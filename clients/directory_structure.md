@@ -22,10 +22,15 @@
 │   │   │   ├── ProtectedRoute.jsx  # Bảo vệ route theo quyền
 │   │
 │   ├── /layouts          # 🏗 Layout theo từng vai trò
-│   │   ├── AdminLayout.jsx
-│   │   ├── ClientLayout.jsx
-│   │   ├── RestaurantLayout.jsx
-│   │   ├── DriverLayout.jsx
+│   │   ├── Admin/
+│   │   │   ├── AdminLayout.jsx
+│   │   │   |
+│   │   ├── Client/
+│   │   │   ├── ClientLayout.jsx
+│   │   ├── Restaurant/
+│   │   │   ├── RestaurantLayout.jsx
+│   │   ├── Driver/
+│   │   │   ├── DriverLayout.jsx
 │   │
 │   ├── /pages            # 📄 Các trang chính
 │   │   ├── /auth
