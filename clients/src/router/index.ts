@@ -9,7 +9,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'Ecommerce',
-      component: () => import('../views/Ecommerce.vue'),
+      component: () => import('../views/admin/Ecommerce.vue'),
       meta: {
         title: 'eCommerce Dashboard',
       },
@@ -17,7 +17,7 @@ const router = createRouter({
     {
       path: '/calendar',
       name: 'Calendar',
-      component: () => import('../views/Others/Calendar.vue'),
+      component: () => import('../views/admin/Others/Calendar.vue'),
       meta: {
         title: 'Calendar',
       },
@@ -25,7 +25,7 @@ const router = createRouter({
     {
       path: '/profile',
       name: 'Profile',
-      component: () => import('../views/Others/UserProfile.vue'),
+      component: () => import('../views/admin/Others/UserProfile.vue'),
       meta: {
         title: 'Profile',
       },
@@ -33,7 +33,7 @@ const router = createRouter({
     {
       path: '/form-elements',
       name: 'Form Elements',
-      component: () => import('../views/Forms/FormElements.vue'),
+      component: () => import('../views/admin/Forms/FormElements.vue'),
       meta: {
         title: 'Form Elements',
       },
@@ -41,7 +41,7 @@ const router = createRouter({
     {
       path: '/basic-tables',
       name: 'Basic Tables',
-      component: () => import('../views/Tables/BasicTables.vue'),
+      component: () => import('../views/admin/Tables/BasicTables.vue'),
       meta: {
         title: 'Basic Tables',
       },
@@ -49,17 +49,17 @@ const router = createRouter({
     {
       path: '/line-chart',
       name: 'Line Chart',
-      component: () => import('../views/Chart/LineChart/LineChart.vue'),
+      component: () => import('../views/admin/Chart/LineChart/LineChart.vue'),
     },
     {
       path: '/bar-chart',
       name: 'Bar Chart',
-      component: () => import('../views/Chart/BarChart/BarChart.vue'),
+      component: () => import('../views/admin/Chart/BarChart/BarChart.vue'),
     },
     {
       path: '/alerts',
       name: 'Alerts',
-      component: () => import('../views/UiElements/Alerts.vue'),
+      component: () => import('../views/admin/UiElements/Alerts.vue'),
       meta: {
         title: 'Alerts',
       },
@@ -67,7 +67,7 @@ const router = createRouter({
     {
       path: '/avatars',
       name: 'Avatars',
-      component: () => import('../views/UiElements/Avatars.vue'),
+      component: () => import('../views/admin/UiElements/Avatars.vue'),
       meta: {
         title: 'Avatars',
       },
@@ -75,7 +75,7 @@ const router = createRouter({
     {
       path: '/badge',
       name: 'Badge',
-      component: () => import('../views/UiElements/Badges.vue'),
+      component: () => import('../views/admin/UiElements/Badges.vue'),
       meta: {
         title: 'Badge',
       },
@@ -84,7 +84,7 @@ const router = createRouter({
     {
       path: '/buttons',
       name: 'Buttons',
-      component: () => import('../views/UiElements/Buttons.vue'),
+      component: () => import('../views/admin/UiElements/Buttons.vue'),
       meta: {
         title: 'Buttons',
       },
@@ -93,7 +93,7 @@ const router = createRouter({
     {
       path: '/images',
       name: 'Images',
-      component: () => import('../views/UiElements/Images.vue'),
+      component: () => import('../views/admin/UiElements/Images.vue'),
       meta: {
         title: 'Images',
       },
@@ -101,7 +101,7 @@ const router = createRouter({
     {
       path: '/videos',
       name: 'Videos',
-      component: () => import('../views/UiElements/Videos.vue'),
+      component: () => import('../views/admin/UiElements/Videos.vue'),
       meta: {
         title: 'Videos',
       },
@@ -109,7 +109,7 @@ const router = createRouter({
     {
       path: '/blank',
       name: 'Blank',
-      component: () => import('../views/Pages/BlankPage.vue'),
+      component: () => import('../views/admin/Pages/BlankPage.vue'),
       meta: {
         title: 'Blank',
       },
@@ -118,7 +118,7 @@ const router = createRouter({
     {
       path: '/error-404',
       name: '404 Error',
-      component: () => import('../views/Errors/FourZeroFour.vue'),
+      component: () => import('../views/admin/Errors/FourZeroFour.vue'),
       meta: {
         title: '404 Error',
       },
@@ -127,7 +127,7 @@ const router = createRouter({
     {
       path: '/signin',
       name: 'Signin',
-      component: () => import('../views/Auth/Signin.vue'),
+      component: () => import('../views/admin/Auth/Signin.vue'),
       meta: {
         title: 'Signin',
       },
@@ -135,7 +135,7 @@ const router = createRouter({
     {
       path: '/signup',
       name: 'Signup',
-      component: () => import('../views/Auth/Signup.vue'),
+      component: () => import('../views/admin/Auth/Signup.vue'),
       meta: {
         title: 'Signup',
       },
