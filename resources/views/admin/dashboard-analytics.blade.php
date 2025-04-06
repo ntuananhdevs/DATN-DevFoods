@@ -113,6 +113,7 @@
                                 <div class="progress-bar" role="progressbar" aria-valuenow="50" aria-valuemin="50" aria-valuemax="100"
                                   style="width:50%"></div>
                               </div>
+                              
                           </div>
                           <div class="col-6">
                               <p class="mb-0">Users: 100K</p>

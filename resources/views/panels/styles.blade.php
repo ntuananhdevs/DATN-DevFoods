@@ -19,7 +19,7 @@ $configData = Helper::applClasses();
 
 {{-- @if($configData['theme'] == 'dark-layout')
         <link rel="stylesheet" href="{{ asset(mix('css/themes/dark-layout.css')) }}">
-@endif
+@endif 
 @if($configData['theme'] == 'semi-dark-layout')
 <link rel="stylesheet" href="{{ asset(mix('css/themes/semi-dark-layout.css')) }}">
 @endif --}}

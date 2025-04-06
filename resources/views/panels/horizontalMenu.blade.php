@@ -19,7 +19,7 @@ $configData = Helper::applClasses();
               data-ticon="icon-disc"></i>
           </a>
         </li>
-      </ul>
+      </ul> 
     </div>
     <!-- Horizontal menu content-->
     <div class="navbar-container main-menu-content" data-menu="menu-container">

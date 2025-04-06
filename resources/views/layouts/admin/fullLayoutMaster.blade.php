@@ -24,7 +24,7 @@ $configData = Helper::applClasses();
 
 </head>
 
-
+ 
 
 <body
     class="vertical-layout vertical-menu-modern 1-column {{ $configData['blankPageClass'] }} {{ $configData['bodyClass'] }} {{($configData['theme'] === 'light') ? '' : $configData['theme'] }}"

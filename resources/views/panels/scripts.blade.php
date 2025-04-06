@@ -12,4 +12,4 @@
 @endif
 {{-- page script --}}
 @yield('page-script')
-{{-- page script --}}
+{{-- page script --}} 

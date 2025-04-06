@@ -6,6 +6,7 @@
     <a class="customizer-toggle" href="javascript:void(0)">
         <i class="feather icon-settings fa fa-spin fa-fw white"></i>
     </a>
+    
     <div class="customizer-content p-2">
         <h4 class="text-uppercase mb-0">Theme Customizer</h4>
         <small>Customize & Preview in Real Time</small>

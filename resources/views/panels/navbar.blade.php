@@ -18,7 +18,7 @@
             <ul class="nav navbar-nav">
               <li class="nav-item mobile-menu d-xl-none mr-auto"><a class="nav-link nav-menu-main menu-toggle hidden-xs"
                   href="#"><i class="ficon feather icon-menu"></i></a></li>
-            </ul>
+            </ul> 
             <ul class="nav navbar-nav bookmark-icons">
               <li class="nav-item d-none d-lg-block"><a class="nav-link" href="app-todo" data-toggle="tooltip"
                   data-placement="top" title="Todo"><i class="ficon feather icon-check-square"></i></a></li>
