@@ -68,7 +68,6 @@ $configData = Helper::applClasses();
     @if($configData['blankPage'] == false)
     @include('adminadmin/customizer')
 
-    @include('adminadmin/buy-now')
     @endif
 
     <div class="sidenav-overlay"></div>
