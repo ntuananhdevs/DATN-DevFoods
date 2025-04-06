@@ -1,0 +1,108 @@
+// ===============================================================================================
+//  File Name: pricing.scss
+//  Description: pricing Page Content SCSS
+//  ----------------------------------------------------------------------------------------------
+//  Item Name: Vuexy  - Vuejs, HTML & Laravel Admin Dashboard Template
+//  Author: PIXINVENT
+//  Author URL: http://www.themeforest.net/user/pixinvent
+// ================================================================================================
+
+@import "../bootstrap/functions";
+@import "../bootstrap/mixins";
+@import "../bootstrap-extended/mixins";
+
+// Core variables and mixins overrides
+@import "../core/variables/variables";
+@import "../bootstrap/variables";
+
+@import "../core/variables/components-variables";
+
+// Pricing table wrapper
+.pricing-table-wrapper {
+  // styles for pricing legend card
+  .pricing-legend {
+    // styles for pricing legend svg
+    .plan-svg {
+      width: 80px;
+      fill: $svg-color-light;
+    }
+    // styles for pricing legend card
+    .card {
+      box-shadow: none !important;
+      border-radius: 5px 0 0 5px;
+    }
+    // styles for header text in pricing legend
+    .header-text {
+      font-size: $font-size-base;
+      color: $primary;
+
+      .heading-primary-text {
+        font-size: $h1-font-size !important;
+      }
+    }
+    // styles for plan limits in pricing legend
+    .plan-limits {
+      .common-height {
+        line-height: 56px;
+      }
+    }
+  }
+
+  // styles for basic, agency , premium plans
+  .pricing-plans {
+    // styles for SVGs at the top
+    .common-svg {
+      height: 90px;
+      fill: $svg-color-light;
+    }
+    // styles for highlited plan SVG at the top
+    .highlited-svg {
+      height: 105px;
+      margin-top: -14px;
+      fill: $svg-color-light;
+    }
+
+    // styles for plan limits in each plan
+    .plan-limits {
+      .common-height-limit {
+        line-height: 55px;
+      }
+
+      .keyword-suggestion-val {
+        sub {
+          font-size: $font-size-base;
+        }
+      }
+    }
+
+    // styles for highlighted plan
+    .hightlight-bestvalue {
+      margin-top: -16px !important;
+      z-index: 10;
+    }
+    // styles for border-radius on basic plan card
+    .left-card {
+      border-radius: 5px 0 0 5px;
+    }
+    // styles for border-radius on agency plan card
+    .right-card {
+      border-radius: 0 5px 5px 0;
+    }
+
+    // hide class for displaying only one type of plan at a time
+    .hide {
+      height: 0px;
+      overflow: hidden;
+    }
+  }
+}
+
+// frequently asked question styles
+
+.pricing-faqs {
+  .faq {
+    p {
+      line-height: 1.8;
+    }
+  }
+}
