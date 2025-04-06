@@ -15,4 +15,3 @@ The application has the following features:
 
 
 ![](backend/public/dev.webp)
-
