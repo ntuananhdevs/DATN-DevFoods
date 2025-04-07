@@ -1,0 +1,68 @@
+/*========================================================
+        DARK LAYOUT
+=========================================================*/
+
+.pricing-table-wrapper .pricing-legend .plan-svg {
+  width: 80px;
+  fill: #626262;
+}
+
+.pricing-table-wrapper .pricing-legend .card {
+  box-shadow: none !important;
+  border-radius: 5px 0 0 5px;
+}
+
+.pricing-table-wrapper .pricing-legend .header-text {
+  font-size: 1rem;
+  color: #7367f0;
+}
+
+.pricing-table-wrapper .pricing-legend .header-text .heading-primary-text {
+  font-size: 2rem !important;
+}
+
+.pricing-table-wrapper .pricing-legend .plan-limits .common-height {
+  line-height: 56px;
+}
+
+.pricing-table-wrapper .pricing-plans .common-svg {
+  height: 90px;
+  fill: #626262;
+}
+
+.pricing-table-wrapper .pricing-plans .highlited-svg {
+  height: 105px;
+  margin-top: -14px;
+  fill: #626262;
+}
+
+.pricing-table-wrapper .pricing-plans .plan-limits .common-height-limit {
+  line-height: 55px;
+}
+
+.pricing-table-wrapper .pricing-plans .plan-limits .keyword-suggestion-val sub {
+  font-size: 1rem;
+}
+
+.pricing-table-wrapper .pricing-plans .hightlight-bestvalue {
+  margin-top: -16px !important;
+  z-index: 10;
+}
+
+.pricing-table-wrapper .pricing-plans .left-card {
+  border-radius: 5px 0 0 5px;
+}
+
+.pricing-table-wrapper .pricing-plans .right-card {
+  border-radius: 0 5px 5px 0;
+}
+
+.pricing-table-wrapper .pricing-plans .hide {
+  height: 0px;
+  overflow: hidden;
+}
+
+.pricing-faqs .faq p {
+  line-height: 1.8;
+}
+
