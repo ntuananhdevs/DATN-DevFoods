@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" version="26.2.14">
   <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
-    <mxGraphModel dx="5037" dy="937" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="4681" background="none" math="0" shadow="0">
+    <mxGraphModel dx="5337" dy="1110" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="4681" background="none" math="0" shadow="0">
       <root>
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
         <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
@@ -2377,7 +2377,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="k2Kob_7Qab4GmlIYvdHQ-294" value="&lt;br&gt;&lt;code class=&quot;bg-text-200/5 border border-0.5 border-border-300 text-danger-000 whitespace-pre-wrap rounded-[0.4rem] px-1 py-px text-[0.9rem]&quot;&gt;discount_codes&lt;/code&gt;&lt;div&gt;&lt;br/&gt;&lt;/div&gt;" style="shape=table;startSize=40;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;html=1;fontSize=17;" parent="WIyWlLk6GJQsqaUBKTNV-1" vertex="1">
-          <mxGeometry x="1480" y="1120" width="240" height="440" as="geometry" />
+          <mxGeometry x="-240" y="2040" width="240" height="440" as="geometry" />
         </mxCell>
         <mxCell id="k2Kob_7Qab4GmlIYvdHQ-295" value="" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=none;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=1;fontSize=17;" parent="k2Kob_7Qab4GmlIYvdHQ-294" vertex="1">
           <mxGeometry y="40" width="240" height="40" as="geometry" />
@@ -2701,6 +2701,12 @@
         </mxCell>
         <mxCell id="tEs2bseSGWbmCgalc67w-0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="k2Kob_7Qab4GmlIYvdHQ-168" target="p7yNoQ_6Ke3ljqvNRkJG-85">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="tEs2bseSGWbmCgalc67w-24" value="" style="edgeStyle=entityRelationEdgeStyle;fontSize=17;html=1;endArrow=ERmandOne;startArrow=ERmandOne;rounded=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="k2Kob_7Qab4GmlIYvdHQ-149" target="wWmwQ9uvO34FJ_Q4iG8c-32">
+          <mxGeometry width="100" height="100" relative="1" as="geometry">
+            <mxPoint x="370" y="1255" as="sourcePoint" />
+            <mxPoint x="490" y="1825" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
