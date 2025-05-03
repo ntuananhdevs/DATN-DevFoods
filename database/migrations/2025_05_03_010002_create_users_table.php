@@ -13,8 +13,15 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->foreignId('role_id')->constrained('roles');
+            $table->string('user_name');
+            $table->string('full_name');
             $table->string('email')->unique();
+            $table->string('phone')->nullable();
+            $table->string('avatar')->nullable();
+            $table->string('google_id')->nullable();
+            $table->decimal('balance', 10, 2)->default(0); // Thêm trường balance
+            $table->boolean('active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
