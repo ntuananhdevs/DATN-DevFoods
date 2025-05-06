@@ -26,6 +26,7 @@
     "webpack-cli": "^3.3.5"
   },
   "dependencies": {
-    "apexcharts": "^4.5.0"
+    "apexcharts": "^4.5.0",
+    "sweetalert2": "^11.21.0"
   }
 }
