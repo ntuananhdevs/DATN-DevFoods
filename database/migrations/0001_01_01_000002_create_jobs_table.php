@@ -11,7 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
             $table->string('queue')->index();
