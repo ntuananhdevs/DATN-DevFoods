@@ -1,0 +1,213 @@
+/*========================================================
+        DARK LAYOUT
+=========================================================*/
+
+.file-manager-application .sidebar-file-manager {
+  width: 260px;
+  background-color: #fff;
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.file-manager-application .sidebar-file-manager .sidebar-inner {
+  height: calc(100vh - 12.9rem);
+  height: calc(var(--vh, 1vh) * 100 - 12.9rem);
+  overflow-y: hidden;
+}
+
+.file-manager-application .sidebar-file-manager .sidebar-inner .sidebar-close-icon {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  font-size: 1.5rem;
+  z-index: 5;
+  cursor: pointer;
+}
+
+.file-manager-application .sidebar-file-manager .sidebar-inner .list {
+  height: calc(var(--vh, 1vh) * 100 - 19rem);
+  overflow-y: scroll;
+  position: relative;
+}
+
+.file-manager-application .sidebar-file-manager .sidebar-inner .list .list-group-item:hover {
+  z-index: 0 !important;
+}
+
+.file-manager-application .sidebar-file-manager .sidebar-inner .list .active {
+  background-color: transparent;
+  color: #7367f0;
+}
+
+.file-manager-application .sidebar-file-manager.show {
+  transition: all 0.25s ease !important;
+  transform: translateX(0) !important;
+  z-index: 10;
+}
+
+.file-manager-application .content-area-wrapper {
+  border: 1px solid #dae1e7;
+  border-radius: 0.25rem;
+}
+
+.file-manager-application .content-area-wrapper .content-right .content-wrapper {
+  padding: 0;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content {
+  border-left: 1px solid #dae1e7;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .file-manager-app-searchbar {
+  padding: 0.35rem 0.1rem;
+  border-bottom: 1px solid #dae1e7;
+  background-color: #fff;
+  border-top-right-radius: 0.5rem;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .file-manager-app-searchbar .file-manager-toggler {
+  cursor: pointer;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .file-manager-app-searchbar input {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .bottom-content {
+  position: relative;
+  height: calc(100vh - 16.4rem);
+  height: calc(var(--vh, 1vh) * 100 - 16.4rem);
+  overflow: scroll;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .bottom-content .files .files-info {
+  cursor: pointer;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .bottom-content .files .content-logo {
+  height: 100px;
+  background-color: #f8f8f8;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .bottom-content .files .content-logo .sidebar-top-icon {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.file-manager-application .content-area-wrapper .file-manager-main-content .bottom-content .folders-cards .folder-info {
+  cursor: pointer;
+}
+
+.file-manager-application .right-sidebar {
+  box-shadow: 0 0.5rem 1rem rgba(34, 41, 47, 0.15);
+  width: 400px;
+  border-radius: 0 0.25rem 0.25rem 0;
+  background-color: #fff;
+  transform: translateX(120%) translateY(0px);
+  position: fixed;
+  transition: all 0.3s ease;
+  z-index: 8;
+  right: 4.85rem;
+  top: 7.7rem;
+  bottom: 5.1rem;
+  opacity: 0;
+  overflow-x: hidden;
+}
+
+.file-manager-application .right-sidebar .card {
+  overflow: hidden;
+  height: 100%;
+}
+
+.file-manager-application .right-sidebar .card .card-body {
+  height: calc(100vh - 13.35rem);
+  height: calc(var(--vh, 1vh) * 100 - 13.35rem);
+  position: relative;
+}
+
+.file-manager-application .right-sidebar .card .card-body .icon-trash,
+.file-manager-application .right-sidebar .card .card-body .icon-x {
+  cursor: pointer;
+}
+
+.file-manager-application .right-sidebar.show {
+  opacity: 1;
+  transform: translateX(9%) translateY(0px);
+}
+
+.file-manager-application .file-manager-content-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  z-index: 7;
+  visibility: hidden;
+  opacity: 0;
+  background: rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.file-manager-application .file-manager-content-overlay.show {
+  visibility: visible;
+  opacity: 1;
+  z-index: 1;
+}
+
+@media screen and (max-width: 1200px) {
+  body .content-right {
+    width: 100%;
+  }
+
+  .content-body {
+    margin-left: 0 !important;
+  }
+
+  .sidebar-left .sidebar {
+    z-index: 10;
+  }
+
+  .sidebar-left .sidebar .sidebar-file-manager {
+    transform: translateX(-112%);
+    transition: all 0.25s ease;
+    position: absolute;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .horizontal-layout.file-manager-application .content-area-wrapper .sidebar-inner {
+    height: calc(100vh - 18.9rem) !important;
+    height: calc(var(--vh, 1vh) * 100 - 15.9rem) !important;
+  }
+
+  .horizontal-layout.file-manager-application .content-area-wrapper .sidebar-inner .list {
+    height: calc(var(--vh, 1vh) * 100 - 22rem) !important;
+    overflow-y: scroll;
+    position: relative;
+  }
+
+  .horizontal-layout.file-manager-application .content-area-wrapper .bottom-content {
+    height: calc(100vh - 19.4rem) !important;
+    height: calc(var(--vh, 1vh) * 100 - 19.4rem) !important;
+  }
+
+  .horizontal-layout.file-manager-application .content-area-wrapper .right-sidebar {
+    height: calc(100vh - 15.85rem) !important;
+    height: calc(var(--vh, 1vh) * 100 - 15.85rem) !important;
+    top: 12rem !important;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .right-sidebar {
+    right: 2.9rem !important;
+    width: 260px !important;
+  }
+}
+

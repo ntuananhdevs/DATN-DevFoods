@@ -1,0 +1,257 @@
+// ================================================================================================
+// 	File Name: file-manager-application.scss
+// 	Description: SCC file for email application page.
+// 	----------------------------------------------------------------------------------------------
+// 	Item Name: Vuexy  - Vuejs, HTML & Laravel Admin Dashboard Template
+// 	Author: PIXINVENT
+// 	Author URL: http://www.themeforest.net/user/pixinvent
+// ================================================================================================
+
+// Core variables and mixins
+@import "../bootstrap/functions";
+@import "../bootstrap/mixins";
+@import "../bootstrap-extended/mixins";
+
+// Load variable overrides
+@import "../core/variables/variables";
+@import "../bootstrap/variables";
+
+// Overrides user variable
+@import "../core/variables/components-variables";
+
+// file manager app container
+.file-manager-application {
+  // file manager sidebar styles
+  .sidebar-file-manager {
+    width: $sidebar-width;
+    background-color: $white;
+    border-top-left-radius: $border-radius-sm;
+    border-bottom-left-radius: $border-radius-sm;
+    transition: all 0.3s ease;
+
+    // styles for card-inner
+    .sidebar-inner {
+      height: calc(100vh - 12.9rem);
+      height: calc(var(--vh, 1vh) * 100 - 12.9rem);
+      overflow-y: hidden;
+
+      .sidebar-close-icon {
+        position: absolute;
+        top: 0.25rem;
+        right: 0.25rem;
+        font-size: $font-size-xl;
+        z-index: 5;
+        cursor: pointer;
+      }
+
+      // styles for card inner list
+      .list {
+        height: calc(var(--vh, 1vh) * 100 - 19rem);
+        overflow-y: scroll;
+        position: relative;
+
+        .list-group-item{
+          &:hover {
+            z-index: 0 !important;
+          }
+        }
+        .active {
+          background-color: transparent;
+          color: $cyan;
+        }
+      }
+
+    }
+
+    // show sidebar on click
+    &.show {
+      transition: all 0.25s ease !important;
+      transform: translateX(0) !important;
+      z-index: 10;
+      // border-right: 1px solid $gray-300;
+    }
+  }
+
+  // styles for content area wrapper
+  .content-area-wrapper {
+    border: 1px solid $gray-300;
+    border-radius: $border-radius-sm;
+
+    .content-right {
+      .content-wrapper {
+        padding: 0;
+      }
+    }
+
+    // styles for file manger app area
+      .file-manager-main-content {
+        border-left: 1px solid $gray-300;
+
+        // styles for searchbar
+        .file-manager-app-searchbar {
+          padding: 0.35rem 0.1rem;
+          border-bottom: 1px solid $gray-300;
+          background-color: $white;
+          border-top-right-radius: $border-radius;
+
+          .file-manager-toggler {
+            cursor: pointer;
+          }
+
+          input {
+            border-color: transparent;
+            box-shadow: none;
+          }
+        }
+
+        // styles for main content bottom
+        .bottom-content {
+          position: relative;
+          height: calc(100vh - 16.4rem);
+          height: calc(var(--vh, 1vh) * 100 - 16.4rem);
+          overflow: scroll;
+
+          // styles for files area
+          .files {
+            .files-info {
+              cursor: pointer;
+            }
+
+            .content-logo {
+              height: 100px;
+              background-color: $body-bg;
+              border-radius: $border-radius $border-radius 0 0;
+
+              .sidebar-top-icon {
+                position: absolute;
+                top: 1.25rem;
+                right: 1.25rem;
+                font-size: $font-size-xl;
+                cursor: pointer;
+              }
+            }
+          }
+
+          // styles for folders area
+          .folders-cards {
+            .folder-info {
+              cursor: pointer;
+            }
+          }
+        }
+    }
+  }
+
+  // right-sidebar styles
+  .right-sidebar {
+    box-shadow: $box-shadow;
+    width: 400px;
+    border-radius: 0 $border-radius-sm $border-radius-sm 0;
+    background-color: $white;
+    transform: translateX(120%) translateY(0px);
+    position: fixed;
+    transition: all 0.3s ease;
+    z-index: 8;
+    right: 4.85rem;
+    top: 7.7rem;
+    bottom: 5.1rem;
+    opacity: 0;
+    overflow-x: hidden;
+    .card {
+      overflow: hidden;
+      height: 100%;
+      .card-body {
+        height: calc(100vh - 13.35rem);
+        height: calc(var(--vh, 1vh) * 100 - 13.35rem);
+        position: relative;
+
+        .icon-trash,
+        .icon-x {
+          cursor: pointer;
+        }
+      }
+    }
+    &.show {
+      opacity: 1;
+      transform: translateX(9%) translateY(0px);
+    }
+  }
+
+  // show overlay on file manager
+  .file-manager-content-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    z-index: 7;
+    visibility: hidden;
+    opacity: 0;
+    background: rgba($pure-black, 0.2);
+    transition: all 0.3s ease;
+
+    &.show {
+      visibility: visible;
+      opacity: 1;
+      z-index: 1;
+    }
+  }
+}
+
+// media query for max-width of 1200px
+@media screen and (max-width: 1200px) {
+  body .content-right {
+    width: 100%;
+  }
+  .content-body {
+    margin-left: 0 !important;
+  }
+
+  .sidebar-left {
+    .sidebar {
+      z-index: 10;
+
+      .sidebar-file-manager {
+        transform: translateX(-112%);
+        transition: all 0.25s ease;
+        position: absolute;
+      }
+    }
+  }
+}
+
+// media query for greater than 1200px
+@media screen and (min-width: 1200px) {
+  .horizontal-layout.file-manager-application {
+    .content-area-wrapper {
+      .sidebar-inner {
+        height: calc(100vh - 18.9rem) !important;
+        height: calc(var(--vh, 1vh) * 100 - 15.9rem) !important;
+  
+        .list {
+          height: calc(var(--vh, 1vh) * 100 - 22rem) !important;
+          overflow-y: scroll;
+          position: relative;
+        }
+      }
+
+      .bottom-content {
+        height: calc(100vh - 19.4rem) !important;
+        height: calc(var(--vh, 1vh) * 100 - 19.4rem) !important;
+      }
+
+      .right-sidebar {
+        height: calc(100vh - 15.85rem) !important;
+        height: calc(var(--vh, 1vh) * 100 - 15.85rem) !important;
+        top: 12rem !important;
+      }
+    }
+  }
+}
+// media query for max-width of 576px
+@media screen and (max-width: 576px) {
+  .right-sidebar {
+    right: 2.9rem !important;
+    width: 260px !important;
+  }
+}
