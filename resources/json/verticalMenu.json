@@ -1,12 +1,13 @@
 {
   "menu": [
-    {
+     {
       "url": "/",
       "name": "Dashboard",
       "slug": "dashboard",
       "badgeClass": "badge badge-warning badge-pill float-right mr-2",
       "icon": "feather icon-home",
-      "i18n": "nav.dashboard_analytics"
+      "i18n": "nav.dashboard_analytics",
+      "classlist": "active"
     },
     {
       "url": "users",
