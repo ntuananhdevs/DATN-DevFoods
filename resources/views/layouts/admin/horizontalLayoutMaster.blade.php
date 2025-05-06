@@ -38,7 +38,7 @@
         <div class="content-wrapper">
             {{-- Include Breadcrumb --}}
             @if($configData['pageHeader'] == true)
-            @include('panels.breadcrumb')
+            @include('panels.admin.breadcrumb')
             @endif
 
             <div class="content-body">
