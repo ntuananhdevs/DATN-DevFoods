@@ -3,7 +3,7 @@
 use App\Http\Controllers\Customer\HomeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Customer\ProductController;
+use App\Http\Controllers\Customer\ProductController;    
 use Illuminate\Support\Facades\Route;
 
 
