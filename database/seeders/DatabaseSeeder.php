@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-<<<<<<< HEAD
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Role;
@@ -22,24 +21,13 @@ class DatabaseSeeder extends Seeder
             'role_id' => function () use ($roleIds) {
                 return $roleIds[array_rand($roleIds)];
             },
-=======
-use App\Models\User;
-use Illuminate\Database\Seeder;
+        ]);
 
-class DatabaseSeeder extends Seeder
-{
-    public function run(): void
-    {
-<<<<<<< HEAD
-        // User::factory(10)->create();
-
+        // Tạo user test cụ thể nếu muốn
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
+            'role_id' => $roleIds[array_rand($roleIds)],
         ]);
-=======
-        User::factory(10)->create();
->>>>>>> 7088f382164c37f9caf064e185d73a37f6df5de3
     }
 }

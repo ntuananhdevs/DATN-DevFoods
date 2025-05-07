@@ -2,13 +2,8 @@
 
 namespace App\Providers;
 
-<<<<<<< HEAD
 use App\Models\User;
-
 use Illuminate\Support\Facades\Gate;
-
-=======
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -19,11 +14,6 @@ class AuthServiceProvider extends ServiceProvider
      *
      * @var array<class-string, class-string>
      */
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
     protected $policies = [
         // Ví dụ:
         // \App\Models\Post::class => \App\Policies\PostPolicy::class,
@@ -35,14 +25,11 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerPolicies();
-<<<<<<< HEAD
+
         // Gate cho quản lý Roles
         Gate::define('manage-roles', function (User $user) {
             return in_array($user->role->name, ['admin', 'manager']);
         });
-
-=======
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
 
         Passport::ignoreRoutes();
 
@@ -51,7 +38,3 @@ class AuthServiceProvider extends ServiceProvider
         // Passport::refreshTokensExpireIn(now()->addDays(30));
     }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6

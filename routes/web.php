@@ -1,30 +1,11 @@
 <?php
 
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\DashboardController;
-use Illuminate\Support\Facades\Route;
-<<<<<<< HEAD
-<<<<<<< HEAD
 use App\Http\Controllers\Admin\RoleController;
-
-Route::resource('admin/roles', RoleController::class);
-
-
-
-=======
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
-
-Route::get('/', [DashboardController::class, 'dashboard']);
-
-// Route Dashboards
-Route::get('/dashboard', [DashboardController::class, 'dashboard']);
-<<<<<<< HEAD
-=======
-
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
-=======
 use App\Http\Controllers\Admin\Auth\LoginController;
 use App\Http\Controllers\Admin\Auth\LogoutController;
+use App\Http\Controllers\DashboardController;
+use Illuminate\Support\Facades\Route;
 
 // Route Auth
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -37,13 +18,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
-    
+
     // Đăng xuất
     Route::post('logout', [LogoutController::class, 'logout'])->name('logout');
-    
+
+    // Roles Management
+    Route::resource('roles', RoleController::class);
+
     // Users Management
-    Route::prefix('users')->name('users.')->group(function() {
-        Route::get('/', [UserController::class, 'index'])->name('index');  
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/store', [UserController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
@@ -55,4 +39,3 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/force-delete/{id}', [UserController::class, 'forceDelete'])->name('forceDelete');
     });
 });
->>>>>>> 7088f382164c37f9caf064e185d73a37f6df5de3

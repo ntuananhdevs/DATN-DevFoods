@@ -2,11 +2,7 @@
 
 namespace App\Helpers;
 
-<<<<<<< HEAD
 use Illuminate\Support\Facades\Config;
-=======
-use Config;
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
 
 class Helper
 {
@@ -38,11 +34,7 @@ class Helper
             'pageHeader' => true,
             'contentLayout' => 'default',
             'blankPage' => false,
-<<<<<<< HEAD
             'defaultLanguage' => 'en',
-=======
-            'defaultLanguage'=>'en',
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
             'direction' => env('MIX_CONTENT_DIRECTION', 'ltr'),
         ];
 
@@ -65,17 +57,10 @@ class Helper
             'blankPage' => array(false, true),
             'sidebarPositionClass' => array('content-left-sidebar' => 'sidebar-left', 'content-right-sidebar' => 'sidebar-right', 'content-detached-left-sidebar' => 'sidebar-detached sidebar-left', 'content-detached-right-sidebar' => 'sidebar-detached sidebar-right', 'default' => 'default-sidebar-position'),
             'contentsidebarClass' => array('content-left-sidebar' => 'content-right', 'content-right-sidebar' => 'content-left', 'content-detached-left-sidebar' => 'content-detached content-right', 'content-detached-right-sidebar' => 'content-detached content-left', 'default' => 'default-sidebar'),
-<<<<<<< HEAD
             'defaultLanguage' => array('en' => 'en', 'fr' => 'fr', 'de' => 'de', 'pt' => 'pt'),
             'direction' => array('ltr', 'rtl'),
         ];
 
-=======
-            'defaultLanguage'=>array('en'=>'en','fr'=>'fr','de'=>'de','pt'=>'pt'),
-            'direction' => array('ltr', 'rtl'),
-        ];
-        
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
         //if mainLayoutType value empty or not match with default options in custom.php config file then set a default value
         foreach ($allOptions as $key => $value) {
             if (array_key_exists($key, $DefaultData)) {
@@ -87,11 +72,7 @@ class Helper
                             // data key should not be exist inside allOptions array's sub array
                             if (!array_key_exists($data[$key], $value)) {
                                 // ensure that passed value should be match with any of allOptions array value
-<<<<<<< HEAD
                                 $result = array_search($data[$key], $value, true);
-=======
-                                $result = array_search($data[$key], $value, 'strict');
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
                                 if (empty($result) && $result !== 0) {
                                     $data[$key] = $DefaultData[$key];
                                 }
@@ -106,11 +87,7 @@ class Helper
                 }
             }
         }
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
         //layout classes
         $layoutClasses = [
             'theme' => $data['theme'],
@@ -131,25 +108,15 @@ class Helper
             'sidebarPositionClass' => $allOptions['sidebarPositionClass'][$data['contentLayout']],
             'contentsidebarClass' => $allOptions['contentsidebarClass'][$data['contentLayout']],
             'mainLayoutType' => $data['mainLayoutType'],
-<<<<<<< HEAD
             'defaultLanguage' => $allOptions['defaultLanguage'][$data['defaultLanguage']],
             'direction' => $data['direction'],
         ];
+
         // set default language if session hasn't locale value the set default language
         if (!session()->has('locale')) {
             app()->setLocale($layoutClasses['defaultLanguage']);
         }
 
-=======
-            'defaultLanguage'=>$allOptions['defaultLanguage'][$data['defaultLanguage']],
-            'direction' => $data['direction'],
-        ];
-        // set default language if session hasn't locale value the set default language
-        if(!session()->has('locale')){
-            app()->setLocale($layoutClasses['defaultLanguage']);
-        }
-        
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
         // sidebar Collapsed
         if ($layoutClasses['sidebarCollapsed'] == 'true') {
             $layoutClasses['sidebarClass'] = "menu-collapsed";
