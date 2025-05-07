@@ -16,6 +16,9 @@ class UserController extends Controller
     {
         try {
             $users = User::with('role')
+                ->whereHas('role', function ($query) {
+                    $query->where('name', 'user');
+                })
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
             

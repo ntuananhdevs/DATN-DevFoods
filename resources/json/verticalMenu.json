@@ -10,7 +10,7 @@
       "classlist": "active"
     },
     {
-      "url": "admin/users",
+      "url": "users",
       "name": "Manage Users",
       "icon": "feather icon-user",
       "i18n": "nav.users"

@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-use Config;
+use Illuminate\Support\Facades\Config;
 
 class Helper
 {
@@ -34,7 +34,7 @@ class Helper
             'pageHeader' => true,
             'contentLayout' => 'default',
             'blankPage' => false,
-            'defaultLanguage'=>'en',
+            'defaultLanguage' => 'en',
             'direction' => env('MIX_CONTENT_DIRECTION', 'ltr'),
         ];
 
@@ -57,10 +57,10 @@ class Helper
             'blankPage' => array(false, true),
             'sidebarPositionClass' => array('content-left-sidebar' => 'sidebar-left', 'content-right-sidebar' => 'sidebar-right', 'content-detached-left-sidebar' => 'sidebar-detached sidebar-left', 'content-detached-right-sidebar' => 'sidebar-detached sidebar-right', 'default' => 'default-sidebar-position'),
             'contentsidebarClass' => array('content-left-sidebar' => 'content-right', 'content-right-sidebar' => 'content-left', 'content-detached-left-sidebar' => 'content-detached content-right', 'content-detached-right-sidebar' => 'content-detached content-left', 'default' => 'default-sidebar'),
-            'defaultLanguage'=>array('en'=>'en','fr'=>'fr','de'=>'de','pt'=>'pt'),
+            'defaultLanguage' => array('en' => 'en', 'fr' => 'fr', 'de' => 'de', 'pt' => 'pt'),
             'direction' => array('ltr', 'rtl'),
         ];
-        
+
         //if mainLayoutType value empty or not match with default options in custom.php config file then set a default value
         foreach ($allOptions as $key => $value) {
             if (array_key_exists($key, $DefaultData)) {
@@ -72,7 +72,7 @@ class Helper
                             // data key should not be exist inside allOptions array's sub array
                             if (!array_key_exists($data[$key], $value)) {
                                 // ensure that passed value should be match with any of allOptions array value
-                                $result = array_search($data[$key], $value, 'strict');
+                                $result = array_search($data[$key], $value, true);
                                 if (empty($result) && $result !== 0) {
                                     $data[$key] = $DefaultData[$key];
                                 }
@@ -87,7 +87,7 @@ class Helper
                 }
             }
         }
-        
+
         //layout classes
         $layoutClasses = [
             'theme' => $data['theme'],
@@ -108,14 +108,15 @@ class Helper
             'sidebarPositionClass' => $allOptions['sidebarPositionClass'][$data['contentLayout']],
             'contentsidebarClass' => $allOptions['contentsidebarClass'][$data['contentLayout']],
             'mainLayoutType' => $data['mainLayoutType'],
-            'defaultLanguage'=>$allOptions['defaultLanguage'][$data['defaultLanguage']],
+            'defaultLanguage' => $allOptions['defaultLanguage'][$data['defaultLanguage']],
             'direction' => $data['direction'],
         ];
+
         // set default language if session hasn't locale value the set default language
-        if(!session()->has('locale')){
+        if (!session()->has('locale')) {
             app()->setLocale($layoutClasses['defaultLanguage']);
         }
-        
+
         // sidebar Collapsed
         if ($layoutClasses['sidebarCollapsed'] == 'true') {
             $layoutClasses['sidebarClass'] = "menu-collapsed";

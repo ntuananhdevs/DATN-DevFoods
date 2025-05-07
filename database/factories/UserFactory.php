@@ -24,7 +24,7 @@ class UserFactory extends Factory
             'balance' => $this->faker->randomFloat(2, 0, 1000),
             'active' => $this->faker->boolean,
             'email_verified_at' => $this->faker->dateTimeBetween('-1 years', 'now'),
-            'password' => bcrypt('password'), // Default password
+            'password' => bcrypt('12345678'), // Default password
             'remember_token' => Str::random(10),
         ];
     }

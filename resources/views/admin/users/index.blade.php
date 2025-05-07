@@ -1,7 +1,7 @@
 
 @extends('layouts.admin.contentLayoutMaster')
 
-@section('title', 'UsersUsers')
+@section('title', 'Users')
 
 @section('vendor-style')
         {{-- vendor css files --}}
