@@ -24,16 +24,13 @@ class DatabaseSeeder extends Seeder
             },
 =======
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
+<<<<<<< HEAD
         // User::factory(10)->create();
 
         User::factory()->create([
@@ -41,5 +38,8 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
 >>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
         ]);
+=======
+        User::factory(10)->create();
+>>>>>>> 7088f382164c37f9caf064e185d73a37f6df5de3
     }
 }

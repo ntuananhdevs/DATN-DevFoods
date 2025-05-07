@@ -158,10 +158,12 @@
                     class="feather icon-mail"></i> My
                   Inbox</a><a class="dropdown-item" href="app-todo"><i class="feather icon-check-square"></i> Task</a><a
                   class="dropdown-item" href="app-chat"><i class="feather icon-message-square"></i> Chats</a>
-                <div class="dropdown-divider"></div><a class="dropdown-item" href="auth-login"><i
-                    class="feather icon-power"></i> Logout</a>
-                <form id="logout-form" action="login" method="POST" style="display: none;">
+                <div class="dropdown-divider"></div>
+                <form action="{{ route('admin.logout') }}" method="POST" style="display: inline;">
                   @csrf
+                  <button type="submit" class="dropdown-item" style="background: none; border: none; padding: 0; margin: 0;">
+                    <i class="feather icon-power"></i> Logout
+                  </button>
                 </form>
               </div>
             </li>

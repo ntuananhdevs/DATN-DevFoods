@@ -28,18 +28,15 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-<<<<<<< HEAD
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'password' => bcrypt('password'),
             // 'role_id' => Role::inRandomOrder()->first()->id, // không cần nếu truyền từ ngoài
-=======
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
->>>>>>> 9b9f675225f77e5568d3f1dd1d4d67da2c3ab1f6
         ];
     }
 
