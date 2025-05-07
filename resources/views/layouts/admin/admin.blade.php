@@ -11,6 +11,12 @@
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Admin Panel</a>
         </div>
+        <form action="{{ route('admin.logout') }}" method="POST" style="display: inline;">
+            @csrf
+            <button type="submit" class="dropdown-item" style="background: white; border: none; padding: 0; margin: 0;">
+              <i class="feather icon-power"></i> Logout
+            </button>
+          </form>
     </nav>
 
     <div class="container mt-4">
