@@ -12,41 +12,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('login', [LoginController::class, 'login'])->name('login.submit');
 });
 
-// Route cho admin 
+// Route cho admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
-
+    // Dashboard
+    Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+    
     // Đăng xuất
     Route::post('logout', [LogoutController::class, 'logout'])->name('logout');
-});
-
-Route::prefix('admin')->name('admin.')->group(function() {
     
-    Route::group(['prefix' => '/'], function() {
-        Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
-    });
-
-    Route::group(['prefix' => 'users'], function() {
-        Route::get('/', [UserController::class, 'index'])->name('users.index');  
-
-        Route::get('/create', [UserController::class, 'create'])->name('users.create');
-
-        Route::post('/store', [UserController::class, 'store'])->name('users.store');
-
-        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('users.edit');
-
-        Route::put('/update/{id}', [UserController::class, 'update'])->name('users.update');
-
-        Route::get('/show/{id}', [UserController::class, 'show'])->name('users.show');
-
-        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('users.destroy');
-
-        Route::get('/trashed', [UserController::class, 'trashed'])->name('users.trashed');
-
-        Route::patch('/restore/{id}', [UserController::class, 'restore'])->name('users.restore');
-        
-        Route::delete('/force-delete/{id}', [UserController::class, 'forceDelete'])->name('users.forceDelete');
+    // Users Management
+    Route::prefix('users')->name('users.')->group(function() {
+        Route::get('/', [UserController::class, 'index'])->name('index');  
+        Route::get('/create', [UserController::class, 'create'])->name('create');
+        Route::post('/store', [UserController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
+        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
+        Route::get('/trashed', [UserController::class, 'trashed'])->name('trashed');
+        Route::patch('/restore/{id}', [UserController::class, 'restore'])->name('restore');
+        Route::delete('/force-delete/{id}', [UserController::class, 'forceDelete'])->name('forceDelete');
     });
 });
