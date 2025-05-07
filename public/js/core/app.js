@@ -826,7 +826,7 @@
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(/*! C:\xampp\htdocs\fe-datn\resources\js\core\app.js */"./resources/js/core/app.js");
+module.exports = __webpack_require__(/*! D:\BackUP\laragon\www\DATN-DevFoods\resources\js\core\app.js */"./resources/js/core/app.js");
 
 
 /***/ })
