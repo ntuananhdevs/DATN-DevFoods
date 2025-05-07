@@ -13,7 +13,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('login', [LoginController::class, 'login'])->name('login.submit');
 });
 
-// Route cho admin
+// Route cho admin đã đăng nhập
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
@@ -23,19 +23,40 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('logout', [LogoutController::class, 'logout'])->name('logout');
 
     // Roles Management
-    Route::resource('roles', RoleController::class);
+    Route::prefix('roles')->name('roles.')->group(function () {
+        // Hiển thị danh sách vai trò
+        Route::get('/', [RoleController::class, 'index'])->name('index');
+        // Tạo mới vai trò
+        Route::get('/create', [RoleController::class, 'create'])->name('create');
+        Route::post('/store', [RoleController::class, 'store'])->name('store');
+        // Sửa vai trò
+        Route::get('/edit/{id}', [RoleController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [RoleController::class, 'update'])->name('update');
+        // Chi tiết vai trò
+        Route::get('/show/{id}', [RoleController::class, 'show'])->name('show');
+        // Xóa vai trò
+        Route::delete('/delete/{id}', [RoleController::class, 'destroy'])->name('destroy');
+    });
 
     // Users Management
     Route::prefix('users')->name('users.')->group(function () {
+        // Hiển thị danh sách người dùng
         Route::get('/', [UserController::class, 'index'])->name('index');
+        // Tạo người dùng mới
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/store', [UserController::class, 'store'])->name('store');
+        // Sửa thông tin người dùng
         Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
+        // Chi tiết người dùng
         Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
+        // Xóa người dùng
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
+        // Hiển thị danh sách người dùng đã xóa
         Route::get('/trashed', [UserController::class, 'trashed'])->name('trashed');
+        // Khôi phục người dùng đã xóa
         Route::patch('/restore/{id}', [UserController::class, 'restore'])->name('restore');
+        // Xóa vĩnh viễn người dùng
         Route::delete('/force-delete/{id}', [UserController::class, 'forceDelete'])->name('forceDelete');
     });
 });
