@@ -1,29 +1,32 @@
 <?php
 
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\Auth\LoginController;
-use App\Http\Controllers\Admin\Auth\LogoutController;
+use App\Http\Controllers\Admin\Auth\AuthController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\DashboardController;
 
-// Route Auth
+// Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [LoginController::class, 'login'])->name('login.submit');
+    Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('login', [AuthController::class, 'login'])->name('login.submit');
 });
 
-// Route cho admin
+// Route chỉ dành cho admin sau khi đăng nhập và có role:admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
-    
+
     // Đăng xuất
-    Route::post('logout', [LogoutController::class, 'logout'])->name('logout');
-    
+    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Categories Management (CRUD)
+    Route::resource('categories', CategoryController::class);
+
     // Users Management
-    Route::prefix('users')->name('users.')->group(function() {
-        Route::get('/', [UserController::class, 'index'])->name('index');  
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/store', [UserController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
