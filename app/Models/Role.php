@@ -8,9 +8,7 @@ class Role extends Model
 {
     protected $fillable = ['name', 'permissions'];
 
-
-
     protected $casts = [
-        'permissions' => 'array',
+        'permissions' => 'array', // Cast quyền thành mảng
     ];
 }

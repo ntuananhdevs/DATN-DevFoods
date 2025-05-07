@@ -1,14 +1,15 @@
 @isset($pageConfigs)
-{!! Helper::updatePageConfig($pageConfigs) !!}
+    {!! Helper::updatePageConfig($pageConfigs) !!}
 @endisset
 
 <!DOCTYPE html>
 {{-- {!! Helper::applClasses() !!} --}}
 @php
-$configData = Helper::applClasses();
+    $configData = Helper::applClasses();
 @endphp
 
-<html lang="@if(session()->has('locale')){{session()->get('locale')}}@else{{$configData['defaultLanguage']}}@endif"
+<html
+    lang="@if (session()->has('locale')) {{ session()->get('locale') }}@else{{ $configData['defaultLanguage'] }} @endif"
     data-textdirection="{{ env('MIX_CONTENT_DIRECTION') === 'rtl' ? 'rtl' : 'ltr' }}">
 
 <head>
@@ -27,7 +28,6 @@ $configData = Helper::applClasses();
 
 
 
-@isset($configData["mainLayoutType"])
-@extends((( $configData["mainLayoutType"] === 'horizontal') ? 'layouts.admin.horizontalLayoutMaster' :
-'layouts.admin.verticalLayoutMaster' ))
+@isset($configData['mainLayoutType'])
+    @extends($configData['mainLayoutType'] === 'horizontal' ? 'layouts.admin.horizontalLayoutMaster' : 'layouts.admin.verticalLayoutMaster')
 @endisset
