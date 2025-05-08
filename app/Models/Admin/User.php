@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Admin;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,8 +18,15 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'role_id',
+        'user_name',
+        'full_name',
         'email',
+        'phone',
+        'avatar',
+        'google_id',
+        'balance',
+        'active',
         'password',
     ];
 
@@ -43,6 +50,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'active' => 'boolean',
+            'balance' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Get the role that owns the user.
+     */
+    // Trong phương thức role()
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
     }
 }

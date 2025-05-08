@@ -54,7 +54,7 @@
     <!-- End: Content-->
 
     @if($configData['blankPage'] == false && isset($configData['blankPage']))
-    @include('admin/customizer')
+    @include('admin.dashboard.customizer')
 
     @include('admin/buy-now')
     @endif
