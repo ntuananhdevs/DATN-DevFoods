@@ -22,7 +22,7 @@
                 <tr>
                     <td>{{ $category->id }}</td>
                     <td>{{ $category->name }}</td>
-                    <td>{{ $category->description }}</td>
+                    <td>{{ Str::limit($category->description, 50) }}</td>
                     <td>
                         @if($category->image)
                             <img src="{{ asset('storage/'.$category->image) }}" width="60">
