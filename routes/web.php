@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Customer\HomeController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Customer\ProductController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Auth\AuthController;
@@ -27,7 +27,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Đăng xuất
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Categories Management 
+    // Categories Management
     Route::resource('categories', CategoryController::class);
 
     // Users Management
