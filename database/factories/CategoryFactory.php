@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Factories;
+namespace Database\Factories\Admin;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,8 +19,8 @@ class CategoryFactory extends Factory
         return [
             'name' => $this->faker->unique()->words(2, true),
             'description' => $this->faker->paragraph(),
-            'image' => 'categories/default.jpg', 
-            'status' => $this->faker->boolean(80), 
+            'image' => 'categories/default.jpg',
+            'status' => $this->faker->boolean(80),
             'created_at' => now(),
             'updated_at' => now(),
         ];

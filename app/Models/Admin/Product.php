@@ -4,10 +4,16 @@ namespace App\Models\Admin;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Database\Factories\Admin\ProductFactory;
 
 class Product extends Model
 {
     use HasFactory;
+
+    protected static function newFactory()
+    {
+        return ProductFactory::new();
+    }
     
     protected $fillable = [
         'category_id',

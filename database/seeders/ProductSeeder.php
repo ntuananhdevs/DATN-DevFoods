@@ -14,7 +14,6 @@ class ProductSeeder extends Seeder
         $categories = Category::all();
 
         foreach ($categories as $category) {
-            // Tạo 20 sản phẩm cho từng category
             Product::factory()->count(20)->create([
                 'category_id' => $category->id,
             ]);

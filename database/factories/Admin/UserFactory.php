@@ -8,17 +8,15 @@ use Illuminate\Support\Str;
 use App\Models\Admin\Role;
 use App\Models\Admin\User;
 
-
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
- */
 class UserFactory extends Factory
 {
+    protected $model = User::class;
+    
     /**
      * The current password being used by the factory.
      */
     protected static ?string $password;
-    protected $model = User::class;
+
     /**
      * Define the model's default state.
      *
@@ -51,7 +49,10 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
-    
+
+    /**
+     * Indicate that the user is inactive.
+     */
     public function inactive(): static
     {
         return $this->state(fn(array $attributes) => [
@@ -59,6 +60,9 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * Indicate that the user has a Google ID (for OAuth).
+     */
     public function withGoogleId(): static
     {
         return $this->state(fn(array $attributes) => [
