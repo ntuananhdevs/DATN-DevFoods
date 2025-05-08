@@ -7,18 +7,29 @@
                 <div class="data-table-logo">
                     <i class="fas fa-layer-group"></i>
                 </div>
-                <h1 class="data-table-title">Data Management</h1>
+                <h1 class=" data-table-title">Quản lý sản phẩm</h1>
             </div>
             <div class="data-table-header-actions">
-                <button class="data-table-btn data-table-btn-outline">
-                    <i class="fas fa-filter"></i> Filter
-                </button>
-                <button class="data-table-btn data-table-btn-outline">
-                    <i class="fas fa-download"></i> Export
-                </button>
-                <button class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-plus"></i> Add New
-                </button>
+                <!-- Đã xóa nút lọc ở đây -->
+                <div class="dropdown d-inline">
+                    <button class="data-table-btn data-table-btn-outline dropdown-toggle" type="button" id="exportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-download"></i> Xuất
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="exportDropdown">
+                        <a class="dropdown-item" href="{{ route('admin.products.export', ['type' => 'excel']) }}">
+                            <i class="fas fa-file-excel"></i> Xuất Excel
+                        </a>
+                        <a class="dropdown-item" href="{{ route('admin.products.export', ['type' => 'pdf']) }}">
+                            <i class="fas fa-file-pdf"></i> Xuất PDF
+                        </a>
+                        <a class="dropdown-item" href="{{ route('admin.products.export', ['type' => 'csv']) }}">
+                            <i class="fas fa-file-csv"></i> Xuất CSV
+                        </a>
+                    </div>
+                </div>
+                <a href="{{ route('admin.products.create') }}" class="data-table-btn data-table-btn-primary">
+                    <i class="fas fa-plus"></i> Thêm mới
+                </a>
             </div>
         </div>
         
@@ -26,21 +37,21 @@
         <div class="data-table-card">
             <!-- Tiêu đề bảng -->
             <div class="data-table-header">
-                <h2 class="data-table-card-title">Transaction Records</h2>
+                <h2 class="data-table-card-title">Danh sách sản phẩm</h2>
             </div>
             
             <!-- Thanh công cụ -->
             <div class="data-table-controls">
                 <div class="data-table-search">
                     <i class="fas fa-search data-table-search-icon"></i>
-                    <input type="text" placeholder="Search by name, email or ID..." id="dataTableSearch">
+                    <input type="text" placeholder="Tìm kiếm theo tên, mã sản phẩm..." id="dataTableSearch">
                 </div>
                 <div class="data-table-actions">
                     <button class="data-table-btn data-table-btn-outline">
-                        <i class="fas fa-sliders"></i> Columns
+                        <i class="fas fa-sliders"></i> Cột
                     </button>
-                    <button class="data-table-btn data-table-btn-outline">
-                        <i class="fas fa-filter"></i> Filter
+                    <button class="data-table-btn data-table-btn-outline" data-toggle="modal" data-target="#filterModal">
+                        <i class="fas fa-filter"></i> Lọc
                     </button>
                 </div>
             </div>
@@ -53,325 +64,169 @@
                             <th data-sort="id" class="active-sort">
                                 ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
                             </th>
+                            <th data-sort="image">
+                                Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
                             <th data-sort="name">
-                                Customer <i class="fas fa-sort data-table-sort-icon"></i>
+                                Tên sản phẩm <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
-                            <th data-sort="amount">
-                                Amount <i class="fas fa-sort data-table-sort-icon"></i>
+                            <th data-sort="category">
+                                Danh mục <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
-                            <th data-sort="status">
-                                Status <i class="fas fa-sort data-table-sort-icon"></i>
+                            <th data-sort="price">
+                                Giá <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
-                            <th data-sort="date">
-                                Date <i class="fas fa-sort data-table-sort-icon"></i>
+                            <th data-sort="stock">
+                                Tồn kho <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
-                            <th>Actions</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="dataTableBody">
+                        @forelse($products as $product)
                         <tr>
                             <td>
                                 <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-receipt"></i></span>
-                                    INV001
+                                    <span class="data-table-id-icon"><i class="fas fa-box"></i></span>
+                                    {{ $product->id }}
                                 </div>
                             </td>
                             <td>
-                                <div class="data-table-customer">
-                                    <div class="data-table-avatar">JD</div>
-                                    <div class="data-table-customer-details">
-                                        <div class="data-table-customer-name">John Doe</div>
-                                        <div class="data-table-customer-email">john.doe@example.com</div>
-                                    </div>
+                                <div class="data-table-product-image">
+                                    <img src="{{ asset($product->image) }}" alt="{{ $product->name }}">
                                 </div>
                             </td>
                             <td>
-                                <div class="data-table-amount">$1,250.00</div>
+                                <div class="data-table-product-name">{{ $product->name }}</div>
                             </td>
                             <td>
-                                <span class="data-table-status data-table-status-pending">
-                                    <i class="fas fa-clock"></i> Pending
-                                </span>
-                            </td>
-                            <td>15 Jan 2023</td>
-                            <td>
-                                <div class="data-table-action-buttons">
-                                    <button class="data-table-action-btn data-table-tooltip" data-tooltip="View details" onclick="showRecord('INV001')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="data-table-action-btn edit data-table-tooltip" data-tooltip="Edit record" onclick="editRecord('INV001')">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button class="data-table-action-btn delete data-table-tooltip" data-tooltip="Delete record" onclick="deleteRecord('INV001')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-receipt"></i></span>
-                                    INV002
-                                </div>
+                                {{ $product->category->name ?? 'N/A' }}
                             </td>
                             <td>
-                                <div class="data-table-customer">
-                                    <div class="data-table-avatar">JS</div>
-                                    <div class="data-table-customer-details">
-                                        <div class="data-table-customer-name">Jane Smith</div>
-                                        <div class="data-table-customer-email">jane.smith@example.com</div>
-                                    </div>
-                                </div>
+                                <div class="data-table-amount">{{ number_format($product->base_price, 0, ',', '.') }} đ</div>
                             </td>
                             <td>
-                                <div class="data-table-amount">$350.00</div>
-                            </td>
-                            <td>
-                                <span class="data-table-status data-table-status-processing">
-                                    <i class="fas fa-spinner"></i> Processing
-                                </span>
-                            </td>
-                            <td>20 Feb 2023</td>
-                            <td>
-                                <div class="data-table-action-buttons">
-                                    <button class="data-table-action-btn data-table-tooltip" data-tooltip="View details" onclick="showRecord('INV002')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="data-table-action-btn edit data-table-tooltip" data-tooltip="Edit record" onclick="editRecord('INV002')">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button class="data-table-action-btn delete data-table-tooltip" data-tooltip="Delete record" onclick="deleteRecord('INV002')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-receipt"></i></span>
-                                    INV003
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-customer">
-                                    <div class="data-table-avatar">RJ</div>
-                                    <div class="data-table-customer-details">
-                                        <div class="data-table-customer-name">Robert Johnson</div>
-                                        <div class="data-table-customer-email">robert.johnson@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-amount">$5,000.00</div>
-                            </td>
-                            <td>
+                                @if($product->stock)
                                 <span class="data-table-status data-table-status-success">
-                                    <i class="fas fa-check"></i> Success
+                                    <i class="fas fa-check"></i> Còn hàng
                                 </span>
-                            </td>
-                            <td>10 Mar 2023</td>
-                            <td>
-                                <div class="data-table-action-buttons">
-                                    <button class="data-table-action-btn data-table-tooltip" data-tooltip="View details" onclick="showRecord('INV003')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="data-table-action-btn edit data-table-tooltip" data-tooltip="Edit record" onclick="editRecord('INV003')">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button class="data-table-action-btn delete data-table-tooltip" data-tooltip="Delete record" onclick="deleteRecord('INV003')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-receipt"></i></span>
-                                    INV004
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-customer">
-                                    <div class="data-table-avatar">ED</div>
-                                    <div class="data-table-customer-details">
-                                        <div class="data-table-customer-name">Emily Davis</div>
-                                        <div class="data-table-customer-email">emily.davis@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-amount">$750.00</div>
-                            </td>
-                            <td>
+                                @else
                                 <span class="data-table-status data-table-status-failed">
-                                    <i class="fas fa-times"></i> Failed
+                                    <i class="fas fa-times"></i> Hết hàng
                                 </span>
+                                @endif
                             </td>
-                            <td>05 Apr 2023</td>
                             <td>
                                 <div class="data-table-action-buttons">
-                                    <button class="data-table-action-btn data-table-tooltip" data-tooltip="View details" onclick="showRecord('INV004')">
+                                    <a href="{{ route('admin.products.show', $product->id) }}" class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
                                         <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="data-table-action-btn edit data-table-tooltip" data-tooltip="Edit record" onclick="editRecord('INV004')">
+                                    </a>
+                                    <a href="{{ route('admin.products.edit', $product->id) }}" class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
                                         <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button class="data-table-action-btn delete data-table-tooltip" data-tooltip="Delete record" onclick="deleteRecord('INV004')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    </a>
+                                    <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="data-table-action-btn delete data-table-tooltip" data-tooltip="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
+                        @empty
                         <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-receipt"></i></span>
-                                    INV005
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-customer">
-                                    <div class="data-table-avatar">MW</div>
-                                    <div class="data-table-customer-details">
-                                        <div class="data-table-customer-name">Michael Wilson</div>
-                                        <div class="data-table-customer-email">michael.wilson@example.com</div>
+                            <td colspan="7" class="text-center">
+                                <div class="data-table-empty" id="dataTableEmpty">
+                                    <div class="data-table-empty-icon">
+                                        <i class="fas fa-box-open"></i>
                                     </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-amount">$2,100.00</div>
-                            </td>
-                            <td>
-                                <span class="data-table-status data-table-status-success">
-                                    <i class="fas fa-check"></i> Success
-                                </span>
-                            </td>
-                            <td>12 May 2023</td>
-                            <td>
-                                <div class="data-table-action-buttons">
-                                    <button class="data-table-action-btn data-table-tooltip" data-tooltip="View details" onclick="showRecord('INV005')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="data-table-action-btn edit data-table-tooltip" data-tooltip="Edit record" onclick="editRecord('INV005')">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button class="data-table-action-btn delete data-table-tooltip" data-tooltip="Delete record" onclick="deleteRecord('INV005')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    <h3>Không có sản phẩm nào</h3>
                                 </div>
                             </td>
                         </tr>
-                        <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-receipt"></i></span>
-                                    INV006
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-customer">
-                                    <div class="data-table-avatar">SB</div>
-                                    <div class="data-table-customer-details">
-                                        <div class="data-table-customer-name">Sarah Brown</div>
-                                        <div class="data-table-customer-email">sarah.brown@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-amount">$890.00</div>
-                            </td>
-                            <td>
-                                <span class="data-table-status data-table-status-pending">
-                                    <i class="fas fa-clock"></i> Pending
-                                </span>
-                            </td>
-                            <td>18 Jun 2023</td>
-                            <td>
-                                <div class="data-table-action-buttons">
-                                    <button class="data-table-action-btn data-table-tooltip" data-tooltip="View details" onclick="showRecord('INV006')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="data-table-action-btn edit data-table-tooltip" data-tooltip="Edit record" onclick="editRecord('INV006')">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button class="data-table-action-btn delete data-table-tooltip" data-tooltip="Delete record" onclick="deleteRecord('INV006')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-receipt"></i></span>
-                                    INV007
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-customer">
-                                    <div class="data-table-avatar">DM</div>
-                                    <div class="data-table-customer-details">
-                                        <div class="data-table-customer-name">David Miller</div>
-                                        <div class="data-table-customer-email">david.miller@example.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-amount">$1,500.00</div>
-                            </td>
-                            <td>
-                                <span class="data-table-status data-table-status-processing">
-                                    <i class="fas fa-spinner"></i> Processing
-                                </span>
-                            </td>
-                            <td>22 Jul 2023</td>
-                            <td>
-                                <div class="data-table-action-buttons">
-                                    <button class="data-table-action-btn data-table-tooltip" data-tooltip="View details" onclick="showRecord('INV007')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="data-table-action-btn edit data-table-tooltip" data-tooltip="Edit record" onclick="editRecord('INV007')">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button class="data-table-action-btn delete data-table-tooltip" data-tooltip="Delete record" onclick="deleteRecord('INV007')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
                 
-                <!-- Trạng thái trống (ẩn mặc định) -->
-                <div class="data-table-empty" style="display: none;" id="dataTableEmpty">
-                    <i class="fas fa-search"></i>
-                    <h3>No records found</h3>
-                    <p>Try adjusting your search or filter to find what you're looking for.</p>
-                </div>
+                <!-- Đã xóa phần trạng thái trống trùng lặp ở đây -->
             </div>
             
-            <!-- Phân trang -->
+            <!-- Phân trang và thông tin -->
             <div class="data-table-footer">
                 <div class="data-table-pagination-info">
-                    Showing <span id="startRecord">1</span> to <span id="endRecord">7</span> of <span id="totalRecords">10</span> entries
+                    Hiển thị <span id="startRecord">{{ ($products->currentPage() - 1) * $products->perPage() + 1 }}</span> đến <span id="endRecord">{{ min($products->currentPage() * $products->perPage(), $products->total()) }}</span> của <span id="totalRecords">{{ $products->total() }}</span> mục
                 </div>
                 <div class="data-table-pagination-controls">
-                    <button class="data-table-pagination-btn" id="prevBtn" disabled>
-                        <i class="fas fa-chevron-left"></i> Previous
-                    </button>
-                    <button class="data-table-pagination-btn active">1</button>
-                    <button class="data-table-pagination-btn">2</button>
-                    <button class="data-table-pagination-btn" id="nextBtn">
-                        Next <i class="fas fa-chevron-right"></i>
-                    </button>
+                    @if(!$products->onFirstPage())
+                        <a href="{{ $products->previousPageUrl() }}" class="data-table-pagination-btn" id="prevBtn">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </a>
+                    @endif
+                    
+                    @for ($i = 1; $i <= $products->lastPage(); $i++)
+                        <a href="{{ $products->url($i) }}" class="data-table-pagination-btn {{ $products->currentPage() == $i ? 'active' : '' }}">
+                            {{ $i }}
+                        </a>
+                    @endfor
+                    
+                    @if($products->hasMorePages())
+                        <a href="{{ $products->nextPageUrl() }}" class="data-table-pagination-btn" id="nextBtn">
+                            Tiếp <i class="fas fa-chevron-right"></i>
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
-    
+<!-- Modal Lọc -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Lọc sản phẩm</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ route('admin.products.index') }}" method="GET">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="filter_category">Danh mục</label>
+                        <select class="form-control" id="filter_category" name="category_id">
+                            <option value="">Tất cả danh mục</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_price_min">Giá tối thiểu</label>
+                        <input type="number" class="form-control" id="filter_price_min" name="price_min" value="{{ request('price_min') }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_price_max">Giá tối đa</label>
+                        <input type="number" class="form-control" id="filter_price_max" name="price_max" value="{{ request('price_max') }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_stock">Tình trạng</label>
+                        <select class="form-control" id="filter_stock" name="stock_status">
+                            <option value="">Tất cả</option>
+                            <option value="in_stock" {{ request('stock_status') == 'in_stock' ? 'selected' : '' }}>Còn hàng</option>
+                            <option value="out_of_stock" {{ request('stock_status') == 'out_of_stock' ? 'selected' : '' }}>Hết hàng</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Áp dụng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 

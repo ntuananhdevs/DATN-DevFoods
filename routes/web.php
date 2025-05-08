@@ -68,5 +68,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/trashed', [ProductController::class, 'trashed'])->name('trashed');
         Route::patch('/restore/{id}', [ProductController::class,'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
+        Route::get('/export', [ProductController::class, 'export'])->name('export'); // Sửa lại route này
     });
 });
