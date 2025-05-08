@@ -14,7 +14,7 @@ class DashboardController extends Controller
             'pageHeader' => false
         ];
 
-        return view('admin.dashboard', [
+        return view('admin.dashboard.dashboard', [
             'pageConfigs' => $pageConfigs
         ]);
     }
@@ -26,7 +26,7 @@ class DashboardController extends Controller
             'pageHeader' => false
         ];
 
-        return view('admin.dashboard-ecommerce', [
+        return view('dashboard.admin.dashboard-ecommerce', [
             'pageConfigs' => $pageConfigs
         ]);
     }

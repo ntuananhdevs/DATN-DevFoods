@@ -48,7 +48,7 @@
   <!-- End: Content-->
 
   @if($configData['blankPage'] == false && isset($configData['blankPage']))
-  @include('admin/customizer')
+  @include('admin.dashboard.customizer')
   @endif
 
   <div class="sidenav-overlay"></div>
