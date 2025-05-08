@@ -5,15 +5,18 @@ namespace App\Http\Controllers\Admin\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 
-class LoginController extends Controller
+class AuthController extends Controller
 {
+    // Hiển thị form đăng nhập
     public function showLoginForm()
     {
         return view('admin.auth.login');
     }
 
-    public function login(Request $request)
+    // Xử lý đăng nhập
+    public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -24,7 +27,7 @@ class LoginController extends Controller
             'password.required' => 'Vui lòng nhập mật khẩu.',
         ]);
 
-        $remember = $request->has('remember');
+        $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
@@ -34,11 +37,14 @@ class LoginController extends Controller
         return back()->with('error', 'Email hoặc mật khẩu không chính xác')->withInput();
     }
 
-    public function logout(Request $request)
+    // Xử lý đăng xuất
+    public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        session()->flash('success', 'Đăng xuất thành công.');
 
         return redirect()->route('admin.login');
     }

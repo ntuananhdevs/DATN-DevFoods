@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Admin\Category;
 use Illuminate\Database\Seeder;
-use App\Models\Role;
-use App\Models\User;
+
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,12 +13,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create 3 fake roles
-        Role::factory()->count(3)->create()->each(function ($role) {
-            // Create 10 fake users for each role
-            User::factory()->count(10)->create([
-                'role_id' => $role->id
-            ]);
-        });
+        // Gọi RoleSeeder trước để tạo roles
+        $this->call(RoleSeeder::class);
+        
+        // Gọi UserSeeder để tạo users
+        $this->call(UserSeeder::class);
+        
+        // Tạo categories và products
+        Category::factory(10)->create();
+        $this->call(ProductSeeder::class);
     }
 }
+

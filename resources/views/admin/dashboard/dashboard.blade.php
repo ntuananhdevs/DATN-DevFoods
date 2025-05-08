@@ -1,4 +1,3 @@
-
 @extends('layouts/admin/contentLayoutMaster')
 
 @section('title', 'Dashboard Ecommerce')

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -13,7 +14,7 @@ class DashboardController extends Controller
             'pageHeader' => false
         ];
 
-        return view('admin.dashboard', [
+        return view('admin.dashboard.dashboard', [
             'pageConfigs' => $pageConfigs
         ]);
     }
@@ -25,7 +26,7 @@ class DashboardController extends Controller
             'pageHeader' => false
         ];
 
-        return view('admin.dashboard-ecommerce', [
+        return view('dashboard.admin.dashboard-ecommerce', [
             'pageConfigs' => $pageConfigs
         ]);
     }

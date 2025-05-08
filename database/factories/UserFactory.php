@@ -2,30 +2,71 @@
 
 namespace Database\Factories;
 
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use App\Models\Admin\Role;
 
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ */
 class UserFactory extends Factory
 {
-    protected $model = User::class;
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
 
-    public function definition()
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
     {
         return [
-            'role_id' => Role::factory(), // Assuming you have a Role model
-            'user_name' => $this->faker->userName,
-            'full_name' => $this->faker->name,
-            'email' => $this->faker->unique()->safeEmail,
-            'phone' => $this->faker->phoneNumber,
-            'avatar' => $this->faker->imageUrl(),
-            'google_id' => $this->faker->uuid,
-            'balance' => $this->faker->randomFloat(2, 0, 1000),
-            'active' => $this->faker->boolean,
-            'email_verified_at' => $this->faker->dateTimeBetween('-1 years', 'now'),
-            'password' => bcrypt('12345678'), // Default password
+            'role_id' => Role::inRandomOrder()->first()->id ?? 1,
+            'user_name' => fake()->unique()->userName(),
+            'full_name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'phone' => fake()->phoneNumber(),
+            'avatar' => 'avatars/default.jpg',
+            'google_id' => null,
+            'balance' => fake()->randomFloat(2, 0, 1000),
+            'active' => true,
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is inactive.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'active' => false,
+        ]);
+    }
+
+    /**
+     * Indicate that the user has a Google ID (for OAuth).
+     */
+    public function withGoogleId(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'google_id' => Str::random(21),
+        ]);
     }
 }
