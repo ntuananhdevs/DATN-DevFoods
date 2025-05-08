@@ -1,13 +1,14 @@
 <?php
 
+use App\Http\Controllers\Customer\HomeController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Customer\ProductController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
-use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\DashboardController; 
 use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Customer\HomeController;
+use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 
 Route::prefix('/')->group(function () {
@@ -16,6 +17,9 @@ Route::prefix('/')->group(function () {
     Route::get('shop/product/product-detail', [CustomerProductController::class, 'show']);
 });
 
+Route::get('/', [HomeController::class, 'index']);
+Route::get('shop/product', [ProductController::class,'index']);
+Route::get('shop/product/product-detail', [ProductController::class,'show']);
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -31,7 +35,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Đăng xuất
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Categories Management 
+    // Categories Management
     Route::resource('categories', CategoryController::class);
 
     // Users Management
@@ -76,5 +80,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/trashed', [ProductController::class, 'trashed'])->name('trashed');
         Route::patch('/restore/{id}', [ProductController::class,'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
+        Route::get('/export', [ProductController::class, 'export'])->name('export'); // Sửa lại route này
     });
 });
