@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Spatie\Permission\Models\Role;  // Add this import
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -16,25 +15,21 @@ class UserController extends Controller
     {
         try {
             $users = User::with('role')
-                ->whereHas('role', function ($query) {
-                    $query->where('name', 'user');
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
+                        ->orderBy('created_at', 'desc')
+                        ->paginate(10);
             
             return view('admin.users.index', compact('users'));
         } catch (\Exception $e) {
             Log::error('Error in UserController@index: ' . $e->getMessage());
             return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi tải danh sách người dùng');
+                ->with('error', 'An error occurred while loading users.');
         }
     }
 
     public function create()
     {
         try {
-            $roles = Role::all();  // Get all roles
-            return view('admin.users.create', compact('roles'));
+            return view('admin.users.create');
         } catch (\Exception $e) {
             Log::error('Error in UserController@create: ' . $e->getMessage());
             return redirect()->back()
@@ -54,7 +49,6 @@ class UserController extends Controller
                 'password' => 'required|min:8|confirmed',
                 'avatar' => 'nullable|image|max:2048',
                 'active' => 'boolean'
-
             ]);
 
             if ($request->hasFile('avatar')) {

@@ -18,10 +18,6 @@ class LoginController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-        ], [
-            'email.required' => 'Vui lòng nhập địa chỉ email.',
-            'email.email' => 'Địa chỉ email không hợp lệ.',
-            'password.required' => 'Vui lòng nhập mật khẩu.',
         ]);
 
         $remember = $request->has('remember');

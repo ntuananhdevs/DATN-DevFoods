@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\User;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -26,11 +24,6 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // Gate cho quản lý Roles
-        Gate::define('manage-roles', function (User $user) {
-            return in_array($user->role->name, ['admin', 'manager']);
-        });
-
         Passport::ignoreRoutes();
 
         // Tuỳ chọn: Cấu hình thời gian sống của access token, refresh token, scopes,...
@@ -38,3 +31,4 @@ class AuthServiceProvider extends ServiceProvider
         // Passport::refreshTokensExpireIn(now()->addDays(30));
     }
 }
+
