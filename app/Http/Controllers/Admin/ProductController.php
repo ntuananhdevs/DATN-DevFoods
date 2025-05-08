@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Product;
 use App\Models\Admin\Category;
 use Illuminate\Support\Facades\Response;
-use Maatwebsite\Excel\Facades\Excel; // Cần cài thêm package maatwebsite/excel
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProductController extends Controller
 {
@@ -190,8 +191,7 @@ class ProductController extends Controller
                     return Excel::download(new \App\Exports\ProductsExport($products), 'products.xlsx');
                     
                 case 'pdf':
-                    // Nếu đã cài đặt barryvdh/laravel-dompdf
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.products', compact('products'));
+                    $pdf = Pdf::loadView('exports.products', compact('products'));
                     return $pdf->download('products.pdf');
                     
                 case 'csv':

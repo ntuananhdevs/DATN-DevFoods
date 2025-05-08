@@ -146,24 +146,24 @@
                     all notifications</a></li>
               </ul>
             </li>
-            <li class="dropdown dropdown-user nav-item"><a class="dropdown-toggle nav-link dropdown-user-link" href="#"
+            <li class="dropdown dropdown-user nav-item">
+              <a class="dropdown-toggle nav-link dropdown-user-link" href="#"
                 data-toggle="dropdown">
-                <div class="user-nav d-sm-flex d-none"><span class="user-name text-bold-600">John
-                    Doe</span><span class="user-status">Available</span></div><span><img class="round"
-                    src="{{asset('images/portrait/small/avatar-s-11.jpg') }}" alt="avatar" height="40"
-                    width="40" /></span>
+                <div class="user-nav d-sm-flex d-none"><span class="user-name text-bold-600">{{ Auth::user()->user_name }}</span><span class="user-status">{{ Auth::user()->role->name }}</span></div>
+                <span>
+                  <img class="round" src="{{ Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : asset('images/portrait/small/avatar-s-26.jpg') }}" alt="avatar" height="40" width="40" />
+                </span>
               </a>
-              <div class="dropdown-menu dropdown-menu-right"><a class="dropdown-item" href="page-user-profile"><i
-                    class="feather icon-user"></i> Edit Profile</a><a class="dropdown-item" href="app-email"><i
-                    class="feather icon-mail"></i> My
-                  Inbox</a><a class="dropdown-item" href="app-todo"><i class="feather icon-check-square"></i> Task</a><a
-                  class="dropdown-item" href="app-chat"><i class="feather icon-message-square"></i> Chats</a>
-                <div class="dropdown-divider"></div>
+              <div class="dropdown-menu dropdown-menu-right">
+                <a class="dropdown-item" href="page-user-profile"><i class="feather icon-user"></i> Edit Profile</a>
+                <a class="dropdown-item" href="app-email"><i class="feather icon-mail"></i> My Inbox</a>
+                <a class="dropdown-item" href="app-todo"><i class="feather icon-check-square"></i> Task</a>
+                <a class="dropdown-item" href="app-chat"><i class="feather icon-message-square"></i> Chats</a>
                 <form action="{{ route('admin.logout') }}" method="POST" style="display: inline;">
                   @csrf
-                  <button type="submit" class="dropdown-item" style="background: none; border: none; padding: 0; margin: 0;">
+                  <a href="javascript:void(0)" class="dropdown-item" onclick="this.closest('form').submit();">
                     <i class="feather icon-power"></i> Logout
-                  </button>
+                  </a>
                 </form>
               </div>
             </li>
