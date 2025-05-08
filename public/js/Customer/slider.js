@@ -3,10 +3,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize promotional carousel
     initPromoCarousel();
-
+    
     // Initialize testimonials carousel
     initTestimonialsCarousel();
-
+    
     // Add animation classes to elements when they come into view
     initScrollAnimations();
 });
@@ -25,11 +25,11 @@ function initPromoCarousel() {
     const autoPlayDelay = 5000; // 5 seconds
 
     function goToSlide(index) {
-        slides.forEach(slide => slide.classList.remove('active', 'fade-in'));
-        slides[index].classList.add('active', 'fade-in');
+        slides.forEach(slide => slide.classList.remove('active'));
+        slides[index].classList.add('active');
         currentIndex = index;
 
-        // Update indicators
+        // Cập nhật indicators nếu có
         if (indicators) {
             const indicatorElements = indicators.querySelectorAll('.carousel-indicator');
             indicatorElements.forEach((indicator, i) => {
@@ -71,23 +71,23 @@ function initTestimonialsCarousel() {
     const container = document.getElementById('testimonials-container');
     const prevBtn = document.getElementById('testimonial-prev');
     const nextBtn = document.getElementById('testimonial-next');
-
+    
     if (!container) return;
-
+    
     const cards = container.querySelectorAll('.testimonial-card');
     if (cards.length === 0) return;
-
+    
     let currentPosition = 0;
     const cardWidth = cards[0].offsetWidth + 20; // Card width + margin
     const visibleCards = Math.floor(container.offsetWidth / cardWidth);
     const maxPosition = Math.max(0, cards.length - visibleCards);
-
+    
     // Add animation classes to testimonial cards
     cards.forEach((card, index) => {
         card.classList.add('fade-in');
         card.style.animationDelay = `${index * 0.1}s`;
     });
-
+    
     // Set up event listeners for controls
     if (prevBtn) {
         prevBtn.addEventListener('click', () => {
@@ -97,7 +97,7 @@ function initTestimonialsCarousel() {
             }
         });
     }
-
+    
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
             if (currentPosition < maxPosition) {
@@ -106,37 +106,37 @@ function initTestimonialsCarousel() {
             }
         });
     }
-
+    
     // Update carousel position
     function updatePosition() {
         const translateX = -currentPosition * cardWidth;
         container.style.transform = `translateX(${translateX}px)`;
-
+        
         // Update button states
         if (prevBtn) {
             prevBtn.disabled = currentPosition === 0;
             prevBtn.classList.toggle('disabled', currentPosition === 0);
         }
-
+        
         if (nextBtn) {
             nextBtn.disabled = currentPosition >= maxPosition;
             nextBtn.classList.toggle('disabled', currentPosition >= maxPosition);
         }
     }
-
+    
     // Initialize position
     updatePosition();
-
+    
     // Handle window resize
     window.addEventListener('resize', () => {
         const newVisibleCards = Math.floor(container.offsetWidth / cardWidth);
         const newMaxPosition = Math.max(0, cards.length - newVisibleCards);
-
+        
         // Adjust position if needed
         if (currentPosition > newMaxPosition) {
             currentPosition = newMaxPosition;
         }
-
+        
         updatePosition();
     });
 }
