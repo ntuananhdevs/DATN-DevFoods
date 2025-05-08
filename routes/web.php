@@ -1,38 +1,58 @@
 <?php
 
-use App\Http\Controllers\Customer\HomeController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Customer\ProductController;    
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\Auth\LoginController;
-use App\Http\Controllers\Admin\Auth\LogoutController;
+use App\Http\Controllers\Admin\Auth\AuthController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\DashboardController; 
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Customer\HomeController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 
-
-Route::prefix('/')->name('customer.')->group(function() {
+Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index']);
-    Route::get('shop/product', [ProductController::class,'index']);
-    Route::get('shop/product/product-detail', [ProductController::class,'show']);
-});
-Route::prefix('admin')->name('admin.')->group(function() {
-// Route Auth
-Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [LoginController::class, 'login'])->name('login.submit');
+    Route::get('shop/product', [CustomerProductController::class, 'index']);
+    Route::get('shop/product/product-detail', [CustomerProductController::class, 'show']);
 });
 
-// Route cho admin
+// Route Auth (login / logout)
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('login', [AuthController::class, 'login'])->name('login.submit');
+});
+
+// Route chỉ dành cho admin sau khi đăng nhập và có role:admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
-    
+
     // Đăng xuất
-    Route::post('logout', [LogoutController::class, 'logout'])->name('logout');
-    
+    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Categories Management 
+    Route::resource('categories', CategoryController::class);
+
     // Users Management
-    Route::prefix('users')->name('users.')->group(function() {
-        Route::get('/', [UserController::class, 'index'])->name('index');  
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+    });
+
+    // Roles Management
+    Route::prefix('roles')->name('roles.')->group(function () {
+        Route::get('/', [RoleController::class, 'index'])->name('index');
+        Route::get('/create', [RoleController::class, 'create'])->name('create');
+        Route::post('/store', [RoleController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [RoleController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [RoleController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [RoleController::class, 'show'])->name('show');
+        Route::delete('/delete/{id}', [RoleController::class, 'destroy'])->name('destroy');
+    });
+
+    // Users Management
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/store', [UserController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
@@ -43,5 +63,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('/restore/{id}', [UserController::class, 'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [UserController::class, 'forceDelete'])->name('forceDelete');
     });
-});
+
+    // Products Management
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/', [ProductController::class, 'index'])->name('index');
+        Route::get('/create', [ProductController::class, 'create'])->name('create');
+        Route::post('/store', [ProductController::class,'store'])->name('store');
+        Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [ProductController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [ProductController::class,'show'])->name('show');
+        Route::delete('/delete/{id}', [ProductController::class, 'destroy'])->name('destroy');
+        Route::get('/trashed', [ProductController::class, 'trashed'])->name('trashed');
+        Route::patch('/restore/{id}', [ProductController::class,'restore'])->name('restore');
+        Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
+    });
 });
