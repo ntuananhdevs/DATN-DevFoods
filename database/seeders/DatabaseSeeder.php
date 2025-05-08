@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Role;
@@ -29,5 +30,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
             'role_id' => $roleIds[array_rand($roleIds)],
         ]);
+
+        Category::factory(10)->create();
     }
 }
