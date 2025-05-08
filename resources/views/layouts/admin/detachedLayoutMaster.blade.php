@@ -44,7 +44,7 @@ $configData = Helper::applClasses();
         <div class="content-wrapper">
             {{-- Include Breadcrumb --}}
             @if($configData['pageHeader'] == true)
-            @include('panels.breadcrumb')
+            @include('panels.admin.breadcrumb')
             @endif
             <div class="{{ $configData['sidebarPositionClass'] }}">
                 <div class="sidebar">
@@ -63,7 +63,7 @@ $configData = Helper::applClasses();
     <!-- End: Content-->
 
     @if($configData['blankPage'] == false)
-    @include('adminadmin/customizer')
+    @include('admin.dashboard.customizer')
     @endif
 
     <div class="sidenav-overlay"></div>

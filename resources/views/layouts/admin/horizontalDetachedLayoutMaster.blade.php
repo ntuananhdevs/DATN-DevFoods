@@ -66,7 +66,7 @@ $configData = Helper::applClasses();
     <!-- End: Content-->
 
     @if($configData['blankPage'] == false)
-    @include('adminadmin/customizer')
+    @include('admin.dashboard.customizer')
     @endif
 
     <div class="sidenav-overlay"></div>

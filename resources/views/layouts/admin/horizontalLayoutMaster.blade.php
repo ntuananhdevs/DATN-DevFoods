@@ -38,7 +38,7 @@
         <div class="content-wrapper">
             {{-- Include Breadcrumb --}}
             @if($configData['pageHeader'] == true)
-            @include('panels.breadcrumb')
+            @include('panels.admin.breadcrumb')
             @endif
 
             <div class="content-body">
@@ -54,7 +54,7 @@
     <!-- End: Content-->
 
     @if($configData['blankPage'] == false && isset($configData['blankPage']))
-    @include('admin/customizer')
+    @include('admin.dashboard.customizer')
 
     @include('admin/buy-now')
     @endif
