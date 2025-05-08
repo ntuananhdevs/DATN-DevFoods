@@ -7,8 +7,15 @@
     if(isset($menu->i18n)){
     $submenuTranslation = $menu->i18n;
     }
+    
+    // Loại bỏ dấu / ở đầu URL nếu có
+    $submenuUrlWithoutSlash = ltrim($submenu->url, '/');
+    // Kiểm tra nhiều trường hợp
+    $activeClass = request()->is($submenu->url) || 
+                  request()->is($submenuUrlWithoutSlash) || 
+                  request()->is('admin/'.$submenuUrlWithoutSlash) ? 'active' : '';
     @endphp
-    <li class="{{ (request()->is($submenu->url)) ? 'active' : '' }}">
+    <li class="{{ $activeClass }}">
         <a href="{{ $submenu->url }}">
             <i class="{{ isset($submenu->icon) ? $submenu->icon : "" }}"></i>
             <span class="menu-title" data-i18n="{{ $submenuTranslation }}">{{ __('locale.'.$submenu->name) }}</span>
