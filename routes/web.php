@@ -16,10 +16,6 @@ Route::prefix('/')->group(function () {
     Route::get('shop/product', [CustomerProductController::class, 'index']);
     Route::get('shop/product/product-detail', [CustomerProductController::class, 'show']);
 });
-
-Route::get('/', [HomeController::class, 'index']);
-Route::get('shop/product', [ProductController::class,'index']);
-Route::get('shop/product/product-detail', [ProductController::class,'show']);
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
