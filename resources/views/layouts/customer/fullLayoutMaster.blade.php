@@ -22,33 +22,33 @@
 <!-- Header -->
 <header class="header">
     <!-- Top Navigation -->
-    <div class="top-nav">
-        <div class="container">
-            <div class="top-nav-content">
-                <div class="top-nav-links">
-                    <a href="#" class="top-nav-link">Về Jollibee</a>
-                    <a href="#" class="top-nav-link">Khuyến Mãi</a>
-                    <a href="#" class="top-nav-link">Cửa Hàng</a>
-                    <a href="#" class="top-nav-link">Tuyển Dụng</a>
-                </div>
-                <div class="top-nav-actions">
-                    <div class="language-selector">
-                        <button class="language-btn active">VN</button>
-                        <span>|</span>
-                        <button class="language-btn">EN</button>
-                    </div>
-                    <button class="location-btn">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>Chọn địa điểm</span>
-                    </button>
-                    <button class="account-btn">
-                        <i class="fas fa-user"></i>
-                        <span>Đăng ký / Đăng nhập</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+{{--    <div class="top-nav">--}}
+{{--        <div class="container">--}}
+{{--            <div class="top-nav-content">--}}
+{{--                <div class="top-nav-links">--}}
+{{--                    <a href="#" class="top-nav-link">Về Jollibee</a>--}}
+{{--                    <a href="#" class="top-nav-link">Khuyến Mãi</a>--}}
+{{--                    <a href="#" class="top-nav-link">Cửa Hàng</a>--}}
+{{--                    <a href="#" class="top-nav-link">Tuyển Dụng</a>--}}
+{{--                </div>--}}
+{{--                <div class="top-nav-actions">--}}
+{{--                    <div class="language-selector">--}}
+{{--                        <button class="language-btn active">VN</button>--}}
+{{--                        <span>|</span>--}}
+{{--                        <button class="language-btn">EN</button>--}}
+{{--                    </div>--}}
+{{--                    <button class="location-btn">--}}
+{{--                        <i class="fas fa-map-marker-alt"></i>--}}
+{{--                        <span>Chọn địa điểm</span>--}}
+{{--                    </button>--}}
+{{--                    <button class="account-btn">--}}
+{{--                        <i class="fas fa-user"></i>--}}
+{{--                        <span>Đăng ký / Đăng nhập</span>--}}
+{{--                    </button>--}}
+{{--                </div>--}}
+{{--            </div>--}}
+{{--        </div>--}}
+{{--    </div>--}}
 
     <!-- Main Navigation -->
     <div class="main-nav">
