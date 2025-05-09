@@ -56,6 +56,14 @@
                                     <td>{{ $user->phone }}</td>
                                 </tr>
                                 <tr>
+                                    <th>Vai trò</th>
+                                    <td>
+                                        <span class="badge badge-primary">
+                                            {{ $user->role->name ?? 'N/A' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <th>Balance</th>
                                     <td>${{ number_format($user->balance, 2) }}</td>
                                 </tr>

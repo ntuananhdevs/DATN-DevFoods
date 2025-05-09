@@ -69,15 +69,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::get('/create', [ProductController::class, 'create'])->name('create');
-        Route::post('/store', [ProductController::class,'store'])->name('store');
+        Route::post('/store', [ProductController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [ProductController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [ProductController::class,'show'])->name('show');
+        Route::get('/show/{id}', [ProductController::class, 'show'])->name('show');
         Route::delete('/delete/{id}', [ProductController::class, 'destroy'])->name('destroy');
         Route::get('/trashed', [ProductController::class, 'trashed'])->name('trashed');
-        Route::patch('/restore/{id}', [ProductController::class,'restore'])->name('restore');
+        Route::patch('/restore/{id}', [ProductController::class, 'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
-        Route::get('/export', [ProductController::class, 'export'])->name('export'); 
+        Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
 });
 Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {

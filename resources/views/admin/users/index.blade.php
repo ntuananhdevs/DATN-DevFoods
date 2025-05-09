@@ -12,19 +12,25 @@
         </div>
         
         <div class="data-table-header-actions">
-        <div class="header-actions">
-                    <div class="btn-group">
-                        <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-download"></i> Xuất dữ liệu
-                        </button>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">Excel</a>
-                            <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">PDF</a>
-                            <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">CSV</a>
-                            <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'json']) }}">JSON</a>
-                        </div>
+            <div class="header-actions">
+                <div class="btn-group">
+                    <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-download"></i> Xuất
+                    </button>
+                    <div class="dropdown-menu">
+                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
+                            <i class="fas fa-file-excel"></i> Xuất Excel
+                        </a>
+                        <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">
+                        <i class="fas fa-file-pdf"></i>PDF</a>
+                        <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">
+                        <i class="fas fa-file-csv"></i> CSV</a>
                     </div>
                 </div>
+                <a href="{{ route('admin.users.trash') }}" class="data-table-btn data-table-btn-danger ml-2">
+                    <i class="fas fa-trash"></i> Thùng rác
+                </a>
+            </div>
             <a href="{{ route('admin.users.create') }}" class="data-table-btn data-table-btn-primary">
                 <i class="fas fa-plus"></i> Thêm mới
             </a>
@@ -77,7 +83,7 @@
                         <th data-sort="phone">
                             Điện thoại <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
-                        <th>Vai trò</th>
+                     
                         <th>Trạng thái</th>
                         <th>Thao tác</th>
                     </tr>
@@ -102,13 +108,11 @@
 
                         <td>
                             <div class="data-table-user-name">{{ $user->full_name }}</div>
-                            <div class="data-table-user-username">{{ $user->user_name }}</div>
+                          
                         </td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->phone ?? 'N/A' }}</td>
-                        <td>
-                            <span class="data-table-role-badge">{{ $user->role->name }}</span>
-                        </td>
+                   
                         <td>
                             @if($user->active)
                             <span class="data-table-status data-table-status-success">

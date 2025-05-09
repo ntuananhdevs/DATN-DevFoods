@@ -17,8 +17,8 @@
 
         <div class="mb-3">
             <label class="form-label">Ảnh hiện tại</label><br>
-            @if($category->image)
-                <img src="{{ asset('storage/'.$category->image) }}" width="100">
+            @if ($category->image)
+                <img src="{{ asset('storage/' . $category->image) }}" width="100">
             @endif
         </div>
 

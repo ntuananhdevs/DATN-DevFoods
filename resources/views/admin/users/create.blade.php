@@ -107,11 +107,7 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="role_id">Vai trò</label>
-                        <input type="hidden" name="role_id" value="{{ $roles->where('name', 'customer')->first()->id }}">
-                        <input type="text" class="form-control" value="Customer" readonly disabled>
-                    </div>
+                
                     <button type="submit" class="btn btn-primary">Create User</button>
                     <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancel</a>
                 </form>

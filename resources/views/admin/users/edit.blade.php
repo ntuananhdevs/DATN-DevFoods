@@ -139,12 +139,7 @@
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="role_id">Vai trò</label>
-                            <input type="hidden" name="role_id" value="{{ $user->role_id }}">
-                            <input type="text" class="form-control" value="{{ $user->role->name }}" readonly disabled>
-                        </div>
-
+                     
                         <button type="submit" class="btn btn-primary">Update User</button>
                         <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancel</a>
                     </form>
