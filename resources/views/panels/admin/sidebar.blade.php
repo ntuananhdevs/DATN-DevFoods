@@ -39,7 +39,12 @@
                             $custom_classes = optional($menu)->classlist;
                             $translation = optional($menu)->i18n;
                             $badgeClasses = "badge badge-pill badge-primary float-right";
-                            $activeClass = request()->is(optional($menu)->url) ? 'active' : '';
+                            
+                            $menuUrl = optional($menu)->url;
+                            $menuUrlWithoutSlash = ltrim($menuUrl, '/');
+                            $activeClass = request()->is($menuUrl) || 
+                                          request()->is($menuUrlWithoutSlash) || 
+                                          request()->is('admin/'.$menuUrlWithoutSlash) ? 'active' : '';
                         @endphp
 
                         <li class="nav-item {{ $activeClass }} {{ $custom_classes }}">

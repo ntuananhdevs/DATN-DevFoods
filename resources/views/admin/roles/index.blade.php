@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container">
-        <h1 class="mb-3">Danh sách Roles</h1>
+        <h1 class="mb-3 text-center">Danh sách Roles</h1>
 
         @if (session('success'))
             <div class="modal show" id="successModal" style="display:block;">
@@ -24,7 +24,7 @@
             </div>
         @endif
 
-        <a href="{{ route('admin.roles.create') }}" class="btn btn-primary mb-3" style="font-size: 1.2rem;">Thêm Role</a>
+        <a href="{{ route('admin.roles.create') }}" class="btn btn-primary mb-3" style="font-size: 1rem;">Thêm Role</a>
 
         <table class="table container table-bordered table-striped">
             <thead class="table-dark">
