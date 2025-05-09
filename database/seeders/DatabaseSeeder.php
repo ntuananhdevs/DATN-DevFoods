@@ -5,8 +5,12 @@ namespace Database\Seeders;
 use App\Models\Admin\Category;
 use Illuminate\Database\Seeder;
 
+
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Seed the application's database.
+     */
     public function run(): void
     {
         // Gọi RoleSeeder trước để tạo roles
