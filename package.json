@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "apexcharts": "^4.5.0",
+    "laravel-echo": "^2.1.0",
+    "pusher-js": "^8.4.0",
     "sweetalert2": "^11.21.0"
   }
 }

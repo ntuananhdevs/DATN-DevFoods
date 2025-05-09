@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Admin\Product;
-use App\Models\Admin\Category;
+use App\Models\Product;
+use App\Models\Category;
 use Illuminate\Support\Facades\Response;
 use Maatwebsite\Excel\Facades\Excel; // Cần cài thêm package maatwebsite/excel
 
@@ -81,6 +81,9 @@ class ProductController extends Controller
         try {
             // Xử lý lưu sản phẩm mới
             // Code xử lý lưu sản phẩm sẽ được thêm vào đây
+            
+            // Thêm dòng này trước khi return
+            // event(new ProductUpdated($product, 'created'));
             
             return redirect()->route('admin.products.index')
                 ->with('success', 'Sản phẩm đã được tạo thành công');
@@ -232,3 +235,11 @@ class ProductController extends Controller
         return Response::download($file, $filename);
     }
 }
+// // Trong phương thức store
+// event(new ProductUpdated($product, 'created'));
+
+// // Trong phương thức update
+// event(new ProductUpdated($product, 'updated'));
+
+// // Trong phương thức destroy
+// event(new ProductUpdated($product, 'deleted'));
