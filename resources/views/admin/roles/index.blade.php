@@ -1,46 +1,44 @@
-@extends('layouts/admin/contentLayoutMaster')
+@extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
-    <div class="container">
-        <h1 class="mb-3 text-center">Danh sách Roles</h1>
+    <div class="data-table-wrapper">
 
-        @if (session('success'))
-            <div class="modal show" id="successModal" style="display:block;">
-                <div class="modal-dialog">
-                    <div class="modal-content bg-success text-white p-3">
-                        {{ session('success') }}
-                    </div>
-                </div>
+        {{-- Header chính --}}
+        <div class="data-table-main-header">
+            <div class="data-table-brand">
+                <div class="data-table-logo"><i class="fas fa-user-shield"></i></div>
+                <h1 class="data-table-title">Quản lý Role</h1>
             </div>
-        @endif
-
-        @if (session('error'))
-            <div class="modal show" id="errorModal" style="display:block;">
-                <div class="modal-dialog">
-                    <div class="modal-content bg-danger text-white p-3">
-                        {{ session('error') }}
-                    </div>
-                </div>
+            <div class="data-table-header-actions">
+                <a href="{{ route('admin.roles.create') }}" class="data-table-btn data-table-btn-primary">
+                    <i class="fas fa-plus"></i> Thêm Role
+                </a>
             </div>
-        @endif
+        </div>
 
-        <a href="{{ route('admin.roles.create') }}" class="btn btn-primary mb-3" style="font-size: 1rem;">Thêm Role</a>
+        {{-- Card bảng --}}
+        <div class="data-table-card">
+            <div class="data-table-header">
+                <h2 class="data-table-card-title">Danh sách Role</h2>
+            </div>
 
-        <table class="table container table-bordered table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>Tên Role</th>
-                    <th>Quyền</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($roles as $role)
-                    @if ($role)
+            {{-- Bảng --}}
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
                         <tr>
-                            <td>{{ $role->name ?? 'N/A' }}</td>
-                            <td>
-                                @if (!empty($role->permissions))
+                            <th>ID</th>
+                            <th>Tên Role</th>
+                            <th>Quyền</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($roles as $role)
+                            <tr>
+                                <td>{{ $role->id }}</td>
+                                <td>{{ $role->name }}</td>
+                                <td>
                                     @php
                                         $permissionsMap = [
                                             'create' => 'Tạo',
@@ -54,46 +52,90 @@
                                             (array) $role->permissions,
                                         );
                                     @endphp
-                                    {{ implode(', ', $translatedPermissions) }}
-                                @else
-                                    Không có quyền
-                                @endif
-                            </td>
-                            <td>
-                                <a href="{{ route('admin.roles.show', $role->id) }}" class="btn btn-info btn-sm"
-                                    style="font-size: 1.1rem;">Chi tiết</a>
-                                <a href="{{ route('admin.roles.edit', $role->id) }}" class="btn btn-warning btn-sm"
-                                    style="font-size: 1.1rem;">Chỉnh sửa</a>
-                                <button type="button" class="btn btn-danger btn-sm" style="font-size: 1.1rem;"
-                                    onclick="confirmDelete({{ $role->id }})">Xóa</button>
-                            </td>
-                        </tr>
-                    @endif
-                @endforeach
-            </tbody>
-        </table>
+                                    {{ implode(', ', $translatedPermissions) ?: 'Không có quyền' }}
+                                </td>
+                                <td>
+                                    <div class="data-table-action-buttons">
+                                        <a href="{{ route('admin.roles.show', $role->id) }}" class="data-table-action-btn"
+                                            data-tooltip="Xem">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ route('admin.roles.edit', $role->id) }}"
+                                            class="data-table-action-btn edit" data-tooltip="Sửa">
+                                            <i class="fas fa-pen"></i>
+                                        </a>
+                                        <button type="button" onclick="confirmDelete({{ $role->id }})"
+                                            class="data-table-action-btn delete" data-tooltip="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">Không có Role nào.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
-        {{ $roles->links() }}
+            {{-- Phân trang --}}
+            <div class="data-table-footer">
+                <div class="data-table-pagination-info">
+                    Hiển thị {{ $roles->firstItem() }} đến {{ $roles->lastItem() }} / tổng số {{ $roles->total() }}
+                </div>
+                <div class="data-table-pagination-controls">
+                    {{ $roles->links('pagination::bootstrap-5') }}
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Modal Confirm Delete -->
-    <div class="modal" tabindex="-1" role="dialog" id="confirmDeleteModal" style="display: none;">
+    {{-- Modal flash message --}}
+    @if (session('success') || session('error'))
+        <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header {{ session('success') ? 'bg-success' : 'bg-danger' }} text-white">
+                        <h5 class="modal-title">Thông báo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        {{ session('success') ?? session('error') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            window.addEventListener('load', function() {
+                const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+                modal.show();
+            });
+        </script>
+    @endif
+
+    {{-- Modal xác nhận xóa --}}
+    <!-- Modal Xác nhận Xóa - Bootstrap 4 style -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
-            <div class="modal-content ">
-                <div class="modal-header btn-secondary ">
-                    <h5 class="modal-title text-white">Xác nhận xóa</h5>
-                    <button type="button" class="close" onclick="closeModal()" aria-label="Close">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Xác nhận xóa</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p>Bạn có chắc chắn muốn xóa role này?</p>
+                    <p>Bạn có chắc chắn muốn xóa Role này?</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
-                    <form id="deleteForm" action="" method="POST" style="display:inline;">
+                    <form id="deleteForm" action="" method="POST">
                         @csrf
                         @method('DELETE')
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
                         <button type="submit" class="btn btn-danger">Xóa</button>
                     </form>
                 </div>
@@ -101,28 +143,14 @@
         </div>
     </div>
 
+
+    {{-- Script xử lý xóa --}}
     <script>
-        function confirmDelete(roleId) {
-            var modal = document.getElementById('confirmDeleteModal');
-            var form = document.getElementById('deleteForm');
-            form.action = "{{ route('admin.roles.destroy', ':id') }}".replace(':id', roleId); // Sửa lỗi thiếu tham số id
-            modal.style.display = 'block';
+        function confirmDelete(id) {
+            const form = document.getElementById('deleteForm');
+            form.action = "{{ route('admin.roles.destroy', ':id') }}".replace(':id', id);
+            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            modal.show();
         }
-
-        function closeModal() {
-            document.getElementById('confirmDeleteModal').style.display = 'none';
-        }
-
-        // Tự động ẩn modal thông báo sau 3 giây
-        setTimeout(function() {
-            var successModal = document.getElementById('successModal');
-            var errorModal = document.getElementById('errorModal');
-            if (successModal) {
-                successModal.style.display = 'none';
-            }
-            if (errorModal) {
-                errorModal.style.display = 'none';
-            }
-        }, 2000);
     </script>
 @endsection

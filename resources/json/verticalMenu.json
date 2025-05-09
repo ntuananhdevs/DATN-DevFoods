@@ -27,6 +27,12 @@
             "icon": "feather icon-list",
             "i18n": "nav.categories"
         },
+        {
+            "url": "/admin/roles",
+            "name": "Manage Roles",
+            "icon": "feather icon-shield",
+            "i18n": "nav.roles"
+        },
 
         {
             "url": "",
