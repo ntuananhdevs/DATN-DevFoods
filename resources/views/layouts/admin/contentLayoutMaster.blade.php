@@ -1,14 +1,15 @@
 @isset($pageConfigs)
-{!! Helper::updatePageConfig($pageConfigs) !!}
+    {!! Helper::updatePageConfig($pageConfigs) !!}
 @endisset
 
 <!DOCTYPE html>
 {{-- {!! Helper::applClasses() !!} --}}
 @php
-$configData = Helper::applClasses();
+    $configData = Helper::applClasses();
 @endphp
 
-<html lang="@if(session()->has('locale')){{session()->get('locale')}}@else{{$configData['defaultLanguage']}}@endif"
+<html
+    lang="@if (session()->has('locale')) {{ session()->get('locale') }}@else{{ $configData['defaultLanguage'] }} @endif"
     data-textdirection="{{ env('MIX_CONTENT_DIRECTION') === 'rtl' ? 'rtl' : 'ltr' }}">
 
 <head>
@@ -30,13 +31,12 @@ $configData = Helper::applClasses();
 
 
 
-@isset($configData["mainLayoutType"])
-@extends((( $configData["mainLayoutType"] === 'horizontal') ? 'layouts.admin.horizontalLayoutMaster' :
-'layouts.admin.verticalLayoutMaster' ))
+@isset($configData['mainLayoutType'])
+    @extends($configData['mainLayoutType'] === 'horizontal' ? 'layouts.admin.horizontalLayoutMaster' : 'layouts.admin.verticalLayoutMaster')
 @endisset
 
 {{-- Modal for flash messages --}}
-@if(session('success') || session('error'))
+@if (session('success') || session('error'))
     <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -50,12 +50,12 @@ $configData = Helper::applClasses();
             </div>
         </div>
     </div>
-    @endif
+@endif
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        window.addEventListener('load', function () {
-            const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
-            if (messageModal) messageModal.show();
-        });
-    </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    window.addEventListener('load', function() {
+        const messageModal = new bootstrap.Modal(document.getElementById('messageModal'));
+        if (messageModal) messageModal.show();
+    });
+</script>

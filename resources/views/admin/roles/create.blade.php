@@ -1,8 +1,8 @@
-@extends('layouts.admin')
+@extends('layouts/admin/contentLayoutMaster')
 
 @section('content')
-    <div class="container">
-        <h1 class="my-4">Thêm Role</h1>
+    <div class="container fs-5">
+        <h1 class="my-4 text-center fw-bold">Thêm Role</h1>
 
         @if (session('error'))
             <div class="alert alert-danger">{{ session('error') }}</div>

@@ -1,6 +1,6 @@
 @extends('layouts/admin/contentLayoutMaster')
 @section('content')
-<div class="data-table-wrapper">
+    <div class="data-table-wrapper">
         <!-- Header chính -->
         <div class="data-table-main-header">
             <div class="data-table-brand">
@@ -12,7 +12,8 @@
             <div class="data-table-header-actions">
                 <!-- Đã xóa nút lọc ở đây -->
                 <div class="dropdown d-inline">
-                    <button class="data-table-btn data-table-btn-outline dropdown-toggle" type="button" id="exportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button class="data-table-btn data-table-btn-outline dropdown-toggle" type="button" id="exportDropdown"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="fas fa-download"></i> Xuất
                     </button>
                     <div class="dropdown-menu" aria-labelledby="exportDropdown">
@@ -32,14 +33,14 @@
                 </a>
             </div>
         </div>
-        
+
         <!-- Card chứa bảng -->
         <div class="data-table-card">
             <!-- Tiêu đề bảng -->
             <div class="data-table-header">
                 <h2 class="data-table-card-title">Danh sách sản phẩm</h2>
             </div>
-            
+
             <!-- Thanh công cụ -->
             <div class="data-table-controls">
                 <div class="data-table-search">
@@ -55,7 +56,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Container bảng -->
             <div class="data-table-container">
                 <table class="data-table" id="dataTable">
@@ -84,93 +85,103 @@
                     </thead>
                     <tbody id="dataTableBody">
                         @forelse($products as $product)
-                        <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-box"></i></span>
-                                    {{ $product->id }}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-product-image">
-                                    <img src="{{ asset($product->image) }}" alt="{{ $product->name }}">
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-product-name">{{ $product->name }}</div>
-                            </td>
-                            <td>
-                                {{ $product->category->name ?? 'N/A' }}
-                            </td>
-                            <td>
-                                <div class="data-table-amount">{{ number_format($product->base_price, 0, ',', '.') }} đ</div>
-                            </td>
-                            <td>
-                                @if($product->stock)
-                                <span class="data-table-status data-table-status-success">
-                                    <i class="fas fa-check"></i> Còn hàng
-                                </span>
-                                @else
-                                <span class="data-table-status data-table-status-failed">
-                                    <i class="fas fa-times"></i> Hết hàng
-                                </span>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="data-table-action-buttons">
-                                    <a href="{{ route('admin.products.show', $product->id) }}" class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('admin.products.edit', $product->id) }}" class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
-                                        <i class="fas fa-pen"></i>
-                                    </a>
-                                    <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="data-table-action-btn delete data-table-tooltip" data-tooltip="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <div class="data-table-empty" id="dataTableEmpty">
-                                    <div class="data-table-empty-icon">
-                                        <i class="fas fa-box-open"></i>
+                            <tr>
+                                <td>
+                                    <div class="data-table-id">
+                                        <span class="data-table-id-icon"><i class="fas fa-box"></i></span>
+                                        {{ $product->id }}
                                     </div>
-                                    <h3>Không có sản phẩm nào</h3>
-                                </div>
-                            </td>
-                        </tr>
+                                </td>
+                                <td>
+                                    <div class="data-table-product-image">
+                                        <img src="{{ asset($product->image) }}" alt="{{ $product->name }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="data-table-product-name">{{ $product->name }}</div>
+                                </td>
+                                <td>
+                                    {{ $product->category->name ?? 'N/A' }}
+                                </td>
+                                <td>
+                                    <div class="data-table-amount">{{ number_format($product->base_price, 0, ',', '.') }} đ
+                                    </div>
+                                </td>
+                                <td>
+                                    @if ($product->stock)
+                                        <span class="data-table-status data-table-status-success">
+                                            <i class="fas fa-check"></i> Còn hàng
+                                        </span>
+                                    @else
+                                        <span class="data-table-status data-table-status-failed">
+                                            <i class="fas fa-times"></i> Hết hàng
+                                        </span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div class="data-table-action-buttons">
+                                        <a href="{{ route('admin.products.show', $product->id) }}"
+                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ route('admin.products.edit', $product->id) }}"
+                                            class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
+                                            <i class="fas fa-pen"></i>
+                                        </a>
+                                        <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST"
+                                            class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="data-table-action-btn delete data-table-tooltip"
+                                                data-tooltip="Xóa"
+                                                onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="data-table-empty" id="dataTableEmpty">
+                                        <div class="data-table-empty-icon">
+                                            <i class="fas fa-box-open"></i>
+                                        </div>
+                                        <h3>Không có sản phẩm nào</h3>
+                                    </div>
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
-                
+
                 <!-- Đã xóa phần trạng thái trống trùng lặp ở đây -->
             </div>
-            
+
             <!-- Phân trang và thông tin -->
             <div class="data-table-footer">
                 <div class="data-table-pagination-info">
-                    Hiển thị <span id="startRecord">{{ ($products->currentPage() - 1) * $products->perPage() + 1 }}</span> đến <span id="endRecord">{{ min($products->currentPage() * $products->perPage(), $products->total()) }}</span> của <span id="totalRecords">{{ $products->total() }}</span> mục
+                    Hiển thị <span id="startRecord">{{ ($products->currentPage() - 1) * $products->perPage() + 1 }}</span>
+                    đến <span
+                        id="endRecord">{{ min($products->currentPage() * $products->perPage(), $products->total()) }}</span>
+                    của <span id="totalRecords">{{ $products->total() }}</span> mục
                 </div>
                 <div class="data-table-pagination-controls">
-                    @if(!$products->onFirstPage())
+                    @if (!$products->onFirstPage())
                         <a href="{{ $products->previousPageUrl() }}" class="data-table-pagination-btn" id="prevBtn">
                             <i class="fas fa-chevron-left"></i> Trước
                         </a>
                     @endif
-                    
+
                     @for ($i = 1; $i <= $products->lastPage(); $i++)
-                        <a href="{{ $products->url($i) }}" class="data-table-pagination-btn {{ $products->currentPage() == $i ? 'active' : '' }}">
+                        <a href="{{ $products->url($i) }}"
+                            class="data-table-pagination-btn {{ $products->currentPage() == $i ? 'active' : '' }}">
                             {{ $i }}
                         </a>
                     @endfor
-                    
-                    @if($products->hasMorePages())
+
+                    @if ($products->hasMorePages())
                         <a href="{{ $products->nextPageUrl() }}" class="data-table-pagination-btn" id="nextBtn">
                             Tiếp <i class="fas fa-chevron-right"></i>
                         </a>
@@ -231,6 +242,3 @@
 
 @endsection
 @endsection
-
-
-
