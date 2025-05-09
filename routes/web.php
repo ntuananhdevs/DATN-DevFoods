@@ -2,14 +2,14 @@
 
 use App\Http\Controllers\Customer\HomeController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Customer\ProductController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
+use App\Http\Controllers\Admin\ProductController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 
 Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index']);
@@ -76,6 +76,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/trashed', [ProductController::class, 'trashed'])->name('trashed');
         Route::patch('/restore/{id}', [ProductController::class,'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
-        Route::get('/export', [ProductController::class, 'export'])->name('export'); // Sửa lại route này
+        Route::get('/export', [ProductController::class, 'export'])->name('export'); 
     });
 });
