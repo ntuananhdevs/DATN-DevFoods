@@ -7,11 +7,11 @@
         <div class="data-table-main-header">
             <div class="data-table-brand">
                 <div class="data-table-logo"><i class="fas fa-user-shield"></i></div>
-                <h1 class="data-table-title">Quản lý Role</h1>
+                <h1 class="data-table-title">Quản lý vai trò</h1>
             </div>
             <div class="data-table-header-actions">
                 <a href="{{ route('admin.roles.create') }}" class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-plus"></i> Thêm Role
+                    <i class="fas fa-plus"></i> Thêm vai trò
                 </a>
             </div>
         </div>
@@ -19,7 +19,15 @@
         {{-- Card bảng --}}
         <div class="data-table-card">
             <div class="data-table-header">
-                <h2 class="data-table-card-title">Danh sách Role</h2>
+                <h2 class="data-table-card-title">Danh sách vai trò</h2>
+            </div>
+
+            <div class="data-table-controls">
+                <form method="GET" action="{{ route('admin.roles.index') }}" class="data-table-search">
+                    <i class="fas fa-search data-table-search-icon"></i>
+                    <input type="text" name="keyword" value="{{ request('keyword') }}"
+                        placeholder="Tìm kiếm theo tên, hoặc id..." id="dataTableSearch">
+                </form>
             </div>
 
             {{-- Bảng --}}
@@ -29,7 +37,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Tên Role</th>
-                            <th>Quyền</th>
+                            <th>Vai trò</th>
                             <th>Hành động</th>
                         </tr>
                     </thead>
@@ -83,10 +91,29 @@
             {{-- Phân trang --}}
             <div class="data-table-footer">
                 <div class="data-table-pagination-info">
-                    Hiển thị {{ $roles->firstItem() }} đến {{ $roles->lastItem() }} / tổng số {{ $roles->total() }}
+                    Hiển thị <span id="startRecord">{{ ($roles->currentPage() - 1) * $roles->perPage() + 1 }}</span>
+                    đến <span id="endRecord">{{ min($roles->currentPage() * $roles->perPage(), $roles->total()) }}</span>
+                    của <span id="totalRecords">{{ $roles->total() }}</span> mục
                 </div>
                 <div class="data-table-pagination-controls">
-                    {{ $roles->links('pagination::bootstrap-5') }}
+                    @if (!$roles->onFirstPage())
+                        <a href="{{ $roles->previousPageUrl() }}" class="data-table-pagination-btn" id="prevBtn">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </a>
+                    @endif
+
+                    @for ($i = 1; $i <= $roles->lastPage(); $i++)
+                        <a href="{{ $roles->url($i) }}"
+                            class="data-table-pagination-btn {{ $roles->currentPage() == $i ? 'active' : '' }}">
+                            {{ $i }}
+                        </a>
+                    @endfor
+
+                    @if ($roles->hasMorePages())
+                        <a href="{{ $roles->nextPageUrl() }}" class="data-table-pagination-btn" id="nextBtn">
+                            Tiếp <i class="fas fa-chevron-right"></i>
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -117,7 +144,6 @@
     @endif
 
     {{-- Modal xác nhận xóa --}}
-    <!-- Modal Xác nhận Xóa - Bootstrap 4 style -->
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -142,7 +168,6 @@
             </div>
         </div>
     </div>
-
 
     {{-- Script xử lý xóa --}}
     <script>

@@ -22,6 +22,15 @@
                 <h2 class="data-table-card-title">Danh sách danh mục</h2>
             </div>
 
+            <div class="data-table-controls">
+                <form method="GET" action="{{ route('admin.categories.index') }}" class="data-table-search">
+                    <i class="fas fa-search data-table-search-icon"></i>
+                    <input type="text" name="keyword" value="{{ request('keyword') }}"
+                        placeholder="Tìm kiếm theo tên danh mục, hoặc id..." id="dataTableSearch">
+                </form>
+            </div>
+
+
             {{-- Bảng danh mục --}}
             <div class="data-table-container">
                 <table class="data-table">
@@ -63,8 +72,9 @@
                                             class="data-table-action-btn edit" data-tooltip="Sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
-                                        <form action="{{ route('admin.categories.destroy', $category->id) }}" method="POST"
-                                            class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?')">
+                                        <form action="{{ route('admin.categories.destroy', $category->id) }}"
+                                            method="POST" class="d-inline"
+                                            onsubmit="return confirm('Bạn có chắc chắn muốn xóa?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="data-table-action-btn delete" data-tooltip="Xóa">

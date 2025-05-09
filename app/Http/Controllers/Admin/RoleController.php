@@ -14,10 +14,20 @@ class RoleController extends Controller
         $this->middleware('can:manage-roles');
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $roles = Role::paginate(10);
+            // Lấy từ input tìm kiếm
+            $keyword = $request->input('keyword');
+
+            // Tạo truy vấn tìm kiếm
+            $roles = Role::when($keyword, function ($query, $keyword) {
+                return $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', '%' . $keyword . '%')
+                        ->orWhere('id', 'like', '%' . $keyword . '%');
+                });
+            })->paginate(10);
+
             return view('admin.roles.index', compact('roles'));
         } catch (\Exception $e) {
             return back()->with('error', 'Lỗi khi lấy danh sách roles.');

@@ -305,11 +305,11 @@
                 <td>
                     ${product.stock ? 
                         `<span class="data-table-status data-table-status-success">
-                                    <i class="fas fa-check"></i> Còn hàng
-                                </span>` : 
+                                                                    <i class="fas fa-check"></i> Còn hàng
+                                                                </span>` : 
                         `<span class="data-table-status data-table-status-failed">
-                                    <i class="fas fa-times"></i> Hết hàng
-                                </span>`
+                                                                    <i class="fas fa-times"></i> Hết hàng
+                                                                </span>`
                     }
                 </td>
                 <td>
