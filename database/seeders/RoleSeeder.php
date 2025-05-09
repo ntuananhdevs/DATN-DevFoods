@@ -26,6 +26,10 @@ class RoleSeeder extends Seeder
                 'name' => 'customer',
                 'permissions' => ['view'],
             ],
+            [
+                'name' => 'driver',
+                'permissions' => ['view', 'driver_actions'],
+            ],
         ];
 
         foreach ($roles as $role) {

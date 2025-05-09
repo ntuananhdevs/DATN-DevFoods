@@ -24,19 +24,16 @@ return new class extends Migration
             $table->text('address');
             $table->string('city', 50);
             $table->string('district', 50);
-            
             $table->enum('vehicle_type', ['motorcycle', 'car', 'bicycle']);
             $table->string('vehicle_model', 50);
             $table->string('vehicle_color', 50);
             $table->string('license_plate', 20)->unique();
             $table->string('driver_license_number', 20)->unique();
-            
             $table->string('id_card_front_image', 255)->nullable();
             $table->string('id_card_back_image', 255)->nullable();
             $table->string('driver_license_image', 255)->nullable();
             $table->string('profile_image', 255)->nullable();
             $table->string('vehicle_registration_image', 255)->nullable();
-            
             $table->string('bank_name', 100);
             $table->string('bank_account_number', 50);
             $table->string('bank_account_name', 100);
@@ -47,6 +44,7 @@ return new class extends Migration
             $table->text('admin_notes')->nullable();
             $table->timestamps();
         });
+        
     }
 
     /**
