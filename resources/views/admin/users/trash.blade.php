@@ -1,4 +1,6 @@
-@extends('layouts.admin')
+@extends('layouts.admin.contentLayoutMaster')
+
+@section('title', 'Thùng rác người dùng')
 
 @section('content')
 <div class="content-wrapper">
@@ -40,7 +42,7 @@
                                                 <i class="feather icon-refresh-ccw"></i> Restore
                                             </button>
                                         </form>
-                                        <form action="{{ route('admin.users.forceDelete', $user->id) }}" method="POST" class="d-inline">
+                                        <form action="{{ route('admin.users.force-delete', $user->id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('This action cannot be undone. Are you sure?')">
