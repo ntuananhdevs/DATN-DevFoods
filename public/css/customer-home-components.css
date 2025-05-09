@@ -1,0 +1,439 @@
+/* Header */
+.header {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 40;
+    transition: all 0.3s ease;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.header-logo {
+    height: 3rem;
+    width: auto;
+}
+
+.header-nav {
+    display: none;
+}
+
+.header-nav-list {
+    display: flex;
+    list-style: none;
+    gap: 1.5rem;
+}
+
+.header-nav-item {
+    position: relative;
+}
+
+.header-nav-link {
+    font-weight: 600;
+    color: var(--text-color);
+    transition: color 0.2s ease;
+    padding: 0.5rem 0;
+}
+
+.header-nav-link:hover {
+    color: var(--primary-color);
+}
+
+.header-nav-link.active {
+    color: var(--primary-color);
+}
+
+.header-nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--primary-color);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: color 0.2s ease;
+}
+
+.header-action-btn:hover {
+    color: var(--primary-color);
+}
+
+.mobile-menu-btn {
+    display: block;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+}
+
+.mobile-menu.open {
+    transform: translateX(0);
+}
+
+.mobile-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-menu-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+
+.mobile-menu-nav {
+    padding: 1rem;
+}
+
+.mobile-menu-nav-list {
+    list-style: none;
+}
+
+.mobile-menu-nav-item {
+    margin-bottom: 1rem;
+}
+
+.mobile-menu-nav-link {
+    display: block;
+    font-weight: 600;
+    color: var(--text-color);
+    padding: 0.5rem 0;
+    transition: color 0.2s ease;
+}
+
+.mobile-menu-nav-link:hover {
+    color: var(--primary-color);
+}
+
+/* Banner */
+.banner {
+    position: relative;
+    overflow: hidden;
+}
+
+.banner-content {
+    position: relative;
+    z-index: 10;
+    padding: 4rem 0;
+}
+
+.banner-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.banner-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.banner-image {
+    position: relative;
+    height: 300px;
+}
+
+.banner-image img {
+    object-fit: contain;
+}
+
+.banner-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.3));
+    z-index: 5;
+}
+
+.banner-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.banner-background img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Card Styles */
+.card {
+    position: relative;
+    background-color: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+}
+
+.card-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.card:hover .card-image img {
+    transform: scale(1.05);
+}
+
+.card-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e31837;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    z-index: 1;
+}
+
+.card-discount {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #ffc522;
+    color: #e31837;
+    font-size: 14px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 4px;
+    z-index: 1;
+}
+
+.card-content {
+    padding: 16px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333333;
+    margin-bottom: 8px;
+    transition: color 0.3s ease;
+}
+
+.card:hover .card-title {
+    color: #e31837;
+}
+
+.card-description {
+    font-size: 14px;
+    color: #666666;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-price {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.current-price {
+    font-size: 18px;
+    font-weight: bold;
+    color: #e31837;
+}
+
+.original-price {
+    font-size: 14px;
+    color: #999999;
+    text-decoration: line-through;
+    margin-left: 8px;
+}
+
+.card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-button {
+    background-color: #e31837;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.card-button:hover {
+    background-color: #c01530;
+    transform: scale(1.05);
+}
+
+.card-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5f5;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.card-icon:hover {
+    background-color: #e31837;
+    color: white;
+}
+
+/* Card Animation */
+.card-enter {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.card-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s, transform 0.5s;
+}
+
+.card-exit {
+    opacity: 1;
+}
+
+.card-exit-active {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s, transform 0.5s;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .card-image {
+        height: 160px;
+    }
+
+    .card-title {
+        font-size: 16px;
+    }
+
+    .card-description {
+        font-size: 13px;
+    }
+
+    .current-price {
+        font-size: 16px;
+    }
+
+    .card-button {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .card-icon {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* Hover Effects */
+.card .card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(227, 24, 55, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.card:hover .card-overlay {
+    opacity: 1;
+}
+
+.card-overlay-content {
+    text-align: center;
+    color: white;
+    padding: 20px;
+}
+
+.card-overlay-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.card-overlay-button {
+    background-color: white;
+    color: #e31837;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.card-overlay-button:hover {
+    background-color: #ffc522;
+    color: #e31837;
+}

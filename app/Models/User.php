@@ -9,7 +9,7 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<\Database\Factories\Admin\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
@@ -18,8 +18,15 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'role_id',
+        'user_name',
+        'full_name',
         'email',
+        'phone',
+        'avatar',
+        'google_id',
+        'balance',
+        'active',
         'password',
     ];
 
@@ -43,21 +50,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'active' => 'boolean',
+            'balance' => 'decimal:2',
         ];
     }
 
+    /**
+     * Get the role that owns the user.
+     */
+    // Trong phương thức role()
     public function role()
     {
-        return $this->belongsTo(Role::class, 'role_id');
-    }
-
-    public function hasRole(string $role): bool
-    {
-        return $this->role && $this->role->name === $role;
-    }
-
-    public function hasPermission(string $permission): bool
-    {
-        return $this->role && in_array($permission, $this->role->permissions ?? []);
+        return $this->belongsTo(Role::class);
     }
 }

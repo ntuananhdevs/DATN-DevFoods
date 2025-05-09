@@ -1,4 +1,4 @@
-@extends('layouts.admin.admin')
+@extends('layouts/admin/contentLayoutMaster')
 
 @section('content')
     <h3>Cập nhật danh mục</h3>
@@ -17,8 +17,8 @@
 
         <div class="mb-3">
             <label class="form-label">Ảnh hiện tại</label><br>
-            @if($category->image)
-                <img src="{{ asset('storage/'.$category->image) }}" width="100">
+            @if ($category->image)
+                <img src="{{ asset('storage/' . $category->image) }}" width="100">
             @endif
         </div>
 

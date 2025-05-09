@@ -21,11 +21,12 @@
             "icon": "feather icon-box",
             "i18n": "nav.products"
         },
+
         {
-            "url": "/admin/roles",
-            "name": "Manage Roles",
-            "icon": "feather icon-shield",
-            "i18n": "nav.roles"
+            "url": "/admin/categories",
+            "name": "Manage Categories",
+            "icon": "feather icon-list",
+            "i18n": "nav.categories"
         },
 
         {

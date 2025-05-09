@@ -1,4 +1,4 @@
-@extends('layouts.admin.admin')
+@extends('layouts/admin/contentLayoutMaster')
 
 @section('content')
     <h3>Thêm danh mục mới</h3>
