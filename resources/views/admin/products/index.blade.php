@@ -190,284 +190,55 @@
             </div>
         </div>
     </div>
-    <!-- Modal Lọc -->
-    <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterModalLabel">Lọc sản phẩm</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <form action="{{ route('admin.products.index') }}" method="GET">
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label for="filter_category">Danh mục</label>
-                            <select class="form-control" id="filter_category" name="category_id">
-                                <option value="">Tất cả danh mục</option>
-                                @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}"
-                                        {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="filter_price_min">Giá tối thiểu</label>
-                            <input type="number" class="form-control" id="filter_price_min" name="price_min"
-                                value="{{ request('price_min') }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="filter_price_max">Giá tối đa</label>
-                            <input type="number" class="form-control" id="filter_price_max" name="price_max"
-                                value="{{ request('price_max') }}">
-                        </div>
-                        <div class="form-group">
-                            <label for="filter_stock">Tình trạng</label>
-                            <select class="form-control" id="filter_stock" name="stock_status">
-                                <option value="">Tất cả</option>
-                                <option value="in_stock" {{ request('stock_status') == 'in_stock' ? 'selected' : '' }}>Còn
-                                    hàng</option>
-                                <option value="out_of_stock"
-                                    {{ request('stock_status') == 'out_of_stock' ? 'selected' : '' }}>Hết hàng</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary">Áp dụng</button>
-                    </div>
-                </form>
+<!-- Modal Lọc -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Lọc sản phẩm</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
+            <form action="{{ route('admin.products.index') }}" method="GET">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="filter_category">Danh mục</label>
+                        <select class="form-control" id="filter_category" name="category_id">
+                            <option value="">Tất cả danh mục</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_price_min">Giá tối thiểu</label>
+                        <input type="number" class="form-control" id="filter_price_min" name="price_min" value="{{ request('price_min') }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_price_max">Giá tối đa</label>
+                        <input type="number" class="form-control" id="filter_price_max" name="price_max" value="{{ request('price_max') }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="filter_stock">Tình trạng</label>
+                        <select class="form-control" id="filter_stock" name="stock_status">
+                            <option value="">Tất cả</option>
+                            <option value="in_stock" {{ request('stock_status') == 'in_stock' ? 'selected' : '' }}>Còn hàng</option>
+                            <option value="out_of_stock" {{ request('stock_status') == 'out_of_stock' ? 'selected' : '' }}>Hết hàng</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Áp dụng</button>
+                </div>
+            </form>
         </div>
     </div>
-    @section('page-script')
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Lắng nghe sự kiện khi có sản phẩm mới được tạo
-                window.Echo.channel('products')
-                    .listen('.product.created', (e) => {
-                        // Thêm sản phẩm mới vào bảng
-                        addProductToTable(e);
-                        updatePaginationInfo();
-                        showNotification('Sản phẩm mới đã được thêm', 'success');
-                    })
-                    .listen('.product.updated', (e) => {
-                        // Cập nhật sản phẩm trong bảng
-                        updateProductInTable(e);
-                        showNotification('Sản phẩm đã được cập nhật', 'info');
-                    })
-                    .listen('.product.deleted', (e) => {
-                        // Xóa sản phẩm khỏi bảng
-                        removeProductFromTable(e.id);
-                        updatePaginationInfo();
-                        showNotification('Sản phẩm đã bị xóa', 'warning');
-                    });
+</div>
+@section('page-script')
 
-                // Hàm thêm sản phẩm mới vào bảng
-                function addProductToTable(product) {
-                    const tableBody = document.getElementById('dataTableBody');
-                    const emptyState = document.getElementById('dataTableEmpty');
-
-                    // Nếu bảng đang trống, xóa trạng thái trống
-                    if (emptyState) {
-                        emptyState.closest('tr').remove();
-                    }
-
-                    // Tạo hàng mới
-                    const newRow = document.createElement('tr');
-                    newRow.setAttribute('data-product-id', product.id);
-                    newRow.classList.add('highlight-new');
-
-                    // Tạo nội dung cho hàng
-                    newRow.innerHTML = `
-                <td>
-                    <div class="data-table-id">
-                        <span class="data-table-id-icon"><i class="fas fa-box"></i></span>
-                        ${product.id}
-                    </div>
-                </td>
-                <td>
-                    <div class="data-table-product-image">
-                        <img src="${product.image}" alt="${product.name}">
-                    </div>
-                </td>
-                <td>
-                    <div class="data-table-product-name">${product.name}</div>
-                </td>
-                <td>${product.category}</td>
-                <td>
-                    <div class="data-table-amount">${formatCurrency(product.base_price)} đ</div>
-                </td>
-                <td>
-                    ${product.stock ? 
-                        `<span class="data-table-status data-table-status-success">
-                                    <i class="fas fa-check"></i> Còn hàng
-                                </span>` : 
-                        `<span class="data-table-status data-table-status-failed">
-                                    <i class="fas fa-times"></i> Hết hàng
-                                </span>`
-                    }
-                </td>
-                <td>
-                    <div class="data-table-action-buttons">
-                        <a href="/admin/products/${product.id}" class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                        <a href="/admin/products/${product.id}/edit" class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
-                            <i class="fas fa-pen"></i>
-                        </a>
-                        <form action="/admin/products/${product.id}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="data-table-action-btn delete data-table-tooltip" data-tooltip="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            `;
-
-                    // Thêm hàng vào đầu bảng
-                    tableBody.insertBefore(newRow, tableBody.firstChild);
-
-                    // Xóa hiệu ứng highlight sau 3 giây
-                    setTimeout(() => {
-                        newRow.classList.remove('highlight-new');
-                    }, 3000);
-                }
-
-                // Hàm cập nhật sản phẩm trong bảng
-                function updateProductInTable(product) {
-                    const row = document.querySelector(`tr[data-product-id="${product.id}"]`);
-                    if (row) {
-                        row.classList.add('highlight-update');
-
-                        // Cập nhật thông tin sản phẩm
-                        const cells = row.querySelectorAll('td');
-                        cells[2].querySelector('.data-table-product-name').textContent = product.name;
-                        cells[1].querySelector('img').src = product.image;
-                        cells[1].querySelector('img').alt = product.name;
-                        cells[3].textContent = product.category;
-                        cells[4].querySelector('.data-table-amount').textContent =
-                            `${formatCurrency(product.base_price)} đ`;
-
-                        // Cập nhật trạng thái tồn kho
-                        cells[5].innerHTML = product.stock ?
-                            `<span class="data-table-status data-table-status-success">
-                        <i class="fas fa-check"></i> Còn hàng
-                    </span>` :
-                            `<span class="data-table-status data-table-status-failed">
-                        <i class="fas fa-times"></i> Hết hàng
-                    </span>`;
-
-                        // Xóa hiệu ứng highlight sau 3 giây
-                        setTimeout(() => {
-                            row.classList.remove('highlight-update');
-                        }, 3000);
-                    }
-                }
-
-                // Hàm xóa sản phẩm khỏi bảng
-                function removeProductFromTable(productId) {
-                    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
-                    if (row) {
-                        row.classList.add('highlight-delete');
-
-                        // Xóa hàng sau hiệu ứng
-                        setTimeout(() => {
-                            row.remove();
-
-                            // Kiểm tra nếu bảng trống, hiển thị trạng thái trống
-                            const tableBody = document.getElementById('dataTableBody');
-                            if (tableBody.children.length === 0) {
-                                tableBody.innerHTML = `
-                            <tr>
-                                <td colspan="7" class="text-center">
-                                    <div class="data-table-empty" id="dataTableEmpty">
-                                        <div class="data-table-empty-icon">
-                                            <i class="fas fa-box-open"></i>
-                                        </div>
-                                        <h3>Không có sản phẩm nào</h3>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                            }
-                        }, 1000);
-                    }
-                }
-
-                // Hàm cập nhật thông tin phân trang
-                function updatePaginationInfo() {
-                    const totalRecords = document.getElementById('totalRecords');
-                    const startRecord = document.getElementById('startRecord');
-                    const endRecord = document.getElementById('endRecord');
-
-                    if (totalRecords && startRecord && endRecord) {
-                        const total = parseInt(totalRecords.textContent);
-                        const start = parseInt(startRecord.textContent);
-                        const end = parseInt(endRecord.textContent);
-
-                        // Cập nhật tổng số bản ghi
-                        totalRecords.textContent = total + 1;
-
-                        // Cập nhật số bản ghi hiển thị
-                        endRecord.textContent = end + 1;
-                    }
-                }
-
-                // Hàm hiển thị thông báo
-                function showNotification(message, type) {
-                    // Kiểm tra nếu đã có Toastr
-                    if (typeof toastr !== 'undefined') {
-                        toastr[type](message);
-                        return;
-                    }
-
-                    // Tạo thông báo tùy chỉnh nếu không có Toastr
-                    const notification = document.createElement('div');
-                    notification.className = `data-table-notification ${type}`;
-                    notification.innerHTML = `
-                <div class="data-table-notification-icon">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-circle'}"></i>
-                </div>
-                <div class="data-table-notification-content">${message}</div>
-                <button class="data-table-notification-close"><i class="fas fa-times"></i></button>
-            `;
-
-                    document.body.appendChild(notification);
-
-                    // Hiển thị thông báo
-                    setTimeout(() => {
-                        notification.classList.add('show');
-                    }, 100);
-
-                    // Xóa thông báo sau 5 giây
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                        setTimeout(() => {
-                            notification.remove();
-                        }, 300);
-                    }, 5000);
-
-                    // Xử lý nút đóng
-                    notification.querySelector('.data-table-notification-close').addEventListener('click', () => {
-                        notification.classList.remove('show');
-                        setTimeout(() => {
-                            notification.remove();
-                        }, 300);
-                    });
-                }
-
-                // Hàm định dạng tiền tệ
-                function formatCurrency(amount) {
-                    return new Intl.NumberFormat('vi-VN').format(amount);
-                }
-            });
-        </script>
-    @endsection
+@endsection
 @endsection
