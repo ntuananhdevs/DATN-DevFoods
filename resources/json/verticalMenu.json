@@ -8,7 +8,7 @@
             "i18n": "nav.dashboard_analytics"
         },
         {
-            "url": "/users",
+            "url": "/admin/users",
             "name": "Manage Users",
             "icon": "feather icon-user",
             "i18n": "nav.users"
