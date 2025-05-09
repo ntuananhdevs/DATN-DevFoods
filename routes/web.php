@@ -59,9 +59,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
         Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
         Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
-        Route::get('/trashed', [UserController::class, 'trashed'])->name('trashed');
-        Route::patch('/restore/{id}', [UserController::class, 'restore'])->name('restore');
-        Route::delete('/force-delete/{id}', [UserController::class, 'forceDelete'])->name('forceDelete');
+        Route::get('trash', [UserController::class, 'trash'])->name('trash');
+        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
+        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
+        Route::get('/export', [UserController::class, 'export'])->name('export'); // Thêm dòng này
     });
 
     // Products Management
@@ -78,4 +79,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export'); 
     });
+});
+Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
+    Route::get('/search', [UserController::class, 'search'])->name('search');
 });
