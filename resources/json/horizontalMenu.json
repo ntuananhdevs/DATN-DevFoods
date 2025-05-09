@@ -1,5 +1,6 @@
 {
-    "menu": [{
+    "menu": [
+        {
             "url": "dashboard-analytics",
             "name": "Dashboard",
             "slug": "dashboard",
@@ -27,8 +28,12 @@
             "icon": "feather icon-list",
             "i18n": "nav.categories"
         },
-
-
+        {
+            "url": "/admin/roles",
+            "name": "Manage Roles",
+            "icon": "feather icon-shield",
+            "i18n": "nav.roles"
+        },
 
         {
             "url": "#",
@@ -38,7 +43,6 @@
             "i18n": "Apps",
             "dropdown": "1",
             "submenu": [
-
                 {
                     "url": "app-chat",
                     "name": "Chat",
@@ -73,7 +77,8 @@
                     "icon": "feather icon-shopping-cart",
                     "slug": "",
                     "dropdown": "1",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "app-ecommerce-shop",
                             "name": "Shop",
                             "i18n": "Shop",
@@ -106,7 +111,8 @@
                     "url": "",
                     "name": "User",
                     "icon": "feather icon-unlock",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "app-user-list",
                             "name": "List",
                             "icon": "feather icon-circle",
@@ -135,13 +141,15 @@
             "icon": "feather icon-layers",
             "i18n": "UI Elements",
             "dropdown": "1",
-            "submenu": [{
+            "submenu": [
+                {
                     "url": "#",
                     "name": "Data List",
                     "i18n": "Data List",
                     "icon": "feather icon-list",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "data-list-view",
                             "name": "List View",
                             "i18n": "List View",
@@ -163,7 +171,8 @@
                     "slug": "content",
                     "i18n": "Content",
                     "icon": "feather icon-layout",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "content-grid",
                             "name": "Grid",
                             "i18n": "Grid",
@@ -213,7 +222,8 @@
                     "i18n": "Cards",
                     "icon": "feather icon-credit-card",
                     "slug": "cards",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "card-basic",
                             "name": "Basic",
                             "i18n": "Basic",
@@ -256,7 +266,8 @@
                     "i18n": "Icons",
                     "icon": "feather icon-eye",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "icons-feather",
                             "name": "Feather",
                             "i18n": "Feather",
@@ -278,7 +289,8 @@
                     "i18n": "Components",
                     "icon": "feather icon-briefcase",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "component-alert",
                             "name": "Alerts",
                             "i18n": "Alerts",
@@ -432,7 +444,8 @@
                     "i18n": "Extra Components",
                     "icon": "feather icon-box",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "ex-component-avatar",
                             "name": "Avatar",
                             "i18n": "Avatar",
@@ -461,7 +474,8 @@
                     "i18n": "Extensions",
                     "icon": "feather icon-box",
                     "slug": "extensions",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "ext-component-sweet-alerts",
                             "name": "Sweet Alert",
                             "i18n": "Sweet Alert",
@@ -556,13 +570,15 @@
             "slug": "Forms & Tables",
             "i18n": "Dashboard",
             "dropdown": "1",
-            "submenu": [{
+            "submenu": [
+                {
                     "url": "#",
                     "name": "Form Elements",
                     "i18n": "Form Elements",
                     "icon": "feather icon-copy",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "form-select",
                             "name": "Select",
                             "i18n": "Select",
@@ -678,7 +694,8 @@
             "slug": "pages",
             "i18n": "Pages",
             "dropdown": "1",
-            "submenu": [{
+            "submenu": [
+                {
                     "url": "page-user-profile",
                     "name": "Profile",
                     "i18n": "Profile",
@@ -732,7 +749,8 @@
                     "i18n": "Authentication",
                     "icon": "feather icon-unlock",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "auth-login",
                             "name": "Login",
                             "i18n": "Login",
@@ -775,7 +793,8 @@
                     "i18n": "Miscellaneous",
                     "icon": "feather icon-file-text",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "page-coming-soon",
                             "name": "Coming Soon",
                             "i18n": "Coming Soon",
@@ -821,13 +840,15 @@
             "slug": "chart",
             "i18n": "Charts & Maps",
             "dropdown": "1",
-            "submenu": [{
+            "submenu": [
+                {
                     "url": "#",
                     "name": "Charts",
                     "i18n": "Charts",
                     "icon": "feather icon-pie-chart",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "chart-apex",
                             "name": "Apex",
                             "i18n": "Apex",
@@ -866,13 +887,15 @@
             "slug": "others",
             "i18n": "Others",
             "dropdown": "1",
-            "submenu": [{
+            "submenu": [
+                {
                     "url": "#",
                     "name": "Menu Levels",
                     "i18n": "Menu Levels",
                     "icon": "feather icon-menu",
                     "slug": "",
-                    "submenu": [{
+                    "submenu": [
+                        {
                             "url": "#",
                             "name": "Second Level",
                             "i18n": "Second Level",
@@ -885,7 +908,8 @@
                             "i18n": "Second Level",
                             "icon": "feather icon-circle",
                             "slug": "",
-                            "submenu": [{
+                            "submenu": [
+                                {
                                     "url": "#",
                                     "name": "Third Level",
                                     "i18n": "Third Level",
