@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
+use App\Http\Controllers\Admin\DriverController;
 
 Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index']);
@@ -79,7 +80,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
+
+    // Driver Application Management
+    Route::prefix('drivers')->name('drivers.')->group(function () {
+        Route::get('pending-applies', [DriverController::class, 'pendingApplies'])->name('pending-applies');
+        Route::get('applications', [DriverController::class, 'index'])->name('applications.index');
+        Route::get('applications/{application}', [DriverController::class, 'show'])->name('applications.show');
+        Route::post('applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
+        Route::post('applications/{application}/reject', [DriverController::class, 'reject'])->name('applications.reject');
+    });
 });
+
 Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
     Route::get('/search', [UserController::class, 'search'])->name('search');
 });

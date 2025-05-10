@@ -7,9 +7,9 @@
     <div class="navbar-header">
         <ul class="nav navbar-nav flex-row">
             <li class="nav-item mr-auto">
-                <a class="navbar-brand" href="dashboard-analytics">
+                <a class="navbar-brand" href="{{ route('admin.dashboard') }}">
                     <div class="brand-logo"></div>
-                    <h2 class="brand-text mb-0">Vuexy</h2>
+                    <h2 class="brand-text mb-0">DevFoods</h2>
                 </a>
             </li>
             <li class="nav-item nav-toggle">
@@ -49,12 +49,10 @@
                         <li class="nav-item {{ $activeClass }} {{ $custom_classes }}">
                             <a href="{{ optional($menu)->url }}">
                                 <i class="{{ optional($menu)->icon }}"></i>
-                                <span class="menu-title"
-                                    data-i18n="{{ $translation }}">{{ __(optional($menu)->name) }}</span>
+                                <span class="menu-title">{{ optional($menu)->name }}</span>
 
                                 @if (isset($menu->badge))
-                                    <span
-                                        class="{{ isset($menu->badgeClass) ? $menu->badgeClass : $badgeClasses }}">{{ $menu->badge }}</span>
+                                    <span class="{{ isset($menu->badgeClass) ? $menu->badgeClass : $badgeClasses }}">{{ $menu->badge }}</span>
                                 @endif
                             </a>
 
@@ -122,15 +120,6 @@
         margin-left: 0.8rem;
     }
 
-    .navigation-header {
-        padding: 1.2rem 1.5rem 0.8rem !important;
-        font-size: 0.9rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.1rem;
-        color: #7367f0;
-    }
-
     .navigation li.nav-item {
         margin: 0.4rem 0.8rem;
     }
@@ -176,15 +165,6 @@
         transition: all 0.3s ease;
     }
 
-    .badge-glow {
-        box-shadow: 0 0 10px rgba(115, 103, 240, 0.5);
-        background: linear-gradient(45deg, #7367f0, #9e95f5);
-        border: none;
-        padding: 0.35rem 0.7rem;
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-
     .navigation li.nav-item ul.menu-content {
         padding-left: 2.5rem;
         margin-top: 0.2rem;
@@ -193,6 +173,11 @@
     .navigation li.nav-item ul.menu-content li a {
         padding: 0.6rem 1rem;
         font-size: 0.9rem;
+    }
+
+    .navigation li.nav-item ul.menu-content li.active a {
+        background: rgba(115, 103, 240, 0.08);
+        color: #fff;
     }
 
     .shadow-bottom {
@@ -206,7 +191,6 @@
         background: linear-gradient(180deg, rgba(40, 48, 70, 0.9) 0%, rgba(40, 48, 70, 0.6) 60%, transparent 100%);
     }
 
-    /* Hiệu ứng hover cho toggle icon */
     .nav-toggle .nav-link {
         width: 40px;
         height: 40px;
@@ -227,36 +211,7 @@
         color: #7367f0;
         transition: all 0.3s ease;
     }
-
-    /* Hiệu ứng ripple cho các menu item */
-    .navigation li.nav-item a {
-        position: relative;
-        overflow: hidden;
-    }
-
-    .navigation li.nav-item a::after {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        background-image: radial-gradient(circle, rgba(115, 103, 240, 0.2) 10%, transparent 10.01%);
-        background-repeat: no-repeat;
-        background-position: 50%;
-        transform: scale(10, 10);
-        opacity: 0;
-        transition: transform 0.5s, opacity 1s;
-    }
-
-    .navigation li.nav-item a:active::after {
-        transform: scale(0, 0);
-        opacity: 0.3;
-        transition: 0s;
-    }
 </style>
-<!-- END: Main Menu -->
 
 <style>
     /* CSS cải tiến cho sidebar */

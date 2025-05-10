@@ -37,7 +37,7 @@ class DriverApplicationFactory extends Factory
             'bank_account_number' => $this->faker->numerify('##############'),
             'bank_account_name' => $this->faker->name(),
             'emergency_contact_name' => $this->faker->name(),
-            'emergency_contact_phone' => $this->faker->phoneNumber(),
+            'emergency_contact_phone' => '+84 ' . $this->faker->unique()->numberBetween(100000000, 999999999),
             'emergency_contact_relationship' => $this->faker->randomElement(['parent', 'spouse', 'sibling', 'friend']),
             'status' => $this->faker->randomElement(['pending', 'approved', 'rejected']),
             'admin_notes' => $this->faker->optional(0.3)->sentence(),
