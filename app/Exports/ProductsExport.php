@@ -2,7 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\Admin\Product; // Sửa namespace cho đúng
+use App\Models\Product; 
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;

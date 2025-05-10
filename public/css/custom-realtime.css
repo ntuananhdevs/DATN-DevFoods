@@ -1,0 +1,114 @@
+/* Hiệu ứng cho sản phẩm mới */
+.highlight-new {
+    animation: highlightNew 3s ease-in-out;
+}
+
+@keyframes highlightNew {
+    0% {
+        background-color: rgba(40, 199, 111, 0.2);
+    }
+
+    70% {
+        background-color: rgba(40, 199, 111, 0.2);
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* Hiệu ứng cho sản phẩm cập nhật */
+.highlight-update {
+    animation: highlightUpdate 3s ease-in-out;
+}
+
+@keyframes highlightUpdate {
+    0% {
+        background-color: rgba(30, 159, 242, 0.2);
+    }
+
+    70% {
+        background-color: rgba(30, 159, 242, 0.2);
+    }
+
+    100% {
+        background-color: transparent;
+    }
+}
+
+/* Hiệu ứng cho sản phẩm xóa */
+.highlight-delete {
+    animation: highlightDelete 1s ease-in-out;
+}
+
+@keyframes highlightDelete {
+    0% {
+        background-color: rgba(234, 84, 85, 0.2);
+    }
+
+    100% {
+        background-color: rgba(234, 84, 85, 0.5);
+        opacity: 0;
+    }
+}
+
+/* Thông báo tùy chỉnh */
+.data-table-notification {
+    position: fixed;
+    top: 20px;
+    right: -350px;
+    width: 320px;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: right 0.3s ease;
+    z-index: 9999;
+    background-color: white;
+}
+
+.data-table-notification.show {
+    right: 20px;
+}
+
+.data-table-notification.success {
+    border-left: 4px solid #28c76f;
+}
+
+.data-table-notification.info {
+    border-left: 4px solid #1e9ff2;
+}
+
+.data-table-notification.warning {
+    border-left: 4px solid #ff9f43;
+}
+
+.data-table-notification-icon {
+    margin-right: 15px;
+    font-size: 20px;
+}
+
+.data-table-notification.success .data-table-notification-icon {
+    color: #28c76f;
+}
+
+.data-table-notification.info .data-table-notification-icon {
+    color: #1e9ff2;
+}
+
+.data-table-notification.warning .data-table-notification-icon {
+    color: #ff9f43;
+}
+
+.data-table-notification-content {
+    flex: 1;
+}
+
+.data-table-notification-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6e6b7b;
+    font-size: 14px;
+}
