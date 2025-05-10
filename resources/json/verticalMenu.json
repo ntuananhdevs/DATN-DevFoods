@@ -31,6 +31,36 @@
             "name": "Manage Roles",
             "icon": "feather icon-shield",
             "i18n": "nav.roles"
+        },
+        {
+            "url": "",
+            "navheader": "Apps",
+            "icon": ""
+        },
+
+        {
+            "url": "app-chat",
+            "name": "Chat",
+            "icon": "feather icon-message-square",
+            "i18n": "nav.app_chat"
+        },
+        {
+            "url": "app-todo",
+            "name": "Todo",
+            "icon": "feather icon-check-square",
+            "i18n": "nav.app_todo"
+        },
+        {
+            "url": "app-calender",
+            "name": "Calender",
+            "icon": "feather icon-calendar",
+            "i18n": "nav.app_calender"
+        },
+        {
+            "url": "app-file-manager",
+            "name": "File Manager",
+            "icon": "feather icon-save",
+            "i18n": "nav.app_calender"
         }
     ]
 }

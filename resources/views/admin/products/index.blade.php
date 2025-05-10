@@ -88,7 +88,6 @@
                             <tr>
                                 <td>
                                     <div class="data-table-id">
-                                        <span class="data-table-id-icon"><i class="fas fa-box"></i></span>
                                         {{ $product->id }}
                                     </div>
                                 </td>
@@ -132,9 +131,13 @@
                                             class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="data-table-action-btn delete data-table-tooltip"
-                                                data-tooltip="Xóa"
-                                                onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')">
+                                            <button type="button" 
+                                                class="data-table-action-btn delete data-table-tooltip"
+                                                data-tooltip="Xóa" 
+                                                onclick="dtmodalConfirmDelete({
+                                                    itemName: '{{ $product->name }}',
+                                                    onConfirm: () => this.closest('form').submit()
+                                                })">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -238,7 +241,5 @@
         </div>
     </div>
 </div>
-@section('page-script')
 
-@endsection
 @endsection
