@@ -158,8 +158,6 @@
                         @endforelse
                     </tbody>
                 </table>
-
-                <!-- Đã xóa phần trạng thái trống trùng lặp ở đây -->
             </div>
 
             <!-- Phân trang và thông tin -->

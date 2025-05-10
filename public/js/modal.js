@@ -32,8 +32,7 @@ function dtmodalShowModal(type, options = {}) {
 
         // Hiển thị modal
         modal.classList.add('dtmodal-active');
-        document.body.classList.add('dtmodal-open'); // Ngừng cuộn trang
-        document.body.style.overflow = 'hidden'; // Ngừng cuộn trang
+        document.body.classList.add('dtmodal-open');
     } else if (options.createIfNotExists) {
         // Tạo modal động nếu không tìm thấy modal có sẵn
         dtmodalCreateModal({
@@ -63,9 +62,6 @@ function dtmodalCloseModal(modalId) {
                 modal.remove();
             }, 300);
         }
-
-        // Cho phép cuộn lại khi đóng modal
-        document.body.style.overflow = ''; // Cho phép cuộn lại khi đóng modal
     }
 }
 
@@ -256,8 +252,7 @@ function dtmodalConfirmDelete(options) {
         type: 'warning',
         title: title,
         subtitle: subtitle,
-        message: itemName ? `Bạn đang xóa: "${itemName}"
-${message}` : message,
+        message: itemName ? `Bạn đang xóa: <strong>"${itemName}"</strong><br>${message}` : message,
         confirmText: 'Xác nhận xóa',
         cancelText: 'Hủy bỏ',
         onConfirm: onConfirm,

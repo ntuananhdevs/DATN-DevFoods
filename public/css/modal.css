@@ -156,11 +156,16 @@
 }
 
 body.dtmodal-open {
-    overflow: hidden;
+    overflow: hidden !important;
     padding-right: 15px;
     /* Bù đắp cho thanh cuộn */
-    position: relative;
-    /* Đảm bảo body không bị cuộn */
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    touch-action: none !important;
 }
 
 /* Modal Container */
@@ -619,7 +624,39 @@ body.dtmodal-open {
 /* Responsive */
 @media (max-width: 768px) {
     .dtmodal-container {
-        max-width: 90%;
+        max-width: 95%;
+        max-height: 80vh;
+        margin: 10px;
+    }
+
+    .dtmodal-header {
+        padding: 16px 20px;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .dtmodal-icon-wrapper {
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+
+    .dtmodal-close {
+        top: 10px;
+        right: 10px;
+    }
+
+    .dtmodal-body {
+        padding: 20px;
+    }
+
+    .dtmodal-footer {
+        padding: 16px 20px;
+        flex-direction: column-reverse;
+    }
+
+    .dtmodal-btn {
+        width: 100%;
+        padding: 12px;
     }
 
     .dtmodal-toast-container {
@@ -627,6 +664,8 @@ body.dtmodal-open {
         left: 50%;
         transform: translateX(-50%);
         right: auto;
+        bottom: 20px;
+        top: auto;
     }
 
     .dtmodal-toast {
@@ -636,5 +675,91 @@ body.dtmodal-open {
 
     .dtmodal-toast.dtmodal-active {
         transform: translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    .dtmodal-container {
+        max-width: 100%;
+        max-height: 85vh;
+        border-radius: 10px;
+    }
+
+    .dtmodal-title {
+        font-size: 18px;
+    }
+
+    .dtmodal-subtitle {
+        font-size: 13px;
+    }
+
+    .dtmodal-message {
+        font-size: 14px;
+    }
+
+    .dtmodal-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .dtmodal-icon i {
+        font-size: 20px;
+    }
+
+    .dtmodal-toast {
+        padding: 12px;
+    }
+
+    .dtmodal-toast-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .dtmodal-toast-icon i {
+        font-size: 16px;
+    }
+
+    .dtmodal-toast-title {
+        font-size: 14px;
+    }
+
+    .dtmodal-toast-message {
+        font-size: 12px;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .dtmodal-container {
+        max-height: 95vh;
+        max-width: 90%;
+    }
+
+    .dtmodal-header {
+        padding: 12px 16px;
+    }
+
+    .dtmodal-icon-wrapper {
+        display: none;
+        /* Ẩn icon để tiết kiệm không gian */
+    }
+
+    .dtmodal-body {
+        padding: 12px 16px;
+    }
+
+    .dtmodal-footer {
+        padding: 12px 16px;
+    }
+}
+
+/* Màn hình lớn */
+@media (min-width: 1200px) {
+    .dtmodal-container {
+        max-width: 600px;
+    }
+
+    .dtmodal-toast-container {
+        max-width: 450px;
     }
 }
