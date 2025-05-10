@@ -1,0 +1,765 @@
+.dtmodal-demo-wrapper {
+    font-family: 'Inter', sans-serif;
+    color: #1e293b;
+    line-height: 1.6;
+    box-sizing: border-box;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-container {
+    max-width: 1200px;
+    width: 100%;
+    padding: 40px 20px;
+    margin: 0 auto;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-title {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 40px;
+    text-align: center;
+    color: #1e293b;
+    position: relative;
+    display: inline-block;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background-color: #6366f1;
+    border-radius: 2px;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-section {
+    margin-bottom: 40px;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-section-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #1e293b;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    gap: 10px;
+    font-family: inherit;
+    color: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn i {
+    font-size: 16px;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-success {
+    background-color: #10b981;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-success:hover {
+    background-color: #059669;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-error {
+    background-color: #ef4444;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-error:hover {
+    background-color: #dc2626;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-warning {
+    background-color: #f59e0b;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-warning:hover {
+    background-color: #d97706;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-info {
+    background-color: #3b82f6;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-info:hover {
+    background-color: #2563eb;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-primary {
+    background-color: #6366f1;
+}
+
+.dtmodal-demo-wrapper .dtmodal-demo-btn-primary:hover {
+    background-color: #4f46e5;
+}
+
+/* Modal Overlay */
+.dtmodal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    /* Đảm bảo chiều rộng đầy đủ */
+    height: 100vh;
+    /* Đảm bảo chiều cao đầy đủ */
+    background-color: rgba(15, 23, 42, 0.7);
+    /* Màu nền mờ */
+    backdrop-filter: blur(4px);
+    /* Làm mờ phía sau */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    /* Tăng z-index để đảm bảo hiển thị trên tất cả các phần tử */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    /* Ngăn cuộn bên trong overlay */
+}
+
+
+.dtmodal-overlay.dtmodal-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+body.dtmodal-open {
+    overflow: hidden !important;
+    padding-right: 15px;
+    /* Bù đắp cho thanh cuộn */
+    position: fixed !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    touch-action: none !important;
+}
+
+/* Modal Container */
+.dtmodal-container {
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    position: relative;
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    overflow: auto;
+    box-sizing: border-box;
+    max-height: 90vh;
+    margin: 0 auto;
+}
+
+
+.dtmodal-overlay.dtmodal-active .dtmodal-container {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+/* Modal Header */
+.dtmodal-header {
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    border-bottom: 1px solid #e2e8f0;
+    box-sizing: border-box;
+}
+
+.dtmodal-icon-wrapper {
+    position: relative;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.dtmodal-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    position: relative;
+    z-index: 2;
+}
+
+.dtmodal-icon::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.5;
+}
+
+.dtmodal-icon i {
+    font-size: 24px;
+}
+
+.dtmodal-success .dtmodal-icon {
+    background-color: #ecfdf5;
+    color: #10b981;
+}
+
+.dtmodal-success .dtmodal-icon::before {
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0) 70%);
+}
+
+.dtmodal-error .dtmodal-icon {
+    background-color: #fef2f2;
+    color: #ef4444;
+}
+
+.dtmodal-error .dtmodal-icon::before {
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0) 70%);
+}
+
+.dtmodal-warning .dtmodal-icon {
+    background-color: #fffbeb;
+    color: #f59e0b;
+}
+
+.dtmodal-warning .dtmodal-icon::before {
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0) 70%);
+}
+
+.dtmodal-info .dtmodal-icon {
+    background-color: #eff6ff;
+    color: #3b82f6;
+}
+
+.dtmodal-info .dtmodal-icon::before {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0) 70%);
+}
+
+.dtmodal-notification .dtmodal-icon {
+    background-color: #eef2ff;
+    color: #6366f1;
+}
+
+.dtmodal-notification .dtmodal-icon::before {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0) 70%);
+}
+
+.dtmodal-title-content {
+    flex-grow: 1;
+    box-sizing: border-box;
+}
+
+.dtmodal-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: #1e293b;
+    font-family: inherit;
+}
+
+.dtmodal-subtitle {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0;
+    font-family: inherit;
+}
+
+.dtmodal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 18px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 55%;
+    transition: all 0.2s ease;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.dtmodal-close:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+
+/* Modal Body */
+.dtmodal-body {
+    padding: 28px;
+    box-sizing: border-box;
+}
+
+.dtmodal-message {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #1e293b;
+    margin: 0;
+    font-family: inherit;
+}
+
+/* Modal Footer */
+.dtmodal-footer {
+    padding: 20px 28px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid #e2e8f0;
+    box-sizing: border-box;
+}
+
+.dtmodal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    gap: 8px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.dtmodal-btn-outline {
+    background-color: #ffffff;
+    color: #1e293b;
+    border: 1px solid #e2e8f0;
+}
+
+.dtmodal-btn-outline:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.dtmodal-success .dtmodal-btn-primary {
+    background-color: #10b981;
+    color: #ffffff;
+}
+
+.dtmodal-success .dtmodal-btn-primary:hover {
+    background-color: #059669;
+}
+
+.dtmodal-error .dtmodal-btn-primary {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+.dtmodal-error .dtmodal-btn-primary:hover {
+    background-color: #dc2626;
+}
+
+.dtmodal-warning .dtmodal-btn-primary {
+    background-color: #f59e0b;
+    color: #ffffff;
+}
+
+.dtmodal-warning .dtmodal-btn-primary:hover {
+    background-color: #d97706;
+}
+
+.dtmodal-info .dtmodal-btn-primary {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+.dtmodal-info .dtmodal-btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.dtmodal-notification .dtmodal-btn-primary {
+    background-color: #6366f1;
+    color: #ffffff;
+}
+
+.dtmodal-notification .dtmodal-btn-primary:hover {
+    background-color: #4f46e5;
+}
+
+/* Toast Notifications */
+.dtmodal-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+    width: 100%;
+    pointer-events: none;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+
+.dtmodal-toast {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    pointer-events: auto;
+    border: 1px solid #e2e8f0;
+    box-sizing: border-box;
+}
+
+.dtmodal-toast.dtmodal-active {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.dtmodal-toast-icon-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.dtmodal-toast-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.dtmodal-toast-icon::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.5;
+}
+
+.dtmodal-toast-icon i {
+    font-size: 18px;
+}
+
+.dtmodal-toast-success .dtmodal-toast-icon {
+    background-color: #ecfdf5;
+    color: #10b981;
+}
+
+.dtmodal-toast-success .dtmodal-toast-icon::before {
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0) 70%);
+}
+
+.dtmodal-toast-error .dtmodal-toast-icon {
+    background-color: #fef2f2;
+    color: #ef4444;
+}
+
+.dtmodal-toast-error .dtmodal-toast-icon::before {
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0) 70%);
+}
+
+.dtmodal-toast-warning .dtmodal-toast-icon {
+    background-color: #fffbeb;
+    color: #f59e0b;
+}
+
+.dtmodal-toast-warning .dtmodal-toast-icon::before {
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0) 70%);
+}
+
+.dtmodal-toast-info .dtmodal-toast-icon {
+    background-color: #eff6ff;
+    color: #3b82f6;
+}
+
+.dtmodal-toast-info .dtmodal-toast-icon::before {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0) 70%);
+}
+
+.dtmodal-toast-notification .dtmodal-toast-icon {
+    background-color: #eef2ff;
+    color: #6366f1;
+}
+
+.dtmodal-toast-notification .dtmodal-toast-icon::before {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0) 70%);
+}
+
+.dtmodal-toast-content {
+    flex-grow: 1;
+    box-sizing: border-box;
+}
+
+.dtmodal-toast-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: #1e293b;
+    font-family: inherit;
+}
+
+.dtmodal-toast-message {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+    font-family: inherit;
+}
+
+.dtmodal-toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 16px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    margin-top: -4px;
+}
+
+.dtmodal-toast-close:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+
+.dtmodal-toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background-color: #e2e8f0;
+}
+
+.dtmodal-toast-success .dtmodal-toast-progress-bar {
+    background-color: #10b981;
+}
+
+.dtmodal-toast-error .dtmodal-toast-progress-bar {
+    background-color: #ef4444;
+}
+
+.dtmodal-toast-warning .dtmodal-toast-progress-bar {
+    background-color: #f59e0b;
+}
+
+.dtmodal-toast-info .dtmodal-toast-progress-bar {
+    background-color: #3b82f6;
+}
+
+.dtmodal-toast-notification .dtmodal-toast-progress-bar {
+    background-color: #6366f1;
+}
+
+.dtmodal-toast-progress-bar {
+    height: 100%;
+    width: 100%;
+    animation: dtmodal-progress 5s linear forwards;
+}
+
+@keyframes dtmodal-progress {
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0%;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dtmodal-container {
+        max-width: 95%;
+        max-height: 80vh;
+        margin: 10px;
+    }
+
+    .dtmodal-header {
+        padding: 16px 20px;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .dtmodal-icon-wrapper {
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+
+    .dtmodal-close {
+        top: 10px;
+        right: 10px;
+    }
+
+    .dtmodal-body {
+        padding: 20px;
+    }
+
+    .dtmodal-footer {
+        padding: 16px 20px;
+        flex-direction: column-reverse;
+    }
+
+    .dtmodal-btn {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .dtmodal-toast-container {
+        max-width: 90%;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+        bottom: 20px;
+        top: auto;
+    }
+
+    .dtmodal-toast {
+        width: 100%;
+        transform: translateY(100%);
+    }
+
+    .dtmodal-toast.dtmodal-active {
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    .dtmodal-container {
+        max-width: 100%;
+        max-height: 85vh;
+        border-radius: 10px;
+    }
+
+    .dtmodal-title {
+        font-size: 18px;
+    }
+
+    .dtmodal-subtitle {
+        font-size: 13px;
+    }
+
+    .dtmodal-message {
+        font-size: 14px;
+    }
+
+    .dtmodal-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .dtmodal-icon i {
+        font-size: 20px;
+    }
+
+    .dtmodal-toast {
+        padding: 12px;
+    }
+
+    .dtmodal-toast-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .dtmodal-toast-icon i {
+        font-size: 16px;
+    }
+
+    .dtmodal-toast-title {
+        font-size: 14px;
+    }
+
+    .dtmodal-toast-message {
+        font-size: 12px;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .dtmodal-container {
+        max-height: 95vh;
+        max-width: 90%;
+    }
+
+    .dtmodal-header {
+        padding: 12px 16px;
+    }
+
+    .dtmodal-icon-wrapper {
+        display: none;
+        /* Ẩn icon để tiết kiệm không gian */
+    }
+
+    .dtmodal-body {
+        padding: 12px 16px;
+    }
+
+    .dtmodal-footer {
+        padding: 12px 16px;
+    }
+}
+
+/* Màn hình lớn */
+@media (min-width: 1200px) {
+    .dtmodal-container {
+        max-width: 600px;
+    }
+
+    .dtmodal-toast-container {
+        max-width: 450px;
+    }
+}
