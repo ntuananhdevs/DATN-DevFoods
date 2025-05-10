@@ -15,7 +15,7 @@ class Role extends Model
     ];
 
     protected $casts = [
-        'permissions' => 'array',
+        'permissions' => 'array', // Cast quyền thành mảng
     ];
 
     public function users()

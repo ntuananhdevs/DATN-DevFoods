@@ -20,7 +20,7 @@
                     <div class="hero-content">
                         <div class="hero-text">
                             <h1 class="hero-title">Thưởng Thức <br><span>Hương Vị Đặc Trưng</span></h1>
-                            <p class="hero-description">Khám phá thực đơn đa dạng và phong phú của Jollibee, với nhiều lựa
+                            <p class="hero-description">Khám phá thực đơn đa dạng và phong phú của DevFood, với nhiều lựa
                                 chọn cho bạn, gia đình và bạn bè.</p>
                             <div class="hero-buttons">
                                 <button class="btn btn-primary">ĐẶT HÀNG NGAY</button>
@@ -28,7 +28,7 @@
                             </div>
                         </div>
                         <div class="hero-image">
-                            <img src="{{ asset('images/banner/banner01.png') }}" alt="Jollibee Featured Product">
+                            <img src="{{ asset('images/banner/banner01.png') }}" alt="DevFood Featured Product">
                             {{-- <div class="floating-image floating-image-1">
                                 <img src="images/decoration-1.png" alt="Decoration">
                             </div>
@@ -87,7 +87,7 @@
                             <img src="{{ asset('images/banner/promo-3.png') }}" alt="Sinh Nhật Vui Vẻ">
                             <div class="carousel-caption">
                                 <h2>Sinh Nhật Vui Vẻ</h2>
-                                <p>Đặt tiệc sinh nhật tại Jollibee - Nhận quà hấp dẫn</p>
+                                <p>Đặt tiệc sinh nhật tại DevFood - Nhận quà hấp dẫn</p>
                             </div>
                         </div>
                     </div>
@@ -110,7 +110,7 @@
                 <div class="container">
                     <div class="section-title">
                         <h2>DANH MỤC MÓN ĂN</h2>
-                        <p>KHÁM PHÁ CÁC DANH MỤC MÓN ĂN PHONG PHÚ CỦA JOLLIBEE</p>
+                        <p>KHÁM PHÁ CÁC DANH MỤC MÓN ĂN PHONG PHÚ CỦA DevFood</p>
                     </div>
 
                     <div class="category-grid">
@@ -136,7 +136,7 @@
                 <div class="container">
                     <div class="section-title">
                         <h2>SẢN PHẨM NỔI BẬT</h2>
-                        <p>KHÁM PHÁ CÁC MÓN ĂN ĐƯỢC YÊU THÍCH NHẤT TẠI JOLLIBEE</p>
+                        <p>KHÁM PHÁ CÁC MÓN ĂN ĐƯỢC YÊU THÍCH NHẤT TẠI DevFood</p>
                     </div>
 
                     <div class="products-grid">
@@ -186,7 +186,7 @@
                     <div class="order-card">
                         <div class="order-content">
                             <h2 class="order-title">ĐẶT HÀNG NGAY!</h2>
-                            <p class="order-description">Thưởng thức món ăn Jollibee yêu thích tại nhà hoặc đặt trước và
+                            <p class="order-description">Thưởng thức món ăn DevFood yêu thích tại nhà hoặc đặt trước và
                                 đến lấy tại cửa hàng.</p>
 
                             <div class="order-tabs">
@@ -222,10 +222,10 @@
                                     <label for="store">Chọn cửa hàng</label>
                                     <select id="store">
                                         <option value="">Chọn cửa hàng gần bạn</option>
-                                        <option value="1">Jollibee Lê Văn Sỹ</option>
-                                        <option value="2">Jollibee Nguyễn Huệ</option>
-                                        <option value="3">Jollibee Royal City</option>
-                                        <option value="4">Jollibee Times City</option>
+                                        <option value="1">DevFood Lê Văn Sỹ</option>
+                                        <option value="2">DevFood Nguyễn Huệ</option>
+                                        <option value="3">DevFood Royal City</option>
+                                        <option value="4">DevFood Times City</option>
                                     </select>
                                 </div>
 
@@ -244,7 +244,7 @@
                             </div>
                         </div>
                         <div class="order-image">
-                            <img src="{{ asset('images/banner/appstore.png') }}" alt="Jollibee Delivery">
+                            <img src="{{ asset('images/banner/appstore.png') }}" alt="DevFood Delivery">
                         </div>
                     </div>
                 </div>
@@ -265,8 +265,8 @@
                 <div class="parallax-background"></div>
                 <div class="container">
                     <div class="parallax-content">
-                        <h2>JOLLIBEE VIETNAM</h2>
-                        <p>Thưởng thức hương vị đặc trưng của Jollibee - Nơi mang đến niềm vui và những khoảnh khắc ấm áp
+                        <h2>DevFood VIETNAM</h2>
+                        <p>Thưởng thức hương vị đặc trưng của DevFood - Nơi mang đến niềm vui và những khoảnh khắc ấm áp
                             cho mọi gia đình Việt Nam.</p>
                         <button class="btn btn-primary">ĐẶT HÀNG NGAY</button>
                     </div>
@@ -283,8 +283,8 @@
                 <div class="container">
                     <div class="banner-content">
                         <div class="banner-text">
-                            <h2>JOLLIBEE KIDS CLUB</h2>
-                            <p>Tham gia Jollibee Kids Club ngay hôm nay để nhận được nhiều ưu đãi đặc biệt, quà tặng sinh
+                            <h2>DevFood KIDS CLUB</h2>
+                            <p>Tham gia DevFood Kids Club ngay hôm nay để nhận được nhiều ưu đãi đặc biệt, quà tặng sinh
                                 nhật và các hoạt động thú vị dành riêng cho các bé!</p>
                             <div class="banner-buttons">
                                 <button class="btn btn-primary">ĐĂNG KÝ NGAY</button>
@@ -301,7 +301,7 @@
                 <div class="container">
                     <div class="section-title">
                         <h2>DỊCH VỤ</h2>
-                        <p>TẬN HƯỞNG NHỮNG KHOẢNH KHẮC TRỌN VẸN CÙNG JOLLIBEE</p>
+                        <p>TẬN HƯỞNG NHỮNG KHOẢNH KHẮC TRỌN VẸN CÙNG DevFood</p>
                     </div>
 
                     <div class="services-grid">
@@ -319,9 +319,9 @@
                         </div>
                         <div class="service-item">
                             <div class="service-image">
-                                <img src="images/service-3.jpg" alt="Jollibee Kids Club">
+                                <img src="images/service-3.jpg" alt="DevFood Kids Club">
                             </div>
-                            <h3>Jollibee Kids Club</h3>
+                            <h3>DevFood Kids Club</h3>
                         </div>
                         <div class="service-item">
                             <div class="service-image">
@@ -363,7 +363,7 @@
                             </div>
                             <p class="product-description" id="modalProductDescription">Gà rán giòn thơm ngon, hương vị
                                 đặc
-                                trưng của Jollibee với lớp bột chiên giòn rụm và thịt gà mềm, thơm ngon.</p>
+                                trưng của DevFood với lớp bột chiên giòn rụm và thịt gà mềm, thơm ngon.</p>
 
                             <div class="quantity-selector">
                                 <span>Số lượng</span>

@@ -1,5 +1,16 @@
-@extends('layouts.admin')
 
+@extends('layouts.admin.contentLayoutMaster')
+
+@section('title', 'Users Details')
+
+@section('vendor-style')
+        {{-- vendor css files --}}
+        <link rel="stylesheet" href="{{ asset(mix('vendors/css/charts/apexcharts.css')) }}">
+@endsection
+@section('page-style')
+        {{-- Page css files --}}
+        <link rel="stylesheet" href="{{ asset(mix('css/pages/card-analytics.css')) }}">
+@endsection
 @section('content')
 <div class="content-wrapper">
     <div class="content-header row">
@@ -12,10 +23,21 @@
         <div class="card">
             <div class="card-content">
                 <div class="card-body">
-               
-                    
                     <div class="row">
-                        <div class="col-12">
+                        <div class="col-md-3 text-center mb-3">
+                            @if($user->avatar)
+                                <img src="{{ Storage::url($user->avatar) }}" 
+                                     alt="User Avatar" 
+                                     class="img-fluid rounded-circle"
+                                     style="max-width: 200px; height: auto;">
+                            @else
+                                <img src="{{ asset('images/default-avatar.png') }}" 
+                                     alt="Default Avatar" 
+                                     class="img-fluid rounded-circle"
+                                     style="max-width: 200px; height: auto;">
+                            @endif
+                        </div>
+                        <div class="col-md-9">
                             <table class="table">
                                 <tr>
                                     <th width="200">Username</th>
@@ -54,7 +76,7 @@
                     </div>
 
                     <div class="mt-2">
-                        <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-warning">Edit</a>
+                        <!-- <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-warning">Edit</a> -->
                         <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Back to List</a>
                     </div>
                 </div>
@@ -63,3 +85,12 @@
     </div>
 </div>
 @endsection
+@section('vendor-script')
+{{-- vendor files --}}
+        <script src="{{ asset(mix('vendors/js/charts/apexcharts.min.js')) }}"></script>
+@endsection
+@section('page-script')
+        {{-- Page js files --}}
+        <script src="{{ asset(mix('js/scripts/pages/dashboard-ecommerce.js')) }}"></script>
+@endsection
+
