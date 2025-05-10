@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\UsersExport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Workbench\App\Models\User as ModelsUser;
 
 class UserController extends Controller
@@ -17,13 +20,23 @@ class UserController extends Controller
     public function index()
     {
         try {
+            $search = request()->input('search');
+            
             $users = User::with('role')
                 ->whereHas('role', function($query) {
                     $query->where('name', 'customer');
                 })
+                ->when($search, function($query) use ($search) {
+                    $query->where(function($q) use ($search) {
+                        $q->where('user_name', 'LIKE', "%$search%")
+                          ->orWhere('full_name', 'LIKE', "%$search%")
+                          ->orWhere('email', 'LIKE', "%$search%")
+                          ->orWhere('phone', 'LIKE', "%$search%");
+                    });
+                })
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
-
+    
             return view('admin.users.index', compact('users'));
         } catch (\Exception $e) {
             Log::error('Error in UserController@index: ' . $e->getMessage());
@@ -256,5 +269,73 @@ class UserController extends Controller
             var_dump($e->getMessage());
 
         }
+    }
+
+    /**
+     * Export users data
+     */
+    public function export(Request $request)
+    {
+        try {
+            $type = $request->type ?? 'excel';
+            $query = User::with('role')->whereHas('role', function($q) {
+                $q->where('name', 'customer');
+            });
+            
+            // Áp dụng các bộ lọc tương tự như trong index
+            if ($request->has('search') && $request->search) {
+                $query->where(function($q) use ($request) {
+                    $q->where('user_name', 'LIKE', "%$request->search%")
+                      ->orWhere('full_name', 'LIKE', "%$request->search%")
+                      ->orWhere('email', 'LIKE', "%$request->search%")
+                      ->orWhere('phone', 'LIKE', "%$request->search%");
+                });
+            }
+            
+            $users = $query->latest()->get();
+            
+            switch ($type) {
+                case 'excel':
+                    return Excel::download(new UsersExport($users), 'users.xlsx');
+                    
+                case 'pdf':
+                    $pdf = Pdf::loadView('admin.exports.users', compact('users'));
+                    return $pdf->download('users.pdf');
+                    
+                case 'csv':
+                    return Excel::download(new UsersExport($users), 'users.csv', \Maatwebsite\Excel\Excel::CSV);
+                    
+                case 'json':
+                    return $this->exportJson($users, 'users.json');
+                    
+                default:
+                    return redirect()->back()->with('error', 'Định dạng xuất không hợp lệ');
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Lỗi xuất dữ liệu: ' . $e->getMessage());
+        }
+    }
+
+    private function exportJson($users, $filename)
+    {
+        $data = $users->map(function($user) {
+            return [
+                'id' => $user->id,
+                'user_name' => $user->user_name,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role->name,
+                'status' => $user->active ? 'Active' : 'Inactive',
+                'balance' => $user->balance,
+                'created_at' => $user->created_at->format('d/m/Y H:i:s'),
+                'updated_at' => $user->updated_at->format('d/m/Y H:i:s')
+            ];
+        });
+        
+        return response()->json($data, 200, [
+            'Content-Type' => 'application/json',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"'
+        ], JSON_PRETTY_PRINT);
     }
 }

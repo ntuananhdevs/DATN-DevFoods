@@ -1,8 +1,8 @@
 <?php
 
 namespace Database\Seeders;
-use Illuminate\Database\Seeder;
 
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,7 +17,12 @@ class DatabaseSeeder extends Seeder
         // Gọi UserSeeder để tạo users
         $this->call(UserSeeder::class);
 
+        // Gọi CategorySeeder và ProductSeeder
         $this->call(CategorySeeder::class);
         $this->call(ProductSeeder::class);
+        
+        // Gọi DriverApplicationSeeder và DriverSeeder
+        $this->call(DriverApplicationSeeder::class);
+        $this->call(DriverSeeder::class);
     }
 }

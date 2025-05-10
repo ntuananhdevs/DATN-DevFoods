@@ -34,22 +34,53 @@ class RoleController extends Controller
         }
     }
 
+    /**
+     * Show the form for creating a new role.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function create()
+    {
+        return view('admin.roles.create');
+    }
+
     public function store(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'permissions' => 'required|json',
+                'permissions' => 'required|array', // Bắt buộc nhập trường quyền
+                'permissions.*' => 'string|in:create,edit,view,delete', // Xác thực giá trị quyền
             ]);
 
             if ($validator->fails()) {
-                return back()->with('error', $validator->errors()->first());
+                return back()->withErrors($validator)->withInput();
             }
 
-            Role::create($request->only('name', 'permissions'));
-            return back()->with('success', 'Tạo role thành công.');
+            Role::create([
+                'name' => $request->name,
+                'permissions' => $request->permissions,
+            ]);
+
+            return redirect()->route('admin.roles.index')->with('success', 'Tạo role thành công.');
         } catch (\Exception $e) {
             return back()->with('error', 'Không thể tạo role: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show the form for editing the specified role.
+     *
+     * @param int $id
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function edit($id)
+    {
+        try {
+            $role = Role::findOrFail($id);
+            return view('admin.roles.edit', compact('role'));
+        } catch (\Exception $e) {
+            return back()->with('error', 'Không tìm thấy vai trò.');
         }
     }
 
@@ -60,15 +91,20 @@ class RoleController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'permissions' => 'required|json',
+                'permissions' => 'required|array', // Bắt buộc nhập trường quyền
+                'permissions.*' => 'string|in:create,edit,view,delete', // Xác thực giá trị quyền
             ]);
 
             if ($validator->fails()) {
-                return back()->with('error', $validator->errors()->first());
+                return back()->withErrors($validator)->withInput();
             }
 
-            $role->update($request->only('name', 'permissions'));
-            return back()->with('success', 'Cập nhật role thành công.');
+            $role->update([
+                'name' => $request->name,
+                'permissions' => $request->permissions,
+            ]);
+
+            return redirect()->route('admin.roles.index')->with('success', 'Cập nhật role thành công.');
         } catch (\Exception $e) {
             return back()->with('error', 'Lỗi khi cập nhật role: ' . $e->getMessage());
         }
