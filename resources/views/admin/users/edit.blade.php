@@ -138,6 +138,7 @@
                                 <option value="0" {{ !old('active', $user->active) ? 'selected' : '' }}>Inactive</option>
                             </select>
                         </div>
+                        <input type="hidden" name="role_id" value="{{ $user->role_id }}">
 
                      
                         <button type="submit" class="btn btn-primary">Update User</button>

@@ -106,7 +106,7 @@
                             <option value="0" {{ !old('active', true) ? 'selected' : '' }}>Inactive</option>
                         </select>
                     </div>
-                    
+                    <input type="hidden" name="role_id" value="{{ $user->role_id }}">
                 
                     <button type="submit" class="btn btn-primary">Create User</button>
                     <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Cancel</a>
