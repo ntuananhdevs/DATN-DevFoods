@@ -158,9 +158,13 @@
                                     <form action="{{ route('admin.categories.destroy', $category->id) }}" method="POST" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="data-table-action-btn delete data-table-tooltip"
-                                            data-tooltip="Xóa"
-                                            onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?')">
+                                        <button type="button" 
+                                            class="data-table-action-btn delete data-table-tooltip"
+                                            data-tooltip="Xóa" 
+                                            onclick="dtmodalConfirmDelete({
+                                                itemName: '{{ $category->name }}',
+                                                onConfirm: () => this.closest('form').submit()
+                                            })">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -214,27 +218,5 @@
     </div>
 </div>
 
-{{-- Modal flash message --}}
-@if (session('success') || session('error'))
-    <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header {{ session('success') ? 'bg-success' : 'bg-danger' }} text-white">
-                    <h5 class="modal-title">Thông báo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                </div>
-                <div class="modal-body">
-                    {{ session('success') ?? session('error') }}
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <script>
-        window.addEventListener('load', function () {
-            const modal = new bootstrap.Modal(document.getElementById('messageModal'));
-            modal.show();
-        });
-    </script>
-@endif
 @endsection
