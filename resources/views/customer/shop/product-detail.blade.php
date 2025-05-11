@@ -72,7 +72,7 @@
 @endsection
 
 @section('content')
-<div class="container">
+<div class="container-detail">
     <!-- Breadcrumb -->
     <div class="breadcrumb">
         <a href="/">Trang chủ</a>

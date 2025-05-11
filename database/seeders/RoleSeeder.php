@@ -2,23 +2,41 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Admin\Role;
+use App\Models\Role;
 
 class RoleSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        //
-        Role::insert([
-            ['name' => 'admin', 'permissions' => json_encode(['*'])],
-            ['name' => 'manager', 'permissions' => json_encode(['create', 'edit', 'view'])],
-            ['name' => 'staff', 'permissions' => json_encode(['view'])],
-            ['name' => 'customer', 'permissions' => json_encode(['view'])],
-        ]);
+        $roles = [
+            [
+                'name' => 'admin',
+                'permissions' => ['*'],
+            ],
+            [
+                'name' => 'manager',
+                'permissions' => ['create', 'edit', 'view'],
+            ],
+            [
+                'name' => 'staff',
+                'permissions' => ['view'],
+            ],
+            [
+                'name' => 'customer',
+                'permissions' => ['view'],
+            ],
+            [
+                'name' => 'driver',
+                'permissions' => ['view', 'driver_actions'],
+            ],
+        ];
+
+        foreach ($roles as $role) {
+            Role::firstOrCreate(
+                ['name' => $role['name']],
+                ['permissions' => $role['permissions']]
+            );
+        }
     }
 }

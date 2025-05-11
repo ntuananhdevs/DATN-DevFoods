@@ -18,5 +18,4 @@ class RoleAdmin
 
         return $next($request);
     }
-    
 }

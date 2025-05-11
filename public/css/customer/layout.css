@@ -111,22 +111,47 @@
 .main-nav {
     background-color: var(--jollibee-red);
     padding: 0.5rem;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1000;
     transition: all var(--transition-medium) ease;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Thêm padding-top cho body để tránh nội dung bị che khuất bởi header cố định */
+body {
+    padding-top: 70px;
+}
+
+/* Thêm class để thay đổi kiểu dáng khi cuộn */
+.main-nav.scrolled {
+    padding: 0.25rem;
+    background-color: rgba(237, 61, 87, 0.95);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Xóa đoạn này để logo không bị co lại khi cuộn */
+/* 
+.main-nav.scrolled .logo img {
+    width: 50px;
+    transition: width var(--transition-medium) ease;
+}
+*/
+
 .main-nav-content {
     display: flex;
-    justify-content: center; /* Center the content */
+    justify-content: center;
     align-items: center;
-    flex-wrap: wrap; /* Allow wrapping if needed */
+    flex-wrap: wrap;
 }
 
 .logo img {
     width: 60px;
     height: auto;
+    transition: all var(--transition-medium) ease;
 }
 
 .desktop-menu {

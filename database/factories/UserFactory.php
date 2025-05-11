@@ -1,12 +1,12 @@
 <?php
 
-namespace Database\Factories\Admin;
+namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Models\Admin\Role;
-use App\Models\Admin\User;
+use App\Models\Role;
+use App\Models\User;
 
 
 /**
