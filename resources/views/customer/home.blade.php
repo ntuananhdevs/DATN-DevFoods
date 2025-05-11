@@ -1,8 +1,8 @@
 @extends('layouts.customer.fullLayoutMaster')
 @section('content')
-    <!DOCTYPE html>
-    <html lang="en">
-
+<!DOCTYPE html>
+<html lang="en">
+    
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,18 @@
         <title>Document</title>
         <link rel="stylesheet" href="{{ asset('css/customer/home.css') }}">
     </head>
-
+    
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+    
+    @if (session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
     <body>
         <main>
             <!-- Hero Banner -->

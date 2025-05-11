@@ -15,14 +15,21 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
+use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
 
 Route::prefix('/')->group(function () {
-    Route::get('/', [HomeController::class, 'index']);
+    Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('shop/product', [CustomerProductController::class, 'index']);
     Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
     Route::get('cart', [CustomerCartController::class, 'index']);
     Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
+    Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
+    Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.submit');
+    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
+    Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.submit');
+    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 });
+
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
