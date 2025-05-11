@@ -80,6 +80,4 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
 });
-Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
-    Route::get('/search', [UserController::class, 'search'])->name('search');
-});
+
