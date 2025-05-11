@@ -236,6 +236,52 @@
     border-radius: 50%;
 }
 
+/* Notification Button */
+.notification-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--text-light);
+    background: none;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all var(--transition-fast) ease;
+    position: relative;
+}
+
+.notification-btn a {
+    color: var(--text-light);
+    text-decoration: none;
+}
+
+.cart-btn a {
+    color: var(--text-light);
+    text-decoration: none;
+}
+
+.notification-btn:hover {
+    background-color: var(--jollibee-dark-red);
+}
+
+.notification-count {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    background-color: var(--jollibee-yellow);
+    color: var(--jollibee-red);
+    font-size: 0.75rem;
+    font-weight: 700;
+    width: 1.25rem;
+    height: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
 .pickup-btn {
     background-color: var(--jollibee-yellow);
     color: var(--jollibee-red);

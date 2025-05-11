@@ -14,6 +14,7 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="{{ asset('css/customer/layout.css') }}">
+    @yield('styles')
 </head>
 <body>
 <!-- Scroll Progress Bar -->
@@ -22,33 +23,33 @@
 <!-- Header -->
 <header class="header">
     <!-- Top Navigation -->
-    <div class="top-nav">
-        <div class="container">
-            <div class="top-nav-content">
-                <div class="top-nav-links">
-                    <a href="#" class="top-nav-link">Về Jollibee</a>
-                    <a href="#" class="top-nav-link">Khuyến Mãi</a>
-                    <a href="#" class="top-nav-link">Cửa Hàng</a>
-                    <a href="#" class="top-nav-link">Tuyển Dụng</a>
-                </div>
-                <div class="top-nav-actions">
-                    <div class="language-selector">
-                        <button class="language-btn active">VN</button>
-                        <span>|</span>
-                        <button class="language-btn">EN</button>
-                    </div>
-                    <button class="location-btn">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>Chọn địa điểm</span>
-                    </button>
-                    <button class="account-btn">
-                        <i class="fas fa-user"></i>
-                        <span>Đăng ký / Đăng nhập</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+{{--    <div class="top-nav">--}}
+{{--        <div class="container">--}}
+{{--            <div class="top-nav-content">--}}
+{{--                <div class="top-nav-links">--}}
+{{--                    <a href="#" class="top-nav-link">Về Jollibee</a>--}}
+{{--                    <a href="#" class="top-nav-link">Khuyến Mãi</a>--}}
+{{--                    <a href="#" class="top-nav-link">Cửa Hàng</a>--}}
+{{--                    <a href="#" class="top-nav-link">Tuyển Dụng</a>--}}
+{{--                </div>--}}
+{{--                <div class="top-nav-actions">--}}
+{{--                    <div class="language-selector">--}}
+{{--                        <button class="language-btn active">VN</button>--}}
+{{--                        <span>|</span>--}}
+{{--                        <button class="language-btn">EN</button>--}}
+{{--                    </div>--}}
+{{--                    <button class="location-btn">--}}
+{{--                        <i class="fas fa-map-marker-alt"></i>--}}
+{{--                        <span>Chọn địa điểm</span>--}}
+{{--                    </button>--}}
+{{--                    <button class="account-btn">--}}
+{{--                        <i class="fas fa-user"></i>--}}
+{{--                        <span>Đăng ký / Đăng nhập</span>--}}
+{{--                    </button>--}}
+{{--                </div>--}}
+{{--            </div>--}}
+{{--        </div>--}}
+{{--    </div>--}}
 
     <!-- Main Navigation -->
     <div class="main-nav">
@@ -72,7 +73,7 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a href="#" class="dropdown-toggle">THỰC ĐƠN</a>
+                            <a href="{{ asset('shop/product') }}" class="dropdown-toggle">THỰC ĐƠN</a>
                             <ul class="dropdown-menu">
                                 <li><a href="#">Gà Giòn Vui Vẻ</a></li>
                                 <li><a href="#">Gà Sốt Cay</a></li>
@@ -92,12 +93,16 @@
                     <button class="search-btn">
                         <i class="fas fa-search"></i>
                     </button>
+                    <div class="notification-btn">
+                        <a href="#"><i class="fa-solid fa-bell"></i></a>
+                        <span class="notification-count">5</span>
+                    </div>
                     <div class="cart-btn">
-                        <i class="fas fa-shopping-bag"></i>
+                        <a href="{{ asset('cart') }}"><i class="fas fa-shopping-bag"></i></a>
                         <span class="cart-count">3</span>
                     </div>
-                    {{-- <button class="pickup-btn">PICK UP</button> --}}
-                    {{-- <div class="hotline">
+                    <!-- <button class="pickup-btn">PICK UP</button>
+                    <div class="hotline">
                         <i class="fas fa-phone"></i>
                         <div>
                             <span class="hotline-number">1900-1533</span>
@@ -106,7 +111,7 @@
                     </div>
                     <button class="mobile-menu-btn">
                         <i class="fas fa-bars"></i>
-                    </button> --}}
+                    </button> -->
                 </div>
             </div>
         </div>
@@ -198,7 +203,7 @@
     </div>
 </footer>
 
-
+@yield('scripts')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/Customer/main.js') }}"></script>
 </body>

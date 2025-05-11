@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Admin;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +15,7 @@ class Role extends Model
     ];
 
     protected $casts = [
-        'permissions' => 'array',
+        'permissions' => 'array', // Cast quyền thành mảng
     ];
 
     public function users()

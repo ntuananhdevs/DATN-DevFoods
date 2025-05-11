@@ -28,13 +28,13 @@
                             </div>
                         </div>
                         <div class="hero-image">
-                            <img src="images/hero-product.png" alt="Jollibee Featured Product">
-                            <div class="floating-image floating-image-1">
+                            <img src="{{ asset('images/banner/banner01.png') }}" alt="Jollibee Featured Product">
+                            {{-- <div class="floating-image floating-image-1">
                                 <img src="images/decoration-1.png" alt="Decoration">
                             </div>
                             <div class="floating-image floating-image-2">
                                 <img src="images/decoration-2.png" alt="Decoration">
-                            </div>
+                            </div> --}}
                         </div>
                     </div>
                 </div>
@@ -70,21 +70,21 @@
                 <div class="carousel-container">
                     <div class="carousel-slides">
                         <div class="carousel-slide active">
-                            <img src="images/promo-1.jpg" alt="Combo Gia Đình Vui Vẻ">
+                            <img src="{{ asset('images/banner/promo-1.png') }}" alt="Combo Gia Đình Vui Vẻ">
                             <div class="carousel-caption">
                                 <h2>Combo Gia Đình Vui Vẻ</h2>
                                 <p>Tiết kiệm đến 15% với combo dành cho gia đình</p>
                             </div>
                         </div>
                         <div class="carousel-slide">
-                            <img src="images/promo-2.jpg" alt="Mua 1 Tặng 1">
+                            <img src="{{ asset('images/banner/promo-2.png') }}" alt="Mua 1 Tặng 1">
                             <div class="carousel-caption">
                                 <h2>Mua 1 Tặng 1</h2>
                                 <p>Thứ 2 hàng tuần - Mua 1 gà giòn tặng 1 mỳ Ý</p>
                             </div>
                         </div>
                         <div class="carousel-slide">
-                            <img src="images/promo-3.jpg" alt="Sinh Nhật Vui Vẻ">
+                            <img src="{{ asset('images/banner/promo-3.png') }}" alt="Sinh Nhật Vui Vẻ">
                             <div class="carousel-caption">
                                 <h2>Sinh Nhật Vui Vẻ</h2>
                                 <p>Đặt tiệc sinh nhật tại Jollibee - Nhận quà hấp dẫn</p>
@@ -108,8 +108,10 @@
             <!-- Category Showcase -->
             <section class="category-showcase">
                 <div class="container">
-                    <h2 class="section-title">DANH MỤC MÓN ĂN</h2>
-                    <p class="section-subtitle">KHÁM PHÁ CÁC DANH MỤC MÓN ĂN PHONG PHÚ CỦA JOLLIBEE</p>
+                    <div class="section-title">
+                        <h2>DANH MỤC MÓN ĂN</h2>
+                        <p>KHÁM PHÁ CÁC DANH MỤC MÓN ĂN PHONG PHÚ CỦA JOLLIBEE</p>
+                    </div>
 
                     <div class="category-grid">
                         @foreach ($categories->take(4) as $category)
@@ -130,11 +132,12 @@
                 </div>
             </section>
 
-            <!-- Featured Products -->
             <section class="featured-products">
                 <div class="container">
-                    <h2 class="section-title">SẢN PHẨM NỔI BẬT</h2>
-                    <p class="section-subtitle">KHÁM PHÁ CÁC MÓN ĂN ĐƯỢC YÊU THÍCH NHẤT TẠI JOLLIBEE</p>
+                    <div class="section-title">
+                        <h2>SẢN PHẨM NỔI BẬT</h2>
+                        <p>KHÁM PHÁ CÁC MÓN ĂN ĐƯỢC YÊU THÍCH NHẤT TẠI JOLLIBEE</p>
+                    </div>
 
                     <div class="products-grid">
                         @foreach ($products->take(4) as $product)
@@ -160,7 +163,8 @@
                                     <p class="product-description">{{ $product->description }}</p>
                                     <div class="product-price-actions">
                                         <div class="product-price">
-                                            <span class="current-price">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+                                            <span
+                                                class="current-price">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
                                         </div>
                                         <button class="add-to-cart-btn">
                                             <i class="fas fa-shopping-bag"></i>
@@ -240,7 +244,7 @@
                             </div>
                         </div>
                         <div class="order-image">
-                            <img src="images/delivery-order.jpg" alt="Jollibee Delivery">
+                            <img src="{{ asset('images/banner/appstore.png') }}" alt="Jollibee Delivery">
                         </div>
                     </div>
                 </div>
@@ -257,7 +261,7 @@
             </section>
 
             <!-- Parallax Section -->
-            <section class="parallax-section">
+            {{-- <section class="parallax-section">
                 <div class="parallax-background"></div>
                 <div class="container">
                     <div class="parallax-content">
@@ -267,11 +271,11 @@
                         <button class="btn btn-primary">ĐẶT HÀNG NGAY</button>
                     </div>
                 </div>
-            </section>
+            </section> --}}
 
-            <!-- Delivery Section -->
+
             <section class="delivery-section">
-                <!-- Delivery content will be here -->
+
             </section>
 
             <!-- Kids Club Banner -->
@@ -287,42 +291,18 @@
                                 <button class="btn btn-outline">TÌM HIỂU THÊM</button>
                             </div>
                         </div>
-                        <div class="banner-image">
-                            <img src="images/kids-club.png" alt="Jollibee Kids Club">
-                            <div class="rotating-image">
-                                <img src="images/star.png" alt="Jollibee Star">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="floating-decorations">
-                        <div class="floating-image floating-image-1">
-                            <img src="images/decoration-4.png" alt="Decoration">
-                        </div>
-                        <div class="floating-image floating-image-2">
-                            <img src="images/decoration-5.png" alt="Decoration">
-                        </div>
-                        <div class="floating-image floating-image-3">
-                            <img src="images/decoration-6.png" alt="Decoration">
-                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Testimonials Section -->
-            <section class="testimonials-section">
-                <!-- Testimonials content will be here -->
-            </section>
-
-            <!-- News Section -->
-            <section class="news-section">
-                <!-- News content will be here -->
-            </section>
 
             <!-- Services Section -->
             <section class="services-section">
                 <div class="container">
-                    <h2 class="section-title">DỊCH VỤ</h2>
-                    <p class="section-subtitle">TẬN HƯỞNG NHỮNG KHOẢNH KHẮC TRỌN VẸN CÙNG JOLLIBEE</p>
+                    <div class="section-title">
+                        <h2>DỊCH VỤ</h2>
+                        <p>TẬN HƯỞNG NHỮNG KHOẢNH KHẮC TRỌN VẸN CÙNG JOLLIBEE</p>
+                    </div>
 
                     <div class="services-grid">
                         <div class="service-item">
@@ -364,7 +344,7 @@
             </section>
         </main>
 
-        <!-- Product Detail Modal -->
+
         <div class="product-modal" id="productModal">
             <div class="modal-content">
                 <button class="modal-close">
@@ -468,6 +448,34 @@
             </div>
         </div>
     </body>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Lấy tất cả các tab
+            const tabs = document.querySelectorAll('.order-tab');
+
+            // Thêm sự kiện click cho mỗi tab
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Xóa class active từ tất cả các tab
+                    tabs.forEach(t => t.classList.remove('active'));
+
+                    // Thêm class active cho tab được click
+                    this.classList.add('active');
+
+                    // Lấy id của tab content tương ứng
+                    const tabId = this.getAttribute('data-tab');
+
+                    // Ẩn tất cả các tab content
+                    document.querySelectorAll('.order-tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+
+                    // Hiển thị tab content tương ứng
+                    document.getElementById(tabId + '-content').classList.add('active');
+                });
+            });
+        });
+    </script>
 
     </html>
 @endsection

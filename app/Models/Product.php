@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Models\Admin;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Database\Factories\Admin\ProductFactory;
+use Database\Factories\ProductFactory;
 
 class Product extends Model
 {
@@ -36,10 +36,10 @@ class Product extends Model
     /**
      * Lấy các biến thể của sản phẩm
      */
-    // public function variants()
-    // {
-    //     return $this->hasMany(ProductVariant::class);
-    // }
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
 
     // /**
     //  * Lấy các đánh giá của sản phẩm
