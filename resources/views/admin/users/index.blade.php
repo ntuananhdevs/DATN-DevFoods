@@ -10,7 +10,7 @@
             </div>
             <h1 class="data-table-title">Quản lý người dùng</h1>
         </div>
-        
+
         <div class="data-table-header-actions">
             <div class="header-actions">
                 <div class="btn-group">
@@ -18,13 +18,13 @@
                         <i class="fas fa-download"></i> Xuất
                     </button>
                     <div class="dropdown-menu">
-                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
+                        <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
                             <i class="fas fa-file-excel"></i> Xuất Excel
                         </a>
                         <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">
-                        <i class="fas fa-file-pdf"></i>PDF</a>
+                            <i class="fas fa-file-pdf"></i>PDF</a>
                         <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">
-                        <i class="fas fa-file-csv"></i> CSV</a>
+                            <i class="fas fa-file-csv"></i> CSV</a>
                     </div>
                 </div>
                 <a href="{{ route('admin.users.trash') }}" class="data-table-btn data-table-btn-danger ml-2">
@@ -61,7 +61,7 @@
                 <button class="data-table-btn data-table-btn-outline">
                     <i class="fas fa-sliders"></i> Cột
                 </button>
-               
+
             </div>
         </div>
 
@@ -83,7 +83,7 @@
                         <th data-sort="phone">
                             Điện thoại <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
-                     
+
                         <th>Trạng thái</th>
                         <th>Thao tác</th>
                     </tr>
@@ -93,7 +93,7 @@
                     <tr>
                         <td>
                             <div class="data-table-id">
-                                <span class="data-table-id-icon"><i class="fas fa-user"></i></span>
+
                                 {{ $user->id }}
                             </div>
                         </td>
@@ -108,11 +108,11 @@
 
                         <td>
                             <div class="data-table-user-name">{{ $user->full_name }}</div>
-                          
+
                         </td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->phone ?? 'N/A' }}</td>
-                   
+
                         <td>
                             @if($user->active)
                             <span class="data-table-status data-table-status-success">
@@ -174,26 +174,55 @@
                 đến <span id="endRecord">{{ min($users->currentPage() * $users->perPage(), $users->total()) }}</span>
                 của <span id="totalRecords">{{ $users->total() }}</span> mục
             </div>
+            @if($users->lastPage() > 1)
             <div class="data-table-pagination-controls">
                 @if(!$users->onFirstPage())
-                <a href="{{ $users->previousPageUrl() }}&search={{ request('search') }}" class="data-table-pagination-btn" id="prevBtn">
+                <a href="{{ $users->previousPageUrl() }}&search={{ request('search') }}"
+                    class="data-table-pagination-btn"
+                    id="prevBtn">
                     <i class="fas fa-chevron-left"></i> Trước
                 </a>
                 @endif
 
-                @for ($i = 1; $i <= $users->lastPage(); $i++)
+                @php
+                $start = max(1, $users->currentPage() - 2);
+                $end = min($users->lastPage(), $users->currentPage() + 2);
+
+                if ($start > 1) {
+                echo '<a href="'.$users->url(1).'&search='.request('search').'"
+                    class="data-table-pagination-btn">1</a>';
+                if ($start > 2) {
+                echo '<span class="data-table-pagination-dots">...</span>';
+                }
+                }
+                @endphp
+
+                @for ($i = $start; $i <= $end; $i++)
                     <a href="{{ $users->url($i) }}&search={{ request('search') }}"
-                        class="data-table-pagination-btn {{ $users->currentPage() == $i ? 'active' : '' }}">
-                        {{ $i }}
+                    class="data-table-pagination-btn {{ $users->currentPage() == $i ? 'active' : '' }}">
+                    {{ $i }}
                     </a>
                     @endfor
 
-                    @if($users->hasMorePages())
-                    <a href="{{ $users->nextPageUrl() }}&search={{ request('search') }}" class="data-table-pagination-btn" id="nextBtn">
-                        Tiếp <i class="fas fa-chevron-right"></i>
-                    </a>
-                    @endif
+                    @php
+                    if ($end < $users->lastPage()) {
+                        if ($end < $users->lastPage() - 1) {
+                            echo '<span class="data-table-pagination-dots">...</span>';
+                            }
+                            echo '<a href="'.$users->url($users->lastPage()).'&search='.request('search').'"
+                                class="data-table-pagination-btn">'.$users->lastPage().'</a>';
+                            }
+                            @endphp
+
+                            @if($users->hasMorePages())
+                            <a href="{{ $users->nextPageUrl() }}&search={{ request('search') }}"
+                                class="data-table-pagination-btn"
+                                id="nextBtn">
+                                Tiếp <i class="fas fa-chevron-right"></i>
+                            </a>
+                            @endif
             </div>
+            @endif
         </div>
     </div>
 </div>
