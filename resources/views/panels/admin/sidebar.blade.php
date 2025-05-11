@@ -354,7 +354,11 @@
         }
 
         .sidebar.open {
-            transform: translateX(0);
+            transform: translateX(0) !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            z-index: 1001 !important;
         }
 
         .app-content {
@@ -386,8 +390,15 @@
     document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.getElementById('sidebar');
         const appContent = document.querySelector('.app-content');
-        const menuToggle = document.querySelector('.nav-menu-main.menu-toggle');
+        // Chọn tất cả các nút toggle có thể có
+        const menuToggleBtn = document.querySelector('.menu-toggle');
+        const navMenuToggleBtn = document.querySelector('.nav-menu-main.menu-toggle, .nav-link.nav-menu-main.menu-toggle');
         const sidebarToggle = document.querySelector('.sidebar-toggle');
+        
+        // Thêm console.log để debug các nút toggle
+        console.log('Menu Toggle Button:', menuToggleBtn);
+        console.log('Nav Menu Toggle Button:', navMenuToggleBtn);
+        console.log('Sidebar Toggle:', sidebarToggle);
         
         // Hàm điều chỉnh chiều rộng của content và bảng
         function adjustContentAndTables(sidebarOpen) {
@@ -444,43 +455,59 @@
             document.body.appendChild(toggle);
             
             toggle.addEventListener('click', function() {
-                sidebar.classList.toggle('open');
-                adjustContentAndTables(sidebar.classList.contains('open'));
-            });
-        }
-        
-        // Xử lý khi click vào nút toggle menu (trong sidebar hoặc navbar)
-        if (menuToggle) {
-            menuToggle.addEventListener('click', function(e) {
-                e.preventDefault();
+                console.log('Sidebar toggle button clicked');
                 sidebar.classList.toggle('open');
                 document.body.classList.toggle('sidebar-open');
-                
-                // Điều chỉnh chiều rộng của content và bảng
+                adjustContentAndTables(sidebar.classList.contains('open'));
+            });
+        } else if (sidebarToggle) {
+            // Đảm bảo sidebarToggle có event listener nếu đã tồn tại
+            sidebarToggle.addEventListener('click', function() {
+                console.log('Existing sidebar toggle clicked');
+                sidebar.classList.toggle('open');
+                document.body.classList.toggle('sidebar-open');
                 adjustContentAndTables(sidebar.classList.contains('open'));
             });
         }
         
-        // Xử lý khi click vào nút toggle menu trong navbar
-        const navbarMenuToggle = document.querySelector('.nav-link.nav-menu-main.menu-toggle');
-        if (navbarMenuToggle) {
-            navbarMenuToggle.addEventListener('click', function(e) {
-                e.preventDefault();
-                // Đảm bảo sidebar luôn ẩn khi nút toggle trong navbar được nhấp
-                sidebar.classList.remove('open');
-                document.body.classList.remove('sidebar-open');
-                
-                // Điều chỉnh chiều rộng của content và bảng
-                adjustContentAndTables(false);
+        // Tạo một hàm để đảm bảo tất cả các nút toggle đều có event listener
+        function ensureToggleButtonsWork() {
+            // Sử dụng selector rộng hơn để bắt tất cả các nút toggle có thể có
+            const allToggleButtons = document.querySelectorAll('.menu-toggle, .nav-menu-main.menu-toggle, .nav-link.nav-menu-main.menu-toggle, .sidebar-toggle, .mobile-menu .nav-link, .nav-item.mobile-menu a');
+            
+            allToggleButtons.forEach(btn => {
+                // Thêm một thuộc tính để đánh dấu đã thêm event listener
+                if (!btn.hasAttribute('data-toggle-initialized')) {
+                    btn.setAttribute('data-toggle-initialized', 'true');
+                    
+                    // Thêm event listener mới
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Toggle button clicked:', this);
+                        sidebar.classList.toggle('open');
+                        document.body.classList.toggle('sidebar-open');
+                        adjustContentAndTables(sidebar.classList.contains('open'));
+                    });
+                }
             });
         }
+        
+        // Gọi hàm để đảm bảo tất cả các nút toggle đều hoạt động
+        ensureToggleButtonsWork();
+        
+        // Không cần thêm event listener riêng cho các nút toggle này nữa
+        // vì chúng đã được xử lý trong hàm ensureToggleButtonsWork
+        // Giữ lại comment để dễ hiểu code
+        
+        // Không cần thêm event listener riêng cho các nút toggle này nữa
+        // vì chúng đã được xử lý trong hàm ensureToggleButtonsWork
         
         // Xử lý khi click bên ngoài sidebar để đóng sidebar trên thiết bị di động
         document.addEventListener('click', function(e) {
             if (window.innerWidth <= 768 && 
                 sidebar.classList.contains('open') && 
                 !sidebar.contains(e.target) && 
-                (menuToggle ? !menuToggle.contains(e.target) : true) &&
+                (menuToggleBtn ? !menuToggleBtn.contains(e.target) : true) &&
                 (sidebarToggle ? !sidebarToggle.contains(e.target) : true)) {
                 sidebar.classList.remove('open');
                 document.body.classList.remove('sidebar-open');
@@ -505,7 +532,25 @@
                 sidebar.classList.add('open');
                 adjustContentAndTables(true);
             }
+            
+            // Đảm bảo các nút toggle vẫn hoạt động sau khi resize
+            setTimeout(ensureToggleButtonsWork, 300);
         });
+        
+        // Thêm một MutationObserver để theo dõi các thay đổi trong DOM
+        // Điều này giúp đảm bảo các nút toggle được thêm vào sau khi trang tải cũng hoạt động
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.addedNodes.length) {
+                    // Nếu có node mới được thêm vào, kiểm tra xem có nút toggle nào không
+                    setTimeout(ensureToggleButtonsWork, 300);
+                }
+            });
+        });
+        
+        // Bắt đầu theo dõi thay đổi trong body
+        observer.observe(document.body, { childList: true, subtree: true });
+        
         
         // Toggle submenu
         document.querySelectorAll('.sidebar-menu-link').forEach(link => {
@@ -556,7 +601,7 @@
                     e.clientY < sidebarRect.top || 
                     e.clientY > sidebarRect.bottom) {
                     // Click nằm ngoài sidebar
-                    if ((!menuToggle || !menuToggle.contains(e.target)) && 
+                    if ((!menuToggleBtn || !menuToggleBtn.contains(e.target)) && 
                         (!sidebarToggle || !sidebarToggle.contains(e.target))) {
                         sidebar.classList.remove('open');
                         document.body.classList.remove('sidebar-open');
