@@ -17,10 +17,8 @@ class RoleController extends Controller
     public function index(Request $request)
     {
         try {
-            // Lấy từ input tìm kiếm
             $keyword = $request->input('keyword');
 
-            // Tạo truy vấn tìm kiếm
             $roles = Role::when($keyword, function ($query, $keyword) {
                 return $query->where(function ($q) use ($keyword) {
                     $q->where('name', 'like', '%' . $keyword . '%')
@@ -30,25 +28,15 @@ class RoleController extends Controller
 
             return view('admin.roles.index', compact('roles'));
         } catch (\Exception $e) {
-            return back()->with('error', 'Lỗi khi lấy danh sách roles.');
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Không thể tải danh sách roles.'
+            ]);
+            return redirect()->route('admin.roles.index');
         }
     }
 
-    public function show($id)
-    {
-        try {
-            $role = Role::findOrFail($id);
-            return view('admin.roles.show', compact('role'));
-        } catch (\Exception $e) {
-            return back()->with('error', 'Không tìm thấy vai trò.');
-        }
-    }
-
-    /**
-     * Show the form for creating a new role.
-     *
-     * @return \Illuminate\View\View
-     */
     public function create()
     {
         return view('admin.roles.create');
@@ -59,9 +47,22 @@ class RoleController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'permissions' => 'required|array', // Bắt buộc nhập trường quyền
-                'permissions.*' => 'string|in:create,edit,view,delete', // Xác thực giá trị quyền
+                'permissions' => 'required|array',
+                'permissions.*' => 'string|in:create,edit,view,delete',
+            ], [
+                'name.required' => 'Tên là bắt buộc.',
+                'name.string' => 'Tên phải là một chuỗi ký tự.',
+                'name.max' => 'Tên không được vượt quá 255 ký tự.',
+                'permissions.required' => 'Phân quyền là bắt buộc.',
+                'permissions.array' => 'Phân quyền phải là một mảng.',
+                'permissions.*.string' => 'Phân quyền phải là một chuỗi ký tự.',
+                'permissions.*.in' => 'Phân quyền phải có giá trị trong các giá trị: create, edit, view, delete.',
             ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()->withErrors($validator)->withInput();
+            }
+
 
             if ($validator->fails()) {
                 return back()->withErrors($validator)->withInput();
@@ -72,25 +73,34 @@ class RoleController extends Controller
                 'permissions' => $request->permissions,
             ]);
 
-            return redirect()->route('admin.roles.index')->with('success', 'Tạo role thành công.');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Đã tạo vai trò mới thành công.'
+            ]);
+            return redirect()->route('admin.roles.index');
         } catch (\Exception $e) {
-            return back()->with('error', 'Không thể tạo role: ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi khi tạo',
+                'message' => 'Đã xảy ra lỗi khi tạo vai trò.'
+            ]);
+            return redirect()->route('admin.roles.index');
         }
     }
 
-    /**
-     * Show the form for editing the specified role.
-     *
-     * @param int $id
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
-     */
     public function edit($id)
     {
         try {
             $role = Role::findOrFail($id);
             return view('admin.roles.edit', compact('role'));
         } catch (\Exception $e) {
-            return back()->with('error', 'Không tìm thấy vai trò.');
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Không tìm thấy',
+                'message' => 'Vai trò không tồn tại.'
+            ]);
+            return redirect()->route('admin.roles.index');
         }
     }
 
@@ -101,9 +111,22 @@ class RoleController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'permissions' => 'required|array', // Bắt buộc nhập trường quyền
-                'permissions.*' => 'string|in:create,edit,view,delete', // Xác thực giá trị quyền
+                'permissions' => 'required|array',
+                'permissions.*' => 'string|in:create,edit,view,delete',
+            ], [
+                'name.required' => 'Tên là bắt buộc.',
+                'name.string' => 'Tên phải là một chuỗi ký tự.',
+                'name.max' => 'Tên không được vượt quá 255 ký tự.',
+                'permissions.required' => 'Phân quyền là bắt buộc.',
+                'permissions.array' => 'Phân quyền phải là một mảng.',
+                'permissions.*.string' => 'Phân quyền phải là một chuỗi ký tự.',
+                'permissions.*.in' => 'Phân quyền phải có giá trị trong các giá trị: create, edit, view, delete.',
             ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()->withErrors($validator)->withInput();
+            }
+
 
             if ($validator->fails()) {
                 return back()->withErrors($validator)->withInput();
@@ -114,9 +137,19 @@ class RoleController extends Controller
                 'permissions' => $request->permissions,
             ]);
 
-            return redirect()->route('admin.roles.index')->with('success', 'Cập nhật role thành công.');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Cập nhật thành công',
+                'message' => 'Vai trò đã được cập nhật.'
+            ]);
+            return redirect()->route('admin.roles.index');
         } catch (\Exception $e) {
-            return back()->with('error', 'Lỗi khi cập nhật role: ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi khi cập nhật',
+                'message' => 'Không thể cập nhật vai trò.'
+            ]);
+            return redirect()->route('admin.roles.index');
         }
     }
 
@@ -125,9 +158,35 @@ class RoleController extends Controller
         try {
             $role = Role::findOrFail($id);
             $role->delete();
-            return back()->with('success', 'Xóa role thành công.');
+
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Xóa thành công',
+                'message' => 'Vai trò đã được xóa.'
+            ]);
+            return redirect()->route('admin.roles.index');
         } catch (\Exception $e) {
-            return back()->with('error', 'Lỗi khi xóa role.');
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi khi xóa',
+                'message' => 'Không thể xóa vai trò.'
+            ]);
+            return redirect()->route('admin.roles.index');
+        }
+    }
+
+    public function show($id)
+    {
+        try {
+            $role = Role::findOrFail($id);
+            return view('admin.roles.show', compact('role'));
+        } catch (\Exception $e) {
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Không tìm thấy',
+                'message' => 'Vai trò không tồn tại.'
+            ]);
+            return redirect()->route('admin.roles.index');
         }
     }
 }
