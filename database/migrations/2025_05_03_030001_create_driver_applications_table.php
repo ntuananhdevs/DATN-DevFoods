@@ -38,7 +38,7 @@ return new class extends Migration
             $table->string('bank_account_number', 50);
             $table->string('bank_account_name', 100);
             $table->string('emergency_contact_name', 100);
-            $table->string('emergency_contact_phone', 15);
+            $table->string('emergency_contact_phone', 20);
             $table->string('emergency_contact_relationship', 50);
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->text('admin_notes')->nullable();

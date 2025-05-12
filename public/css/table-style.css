@@ -188,7 +188,7 @@
     background-color: var(--dt-lightest-gray);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 1;
 }
 
 .data-table th {
@@ -346,6 +346,8 @@
 .data-table-action-buttons {
     display: flex;
     gap: 8px;
+    position: relative;
+    z-index: 5;
 }
 
 .data-table-action-btn {

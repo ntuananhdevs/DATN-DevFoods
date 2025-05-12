@@ -1,21 +1,28 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
+//Admin
 use App\Http\Controllers\Customer\HomeController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ProductController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
+
+//Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Admin\DriverController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
+use App\Http\Controllers\Customer\CartController as CustomerCartController;
 
 Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index']);
     Route::get('shop/product', [CustomerProductController::class, 'index']);
-    Route::get('shop/product/product-detail', [CustomerProductController::class, 'show']);
+    Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
+    Route::get('cart', [CustomerCartController::class, 'index']);
+    Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
 });
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -91,6 +98,3 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
-Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
-    Route::get('/search', [UserController::class, 'search'])->name('search');
-});

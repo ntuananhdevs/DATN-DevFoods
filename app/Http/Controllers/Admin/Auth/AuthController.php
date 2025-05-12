@@ -19,7 +19,7 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email:dns'],
             'password' => ['required'],
         ], [
             'email.required' => 'Vui lòng nhập địa chỉ email.',
