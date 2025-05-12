@@ -97,10 +97,3 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
 });
-
-<<<<<<<<< Temporary merge branch 1
-=========
-Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
-    Route::get('/search', [UserController::class, 'search'])->name('search');
-});
->>>>>>>>> Temporary merge branch 2
