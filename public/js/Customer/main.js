@@ -32,11 +32,13 @@ document.addEventListener("DOMContentLoaded", () => {
   
     window.addEventListener("scroll", () => {
       if (window.scrollY > 50) {
-        mainNav.style.padding = "0.5rem 0"
-        if (logo) logo.style.height = "3rem"
+        mainNav.classList.add("scrolled")
+        // Xóa dòng thay đổi chiều cao logo
+        // if (logo) logo.style.height = "3rem"
       } else {
-        mainNav.style.padding = "0.75rem 0"
-        if (logo) logo.style.height = "3.5rem"
+        mainNav.classList.remove("scrolled")
+        // Xóa dòng thay đổi chiều cao logo
+        // if (logo) logo.style.height = "3.5rem"
       }
     })
   

@@ -36,10 +36,10 @@ class Product extends Model
     /**
      * Lấy các biến thể của sản phẩm
      */
-    // public function variants()
-    // {
-    //     return $this->hasMany(ProductVariant::class);
-    // }
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
 
     // /**
     //  * Lấy các đánh giá của sản phẩm
