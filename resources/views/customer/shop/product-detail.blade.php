@@ -1,545 +1,243 @@
+
 @extends('layouts.customer.fullLayoutMaster')
 
-@section('title', 'Poly Crispy Wings')
+@section('title', $product->name)
 
-@section('content')
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/product-detail.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 <link rel="stylesheet" href="{{ asset('fonts/feather/style.min.css') }}">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@6.8.4/swiper-bundle.min.css">
-<link rel="stylesheet" href="{{ asset('css/pages/app-ecommerce-details.css') }}">
-<style>
-    /* Thiết lập chung */
-    body {
-        background-color: #f8f8f8;
-        font-family: 'Montserrat', sans-serif;
-        color: #626262;
-        margin: 0;
-        padding: 0;
-    }
+@endsection
 
-    .container-fluid {
-        padding: 2rem;
-    }
+@section('scripts')
+<script src="{{ asset('js/script/product-detail.js') }}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@6.8.4/swiper-bundle.min.js"></script>
+<script>
+    // Initialize Swiper for thumbnail gallery
+    var thumbnailSwiper = new Swiper('.thumbnail-swiper', {
+        slidesPerView: 4,
+        spaceBetween: 10,
+        navigation: {
+            nextEl: '.swiper-button-next',
+            prevEl: '.swiper-button-prev',
+        },
+    });
 
-    /* Breadcrumb */
-    .breadcrumb {
-        background-color: transparent;
-        padding: 0;
-        margin-bottom: 1.5rem;
-    }
+    // Thumbnail click to change main image
+    document.querySelectorAll('.thumbnail').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+            document.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+            document.getElementById('main-product-image').src = thumb.dataset.img;
+        });
+    });
 
-    .breadcrumb-item a {
-        color: #7367f0;
-        text-decoration: none;
-    }
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
 
-    .breadcrumb-item.active {
-        color: #626262;
-    }
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab).classList.add('active');
+        });
+    });
 
-    /* Product Details */
-    .card {
-        background-color: #fff;
-        border-radius: 5px;
-        box-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.1);
-        margin-bottom: 2rem;
-    }
+    // Quantity selector
+    document.querySelector('.minus-btn').addEventListener('click', () => {
+        let input = document.querySelector('.quantity-input');
+        let value = parseInt(input.value);
+        if (value > 1) input.value = value - 1;
+    });
 
-    .product-img {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-    }
+    document.querySelector('.plus-btn').addEventListener('click', () => {
+        let input = document.querySelector('.quantity-input');
+        let value = parseInt(input.value);
+        if (value < 99) input.value = value + 1;
+    });
 
-    .product-img img {
-        max-width: 100%;
-        max-height: 400px;
-        object-fit: contain;
-    }
+    // Option selection
+    document.querySelectorAll('.option-item').forEach(item => {
+        item.addEventListener('click', () => {
+            item.parentElement.querySelectorAll('.option-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+        });
+    });
+</script>
+<script src="js/script/product-detail.js"></script>
+@endsection
 
-    .product-title {
-        font-size: 1.8rem;
-        font-weight: 600;
-        color: #2c2c2c;
-        margin-bottom: 0.5rem;
-    }
+@section('content')
+<div class="container-detail">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <a href="/">Trang chủ</a>
+        <span class="separator">/</span>
+        <a href="/shop">Cửa hàng</a>
+        <span class="separator">/</span>
+        <span class="current">{{ $product->category->name }}</span>
+        <span class="separator">/</span>
+        <span class="current">{{ $product->name }}</span>
+    </div>
 
-    .product-ratings {
-        margin-bottom: 1rem;
-    }
-
-    .product-ratings i {
-        color: #ffc107;
-        font-size: 1.2rem;
-    }
-
-    .product-price {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #7367f0;
-        margin-bottom: 1rem;
-    }
-
-    .product-price .old-price {
-        text-decoration: line-through;
-        color: #b8c2cc;
-        font-size: 1.2rem;
-        margin-left: 0.5rem;
-    }
-
-    .product-description {
-        margin-bottom: 1.5rem;
-    }
-
-    .product-features {
-        margin-bottom: 1.5rem;
-    }
-
-    .product-features ul {
-        padding-left: 1.5rem;
-    }
-
-    .product-features li {
-        margin-bottom: 0.5rem;
-    }
-
-    .item-quantity {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .input-group {
-        width: 150px;
-        margin-right: 1rem;
-    }
-
-    .btn-cart {
-        background-color: #7367f0;
-        color: white;
-        border: none;
-        padding: 0.8rem 2rem;
-        border-radius: 5px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .btn-cart:hover {
-        background-color: #5e50ee;
-    }
-
-    .btn-wishlist {
-        background-color: #f6f6f6;
-        color: #2c2c2c;
-        border: none;
-        padding: 0.8rem 1.5rem;
-        border-radius: 5px;
-        font-weight: 600;
-        margin-left: 1rem;
-        transition: all 0.3s ease;
-    }
-
-    .btn-wishlist:hover {
-        background-color: #eeeeee;
-    }
-
-    .btn-wishlist.active {
-        color: #ea5455;
-    }
-
-    .product-color-options {
-        margin-bottom: 1.5rem;
-    }
-
-    .product-color-options .color-option {
-        display: inline-block;
-        margin-right: 0.5rem;
-        cursor: pointer;
-    }
-
-    .product-color-options .color-option .filloption {
-        height: 30px;
-        width: 30px;
-        border-radius: 50%;
-        display: inline-block;
-    }
-
-    .product-color-options .selected {
-        border: 2px solid #7367f0;
-        border-radius: 50%;
-        padding: 3px;
-    }
-
-    .product-color-options .b-primary .filloption {
-        background-color: #7367f0;
-    }
-
-    .product-color-options .b-success .filloption {
-        background-color: #28c76f;
-    }
-
-    .product-color-options .b-danger .filloption {
-        background-color: #ea5455;
-    }
-
-    .product-color-options .b-warning .filloption {
-        background-color: #ff9f43;
-    }
-
-    .product-color-options .b-black .filloption {
-        background-color: #22292f;
-    }
-
-    /* Swiper */
-    .swiper-container {
-        margin-top: 2rem;
-    }
-
-    .swiper-slide {
-        text-align: center;
-    }
-
-    .swiper-slide img {
-        max-width: 100%;
-        height: 100px;
-        object-fit: contain;
-    }
-
-    /* Related Products */
-    .related-products {
-        margin-top: 3rem;
-    }
-
-    .related-products .title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1.5rem;
-    }
-
-    .related-product-card {
-        background-color: #fff;
-        border-radius: 5px;
-        overflow: hidden;
-        box-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-        margin-bottom: 1.5rem;
-    }
-
-    .related-product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.25);
-    }
-
-    .related-product-img {
-        height: 200px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-
-    .related-product-img img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-    }
-
-    .related-product-info {
-        padding: 1rem;
-    }
-
-    .related-product-title {
-        font-weight: 600;
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-        color: #2c2c2c;
-    }
-
-    .related-product-price {
-        font-weight: 600;
-        color: #7367f0;
-        margin-bottom: 1rem;
-    }
-
-    .related-product-rating {
-        color: #ffc107;
-        margin-bottom: 1rem;
-    }
-
-    .related-product-actions {
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .related-product-actions .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-    }
-
-    /* Item Features */
-    .item-features {
-        background-color: #f7f7f7;
-        padding: 2rem;
-        border-radius: 5px;
-        margin-top: 2rem;
-    }
-
-    .item-features .title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin-bottom: 1.5rem;
-    }
-
-    .feature-text {
-        margin-bottom: 1rem;
-    }
-
-    .feature-icon {
-        font-size: 2rem;
-        color: #7367f0;
-        margin-bottom: 1rem;
-    }
-</style>
-<body>
-    <div class="container-fluid">
-        <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="#">Trang chủ</a></li>
-                <li class="breadcrumb-item"><a href="#">Cửa hàng</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Chi tiết sản phẩm</li>
-            </ol>
-        </nav>
-
-        <div class="card">
-            <div class="card-body">
-                <div class="row">
-                    <!-- Product Image -->
-                    <div class="col-12 col-md-5">
-                        <div class="product-img">
-                            <img src="https://via.placeholder.com/500" alt="Product Image">
-                        </div>
-                        <!-- Swiper -->
-                        <div class="swiper-container swiper-responsive-breakpoints">
-                            <div class="swiper-wrapper">
-                                <div class="swiper-slide">
-                                    <img src="https://via.placeholder.com/100" alt="Product Image">
-                                </div>
-                                <div class="swiper-slide">
-                                    <img src="https://via.placeholder.com/100" alt="Product Image">
-                                </div>
-                                <div class="swiper-slide">
-                                    <img src="https://via.placeholder.com/100" alt="Product Image">
-                                </div>
-                                <div class="swiper-slide">
-                                    <img src="https://via.placeholder.com/100" alt="Product Image">
-                                </div>
-                                <div class="swiper-slide">
-                                    <img src="https://via.placeholder.com/100" alt="Product Image">
-                                </div>
-                            </div>
-                            <!-- Add Arrows -->
-                            <div class="swiper-button-next"></div>
-                            <div class="swiper-button-prev"></div>
-                        </div>
+    <!-- Product Detail Main Section -->
+    <div class="product-detail-card">
+        <div class="product-detail-grid">
+            <!-- Product Images Section -->
+            <div class="product-images">
+                <div class="main-image">
+                    <img src="{{ $product->image ?? 'https://via.placeholder.com/600x600' }}" alt="{{ $product->name }}" id="main-product-image">
+                    <div class="image-badges">
+                        @if($product->created_at->diffInDays(now()) < 7)
+                            <span class="badge new-badge">Mới</span>
+                        @endif
+                        @if($product->discount_amount > 0)
+                            <span class="badge sale-badge">-{{ $product->discount_amount }}%</span>
+                        @endif
                     </div>
+                    <button class="image-zoom-btn">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                </div>
 
-                    <!-- Product Details -->
-                    <div class="col-12 col-md-7">
-                        <h1 class="product-title">Bánh Mì Thịt Nướng</h1>
-                        <div class="product-ratings">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="far fa-star"></i>
-                            <span class="ml-2">(4.0)</span>
+                <!-- Thumbnail Gallery -->
+                <div class="thumbnail-gallery">
+                    <div class="swiper thumbnail-swiper">
+                        <div class="swiper-wrapper">
+                            @if($product->images && count($product->images) > 0)
+                                @foreach($product->images as $index => $image)
+                                    <div class="swiper-slide thumbnail {{ $index === 0 ? 'active' : '' }}" data-img="{{ $image->url ?? 'https://via.placeholder.com/600x600' }}">
+                                        <img src="{{ $image->thumbnail_url ?? 'https://via.placeholder.com/150x150' }}" alt="Thumbnail {{ $index + 1 }}">
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="swiper-slide thumbnail active" data-img="{{ $product->image ?? 'https://via.placeholder.com/600x600' }}">
+                                    <img src="{{ $product->image ?? 'https://via.placeholder.com/150x150' }}" alt="Thumbnail 1">
+                                </div>
+                            @endif
                         </div>
-                        <div class="product-price">
-                            <span>35.000đ</span>
-                            <span class="old-price">45.000đ</span>
-                        </div>
-                        <div class="product-description">
-                            <p>Bánh mì thịt nướng là một món ăn đường phố phổ biến của Việt Nam, bao gồm bánh mì giòn với nhân thịt heo nướng, rau sống, đồ chua và sốt đặc biệt.</p>
-                        </div>
-                        <div class="product-features">
-                            <h6>Đặc điểm:</h6>
-                            <ul>
-                                <li>Thịt heo nướng thơm ngon</li>
-                                <li>Bánh mì giòn rụm</li>
-                                <li>Rau sống tươi ngon</li>
-                                <li>Đồ chua đặc trưng</li>
-                            </ul>
-                        </div>
-                        <div class="product-color-options">
-                            <h6>Tùy chọn:</h6>
-                            <ul class="list-unstyled">
-                                <li class="color-option b-primary selected">
-                                    <div class="filloption"></div>
-                                </li>
-                                <li class="color-option b-success">
-                                    <div class="filloption"></div>
-                                </li>
-                                <li class="color-option b-danger">
-                                    <div class="filloption"></div>
-                                </li>
-                                <li class="color-option b-warning">
-                                    <div class="filloption"></div>
-                                </li>
-                                <li class="color-option b-black">
-                                    <div class="filloption"></div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="item-quantity">
-                            <div class="input-group">
-                                <button class="btn btn-outline-secondary" type="button" id="button-minus">-</button>
-                                <input type="text" class="form-control text-center" value="1" id="quantity">
-                                <button class="btn btn-outline-secondary" type="button" id="button-plus">+</button>
-                            </div>
-                            <button class="btn-cart">
-                                <i class="feather icon-shopping-cart"></i>
-                                <span>Thêm vào giỏ hàng</span>
-                            </button>
-                            <button class="btn-wishlist">
-                                <i class="feather icon-heart"></i>
-                            </button>
-                        </div>
+                        <div class="swiper-button-next"></div>
+                        <div class="swiper-button-prev"></div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Item Features -->
-        <div class="item-features">
-            <div class="row text-center">
-                <div class="col-12 col-md-4">
-                    <div class="feature-icon">
-                        <i class="feather icon-truck"></i>
-                    </div>
-                    <h6 class="font-weight-bold">Giao hàng miễn phí</h6>
-                    <p class="feature-text">Giao hàng miễn phí cho đơn hàng trên 200.000đ</p>
-                </div>
-                <div class="col-12 col-md-4">
-                    <div class="feature-icon">
-                        <i class="feather icon-refresh-cw"></i>
-                    </div>
-                    <h6 class="font-weight-bold">Đổi trả dễ dàng</h6>
-                    <p class="feature-text">Đổi trả sản phẩm trong vòng 24 giờ</p>
-                </div>
-                <div class="col-12 col-md-4">
-                    <div class="feature-icon">
-                        <i class="feather icon-shield"></i>
-                    </div>
-                    <h6 class="font-weight-bold">Bảo đảm chất lượng</h6>
-                    <p class="feature-text">Cam kết chất lượng sản phẩm</p>
-                </div>
-            </div>
-        </div>
+            <!-- Product Info Section -->
+            <div class="product-info">
+                <h1 class="product-title">{{ $product->name }}</h1>
 
-        <!-- Related Products -->
-        <div class="related-products">
-            <h2 class="title">Sản phẩm liên quan</h2>
-            <div class="row">
-                <!-- Related Product 1 -->
-                <div class="col-12 col-md-3">
-                    <div class="related-product-card">
-                        <div class="related-product-img">
-                            <img src="https://via.placeholder.com/200" alt="Related Product">
+                <div class="product-meta">
+                    <div class="product-ratings">
+                        <div class="stars">
+                            @for($i = 1; $i <= 5; $i++)
+                                <i class="fas fa-star {{ $i <= $product->average_rating ? '' : 'far' }}"></i>
+                            @endfor
                         </div>
-                        <div class="related-product-info">
-                            <h5 class="related-product-title">Bánh Mì Chả Lụa</h5>
-                            <div class="related-product-price">30.000đ</div>
-                            <div class="related-product-rating">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="far fa-star"></i>
-                            </div>
-                            <div class="related-product-actions">
-                                <button class="btn btn-primary btn-sm">Thêm vào giỏ</button>
-                                <button class="btn btn-outline-secondary btn-sm">
-                                    <i class="feather icon-heart"></i>
-                                </button>
-                            </div>
+                        <span class="rating-count">({{ number_format($product->average_rating, 1) }} - {{ $product->reviews_count }} đánh giá)</span>
+                    </div>
+                    <div class="product-sku">
+                        <span>Mã SP: </span>
+                        <span class="sku-value">{{ $product->sku ?? 'GA-RAN-' . str_pad($product->id, 3, '0', STR_PAD_LEFT) }}</span>
+                    </div>
+                </div>
+
+                <div class="product-price">
+                    <span class="current-price">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+                    @if($product->original_price)
+                        <span class="old-price">{{ number_format($product->original_price, 0, ',', '.') }}đ</span>
+                        <span class="discount-badge">-{{ round(($product->original_price - $product->base_price) / $product->original_price * 100) }}%</span>
+                    @endif
+                </div>
+
+                <div class="product-description">
+                    <p>{{ $product->description ?? 'Không có mô tả.' }}</p>
+                </div>
+
+                <div class="product-options">
+                    <div class="option-group">
+                        <h3 class="option-title">Kích cỡ</h3>
+                        <div class="option-items">
+                            @if($product->variants && count($product->variants) > 0)
+                                @foreach($product->variants as $variant)
+                                    <button class="option-item {{ $loop->first ? 'active' : '' }}" data-price="{{ $variant->price }}">{{ $variant->name }}</button>
+                                @endforeach
+                            @else
+                                <button class="option-item active">Mặc định</button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <h3 class="option-title">Độ cay</h3>
+                        <div class="option-items">
+                            @foreach(['Nhẹ', 'Vừa', 'Cay', 'Siêu cay'] as $spice)
+                                <button class="option-item {{ $spice == 'Vừa' ? 'active' : '' }}">{{ $spice }}</button>
+                            @endforeach
                         </div>
                     </div>
                 </div>
-                <!-- Related Product 2 -->
-                <div class="col-12 col-md-3">
-                    <div class="related-product-card">
-                        <div class="related-product-img">
-                            <img src="https://via.placeholder.com/200" alt="Related Product">
-                        </div>
-                        <div class="related-product-info">
-                            <h5 class="related-product-title">Bánh Mì Gà Nướng</h5>
-                            <div class="related-product-price">32.000đ</div>
-                            <div class="related-product-rating">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="related-product-actions">
-                                <button class="btn btn-primary btn-sm">Thêm vào giỏ</button>
-                                <button class="btn btn-outline-secondary btn-sm">
-                                    <i class="feather icon-heart"></i>
-                                </button>
-                            </div>
-                        </div>
+
+                <div class="product-actions">
+                    <div class="quantity-selector">
+                        <button class="quantity-btn minus-btn">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" class="quantity-input" value="1" min="1" max="99">
+                        <button class="quantity-btn plus-btn">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="add-to-cart-btn">
+                            <i class="fas fa-shopping-cart"></i>
+                            Thêm vào giỏ hàng
+                        </button>
+                        <button class="wishlist-btn">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <button class="share-btn">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
                     </div>
                 </div>
-                <!-- Related Product 3 -->
-                <div class="col-12 col-md-3">
-                    <div class="related-product-card">
-                        <div class="related-product-img">
-                            <img src="https://via.placeholder.com/200" alt="Related Product">
-                        </div>
-                        <div class="related-product-info">
-                            <h5 class="related-product-title">Bánh Mì Xíu Mại</h5>
-                            <div class="related-product-price">28.000đ</div>
-                            <div class="related-product-rating">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="far fa-star"></i>
-                                <i class="far fa-star"></i>
-                            </div>
-                            <div class="related-product-actions">
-                                <button class="btn btn-primary btn-sm">Thêm vào giỏ</button>
-                                <button class="btn btn-outline-secondary btn-sm">
-                                    <i class="feather icon-heart"></i>
-                                </button>
-                            </div>
-                        </div>
+
+                <div class="product-features">
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Thịt gà tươi ngon</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Sốt cay đặc biệt</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Không chất bảo quản</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Chế biến khi đặt hàng</span>
                     </div>
                 </div>
-                <!-- Related Product 4 -->
-                <div class="col-12 col-md-3">
-                    <div class="related-product-card">
-                        <div class="related-product-img">
-                            <img src="https://via.placeholder.com/200" alt="Related Product">
+
+                <div class="product-delivery">
+                    <div class="delivery-option">
+                        <i class="fas fa-truck"></i>
+                        <div class="delivery-info">
+                            <h4>Giao hàng miễn phí</h4>
+                            <p>Cho đơn hàng từ 200.000đ</p>
                         </div>
-                        <div class="related-product-info">
-                            <h5 class="related-product-title">Bánh Mì Pate</h5>
-                            <div class="related-product-price">25.000đ</div>
-                            <div class="related-product-rating">
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="fas fa-star"></i>
-                                <i class="far fa-star"></i>
-                            </div>
-                            <div class="related-product-actions">
-                                <button class="btn btn-primary btn-sm">Thêm vào giỏ</button>
-                                <button class="btn btn-outline-secondary btn-sm">
-                                    <i class="feather icon-heart"></i>
-                                </button>
-                            </div>
+                    </div>
+                    <div class="delivery-option">
+                        <i class="fas fa-undo"></i>
+                        <div class="delivery-info">
+                            <h4>Đổi trả dễ dàng</h4>
+                            <p>Trong vòng 24 giờ</p>
                         </div>
                     </div>
                 </div>
@@ -547,62 +245,165 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@6.8.4/swiper-bundle.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            // Swiper initialization
-            var mySwiper = new Swiper('.swiper-responsive-breakpoints', {
-                slidesPerView: 5,
-                spaceBetween: 10,
-                navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
-                },
-                breakpoints: {
-                    1600: {
-                        slidesPerView: 4,
-                        spaceBetween: 10,
-                    },
-                    1300: {
-                        slidesPerView: 3,
-                        spaceBetween: 10,
-                    },
-                    900: {
-                        slidesPerView: 2,
-                        spaceBetween: 10,
-                    },
-                    768: {
-                        slidesPerView: 1,
-                        spaceBetween: 10,
-                    }
-                }
-            });
+    <!-- Product Tabs -->
+    <div class="product-tabs">
+        <div class="tabs-header">
+            <button class="tab-btn active" data-tab="description">Mô tả</button>
+            <button class="tab-btn" data-tab="nutrition">Dinh dưỡng</button>
+            <button class="tab-btn" data-tab="reviews">Đánh giá ({{ $product->reviews_count }})</button>
+        </div>
 
-            // Product color options
-            $(".product-color-options li").on("click", function () {
-                $(this).addClass('selected').siblings().removeClass('selected');
-            });
+        <div class="tabs-content">
+            <div class="tab-panel active" id="description">
+                <div class="tab-content">
+                    <h3>Thông tin chi tiết</h3>
+                    <p>{{ $product->description ?? 'Không có mô tả.' }}</p>
+                    @if($product->preparation_steps)
+                        <p>Quy trình chế biến gồm nhiều bước:</p>
+                        <ul>
+                            @foreach($product->preparation_steps as $step)
+                                <li>{{ $step }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            </div>
 
-            // Quantity buttons
-            $("#button-plus").on("click", function() {
-                var quantity = parseInt($("#quantity").val());
-                $("#quantity").val(quantity + 1);
-            });
+            <div class="tab-panel" id="nutrition">
+                <div class="tab-content">
+                    <h3>Thông tin dinh dưỡng</h3>
+                    <div class="nutrition-table">
+                        @if($product->nutrition && count($product->nutrition) > 0)
+                            @foreach($product->nutrition as $nutrient)
+                                <div class="nutrition-row">
+                                    <div class="nutrition-label">{{ $nutrient->name }}</div>
+                                    <div class="nutrition-value">{{ $nutrient->value }}</div>
+                                </div>
+                            @endforeach
+                        @else
+                            <p>Không có thông tin dinh dưỡng.</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
 
-            $("#button-minus").on("click", function() {
-                var quantity = parseInt($("#quantity").val());
-                if (quantity > 1) {
-                    $("#quantity").val(quantity - 1);
-                }
-            });
+            <div class="tab-panel" id="reviews">
+                <div class="tab-content">
+                    <div class="reviews-summary">
+                        <div class="rating-summary">
+                            <div class="average-rating">
+                                <span class="rating-number">{{ number_format($product->average_rating, 1) }}</span>
+                                <div class="stars">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <i class="fas fa-star {{ $i <= $product->average_rating ? '' : 'far' }}"></i>
+                                    @endfor
+                                </div>
+                                <span class="rating-count">{{ $product->reviews_count }} đánh giá</span>
+                            </div>
 
-            // Wishlist button
-            $(".btn-wishlist").on("click", function() {
-                $(this).toggleClass('active');
-            });
-        });
-    </script>
+                            <div class="rating-bars">
+                                @foreach([5, 4, 3, 2, 1] as $star)
+                                    @php
+                                        $percentage = $product->reviews_count > 0 ? ($product->reviews()->where('rating', $star)->count() / $product->reviews_count * 100) : 0;
+                                    @endphp
+                                    <div class="rating-bar-item">
+                                        <div class="rating-label">{{ $star }} sao</div>
+                                        <div class="rating-bar">
+                                            <div class="rating-fill"></div>
+                                        </div>
+                                        <div class="rating-percent">{{ round($percentage) }}%</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="review-action">
+                            <button class="write-review-btn">Viết đánh giá</button>
+                        </div>
+                    </div>
+
+                    <div class="reviews-list">
+                        @if($product->reviews && count($product->reviews) > 0)
+                            @foreach($product->reviews as $review)
+                                <div class="review-item">
+                                    <div class="review-header">
+                                        <div class="reviewer-info">
+                                            <div class="reviewer-avatar">
+                                                <img src="{{ $review->user->avatar ?? 'https://via.placeholder.com/50' }}" alt="Avatar">
+                                            </div>
+                                            <div class="reviewer-details">
+                                                <h4 class="reviewer-name">{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->full_name }}</h4>
+                                                <div class="review-date">{{ $review->review_date->format('d/m/Y') }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="review-rating">
+                                            <div class="stars">
+                                                @for($i = 1; $i <= 5; $i++)
+                                                    <i class="fas fa-star {{ $i <= $review->rating ? '' : 'far' }}"></i>
+                                                @endfor
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="review-content">
+                                        <p>{{ $review->review }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @else
+                            <p>Chưa có đánh giá nào cho sản phẩm này.</p>
+                        @endif
+                    </div>
+
+                    @if($product->reviews && count($product->reviews) > 0)
+                        <div class="reviews-pagination">
+                            <!-- Pagination logic can be added here -->
+                            <button class="pagination-btn active">1</button>
+                            <button class="pagination-btn">2</button>
+                            <button class="pagination-btn">3</button>
+                            <button class="pagination-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    <div class="related-products">
+        <h2 class="section-title">Sản phẩm liên quan</h2>
+
+        <div class="related-products-grid">
+            @foreach($relatedProducts as $related)
+                <div class="card">
+                    <span class="like"><i class='bx bx-heart'></i></span>
+                    <span class="cart"><i class='bx bx-cart-alt'></i></span>
+                    <div class="card__img">
+                        <img src="{{ $related->image ?? 'https://via.placeholder.com/300' }}" alt="{{ $related->name }}" />
+                    </div>
+                    <h2 class="card__title">{{ $related->name }}</h2>
+                    <p class="card__price">{{ number_format($related->base_price, 0, ',', '.') }}đ</p>
+                    <div class="card__action">
+                        <button class="action-btn favorite-btn">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                        <button class="action-btn cart-btn">
+                            <i class="fas fa-shopping-bag"></i>
+                        </button>
+                        <a class="action-btn" href="{{ url('shop/product/product-detail/' . $related->id) }}"><i class="fas fa-info"></i></a>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
+<!-- Zoom Modal -->
+<div class="zoom-modal" id="zoom-modal">
+    <div class="zoom-modal-content">
+        <span class="zoom-close">&times;</span>
+        <img src="/placeholder.svg" alt="Zoomed Image" id="zoomed-image">
+    </div>
+</div>
 @endsection
