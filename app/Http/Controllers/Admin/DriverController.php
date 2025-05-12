@@ -12,34 +12,47 @@ use App\Notifications\DriverApplicationStatusUpdated;
 
 class DriverController extends Controller
 {
-    public function pendingApplies(Request $request)
-    {
-        $applications = DriverApplication::where('status', 'pending')
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('license_plate', 'like', "%{$search}%")
-                        ->orWhere('phone_number', 'like', "%{$search}%");
-                });
-            })
-            ->latest()
-            ->paginate(10);
+    public function listApplications(Request $request){
+        try {
+            $search = $request->search;
+            $pendingApplications = DriverApplication::where('status', 'pending')
+                ->when($request->search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('license_plate', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%");
+                    });
+                })
+                ->latest()
+                ->paginate(5, ['*'], 'pending_page');
+            
+            $processedApplications = DriverApplication::whereIn('status', ['approved', 'rejected'])
+                ->when($request->search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('license_plate', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%");
+                    });
+                })
+                ->latest()
+                ->paginate(5, ['*'], 'processed_page');
 
-        return view('admin.driver-applications.pending', compact('applications'));
+            return view('admin.driver.applications', compact('pendingApplications', 'processedApplications'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Không thể tải danh sách đơn: ' . $e->getMessage());
+        }
+    }
+    
+    public function viewApplicationDetails(DriverApplication $application)
+    {
+        try {
+            return view('admin.driver.show-apply-detail', compact('application'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Không thể xem chi tiết đơn: ' . $e->getMessage());
+        }
     }
 
-    public function index()
-    {
-        $applications = DriverApplication::latest()->paginate(10);
-        return view('admin.driver-applications.index', compact('applications'));
-    }
-
-    public function show(DriverApplication $application)
-    {
-        return view('admin.driver-applications.show', compact('application'));
-    }
-
-    public function approve(DriverApplication $application)
+    public function approveApplication(DriverApplication $application)
     {
         try {
             DB::beginTransaction();
@@ -76,19 +89,19 @@ class DriverController extends Controller
         }
     }
 
-    public function reject(Request $request, DriverApplication $application)
+    public function rejectApplication(Request $request, DriverApplication $application)
     {
-        $request->validate([
-            'rejection_reason' => 'required|string|max:500'
-        ]);
-
         try {
+            $request->validate([
+                'rejection_reason' => 'required|string|max:500'
+            ]);
+
             DB::beginTransaction();
 
             $application->update([
                 'status' => 'rejected',
                 'rejection_reason' => $request->rejection_reason,
-                'admin_notes' => 'Đơn bị từ chối bởi quản trị viên'
+                'admin_notes' => $request->admin_notes ?? 'Quản trị viên chưa nhập ghi chú'
             ]);
 
             // Gửi thông báo

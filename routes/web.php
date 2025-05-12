@@ -83,11 +83,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
-        Route::get('pending-applies', [DriverController::class, 'pendingApplies'])->name('pending-applies');
-        Route::get('applications', [DriverController::class, 'index'])->name('applications.index');
-        Route::get('applications/{application}', [DriverController::class, 'show'])->name('applications.show');
-        Route::post('applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
-        Route::post('applications/{application}/reject', [DriverController::class, 'reject'])->name('applications.reject');
+        Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
+        Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
+        Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
+        Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
 });
 

@@ -44,7 +44,7 @@
                     "i18n": "nav.all_applications"
                 },
                 {
-                    "url": "/admin/drivers/pending-applies",
+                    "url": "/admin/drivers/applications",
                     "name": "Đơn ứng tuyển",
                     "icon": "feather icon-file",
                     "i18n": "nav.pending_applications"

@@ -38,7 +38,7 @@
             "i18n": "nav.drivers",
             "submenu": [
                 {
-                    "url": "/admin/drivers/pending-applies",
+                    "url": "/admin/drivers/applications",
                     "name": "Đơn đang chờ duyệt",
                     "icon": "feather icon-clock",
                     "i18n": "nav.pending_applications"
