@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\RoleController;
 
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
+use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 
@@ -86,5 +87,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
+
+    // Driver Application Management
+    Route::prefix('drivers')->name('drivers.')->group(function () {
+        Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
+        Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
+        Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
+        Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
+    });
 });
 
+<<<<<<<<< Temporary merge branch 1
+=========
+Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
+    Route::get('/search', [UserController::class, 'search'])->name('search');
+});
+>>>>>>>>> Temporary merge branch 2
