@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Jollibee Vietnam')</title>
+    <title>@yield('title', 'DevFood Vietnam')</title>
 
     <!-- External CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,6 +14,7 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="{{ asset('css/customer/layout.css') }}">
+    @yield('styles')
 </head>
 <body>
 <!-- Scroll Progress Bar -->
@@ -26,7 +27,7 @@
 {{--        <div class="container">--}}
 {{--            <div class="top-nav-content">--}}
 {{--                <div class="top-nav-links">--}}
-{{--                    <a href="#" class="top-nav-link">Về Jollibee</a>--}}
+{{--                    <a href="#" class="top-nav-link">Về DevFood</a>--}}
 {{--                    <a href="#" class="top-nav-link">Khuyến Mãi</a>--}}
 {{--                    <a href="#" class="top-nav-link">Cửa Hàng</a>--}}
 {{--                    <a href="#" class="top-nav-link">Tuyển Dụng</a>--}}
@@ -56,14 +57,14 @@
             <div class="main-nav-content">
                 <div class="logo">
                     <a href="{{ url('/') }}">
-                        <img src="{{ asset('images/logo/Logo-DevFood.png') }}" alt="Jollibee Logo">
+                        <img src="{{ asset('images/logo/Logo-DevFood.png') }}" alt="DevFood Logo">
                     </a>
                 </div>
                 <nav class="desktop-menu">
                     <ul class="nav-list">
                         <li class="nav-item active"><a href="{{ url('/') }}">TRANG CHỦ</a></li>
                         <li class="nav-item dropdown">
-                            <a href="#" class="dropdown-toggle">VỀ JOLLIBEE</a>
+                            <a href="#" class="dropdown-toggle">VỀ DevFood</a>
                             <ul class="dropdown-menu">
                                 <li><a href="#">Câu chuyện thương hiệu</a></li>
                                 <li><a href="#">Lịch sử phát triển</a></li>
@@ -72,7 +73,7 @@
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a href="#" class="dropdown-toggle">THỰC ĐƠN</a>
+                            <a href="{{ asset('shop/product') }}" class="dropdown-toggle">THỰC ĐƠN</a>
                             <ul class="dropdown-menu">
                                 <li><a href="#">Gà Giòn Vui Vẻ</a></li>
                                 <li><a href="#">Gà Sốt Cay</a></li>
@@ -92,12 +93,16 @@
                     <button class="search-btn">
                         <i class="fas fa-search"></i>
                     </button>
+                    <div class="notification-btn">
+                        <a href="#"><i class="fa-solid fa-bell"></i></a>
+                        <span class="notification-count">5</span>
+                    </div>
                     <div class="cart-btn">
-                        <i class="fas fa-shopping-bag"></i>
+                        <a href="{{ asset('cart') }}"><i class="fas fa-shopping-bag"></i></a>
                         <span class="cart-count">3</span>
                     </div>
-                    {{-- <button class="pickup-btn">PICK UP</button> --}}
-                    {{-- <div class="hotline">
+                    <!-- <button class="pickup-btn">PICK UP</button>
+                    <div class="hotline">
                         <i class="fas fa-phone"></i>
                         <div>
                             <span class="hotline-number">1900-1533</span>
@@ -106,7 +111,7 @@
                     </div>
                     <button class="mobile-menu-btn">
                         <i class="fas fa-bars"></i>
-                    </button> --}}
+                    </button> -->
                 </div>
             </div>
         </div>
@@ -120,7 +125,7 @@
             </button>
             <ul class="mobile-nav-list">
                 <li><a href="{{ url('/') }}">TRANG CHỦ</a></li>
-                <li><a href="#">VỀ JOLLIBEE</a></li>
+                <li><a href="#">VỀ DevFood</a></li>
                 <li><a href="#">THỰC ĐƠN</a></li>
                 <li><a href="#">KHUYẾN MÃI</a></li>
                 <li><a href="#">DỊCH VỤ</a></li>
@@ -143,10 +148,10 @@
         <div class="footer-content">
             <div class="footer-column">
                 <div class="footer-logo">
-                    <img src="{{ asset('images/logo-white.png') }}" alt="Jollibee Logo">
+                    <img src="{{ asset('images/logo-white.png') }}" alt="DevFood Logo">
                 </div>
                 <p class="footer-description">
-                    Jollibee là thương hiệu đồ ăn nhanh nổi tiếng với các món gà giòn, mỳ Ý, burger và nhiều món ăn
+                    DevFood là thương hiệu đồ ăn nhanh nổi tiếng với các món gà giòn, mỳ Ý, burger và nhiều món ăn
                     hấp dẫn khác.
                 </p>
                 <div class="social-links">
@@ -158,7 +163,7 @@
             </div>
 
             <div class="footer-column">
-                <h3 class="footer-title">Về Jollibee</h3>
+                <h3 class="footer-title">Về DevFood</h3>
                 <ul class="footer-links">
                     <li><a href="#">Giới thiệu</a></li>
                     <li><a href="#">Lịch sử phát triển</a></li>
@@ -172,7 +177,7 @@
                 <ul class="footer-links">
                     <li><a href="#">Đặt hàng trực tuyến</a></li>
                     <li><a href="#">Tiệc sinh nhật</a></li>
-                    <li><a href="#">Jollibee Kids Club</a></li>
+                    <li><a href="#">DevFood Kids Club</a></li>
                     <li><a href="#">Đơn hàng lớn</a></li>
                 </ul>
             </div>
@@ -181,7 +186,7 @@
                 <h3 class="footer-title">Liên hệ</h3>
                 <ul class="contact-info">
                     <li>Hotline: 1900-1533</li>
-                    <li>Email: info@jollibee.com.vn</li>
+                    <li>Email: info@DevFood.com.vn</li>
                     <li>Địa chỉ: Tầng 26, Tòa nhà CII Tower, 152 Điện Biên Phủ, Phường 25, Quận Bình Thạnh, TP. Hồ
                         Chí Minh</li>
                 </ul>
@@ -189,7 +194,7 @@
         </div>
 
         <div class="footer-bottom">
-            <p class="copyright">© 2024 Jollibee Vietnam. Tất cả các quyền được bảo lưu.</p>
+            <p class="copyright">© 2024 DevFood Vietnam. Tất cả các quyền được bảo lưu.</p>
             <div class="footer-legal">
                 <a href="#">Điều khoản sử dụng</a>
                 <a href="#">Chính sách bảo mật</a>
@@ -198,7 +203,7 @@
     </div>
 </footer>
 
-
+@yield('scripts')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/Customer/main.js') }}"></script>
 </body>
