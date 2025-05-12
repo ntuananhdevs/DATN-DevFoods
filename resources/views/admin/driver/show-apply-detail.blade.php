@@ -100,7 +100,7 @@
                         <div class="col-md-12">
                             <h5>Ghi chú & Trạng thái</h5>
                             <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>Ghi chú admin:</strong> {{ $application->admin_notes ?? 'Không có ghi chú' }}</li>
+                                <li class="list-group-item"><strong>Ghi chú admin:</strong> {{ $application->admin_notes ?? 'Không có' }}</li>
                                 <li class="list-group-item"><strong>Ngày nộp đơn:</strong> {{ $application->created_at->format('d/m/Y H:i') }}</li>
                                 <li class="list-group-item"><strong>Ngày cập nhật:</strong> {{ $application->updated_at->format('d/m/Y H:i') }}</li>
                             </ul>
@@ -109,29 +109,67 @@
 
                     @if($application->status === 'pending')
                         <div class="mt-4 text-center">
-                            <form action="{{ route('admin.drivers.applications.approve', $application) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="button" class="btn btn-success" onclick="dtmodalConfirmDelete({
-                                    itemName: '{{ $application->full_name }}',
-                                    title: 'Xác nhận phê duyệt',
-                                    onConfirm: () => this.closest('form').submit()
-                                })">
-                                    <i class="fas fa-check"></i> Chấp nhận
-                                </button>
-                            </form>
-                            <form action="{{ route('admin.drivers.applications.reject', $application) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="button" class="btn btn-danger" onclick="dtmodalConfirmDelete({
-                                    itemName: '{{ $application->full_name }}',
-                                    title: 'Xác nhận từ chối',
-                                    message: 'Bạn có chắc chắn muốn từ chối đơn ứng tuyển của {{ $application->full_name }}?',
-                                    confirmText: 'Từ chối',
-                                    onConfirm: () => this.closest('form').submit()
-                                })">Từ chối đơn</button>
-                            </form>
+                            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#approveModal">
+                                <i class="fas fa-check"></i> Chấp nhận
+                            </button>
+                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#rejectModal">
+                                <i class="fas fa-times"></i> Từ chối
+                            </button>
                         </div>
 
+                        <!-- Modal phê duyệt -->
+                        <div class="modal fade" id="approveModal" tabindex="-1" role="dialog" aria-labelledby="approveModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <form action="{{ route('admin.drivers.applications.approve', $application) }}" method="POST">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="approveModalLabel">Phê duyệt đơn ứng tuyển</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="form-group">
+                                                <label for="admin_notes">Ghi chú admin</label>
+                                                <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-success">Phê duyệt đơn</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
 
+                        <!-- Modal từ chối -->
+                        <div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-labelledby="rejectModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <form action="{{ route('admin.drivers.applications.reject', $application) }}" method="POST">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="rejectModalLabel">Từ chối đơn ứng tuyển</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="form-group">
+                                                <label for="rejection_reason">Lý do từ chối</label>
+                                                <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3" required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                            <button type="submit" class="btn btn-danger">Từ chối đơn</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>

@@ -63,7 +63,10 @@
                                 Biển số xe <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
                             <th data-sort="date">
-                                Ngày đăng ký <i class="fas fa-sort data-table-sort-icon"></i>
+                                Ngày nộp đơn <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="date">
+                                Ngày cập nhật <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
                             <th>Thao tác</th>
                         </tr>
@@ -73,10 +76,6 @@
                             <tr>
                                 <td>
                                     <div class="data-table-id">
-
-
-
-                                    
                                         {{ $application->id }}
                                     </div>
                                 </td>
@@ -86,53 +85,16 @@
                                 <td>{{ $application->phone_number }}</td>
                                 <td>{{ $application->license_plate }}</td>
                                 <td>{{ $application->created_at->format('d/m/Y H:i') }}</td>
+                                <td>{{ $application->updated_at->format('d/m/Y H:i') }}</td>
                                 <td>
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.drivers.applications.show', ['application' => $application->id]) }}"
                                             class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <form action="{{ route('admin.drivers.applications.approve', $application) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="data-table-action-btn edit data-table-tooltip" data-tooltip="Phê duyệt"
-                                                onclick="return confirm('Bạn có chắc chắn muốn phê duyệt đơn này?')">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                        </form>
-                                        <button type="button" class="data-table-action-btn delete data-table-tooltip" data-tooltip="Từ chối"
-                                            data-toggle="modal" data-target="#rejectModal{{ $application->id }}">
-                                            <i class="fas fa-times"></i>
-                                        </button>
                                     </div>
                                 </td>
                             </tr>
-
-                            <!-- Reject Modal -->
-                            <div class="modal fade" id="rejectModal{{ $application->id }}" tabindex="-1" role="dialog" aria-labelledby="rejectModalLabel{{ $application->id }}" aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                    <div class="modal-content">
-                                        <form action="{{ route('admin.drivers.applications.reject', $application) }}" method="POST">
-                                            @csrf
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="rejectModalLabel{{ $application->id }}">Từ chối đơn đăng ký</h5>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="form-group">
-                                                    <label for="rejection_reason">Lý do từ chối</label>
-                                                    <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3" required></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                <button type="submit" class="btn btn-danger">Từ chối đơn</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
                         @empty
                             <tr>
                                 <td colspan="6" class="text-center">
@@ -206,8 +168,11 @@
                             <th data-sort="status">
                                 Trạng thái <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
-                            <th data-sort="date">
-                                Ngày xử lý <i class="fas fa-sort data-table-sort-icon"></i>
+                            <th data-sort="created_date">
+                                Ngày nộp đơn <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="updated_date">
+                                Ngày cập nhật <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
                             <th>Thao tác</th>
                         </tr>
@@ -216,13 +181,7 @@
                         @forelse($processedApplications as $application)
                             <tr>
                                 <td>
-                                    <div class="data-table-id">
-
-
-
-                                    
-                                        {{ $application->id }}
-                                    </div>
+                                    <div class="data-table-id">{{ $application->id }}</div>
                                 </td>
                                 <td>
                                     <div class="data-table-product-name">{{ $application->full_name }}</div>
@@ -235,6 +194,7 @@
                                         {{ $application->status === 'approved' ? 'Đã duyệt' : 'Đã từ chối' }}
                                     </span>
                                 </td>
+                                <td>{{ $application->created_at->format('d/m/Y H:i') }}</td>
                                 <td>{{ $application->updated_at->format('d/m/Y H:i') }}</td>
                                 <td>
                                     <div class="data-table-action-buttons">
@@ -247,10 +207,10 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center">
+                                <td colspan="8" class="text-center">
                                     <div class="data-table-empty">
                                         <div class="data-table-empty-icon">
-                                            </i>
+                                            <i class="fas fa-inbox"></i>
                                         </div>
                                         <h3>Không có đơn đăng ký nào đã xử lý</h3>
                                     </div>

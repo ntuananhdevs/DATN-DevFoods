@@ -76,7 +76,6 @@
                     </div>
 
                     <div class="mt-2">
-                        <!-- <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-warning">Edit</a> -->
                         <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Back to List</a>
                     </div>
                 </div>
