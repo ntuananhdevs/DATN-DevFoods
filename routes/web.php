@@ -88,7 +88,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
 
-    // Drivers Management
+    // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
@@ -98,3 +98,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
+<<<<<<<<< Temporary merge branch 1
+=========
+Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
+    Route::get('/search', [UserController::class, 'search'])->name('search');
+});
+>>>>>>>>> Temporary merge branch 2
