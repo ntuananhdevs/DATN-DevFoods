@@ -8,7 +8,6 @@
 
     <!-- External CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('fonts/feather/style.min.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/noui-slider@15.6.1/dist/nouislider.min.css">
@@ -88,21 +87,32 @@
                             <li class="nav-item"><a href="#">DỊCH VỤ</a></li>
                             <li class="nav-item"><a href="#">CỬA HÀNG</a></li>
                             <li class="nav-item"><a href="#">LIÊN HỆ</a></li>
-                            <li class="nav-item">
+                            <li class="nav-item dropdown">
                                 @guest
-                                    <a href="{{ route('customer.login') }}">Đăng Nhập</a>
+                                    <a href="{{ route('customer.login') }}" class="nav-link">Đăng Nhập</a>
                                 @else
-                                    <span>Xin chào, {{ Auth::user()->full_name ?? Auth::user()->email }}</span>
-                                    <a href="{{ route('customer.logout') }}"
-                                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                        Đăng Xuất
+                                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        Xin chào, {{ Auth::user()->full_name ?? Auth::user()->email }}
                                     </a>
-                                    <form id="logout-form" action="{{ route('customer.logout') }}" method="POST"
-                                        style="display: none;">
+                                    <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ route('customer.profile') }}">
+                                                Trang Cá Nhân
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{{ route('customer.logout') }}"
+                                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                                Đăng Xuất
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    <form id="logout-form" action="{{ route('customer.logout') }}" method="POST" style="display: none;">
                                         @csrf
                                     </form>
                                 @endguest
-                            </li>
+                            </li>                            
                         </ul>
                     </nav>
                     <div class="nav-actions">

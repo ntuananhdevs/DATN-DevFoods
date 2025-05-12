@@ -16,6 +16,7 @@ use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
+use App\Http\Controllers\Customer\UserController as CustomerUserController;
 
 Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -23,11 +24,18 @@ Route::prefix('/')->group(function () {
     Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
     Route::get('cart', [CustomerCartController::class, 'index']);
     Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
+
+    // Route Customer (login / logout / register)
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
     Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.submit');
     Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
     Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.submit');
     Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
+
+    // Route Customer (profile)
+    Route::get('/profile', [CustomerUserController::class, 'showProfile'])->name('customer.profile');
+    Route::get('/profile/update', [CustomerUserController::class, 'ShowForm'])->name('customer.profile.form');
+    Route::post('/profile/update', [CustomerUserController::class, 'updateProfile'])->name('customer.profile.update');
 });
 
 // Route Auth (login / logout)
