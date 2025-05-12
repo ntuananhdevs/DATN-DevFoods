@@ -164,7 +164,7 @@ class CategoryController extends Controller
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi!',
-                'message' => 'Không thể xóa danh mục. ' . $e->getMessage()
+                'message' => 'Không thể xóa danh mục. '
             ]);
 
             return back();
