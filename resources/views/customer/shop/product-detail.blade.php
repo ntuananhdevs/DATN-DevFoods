@@ -60,15 +60,184 @@
         if (value < 99) input.value = value + 1;
     });
 
-    // Option selection
+    // Cải thiện xử lý biến thể sản phẩm
+    let selectedVariantId = null;
+    let selectedOptions = {};
+    let basePrice = {{ $product->base_price }};
+    let variantCombinations = {};
+    
+    // Khởi tạo dữ liệu biến thể
+    @if(isset($product->variants) && count($product->variants) > 0)
+        @foreach($product->variants as $variant)
+            variantCombinations[{{ $variant->id }}] = {
+                price: {{ $variant->price }},
+                image: "{{ $variant->image ?? $product->image }}",
+                attributes: {},
+                name: "{{ $variant->name ?? '' }}"
+            };
+            
+            @if(isset($variant->variantValues))
+                @foreach($variant->variantValues as $value)
+                    @if(isset($value->variantAttribute))
+                        variantCombinations[{{ $variant->id }}].attributes["{{ $value->variantAttribute->name }}"] = "{{ $value->value }}";
+                    @endif
+                @endforeach
+            @endif
+        @endforeach
+    @endif
+    
+    // Hiển thị tên biến thể đầy đủ
+    function getFullVariantName(variantId) {
+        if (variantCombinations[variantId] && variantCombinations[variantId].name) {
+            return variantCombinations[variantId].name;
+        }
+        
+        // Nếu không có tên, tạo tên từ các thuộc tính
+        if (variantCombinations[variantId] && variantCombinations[variantId].attributes) {
+            const attrs = variantCombinations[variantId].attributes;
+            return Object.values(attrs).join(' - ');
+        }
+        
+        return '';
+    }
+    
+    // Tìm biến thể phù hợp với các tùy chọn đã chọn
+    function findMatchingVariant(selectedOptions) {
+        for (const variantId in variantCombinations) {
+            const variant = variantCombinations[variantId];
+            let isMatch = true;
+            
+            // Kiểm tra từng thuộc tính
+            for (const attrName in selectedOptions) {
+                if (variant.attributes[attrName] !== selectedOptions[attrName]) {
+                    isMatch = false;
+                    break;
+                }
+            }
+            
+            // Nếu tất cả thuộc tính khớp, trả về biến thể này
+            if (isMatch && Object.keys(selectedOptions).length === Object.keys(variant.attributes).length) {
+                return {
+                    id: variantId,
+                    price: variant.price,
+                    image: variant.image,
+                    name: getFullVariantName(variantId)
+                };
+            }
+        }
+        
+        return null;
+    }
+    
+    // Cập nhật hiển thị biến thể đã chọn
+    function updateSelectedVariantDisplay(variant) {
+        const variantNameElement = document.getElementById('selected-variant-name');
+        if (variantNameElement) {
+            variantNameElement.textContent = variant ? variant.name : '';
+        }
+    }
+    
+    // Xử lý khi chọn tùy chọn
     document.querySelectorAll('.option-item').forEach(item => {
         item.addEventListener('click', () => {
+            // Xóa lớp active từ các nút cùng nhóm
             item.parentElement.querySelectorAll('.option-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
+            
+            // Lưu thuộc tính được chọn
+            const attributeName = item.closest('.option-group').querySelector('.option-title').textContent;
+            selectedOptions[attributeName] = item.textContent.trim();
+            
+            // Tìm biến thể phù hợp
+            const matchingVariant = findMatchingVariant(selectedOptions);
+            
+            if (matchingVariant) {
+                selectedVariantId = matchingVariant.id;
+                
+                // Cập nhật giá hiển thị
+                document.querySelector('.current-price').textContent = new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
+                }).format(matchingVariant.price);
+                
+                // Cập nhật hình ảnh
+                document.getElementById('main-product-image').src = matchingVariant.image;
+                
+                // Cập nhật tên biến thể đã chọn
+                updateSelectedVariantDisplay(matchingVariant);
+                
+                // Cập nhật input hidden cho form thêm vào giỏ hàng
+                if (document.getElementById('variant-id-input')) {
+                    document.getElementById('variant-id-input').value = matchingVariant.id;
+                }
+            } else {
+                // Nếu không tìm thấy biến thể phù hợp, sử dụng giá cơ bản
+                selectedVariantId = null;
+                document.querySelector('.current-price').textContent = new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
+                }).format(basePrice);
+                document.getElementById('main-product-image').src = '{{ $product->image ?? "https://via.placeholder.com/600x600" }}';
+                
+                // Cập nhật tên biến thể đã chọn
+                updateSelectedVariantDisplay(null);
+                
+                // Xóa giá trị input hidden
+                if (document.getElementById('variant-id-input')) {
+                    document.getElementById('variant-id-input').value = '';
+                }
+            }
+        });
+    });
+
+    // Tự động chọn biến thể khi trang được tải
+    document.addEventListener('DOMContentLoaded', function() {
+        // Chọn tùy chọn đầu tiên của mỗi nhóm thuộc tính
+        const optionGroups = document.querySelectorAll('.option-group');
+        if (optionGroups.length > 0) {
+            optionGroups.forEach(group => {
+                const firstOption = group.querySelector('.option-item');
+                if (firstOption) {
+                    // Kích hoạt sự kiện click cho tùy chọn đầu tiên
+                    firstOption.click();
+                }
+            });
+        }
+    });
+    
+    // Thêm vào giỏ hàng
+    document.querySelector('.add-to-cart-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const quantity = parseInt(document.querySelector('.quantity-input').value);
+        const productId = {{ $product->id }};
+        
+        // Gửi yêu cầu AJAX để thêm vào giỏ hàng
+        $.ajax({
+            url: '{{ route("cart.add") }}',
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                product_id: productId,
+                variant_id: selectedVariantId,
+                quantity: quantity
+            },
+            success: function(response) {
+                // Hiển thị thông báo thành công
+                alert('Đã thêm sản phẩm vào giỏ hàng!');
+                
+                // Cập nhật số lượng sản phẩm trong giỏ hàng (nếu có)
+                if (document.querySelector('.cart-count')) {
+                    document.querySelector('.cart-count').textContent = response.cartCount;
+                }
+            },
+            error: function(xhr) {
+                // Hiển thị thông báo lỗi
+                alert('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng.');
+            }
         });
     });
 </script>
-<script src="js/script/product-detail.js"></script>
 @endsection
 
 @section('content')
@@ -146,9 +315,9 @@
                 </div>
 
                 <div class="product-price">
-                    <span class="current-price">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+                    <span class="current-price">{{ number_format($product->base_price, 0, ',', '.') }} ₫</span>
                     @if($product->original_price)
-                        <span class="old-price">{{ number_format($product->original_price, 0, ',', '.') }}đ</span>
+                        <span class="old-price">{{ number_format($product->original_price, 0, ',', '.') }} ₫</span>
                         <span class="discount-badge">-{{ round(($product->original_price - $product->base_price) / $product->original_price * 100) }}%</span>
                     @endif
                 </div>
@@ -157,28 +326,90 @@
                     <p>{{ $product->description ?? 'Không có mô tả.' }}</p>
                 </div>
 
+                <!-- Product Options -->
                 <div class="product-options">
-                    <div class="option-group">
-                        <h3 class="option-title">Kích cỡ</h3>
-                        <div class="option-items">
-                            @if($product->variants && count($product->variants) > 0)
-                                @foreach($product->variants as $variant)
-                                    <button class="option-item {{ $loop->first ? 'active' : '' }}" data-price="{{ $variant->price }}">{{ $variant->name }}</button>
-                                @endforeach
-                            @else
-                                <button class="option-item active">Mặc định</button>
-                            @endif
-                        </div>
+                    @php
+                        // Lấy tất cả thuộc tính biến thể của sản phẩm
+                        $variantAttributes = [];
+                        
+                        // Kiểm tra xem sản phẩm có biến thể không
+                        if(isset($product->variants) && count($product->variants) > 0) {
+                            // Nhóm các thuộc tính biến thể theo tên thuộc tính
+                            foreach($product->variants as $variant) {
+                                if(isset($variant->variantValues)) {
+                                    foreach($variant->variantValues as $value) {
+                                        if(isset($value->variantAttribute)) {
+                                            $attributeName = $value->variantAttribute->name;
+                                            if(!isset($variantAttributes[$attributeName])) {
+                                                $variantAttributes[$attributeName] = [];
+                                            }
+                                            
+                                            // Thêm giá trị vào mảng nếu chưa tồn tại
+                                            $valueData = [
+                                                'value' => $value->value,
+                                                'variant_id' => $variant->id,
+                                                'price' => $variant->price,
+                                                'image' => $variant->image ?? $product->image
+                                            ];
+                                            
+                                            // Kiểm tra xem giá trị đã tồn tại chưa
+                                            $exists = false;
+                                            foreach($variantAttributes[$attributeName] as $existingValue) {
+                                                if($existingValue['value'] === $value->value) {
+                                                    $exists = true;
+                                                    break;
+                                                }
+                                            }
+                                            
+                                            if(!$exists) {
+                                                $variantAttributes[$attributeName][] = $valueData;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    @endphp
+
+                    <!-- Hiển thị biến thể đã chọn -->
+                    <div class="selected-variant">
+                        <h3>Biến thể đã chọn: <span id="selected-variant-name">{{ isset($product->variants) && count($product->variants) > 0 ? '' : 'Không có biến thể' }}</span></h3>
                     </div>
 
-                    <div class="option-group">
-                        <h3 class="option-title">Độ cay</h3>
-                        <div class="option-items">
-                            @foreach(['Nhẹ', 'Vừa', 'Cay', 'Siêu cay'] as $spice)
-                                <button class="option-item {{ $spice == 'Vừa' ? 'active' : '' }}">{{ $spice }}</button>
-                            @endforeach
+                    @if(count($variantAttributes) > 0)
+                        @foreach($variantAttributes as $attributeName => $values)
+                            <div class="option-group">
+                                <h3 class="option-title">{{ $attributeName }}</h3>
+                                <div class="option-items">
+                                    @foreach($values as $index => $valueData)
+                                        <button class="option-item {{ $index === 0 ? 'active' : '' }}"
+                                                data-variant-id="{{ $valueData['variant_id'] }}"
+                                                data-price="{{ $valueData['price'] }}"
+                                                data-image="{{ $valueData['image'] }}">
+                                            {{ $valueData['value'] }}
+                                        </button>
+
+
+
+
+
+
+
+
+
+                                        
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="option-group">
+                            <h3 class="option-title">Kích cỡ</h3>
+                            <div class="option-items">
+                                <button class="option-item active" data-price="{{ $product->base_price }}">Mặc định</button>
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
 
                 <div class="product-actions">
@@ -193,6 +424,7 @@
                     </div>
 
                     <div class="action-buttons">
+                        <input type="hidden" id="variant-id-input" name="variant_id" value="">
                         <button class="add-to-cart-btn">
                             <i class="fas fa-shopping-cart"></i>
                             Thêm vào giỏ hàng
