@@ -89,57 +89,46 @@
 
 
 
-            {{-- Bảng danh mục --}}
-            <div class="data-table-container">
-                <table class="data-table" id="dataTable">
-                    <thead>
+        {{-- Bảng danh mục --}}
+        <div class="data-table-container">
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th data-sort="id" class="active-sort">
+                            ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
+                        </th>
+                        <th data-sort="category">
+                            Tên danh mục <i class="fas fa-sort data-table-sort-icon"></i>
+                        </th>
+                        {{-- <th data-sort="description">
+                            Mô tả <i class="fas fa-sort data-table-sort-icon"></i>
+                        </th> --}}
+                        <th data-sort="image">
+                            Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
+                        </th>
+                        <th data-sort="status">
+                            Trạng thái <i class="fas fa-sort data-table-sort-icon"></i>
+                        </th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($categories as $category)
                         <tr>
-                            <th data-sort="id" class="active-sort">
-                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
-                            </th>
-                            <th data-sort="category">
-                                Tên danh mục <i class="fas fa-sort data-table-sort-icon"></i>
-                            </th>
-                            <th data-sort="description">
-                                Mô tả <i class="fas fa-sort data-table-sort-icon"></i>
-                            </th>
-                            <th data-sort="image">
-                                Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
-                            </th>
-                            <th data-sort="status">
-                                Trạng thái <i class="fas fa-sort data-table-sort-icon"></i>
-                            </th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($categories as $category)
-                            <tr>
-                                <td>
-                                    <div class="data-table-id">
-                                        <span class="data-table-id-icon"><i class="fas fa-tag"></i></span>
-                                        {{ $category->id }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="data-table-product-name">{{ $category->name }}</div>
-                                </td>
-                                <td>{{ Str::limit($category->description, 50) }}</td>
-                                <td>
-                                    <div class="data-table-product-image">
-                                        @if ($category->image)
-                                            <img src="{{ asset('storage/' . $category->image) }}"
-                                                alt="{{ $category->name }}" width="50%">
-                                        @else
-                                            <span class="text-muted">Không có</span>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td>
-                                    @if ($category->status)
-                                        <span class="data-table-status data-table-status-success">
-                                            <i class="fas fa-check"></i> Hiển thị
-                                        </span>
+                            <td>
+                                <div class="data-table-id">
+                                    <span class="data-table-id-icon"><i class="fas fa-tag"></i></span>
+                                    {{ $category->id }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="data-table-product-name">{{ $category->name }}</div>
+                            </td>
+                            {{-- <td>{{ Str::limit($category->description, 50) }}</td> --}}
+                            <td>
+                                <div class="data-table-product-image">
+                                    @if ($category->image)
+                                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" width="200px">
                                     @else
                                         <span class="data-table-status data-table-status-failed">
                                             <i class="fas fa-times"></i> Ẩn
