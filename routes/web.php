@@ -98,9 +98,3 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
-<<<<<<<<< Temporary merge branch 1
-=========
-Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
-    Route::get('/search', [UserController::class, 'search'])->name('search');
-});
->>>>>>>>> Temporary merge branch 2
