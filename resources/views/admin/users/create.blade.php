@@ -286,7 +286,7 @@
         <div class="form-group">
           <label for="user_name">Tên đăng nhập</label>
           <input type="text" class="@error('user_name') is-invalid @enderror" id="user_name" name="user_name"
-            value="{{ old('user_name') }}" placeholder="Tên đăng nhập">
+            value="{{ old('user_name') }}" placeholder="Tên đăng nhập">  
           @error('user_name')
           <div class="invalid-feedback">{{ $message }}</div>
           @enderror
@@ -393,22 +393,4 @@
   </script>
   @endsection
 
-  @section('vendor-script')
-  {{-- vendor files --}}
-  <script src="{{ asset(mix('vendors/js/charts/apexcharts.min.js')) }}"></script>
-  <script src="{{ asset(mix('vendors/js/extensions/toastr.min.js')) }}"></script>
-  @endsection
-
-  @section('page-script')
-  {{-- Page js files --}}
-  <script src="{{ asset(mix('js/scripts/pages/dashboard-ecommerce.js')) }}"></script>
-  <script src="{{ asset(mix('js/scripts/extensions/toastr.js')) }}"></script>
-  <script>
-    // Hiển thị thông báo tự động ẩn sau 3 giây
-    $(document).ready(function() {
-      setTimeout(function() {
-        $('.alert').alert('close');
-      }, 3000);
-    });
-  </script>
-  @endsection
+  

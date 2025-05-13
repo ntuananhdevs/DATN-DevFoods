@@ -206,20 +206,29 @@ class UserController extends Controller
         }
     }
 
-    public function destroy(User $user , $id)
+    public function destroy(User $user, $id)
     {
         try {
-
-            $user =User::findOrFail($id)->delete();
-
-            return redirect()->route('admin.users.index')
-                ->with('success', 'Đã xóa người dùng thành công.');
+            $user = User::findOrFail($id)->delete();
+            
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Xóa thành công!',
+                'message' => 'Người dùng đã được xóa thành công.'
+            ]);
+            
+            return redirect()->route('admin.users.index');
         } catch (\Exception $e) {
-            Log::error('Lỗi khi xóa người dùng: ' . $e->getMessage());
-                                            return redirect()->back()
-                ->with('error', 'Đã xảy ra lỗi khi xóa người dùng. Vui lòng thử lại.');
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể xóa người dùng. ' . $e->getMessage()
+            ]);
+            
+            return back();
         }
     }
+
 
     public function trash()
     {

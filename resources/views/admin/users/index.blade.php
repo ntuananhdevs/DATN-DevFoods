@@ -46,25 +46,20 @@
 
         <!-- Controls -->
         <div class="data-table-controls">
-            <div class="data-table-search">
-                <form method="GET" action="{{ route('admin.users.index') }}">
-                    <i class="fas fa-search data-table-search-icon"></i>
-                    <input type="text"
-                        placeholder="Tìm kiếm theo tên, email..."
-                        name="search"
-                        value="{{ request('search') }}"
-                        id="dataTableSearch">
-                    <button type="submit" hidden></button>
-                </form>
-            </div>
-            <div class="data-table-actions">
-                <button class="data-table-btn data-table-btn-outline">
-                    <i class="fas fa-sliders"></i> Cột
-                </button>
-
-            </div>
-        </div>
-
+    <div class="data-table-search">
+        <i class="fas fa-search data-table-search-icon"></i>
+        <input type="text" 
+            placeholder="Tìm kiếm theo tên, mail người dùng ..." 
+            id="dataTableSearch"
+            value="{{ request('search') }}"
+            onkeyup="handleSearch(event)">
+    </div>
+    <div class="data-table-actions">
+        <button class="data-table-btn data-table-btn-outline">
+            <i class="fas fa-sliders"></i> Cột
+        </button>
+    </div>
+</div>
         <!-- Table Container -->
         <div class="data-table-container">
             <table class="data-table" id="dataTable">
@@ -93,7 +88,6 @@
                     <tr>
                         <td>
                             <div class="data-table-id">
-
                                 {{ $user->id }}
                             </div>
                         </td>
@@ -141,10 +135,13 @@
                                     class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit"
+                                    <button type="button"
                                         class="data-table-action-btn delete data-table-tooltip"
                                         data-tooltip="Xóa"
-                                        onclick="return confirm('Bạn có chắc chắn muốn xóa người dùng này?')">
+                                        onclick="dtmodalConfirmDelete({
+                                           itemName: '{{ $user->full_name }}',
+                                           onConfirm: () => this.closest('form').submit()
+                                            })">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -226,24 +223,21 @@
         </div>
     </div>
 </div>
-@endsection
-
-@section('vendor-script')
-{{-- vendor files --}}
-<script src="{{ asset(mix('vendors/js/charts/apexcharts.min.js')) }}"></script>
-<script src="{{ asset(mix('vendors/js/extensions/toastr.min.js')) }}"></script>
-@endsection
-
-@section('page-script')
-{{-- Page js files --}}
-<script src="{{ asset(mix('js/scripts/pages/dashboard-ecommerce.js')) }}"></script>
-<script src="{{ asset(mix('js/scripts/extensions/toastr.js')) }}"></script>
 <script>
-    // Hiển thị thông báo tự động ẩn sau 3 giây
-    $(document).ready(function() {
-        setTimeout(function() {
-            $('.alert').alert('close');
-        }, 3000);
-    });
+   function handleSearch(event) {
+    const searchValue = event.target.value.trim();
+    const currentUrl = new URL(window.location.href);
+    
+    if (searchValue) {
+        currentUrl.searchParams.set('search', searchValue);
+    } else {
+        currentUrl.searchParams.delete('search');
+    }
+    
+    // Chỉ chuyển hướng khi nhấn Enter
+    if (event.key === 'Enter') {
+        window.location.href = currentUrl.toString();
+    }
+}
 </script>
 @endsection
