@@ -307,6 +307,8 @@
                         </div>
                     </div>
 
+                    <div class="mt-2">
+                        <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Back to List</a>
                     <div class="user-action-buttons">
                         <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-custom btn-primary-custom">
                             <i data-feather="edit-2" class="font-small-4"></i>

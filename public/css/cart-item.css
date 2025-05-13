@@ -40,7 +40,6 @@ body {
     width: 100%;
     max-width: 1440px;
     margin: 0 auto;
-    padding: 2rem;
 }
 
 /* Breadcrumb */
@@ -49,6 +48,7 @@ body {
     align-items: center;
     margin-bottom: 1.5rem;
     font-size: 0.9rem;
+    margin-top: 40px;
 }
 
 .breadcrumb a {
