@@ -14,19 +14,43 @@ class CategoryController extends Controller
         $this->middleware(['auth', 'role:admin']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $categories = Category::latest()->paginate(5);
+            // Lấy từ input tìm kiếm
+            $keyword = $request->input('keyword');
+
+            // Tạo truy vấn tìm kiếm
+            $categories = Category::when($keyword, function ($query, $keyword) {
+                return $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', '%' . $keyword . '%')
+                        ->orWhere('id', 'like', '%' . $keyword . '%');
+                });
+            })->paginate(10);
+
             return view('admin.categories.index', compact('categories'));
         } catch (\Exception $e) {
-            return back()->with('error', 'Không thể lấy danh sách categories. ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể lấy danh sách danh mục. ' . $e->getMessage()
+            ]);
+            return back();
         }
     }
 
     public function create()
     {
-        return view('admin.categories.create');
+        try {
+            return view('admin.categories.create');
+        } catch (\Exception $e) {
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể truy cập trang tạo danh mục. ' . $e->getMessage()
+            ]);
+            return back();
+        }
     }
 
     public function store(Request $request)
@@ -47,9 +71,20 @@ class CategoryController extends Controller
 
             Category::create($data);
 
-            return redirect()->route('admin.categories.index')->with('success', 'Tạo danh mục thành công!');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Danh mục đã được tạo thành công.'
+            ]);
+
+            return redirect()->route('admin.categories.index');
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Lỗi khi tạo danh mục: ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Lỗi khi tạo danh mục: ' . $e->getMessage()
+            ]);
+            return back()->withInput();
         }
     }
 
@@ -58,7 +93,12 @@ class CategoryController extends Controller
         try {
             return view('admin.categories.edit', compact('category'));
         } catch (\Exception $e) {
-            return back()->with('error', 'Không thể truy cập trang chỉnh sửa. ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể truy cập trang chỉnh sửa. ' . $e->getMessage()
+            ]);
+            return back();
         }
     }
 
@@ -83,9 +123,20 @@ class CategoryController extends Controller
 
             $category->update($data);
 
-            return redirect()->route('admin.categories.index')->with('success', 'Cập nhật danh mục thành công!');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Cập nhật danh mục thành công.'
+            ]);
+
+            return redirect()->route('admin.categories.index');
         } catch (\Exception $e) {
-            return back()->withInput()->with('error', 'Lỗi khi cập nhật danh mục: ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Lỗi khi cập nhật danh mục: ' . $e->getMessage()
+            ]);
+            return back()->withInput();
         }
     }
 
@@ -94,7 +145,12 @@ class CategoryController extends Controller
         try {
             return view('admin.categories.show', compact('category'));
         } catch (\Exception $e) {
-            return back()->with('error', 'Không thể truy cập trang chi tiết. ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể truy cập trang chi tiết. ' . $e->getMessage()
+            ]);
+            return back();
         }
     }
 
@@ -107,9 +163,21 @@ class CategoryController extends Controller
 
             $category->delete();
 
-            return redirect()->route('admin.categories.index')->with('success', 'Xóa danh mục thành công!');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Xóa thành công!',
+                'message' => 'Danh mục đã được xóa thành công.'
+            ]);
+
+            return redirect()->route('admin.categories.index');
         } catch (\Exception $e) {
-            return back()->with('error', 'Không thể xóa danh mục. ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể xóa danh mục. '
+            ]);
+
+            return back();
         }
     }
 }

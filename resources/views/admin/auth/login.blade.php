@@ -5,20 +5,17 @@
     <h1 class="login-title">Đăng nhập tài khoản</h1>
     <p class="login-subtitle">Nhập thông tin đăng nhập của bạn để tiếp tục</p>
     
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
     @if(session('success'))
     <div class="alert alert-success">
         {{ session('success') }}
     </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.login.submit') }}">
+    <form method="POST" action="{{ route('admin.login.submit') }}">                                                             
         @csrf
       <div class="form-group">
         <label for="email" class="form-label">Email</label>
-        <input type="email" id="email" name="email" class="form-input" placeholder="name@example.com" value="{{ old('email') }}">
+        <input type="text" id="email" name="email" class="form-input @error('email') is-invalid @enderror" placeholder="name@example.com" value="{{ old('email') }}">
         @error('email')
         <div class="text-danger mt-1">{{ $message }}</div>
         @enderror
@@ -33,6 +30,10 @@
         @error('password')
         <div class="text-danger mt-1">{{ $message }}</div>
         @enderror
+
+        @if(session('error'))
+        <div class="text-danger mt-1">{{ session('error') }}</div>
+        @endif
       </div>
       
       <div class="remember-me">

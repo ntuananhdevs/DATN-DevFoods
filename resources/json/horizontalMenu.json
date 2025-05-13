@@ -1,37 +1,55 @@
 {
     "menu": [{
-            "url": "dashboard-analytics",
+            "url": "/admin",
             "name": "Dashboard",
             "slug": "dashboard",
+            "badgeClass": "badge badge-warning badge-pill float-right mr-2",
             "icon": "feather icon-home",
-            "i18n": "Dashboard"
+            "i18n": "nav.dashboard_analytics"
         },
         {
-            "url": "users",
-            "name": "Manage Users",
-            "slug": "users",
+            "url": "/admin/users",
+            "name": "Quản lý người dùng",
             "icon": "feather icon-user",
             "i18n": "nav.users"
         },
-
         {
             "url": "/admin/products",
-            "name": "Manage Products",
+            "name": "Quản lý sản phẩm",
             "icon": "feather icon-box",
             "i18n": "nav.products"
         },
-
         {
             "url": "/admin/categories",
-            "name": "Manage Categories",
+            "name": "Quản lý danh mục",
             "icon": "feather icon-list",
             "i18n": "nav.categories"
         },
         {
             "url": "/admin/roles",
-            "name": "Manage Roles",
+            "name": "Quản lý quyền",
             "icon": "feather icon-shield",
             "i18n": "nav.roles"
+        },
+        {
+            "url": "#",
+            "name": "Quản lý tài xế",
+            "icon": "feather icon-user-tie",
+            "i18n": "nav.drivers",
+            "submenu": [
+                {
+                    "url": "/admin/drivers/applications",
+                    "name": "Đơn đang chờ duyệt",
+                    "icon": "feather icon-clock",
+                    "i18n": "nav.pending_applications"
+                },
+                {
+                    "url": "/admin/drivers/applications",
+                    "name": "Tất cả đơn ứng tuyển",
+                    "icon": "feather icon-list",
+                    "i18n": "nav.all_applications"
+                }
+            ]
         }
     ]
 }

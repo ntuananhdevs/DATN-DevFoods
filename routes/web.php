@@ -1,21 +1,44 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
+//Admin
 use App\Http\Controllers\Customer\HomeController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ProductController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
+
+//Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
+use App\Http\Controllers\Admin\DriverController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
+use App\Http\Controllers\Customer\CartController as CustomerCartController;
+use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
+use App\Http\Controllers\Customer\UserController as CustomerUserController;
 
 Route::prefix('/')->group(function () {
-    Route::get('/', [HomeController::class, 'index']);
+    Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('shop/product', [CustomerProductController::class, 'index']);
-    Route::get('shop/product/product-detail', [CustomerProductController::class, 'show']);
+    Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
+    Route::get('cart', [CustomerCartController::class, 'index']);
+    Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
+
+    // Route Customer (login / logout / register)
+    Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
+    Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.submit');
+    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
+    Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.submit');
+    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
+
+    // Route Customer (profile)
+    Route::get('/profile', [CustomerUserController::class, 'showProfile'])->name('customer.profile');
+    Route::get('/profile/update', [CustomerUserController::class, 'ShowForm'])->name('customer.profile.form');
+    Route::post('/profile/update', [CustomerUserController::class, 'updateProfile'])->name('customer.profile.update');
 });
+
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -62,7 +85,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('trash', [UserController::class, 'trash'])->name('trash');
         Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
         Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
-        Route::get('/export', [UserController::class, 'export'])->name('export'); // Thêm dòng này
+        Route::get('/export', [UserController::class, 'export'])->name('export');
+        Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
     // Products Management
@@ -79,5 +104,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
-});
 
+    // Driver Application Management
+    Route::prefix('drivers')->name('drivers.')->group(function () {
+        Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
+        Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
+        Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
+        Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
+    });
+});

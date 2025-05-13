@@ -2,16 +2,35 @@
 
 @section('content')
     <div class="data-table-wrapper">
-
         {{-- Header chính --}}
         <div class="data-table-main-header">
             <div class="data-table-brand">
-                <div class="data-table-logo"><i class="fas fa-list-alt"></i></div>
+                <div class="data-table-logo">
+                    <i class="fas fa-layer-group"></i>
+                </div>
                 <h1 class="data-table-title">Quản lý danh mục</h1>
             </div>
+
             <div class="data-table-header-actions">
+                {{-- <div class="dropdown d-inline">
+                    <button class="data-table-btn data-table-btn-outline dropdown-toggle" type="button" id="exportDropdown"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-download"></i> Xuất
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="exportDropdown">
+                        <a class="dropdown-item" href="{{ route('admin.categories.export', ['type' => 'excel']) }}">
+                            <i class="fas fa-file-excel"></i> Xuất Excel
+                        </a>
+                        <a class="dropdown-item" href="{{ route('admin.categories.export', ['type' => 'pdf']) }}">
+                            <i class="fas fa-file-pdf"></i> Xuất PDF
+                        </a>
+                        <a class="dropdown-item" href="{{ route('admin.categories.export', ['type' => 'csv']) }}">
+                            <i class="fas fa-file-csv"></i> Xuất CSV
+                        </a>
+                    </div>
+                </div> --}}
                 <a href="{{ route('admin.categories.create') }}" class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-plus"></i> Thêm danh mục
+                    <i class="fas fa-plus"></i> Thêm mới
                 </a>
             </div>
         </div>
@@ -22,52 +41,131 @@
                 <h2 class="data-table-card-title">Danh sách danh mục</h2>
             </div>
 
+            <!-- Thanh công cụ -->
+            {{-- <form method="GET" action="{{ route('admin.categories.index') }}">
+                <div class="data-table-controls">
+                    <div class="data-table-search">
+                        <i class="fas fa-search data-table-search-icon"></i>
+                        <input type="text" name="keyword" value="{{ request('keyword') }}"
+                            placeholder="Tìm kiếm theo tên, mã danh mục..." id="dataTableSearch">
+                    </div>
+                    <div class="data-table-actions">
+                        <button class="data-table-btn data-table-btn-outline" type="submit">
+                            <i class="fas fa-sliders"></i> Cột
+                        </button>
+                        <button class="data-table-btn data-table-btn-outline" data-bs-toggle="modal" data-bs-target="#filterModal" type="button">
+                            <i class="fas fa-filter"></i> Lọc
+                        </button>
+                    </div>
+                </div>
+            </form> --}}
+
+            <!-- Modal Lọc -->
+            {{-- <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form action="{{ route('admin.categories.index') }}" method="GET">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Lọc danh mục</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-2">
+                        <label>Trạng thái</label>
+                        <select name="status" class="form-control">
+                            <option value="">-- Tất cả --</option>
+                            <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Hiển thị</option>
+                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Ẩn</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Áp dụng</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div> --}}
+
+
+
             {{-- Bảng danh mục --}}
             <div class="data-table-container">
-                <table class="data-table">
+                <table class="data-table" id="dataTable">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Tên</th>
-                            <th>Mô tả</th>
-                            <th>Ảnh</th>
-                            <th>Trạng thái</th>
-                            <th>Hành động</th>
+                            <th data-sort="id" class="active-sort">
+                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="category">
+                                Tên danh mục <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="description">
+                                Mô tả <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="image">
+                                Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="status">
+                                Trạng thái <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($categories as $category)
                             <tr>
-                                <td>{{ $category->id }}</td>
-                                <td>{{ $category->name }}</td>
-                                <td>{{ Str::limit($category->description, 50) }}</td>
                                 <td>
-                                    @if ($category->image)
-                                        <img src="{{ asset('storage/' . $category->image) }}" width="60">
-                                    @else
-                                        <span class="text-muted">Không có</span>
-                                    @endif
+                                    <div class="data-table-id">
+                                        <span class="data-table-id-icon"><i class="fas fa-tag"></i></span>
+                                        {{ $category->id }}
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge {{ $category->status ? 'bg-success' : 'bg-secondary' }}">
-                                        {{ $category->status ? 'Hiển thị' : 'Ẩn' }}
-                                    </span>
+                                    <div class="data-table-product-name">{{ $category->name }}</div>
+                                </td>
+                                <td>{{ Str::limit($category->description, 50) }}</td>
+                                <td>
+                                    <div class="data-table-product-image">
+                                        @if ($category->image)
+                                            <img src="{{ asset('storage/' . $category->image) }}"
+                                                alt="{{ $category->name }}" width="50%">
+                                        @else
+                                            <span class="text-muted">Không có</span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    @if ($category->status)
+                                        <span class="data-table-status data-table-status-success">
+                                            <i class="fas fa-check"></i> Hiển thị
+                                        </span>
+                                    @else
+                                        <span class="data-table-status data-table-status-failed">
+                                            <i class="fas fa-times"></i> Ẩn
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.categories.show', $category->id) }}"
-                                            class="data-table-action-btn" data-tooltip="Xem">
+                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{{ route('admin.categories.edit', $category->id) }}"
-                                            class="data-table-action-btn edit" data-tooltip="Sửa">
+                                            class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
                                         <form action="{{ route('admin.categories.destroy', $category->id) }}" method="POST"
-                                            class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?')">
+                                            class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="data-table-action-btn delete" data-tooltip="Xóa">
+                                            <button type="button" class="data-table-action-btn delete data-table-tooltip"
+                                                data-tooltip="Xóa"
+                                                onclick="dtmodalConfirmDelete({
+                                                itemName: '{{ $category->name }}',
+                                                onConfirm: () => this.closest('form').submit()
+                                            })">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -76,7 +174,14 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">Không có danh mục nào.</td>
+                                <td colspan="6" class="text-center">
+                                    <div class="data-table-empty" id="dataTableEmpty">
+                                        <div class="data-table-empty-icon">
+                                            <i class="fas fa-box-open"></i>
+                                        </div>
+                                        <h3>Không có danh mục nào</h3>
+                                    </div>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -86,37 +191,33 @@
             {{-- Phân trang --}}
             <div class="data-table-footer">
                 <div class="data-table-pagination-info">
-                    Hiển thị {{ $categories->firstItem() }} đến {{ $categories->lastItem() }} / tổng số
-                    {{ $categories->total() }}
+                    Hiển thị <span
+                        id="startRecord">{{ ($categories->currentPage() - 1) * $categories->perPage() + 1 }}</span>
+                    đến <span
+                        id="endRecord">{{ min($categories->currentPage() * $categories->perPage(), $categories->total()) }}</span>
+                    của <span id="totalRecords">{{ $categories->total() }}</span> mục
                 </div>
                 <div class="data-table-pagination-controls">
-                    {{ $categories->links('pagination::bootstrap-5') }}
+                    @if (!$categories->onFirstPage())
+                        <a href="{{ $categories->previousPageUrl() }}" class="data-table-pagination-btn" id="prevBtn">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </a>
+                    @endif
+
+                    @for ($i = 1; $i <= $categories->lastPage(); $i++)
+                        <a href="{{ $categories->url($i) }}"
+                            class="data-table-pagination-btn {{ $categories->currentPage() == $i ? 'active' : '' }}">
+                            {{ $i }}
+                        </a>
+                    @endfor
+
+                    @if ($categories->hasMorePages())
+                        <a href="{{ $categories->nextPageUrl() }}" class="data-table-pagination-btn" id="nextBtn">
+                            Tiếp <i class="fas fa-chevron-right"></i>
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
-
-    {{-- Modal flash message --}}
-    @if (session('success') || session('error'))
-        <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header {{ session('success') ? 'bg-success' : 'bg-danger' }} text-white">
-                        <h5 class="modal-title">Thông báo</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                    </div>
-                    <div class="modal-body">
-                        {{ session('success') ?? session('error') }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script>
-            window.addEventListener('load', function() {
-                const modal = new bootstrap.Modal(document.getElementById('messageModal'));
-                modal.show();
-            });
-        </script>
-    @endif
 @endsection

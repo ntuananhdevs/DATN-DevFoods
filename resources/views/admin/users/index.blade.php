@@ -11,30 +11,7 @@
             <h1 class="data-table-title">Quản lý người dùng</h1>
         </div>
 
-        <div class="data-table-header-actions">
-            <div class="header-actions">
-                <div class="btn-group">
-                    <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-download"></i> Xuất
-                    </button>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
-                            <i class="fas fa-file-excel"></i> Xuất Excel
-                        </a>
-                        <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">
-                            <i class="fas fa-file-pdf"></i>PDF</a>
-                        <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">
-                            <i class="fas fa-file-csv"></i> CSV</a>
-                    </div>
-                </div>
-                <a href="{{ route('admin.users.trash') }}" class="data-table-btn data-table-btn-danger ml-2">
-                    <i class="fas fa-trash"></i> Thùng rác
-                </a>
-            </div>
-            <a href="{{ route('admin.users.create') }}" class="data-table-btn data-table-btn-primary">
-                <i class="fas fa-plus"></i> Thêm mới
-            </a>
-        </div>
+
     </div>
 
     <!-- Data Table Card -->
@@ -46,25 +23,73 @@
 
         <!-- Controls -->
         <div class="data-table-controls">
-    <div class="data-table-search">
-        <i class="fas fa-search data-table-search-icon"></i>
-        <input type="text" 
-            placeholder="Tìm kiếm theo tên, mail người dùng ..." 
-            id="dataTableSearch"
-            value="{{ request('search') }}"
-            onkeyup="handleSearch(event)">
-    </div>
-    <div class="data-table-actions">
-        <button class="data-table-btn data-table-btn-outline">
-            <i class="fas fa-sliders"></i> Cột
-        </button>
-    </div>
-</div>
+            <div class="data-table-search">
+                <i class="fas fa-search data-table-search-icon"></i>
+                <input type="text"
+                    placeholder="Tìm kiếm theo tên, mail người dùng ..."
+                    id="dataTableSearch"
+                    value="{{ request('search') }}"
+                    onkeyup="handleSearch(event)">
+            </div>
+            <div class="data-table-actions">
+                <div class="d-flex align-items-center">
+                    <div class="data-table-actions">
+                        <div class="d-flex align-items-center">
+                            <button class="data-table-btn data-table-btn-outline mr-2" onclick="toggleSelectAll()">
+                                <i class="fas fa-check-square"></i> Chọn tất cả
+                            </button>
+                            <div class="btn-group mr-2">
+                                <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
+                                    <i class="fas fa-tasks"></i> Thao tác
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(1)">
+                                        <i class="fas fa-check-circle text-success"></i> Kích hoạt đã chọn
+                                    </a>
+                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(0)">
+                                        <i class="fas fa-times-circle text-danger"></i> Vô hiệu hóa đã chọn
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="btn-group mr-2">
+                                <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
+                                    <i class="fas fa-download"></i> Xuất
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
+                                        <i class="fas fa-file-excel text-success"></i> Excel
+                                    </a>
+                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">
+                                        <i class="fas fa-file-pdf text-danger"></i> PDF
+                                    </a>
+                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">
+                                        <i class="fas fa-file-csv text-primary"></i> CSV
+                                    </a>
+                                </div>
+                            </div>
+
+                            <button class="data-table-btn data-table-btn-outline">
+                                <i class="fas fa-columns"></i> Cột
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Table Container -->
         <div class="data-table-container">
             <table class="data-table" id="dataTable">
                 <thead>
                     <tr>
+                        <th>
+                            <div>
+                                <input type="checkbox" id="selectAll">
+
+                            </div>
+
+                        </th>
                         <th data-sort="id" class="active-sort">
                             ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
                         </th>
@@ -78,7 +103,6 @@
                         <th data-sort="phone">
                             Điện thoại <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
-
                         <th>Trạng thái</th>
                         <th>Thao tác</th>
                     </tr>
@@ -86,6 +110,9 @@
                 <tbody id="dataTableBody">
                     @forelse($users as $user)
                     <tr>
+                        <td>
+                            <input type="checkbox" class="row-checkbox" value="{{ $user->id }}">
+                        </td>
                         <td>
                             <div class="data-table-id">
                                 {{ $user->id }}
@@ -99,24 +126,36 @@
                                     style="width: 40px; height: 40px; object-fit: cover;">
                             </div>
                         </td>
-
                         <td>
                             <div class="data-table-user-name">{{ $user->full_name }}</div>
-
                         </td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->phone ?? 'N/A' }}</td>
-
                         <td>
-                            @if($user->active)
-                            <span class="data-table-status data-table-status-success">
-                                <i class="fas fa-check"></i> Hoạt động
-                            </span>
-                            @else
-                            <span class="data-table-status data-table-status-failed">
-                                <i class="fas fa-times"></i> Vô hiệu hóa
-                            </span>
-                            @endif
+                            <form action="{{ route('admin.users.toggle-status', $user->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('PATCH')
+                                <button type="button"
+                                    class="data-table-status {{ $user->active ? 'data-table-status-success' : 'data-table-status-failed' }}"
+                                    style="border: none; cursor: pointer; width: 60%;"
+                                    onclick="dtmodalHandleStatusToggle({
+                                        button: this,
+                                        userName: '{{ $user->full_name }}',
+                                        currentStatus: {{ $user->active ? 'true' : 'false' }},
+                                        confirmTitle: 'Xác nhận thay đổi trạng thái',
+                                        confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của người dùng này?',
+                                        confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của người dùng.',
+                                        successMessage: 'Đã thay đổi trạng thái người dùng thành công',
+                                        errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái người dùng'
+                                    })">
+                                    @if($user->active)
+                                    <i class="fas fa-check"></i> Hoạt động
+                                    @else
+                                    <i class="fas fa-times"></i> Vô hiệu hóa
+                                    @endif
+                                </button>
+                            </form>
+
                         </td>
                         <td>
                             <div class="data-table-action-buttons">
@@ -125,32 +164,18 @@
                                     data-tooltip="Xem chi tiết">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{{ route('admin.users.edit', $user->id) }}"
-                                    class="data-table-action-btn edit data-table-tooltip"
-                                    data-tooltip="Chỉnh sửa">
-                                    <i class="fas fa-pen"></i>
-                                </a>
-                                <form action="{{ route('admin.users.destroy', $user->id) }}"
-                                    method="POST"
-                                    class="d-inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button"
-                                        class="data-table-action-btn delete data-table-tooltip"
-                                        data-tooltip="Xóa"
-                                        onclick="dtmodalConfirmDelete({
-                                           itemName: '{{ $user->full_name }}',
-                                           onConfirm: () => this.closest('form').submit()
-                                            })">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
                             </div>
+                            <form id="bulkStatusForm" action="{{ route('admin.users.bulk-status-update') }}" method="POST" style="display: none;">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="user_ids" id="selectedUserIds">
+                                <input type="hidden" name="status" id="selectedStatus">
+                            </form>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center">
+                        <td colspan="9" class="text-center">
                             <div class="data-table-empty">
                                 <div class="data-table-empty-icon">
                                     <i class="fas fa-user-slash"></i>
@@ -223,21 +248,38 @@
         </div>
     </div>
 </div>
+
 <script>
-   function handleSearch(event) {
-    const searchValue = event.target.value.trim();
-    const currentUrl = new URL(window.location.href);
-    
-    if (searchValue) {
-        currentUrl.searchParams.set('search', searchValue);
-    } else {
-        currentUrl.searchParams.delete('search');
+    function handleSearch(event) {
+        const searchValue = event.target.value.trim();
+        const currentUrl = new URL(window.location.href);
+
+        if (searchValue) {
+            currentUrl.searchParams.set('search', searchValue);
+        } else {
+            currentUrl.searchParams.delete('search');
+        }
+
+        if (event.key === 'Enter') {
+            window.location.href = currentUrl.toString();
+        }
     }
-    
-    // Chỉ chuyển hướng khi nhấn Enter
-    if (event.key === 'Enter') {
-        window.location.href = currentUrl.toString();
+
+    function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const rowCheckboxes = document.getElementsByClassName('row-checkbox');
+
+        selectAllCheckbox.checked = !selectAllCheckbox.checked;
+        for (let checkbox of rowCheckboxes) {
+            checkbox.checked = selectAllCheckbox.checked;
+        }
     }
-}
+
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const rowCheckboxes = document.getElementsByClassName('row-checkbox');
+        for (let checkbox of rowCheckboxes) {
+            checkbox.checked = this.checked;
+        }
+    });
 </script>
 @endsection
