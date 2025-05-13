@@ -6,7 +6,7 @@
         @csrf
         <div class="mb-3">
             <label class="form-label">Tên danh mục</label>
-            <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
+            <input type="text" name="name" class="form-control" value="{{ old('name') }}" >
         </div>
 
         <div class="mb-3">
@@ -27,6 +27,11 @@
             </select>
         </div>
 
-        <button type="submit" class="btn btn-success">Lưu</button>
+        <div class="d-flex">
+        <button type="submit" class="btn btn-success mr-1">Lưu</button>
+        <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+        </div>
     </form>
 @endsection

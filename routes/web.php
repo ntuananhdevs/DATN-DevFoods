@@ -39,7 +39,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Categories Management
-    Route::resource('categories', CategoryController::class);
+    Route::resource('categories', CategoryController::class)->except(['destroy']);
+    Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
     // Users Management
     Route::prefix('users')->name('users.')->group(function () {

@@ -56,8 +56,9 @@ class CategoryController extends Controller
             $data = $request->only(['name', 'description', 'status']);
 
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('categories', 'public');
+                $data['image'] = $request->file('image')->store('images/categories', 'public');
             }
+
 
             Category::create($data);
 
@@ -93,42 +94,45 @@ class CategoryController extends Controller
     }
 
     public function update(Request $request, Category $category)
-    {
-        try {
-            $request->validate([
-                'name' => 'required|string|max:191',
-                'description' => 'nullable|string',
-                'image' => 'nullable|image|max:2048',
-                'status' => 'required|boolean',
-            ]);
+{
+    try {
+        $request->validate([
+            'name' => 'required|string|max:191',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|max:2048',
+            'status' => 'required|boolean',
+        ]);
 
-            $data = $request->only(['name', 'description', 'status']);
+        $data = $request->only(['name', 'description', 'status']);
 
-            if ($request->hasFile('image')) {
-                if ($category->image) {
-                    Storage::disk('public')->delete($category->image);
-                }
-                $data['image'] = $request->file('image')->store('categories', 'public');
+        if ($request->hasFile('image')) {
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
             }
-
-            $category->update($data);
-
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => 'Cập nhật danh mục thành công.'
-            ]);
-
-            return redirect()->route('admin.categories.index');
-        } catch (\Exception $e) {
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Lỗi khi cập nhật danh mục: ' . $e->getMessage()
-            ]);
-            return back()->withInput();
+            $data['image'] = $request->file('image')->store('images/categories', 'public');
         }
+
+        $category->update($data);
+
+        session()->flash('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Cập nhật danh mục thành công.'
+        ]);
+
+        // Quay lại trang sửa thay vì index
+        return redirect()->route('admin.categories.edit', $category->id);
+
+    } catch (\Exception $e) {
+        session()->flash('toast', [
+            'type' => 'error',
+            'title' => 'Lỗi!',
+            'message' => 'Lỗi khi cập nhật danh mục: ' . $e->getMessage()
+        ]);
+        return back()->withInput();
     }
+}
+
 
     public function show(Category $category)
     {
@@ -144,30 +148,46 @@ class CategoryController extends Controller
         }
     }
 
-    public function destroy(Category $category)
-    {
-        try {
-            if ($category->image) {
-                Storage::disk('public')->delete($category->image);
-            }
+    public function destroy($id)
+{
+    try {
+        $category = Category::find($id);
 
-            $category->delete();
-
+        if (! $category) {
+            // Flash lỗi thông báo (hiển thị bằng modal hoặc alert)
             session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Xóa thành công!',
-                'message' => 'Danh mục đã được xóa thành công.'
+                'type' => 'error',
+                'title' => 'Không tìm thấy!',
+                'message' => 'Danh mục không tồn tại hoặc đã bị xóa.'
             ]);
 
             return redirect()->route('admin.categories.index');
-        } catch (\Exception $e) {
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Không thể xóa danh mục. ' . $e->getMessage()
-            ]);
-
-            return back();
         }
+
+        // Nếu tồn tại thì tiếp tục xóa
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
+        }
+
+        $category->delete();
+
+        session()->flash('toast', [
+            'type' => 'success',
+            'title' => 'Xóa thành công!',
+            'message' => 'Danh mục đã được xóa thành công.'
+        ]);
+
+        return redirect()->route('admin.categories.index');
+    } catch (\Exception $e) {
+        session()->flash('toast', [
+            'type' => 'error',
+            'title' => 'Lỗi!',
+            'message' => 'Không thể xóa danh mục. ' . $e->getMessage()
+        ]);
+
+        return back();
     }
+}
+
+
 }

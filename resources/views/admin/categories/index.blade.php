@@ -100,9 +100,9 @@
                         <th data-sort="category">
                             Tên danh mục <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
-                        <th data-sort="description">
+                        {{-- <th data-sort="description">
                             Mô tả <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
+                        </th> --}}
                         <th data-sort="image">
                             Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
@@ -124,11 +124,11 @@
                             <td>
                                 <div class="data-table-product-name">{{ $category->name }}</div>
                             </td>
-                            <td>{{ Str::limit($category->description, 50) }}</td>
+                            {{-- <td>{{ Str::limit($category->description, 50) }}</td> --}}
                             <td>
                                 <div class="data-table-product-image">
                                     @if ($category->image)
-                                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" width="50%">
+                                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" width="200px">
                                     @else
                                         <span class="text-muted">Không có</span>
                                     @endif
