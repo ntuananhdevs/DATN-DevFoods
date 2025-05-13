@@ -1,5 +1,6 @@
 {
-    "menu": [{
+    "menu": [
+        {
             "url": "/admin",
             "name": "Dashboard",
             "slug": "dashboard",
