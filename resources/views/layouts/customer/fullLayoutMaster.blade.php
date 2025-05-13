@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'DevFood Vietnam')</title>
 
@@ -122,11 +123,11 @@
                         </button>
                         <div class="notification-btn">
                             <a href="#"><i class="fa-solid fa-bell"></i></a>
-                            <span class="notification-count">5</span>
+                            <span class="notification-count">{{ $notificationCount ?? '0' }}</span>
                         </div>
                         <div class="cart-btn">
                             <a href="{{ asset('cart') }}"><i class="fas fa-shopping-bag"></i></a>
-                            <span class="cart-count">3</span>
+                            <span class="cart-count">{{ session()->has('cart') ? count(session('cart')) : '0' }}</span>
                         </div>
                         <!-- <button class="pickup-btn">PICK UP</button>
                     <div class="hotline">
