@@ -14,10 +14,20 @@ class CategoryController extends Controller
         $this->middleware(['auth', 'role:admin']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $categories = Category::latest()->paginate(5);
+            // Lấy từ input tìm kiếm
+            $keyword = $request->input('keyword');
+
+            // Tạo truy vấn tìm kiếm
+            $categories = Category::when($keyword, function ($query, $keyword) {
+                return $query->where(function ($q) use ($keyword) {
+                    $q->where('name', 'like', '%' . $keyword . '%')
+                        ->orWhere('id', 'like', '%' . $keyword . '%');
+                });
+            })->paginate(10);
+
             return view('admin.categories.index', compact('categories'));
         } catch (\Exception $e) {
             session()->flash('toast', [

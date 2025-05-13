@@ -1,7 +1,7 @@
 @extends('layouts.customer.fullLayoutMaster')
 @section('content')
-    <!DOCTYPE html>
-    <html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 
     <head>
         <meta charset="UTF-8">
@@ -11,6 +11,17 @@
         <link rel="stylesheet" href="{{ asset('css/customer/home.css') }}">
     </head>
 
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if (session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
     <body>
         <main>
             <!-- Hero Banner -->
@@ -152,9 +163,9 @@
                                             <button class="action-btn cart-btn">
                                                 <i class="fas fa-shopping-bag"></i>
                                             </button>
-                                            <button class="action-btn info-btn">
-                                                <i class="fas fa-info"></i>
-                                            </button>
+{{--                                            <button class="action-btn info-btn">--}}
+{{--                                                <i class="fas fa-info"></i>--}}
+{{--                                            </button>--}}
                                         </div>
                                     </div>
                                 </div>
@@ -175,7 +186,7 @@
                         @endforeach
                     </div>
                     <div class="view-all-container">
-                        <a href="menu.html" class="btn btn-primary">XEM TẤT CẢ SẢN PHẨM</a>
+                        <a href="{{asset('shop/product')}}" class="btn btn-primary">XEM TẤT CẢ SẢN PHẨM</a>
                     </div>
                 </div>
             </section>

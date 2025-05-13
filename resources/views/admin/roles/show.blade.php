@@ -16,11 +16,20 @@
                 <div class="card-body">
                     <p><strong>Tên Role:</strong> {{ $role->name }}</p>
                     <p><strong>Quyền:</strong>
-                        @if (!empty($role->permissions) && is_array($role->permissions))
-                            {{ implode(', ', $role->permissions) }}
-                        @else
-                            Không có quyền
-                        @endif
+                        @php
+                            $permissionsMap = [
+                                'create' => 'Tạo',
+                                'edit' => 'Chỉnh sửa',
+                                'view' => 'Xem',
+                                'delete' => 'Xóa',
+                                '*' => 'Tất cả quyền',
+                            ];
+                            $translatedPermissions = array_map(
+                                fn($permission) => $permissionsMap[$permission] ?? $permission,
+                                (array) $role->permissions,
+                            );
+                        @endphp
+                        {{ implode(', ', $translatedPermissions) ?: 'Không có quyền' }}
                     </p>
                 </div>
                 <div class="card-footer">
