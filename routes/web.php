@@ -10,13 +10,17 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
-use App\Http\Controllers\Admin\DriverController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
+use App\Http\Controllers\Customer\CartController as CustomerCartController;
 
 Route::prefix('/')->group(function () {
-    Route::get('/', [HomeController::class, 'index']);
+    Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('shop/product', [CustomerProductController::class, 'index']);
-    Route::get('shop/product/product-detail', [CustomerProductController::class, 'show']);
+    Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
+    Route::get('cart', [CustomerCartController::class, 'index']);
+    Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
 });
+
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -33,7 +37,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Categories Management
-    Route::resource('categories', CategoryController::class);
+    Route::resource('categories', CategoryController::class)->except(['destroy']);
+    Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
     // Users Management
     Route::prefix('users')->name('users.')->group(function () {
@@ -80,17 +85,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
-
-    // Driver Application Management
-    Route::prefix('drivers')->name('drivers.')->group(function () {
-        Route::get('/', [DriverController::class, 'index'])->name('index');
-        Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
-        Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
-        Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
-        Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
-    });
 });
 
-Route::group(['prefix' => 'admin/users', 'as' => 'admin.users.'], function() {
-    Route::get('/search', [UserController::class, 'search'])->name('search');
-});
