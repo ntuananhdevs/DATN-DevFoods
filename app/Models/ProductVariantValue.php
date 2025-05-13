@@ -5,27 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class VariantValue extends Model
+class ProductVariantValue extends Model
 {
     use HasFactory;
 
+    protected $table = 'product_variant_values';
+
     protected $fillable = [
-        'variant_attribute_id',
         'product_variant_id',
-        'value',
+        'attribute_value_id',
     ];
 
-    /**
-     * Lấy thuộc tính biến thể
-     */
-    public function variantAttribute()
+    public function attributeValue()
     {
-        return $this->belongsTo(VariantAttribute::class);
+        return $this->belongsTo(AttributeValue::class);
     }
 
-    /**
-     * Lấy biến thể sản phẩm
-     */
     public function productVariant()
     {
         return $this->belongsTo(ProductVariant::class);
