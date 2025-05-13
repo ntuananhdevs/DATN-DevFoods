@@ -3,27 +3,27 @@
 use Illuminate\Support\Facades\Route;
 
 //Admin
-use App\Http\Controllers\Customer\HomeController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\DriverController;
 
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
-use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 
 Route::prefix('/')->group(function () {
-    Route::get('/', [HomeController::class, 'index']);
+    Route::get('/', [CustomerHomeController::class, 'index']);
     Route::get('shop/product', [CustomerProductController::class, 'index']);
     Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
     Route::get('cart', [CustomerCartController::class, 'index']);
     Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
 });
+
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -45,6 +45,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Users Management
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/create', [UserController::class, 'create'])->name('create');
+        Route::post('/store', [UserController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
+        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
+        Route::get('trash', [UserController::class, 'trash'])->name('trash');
+        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
+        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
+        Route::get('/export', [UserController::class, 'export'])->name('export');
     });
 
     // Roles Management
@@ -56,21 +66,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::put('/update/{id}', [RoleController::class, 'update'])->name('update');
         Route::get('/show/{id}', [RoleController::class, 'show'])->name('show');
         Route::delete('/delete/{id}', [RoleController::class, 'destroy'])->name('destroy');
-    });
-
-    // Users Management
-    Route::prefix('users')->name('users.')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index');
-        Route::get('/create', [UserController::class, 'create'])->name('create');
-        Route::post('/store', [UserController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
-        Route::get('trash', [UserController::class, 'trash'])->name('trash');
-        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
-        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
-        Route::get('/export', [UserController::class, 'export'])->name('export'); // Thêm dòng này
     });
 
     // Products Management
@@ -97,4 +92,3 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
 });
-
