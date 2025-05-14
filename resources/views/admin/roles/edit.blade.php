@@ -2,8 +2,6 @@
 
 @section('content')
     <div class="container">
-        <h1 class="my-4 text-center" style="font-size: 1.5rem;">Chỉnh sửa Role</h1>
-
         @if (session('error'))
             <div class="alert alert-danger">{{ session('error') }}</div>
         @endif

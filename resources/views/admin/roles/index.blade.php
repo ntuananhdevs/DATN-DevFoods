@@ -10,7 +10,7 @@
             </div>
             <div class="data-table-header-actions">
                 <a href="{{ route('admin.roles.create') }}" class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-plus"></i> Thêm Role
+                    <i class="fas fa-plus"></i> Thêm mới
                 </a>
             </div>
         </div>
