@@ -123,19 +123,20 @@
                                 </td>
                                 <td>
                                     <div class="data-table-action-buttons">
-                                        <a href="{{ route('admin.users.show', $user->id) }}" class="data-table-action-btn"
-                                            title="Xem chi tiết">
+                                        <a href="{{ route('admin.users.show', $user->id) }}"
+                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{{ route('admin.users.edit', $user->id) }}"
-                                            class="data-table-action-btn edit" title="Chỉnh sửa">
+                                            class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
                                         <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST"
                                             class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="data-table-action-btn delete" title="Xóa"
+                                            <button type="submit" class="data-table-action-btn delete data-table-tooltip"
+                                                data-tooltip="Xóa"
                                                 onclick="return confirm('Bạn có chắc chắn muốn xóa người dùng này?')">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -244,14 +245,6 @@
             setTimeout(function() {
                 $('.alert').alert('close');
             }, 3000);
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
-                new bootstrap.Tooltip(tooltipTriggerEl);
-            });
         });
     </script>
 @endsection

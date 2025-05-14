@@ -23,6 +23,56 @@
             <div class="data-table-header">
                 <h2 class="data-table-card-title">Danh sách danh mục</h2>
             </div>
+
+            <!-- Thanh công cụ -->
+            {{-- <form method="GET" action="{{ route('admin.categories.index') }}">
+                <div class="data-table-controls">
+                    <div class="data-table-search">
+                        <i class="fas fa-search data-table-search-icon"></i>
+                        <input type="text" name="keyword" value="{{ request('keyword') }}"
+                            placeholder="Tìm kiếm theo tên, mã danh mục..." id="dataTableSearch">
+                    </div>
+                    <div class="data-table-actions">
+                        <button class="data-table-btn data-table-btn-outline" type="submit">
+                            <i class="fas fa-sliders"></i> Cột
+                        </button>
+                        <button class="data-table-btn data-table-btn-outline" data-bs-toggle="modal" data-bs-target="#filterModal" type="button">
+                            <i class="fas fa-filter"></i> Lọc
+                        </button>
+                    </div>
+                </div>
+            </form> --}}
+
+            <!-- Modal Lọc -->
+            {{-- <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form action="{{ route('admin.categories.index') }}" method="GET">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Lọc danh mục</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-2">
+                        <label>Trạng thái</label>
+                        <select name="status" class="form-control">
+                            <option value="">-- Tất cả --</option>
+                            <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Hiển thị</option>
+                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Ẩn</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Áp dụng</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div> --}}
+
+
+
+            {{-- Bảng danh mục --}}
             <div class="data-table-container">
                 <table class="data-table" id="dataTable">
                     <thead>
