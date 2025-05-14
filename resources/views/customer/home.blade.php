@@ -1,7 +1,7 @@
 @extends('layouts.customer.fullLayoutMaster')
 @section('content')
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
 
     <head>
         <meta charset="UTF-8">
@@ -22,6 +22,7 @@
             {{ session('success') }}
         </div>
     @endif
+
     <body>
         <main>
             <!-- Hero Banner -->
@@ -163,9 +164,9 @@
                                             <button class="action-btn cart-btn">
                                                 <i class="fas fa-shopping-bag"></i>
                                             </button>
-{{--                                            <button class="action-btn info-btn">--}}
-{{--                                                <i class="fas fa-info"></i>--}}
-{{--                                            </button>--}}
+                                            {{--                                            <button class="action-btn info-btn"> --}}
+                                            {{--                                                <i class="fas fa-info"></i> --}}
+                                            {{--                                            </button> --}}
                                         </div>
                                     </div>
                                 </div>
@@ -186,7 +187,7 @@
                         @endforeach
                     </div>
                     <div class="view-all-container">
-                        <a href="{{asset('shop/product')}}" class="btn btn-primary">XEM TẤT CẢ SẢN PHẨM</a>
+                        <a href="{{ asset('shop/product') }}" class="btn btn-primary">XEM TẤT CẢ SẢN PHẨM</a>
                     </div>
                 </div>
             </section>
