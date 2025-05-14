@@ -10,8 +10,28 @@
             </div>
             <h1 class="data-table-title">Quản lý người dùng</h1>
         </div>
+        <div class="data-table-header-actions">
+        <div class="btn-group mr-2">
+                                <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
+                                    <i class="fas fa-download"></i> Xuất
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
+                                        <i class="fas fa-file-excel"></i> Excel
+                                    </a>
+                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">
+                                        <i class="fas fa-file-pdf"></i> PDF
+                                    </a>
+                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">
+                                        <i class="fas fa-file-csv"></i> CSV
+                                    </a>
+                                </div>
+                            </div>
 
-
+            <a href="{{ route('admin.users.create') }}" class="data-table-btn data-table-btn-primary">
+                <i class="fas fa-plus"></i> Thêm mới
+            </a>
+        </div>
     </div>
 
     <!-- Data Table Card -->
@@ -52,23 +72,7 @@
                                 </div>
                             </div>
 
-                            <div class="btn-group mr-2">
-                                <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                                    <i class="fas fa-download"></i> Xuất
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
-                                        <i class="fas fa-file-excel text-success"></i> Excel
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">
-                                        <i class="fas fa-file-pdf text-danger"></i> PDF
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">
-                                        <i class="fas fa-file-csv text-primary"></i> CSV
-                                    </a>
-                                </div>
-                            </div>
-
+                          
                             <button class="data-table-btn data-table-btn-outline">
                                 <i class="fas fa-columns"></i> Cột
                             </button>
@@ -137,7 +141,7 @@
                                 @method('PATCH')
                                 <button type="button"
                                     class="data-table-status {{ $user->active ? 'data-table-status-success' : 'data-table-status-failed' }}"
-                                    style="border: none; cursor: pointer; width: 60%;"
+                                    style="border: none; cursor: pointer; width: 100px;"
                                     onclick="dtmodalHandleStatusToggle({
                                         button: this,
                                         userName: '{{ $user->full_name }}',
@@ -155,7 +159,6 @@
                                     @endif
                                 </button>
                             </form>
-
                         </td>
                         <td>
                             <div class="data-table-action-buttons">

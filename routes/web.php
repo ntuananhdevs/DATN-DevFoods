@@ -78,13 +78,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/store', [UserController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
         Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
-        Route::get('trash', [UserController::class, 'trash'])->name('trash');
-        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
-        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
         Route::get('/export', [UserController::class, 'export'])->name('export');
         Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
