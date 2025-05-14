@@ -62,7 +62,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Categories Management
-    Route::resource('categories', CategoryController::class);
+    Route::resource('categories', CategoryController::class)->except(['destroy']);
+    Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
     // Users Management
     Route::prefix('users')->name('users.')->group(function () {
@@ -92,7 +93,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('trash', [UserController::class, 'trash'])->name('trash');
         Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
         Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
-        Route::get('/export', [UserController::class, 'export'])->name('export'); // Thêm dòng này
+        Route::get('/export', [UserController::class, 'export'])->name('export');
+        Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
     // Products Management

@@ -1,0 +1,48 @@
+.role-form-container {
+    font-size: 1.2rem;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+.role-form-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.role-form-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.role-form-input {
+    margin-top: 0.5rem;
+}
+
+.role-permissions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.role-permission-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.role-permission-checkbox {
+    transform: scale(1.8);
+    margin: 0 5px 0 20px;
+}
+
+.role-permission-label {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.role-form-btn {
+    margin-right: 10px;
+}
