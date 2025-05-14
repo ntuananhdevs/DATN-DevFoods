@@ -273,7 +273,7 @@ function dtmodalConfirmIndex(options) {
         title: title,
         subtitle: subtitle,
         message: itemName ? `Bạn đang thay đổi trạng thái của  : <strong>"${itemName}"</strong><br>${message}` : message,
-        confirmText: 'Xác nhận xóa',
+        confirmText: 'Xác nhận thay đổi',
         cancelText: 'Hủy bỏ',
         onConfirm: onConfirm,
         onCancel: null
