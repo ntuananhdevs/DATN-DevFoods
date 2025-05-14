@@ -36,7 +36,7 @@
                         @forelse ($roles as $role)
                             <tr>
                                 <td>{{ $role->id }}</td>
-                                <td>{{ $role->name }}</td>
+                                <td>{{ $role->name ?? 'Không xác định' }}</td>
                                 <td>
                                     @php
                                         $permissionsMap = [
@@ -48,7 +48,7 @@
                                         ];
                                         $translatedPermissions = array_map(
                                             fn($permission) => $permissionsMap[$permission] ?? $permission,
-                                            (array) $role->permissions,
+                                            (array) ($role->permissions ?? []),
                                         );
                                     @endphp
                                     {{ implode(', ', $translatedPermissions) ?: 'Không có quyền' }}
@@ -67,8 +67,7 @@
                                             class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" class="data-table-action-btn delete data-table-tooltip"
-                                                data-tooltip="Xóa"
+                                            <button type="button" class="data-table-action-btn delete " title="Xóa"
                                                 onclick="dtmodalConfirmDelete({
                                              itemName: '{{ $role->name }}',
                                              onConfirm: () => this.closest('form').submit()

@@ -12,23 +12,6 @@
             </div>
 
             <div class="data-table-header-actions">
-                {{-- <div class="dropdown d-inline">
-                    <button class="data-table-btn data-table-btn-outline dropdown-toggle" type="button" id="exportDropdown"
-                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-download"></i> Xuất
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="exportDropdown">
-                        <a class="dropdown-item" href="{{ route('admin.categories.export', ['type' => 'excel']) }}">
-                            <i class="fas fa-file-excel"></i> Xuất Excel
-                        </a>
-                        <a class="dropdown-item" href="{{ route('admin.categories.export', ['type' => 'pdf']) }}">
-                            <i class="fas fa-file-pdf"></i> Xuất PDF
-                        </a>
-                        <a class="dropdown-item" href="{{ route('admin.categories.export', ['type' => 'csv']) }}">
-                            <i class="fas fa-file-csv"></i> Xuất CSV
-                        </a>
-                    </div>
-                </div> --}}
                 <a href="{{ route('admin.categories.create') }}" class="data-table-btn data-table-btn-primary">
                     <i class="fas fa-plus"></i> Thêm mới
                 </a>
@@ -40,117 +23,67 @@
             <div class="data-table-header">
                 <h2 class="data-table-card-title">Danh sách danh mục</h2>
             </div>
-
-            <!-- Thanh công cụ -->
-            {{-- <form method="GET" action="{{ route('admin.categories.index') }}">
-                <div class="data-table-controls">
-                    <div class="data-table-search">
-                        <i class="fas fa-search data-table-search-icon"></i>
-                        <input type="text" name="keyword" value="{{ request('keyword') }}"
-                            placeholder="Tìm kiếm theo tên, mã danh mục..." id="dataTableSearch">
-                    </div>
-                    <div class="data-table-actions">
-                        <button class="data-table-btn data-table-btn-outline" type="submit">
-                            <i class="fas fa-sliders"></i> Cột
-                        </button>
-                        <button class="data-table-btn data-table-btn-outline" data-bs-toggle="modal" data-bs-target="#filterModal" type="button">
-                            <i class="fas fa-filter"></i> Lọc
-                        </button>
-                    </div>
-                </div>
-            </form> --}}
-
-            <!-- Modal Lọc -->
-            {{-- <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <form action="{{ route('admin.categories.index') }}" method="GET">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterModalLabel">Lọc danh mục</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group mb-2">
-                        <label>Trạng thái</label>
-                        <select name="status" class="form-control">
-                            <option value="">-- Tất cả --</option>
-                            <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Hiển thị</option>
-                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Ẩn</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Áp dụng</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div> --}}
-
-
-
-        {{-- Bảng danh mục --}}
-        <div class="data-table-container">
-            <table class="data-table" id="dataTable">
-                <thead>
-                    <tr>
-                        <th data-sort="id" class="active-sort">
-                            ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
-                        </th>
-                        <th data-sort="category">
-                            Tên danh mục <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
-                        {{-- <th data-sort="description">
+            <div class="data-table-container">
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="id" class="active-sort">
+                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="category">
+                                Tên danh mục <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            {{-- <th data-sort="description">
                             Mô tả <i class="fas fa-sort data-table-sort-icon"></i>
                         </th> --}}
-                        <th data-sort="image">
-                            Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
-                        <th data-sort="status">
-                            Trạng thái <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($categories as $category)
-                        <tr>
-                            <td>
-                                <div class="data-table-id">
-                                    <span class="data-table-id-icon"><i class="fas fa-tag"></i></span>
-                                    {{ $category->id }}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="data-table-product-name">{{ $category->name }}</div>
-                            </td>
-                            {{-- <td>{{ Str::limit($category->description, 50) }}</td> --}}
-                            <td>
-                                <div class="data-table-product-image">
-                                    @if ($category->image)
-                                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" width="200px">
-                                    @else
-                                        <span class="data-table-status data-table-status-failed">
-                                            <i class="fas fa-times"></i> Ẩn
-                                        </span>
-                                    @endif
+                            <th data-sort="image">
+                                Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="status">
+                                Trạng thái <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($categories as $category)
+                            <tr>
+                                <td>
+                                    <div class="data-table-id">
+                                        <span class="data-table-id-icon"><i class="fas fa-tag"></i></span>
+                                        {{ $category->id }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="data-table-product-name">{{ $category->name }}</div>
+                                </td>
+                                {{-- <td>{{ Str::limit($category->description, 50) }}</td> --}}
+                                <td>
+                                    <div class="data-table-product-image">
+                                        @if ($category->image)
+                                            <img src="{{ asset('storage/' . $category->image) }}"
+                                                alt="{{ $category->name }}" width="200px">
+                                        @else
+                                            <span class="data-table-status data-table-status-failed">
+                                                <i class="fas fa-times"></i> Ẩn
+                                            </span>
+                                        @endif
                                 </td>
                                 <td>
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.categories.show', $category->id) }}"
-                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
+                                            class="data-table-action-btn" title="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{{ route('admin.categories.edit', $category->id) }}"
-                                            class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
+                                            class="data-table-action-btn edit" title="Chỉnh sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
                                         <form action="{{ route('admin.categories.destroy', $category->id) }}" method="POST"
                                             class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" class="data-table-action-btn delete data-table-tooltip"
-                                                data-tooltip="Xóa"
+                                            <button type="button" class="data-table-action-btn delete" title="Xóa"
                                                 onclick="dtmodalConfirmDelete({
                                                 itemName: '{{ $category->name }}',
                                                 onConfirm: () => this.closest('form').submit()
@@ -210,3 +143,12 @@
         </div>
     </div>
 @endsection
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
