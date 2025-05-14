@@ -5,7 +5,7 @@
             "name": "Dashboard",
             "slug": "dashboard",
             "badgeClass": "badge badge-warning badge-pill float-right mr-2",
-            "icon": "feather icon-home",
+            "icon": "feather icon-bar-chart",
             "i18n": "nav.dashboard_analytics"
         },
         {
@@ -35,7 +35,7 @@
         {
             "url": "#",
             "name": "Quản lý tài xế",
-            "icon": "feather icon-user",
+            "icon": "feather icon-truck",
             "i18n": "nav.drivers",
             "submenu": [
                 {

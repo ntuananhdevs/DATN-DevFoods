@@ -11,7 +11,7 @@
 @endsection
 
 @section('scripts')
-<script src="{{ asset('js/script/cart-item.js') }}"></script>
+<script src="{{ asset('js/scripts/cart-item.js') }}"></script>
 @endsection
 
 @section('content')
@@ -39,104 +39,58 @@
             </div>
 
             <div class="cart-items">
-                <!-- Cart Item 1 -->
-                <div class="cart-item">
-                    <div class="product-col">
-                        <div class="product-image">
-                            <img src="https://via.placeholder.com/100" alt="Gà Rán Sốt Cay">
+                @if(count($cartData ?? []) > 0)
+                    @foreach($cartData as $key => $item)
+                        <div class="cart-item" data-cart-key="{{ $key }}">
+                            <div class="product-col">
+                                <div class="product-image">
+                                    <img src="{{ $item['image'] ?? 'https://via.placeholder.com/100' }}" alt="{{ $item['name'] }}">
+                                </div>
+                                <div class="product-info">
+                                    <h3 class="product-title">{{ $item['name'] }}</h3>
+                                    @if($item['variant_name'])
+                                        <div class="product-variant">Biến thể: <span>{{ $item['variant_name'] }}</span></div>
+                                    @endif
+                                    @if(!empty($item['attributes']))
+                                        @foreach($item['attributes'] as $attrName => $attrValue)
+                                            <div class="product-variant">{{ $attrName }}: <span>{{ $attrValue }}</span></div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="price-col">{{ number_format($item['price'], 0, ',', '.') }}đ</div>
+                            <div class="quantity-col">
+                                <div class="quantity-selector">
+                                    <button class="quantity-btn minus-btn" data-cart-key="{{ $key }}">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" class="quantity-input" value="{{ $item['quantity'] }}" min="1" max="99" data-cart-key="{{ $key }}">
+                                    <button class="quantity-btn plus-btn" data-cart-key="{{ $key }}">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="total-col">{{ number_format($item['total'], 0, ',', '.') }}đ</div>
+                            <div class="action-col">
+                                <button class="remove-btn" data-cart-key="{{ $key }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="product-info">
-                            <h3 class="product-title">Gà Rán Sốt Cay</h3>
-                            <div class="product-variant">Kích cỡ: <span>Vừa</span></div>
-                            <div class="product-variant">Độ cay: <span>Cay</span></div>
+                    @endforeach
+                @else
+                    <div class="empty-cart">
+                        <div class="empty-cart-icon">
+                            <i class="fas fa-shopping-cart"></i>
                         </div>
+                        <h3>Giỏ hàng của bạn đang trống</h3>
+                        <p>Hãy thêm sản phẩm vào giỏ hàng để tiếp tục mua sắm</p>
                     </div>
-                    <div class="price-col">89.000đ</div>
-                    <div class="quantity-col">
-                        <div class="quantity-selector">
-                            <button class="quantity-btn minus-btn">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <input type="number" class="quantity-input" value="1" min="1" max="99">
-                            <button class="quantity-btn plus-btn">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="total-col">89.000đ</div>
-                    <div class="action-col">
-                        <button class="remove-btn">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cart Item 2 -->
-                <div class="cart-item">
-                    <div class="product-col">
-                        <div class="product-image">
-                            <img src="https://via.placeholder.com/100" alt="Gà Sốt Phô Mai">
-                        </div>
-                        <div class="product-info">
-                            <h3 class="product-title">Gà Sốt Phô Mai</h3>
-                            <div class="product-variant">Kích cỡ: <span>Lớn</span></div>
-                            <div class="product-variant">Độ cay: <span>Vừa</span></div>
-                        </div>
-                    </div>
-                    <div class="price-col">95.000đ</div>
-                    <div class="quantity-col">
-                        <div class="quantity-selector">
-                            <button class="quantity-btn minus-btn">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <input type="number" class="quantity-input" value="2" min="1" max="99">
-                            <button class="quantity-btn plus-btn">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="total-col">190.000đ</div>
-                    <div class="action-col">
-                        <button class="remove-btn">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cart Item 3 -->
-                <div class="cart-item">
-                    <div class="product-col">
-                        <div class="product-image">
-                            <img src="https://via.placeholder.com/100" alt="Gà Nướng BBQ">
-                        </div>
-                        <div class="product-info">
-                            <h3 class="product-title">Gà Nướng BBQ</h3>
-                            <div class="product-variant">Kích cỡ: <span>Nhỏ</span></div>
-                        </div>
-                    </div>
-                    <div class="price-col">85.000đ</div>
-                    <div class="quantity-col">
-                        <div class="quantity-selector">
-                            <button class="quantity-btn minus-btn">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <input type="number" class="quantity-input" value="1" min="1" max="99">
-                            <button class="quantity-btn plus-btn">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="total-col">85.000đ</div>
-                    <div class="action-col">
-                        <button class="remove-btn">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
+                @endif
             </div>
 
             <div class="cart-actions">
-                <a href="/shop" class="continue-shopping-btn">
+                <a href="{{ asset('shop/product') }}" class="continue-shopping-btn">
                     <i class="fas fa-arrow-left"></i>
                     Tiếp tục mua sắm
                 </a>
@@ -154,7 +108,7 @@
 
                 <div class="summary-row">
                     <div class="summary-label">Tạm tính</div>
-                    <div class="summary-value">364.000đ</div>
+                    <div class="summary-value">{{ number_format($totalPrice ?? 0, 0, ',', '.') }}đ</div>
                 </div>
 
                 <div class="summary-row">

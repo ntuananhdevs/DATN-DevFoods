@@ -10,7 +10,7 @@
             </div>
             <div class="data-table-header-actions">
                 <a href="{{ route('admin.roles.create') }}" class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-plus"></i> Thêm Role
+                    <i class="fas fa-plus"></i> Thêm mới
                 </a>
             </div>
         </div>
@@ -26,7 +26,9 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th data-sort="id" class="active-sort">
+                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
+                            </th>
                             <th>Tên Role</th>
                             <th>Quyền</th>
                             <th>Hành động</th>
@@ -35,8 +37,12 @@
                     <tbody>
                         @forelse ($roles as $role)
                             <tr>
-                                <td>{{ $role->id }}</td>
-                                <td>{{ $role->name }}</td>
+                                <td>
+                                    <div class="data-table-id">
+                                        {{ $role->id }}
+                                    </div>
+                                </td>
+                                <td>{{ $role->name ?? 'Không xác định' }}</td>
                                 <td>
                                     @php
                                         $permissionsMap = [
@@ -48,7 +54,7 @@
                                         ];
                                         $translatedPermissions = array_map(
                                             fn($permission) => $permissionsMap[$permission] ?? $permission,
-                                            (array) $role->permissions,
+                                            (array) ($role->permissions ?? []),
                                         );
                                     @endphp
                                     {{ implode(', ', $translatedPermissions) ?: 'Không có quyền' }}
@@ -67,8 +73,7 @@
                                             class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" class="data-table-action-btn delete data-table-tooltip"
-                                                data-tooltip="Xóa"
+                                            <button type="button" class="data-table-action-btn delete " title="Xóa"
                                                 onclick="dtmodalConfirmDelete({
                                              itemName: '{{ $role->name }}',
                                              onConfirm: () => this.closest('form').submit()
