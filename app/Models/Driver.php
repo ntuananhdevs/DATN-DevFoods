@@ -10,7 +10,7 @@ class Driver extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'driver_application_id', 'driver_license_number',
+        'user_id', 'application_id', 'license_number',
         'vehicle_type', 'vehicle_registration', 'vehicle_color',
         'status', 'is_available', 'current_latitude', 'current_longitude',
         'balance', 'rating', 'cancellation_count', 'reliability_score',
@@ -18,6 +18,7 @@ class Driver extends Model
     ];
 
     protected $casts = [
+        'application_id' => 'integer',
         'is_available' => 'boolean',
         'auto_deposit_earnings' => 'boolean',
         'balance' => 'decimal:2',
@@ -33,6 +34,6 @@ class Driver extends Model
 
     public function application()
     {
-        return $this->belongsTo(DriverApplication::class, 'driver_application_id');
+        return $this->belongsTo(DriverApplication::class, 'application_id');
     }
 }

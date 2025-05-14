@@ -1,5 +1,29 @@
 @extends('layouts/admin/contentLayoutMaster')
 @section('content')
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="alert-message">
+            {{ session('success') }}
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="alert-icon">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <div class="alert-message">
+            {{ session('error') }}
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -132,8 +156,24 @@
                                         <div class="modal-body">
                                             <div class="form-group">
                                                 <label for="admin_notes">Ghi chú admin</label>
-                                                <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3"></textarea>
+                                                <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3">Đơn được phê duyệt bởi quản trị viên</textarea>
                                             </div>
+                                            <!-- Hidden fields to pass application data -->
+                                            <input type="hidden" name="id_card_number" value="{{ $application->id_card_number }}">
+                                            <input type="hidden" name="id_card_front_image" value="{{ $application->id_card_front_image }}">
+                                            <input type="hidden" name="id_card_back_image" value="{{ $application->id_card_back_image }}">
+                                            <input type="hidden" name="driver_license_number" value="{{ $application->driver_license_number }}">
+                                            <input type="hidden" name="driver_license_front_image" value="{{ $application->driver_license_front_image }}">
+                                            <input type="hidden" name="driver_license_back_image" value="{{ $application->driver_license_back_image }}">
+                                            <input type="hidden" name="vehicle_type" value="{{ $application->vehicle_type }}">
+                                            <input type="hidden" name="vehicle_registration_image" value="{{ $application->vehicle_registration_image }}">
+                                            <input type="hidden" name="vehicle_color" value="{{ $application->vehicle_color }}">
+                                            <input type="hidden" name="full_name" value="{{ $application->full_name }}">
+                                            <input type="hidden" name="phone_number" value="{{ $application->phone_number }}">
+                                            <input type="hidden" name="email" value="{{ $application->email }}">
+                                            <input type="hidden" name="address" value="{{ $application->address }}">
+                                            <input type="hidden" name="district" value="{{ $application->district }}">
+                                            <input type="hidden" name="city" value="{{ $application->city }}">
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
@@ -158,8 +198,8 @@
                                         </div>
                                         <div class="modal-body">
                                             <div class="form-group">
-                                                <label for="rejection_reason">Lý do từ chối</label>
-                                                <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3" required></textarea>
+                                                <label for="admin_notes">Ghi chú admin</label>
+                                                <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3" required></textarea>
                                             </div>
                                         </div>
                                         <div class="modal-footer">

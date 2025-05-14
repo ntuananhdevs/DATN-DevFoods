@@ -52,7 +52,7 @@ class DriverController extends Controller
         }
     }
 
-    public function approveApplication(DriverApplication $application)
+    public function approveApplication(Request $request, DriverApplication $application)
     {
         try {
             DB::beginTransaction();
@@ -60,19 +60,27 @@ class DriverController extends Controller
             // Cập nhật trạng thái đơn
             $application->update([
                 'status' => 'approved',
-                'admin_notes' => 'Đơn được phê duyệt bởi quản trị viên'
+                'admin_notes' => request('admin_notes', 'Đơn được phê duyệt bởi quản trị viên')
             ]);
 
             // Tạo bản ghi tài xế
-            Driver::create([
-                'user_id' => null, // Sẽ được thiết lập khi tài xế tạo tài khoản
-                'driver_application_id' => $application->id,
-                'driver_license_number' => $application->driver_license_number,
-                'vehicle_type' => $application->vehicle_type,
-                'vehicle_registration' => $application->vehicle_registration_image,
-                'vehicle_color' => $application->vehicle_color,
+            \App\Models\Driver::create([
+                'user_id' => $application->user_id,
+                'application_id' => $application->id,
+                'license_number' => request('license_number'),
+                'vehicle_type' => request('vehicle_type'),
+                'vehicle_registration' => request('vehicle_registration_image'),
+                'vehicle_color' => request('vehicle_color'),
                 'status' => 'active',
-                'is_available' => true
+                'is_available' => true,
+                'current_latitude' => null,
+                'current_longitude' => null,
+                'balance' => 0,
+                'rating' => 5.00,
+                'cancellation_count' => 0,
+                'reliability_score' => 100,
+                'penalty_count' => 0,
+                'auto_deposit_earnings' => false
             ]);
 
             // Gửi thông báo
@@ -82,7 +90,12 @@ class DriverController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Phê duyệt đơn thành công');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Phê duyệt đơn thành công.'
+            ]);
+            return redirect()->back();
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Không thể phê duyệt đơn: ' . $e->getMessage());
@@ -93,15 +106,14 @@ class DriverController extends Controller
     {
         try {
             $request->validate([
-                'rejection_reason' => 'required|string|max:500'
+                'admin_notes' => 'required|string|max:500'
             ]);
 
             DB::beginTransaction();
 
             $application->update([
                 'status' => 'rejected',
-                'rejection_reason' => $request->rejection_reason,
-                'admin_notes' => $request->admin_notes ?? 'Quản trị viên chưa nhập ghi chú'
+                'admin_notes' => $request->admin_notes
             ]);
 
             // Gửi thông báo
@@ -111,7 +123,12 @@ class DriverController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Từ chối đơn thành công');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Từ chối đơn thành công.'
+            ]);
+            return redirect()->back();
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Không thể từ chối đơn: ' . $e->getMessage());

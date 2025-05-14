@@ -88,7 +88,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [DriverController::class, 'index'])->name('index');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
         Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
-        Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
+        Route::post('/applications/{application}/approve', [DriverController::class, 'approveApplication'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
 });
