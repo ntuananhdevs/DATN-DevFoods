@@ -26,7 +26,9 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th data-sort="id" class="active-sort">
+                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
+                            </th>
                             <th>Tên Role</th>
                             <th>Quyền</th>
                             <th>Hành động</th>
@@ -35,7 +37,11 @@
                     <tbody>
                         @forelse ($roles as $role)
                             <tr>
-                                <td>{{ $role->id }}</td>
+                                <td>
+                                    <div class="data-table-id">
+                                        {{ $role->id }}
+                                    </div>
+                                </td>
                                 <td>{{ $role->name ?? 'Không xác định' }}</td>
                                 <td>
                                     @php
