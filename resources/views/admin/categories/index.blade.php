@@ -100,7 +100,6 @@
                             <tr>
                                 <td>
                                     <div class="data-table-id">
-                                        <span class="data-table-id-icon"><i class="fas fa-tag"></i></span>
                                         {{ $category->id }}
                                     </div>
                                 </td>
