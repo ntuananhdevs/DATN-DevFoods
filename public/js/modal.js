@@ -259,3 +259,88 @@ function dtmodalConfirmDelete(options) {
         onCancel: null
     });
 }
+function dtmodalConfirmIndex(options) {
+    const {
+        title = 'Xác nhận xóa',
+            subtitle = 'Bạn có chắc chắn muốn xóa?',
+            message = 'Hành động này không thể hoàn tác.',
+            itemName = '',
+            onConfirm = null
+    } = options;
+
+    return dtmodalCreateModal({
+        type: 'warning',
+        title: title,
+        subtitle: subtitle,
+        message: itemName ? `Bạn đang thay đổi trạng thái của  : <strong>"${itemName}"</strong><br>${message}` : message,
+        confirmText: 'Xác nhận xóa',
+        cancelText: 'Hủy bỏ',
+        onConfirm: onConfirm,
+        onCancel: null
+    });
+}
+
+// Hàm xử lý thay đổi trạng thái cho một mục
+function dtmodalHandleStatusToggle(options) {
+    const {
+        button,
+        userName,
+        currentStatus,
+        formSelector = 'form',
+        confirmTitle = 'Xác nhận thay đổi trạng thái',
+        confirmSubtitle = 'Bạn có chắc chắn muốn thay đổi trạng thái?',
+        confirmMessage = 'Hành động này sẽ thay đổi trạng thái hoạt động.',
+        successMessage = 'Đã thay đổi trạng thái thành công',
+        errorMessage = 'Có lỗi xảy ra khi thay đổi trạng thái'
+    } = options;
+
+    const newStatus = !currentStatus;
+    const statusText = newStatus ? 'kích hoạt' : 'vô hiệu hóa';
+    
+    dtmodalConfirmIndex({
+        title: confirmTitle,
+        subtitle: confirmSubtitle || `Bạn có chắc chắn muốn ${statusText} mục này?`,
+        message: confirmMessage,
+        itemName: userName,
+        onConfirm: () => {
+            const form = button.closest(formSelector);
+            form.submit();
+        }
+    });
+    
+}
+
+// Hàm cập nhật trạng thái cho nhiều người dùng đã chọn
+function updateSelectedStatus(status) {
+    const checkboxes = document.getElementsByClassName('row-checkbox');
+    const selectedIds = [];
+    
+    for (let checkbox of checkboxes) {
+        if (checkbox.checked) {
+            selectedIds.push(checkbox.value);
+        }
+    }
+    
+    if (selectedIds.length === 0) {
+        dtmodalShowToast('warning', {
+            title: 'Cảnh báo',
+            message: 'Vui lòng chọn ít nhất một người dùng'
+        });
+        return;
+    }
+    
+    const statusText = status === 1 ? 'kích hoạt' : 'vô hiệu hóa';
+    
+    dtmodalCreateModal({
+        type: 'warning',
+        title: `Xác nhận ${statusText} người dùng`,
+        message: `Bạn có chắc chắn muốn ${statusText} ${selectedIds.length} người dùng đã chọn không?`,
+        confirmText: 'Xác nhận',
+        cancelText: 'Hủy',
+        onConfirm: function() {
+            document.getElementById('selectedUserIds').value = selectedIds.join(',');
+            document.getElementById('selectedStatus').value = status;
+            document.getElementById('bulkStatusForm').submit();
+        }
+    });
+}
