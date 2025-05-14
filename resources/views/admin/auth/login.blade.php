@@ -19,7 +19,7 @@
         @error('email')
         <div class="text-danger mt-1">{{ $message }}</div>
         @enderror
-      </div>
+        </div>
       
       <div class="form-group">
         <div class="password-header">
@@ -34,6 +34,32 @@
         @if(session('error'))
         <div class="text-danger mt-1">{{ session('error') }}</div>
         @endif
+
+        @if(session('cooldown'))
+            <div class="text-danger mt-1" id="countdownBox">
+                <strong>Thông báo:</strong> Bạn đã nhập sai quá nhiều lần.
+                Vui lòng thử lại sau <span id="countdown">{{ session('cooldown') }}</span> giây.
+            </div>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    let seconds = {{ session('cooldown') }};
+                    const countdown = document.getElementById('countdown');
+                    const countdownBox = document.getElementById('countdownBox');
+
+                    const interval = setInterval(function () {
+                        seconds--;
+                        if (seconds <= 0) {
+                            clearInterval(interval);
+                            countdownBox.style.display = 'none';
+                        } else {
+                            countdown.textContent = seconds;
+                        }
+                    }, 1000);
+                });
+            </script>
+        @endif
+      
       </div>
       
       <div class="remember-me">

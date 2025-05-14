@@ -188,7 +188,7 @@
     background-color: var(--dt-lightest-gray);
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 0;
 }
 
 .data-table th {
