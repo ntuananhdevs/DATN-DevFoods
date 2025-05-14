@@ -23,8 +23,15 @@ Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('shop/product', [CustomerProductController::class, 'index']);
     Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
-    Route::get('cart', [CustomerCartController::class, 'index']);
-    Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
+    
+    // Route giỏ hàng
+    Route::prefix('cart')->name('customer.cart.')->group(function () {
+        Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+        Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+        Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+        Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+        Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+    });
 
     // Route Customer (login / logout / register)
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
@@ -55,7 +62,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Categories Management
-    Route::resource('categories', CategoryController::class);
+    Route::resource('categories', CategoryController::class)->except(['destroy']);
+    Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
     // Users Management
     Route::prefix('users')->name('users.')->group(function () {
@@ -85,7 +93,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('trash', [UserController::class, 'trash'])->name('trash');
         Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
         Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
-        Route::get('/export', [UserController::class, 'export'])->name('export'); // Thêm dòng này
+        Route::get('/export', [UserController::class, 'export'])->name('export');
+        Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
     // Products Management
@@ -111,4 +121,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
+});
+
+// Customer Cart Routes
+Route::prefix('cart')->name('customer.cart.')->group(function () {
+    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
+    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });
