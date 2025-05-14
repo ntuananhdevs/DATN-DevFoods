@@ -78,7 +78,7 @@
             </section>
 
             <!-- Promotional Carousel -->
-            @include('layouts.customer.banner')
+            @include('panels.customer.banner')
 
             <!-- Category Showcase -->
             <section class="category-showcase">

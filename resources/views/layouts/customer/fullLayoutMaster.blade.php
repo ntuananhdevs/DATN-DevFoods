@@ -23,14 +23,13 @@
 
 <body>
     <div class="scroll-progress-bar"></div>
-    @include('layouts.customer.header')
+    @include('panels.customer.header')
     <main>
         @yield('content')
     </main>
-    @include('layouts.customer.footer')
+    @include('panels.customer.footer')
     @yield('scripts')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-    {{-- <script src="{{ asset('js/Customer/main.js') }}"></script> --}}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@6.8.4/swiper-bundle.min.js"></script>
 </body>
