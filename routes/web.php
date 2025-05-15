@@ -23,8 +23,15 @@ Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('shop/product', [CustomerProductController::class, 'index']);
     Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
-    Route::get('cart', [CustomerCartController::class, 'index']);
-    Route::post('/cart/add', [CustomerCartController::class, 'add'])->name('cart.add');
+    
+    // Route giỏ hàng
+    Route::prefix('cart')->name('customer.cart.')->group(function () {
+        Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+        Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+        Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+        Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+        Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+    });
 
     // Route Customer (login / logout / register)
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
@@ -79,13 +86,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/store', [UserController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
         Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
-        Route::get('trash', [UserController::class, 'trash'])->name('trash');
-        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
-        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
         Route::get('/export', [UserController::class, 'export'])->name('export');
         Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
@@ -114,4 +115,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
+});
+
+// Customer Cart Routes
+Route::prefix('cart')->name('customer.cart.')->group(function () {
+    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
+    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });

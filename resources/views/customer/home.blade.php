@@ -1,7 +1,7 @@
 @extends('layouts.customer.fullLayoutMaster')
 @section('content')
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
 
     <head>
         <meta charset="UTF-8">
@@ -22,6 +22,7 @@
             {{ session('success') }}
         </div>
     @endif
+
     <body>
         <main>
             <!-- Hero Banner -->
@@ -77,44 +78,7 @@
             </section>
 
             <!-- Promotional Carousel -->
-            <section class="promo-carousel">
-                <div class="carousel-container">
-                    <div class="carousel-slides">
-                        <div class="carousel-slide active">
-                            <img src="{{ asset('images/banner/promo-1.png') }}" alt="Combo Gia Đình Vui Vẻ">
-                            <div class="carousel-caption">
-                                <h2>Combo Gia Đình Vui Vẻ</h2>
-                                <p>Tiết kiệm đến 15% với combo dành cho gia đình</p>
-                            </div>
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="{{ asset('images/banner/promo-2.png') }}" alt="Mua 1 Tặng 1">
-                            <div class="carousel-caption">
-                                <h2>Mua 1 Tặng 1</h2>
-                                <p>Thứ 2 hàng tuần - Mua 1 gà giòn tặng 1 mỳ Ý</p>
-                            </div>
-                        </div>
-                        <div class="carousel-slide">
-                            <img src="{{ asset('images/banner/promo-3.png') }}" alt="Sinh Nhật Vui Vẻ">
-                            <div class="carousel-caption">
-                                <h2>Sinh Nhật Vui Vẻ</h2>
-                                <p>Đặt tiệc sinh nhật tại DevFood - Nhận quà hấp dẫn</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="carousel-control prev">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <button class="carousel-control next">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                    <div class="carousel-indicators">
-                        <button class="indicator active" data-slide="0"></button>
-                        <button class="indicator" data-slide="1"></button>
-                        <button class="indicator" data-slide="2"></button>
-                    </div>
-                </div>
-            </section>
+            @include('panels.customer.banner')
 
             <!-- Category Showcase -->
             <section class="category-showcase">
@@ -163,9 +127,9 @@
                                             <button class="action-btn cart-btn">
                                                 <i class="fas fa-shopping-bag"></i>
                                             </button>
-{{--                                            <button class="action-btn info-btn">--}}
-{{--                                                <i class="fas fa-info"></i>--}}
-{{--                                            </button>--}}
+                                            {{--                                            <button class="action-btn info-btn"> --}}
+                                            {{--                                                <i class="fas fa-info"></i> --}}
+                                            {{--                                            </button> --}}
                                         </div>
                                     </div>
                                 </div>
@@ -186,7 +150,7 @@
                         @endforeach
                     </div>
                     <div class="view-all-container">
-                        <a href="{{asset('shop/product')}}" class="btn btn-primary">XEM TẤT CẢ SẢN PHẨM</a>
+                        <a href="{{ asset('shop/product') }}" class="btn btn-primary">XEM TẤT CẢ SẢN PHẨM</a>
                     </div>
                 </div>
             </section>
@@ -459,34 +423,5 @@
             </div>
         </div>
     </body>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Lấy tất cả các tab
-            const tabs = document.querySelectorAll('.order-tab');
-
-            // Thêm sự kiện click cho mỗi tab
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Xóa class active từ tất cả các tab
-                    tabs.forEach(t => t.classList.remove('active'));
-
-                    // Thêm class active cho tab được click
-                    this.classList.add('active');
-
-                    // Lấy id của tab content tương ứng
-                    const tabId = this.getAttribute('data-tab');
-
-                    // Ẩn tất cả các tab content
-                    document.querySelectorAll('.order-tab-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-
-                    // Hiển thị tab content tương ứng
-                    document.getElementById(tabId + '-content').classList.add('active');
-                });
-            });
-        });
-    </script>
-
     </html>
 @endsection

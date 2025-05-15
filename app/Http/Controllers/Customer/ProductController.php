@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attribute;
 use Illuminate\Http\Request;
 use App\Models\Product;
-use App\Models\VariantAttribute;
+use App\Models\ProductVariant;
 
 class ProductController extends Controller
 {
@@ -22,7 +23,7 @@ class ProductController extends Controller
 
         return view("customer.shop.product-list", compact('products'));
     }
-    
+
     /**
      * Show the form for creating a new resource.
      */
@@ -30,7 +31,7 @@ class ProductController extends Controller
     {
         //
     }
-    
+
     /**
      * Store a newly created resource in storage.
      */
@@ -38,49 +39,58 @@ class ProductController extends Controller
     {
         //
     }
-    
+
     /**
      * Display the specified resource.
      */
     public function show($id)
     {
-        $product = Product::with(['category', 'variants.variantValues.variantAttribute'])->findOrFail($id);
-        
-        // Lấy tất cả thuộc tính biến thể của sản phẩm này
-        $variantAttributes = VariantAttribute::whereHas('variantValues', function($query) use ($product) {
-            $query->whereHas('productVariant', function($q) use ($product) {
-                $q->where('product_id', $product->id);
-            });
-        })->with(['variantValues' => function($query) use ($product) {
-            $query->whereHas('productVariant', function($q) use ($product) {
-                $q->where('product_id', $product->id);
+        // Tải sản phẩm với các quan hệ cần thiết
+        $product = Product::with([
+            'category',
+            'variants.attributeValues.attribute', // Tải attributeValues và attribute liên quan
+            'reviews.user'
+        ])->findOrFail($id);
+
+        // Lấy danh sách thuộc tính của sản phẩm
+        $productAttributes = $product->attributes()->with(['values' => function($query) use ($product) {
+            $query->whereHas('productVariants', function($subQuery) use ($product) {
+                $subQuery->where('product_id', $product->id);
             });
         }])->get();
-        
+
         // Chuẩn bị dữ liệu biến thể cho JavaScript
         $variantsData = [];
         foreach ($product->variants as $variant) {
-            $attributes = [];
-            foreach ($variant->variantValues as $value) {
-                $attributes[$value->variantAttribute->id] = $value->id;
+            $attributeValues = [];
+            foreach ($variant->attributeValues as $value) {
+                $attributeValues[$value->attribute_id] = $value->id;
             }
             
             $variantsData[$variant->id] = [
                 'id' => $variant->id,
                 'name' => $variant->name,
                 'price' => $variant->price,
-                'attributes' => $attributes
+                'image' => $variant->image ?? $product->image,
+                'stock_quantity' => $variant->stock_quantity ?? 0,
+                'sku' => $variant->sku,
+                'attributes' => $attributeValues
             ];
         }
-        
-        // Lấy sản phẩm liên quan (cùng danh mục)
+
+        // Lấy sản phẩm liên quan
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->where('stock', 1)
             ->take(4)
             ->get();
-        
-        return view('customer.shop.product-detail', compact('product', 'variantAttributes', 'variantsData', 'relatedProducts'));
+
+        return view('customer.shop.product-detail', compact(
+            'product',
+            'productAttributes',
+            'variantsData',
+            'relatedProducts'
+        ));
     }
 
     /**

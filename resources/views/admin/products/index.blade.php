@@ -120,19 +120,18 @@
                                 <td>
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.products.show', $product->id) }}"
-                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
+                                            class="data-table-action-btn" title="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{{ route('admin.products.edit', $product->id) }}"
-                                            class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
+                                            class="data-table-action-btn edit" title="Chỉnh sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
                                         <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST"
                                             class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" class="data-table-action-btn delete data-table-tooltip"
-                                                data-tooltip="Xóa"
+                                            <button type="button" class="data-table-action-btn delete" title="Xóa"
                                                 onclick="dtmodalConfirmDelete({
                                                     itemName: '{{ $product->name }}',
                                                     onConfirm: () => this.closest('form').submit()
@@ -245,3 +244,11 @@
         </div>
     </div>
 @endsection
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
