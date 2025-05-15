@@ -73,6 +73,82 @@ class UserController extends Controller
         }
     }
 
+    public function create()
+    {
+        try {
+            $roles = Role::all();  // Get all roles
+            return view('admin.users.create', compact('roles'));
+        } catch (\Exception $e) {
+            Log::error('Error in UserController@create: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'An error occurred while loading the create form.');
+        }
+    }
+
+    public function store(Request $request)
+    {
+        $validatedData = $request->validate([
+            'role_id' => 'required|exists:roles,id',
+            'user_name' => 'required|string|max:255|unique:users',
+            'full_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'nullable|string|max:20|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
+            'active' => 'boolean',
+            'balance' => 'nullable|numeric|min:0'
+        ], [
+            'required' => ':attribute không được để trống.',
+            'string' => ':attribute phải là chuỗi.',
+            'email' => ':attribute phải là email hợp lệ.',
+            'max' => ':attribute không được vượt quá :max ký tự.',
+            'min' => ':attribute phải có ít nhất :min ký tự.',
+            'unique' => ':attribute đã tồn tại trong hệ thống.',
+            'confirmed' => ':attribute xác nhận không khớp.',
+            'numeric' => ':attribute phải là số.',
+            'image' => ':attribute phải là hình ảnh.',
+            'mimes' => ':attribute phải có định dạng: :values.',
+            'boolean' => ':attribute phải là true hoặc false.'
+        ], [
+            'role_id' => 'Vai trò',
+            'user_name' => 'Tên đăng nhập',
+            'full_name' => 'Họ và tên',
+            'email' => 'Email',
+            'phone' => 'Số điện thoại',
+            'password' => 'Mật khẩu',
+            'avatar' => 'Ảnh đại diện',
+            'active' => 'Trạng thái',
+            'balance' => 'Số dư'
+        ]);
+
+        try {
+            $validatedData['password'] = Hash::make($validatedData['password']);
+            if ($request->hasFile('avatar')) {
+                $validatedData['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            }
+
+            User::create($validatedData);
+
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Người dùng đã được tạo thành công'
+            ]);
+            
+            return redirect()->route('admin.users.index');
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi tạo người dùng: ' . $e->getMessage());
+            
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back()->withInput();
+        }
+    }
+
 
 
     public function show(User $user , $id)
