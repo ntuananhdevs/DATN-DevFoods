@@ -31,6 +31,10 @@ Route::prefix('/')->group(function () {
         Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
         Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
         Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+        
+        // Chỉ giữ lại 2 route AJAX cần thiết
+        Route::post('/ajax/update', [CustomerCartController::class, 'ajaxUpdate'])->name('ajax.update');
+        Route::post('/ajax/remove', [CustomerCartController::class, 'ajaxRemove'])->name('ajax.remove');
     });
 
     // Route Customer (login / logout / register)
@@ -121,14 +125,4 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
-});
-
-// Customer Cart Routes
-Route::prefix('cart')->name('customer.cart.')->group(function () {
-    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
-    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });

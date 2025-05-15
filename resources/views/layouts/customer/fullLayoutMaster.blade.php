@@ -128,6 +128,7 @@
                         <div class="cart-btn">
                             <a href="{{ asset('cart') }}"><i class="fas fa-shopping-bag"></i></a>
                             <span class="cart-count">{{ session()->has('cart') ? count(session('cart')) : '0' }}</span>
+                            <span class="cart-count">{{ count(Session::get('cart', [])) }}</span>
                         </div>
                         <!-- <button class="pickup-btn">PICK UP</button>
                     <div class="hotline">
@@ -236,6 +237,13 @@
     <script src="{{ asset('js/Customer/main.js') }}"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@6.8.4/swiper-bundle.min.js"></script>
+    <!-- <script>
+        $(document).ready(function() {
+            // Cập nhật số lượng sản phẩm trong giỏ hàng từ session
+            const cartCount = {{ count(Session::get('cart', [])) }};
+            $('.cart-count').text(cartCount);
+        });
+    </script> -->
 </body>
 
 </html>
