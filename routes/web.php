@@ -63,7 +63,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);
-    Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::prefix('categories')->name('categories.')->group(function () {
+    Route::delete('{id}', [CategoryController::class, 'destroy'])->name('destroy');
+    Route::patch('categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
+    Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+    });
 
     // Users Management
     Route::prefix('users')->name('users.')->group(function () {
@@ -126,3 +130,9 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });
+
+// routes/web.php
+Route::get('/driver', function () {
+    return view('driver.home');
+});
+
