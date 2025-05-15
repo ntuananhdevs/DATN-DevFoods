@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\DriverApplicationStatusUpdated;
+use App\Services\MailService;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\GenericMail;
 
 class DriverController extends Controller
 {
@@ -64,30 +67,27 @@ class DriverController extends Controller
             ]);
 
             // Tạo bản ghi tài xế
-            \App\Models\Driver::create([
-                'user_id' => $application->user_id,
-                'application_id' => $application->id,
-                'license_number' => request('license_number'),
-                'vehicle_type' => request('vehicle_type'),
-                'vehicle_registration' => request('vehicle_registration_image'),
-                'vehicle_color' => request('vehicle_color'),
-                'status' => 'active',
-                'is_available' => true,
-                'current_latitude' => null,
-                'current_longitude' => null,
-                'balance' => 0,
-                'rating' => 5.00,
-                'cancellation_count' => 0,
-                'reliability_score' => 100,
-                'penalty_count' => 0,
-                'auto_deposit_earnings' => false
-            ]);
+            // \App\Models\Driver::create([
+            //     'user_id' => $application->user_id,
+            //     'application_id' => $application->id,
+            //     'license_number' => request('license_number'),
+            //     'vehicle_type' => request('vehicle_type'),
+            //     'vehicle_registration' => request('vehicle_registration_image'),
+            //     'vehicle_color' => request('vehicle_color'),
+            //     'status' => 'active',
+            //     'is_available' => true,
+            //     'current_latitude' => null,
+            //     'current_longitude' => null,
+            //     'balance' => 0,
+            //     'rating' => 5.00,
+            //     'cancellation_count' => 0,
+            //     'reliability_score' => 100,
+            //     'penalty_count' => 0,
+            //     'auto_deposit_earnings' => false
+            // ]);
 
-            // Gửi thông báo
-            if ($application->email) {
-                Notification::route('mail', $application->email)
-                    ->notify(new DriverApplicationStatusUpdated($application, 'approved'));
-            }
+            // Gửi thông báo qua mail
+            
 
             DB::commit();
             session()->flash('toast', [
@@ -116,11 +116,12 @@ class DriverController extends Controller
                 'admin_notes' => $request->admin_notes
             ]);
 
-            // Gửi thông báo
-            if ($application->email) {
-                Notification::route('mail', $application->email)
-                    ->notify(new DriverApplicationStatusUpdated($application, 'rejected'));
-            }
+            // Gửi thông báo qua mail
+            $toEmail = $application->email;
+            $subject = 'Thông báo đơn ứng tuyển tài xế đã được từ chối';
+            $content = 'Đơn bị từ chối với lí do: ' . $request->admin_notes;
+
+            Mail::to($toEmail)->send(new GenericMail($subject, $content));
 
             DB::commit();
             session()->flash('toast', [

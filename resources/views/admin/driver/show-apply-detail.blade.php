@@ -30,7 +30,7 @@
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="mb-0">Chi tiết đơn ứng tuyển tài xế</h3>
-                    <a href="{{ url()->previous() }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Quay lại</a>
+                    <a href="{{ route('admin.drivers.applications.index') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Quay lại</a>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
