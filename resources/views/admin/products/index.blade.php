@@ -120,20 +120,18 @@
                                 <td>
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.products.show', $product->id) }}"
-                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
+                                            class="data-table-action-btn" title="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{{ route('admin.products.edit', $product->id) }}"
-                                            class="data-table-action-btn edit data-table-tooltip" data-tooltip="Chỉnh sửa">
+                                            class="data-table-action-btn edit" title="Chỉnh sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
                                         <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST"
                                             class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="button" 
-                                                class="data-table-action-btn delete data-table-tooltip"
-                                                data-tooltip="Xóa" 
+                                            <button type="button" class="data-table-action-btn delete" title="Xóa"
                                                 onclick="dtmodalConfirmDelete({
                                                     itemName: '{{ $product->name }}',
                                                     onConfirm: () => this.closest('form').submit()
@@ -191,53 +189,66 @@
             </div>
         </div>
     </div>
-<!-- Modal Lọc -->
-<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="filterModalLabel">Lọc sản phẩm</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+    <!-- Modal Lọc -->
+    <div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="filterModalLabel">Lọc sản phẩm</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{{ route('admin.products.index') }}" method="GET">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="filter_category">Danh mục</label>
+                            <select class="form-control" id="filter_category" name="category_id">
+                                <option value="">Tất cả danh mục</option>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category->id }}"
+                                        {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="filter_price_min">Giá tối thiểu</label>
+                            <input type="number" class="form-control" id="filter_price_min" name="price_min"
+                                value="{{ request('price_min') }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter_price_max">Giá tối đa</label>
+                            <input type="number" class="form-control" id="filter_price_max" name="price_max"
+                                value="{{ request('price_max') }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="filter_stock">Tình trạng</label>
+                            <select class="form-control" id="filter_stock" name="stock_status">
+                                <option value="">Tất cả</option>
+                                <option value="in_stock" {{ request('stock_status') == 'in_stock' ? 'selected' : '' }}>Còn
+                                    hàng</option>
+                                <option value="out_of_stock"
+                                    {{ request('stock_status') == 'out_of_stock' ? 'selected' : '' }}>Hết hàng</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Áp dụng</button>
+                    </div>
+                </form>
             </div>
-            <form action="{{ route('admin.products.index') }}" method="GET">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="filter_category">Danh mục</label>
-                        <select class="form-control" id="filter_category" name="category_id">
-                            <option value="">Tất cả danh mục</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filter_price_min">Giá tối thiểu</label>
-                        <input type="number" class="form-control" id="filter_price_min" name="price_min" value="{{ request('price_min') }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="filter_price_max">Giá tối đa</label>
-                        <input type="number" class="form-control" id="filter_price_max" name="price_max" value="{{ request('price_max') }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="filter_stock">Tình trạng</label>
-                        <select class="form-control" id="filter_stock" name="stock_status">
-                            <option value="">Tất cả</option>
-                            <option value="in_stock" {{ request('stock_status') == 'in_stock' ? 'selected' : '' }}>Còn hàng</option>
-                            <option value="out_of_stock" {{ request('stock_status') == 'out_of_stock' ? 'selected' : '' }}>Hết hàng</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn btn-primary">Áp dụng</button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
-
 @endsection
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>

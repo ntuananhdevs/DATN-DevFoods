@@ -2,7 +2,6 @@
 
 @section('content')
     <div class="data-table-wrapper">
-
         {{-- Header chính --}}
         <div class="data-table-main-header">
             <div class="data-table-brand">
@@ -11,7 +10,7 @@
             </div>
             <div class="data-table-header-actions">
                 <a href="{{ route('admin.roles.create') }}" class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-plus"></i> Thêm Role
+                    <i class="fas fa-plus"></i> Thêm mới
                 </a>
             </div>
         </div>
@@ -27,7 +26,9 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th data-sort="id" class="active-sort">
+                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
+                            </th>
                             <th>Tên Role</th>
                             <th>Quyền</th>
                             <th>Hành động</th>
@@ -36,8 +37,12 @@
                     <tbody>
                         @forelse ($roles as $role)
                             <tr>
-                                <td>{{ $role->id }}</td>
-                                <td>{{ $role->name }}</td>
+                                <td>
+                                    <div class="data-table-id">
+                                        {{ $role->id }}
+                                    </div>
+                                </td>
+                                <td>{{ $role->name ?? 'Không xác định' }}</td>
                                 <td>
                                     @php
                                         $permissionsMap = [
@@ -49,7 +54,7 @@
                                         ];
                                         $translatedPermissions = array_map(
                                             fn($permission) => $permissionsMap[$permission] ?? $permission,
-                                            (array) $role->permissions,
+                                            (array) ($role->permissions ?? []),
                                         );
                                     @endphp
                                     {{ implode(', ', $translatedPermissions) ?: 'Không có quyền' }}
@@ -57,17 +62,26 @@
                                 <td>
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.roles.show', $role->id) }}" class="data-table-action-btn"
-                                            data-tooltip="Xem">
+                                            title="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <a href="{{ route('admin.roles.edit', $role->id) }}"
-                                            class="data-table-action-btn edit" data-tooltip="Sửa">
+                                            class="data-table-action-btn edit" title="Sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
-                                        <button type="button" onclick="confirmDelete({{ $role->id }})"
-                                            class="data-table-action-btn delete" data-tooltip="Xóa">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        <form action="{{ route('admin.roles.destroy', $role->id) }}" method="POST"
+                                            class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="data-table-action-btn delete " title="Xóa"
+                                                onclick="dtmodalConfirmDelete({
+                                             itemName: '{{ $role->name }}',
+                                             onConfirm: () => this.closest('form').submit()
+                                            })">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+
                                     </div>
                                 </td>
                             </tr>
@@ -83,74 +97,43 @@
             {{-- Phân trang --}}
             <div class="data-table-footer">
                 <div class="data-table-pagination-info">
-                    Hiển thị {{ $roles->firstItem() }} đến {{ $roles->lastItem() }} / tổng số {{ $roles->total() }}
+                    Hiển thị
+                    <span id="startRecord">{{ ($roles->currentPage() - 1) * $roles->perPage() + 1 }}</span>
+                    đến
+                    <span id="endRecord">{{ min($roles->currentPage() * $roles->perPage(), $roles->total()) }}</span>
+                    của
+                    <span id="totalRecords">{{ $roles->total() }}</span> mục
                 </div>
                 <div class="data-table-pagination-controls">
-                    {{ $roles->links('pagination::bootstrap-5') }}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal flash message --}}
-    @if (session('success') || session('error'))
-        <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header {{ session('success') ? 'bg-success' : 'bg-danger' }} text-white">
-                        <h5 class="modal-title">Thông báo</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                    </div>
-                    <div class="modal-body">
-                        {{ session('success') ?? session('error') }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script>
-            window.addEventListener('load', function() {
-                const modal = new bootstrap.Modal(document.getElementById('messageModal'));
-                modal.show();
-            });
-        </script>
-    @endif
-
-    {{-- Modal xác nhận xóa --}}
-    <!-- Modal Xác nhận Xóa - Bootstrap 4 style -->
-    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-secondary text-white">
-                    <h5 class="modal-title" id="confirmDeleteModalLabel">Xác nhận xóa</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Đóng">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <p>Bạn có chắc chắn muốn xóa Role này?</p>
-                </div>
-                <div class="modal-footer">
-                    <form id="deleteForm" action="" method="POST">
-                        @csrf
-                        @method('DELETE')
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                        <button type="submit" class="btn btn-danger">Xóa</button>
-                    </form>
+                    @if (!$roles->onFirstPage())
+                        <a href="{{ $roles->previousPageUrl() }}" class="data-table-pagination-btn" id="prevBtn">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </a>
+                    @endif
+                    @for ($i = 1; $i <= $roles->lastPage(); $i++)
+                        <a href="{{ $roles->url($i) }}"
+                            class="data-table-pagination-btn {{ $roles->currentPage() == $i ? 'active' : '' }}">
+                            {{ $i }}
+                        </a>
+                    @endfor
+                    @if ($roles->hasMorePages())
+                        <a href="{{ $roles->nextPageUrl() }}" class="data-table-pagination-btn" id="nextBtn">
+                            Tiếp <i class="fas fa-chevron-right"></i>
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 
 
-    {{-- Script xử lý xóa --}}
+    {{-- Scripts --}}
     <script>
-        function confirmDelete(id) {
-            const form = document.getElementById('deleteForm');
-            form.action = "{{ route('admin.roles.destroy', ':id') }}".replace(':id', id);
-            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-            modal.show();
-        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
     </script>
 @endsection

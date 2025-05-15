@@ -9,28 +9,31 @@ class ProductVariant extends Model
 {
     use HasFactory;
 
+    protected $table = 'product_variants';
+
     protected $fillable = [
         'product_id',
         'name',
+        'sku',
         'price',
         'image',
         'stock_quantity',
         'active',
     ];
 
-    /**
-     * Lấy sản phẩm của biến thể
-     */
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    /**
-     * Lấy giá trị biến thể
-     */
     public function variantValues()
     {
-        return $this->hasMany(VariantValue::class);
+        return $this->hasMany(ProductVariantValue::class);
+    }
+
+    public function attributeValues()
+    {
+        return $this->belongsToMany(AttributeValue::class, 'product_variant_values', 
+            'product_variant_id', 'attribute_value_id');
     }
 }

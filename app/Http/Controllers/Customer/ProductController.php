@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attribute;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\ProductVariant;
 
 class ProductController extends Controller
 {
@@ -21,7 +23,7 @@ class ProductController extends Controller
 
         return view("customer.shop.product-list", compact('products'));
     }
-    
+
     /**
      * Show the form for creating a new resource.
      */
@@ -29,7 +31,7 @@ class ProductController extends Controller
     {
         //
     }
-    
+
     /**
      * Store a newly created resource in storage.
      */
@@ -37,29 +39,58 @@ class ProductController extends Controller
     {
         //
     }
-    
+
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        // Lấy sản phẩm theo ID, kèm danh mục và biến thể
+        // Tải sản phẩm với các quan hệ cần thiết
         $product = Product::with([
             'category',
-            'variants' => function ($query) {
-                $query->where('active', 1)->with('variantValues');
-            }
+            'variants.attributeValues.attribute', // Tải attributeValues và attribute liên quan
+            'reviews.user'
         ])->findOrFail($id);
+
+        // Lấy danh sách thuộc tính của sản phẩm
+        $productAttributes = $product->attributes()->with(['values' => function($query) use ($product) {
+            $query->whereHas('productVariants', function($subQuery) use ($product) {
+                $subQuery->where('product_id', $product->id);
+            });
+        }])->get();
+
+        // Chuẩn bị dữ liệu biến thể cho JavaScript
+        $variantsData = [];
+        foreach ($product->variants as $variant) {
+            $attributeValues = [];
+            foreach ($variant->attributeValues as $value) {
+                $attributeValues[$value->attribute_id] = $value->id;
+            }
+            
+            $variantsData[$variant->id] = [
+                'id' => $variant->id,
+                'name' => $variant->name,
+                'price' => $variant->price,
+                'image' => $variant->image ?? $product->image,
+                'stock_quantity' => $variant->stock_quantity ?? 0,
+                'sku' => $variant->sku,
+                'attributes' => $attributeValues
+            ];
+        }
 
         // Lấy sản phẩm liên quan
         $relatedProducts = Product::where('category_id', $product->category_id)
-            ->where('id', '!=', $id)
+            ->where('id', '!=', $product->id)
             ->where('stock', 1)
-            ->with('category')
             ->take(4)
             ->get();
 
-        return view('customer.shop.product-detail', compact('product', 'relatedProducts'));
+        return view('customer.shop.product-detail', compact(
+            'product',
+            'productAttributes',
+            'variantsData',
+            'relatedProducts'
+        ));
     }
 
     /**

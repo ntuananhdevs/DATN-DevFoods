@@ -23,29 +23,34 @@ class Product extends Model
         'stock',
         'image',
         'preparation_time',
+        'sku',
     ];
 
-    /**
-     * Lấy danh mục của sản phẩm
-     */
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Lấy các biến thể của sản phẩm
-     */
     public function variants()
     {
         return $this->hasMany(ProductVariant::class);
     }
 
-    // /**
-    //  * Lấy các đánh giá của sản phẩm
-    //  */
-    // public function reviews()
-    // {
-    //     return $this->hasMany(ProductReview::class);
-    // }
+    public function attributes()
+    {
+        return Attribute::whereIn('id', function ($query) {
+            $query->select('attribute_id')
+                ->from('attribute_values')
+                ->whereIn('id', function ($subQuery) {
+                    $subQuery->select('attribute_value_id')
+                        ->from('product_variant_values')
+                        ->whereIn('product_variant_id', $this->variants()->pluck('id'));
+                });
+        })->distinct();
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(ProductReview::class);
+    }
 }
