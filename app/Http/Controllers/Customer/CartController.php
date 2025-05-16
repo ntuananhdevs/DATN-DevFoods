@@ -208,4 +208,15 @@ class CartController extends Controller
         Session::forget('cart');
         return response()->json(['success' => true, 'message' => 'Giỏ hàng đã được xóa!']);
     }
+
+    /**
+     * Lưu danh sách sản phẩm được chọn vào session
+     */
+    public function saveSelectedItems(Request $request)
+    {
+        $selectedItems = $request->input('selected_items', []);
+        session()->put('selected_cart_items', $selectedItems);
+        
+        return response()->json(['success' => true]);
+    }
 }

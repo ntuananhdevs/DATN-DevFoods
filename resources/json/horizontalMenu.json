@@ -56,6 +56,12 @@
                     "i18n": "nav.all_applications"
                 }
             ]
+        },
+        {
+            "url": "/admin/banners",
+            "name": "Quản lý Banner",
+            "icon": "feather icon-image",
+            "i18n": "nav.banners"
         }
     ]
 }

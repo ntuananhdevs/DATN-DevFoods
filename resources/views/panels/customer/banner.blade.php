@@ -58,27 +58,20 @@
     <section class="promo-carousel">
         <div class="carousel-container">
             <div class="carousel-slides">
-                <div class="carousel-slide active">
-                    <img src="{{ asset('images/banner/promo-1.png') }}" alt="Combo Gia Đình Vui Vẻ">
+                @inject('bannerService', 'App\Services\BannerService')
+                @php
+                    $banners = $bannerService->getActiveBanners();
+                @endphp
+               
+                @foreach($banners as $banner)
+                <div class="carousel-slide {{ $banner === 0 ? 'active' : '' }}">
+                    <img src="{{ asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}">
                     <div class="carousel-caption">
-                        <h2>Combo Gia Đình Vui Vẻ</h2>
-                        <p>Tiết kiệm đến 15% với combo dành cho gia đình</p>
+                        <h2>{{ $banner->title }}</h2>
+                        <p>{{ $banner->description }}</p>
                     </div>
                 </div>
-                <div class="carousel-slide">
-                    <img src="{{ asset('images/banner/promo-2.png') }}" alt="Mua 1 Tặng 1">
-                    <div class="carousel-caption">
-                        <h2>Mua 1 Tặng 1</h2>
-                        <p>Thứ 2 hàng tuần - Mua 1 gà giòn tặng 1 mỳ Ý</p>
-                    </div>
-                </div>
-                <div class="carousel-slide">
-                    <img src="{{ asset('images/banner/promo-3.png') }}" alt="Sinh Nhật Vui Vẻ">
-                    <div class="carousel-caption">
-                        <h2>Sinh Nhật Vui Vẻ</h2>
-                        <p>Đặt tiệc sinh nhật tại DevFood - Nhận quà hấp dẫn</p>
-                    </div>
-                </div>
+                @endforeach
             </div>
             <button class="carousel-control prev">
                 <i class="fas fa-chevron-left"></i>
