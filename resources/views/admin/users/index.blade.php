@@ -439,7 +439,7 @@ function updateTable(users) {
                     </td>
                     <td>
                         <div class="data-table-action-buttons">
-                            <a href="/admin/users/${user.id}" 
+                            <a href="/admin/users/show/${user.id}" 
                                class="data-table-action-btn data-table-tooltip"
                                data-tooltip="Xem chi tiết">
                                 <i class="fas fa-eye"></i>

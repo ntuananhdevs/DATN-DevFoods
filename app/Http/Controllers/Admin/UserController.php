@@ -186,14 +186,42 @@ class UserController extends Controller
 
 
 
-    public function show(User $user, $id)
+    public function show(Request $request, $id)
     {
         try {
-            $user = User::findOrFail($id);
+            $user = User::with('role')->findOrFail($id);
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $user->id,
+                        'user_name' => $user->user_name,
+                        'full_name' => $user->full_name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'role' => $user->role->name,
+                        'status' => $user->active ? 'Hoạt động' : 'Vô hiệu hóa',
+                      
+                    ],
+                    'html' => view('admin.users.partials.user_info', compact('user'))->render(),
+                    'message' => 'Tải dữ liệu người dùng thành công'
+                ]);
+            }
+
             return view('admin.users.show', compact('user'));
         } catch (\Exception $e) {
             Log::error('Error in UserController@show: ' . $e->getMessage());
-            var_dump($e->getMessage());
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy người dùng',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Không tìm thấy người dùng');
         }
     }
 

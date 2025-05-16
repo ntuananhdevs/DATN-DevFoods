@@ -19,8 +19,12 @@ class DatabaseSeeder extends Seeder
 
         // Gọi CategorySeeder và ProductSeeder
         $this->call(CategorySeeder::class);
-        $this->call(ProductSeeder::class);
         
+        // Gọi AttributeSeeder trước ProductSeeder
+        $this->call(AttributeSeeder::class);
+        
+        $this->call(ProductSeeder::class);
+
         // Gọi DriverApplicationSeeder và DriverSeeder
         $this->call(DriverApplicationSeeder::class);
         $this->call(DriverSeeder::class);

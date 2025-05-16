@@ -9,16 +9,8 @@ class Category extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'description',
-        'image',
-        'status',
-    ];
+    protected $fillable = ['name', 'description', 'image', 'status'];
 
-    /**
-     * Lấy các sản phẩm thuộc danh mục này
-     */
     public function products()
     {
         return $this->hasMany(Product::class);
