@@ -427,23 +427,3 @@
 </div>
 @endsection
 
-@section('vendor-script')
-{{-- vendor files --}}
-<script src="{{ asset(mix('vendors/js/charts/apexcharts.min.js')) }}"></script>
-<script src="{{ asset(mix('vendors/js/extensions/sweetalert2.all.min.js')) }}"></script>
-@endsection
-
-@section('page-script')
-{{-- Page js files --}}
-<script src="{{ asset(mix('js/scripts/pages/dashboard-ecommerce.js')) }}"></script>
-<script>
-    $(window).on('load', function() {
-        if (feather) {
-            feather.replace({
-                width: 14,
-                height: 14
-            });
-        }
-    });
-</script>
-@endsection
