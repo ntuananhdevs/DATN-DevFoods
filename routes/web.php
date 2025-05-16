@@ -130,9 +130,3 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });
-
-// routes/web.php
-Route::get('/driver', function () {
-    return view('driver.home');
-});
-
