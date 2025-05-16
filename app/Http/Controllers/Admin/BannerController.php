@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Banner;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Storage;
 class BannerController extends Controller
 {
     public function index(Request $request)
@@ -14,17 +14,17 @@ class BannerController extends Controller
         try {
             $search = $request->input('search');
             $query = Banner::orderBy('created_at', 'desc');
-            
+
             if ($search) {
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', '%' . $search . '%')
-                      ->orWhere('description', 'like', '%' . $search . '%');
+                        ->orWhere('description', 'like', '%' . $search . '%');
                 });
             }
-            
+
             $banners = $query->paginate(10);
             $banners->appends(['search' => $search]);
-            
+
             return view('admin.banner.index', compact('banners', 'search'));
         } catch (\Exception $e) {
             Log::error('Error in BannerController@index: ' . $e->getMessage());
@@ -98,7 +98,18 @@ class BannerController extends Controller
      */
     public function show(string $id)
     {
-        //
+        try {
+            $banner = Banner::findOrFail($id);
+            return view('admin.banner.show', compact('banner'));
+        } catch (\Exception $e) {
+            Log::error('Error in BannerController@show: ' . $e->getMessage());
+            return redirect()->route('admin.banners.index')
+                ->with('toast', [
+                    'type' => 'error',
+                    'title' => 'Lỗi',
+                    'message' => 'Không tìm thấy banner'
+                ]);
+        }
     }
 
     /**
@@ -124,7 +135,7 @@ class BannerController extends Controller
     {
         try {
             $banner = Banner::findOrFail($id);
-            
+
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
                 'link' => 'nullable|url|starts_with:https://',
@@ -174,7 +185,25 @@ class BannerController extends Controller
     }
     public function destroy(string $id)
     {
-        //
+        try {
+            $banner = Banner::findOrFail($id);
+            if ($banner->image_path) {
+                Storage::disk('public')->delete($banner->image_path);
+            }   
+            $banner->delete();
+            return redirect()->route('admin.banners.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Banner đã được xóa thành công'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in BannerController@destroy: ' . $e->getMessage());
+            return redirect()->route('admin.banners.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Có lỗi xảy ra khi xóa banner: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function toggleStatus($id)
@@ -220,8 +249,6 @@ class BannerController extends Controller
             } else {
                 $ids = $idsInput;
             }
-
-            // Kiểm tra xem $ids có phải là mảng không
             if (!is_array($ids)) {
                 return back()->with('toast', [
                     'type' => 'error',

@@ -25,8 +25,7 @@
 .container-detail {
     width: 100%;
     max-width: 1200px;
-    margin: 0 auto;
-    padding-top: 50px;
+    margin: 80px auto 0;
 }
 
 /* Breadcrumb */

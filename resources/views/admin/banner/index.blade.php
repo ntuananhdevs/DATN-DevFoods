@@ -1,6 +1,34 @@
 @extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
+@push('scripts')
+    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+    <script>
+        // Initialize Pusher
+        const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
+            cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
+            encrypted: true
+        });
+
+        // Subscribe to channel
+        const channel = pusher.subscribe('banner-channel');
+
+        // Handle new banner event
+        channel.bind('banner-created', function(data) {
+            location.reload();
+        });
+
+        // Handle updated banner event
+        channel.bind('banner-updated', function(data) {
+            location.reload();
+        });
+
+        // Handle deleted banner event
+        channel.bind('banner-deleted', function(data) {
+            location.reload();
+        });
+    </script>
+@endpush
     <div class="data-table-wrapper">
         <!-- Main Header -->
         <div class="data-table-main-header">
@@ -164,6 +192,19 @@
                                             class="data-table-action-btn edit" title="Chỉnh sửa">
                                             <i class="fas fa-pen"></i>
                                         </a>
+                                        <form action="{{ route('admin.banners.destroy', $banner->id) }}" method="POST"
+                                            class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="data-table-action-btn delete data-table-tooltip"
+                                                data-tooltip="Xóa"
+                                                onclick="dtmodalConfirmDelete({
+                                                itemName: '{{ $banner->name }}',
+                                                onConfirm: () => this.closest('form').submit()
+                                            })">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                     <form id="bulkStatusForm" action="{{ route('admin.banners.bulk-status-update') }}" method="POST" style="display: none;">
                                         @csrf
@@ -259,6 +300,8 @@
     </div>
 
     <script>
+        // Pusher already initialized above
+
         function handleSearch(event) {
             const searchValue = event.target.value.trim();
             const currentUrl = new URL(window.location.href);

@@ -19,7 +19,7 @@ class CartController extends Controller
         $cartItems = Session::get('cart', []);
         $cartData = [];
         $totalPrice = 0;
-        
+
         // Nếu giỏ hàng không trống, lấy thông tin sản phẩm
         if (!empty($cartItems)) {
             foreach ($cartItems as $key => $item) {
@@ -36,10 +36,10 @@ class CartController extends Controller
                         $image = $product->image;
                         $variantName = '';
                     }
-                    
+
                     $itemTotal = $price * $item['quantity'];
                     $totalPrice += $itemTotal;
-                    
+
                     $cartData[$key] = [
                         'id' => $key,
                         'product_id' => $product->id,
@@ -54,7 +54,7 @@ class CartController extends Controller
                 }
             }
         }
-        
+
         return view("customer.cart.cart-item", compact('cartData', 'totalPrice'));
     }
 
@@ -67,13 +67,13 @@ class CartController extends Controller
         $variantId = $request->input('variant_id');
         $quantity = $request->input('quantity', 1);
         $attributes = $request->input('attributes', []);
-        
+
         // Kiểm tra sản phẩm tồn tại
         $product = Product::find($productId);
         if (!$product) {
             return response()->json(['success' => false, 'message' => 'Sản phẩm không tồn tại!'], 404);
         }
-        
+
         // Xác định giá sản phẩm
         $price = $product->base_price;
         if ($variantId) {
@@ -82,13 +82,13 @@ class CartController extends Controller
                 $price = $variant->price;
             }
         }
-        
+
         // Lấy giỏ hàng từ session (hoặc khởi tạo mới)
         $cart = Session::get('cart', []);
-        
+
         // Tạo key duy nhất cho sản phẩm
         $cartKey = $variantId ? $productId . '-' . $variantId : $productId;
-        
+
         // Thêm hoặc cập nhật sản phẩm trong giỏ hàng
         if (isset($cart[$cartKey])) {
             $cart[$cartKey]['quantity'] += $quantity;
@@ -101,56 +101,105 @@ class CartController extends Controller
                 'attributes' => $attributes
             ];
         }
-        
+
         // Lưu lại giỏ hàng vào session
         Session::put('cart', $cart);
-        
+
+        // Trả về response với số lượng sản phẩm trong giỏ hàng
         return response()->json([
-            'success' => true, 
-            'message' => 'Đã thêm vào giỏ hàng!',
-            'cart_count' => count($cart)
+            'success' => true,
+            'message' => 'Sản phẩm đã được thêm vào giỏ hàng',
+            'cart_count' => count(session()->get('cart', []))
         ]);
     }
-    
+
     /**
-     * Cập nhật số lượng sản phẩm trong giỏ hàng
+     * Lấy số lượng sản phẩm trong giỏ hàng
      */
-    public function update(Request $request)
+    public function count()
+    {
+        $cart = session()->get('cart', []);
+        return response()->json(['count' => count($cart)]);
+    }
+
+    /**
+     * Cập nhật số lượng sản phẩm trong giỏ hàng (Ajax)
+     */
+    public function ajaxUpdate(Request $request)
     {
         $cartKey = $request->input('cart_key');
         $quantity = $request->input('quantity');
-        
-        // Lấy giỏ hàng từ session
-        $cart = Session::get('cart', []);
+        $cart = session()->get('cart', []);
         
         if (isset($cart[$cartKey])) {
             $cart[$cartKey]['quantity'] = $quantity;
-            Session::put('cart', $cart);
-            return response()->json(['success' => true, 'message' => 'Giỏ hàng đã được cập nhật!']);
+            // Không cần thiết lập 'total' ở đây vì nó được tính toán trong index()
+            session()->put('cart', $cart);
+            
+            // Tính lại tổng giá
+            $subtotal = 0;
+            foreach ($cart as $item) {
+                $itemTotal = $item['price'] * $item['quantity'];
+                $subtotal += $itemTotal;
+            }
+            
+            // Giả sử phí vận chuyển là 30.000đ và giảm giá là 0đ (hoặc lấy từ session nếu có)
+            $shipping = 30000;
+            $discount = session()->get('coupon.discount', 0);
+            $total = $subtotal + $shipping - $discount;
+            
+            // Tính toán thành tiền cho sản phẩm hiện tại
+            $itemTotal = $cart[$cartKey]['price'] * $quantity;
+            
+            return response()->json([
+                'success' => true,
+                'item_total' => number_format($itemTotal, 0, ',', '.') . 'đ',
+                'subtotal' => number_format($subtotal, 0, ',', '.') . 'đ',
+                'total' => number_format($total, 0, ',', '.') . 'đ'
+            ]);
         }
         
-        return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm trong giỏ hàng!'], 404);
+        return response()->json(['success' => false]);
     }
-    
+
     /**
-     * Xóa sản phẩm khỏi giỏ hàng
+     * Xóa sản phẩm khỏi giỏ hàng (Ajax)
      */
-    public function remove(Request $request)
+    /**
+     * Xóa sản phẩm khỏi giỏ hàng (Ajax)
+     */
+    public function ajaxRemove(Request $request)
     {
         $cartKey = $request->input('cart_key');
-        
-        // Lấy giỏ hàng từ session
-        $cart = Session::get('cart', []);
+        $cart = session()->get('cart', []);
         
         if (isset($cart[$cartKey])) {
             unset($cart[$cartKey]);
-            Session::put('cart', $cart);
-            return response()->json(['success' => true, 'message' => 'Sản phẩm đã được xóa khỏi giỏ hàng!']);
+            session()->put('cart', $cart);
+            
+            // Tính lại tổng giá
+            $subtotal = 0;
+            foreach ($cart as $item) {
+                $itemTotal = $item['price'] * $item['quantity'];
+                $subtotal += $itemTotal;
+            }
+            
+            // Giả sử phí vận chuyển là 30.000đ và giảm giá là 0đ (hoặc lấy từ session nếu có)
+            $shipping = 30000;
+            $discount = session()->get('coupon.discount', 0);
+            $total = $subtotal + $shipping - $discount;
+            
+            return response()->json([
+                'success' => true,
+                'cart_count' => count($cart),
+                'subtotal' => number_format($subtotal, 0, ',', '.') . 'đ',
+                'total' => number_format($total, 0, ',', '.') . 'đ'
+            ]);
         }
         
-        return response()->json(['success' => false, 'message' => 'Không tìm thấy sản phẩm trong giỏ hàng!'], 404);
+        return response()->json(['success' => false]);
     }
-    
+
     /**
      * Xóa toàn bộ giỏ hàng
      */

@@ -71,11 +71,11 @@ $currentRoute = request()->route()->getName();
                             </button>
                             <div class="notification-btn">
                                 <a href="#"><i class="fa-solid fa-bell"></i></a>
-                                <span class="notification-count">5</span>
+                                <span class="notification-count">{{ $notificationCount ?? '0' }}</span>
                             </div>
                             <div class="cart-btn">
                                 <a href="{{ asset('cart') }}"><i class="fas fa-shopping-bag"></i></a>
-                                <span class="cart-count">3</span>
+                                <span class="cart-count" id="cart-badge-count">{{ count(Session::get('cart', [])) }}</span>
                             </div>
                         </div>
                     </ul>
@@ -103,3 +103,41 @@ $currentRoute = request()->route()->getName();
         </div>
     </div>
 </header>
+
+<!-- Thêm script để lắng nghe sự kiện thêm vào giỏ hàng -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Lắng nghe sự kiện click trên các nút thêm vào giỏ hàng
+    document.addEventListener('click', function(e) {
+        // Kiểm tra nếu phần tử được click có class 'add-to-cart-btn' hoặc 'cart-btn' hoặc có data-action="add-to-cart"
+        if (e.target.classList.contains('add-to-cart-btn') || 
+            e.target.classList.contains('cart-btn') || 
+            e.target.closest('[data-action="add-to-cart"]') ||
+            e.target.getAttribute('data-action') === 'add-to-cart') {
+            
+            // Lắng nghe sự kiện Ajax hoàn thành
+            $(document).ajaxComplete(function(event, xhr, settings) {
+                // Kiểm tra nếu response có chứa thông tin về giỏ hàng
+                if (xhr.responseJSON && xhr.responseJSON.cart_count !== undefined) {
+                    // Cập nhật số lượng giỏ hàng
+                    updateCartCount(xhr.responseJSON.cart_count);
+                } else if (xhr.responseJSON && xhr.responseJSON.cart) {
+                    // Nếu response trả về đối tượng cart
+                    updateCartCount(Object.keys(xhr.responseJSON.cart).length);
+                } else {
+                    // Nếu không có thông tin rõ ràng, gọi API để lấy số lượng hiện tại
+                    $.ajax({
+                        url: '{{ route("customer.cart.count") }}',
+                        type: 'GET',
+                        success: function(response) {
+                            if (response.count !== undefined) {
+                                updateCartCount(response.count);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    });
+});
+</script>

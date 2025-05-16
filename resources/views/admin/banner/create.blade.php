@@ -11,7 +11,7 @@
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
-
+        
         <div class="mb-3">
             <label class="form-label">Mô tả</label>
             <textarea name="description" class="form-control">{{ old('description') }}</textarea>
@@ -73,18 +73,25 @@
 <style>
     .image-upload-container {
         position: relative;
-        border: 2px dashed #4CAF50;
-        padding: 40px;
+        border: 2px dashed #3b82f6;
+        padding: 2rem;
         text-align: center;
-        transition: 0.3s ease-in-out;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #f0fff4, #e8f5e9);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 0.5rem;
+        background-color: #f8fafc;
         cursor: pointer;
+        margin-bottom: 1rem;
     }
 
     .image-upload-container:hover {
-        box-shadow: 0 0 20px rgba(76, 175, 80, 0.6);
-        transform: scale(1.02);
+        border-color: #2563eb;
+        background-color: #eff6ff;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.06);
+    }
+
+    .image-upload-container.active {
+        border-color: #2563eb;
+        background-color: #dbeafe;
     }
 
     .image-upload-container input[type="file"] {
@@ -98,28 +105,41 @@
     }
 
     .image-upload-container .upload-text {
-        font-size: 16px;
-        color: #4CAF50;
-        font-weight: bold;
+        font-size: 1rem;
+        color: #3b82f6;
+        font-weight: 500;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .image-upload-container .upload-text::before {
+        content: "\f03e";
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        font-size: 1.5rem;
+        color: #3b82f6;
     }
 
     .image-preview {
-        margin-top: 15px;
+        margin: 1rem auto;
         display: none;
-        max-height: 200px;
-        border-radius: 10px;
-        animation: fadeIn 0.7s ease-in-out;
+        max-height: 300px;
+        max-width: 100%;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        animation: fadeIn 0.3s ease-out;
     }
 
     @keyframes fadeIn {
         from {
             opacity: 0;
-            transform: scale(0.95);
+            transform: translateY(-10px);
         }
-
         to {
             opacity: 1;
-            transform: scale(1);
+            transform: translateY(0);
         }
     }
 </style>
