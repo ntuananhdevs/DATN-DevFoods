@@ -54,7 +54,7 @@
         background-color: #f8f9fa;
         border-radius: 6px;
         padding: 12px;
-        margin-top: 15px;
+        margin-top: 50px;
     }
     
     .selected-variant-header {
@@ -89,6 +89,69 @@
         color: #17a2b8;
         margin-right: 10px;
         font-size: 18px;
+    }
+    
+    /* CSS cho toast notification */
+    .toast-container {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 9999;
+    }
+    
+    .toast {
+        display: flex;
+        align-items: center;
+        background-color: #fff;
+        border-left: 4px solid #4CAF50;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 4px;
+        padding: 16px;
+        margin-bottom: 16px;
+        min-width: 300px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out forwards;
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    
+    @keyframes slideIn {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    @keyframes slideOut {
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+    
+    .toast.hide {
+        animation: slideOut 0.3s ease-out forwards;
+    }
+    
+    .toast-icon {
+        margin-right: 12px;
+        color: #4CAF50;
+        font-size: 20px;
+    }
+    
+    .toast-content {
+        flex: 1;
+    }
+    
+    .toast-close {
+        color: #aaa;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0 4px;
+    }
+    
+    .toast-close:hover {
+        color: #555;
     }
 </style>
 @endsection
@@ -404,6 +467,9 @@
         <img src="/placeholder.svg" alt="Zoomed Image" id="zoomed-image">
     </div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
 @endsection
 
 @section('scripts')
@@ -434,6 +500,64 @@
             mainImage.src = this.getAttribute('data-img');
         });
     });
+
+    // Hàm hiển thị toast
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        
+        // Tạo toast element
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        
+        // Icon dựa vào loại toast
+        let icon = 'fa-check-circle';
+        let color = '#4CAF50';
+        
+        if (type === 'error') {
+            icon = 'fa-exclamation-circle';
+            color = '#F44336';
+            toast.style.borderLeftColor = color;
+        } else if (type === 'warning') {
+            icon = 'fa-exclamation-triangle';
+            color = '#FF9800';
+            toast.style.borderLeftColor = color;
+        } else if (type === 'info') {
+            icon = 'fa-info-circle';
+            color = '#2196F3';
+            toast.style.borderLeftColor = color;
+        }
+        
+        // Nội dung toast
+        toast.innerHTML = `
+            <div class="toast-icon">
+                <i class="fas ${icon}" style="color: ${color}"></i>
+            </div>
+            <div class="toast-content">${message}</div>
+            <div class="toast-close">&times;</div>
+        `;
+        
+        // Thêm toast vào container
+        toastContainer.appendChild(toast);
+        
+        // Xử lý nút đóng
+        const closeBtn = toast.querySelector('.toast-close');
+        closeBtn.addEventListener('click', function() {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        });
+        
+        // Tự động đóng sau 5 giây
+        setTimeout(() => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 5000);
+    }
+
+    
     
     // Xử lý nút tăng/giảm số lượng
     const minusBtn = document.querySelector('.minus-btn');

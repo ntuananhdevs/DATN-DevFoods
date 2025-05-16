@@ -19,6 +19,7 @@ return new class extends Migration
             $table->foreignId('address_id')->constrained('addresses');
             $table->foreignId('payment_id')->nullable()->constrained('payments');
             $table->foreignId('discount_code_id')->nullable()->constrained('discount_codes');
+            $table->foreignId('point_rule_id')->nullable()->constrained('point_rules');
             $table->string('order_number')->unique();
             $table->dateTime('order_date');
             $table->dateTime('estimated_delivery_time')->nullable();
@@ -32,11 +33,6 @@ return new class extends Migration
             $table->integer('points_earned')->default(0);
             $table->enum('points_status', ['awarded', 'pending', 'cancelled', 'refunded'])->default('pending');
             $table->text('notes')->nullable();
-            
-            // Thông tin hoàn tiền
-            $table->enum('refund_status', ['requested', 'processing', 'refunded', 'rejected'])->nullable();
-            $table->decimal('refunded_amount', 10, 2)->default(0);
-            $table->string('responsible_party')->nullable();
             
             // Thông tin xác nhận giao hàng
             $table->string('delivery_confirmation_photo')->nullable();
