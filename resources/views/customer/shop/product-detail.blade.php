@@ -557,7 +557,28 @@
         }, 5000);
     }
 
-    
+    // Gửi request thêm vào giỏ hàng
+    $.ajax({
+            url: '{{ route("customer.cart.add") }}',
+            type: 'POST',
+            data: {
+                product_id: productId,
+                variant_id: variantId,
+                quantity: quantity
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast(`Đã thêm ${quantity} ${variantId ? selectedVariant.name : '{{ $product->name }}'} vào giỏ hàng`);
+                } else {
+                    showToast(response.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', xhr.responseText);
+                showToast('Có lỗi xảy ra khi thêm vào giỏ hàng', 'error');
+            }
+        });
+    });
     
     // Xử lý nút tăng/giảm số lượng
     const minusBtn = document.querySelector('.minus-btn');
