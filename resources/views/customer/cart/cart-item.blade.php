@@ -8,17 +8,77 @@
 <link rel="stylesheet" href="{{ asset('fonts/feather/style.min.css') }}">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@6.8.4/swiper-bundle.min.css">
+<style>
+    /* CSS để đẩy toast xuống thấp hơn header */
+    .toast-container {
+        position: fixed;
+        top: 80px; /* Điều chỉnh giá trị này tùy theo chiều cao của header */
+        right: 20px;
+        z-index: 1050;
+    }
+    
+    /* Đảm bảo toast hiển thị đúng */
+    .toast {
+        min-width: 250px;
+        margin-bottom: 10px;
+        background-color: #fff;
+        border-radius: 4px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+    
+    .toast.show {
+        opacity: 1;
+    }
+    
+    /* Tùy chỉnh màu sắc cho các loại toast khác nhau */
+    .toast.success .toast-header {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .toast.error .toast-header {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .toast.warning .toast-header {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .toast.info .toast-header {
+        background-color: #17a2b8;
+        color: white;
+    }
+</style>
 @endsection
 
 @section('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    // Thiết lập CSRF token cho tất cả các request Ajax
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+    
     $(document).ready(function() {
         // Xử lý sự kiện khi nhấn nút xóa sản phẩm
-        $('.remove-btn').on('click', function(e) {
+        $(document).on('click', '.remove-btn', function(e) {
             e.preventDefault();
             
             const cartKey = $(this).data('cart-key');
+            console.log('Removing item with key:', cartKey); // Thêm log để debug
+            
+            // Kiểm tra xem cartKey có tồn tại không
+            if (!cartKey) {
+                console.error('Cart key is missing');
+                return;
+            }
+            
             const cartItem = $(this).closest('.cart-item');
             
             // Hiển thị xác nhận xóa
@@ -28,10 +88,10 @@
                     url: '{{ route("customer.cart.ajax.remove") }}',
                     type: 'POST',
                     data: {
-                        _token: '{{ csrf_token() }}',
                         cart_key: cartKey
                     },
                     success: function(response) {
+                        console.log('Response:', response); // Thêm log để debug
                         if (response.success) {
                             // Xóa phần tử khỏi DOM
                             cartItem.fadeOut(300, function() {
@@ -61,7 +121,8 @@
                             alert('Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại!');
                         }
                     },
-                    error: function() {
+                    error: function(xhr, status, error) {
+                        console.error('Error:', xhr.responseText); // Thêm log chi tiết lỗi
                         alert('Có lỗi xảy ra khi xóa sản phẩm. Vui lòng thử lại!');
                     }
                 });
@@ -71,9 +132,18 @@
         // Xử lý sự kiện khi thay đổi số lượng
         $('.quantity-input').on('change', function() {
             const cartKey = $(this).data('cart-key');
-            const quantity = $(this).val();
+            const quantity = parseInt($(this).val());
             
-            updateCartItem(cartKey, quantity);
+            // Kiểm tra giá trị hợp lệ
+            if (quantity < 1) {
+                $(this).val(1);
+                updateCartItem(cartKey, 1);
+            } else if (quantity > 99) {
+                $(this).val(99);
+                updateCartItem(cartKey, 99);
+            } else {
+                updateCartItem(cartKey, quantity);
+            }
         });
         
         // Xử lý nút tăng số lượng
@@ -111,7 +181,6 @@
                 url: '{{ route("customer.cart.ajax.update") }}',
                 type: 'POST',
                 data: {
-                    _token: '{{ csrf_token() }}',
                     cart_key: cartKey,
                     quantity: quantity
                 },
@@ -128,7 +197,8 @@
                         alert('Có lỗi xảy ra khi cập nhật giỏ hàng. Vui lòng thử lại!');
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.error('Error:', xhr.responseText);
                     alert('Có lỗi xảy ra khi cập nhật giỏ hàng. Vui lòng thử lại!');
                 }
             });

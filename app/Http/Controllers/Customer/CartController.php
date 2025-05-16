@@ -105,11 +105,21 @@ class CartController extends Controller
         // Lưu lại giỏ hàng vào session
         Session::put('cart', $cart);
 
+        // Trả về response với số lượng sản phẩm trong giỏ hàng
         return response()->json([
             'success' => true,
-            'message' => 'Đã thêm vào giỏ hàng!',
-            'cart_count' => count($cart)
+            'message' => 'Sản phẩm đã được thêm vào giỏ hàng',
+            'cart_count' => count(session()->get('cart', []))
         ]);
+    }
+
+    /**
+     * Lấy số lượng sản phẩm trong giỏ hàng
+     */
+    public function count()
+    {
+        $cart = session()->get('cart', []);
+        return response()->json(['count' => count($cart)]);
     }
 
     /**
@@ -123,13 +133,14 @@ class CartController extends Controller
         
         if (isset($cart[$cartKey])) {
             $cart[$cartKey]['quantity'] = $quantity;
-            $cart[$cartKey]['total'] = $cart[$cartKey]['price'] * $quantity;
+            // Không cần thiết lập 'total' ở đây vì nó được tính toán trong index()
             session()->put('cart', $cart);
             
             // Tính lại tổng giá
             $subtotal = 0;
             foreach ($cart as $item) {
-                $subtotal += $item['total'];
+                $itemTotal = $item['price'] * $item['quantity'];
+                $subtotal += $itemTotal;
             }
             
             // Giả sử phí vận chuyển là 30.000đ và giảm giá là 0đ (hoặc lấy từ session nếu có)
@@ -137,9 +148,12 @@ class CartController extends Controller
             $discount = session()->get('coupon.discount', 0);
             $total = $subtotal + $shipping - $discount;
             
+            // Tính toán thành tiền cho sản phẩm hiện tại
+            $itemTotal = $cart[$cartKey]['price'] * $quantity;
+            
             return response()->json([
                 'success' => true,
-                'item_total' => number_format($cart[$cartKey]['total'], 0, ',', '.') . 'đ',
+                'item_total' => number_format($itemTotal, 0, ',', '.') . 'đ',
                 'subtotal' => number_format($subtotal, 0, ',', '.') . 'đ',
                 'total' => number_format($total, 0, ',', '.') . 'đ'
             ]);
@@ -148,6 +162,9 @@ class CartController extends Controller
         return response()->json(['success' => false]);
     }
 
+    /**
+     * Xóa sản phẩm khỏi giỏ hàng (Ajax)
+     */
     /**
      * Xóa sản phẩm khỏi giỏ hàng (Ajax)
      */
@@ -163,7 +180,8 @@ class CartController extends Controller
             // Tính lại tổng giá
             $subtotal = 0;
             foreach ($cart as $item) {
-                $subtotal += $item['total'];
+                $itemTotal = $item['price'] * $item['quantity'];
+                $subtotal += $itemTotal;
             }
             
             // Giả sử phí vận chuyển là 30.000đ và giảm giá là 0đ (hoặc lấy từ session nếu có)

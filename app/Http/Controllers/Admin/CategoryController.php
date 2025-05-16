@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Category;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
@@ -18,13 +19,13 @@ class CategoryController extends Controller
     {
         try {
             // Lấy từ input tìm kiếm
-            $keyword = $request->input('keyword');
+            $search = $request->input('search');
 
             // Tạo truy vấn tìm kiếm
-            $categories = Category::when($keyword, function ($query, $keyword) {
-                return $query->where(function ($q) use ($keyword) {
-                    $q->where('name', 'like', '%' . $keyword . '%')
-                        ->orWhere('id', 'like', '%' . $keyword . '%');
+            $categories = Category::when($search, function ($query, $search) {
+                return $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('id', 'like', '%' . $search . '%');
                 });
             })->paginate(10);
 
@@ -198,6 +199,59 @@ class CategoryController extends Controller
         return back();
     }
 }
+
+    public function toggleStatus(Category $category)
+    {
+        try {
+            $category->status = !$category->status;
+            $category->save();
+
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Trạng thái danh mục đã được thay đổi thành công.'
+            ]);
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi thay đổi trạng thái danh mục: ' . $e->getMessage());
+            
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back();
+        }
+    }
+
+    public function bulkStatusUpdate(Request $request)
+    {
+        try {
+            $categoryIds = explode(',', $request->category_ids);
+            $status = (bool)$request->status;
+
+            Category::whereIn('id', $categoryIds)->update(['status' => $status]);
+
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Đã cập nhật trạng thái danh mục thành công'
+            ]);
+
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Log::error('Lỗi cập nhật trạng thái danh mục hàng loạt: ' . $e->getMessage());
+
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+
+            return redirect()->back();
+        }
+    }
 
 
 }

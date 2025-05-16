@@ -114,13 +114,16 @@
             <!-- Phân trang và thông tin -->
             <div class="data-table-footer">
                 <div class="data-table-pagination-info">
-                    Hiển thị <span id="startRecord">{{ ($pendingApplications->currentPage() - 1) * $pendingApplications->perPage() + 1 }}</span>
-                    đến <span id="endRecord">{{ min($pendingApplications->currentPage() * $pendingApplications->perPage(), $pendingApplications->total()) }}</span>
+                    Hiển thị <span
+                        id="startRecord">{{ ($pendingApplications->currentPage() - 1) * $pendingApplications->perPage() + 1 }}</span>
+                    đến <span
+                        id="endRecord">{{ min($pendingApplications->currentPage() * $pendingApplications->perPage(), $pendingApplications->total()) }}</span>
                     của <span id="totalRecords">{{ $pendingApplications->total() }}</span> mục
                 </div>
                 <div class="data-table-pagination-controls">
                     @if (!$pendingApplications->onFirstPage())
-                        <a href="{{ $pendingApplications->previousPageUrl() }}" class="data-table-pagination-btn" id="prevBtn">
+                        <a href="{{ $pendingApplications->previousPageUrl() }}" class="data-table-pagination-btn"
+                            id="prevBtn">
                             <i class="fas fa-chevron-left"></i> Trước
                         </a>
                     @endif
@@ -133,7 +136,8 @@
                     @endfor
 
                     @if ($pendingApplications->hasMorePages())
-                        <a href="{{ $pendingApplications->nextPageUrl() }}" class="data-table-pagination-btn" id="nextBtn">
+                        <a href="{{ $pendingApplications->nextPageUrl() }}" class="data-table-pagination-btn"
+                            id="nextBtn">
                             Tiếp <i class="fas fa-chevron-right"></i>
                         </a>
                     @endif
@@ -189,8 +193,10 @@
                                 <td>{{ $application->phone_number }}</td>
                                 <td>{{ $application->license_plate }}</td>
                                 <td>
-                                    <span class="data-table-status {{ $application->status === 'approved' ? 'data-table-status-success' : 'data-table-status-failed' }}">
-                                        <i class="fas fa-{{ $application->status === 'approved' ? 'check' : 'times' }}"></i>
+                                    <span
+                                        class="data-table-status {{ $application->status === 'approved' ? 'data-table-status-success' : 'data-table-status-failed' }}">
+                                        <i
+                                            class="fas fa-{{ $application->status === 'approved' ? 'check' : 'times' }}"></i>
                                         {{ $application->status === 'approved' ? 'Đã duyệt' : 'Đã từ chối' }}
                                     </span>
                                 </td>
@@ -224,8 +230,10 @@
             <!-- Phân trang và thông tin -->
             <div class="data-table-footer">
                 <div class="data-table-pagination-info">
-                    Hiển thị <span>{{ ($processedApplications->currentPage() - 1) * $processedApplications->perPage() + 1 }}</span>
-                    đến <span>{{ min($processedApplications->currentPage() * $processedApplications->perPage(), $processedApplications->total()) }}</span>
+                    Hiển thị
+                    <span>{{ ($processedApplications->currentPage() - 1) * $processedApplications->perPage() + 1 }}</span>
+                    đến
+                    <span>{{ min($processedApplications->currentPage() * $processedApplications->perPage(), $processedApplications->total()) }}</span>
                     của <span>{{ $processedApplications->total() }}</span> mục
                 </div>
                 <div class="data-table-pagination-controls">
@@ -251,4 +259,4 @@
             </div>
         </div>
     </div>
-@endsection 
+@endsection
