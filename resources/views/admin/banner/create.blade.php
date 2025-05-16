@@ -62,6 +62,15 @@
             </select>
         </div>
 
+        <div class="mb-3">
+            <label class="form-label">Vị trí hiển thị</label>
+            <select name="order" class="form-control">
+                <option value="0">Đầu tiên</option>
+                <option value="1">Giữa</option>
+                <option value="2">Cuối cùng</option>
+            </select>
+        </div>
+
         <div class="d-flex">
             <button type="submit" class="btn btn-success mr-1">Lưu</button>
             <a href="{{ route('admin.banners.index') }}" class="btn btn-secondary">

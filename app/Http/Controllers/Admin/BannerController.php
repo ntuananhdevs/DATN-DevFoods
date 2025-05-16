@@ -51,7 +51,9 @@ class BannerController extends Controller
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
+                'order' => 'required|integer|min:0|max:2|unique:banners',
             ], [
+                'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
@@ -68,7 +70,8 @@ class BannerController extends Controller
                 'description' => 'Mô tả',
                 'start_at' => 'Ngày bắt đầu',
                 'end_at' => 'Ngày kết thúc',
-                'is_active' => 'Trạng thái'
+                'is_active' => 'Trạng thái',
+                'order' => 'Thứ tự hiển thị'
             ]);
 
             if ($request->hasFile('image_path')) {
@@ -144,7 +147,9 @@ class BannerController extends Controller
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
+                'order' => 'required|integer|min:0|max:2|unique:banners,order,'.$id,
             ], [
+                'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
@@ -161,7 +166,8 @@ class BannerController extends Controller
                 'description' => 'Mô tả',
                 'start_at' => 'Ngày bắt đầu',
                 'end_at' => 'Ngày kết thúc',
-                'is_active' => 'Trạng thái'
+                'is_active' => 'Trạng thái',
+                'order' => 'Thứ tự hiển thị'
             ]);
 
             if ($request->hasFile('image_path')) {

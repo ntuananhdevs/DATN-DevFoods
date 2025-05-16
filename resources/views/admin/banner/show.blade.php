@@ -65,6 +65,18 @@
                     <td>Lần cập nhật</td>
                     <td>{{ $banner->updated_at->format('d/m/Y H:i') }}</td>
                 </tr>
+                <tr>
+                    <td>Vị trí hiển thị</td>
+                    <td>
+                        @if($banner->order === 0)
+                            Đầu tiên
+                        @elseif($banner->order === 1)
+                            Giữa
+                        @else
+                            Cuối cùng
+                        @endif
+                    </td>
+                </tr>
             </table>
         </div>
     </div>

@@ -50,6 +50,15 @@
             </select>
         </div>
 
+        <div class="mb-3">
+            <label class="form-label">Vị trí hiển thị</label>
+            <select name="order" class="form-control">
+                <option value="0" {{ $banner->order == 0 ? 'selected' : '' }}>Đầu tiên</option>
+                <option value="1" {{ $banner->order == 1 ? 'selected' : '' }}>Giữa</option>
+                <option value="2" {{ $banner->order == 2 ? 'selected' : '' }}>Cuối cùng</option>
+            </select>
+        </div>
+
         <div class="d-flex">
             <button type="submit" class="btn btn-success mr-1">Cập nhật</button>
             <a href="{{ route('admin.banners.index') }}" class="btn btn-secondary">

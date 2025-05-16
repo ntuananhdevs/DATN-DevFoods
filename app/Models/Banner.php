@@ -13,7 +13,8 @@ class Banner extends Model
         'link',
         'is_active',
         'start_at',
-        'end_at'
+        'end_at',
+        'order'
     ];
 
     protected $casts = [

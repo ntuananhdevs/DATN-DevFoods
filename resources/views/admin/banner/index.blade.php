@@ -128,6 +128,7 @@
                             <th>Trạng thái</th>
                             <th>Ngày bắt đầu</th>
                             <th>Ngày kết thúc</th>
+                            <th>Vị trí</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
@@ -181,7 +182,17 @@
                                 </td>
                                 <td>{{ $banner->start_at->format('d/m/Y') }}</td>
                                 <td>{{ $banner->end_at->format('d/m/Y') }}</td>
-
+                                <td>
+                                    <span class="badge {{ $banner->order === 0 ? 'badge-primary' : ($banner->order === 1 ? 'badge-info' : 'badge-secondary') }}">
+                                        @if($banner->order === 0)
+                                            Đầu tiên
+                                        @elseif($banner->order === 1)
+                                            Giữa
+                                        @else
+                                            Cuối cùng
+                                        @endif
+                                    </span>
+                                </td>
                                 <td>
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.banners.show', $banner->id) }}"
