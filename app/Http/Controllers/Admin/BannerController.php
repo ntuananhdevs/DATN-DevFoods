@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Banner;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+
 class BannerController extends Controller
 {
     public function index(Request $request)
@@ -78,27 +79,30 @@ class BannerController extends Controller
                 $path = $request->file('image_path')->store('banners', 'public');
                 $validated['image_path'] = $path;
             }
-
             Banner::create($validated);
-
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Banner đã được tạo thành công'
             ]);
+            return redirect()->route('admin.banners.index');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Banner đã được cập nhật thành công'
+            ]);
+            return redirect()->route('admin.banners.index');
         } catch (\Exception $e) {
-            return back()->withInput()->with('toast', [
+            Log::error('Error in BannerController@store/update: ' . $e->getMessage());
+            session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
+            return back()->withInput();
         }
     }
-
-
-    /**
-     * Display the specified resource.
-     */
+    
     public function show(string $id)
     {
         try {
@@ -147,7 +151,7 @@ class BannerController extends Controller
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|max:2|unique:banners,order,'.$id,
+                'order' => 'required|integer|min:0|max:2|unique:banners,order,' . $id,
             ], [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
@@ -175,18 +179,20 @@ class BannerController extends Controller
                 $validated['image_path'] = $path;
             }
             $banner->update($validated);
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Banner đã được cập nhật thành công'
             ]);
+            return redirect()->route('admin.banners.index');
         } catch (\Exception $e) {
             Log::error('Error in BannerController@update: ' . $e->getMessage());
-            return back()->withInput()->with('toast', [
+            session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra khi cập nhật banner: ' . $e->getMessage()
             ]);
+            return back()->withInput();
         }
     }
     public function destroy(string $id)
@@ -195,20 +201,22 @@ class BannerController extends Controller
             $banner = Banner::findOrFail($id);
             if ($banner->image_path) {
                 Storage::disk('public')->delete($banner->image_path);
-            }   
+            }
             $banner->delete();
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
-                'message' => 'Banner đã được xóa thành công'
+                'message' => 'Banner đã được tạo thành công'
             ]);
+            return redirect()->route('admin.banners.index');
         } catch (\Exception $e) {
             Log::error('Error in BannerController@destroy: ' . $e->getMessage());
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra khi xóa banner: ' . $e->getMessage()
             ]);
+            return redirect()->route('admin.banners.index');
         }
     }
 
