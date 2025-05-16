@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="{{ asset('css/category-detail.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/admin/product.css') }}">
     <link rel="stylesheet" href="{{ asset('css/custom-realtime.css') }}">
     {{-- Include core + vendor Styles --}}
     @include('panels/admin/styles')
@@ -34,7 +35,9 @@
 @isset($configData['mainLayoutType'])
     @extends($configData['mainLayoutType'] === 'horizontal' ? 'layouts.admin.horizontalLayoutMaster' : 'layouts.admin.verticalLayoutMaster')
 @endisset
+<script src="{{ asset('js/admin/product.js') }}"></script>
 <script src="{{ asset('js/modal.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ asset('js/admin/products.js') }}"></script>
 
 @include('components.modal')

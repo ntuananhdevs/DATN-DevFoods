@@ -20,6 +20,12 @@
             "i18n": "nav.products"
         },
         {
+            "url": "/admin/products/create",
+            "name": "Quản lý sản phẩm",
+            "icon": "feather icon-box",
+            "i18n": "nav.products"
+        },
+        {
             "url": "/admin/categories",
             "name": "Quản lý danh mục",
             "icon": "feather icon-list",

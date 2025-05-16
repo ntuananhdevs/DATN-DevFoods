@@ -1,5 +1,6 @@
 @extends('layouts/admin/contentLayoutMaster')
 @section('content')
+
     <div class="data-table-wrapper">
         <!-- Header chính -->
         <div class="data-table-main-header">
@@ -10,7 +11,6 @@
                 <h1 class=" data-table-title">Quản lý sản phẩm</h1>
             </div>
             <div class="data-table-header-actions">
-                <!-- Đã xóa nút lọc ở đây -->
                 <div class="dropdown d-inline">
                     <button class="data-table-btn data-table-btn-outline dropdown-toggle" type="button" id="exportDropdown"
                         data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -43,42 +43,73 @@
 
             <!-- Thanh công cụ -->
             <div class="data-table-controls">
-                <div class="data-table-search">
-                    <i class="fas fa-search data-table-search-icon"></i>
-                    <input type="text" placeholder="Tìm kiếm theo tên, mã sản phẩm..." id="dataTableSearch">
-                </div>
-                <div class="data-table-actions">
-                    <button class="data-table-btn data-table-btn-outline">
-                        <i class="fas fa-sliders"></i> Cột
-                    </button>
-                    <button class="data-table-btn data-table-btn-outline" data-toggle="modal" data-target="#filterModal">
-                        <i class="fas fa-filter"></i> Lọc
-                    </button>
+            <div class="data-table-search">
+                <i class="fas fa-search data-table-search-icon"></i>
+                <input type="text"
+                    placeholder="Tìm kiếm theo tên, mail người dùng ..."
+                    id="dataTableSearch"
+                    value="{{ request('search') }}"
+                    onkeyup="handleSearch(event)">
+            </div>
+            <div class="data-table-actions">
+                <div class="d-flex align-items-center">
+                    <div class="data-table-actions">
+                        <div class="d-flex align-items-center">
+                            <button class="data-table-btn data-table-btn-outline mr-2" onclick="toggleSelectAll()">
+                                <i class="fas fa-check-square"></i> Chọn tất cả
+                            </button>
+                            <div class="btn-group mr-2">
+                                <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
+                                    <i class="fas fa-tasks"></i> Thao tác
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(1)">
+                                        <i class="fas fa-check-circle text-success"></i> Kích hoạt đã chọn
+                                    </a>
+                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(0)">
+                                        <i class="fas fa-times-circle text-danger"></i> Vô hiệu hóa đã chọn
+                                    </a>
+                                </div>
+                            </div>
+                            <button class="data-table-btn data-table-btn-outline" data-toggle="modal" data-target="#filterModal">
+                                <i class="fas fa-filter"></i> Lọc
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
             <!-- Container bảng -->
             <div class="data-table-container">
                 <table class="data-table" id="dataTable">
                     <thead>
                         <tr>
+                            <th>
+                                <div>
+                                    <input type="checkbox" id="selectAll">
+                                </div>
+                            </th>
                             <th data-sort="id" class="active-sort">
                                 ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
                             </th>
                             <th data-sort="image">
-                                Hình ảnh <i class="fas fa-sort data-table-sort-icon"></i>
+                                Hình ảnh 
                             </th>
-                            <th data-sort="name">
-                                Tên sản phẩm <i class="fas fa-sort data-table-sort-icon"></i>
+                            <th data-sort="name" class="col-product-name">
+                                Tên sản phẩm 
                             </th>
                             <th data-sort="category">
-                                Danh mục <i class="fas fa-sort data-table-sort-icon"></i>
+                                Danh mục 
                             </th>
                             <th data-sort="price">
                                 Giá <i class="fas fa-sort data-table-sort-icon"></i>
                             </th>
-                            <th data-sort="stock">
+                            <th data-sort="stock" class="col-status">
                                 Tồn kho <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="stock" class="col-actions">
+                                Trạng thái 
                             </th>
                             <th>Thao tác</th>
                         </tr>
@@ -86,6 +117,9 @@
                     <tbody id="dataTableBody">
                         @forelse($products as $product)
                             <tr>
+                                <td>
+                                    <input type="checkbox" class="row-checkbox" value="{{ $product->id }}">
+                                </td>
                                 <td>
                                     <div class="data-table-id">
                                         {{ $product->id }}
@@ -96,7 +130,7 @@
                                         <img src="{{ asset($product->image) }}" alt="{{ $product->name }}">
                                     </div>
                                 </td>
-                                <td>
+                                <td class="col-product-name">
                                     <div class="data-table-product-name">{{ $product->name }}</div>
                                 </td>
                                 <td>
@@ -106,7 +140,7 @@
                                     <div class="data-table-amount">{{ number_format($product->base_price, 0, ',', '.') }} đ
                                     </div>
                                 </td>
-                                <td>
+                                <td class="col-status">
                                     @if ($product->stock)
                                         <span class="data-table-status data-table-status-success">
                                             <i class="fas fa-check"></i> Còn hàng
@@ -118,6 +152,17 @@
                                     @endif
                                 </td>
                                 <td>
+                                    @if ($product->stock)
+                                        <span class="data-table-status data-table-status-success">
+                                            <i class="fas fa-check"></i> Đang bán 
+                                        </span>
+                                    @else
+                                        <span class="data-table-status data-table-status-failed">
+                                            <i class="fas fa-times"></i> Khóa
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="col-actions">
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.products.show', $product->id) }}"
                                             class="data-table-action-btn" title="Xem chi tiết">
@@ -243,12 +288,5 @@
             </div>
         </div>
     </div>
+    <script src="{{ asset('js/scripts/admin/products.js') }}"></script>
 @endsection
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-        tooltipTriggerList.forEach(function(tooltipTriggerEl) {
-            new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-    });
-</script>
