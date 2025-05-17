@@ -40,5 +40,37 @@ class UserSeeder extends Seeder
             'email' => 'customer@example.com',
             'role_id' => Role::where('name', 'customer')->first()->id,
         ]);
+
+        
+        // Tạo 3 người quản lý chi nhánh
+        $managerRoleId = Role::where('name', 'manager')->first()->id ?? $roleIds[array_rand($roleIds)];
+        
+        $branchManagers = [
+            [
+                'user_name' => 'manager1',
+                'full_name' => 'Nguyễn Văn Quản Lý',
+                'email' => 'manager1@devfoods.com',
+                'password' => bcrypt('manager123'),
+                'role_id' => $managerRoleId,
+            ],
+            [
+                'user_name' => 'manager2',
+                'full_name' => 'Trần Thị Quản Lý',
+                'email' => 'manager2@devfoods.com',
+                'password' => bcrypt('manager123'),
+                'role_id' => $managerRoleId,
+            ],
+            [
+                'user_name' => 'manager3',
+                'full_name' => 'Lê Minh Quản Lý',
+                'email' => 'manager3@devfoods.com',
+                'password' => bcrypt('manager123'),
+                'role_id' => $managerRoleId,
+            ],
+        ];
+        
+        foreach ($branchManagers as $manager) {
+            User::factory()->create($manager);
+        }
     }
 }

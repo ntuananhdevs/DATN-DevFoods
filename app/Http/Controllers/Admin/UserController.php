@@ -12,59 +12,61 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\UsersExport;
+use App\Models\UserRole;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 use Workbench\App\Models\User as ModelsUser;
 
 class UserController extends Controller
 {
-   public function index(Request $request)
-{
-    try {
-        $search = $request->input('search');
-        $query = User::with('role')
-            ->whereHas('role', function ($query) {
-                $query->where('name', 'customer');
-            })
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('user_name', 'LIKE', "%$search%")
-                        ->orWhere('full_name', 'LIKE', "%$search%")
-                        ->orWhere('email', 'LIKE', "%$search%")
-                        ->orWhere('phone', 'LIKE', "%$search%");
-                });
-            })
-            ->orderBy('id', 'asc');
+    public function index(Request $request)
+    {
+        try {
+            $search = $request->input('search');
+            $query = User::with('role')
+                ->whereHas('role', function ($query) {
+                    $query->where('name', 'customer');
+                })
+                ->when($search, function ($query) use ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('user_name', 'LIKE', "%$search%")
+                            ->orWhere('full_name', 'LIKE', "%$search%")
+                            ->orWhere('email', 'LIKE', "%$search%")
+                            ->orWhere('phone', 'LIKE', "%$search%");
+                    });
+                })
+                ->orderBy('id', 'asc');
 
-        $users = $query->paginate(10);
+            $users = $query->paginate(10);
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'users' => $users->items(),
-                'pagination' => [
-                    'total' => $users->total(),
-                    'per_page' => $users->perPage(),
-                    'current_page' => $users->currentPage(),
-                    'last_page' => $users->lastPage()
-                ]
-            ]);
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'users' => $users->items(),
+                    'pagination' => [
+                        'total' => $users->total(),
+                        'per_page' => $users->perPage(),
+                        'current_page' => $users->currentPage(),
+                        'last_page' => $users->lastPage()
+                    ]
+                ]);
+            }
+
+            return view('admin.users.index', compact('users'));
+        } catch (\Exception $e) {
+            Log::error('Error in UserController@index: ' . $e->getMessage());
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra khi tải danh sách người dùng'
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi tải danh sách người dùng');
         }
-
-        return view('admin.users.index', compact('users'));
-    } catch (\Exception $e) {
-        Log::error('Error in UserController@index: ' . $e->getMessage());
-       
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi tải danh sách người dùng'
-            ], 500);
-        }
-
-        return redirect()->back()
-            ->with('error', 'Có lỗi xảy ra khi tải danh sách người dùng');
     }
-}
     // Thêm phương thức mới để xử lý thay đổi trạng thái
     public function toggleStatus($id)
     {
@@ -162,8 +164,17 @@ class UserController extends Controller
                 $validatedData['avatar'] = $request->file('avatar')->store('avatars', 'public');
             }
 
-            User::create($validatedData);
+            // Tạo người dùng mới
+            $user = User::create($validatedData);
 
+            // Thêm bản ghi vào bảng user_roles
+
+            UserRole::create([
+                'user_id' => $user->id,
+                'role_id' => $validatedData['role_id'],
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
@@ -183,14 +194,11 @@ class UserController extends Controller
             return redirect()->back()->withInput();
         }
     }
-
-
-
     public function show(Request $request, $id)
     {
         try {
             $user = User::with('role')->findOrFail($id);
-            
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -202,7 +210,7 @@ class UserController extends Controller
                         'phone' => $user->phone,
                         'role' => $user->role->name,
                         'status' => $user->active ? 'Hoạt động' : 'Vô hiệu hóa',
-                      
+
                     ],
                     'html' => view('admin.users.partials.user_info', compact('user'))->render(),
                     'message' => 'Tải dữ liệu người dùng thành công'
@@ -212,7 +220,7 @@ class UserController extends Controller
             return view('admin.users.show', compact('user'));
         } catch (\Exception $e) {
             Log::error('Error in UserController@show: ' . $e->getMessage());
-            
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -299,10 +307,10 @@ class UserController extends Controller
         try {
             // Kiểm tra xem dữ liệu đến từ form hay từ AJAX
             $userIds = $request->has('ids') ? $request->ids : explode(',', $request->user_ids);
-            
+
             // Xác định trạng thái từ action hoặc status
-            $status = $request->has('action') 
-                ? ($request->action === 'activate') 
+            $status = $request->has('action')
+                ? ($request->action === 'activate')
                 : (bool)$request->status;
 
             User::whereIn('id', $userIds)->update(['active' => $status]);
