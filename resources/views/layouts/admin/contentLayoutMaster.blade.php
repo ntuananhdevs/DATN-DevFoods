@@ -35,9 +35,7 @@
 @isset($configData['mainLayoutType'])
     @extends($configData['mainLayoutType'] === 'horizontal' ? 'layouts.admin.horizontalLayoutMaster' : 'layouts.admin.verticalLayoutMaster')
 @endisset
-<script src="{{ asset('js/admin/product.js') }}"></script>
 <script src="{{ asset('js/modal.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ asset('js/admin/products.js') }}"></script>
-
+<script src="{{ asset('js/scripts/admin/products.js') }}"></script>
 @include('components.modal')

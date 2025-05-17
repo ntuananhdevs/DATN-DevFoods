@@ -31,259 +31,151 @@ function handleSearch(event) {
     });
 
 
-// DOM Elements
-    const avatarButton = document.getElementById('avatar-button');
-    const userDropdown = document.getElementById('user-dropdown');
-    const tabs = document.querySelectorAll('.ap-tab');
-    const tabContents = document.querySelectorAll('.ap-tab-content');
-    const addAttributeBtn = document.getElementById('add-attribute-btn');
-    const attributesContainer = document.getElementById('attributes-container');
-    const addVariantBtn = document.getElementById('add-variant-btn');
-    const generateVariantsBtn = document.getElementById('generate-variants-btn');
-    const nameInput = document.getElementById('name');
-    const slugInput = document.getElementById('slug');
-    const metaTitleInput = document.getElementById('meta-title');
-    const metaDescriptionInput = document.getElementById('meta-description');
-    const seoPreviewTitle = document.getElementById('seo-preview-title');
-    const seoPreviewUrl = document.getElementById('seo-preview-url');
-    const seoPreviewDescription = document.getElementById('seo-preview-description');
 
-    // Toggle user dropdown
-    avatarButton.addEventListener('click', () => {
-      userDropdown.classList.toggle('show');
+    // Tab switching giữa Thuộc tính và Biến thể
+  const tabs = document.querySelectorAll('.ap-tab');
+  const tabContents = document.querySelectorAll('.ap-tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabId = tab.getAttribute('data-tab');
+
+      tabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+
+      tab.classList.add('active');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
     });
+  });
 
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (event) => {
-      if (!avatarButton.contains(event.target) && !userDropdown.contains(event.target)) {
-        userDropdown.classList.remove('show');
-      }
-    });
+  // Xử lý upload hình ảnh sản phẩm
+  function handleFileUpload(input) {
+    const files = input.files;
+    const gallery = document.getElementById('image-gallery');
+    if (files.length > 0) {
+      document.getElementById('image-placeholder').style.display = 'none';
+      gallery.innerHTML = '';
+      for (let file of files) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const div = document.createElement('div');
+          div.className = 'ap-image-item';
 
-    // Tab functionality
-    document.querySelectorAll('.ap-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const tabId = tab.getAttribute('data-tab');
-        document.querySelectorAll('.ap-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.ap-tab-content').forEach(content => content.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById(`${tabId}-tab`).classList.add('active');
-      });
-    });
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.alt = 'Product image';
 
-    // Handle file upload
-    window.handleFileUpload = function(input) {
-      const files = input.files;
-      const gallery = document.getElementById('image-gallery');
-      if (files.length > 0) {
-        document.getElementById('image-placeholder').style.display = 'none';
-        gallery.innerHTML = '';
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const div = document.createElement('div');
-            div.className = 'ap-image-item';
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.alt = 'Product image';
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'ap-image-item-remove';
-            removeBtn.innerHTML = '×';
-            removeBtn.onclick = function() {
-              div.remove();
-              if (gallery.children.length === 0) {
-                document.getElementById('image-placeholder').style.display = 'flex';
-              }
-            };
-            div.appendChild(img);
-            div.appendChild(removeBtn);
-            gallery.appendChild(div);
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'ap-image-item-remove';
+          removeBtn.innerHTML = '×';
+          removeBtn.onclick = () => {
+            div.remove();
+            if (gallery.children.length === 0) {
+              document.getElementById('image-placeholder').style.display = 'flex';
+            }
           };
-          reader.readAsDataURL(file);
-        }
-      }
-    };
 
-    // Tags functionality
-    function addTag(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        
-        const input = document.getElementById('tag-input');
-        const value = input.value.trim();
-        
-        if (value) {
-          const container = document.getElementById('tags-container');
-          const hiddenInput = document.getElementById('tags-hidden');
-          
-          const tag = document.createElement('div');
-          tag.className = 'ap-tag';
-          tag.innerHTML = `
-            ${value}
-            <span class="ap-tag-remove" onclick="removeTag(this)">×</span>
-          `;
-          
-          container.insertBefore(tag, input);
-          input.value = '';
-          
-          // Update hidden input with all tags
-          updateHiddenTags();
-        }
+          div.appendChild(img);
+          div.appendChild(removeBtn);
+          gallery.appendChild(div);
+        };
+        reader.readAsDataURL(file);
       }
     }
+  }
 
-    function removeTag(element) {
-      const tag = element.parentElement;
-      tag.remove();
-      updateHiddenTags();
-    }
+  // Thuộc tính container và counter để thêm thuộc tính mới
+  const attributesContainer = document.getElementById('attributes-container');
+  let attributeCounter = 3; // Bắt đầu từ 3 vì đã có 2 thuộc tính mặc định
 
-    function updateHiddenTags() {
-      const tags = document.querySelectorAll('.ap-tag');
-      const values = Array.from(tags).map(tag => tag.textContent.trim().slice(0, -1));
-      document.getElementById('tags-hidden').value = values.join(',');
-    }
+  // Nút thêm thuộc tính
+  document.getElementById('add-attribute-btn').addEventListener('click', () => {
+    const attributeRow = document.createElement('div');
+    attributeRow.className = 'ap-attribute-row';
+    attributeRow.dataset.attributeId = attributeCounter;
 
-    // SEO preview functionality
-    nameInput.addEventListener('input', updateSeoPreview);
-    slugInput.addEventListener('input', updateSeoPreview);
-    metaTitleInput.addEventListener('input', updateSeoPreview);
-    metaDescriptionInput.addEventListener('input', updateSeoPreview);
-
-    function updateSeoPreview() {
-      const name = nameInput.value || 'Tên sản phẩm';
-      const slug = slugInput.value || 'ten-san-pham';
-      const title = metaTitleInput.value || name;
-      const description = metaDescriptionInput.value || 'Mô tả sản phẩm sẽ hiển thị ở đây. Đây là phần mô tả ngắn gọn về sản phẩm của bạn để thu hút khách hàng nhấp vào liên kết.';
-      
-      seoPreviewTitle.textContent = title;
-      seoPreviewUrl.textContent = `www.example.com/san-pham/${slug}`;
-      seoPreviewDescription.textContent = description;
-    }
-
-    // Auto-generate slug from name
-    nameInput.addEventListener('blur', () => {
-      if (!slugInput.value && nameInput.value) {
-        const slug = nameInput.value
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[đĐ]/g, 'd')
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
-        
-        slugInput.value = slug;
-        updateSeoPreview();
-      }
-    });
-
-    // Add attribute functionality
-    let attributeCounter = 3; // Starting from 3 since we already have 2 attributes
-
-    addAttributeBtn.addEventListener('click', () => {
-      const attributeRow = document.createElement('div');
-      attributeRow.className = 'ap-attribute-row';
-      attributeRow.dataset.attributeId = attributeCounter;
-      
-      attributeRow.innerHTML = `
-        <div class="ap-attribute-name">
-          <div class="ap-form-group">
-            <label class="ap-form-label">Tên thuộc tính</label>
-            <input type="text" name="attributes[${attributeCounter}][name]" class="ap-form-input" placeholder="Nhập tên thuộc tính">
-          </div>
-          <div class="ap-form-checkbox ap-mt-2">
-            <input type="checkbox" id="attribute-${attributeCounter}-variant" name="attributes[${attributeCounter}][is_variant]">
-            <label for="attribute-${attributeCounter}-variant">Dùng cho biến thể</label>
-          </div>
-          <div class="ap-flex ap-justify-end ap-mt-2">
-            <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-attribute" data-attribute-id="${attributeCounter}">
-              Xóa
-            </button>
-          </div>
+    attributeRow.innerHTML = `
+      <div class="ap-attribute-name">
+        <div class="ap-form-group">
+          <label class="ap-form-label">Tên thuộc tính</label>
+          <input type="text" name="attributes[${attributeCounter}][name]" class="ap-form-input" placeholder="Nhập tên thuộc tính">
         </div>
-        <div class="ap-attribute-values">
-          <label class="ap-form-label">Giá trị thuộc tính</label>
-          <div class="ap-border ap-rounded">
-            <div class="ap-attribute-value-item">
-              <input type="text" name="attributes[${attributeCounter}][values][]" class="ap-form-input" placeholder="Nhập giá trị thuộc tính">
-              <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">×</button>
-            </div>
-          </div>
-          <div class="ap-attribute-add-value">
-            <button type="button" class="ap-btn ap-btn-outline ap-btn-sm add-value-btn" data-attribute-id="${attributeCounter}">
-              Thêm giá trị
-            </button>
-          </div>
+        <div class="ap-form-checkbox ap-mt-2">
+          <input type="checkbox" id="attribute-${attributeCounter}-variant" name="attributes[${attributeCounter}][is_variant]">
+          <label for="attribute-${attributeCounter}-variant">Dùng cho biến thể</label>
         </div>
-      `;
-      
-      attributesContainer.appendChild(attributeRow);
-      attributeCounter++;
-      bindAttributeEvents(attributeRow);
-    });
+        <div class="ap-flex ap-justify-end ap-mt-2">
+          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-attribute" data-attribute-id="${attributeCounter}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            </svg>
+            Xóa
+          </button>
+        </div>
+      </div>
+      <div class="ap-attribute-values">
+        <label class="ap-form-label">Giá trị thuộc tính</label>
+        <div class="ap-border ap-rounded"></div>
+        <div class="ap-attribute-add-value">
+          <button type="button" class="ap-btn ap-btn-outline ap-btn-sm add-value-btn" data-attribute-id="${attributeCounter}">
+            <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Thêm giá trị
+          </button>
+        </div>
+      </div>
+    `;
+    attributesContainer.appendChild(attributeRow);
+    attributeCounter++;
+  });
 
-    // Bind events for attribute row
-    function bindAttributeEvents(row) {
-      row.querySelector('.add-value-btn').addEventListener('click', addAttributeValue);
-      row.querySelector('.delete-attribute').addEventListener('click', function() {
-        row.remove();
-      });
-      row.querySelectorAll('.delete-value').forEach(btn => {
-        btn.addEventListener('click', function() {
-          btn.closest('.ap-attribute-value-item').remove();
-        });
-      });
+  // Event delegation xử lý xóa thuộc tính, thêm/xóa giá trị thuộc tính
+  attributesContainer.addEventListener('click', e => {
+    const target = e.target;
+
+    // Xóa thuộc tính
+    if(target.closest('.delete-attribute')) {
+      const btn = target.closest('.delete-attribute');
+      const attributeRow = btn.closest('.ap-attribute-row');
+      if(attributeRow) attributeRow.remove();
+      return;
     }
 
-    // Initial binding for existing attribute rows
-    document.querySelectorAll('.ap-attribute-row').forEach(bindAttributeEvents);
-
-    // Add attribute value
-    function addAttributeValue(event) {
-      const btn = event.currentTarget;
+    // Thêm giá trị thuộc tính
+    if(target.closest('.add-value-btn')) {
+      const btn = target.closest('.add-value-btn');
       const attributeId = btn.dataset.attributeId;
       const valuesContainer = btn.closest('.ap-attribute-values').querySelector('.ap-border');
+
       const valueItem = document.createElement('div');
       valueItem.className = 'ap-attribute-value-item';
       valueItem.innerHTML = `
         <input type="text" name="attributes[${attributeId}][values][]" class="ap-form-input" placeholder="Nhập giá trị thuộc tính">
-        <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">×</button>
+        <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          </svg>
+        </button>
       `;
       valuesContainer.appendChild(valueItem);
-      valueItem.querySelector('.delete-value').addEventListener('click', function() {
-        valueItem.remove();
-      });
+      return;
     }
 
-    // Delete attribute functionality
-    document.querySelectorAll('.delete-attribute').forEach(btn => {
-      btn.addEventListener('click', deleteAttribute);
-    });
-
-    function deleteAttribute(event) {
-      const btn = event.currentTarget;
-      const attributeRow = btn.closest('.ap-attribute-row');
-      attributeRow.remove();
-    }
-
-    // Delete attribute value functionality
-    document.querySelectorAll('.delete-value').forEach(btn => {
-      btn.addEventListener('click', deleteAttributeValue);
-    });
-
-    function deleteAttributeValue(event) {
-      const btn = event.currentTarget;
+    // Xóa giá trị thuộc tính
+    if(target.closest('.delete-value')) {
+      const btn = target.closest('.delete-value');
       const valueItem = btn.closest('.ap-attribute-value-item');
-      valueItem.remove();
+      if(valueItem) valueItem.remove();
+      return;
     }
-
-    // Form submission
-    document.getElementById('add-product-form').addEventListener('submit', function(event) {
-      // Có thể dùng AJAX ở đây nếu muốn
-      // event.preventDefault();
-      // Gửi form như bình thường hoặc xử lý theo ý bạn
-    });
-
-    // Initialize SEO preview
-    updateSeoPreview();
+  });
+  document.getElementById('add-product-form').addEventListener('submit', e => {
+    e.preventDefault();
+    alert('Sản phẩm đã được tạo thành công!');
+  });

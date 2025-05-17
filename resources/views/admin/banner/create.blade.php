@@ -6,7 +6,7 @@
         @csrf
         <div class="mb-3">
             <label class="form-label">Tiêu đề</label>
-            <input type="text" name="title" class="form-control" value="{{ old('title') }}">
+            <input type="text" name="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}">
             @error('title')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -14,7 +14,7 @@
         
         <div class="mb-3">
             <label class="form-label">Mô tả</label>
-            <textarea name="description" class="form-control">{{ old('description') }}</textarea>
+            <textarea name="description" class="form-control @error('description') is-invalid @enderror">{{ old('description') }}</textarea>
             @error('description')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -24,23 +24,22 @@
             <label class="form-label">Hình ảnh (tối đa 5MB)</label>
             <div class="image-upload-container" id="uploadBox">
                 <span class="upload-text">Click để chọn hình ảnh</span>
-                <input type="file" name="image_path" id="imageInput" accept="image/*">
+                <input type="file" name="image_path" id="imageInput" class="@error('image_path') is-invalid @enderror" accept="image/*">
             </div>
             <img id="previewImage" class="image-preview" src="#" alt="Preview Image" />
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Liên kết (phải bắt đầu bằng https://)</label>
-            <input type="url" name="link" class="form-control" value="{{ old('link') }}">
+            <label class="form-label">Liên kết sản phẩm</label>
+            <input type="url" name="link" class="form-control @error('link') is-invalid @enderror" value="{{ old('link') }}" placeholder="https://example.com/products/123">
             @error('link')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
-
         </div>
 
         <div class="mb-3">
             <label class="form-label">Ngày bắt đầu</label>
-            <input type="date" name="start_at" class="form-control " value="{{ old('start_at') }}">
+            <input type="date" name="start_at" class="form-control @error('start_at') is-invalid @enderror" value="{{ old('start_at') }}">
             @error('start_at')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -48,7 +47,7 @@
 
         <div class="mb-3">
             <label class="form-label">Ngày kết thúc</label>
-            <input type="date" name="end_at" class="form-control " value="{{ old('end_at') }}">
+            <input type="date" name="end_at" class="form-control @error('end_at') is-invalid @enderror" value="{{ old('end_at') }}">
             @error('end_at')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -80,6 +79,18 @@
     </form>
 @endsection
 <style>
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+
     .image-upload-container {
         position: relative;
         border: 2px dashed #3b82f6;
