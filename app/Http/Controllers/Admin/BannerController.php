@@ -46,7 +46,7 @@ class BannerController extends Controller
         try {
             $validated = $request->validate([
                 'image_path' => 'required|image|max:5120',
-                'link' => 'nullable|url|regex:/^https?:\/\/.*\/products\/[0-9]+/',
+                'link' => 'nullable|url',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
@@ -142,7 +142,7 @@ class BannerController extends Controller
 
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
-                'link' => 'nullable|url|regex:/^https?:\/\/.*\/products\/[0-9]+/',
+                'link' => 'nullable|url',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
