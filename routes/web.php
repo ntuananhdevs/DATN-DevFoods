@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\BannerController;
 
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
@@ -36,6 +37,7 @@ Route::prefix('/')->group(function () {
         Route::post('/ajax/update', [CustomerCartController::class, 'ajaxUpdate'])->name('ajax.update');
         Route::post('/ajax/remove', [CustomerCartController::class, 'ajaxRemove'])->name('ajax.remove');
         Route::get('/count', [CustomerCartController::class, 'count'])->name('count');
+        Route::post('/selected', [CustomerCartController::class, 'saveSelectedItems'])->name('selected');
     });
 
     // Route Customer (login / logout / register)
@@ -206,6 +208,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
         Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
+
+    // Banner Management
+    Route::prefix('banners')->name('banners.')->group(function () {
+        Route::get('/', [BannerController::class, 'index'])->name('index');
+        Route::get('/create', [BannerController::class, 'create'])->name('create');
+        Route::post('/store', [BannerController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [BannerController::class,'show'])->name('show');
+        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+    });
+
+
 });
 Route::get('/driver', function () {
     return view('driver.home');
