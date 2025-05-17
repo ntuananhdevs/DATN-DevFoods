@@ -1,4 +1,15 @@
 <link href="{{ asset('css/customer/banner.css') }}" rel="stylesheet">
+<style>
+    .carousel-slide .slide-content {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+    .carousel-slide[data-link]:hover .slide-content {
+        opacity: 0.95;
+    }
+</style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const slides = document.querySelectorAll('.carousel-slide');
@@ -52,6 +63,16 @@
                 });
             });
 
+            // Xử lý sự kiện click vào banner để chuyển trang
+            slides.forEach(slide => {
+                slide.querySelector('.slide-content').addEventListener('click', () => {
+                    const link = slide.getAttribute('data-link');
+                    if (link && link.trim() !== '') {
+                        window.location.href = link;
+                    }
+                });
+            });
+
             startAutoSlide();
         });
     </script>
@@ -63,12 +84,14 @@
                     $banners = $bannerService->getActiveBanners();
                 @endphp
                
-                @foreach($banners as $banner)
-                <div class="carousel-slide {{ $banner === 0 ? 'active' : '' }}">
-                    <img src="{{ asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}">
-                    <div class="carousel-caption">
-                        <h2>{{ $banner->title }}</h2>
-                        <p>{{ $banner->description }}</p>
+                @foreach($banners as $key => $banner)
+                <div class="carousel-slide {{ $key === 0 ? 'active' : '' }}" data-link="{{ $banner->link }}">
+                    <div class="slide-content" style="cursor: {{ $banner->link ? 'pointer' : 'default' }}">
+                        <img src="{{ asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}">
+                        <div class="carousel-caption">
+                            <h2>{{ $banner->title }}</h2>
+                            <p>{{ $banner->description }}</p>
+                        </div>
                     </div>
                 </div>
                 @endforeach

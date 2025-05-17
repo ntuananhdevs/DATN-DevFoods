@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Banner;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+
 class BannerController extends Controller
 {
     public function index(Request $request)
@@ -45,7 +46,7 @@ class BannerController extends Controller
         try {
             $validated = $request->validate([
                 'image_path' => 'required|image|max:5120',
-                'link' => 'nullable|url|starts_with:https://',
+                'link' => 'nullable|url',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
@@ -61,7 +62,7 @@ class BannerController extends Controller
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
                 'image' => ':attribute phải là hình ảnh.',
-                'starts_with' => ':attribute phải bắt đầu bằng https://',
+                'regex' => ':attribute phải là đường dẫn đến trang sản phẩm (ví dụ: https://example.com/products/123)',
                 'boolean' => ':attribute không hợp lệ.'
             ], [
                 'image_path' => 'Hình ảnh',
@@ -78,27 +79,27 @@ class BannerController extends Controller
                 $path = $request->file('image_path')->store('banners', 'public');
                 $validated['image_path'] = $path;
             }
-
             Banner::create($validated);
-
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Banner đã được tạo thành công'
             ]);
+            return redirect()->route('admin.banners.index');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Đây là lỗi validation, để Laravel tự động redirect với errors
+            throw $e;
         } catch (\Exception $e) {
-            return back()->withInput()->with('toast', [
+            Log::error('Error in BannerController@store: ' . $e->getMessage());
+            session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
+            return back()->withInput();
         }
     }
-
-
-    /**
-     * Display the specified resource.
-     */
+    
     public function show(string $id)
     {
         try {
@@ -141,13 +142,13 @@ class BannerController extends Controller
 
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
-                'link' => 'nullable|url|starts_with:https://',
+                'link' => 'nullable|url',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|max:2|unique:banners,order,'.$id,
+                'order' => 'required|integer|min:0|max:2|unique:banners,order,' . $id,
             ], [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
@@ -157,7 +158,7 @@ class BannerController extends Controller
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
                 'image' => ':attribute phải là hình ảnh.',
-                'starts_with' => ':attribute phải bắt đầu bằng https://',
+                'regex' => ':attribute phải là đường dẫn đến trang sản phẩm (ví dụ: https://example.com/products/123)',
                 'boolean' => ':attribute không hợp lệ.'
             ], [
                 'image_path' => 'Hình ảnh',
@@ -175,40 +176,47 @@ class BannerController extends Controller
                 $validated['image_path'] = $path;
             }
             $banner->update($validated);
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Banner đã được cập nhật thành công'
             ]);
+            return redirect()->route('admin.banners.index');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Error in BannerController@update: ' . $e->getMessage());
-            return back()->withInput()->with('toast', [
+            session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra khi cập nhật banner: ' . $e->getMessage()
             ]);
+            return back()->withInput();
         }
     }
+    
     public function destroy(string $id)
     {
         try {
             $banner = Banner::findOrFail($id);
             if ($banner->image_path) {
                 Storage::disk('public')->delete($banner->image_path);
-            }   
+            }
             $banner->delete();
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
-                'message' => 'Banner đã được xóa thành công'
+                'message' => 'Banner đã được tạo thành công'
             ]);
+            return redirect()->route('admin.banners.index');
         } catch (\Exception $e) {
             Log::error('Error in BannerController@destroy: ' . $e->getMessage());
-            return redirect()->route('admin.banners.index')->with('toast', [
+            session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra khi xóa banner: ' . $e->getMessage()
             ]);
+            return redirect()->route('admin.banners.index');
         }
     }
 

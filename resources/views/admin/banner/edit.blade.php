@@ -7,17 +7,26 @@
         @method('PUT')
         <div class="mb-3">
             <label class="form-label">Tiêu đề</label>
-            <input type="text" name="title" class="form-control" value="{{ old('title', $banner->title) }}">
+            <input type="text" name="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title', $banner->title) }}">
+            @error('title')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
             <label class="form-label">Mô tả</label>
-            <textarea name="description" class="form-control">{{ old('description', $banner->description) }}</textarea>
+            <textarea name="description" class="form-control @error('description') is-invalid @enderror">{{ old('description', $banner->description) }}</textarea>
+            @error('description')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Liên kết</label>
-            <input type="url" name="link" class="form-control" value="{{ old('link', $banner->link) }}" placeholder="https://example.com">
+            <label class="form-label">Liên kết sản phẩm</label>
+            <input type="url" name="link" class="form-control @error('link') is-invalid @enderror" value="{{ old('link', $banner->link) }}" placeholder="https://example.com/products/123">
+            @error('link')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
@@ -29,17 +38,26 @@
 
         <div class="mb-3">
             <label class="form-label">Ảnh mới</label>
-            <input type="file" name="image_path" class="form-control">
+            <input type="file" name="image_path" class="form-control @error('image_path') is-invalid @enderror">
+            @error('image_path')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
             <label class="form-label">Ngày bắt đầu</label>
-            <input type="datetime-local" name="start_at" class="form-control" value="{{ old('start_at', $banner->start_at->format('Y-m-d\TH:i')) }}">
+            <input type="datetime-local" name="start_at" class="form-control @error('start_at') is-invalid @enderror" value="{{ old('start_at', $banner->start_at->format('Y-m-d\TH:i')) }}">
+            @error('start_at')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
             <label class="form-label">Ngày kết thúc</label>
-            <input type="datetime-local" name="end_at" class="form-control" value="{{ old('end_at', $banner->end_at->format('Y-m-d\TH:i')) }}">
+            <input type="datetime-local" name="end_at" class="form-control @error('end_at') is-invalid @enderror" value="{{ old('end_at', $banner->end_at->format('Y-m-d\TH:i')) }}">
+            @error('end_at')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="mb-3">
