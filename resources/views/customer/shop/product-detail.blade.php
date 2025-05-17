@@ -54,7 +54,7 @@
         background-color: #f8f9fa;
         border-radius: 6px;
         padding: 12px;
-        margin-top: 15px;
+        margin-top: 50px;
     }
     
     .selected-variant-header {
@@ -89,6 +89,69 @@
         color: #17a2b8;
         margin-right: 10px;
         font-size: 18px;
+    }
+    
+    /* CSS cho toast notification */
+    .toast-container {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 9999;
+    }
+    
+    .toast {
+        display: flex;
+        align-items: center;
+        background-color: #fff;
+        border-left: 4px solid #4CAF50;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 4px;
+        padding: 16px;
+        margin-bottom: 16px;
+        min-width: 300px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out forwards;
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    
+    @keyframes slideIn {
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    @keyframes slideOut {
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+    
+    .toast.hide {
+        animation: slideOut 0.3s ease-out forwards;
+    }
+    
+    .toast-icon {
+        margin-right: 12px;
+        color: #4CAF50;
+        font-size: 20px;
+    }
+    
+    .toast-content {
+        flex: 1;
+    }
+    
+    .toast-close {
+        color: #aaa;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0 4px;
+    }
+    
+    .toast-close:hover {
+        color: #555;
     }
 </style>
 @endsection
@@ -203,7 +266,7 @@
                         <div class="variant-selection-container">
                             @foreach($productAttributes as $attribute)
                                 <div class="option-group">
-                                    <h4 class="option-title">{{ $attribute->name }}</h4>
+                                    <h4 class="option-title" data-attribute-id="{{ $attribute->id }}">{{ $attribute->name }}</h4>
                                     <div class="option-items">
                                         @php
                                             $attributeValues = $attribute->values()
@@ -264,10 +327,6 @@
 
                 <div class="action-buttons">
                     <input type="hidden" id="variant-id-input" name="variant_id" value="">
-                    <button class="add-to-cart-btn" {{ $product->stock ? '' : 'disabled' }}>
-                        <i class="fas fa-shopping-cart"></i>
-                        Thêm vào giỏ hàng
-                    </button>
                     <button class="wishlist-btn">
                         <i class="far fa-heart"></i>
                     </button>
@@ -408,6 +467,9 @@
         <img src="/placeholder.svg" alt="Zoomed Image" id="zoomed-image">
     </div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
 @endsection
 
 @section('scripts')
@@ -436,6 +498,85 @@
             this.classList.add('active');
             // Cập nhật ảnh chính
             mainImage.src = this.getAttribute('data-img');
+        });
+    });
+
+    // Hàm hiển thị toast
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        
+        // Tạo toast element
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        
+        // Icon dựa vào loại toast
+        let icon = 'fa-check-circle';
+        let color = '#4CAF50';
+        
+        if (type === 'error') {
+            icon = 'fa-exclamation-circle';
+            color = '#F44336';
+            toast.style.borderLeftColor = color;
+        } else if (type === 'warning') {
+            icon = 'fa-exclamation-triangle';
+            color = '#FF9800';
+            toast.style.borderLeftColor = color;
+        } else if (type === 'info') {
+            icon = 'fa-info-circle';
+            color = '#2196F3';
+            toast.style.borderLeftColor = color;
+        }
+        
+        // Nội dung toast
+        toast.innerHTML = `
+            <div class="toast-icon">
+                <i class="fas ${icon}" style="color: ${color}"></i>
+            </div>
+            <div class="toast-content">${message}</div>
+            <div class="toast-close">&times;</div>
+        `;
+        
+        // Thêm toast vào container
+        toastContainer.appendChild(toast);
+        
+        // Xử lý nút đóng
+        const closeBtn = toast.querySelector('.toast-close');
+        closeBtn.addEventListener('click', function() {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        });
+        
+        // Tự động đóng sau 5 giây
+        setTimeout(() => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 5000);
+    }
+
+    // Gửi request thêm vào giỏ hàng
+    $.ajax({
+            url: '{{ route("customer.cart.add") }}',
+            type: 'POST',
+            data: {
+                product_id: productId,
+                variant_id: variantId,
+                quantity: quantity
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast(`Đã thêm ${quantity} ${variantId ? selectedVariant.name : '{{ $product->name }}'} vào giỏ hàng`);
+                } else {
+                    showToast(response.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', xhr.responseText);
+                showToast('Có lỗi xảy ra khi thêm vào giỏ hàng', 'error');
+            }
         });
     });
     
@@ -475,12 +616,44 @@
         }
     });
     
-    // Tìm biến thể phù hợp với các thuộc tính đã chọn
+    // Cập nhật hiển thị biến thể đã chọn ban đầu
+    updateSelectedVariantDisplay();
+    
+    // Xử lý khi click vào option item
+    optionItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const attributeId = this.getAttribute('data-attribute-id');
+            const valueId = this.getAttribute('data-value-id');
+            
+            // Xóa class active từ tất cả option items cùng attribute
+            document.querySelectorAll(`.option-item[data-attribute-id="${attributeId}"]`).forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Thêm class active vào option item được chọn
+            this.classList.add('active');
+            
+            // Cập nhật selectedAttributes
+            selectedAttributes[attributeId] = valueId;
+            
+            // Tìm biến thể phù hợp
+            findMatchingVariant();
+            
+            // Cập nhật hiển thị biến thể đã chọn
+            updateSelectedVariantDisplay();
+        });
+    });
+    
+    // Hàm tìm biến thể phù hợp
     function findMatchingVariant() {
+        selectedVariant = null;
+        
+        // Kiểm tra từng biến thể
         for (const variantId in variantsData) {
             const variant = variantsData[variantId];
             let isMatch = true;
             
+            // Kiểm tra từng thuộc tính
             for (const attributeId in selectedAttributes) {
                 if (variant.attributes[attributeId] != selectedAttributes[attributeId]) {
                     isMatch = false;
@@ -489,120 +662,184 @@
             }
             
             if (isMatch) {
-                return variant;
+                selectedVariant = variant;
+                break;
             }
         }
         
-        return null;
-    }
-    
-    // Cập nhật thông tin biến thể đã chọn
-    function updateSelectedVariantInfo() {
-        selectedVariant = findMatchingVariant();
-        const variantInfoElement = document.querySelector('.selected-variant-info');
-        const priceElement = document.getElementById('product-price');
-        const stockStatusElement = document.getElementById('stock-status');
-        
+        // Cập nhật thông tin sản phẩm nếu tìm thấy biến thể phù hợp
         if (selectedVariant) {
-            // Cập nhật thông tin biến thể
-            variantInfoElement.textContent = selectedVariant.name;
-            
             // Cập nhật giá
-            priceElement.textContent = new Intl.NumberFormat('vi-VN').format(selectedVariant.price) + ' ₫';
+            document.getElementById('product-price').textContent = new Intl.NumberFormat('vi-VN').format(selectedVariant.price) + ' ₫';
             
             // Cập nhật trạng thái tồn kho
+            const stockStatus = document.getElementById('stock-status');
             if (selectedVariant.stock_quantity > 0) {
-                stockStatusElement.textContent = 'Còn hàng';
-                stockStatusElement.className = 'stock-status in-stock';
+                stockStatus.textContent = 'Còn hàng';
+                stockStatus.className = 'stock-status in-stock';
+                document.getElementById('add-to-cart-btn').disabled = false;
             } else {
-                stockStatusElement.textContent = 'Hết hàng';
-                stockStatusElement.className = 'stock-status out-of-stock';
+                stockStatus.textContent = 'Hết hàng';
+                stockStatus.className = 'stock-status out-of-stock';
+                document.getElementById('add-to-cart-btn').disabled = true;
             }
             
             // Cập nhật ảnh nếu có
             if (selectedVariant.image) {
                 mainImage.src = selectedVariant.image;
+                
+                // Tìm và active thumbnail tương ứng
+                thumbnails.forEach(thumbnail => {
+                    if (thumbnail.getAttribute('data-img') === selectedVariant.image) {
+                        thumbnails.forEach(t => t.classList.remove('active'));
+                        thumbnail.classList.add('active');
+                    }
+                });
             }
-        } else {
-            variantInfoElement.textContent = 'Không tìm thấy biến thể phù hợp';
+            
+            // Cập nhật variant_id cho form
+            document.getElementById('variant-id-input').value = selectedVariant.id;
         }
     }
     
-    // Xử lý sự kiện khi chọn thuộc tính
-    optionItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const attributeId = this.getAttribute('data-attribute-id');
-            const valueId = this.getAttribute('data-value-id');
+    // Hàm cập nhật hiển thị biến thể đã chọn
+    function updateSelectedVariantDisplay() {
+        const selectedVariantInfo = document.querySelector('.selected-variant-info');
+        
+        if (selectedVariant) {
+            // Tạo danh sách các thuộc tính đã chọn
+            let attributesList = [];
             
-            // Xóa class active từ tất cả các option cùng nhóm
-            document.querySelectorAll(`.option-item[data-attribute-id="${attributeId}"]`).forEach(option => {
-                option.classList.remove('active');
-            });
+            // Lặp qua các thuộc tính đã chọn
+            for (const attributeId in selectedAttributes) {
+                const valueId = selectedAttributes[attributeId];
+                
+                // Tìm tên thuộc tính
+                const attributeElement = document.querySelector(`.option-title[data-attribute-id="${attributeId}"]`);
+                const attributeName = attributeElement ? attributeElement.textContent : '';
+                
+                // Tìm giá trị thuộc tính
+                const valueElement = document.querySelector(`.option-item[data-attribute-id="${attributeId}"][data-value-id="${valueId}"]`);
+                const valueName = valueElement ? valueElement.textContent.trim() : '';
+                
+                if (attributeName && valueName) {
+                    attributesList.push(`<strong>${attributeName}:</strong> ${valueName}`);
+                }
+            }
             
-            // Thêm class active vào option được chọn
-            this.classList.add('active');
-            
-            // Cập nhật thuộc tính đã chọn
-            selectedAttributes[attributeId] = valueId;
-            
-            // Cập nhật thông tin biến thể
-            updateSelectedVariantInfo();
-        });
-    });
+            // Hiển thị thông tin biến thể
+            selectedVariantInfo.innerHTML = `
+                ${attributesList.join(' | ')}
+                <br>
+                <strong>Giá:</strong> ${new Intl.NumberFormat('vi-VN').format(selectedVariant.price)} ₫
+                <strong>Tồn kho:</strong> ${selectedVariant.stock_quantity}
+            `;
+        } else {
+            selectedVariantInfo.textContent = 'Không tìm thấy biến thể phù hợp với lựa chọn của bạn';
+        }
+    }
     
-    // Khởi tạo thông tin biến thể ban đầu
-    updateSelectedVariantInfo();
-    
-    // Xử lý thêm vào giỏ hàng
+    // Xử lý nút thêm vào giỏ hàng
     const addToCartBtn = document.getElementById('add-to-cart-btn');
     
     addToCartBtn.addEventListener('click', function() {
-        const productId = {{ $product->id }};
-        const quantity = parseInt(document.getElementById('product-quantity').value);
-        
-        // Dữ liệu gửi đi
-        const data = {
-            product_id: productId,
-            quantity: quantity,
-            _token: '{{ csrf_token() }}'
-        };
-        
-        // Nếu có biến thể được chọn
-        if (selectedVariant) {
-            data.variant_id = selectedVariant.id;
-            data.attributes = selectedAttributes;
+        // Kiểm tra xem đã chọn biến thể chưa
+        if (!selectedVariant && document.querySelectorAll('.option-group').length > 0) {
+            dtmodalShowToast('warning', {
+                title: 'Chưa chọn biến thể',
+                message: 'Vui lòng chọn biến thể sản phẩm trước khi thêm vào giỏ hàng'
+            });
+            return;
         }
         
-        // Gửi request AJAX để thêm vào giỏ hàng
-        fetch('{{ route("customer.cart.add") }}', {
+        // Lấy số lượng
+        const quantity = parseInt(document.getElementById('product-quantity').value);
+        
+        // Lấy variant_id (nếu có)
+        const variantId = selectedVariant ? selectedVariant.id : null;
+        
+        // Gửi request thêm vào giỏ hàng
+        fetch('/cart/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                product_id: {{ $product->id }},
+                variant_id: variantId,
+                quantity: quantity
+            })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Hiển thị thông báo thành công
-                alert(data.message);
+                // Hiển thị toast thành công
+                dtmodalShowToast('Đã thêm ' + quantity + ' ' + (selectedVariant ? selectedVariant.name || '{{ $product->name }}' : '{{ $product->name }}') + ' vào giỏ hàng', 'success');
                 
-                // Cập nhật số lượng sản phẩm trong giỏ hàng (nếu có hiển thị)
-                const cartCountElement = document.querySelector('.cart-count');
-                if (cartCountElement && data.cart_count) {
-                    cartCountElement.textContent = data.cart_count;
+                // Cập nhật số lượng sản phẩm trong giỏ hàng (nếu có)
+                if (data.cartCount) {
+                    const cartCountElements = document.querySelectorAll('.cart-count');
+                    if (cartCountElements && cartCountElements.length > 0) {
+                        cartCountElements.forEach(element => {
+                            element.textContent = data.cartCount;
+                        });
+                    }
                 }
             } else {
-                alert(data.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');
+                // Hiển thị thông báo lỗi
+                dtmodalShowToast(data.message || 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Có lỗi xảy ra khi thêm vào giỏ hàng');
+            dtmodalShowToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
         });
     });
+    
+    // Xử lý tabs
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Xóa class active từ tất cả tab buttons và panels
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabPanels.forEach(p => p.classList.remove('active'));
+            
+            // Thêm class active vào tab button được chọn
+            this.classList.add('active');
+            
+            // Hiển thị tab panel tương ứng
+            const tabId = this.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+        });
+    });
+    
+    // Xử lý zoom ảnh
+    const zoomBtn = document.querySelector('.image-zoom-btn');
+    const zoomModal = document.getElementById('zoom-modal');
+    const zoomedImage = document.getElementById('zoomed-image');
+    const zoomClose = document.querySelector('.zoom-close');
+    
+    zoomBtn.addEventListener('click', function() {
+        zoomedImage.src = mainImage.src;
+        zoomModal.style.display = 'flex';
+    });
+    
+    zoomClose.addEventListener('click', function() {
+        zoomModal.style.display = 'none';
+    });
+    
+    // Đóng modal khi click bên ngoài
+    window.addEventListener('click', function(event) {
+        if (event.target === zoomModal) {
+            zoomModal.style.display = 'none';
+        }
+    });
+    
+    // Tìm biến thể phù hợp ban đầu
+    findMatchingVariant();
 });
 </script>
 @endsection
