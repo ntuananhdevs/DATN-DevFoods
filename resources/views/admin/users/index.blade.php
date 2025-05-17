@@ -10,28 +10,9 @@
             </div>
             <h1 class="data-table-title">Quản lý người dùng</h1>
         </div>
-        <div class="data-table-header-actions">
-        <div class="btn-group mr-2">
-                                <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                                    <i class="fas fa-download"></i> Xuất
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'excel']) }}">
-                                        <i class="fas fa-file-excel"></i> Excel
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'pdf']) }}">
-                                        <i class="fas fa-file-pdf"></i> PDF
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.users.export', ['type' => 'csv']) }}">
-                                        <i class="fas fa-file-csv"></i> CSV
-                                    </a>
-                                </div>
-                            </div>
-
-            <a href="{{ route('admin.users.create') }}" class="data-table-btn data-table-btn-primary">
+        <a href="{{ route('admin.users.create') }}" class="data-table-btn data-table-btn-primary">
                 <i class="fas fa-plus"></i> Thêm mới
             </a>
-        </div>
     </div>
 
     <!-- Data Table Card -->
@@ -39,46 +20,50 @@
         <!-- Table Header -->
         <div class="data-table-header">
             <h2 class="data-table-card-title">Danh sách người dùng</h2>
+            
         </div>
 
+        
         <!-- Controls -->
         <div class="data-table-controls">
             <div class="data-table-search">
                 <i class="fas fa-search data-table-search-icon"></i>
                 <input type="text"
-                    placeholder="Tìm kiếm theo tên, mail người dùng ..."
+                    placeholder="Tìm kiếm theo tên, email, số điện thoại..."
                     id="dataTableSearch"
                     value="{{ request('search') }}"
                     onkeyup="handleSearch(event)">
             </div>
             <div class="data-table-actions">
-                <div class="d-flex align-items-center">
-                    <div class="data-table-actions">
-                        <div class="d-flex align-items-center">
-                            <button class="data-table-btn data-table-btn-outline mr-2" onclick="toggleSelectAll()">
-                                <i class="fas fa-check-square"></i> Chọn tất cả
-                            </button>
-                            <div class="btn-group mr-2">
+                <button class="data-table-btn data-table-btn-outline" 
+                        onclick="document.getElementById('selectAllCheckbox').click()" 
+                        style="margin-right: 10px;">
+                    <i class="fas fa-check-square"></i> Chọn tất cả
+                  
+                </button>
+                <div class="data-table-header-actions">
+            <div class="btn-group mr-2">
+               
+                <div class="btn-group mr-2">
                                 <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
                                     <i class="fas fa-tasks"></i> Thao tác
                                 </button>
-                                <div class="dropdown-menu">
-                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(1)">
-                                        <i class="fas fa-check-circle text-success"></i> Kích hoạt đã chọn
-                                    </a>
-                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(0)">
-                                        <i class="fas fa-times-circle text-danger"></i> Vô hiệu hóa đã chọn
-                                    </a>
-                                </div>
-                            </div>
-
-                          
-                            <button class="data-table-btn data-table-btn-outline">
-                                <i class="fas fa-columns"></i> Cột
-                            </button>
-                        </div>
-                    </div>
+                <div class="dropdown-menu">
+                    <a href="#" class="dropdown-item" onclick="handleBulkAction('activate')">
+                    <i class="fas fa-check-circle text-success"></i> Kích hoạt đã chọn
+                    </a>
+                    <a href="#" class="dropdown-item" onclick="handleBulkAction('deactivate')">
+                    <i class="fas fa-times-circle text-danger"></i> Vô hiệu hóa đã chọn
+                    </a>
                 </div>
+            </div>
+
+         
+        </div>
+        </div>
+                <button class="data-table-btn data-table-btn-outline">
+                    <i class="fas fa-columns"></i> Cột
+                </button>
             </div>
         </div>
 
@@ -87,12 +72,11 @@
             <table class="data-table" id="dataTable">
                 <thead>
                     <tr>
-                        <th>
-                            <div>
-                                <input type="checkbox" id="selectAll">
-
+                        <th class="checkbox-column">
+                            <div class="data-table-checkbox">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                                <label for="selectAllCheckbox"></label>
                             </div>
-
                         </th>
                         <th data-sort="id" class="active-sort">
                             ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
@@ -113,9 +97,12 @@
                 </thead>
                 <tbody id="dataTableBody">
                     @forelse($users as $user)
-                    <tr>
-                        <td>
-                            <input type="checkbox" class="row-checkbox" value="{{ $user->id }}">
+                    <tr data-user-id="{{ $user->id }}">
+                        <td class="checkbox-column">
+                            <div class="data-table-checkbox">
+                                <input type="checkbox" class="user-checkbox" id="user-{{ $user->id }}" value="{{ $user->id }}">
+                                <label for="user-{{ $user->id }}"></label>
+                            </div>
                         </td>
                         <td>
                             <div class="data-table-id">
@@ -136,29 +123,17 @@
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->phone ?? 'N/A' }}</td>
                         <td>
-                            <form action="{{ route('admin.users.toggle-status', $user->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('PATCH')
-                                <button type="button"
-                                    class="data-table-status {{ $user->active ? 'data-table-status-success' : 'data-table-status-failed' }}"
-                                    style="border: none; cursor: pointer; width: 100px;"
-                                    onclick="dtmodalHandleStatusToggle({
-                                        button: this,
-                                        userName: '{{ $user->full_name }}',
-                                        currentStatus: {{ $user->active ? 'true' : 'false' }},
-                                        confirmTitle: 'Xác nhận thay đổi trạng thái',
-                                        confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của người dùng này?',
-                                        confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của người dùng.',
-                                        successMessage: 'Đã thay đổi trạng thái người dùng thành công',
-                                        errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái người dùng'
-                                    })">
-                                    @if($user->active)
-                                    <i class="fas fa-check"></i> Hoạt động
-                                    @else
-                                    <i class="fas fa-times"></i> Vô hiệu hóa
-                                    @endif
-                                </button>
-                            </form>
+                            <button type="button"
+                                class="data-table-status {{ $user->active ? 'data-table-status-success' : 'data-table-status-failed' }}"
+                                 style="border: none; cursor: pointer; width: 100px;"
+                                onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }} ,
+                                )">
+                                @if($user->active)
+                                <i class="fas fa-check"></i> Hoạt động
+                                @else
+                                <i class="fas fa-times"></i> Vô hiệu hóa
+                                @endif
+                            </button>
                         </td>
                         <td>
                             <div class="data-table-action-buttons">
@@ -168,17 +143,11 @@
                                     <i class="fas fa-eye"></i>
                                 </a>
                             </div>
-                            <form id="bulkStatusForm" action="{{ route('admin.users.bulk-status-update') }}" method="POST" style="display: none;">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="user_ids" id="selectedUserIds">
-                                <input type="hidden" name="status" id="selectedStatus">
-                            </form>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center">
+                        <td colspan="7" class="text-center">
                             <div class="data-table-empty">
                                 <div class="data-table-empty-icon">
                                     <i class="fas fa-user-slash"></i>
@@ -202,7 +171,7 @@
             @if($users->lastPage() > 1)
             <div class="data-table-pagination-controls">
                 @if(!$users->onFirstPage())
-                <a href="{{ $users->previousPageUrl() }}&search={{ request('search') }}"
+                <a href="javascript:void(0)" onclick="loadUsers({{ $users->currentPage() - 1 }})"
                     class="data-table-pagination-btn"
                     id="prevBtn">
                     <i class="fas fa-chevron-left"></i> Trước
@@ -212,77 +181,431 @@
                 @php
                 $start = max(1, $users->currentPage() - 2);
                 $end = min($users->lastPage(), $users->currentPage() + 2);
-
-                if ($start > 1) {
-                echo '<a href="'.$users->url(1).'&search='.request('search').'"
-                    class="data-table-pagination-btn">1</a>';
-                if ($start > 2) {
-                echo '<span class="data-table-pagination-dots">...</span>';
-                }
-                }
                 @endphp
 
                 @for ($i = $start; $i <= $end; $i++)
-                    <a href="{{ $users->url($i) }}&search={{ request('search') }}"
-                    class="data-table-pagination-btn {{ $users->currentPage() == $i ? 'active' : '' }}">
-                    {{ $i }}
+                    <a href="javascript:void(0)" onclick="loadUsers({{ $i }})"
+                        class="data-table-pagination-btn {{ $users->currentPage() == $i ? 'active' : '' }}">
+                        {{ $i }}
                     </a>
-                    @endfor
+                @endfor
 
-                    @php
-                    if ($end < $users->lastPage()) {
-                        if ($end < $users->lastPage() - 1) {
-                            echo '<span class="data-table-pagination-dots">...</span>';
-                            }
-                            echo '<a href="'.$users->url($users->lastPage()).'&search='.request('search').'"
-                                class="data-table-pagination-btn">'.$users->lastPage().'</a>';
-                            }
-                            @endphp
-
-                            @if($users->hasMorePages())
-                            <a href="{{ $users->nextPageUrl() }}&search={{ request('search') }}"
-                                class="data-table-pagination-btn"
-                                id="nextBtn">
-                                Tiếp <i class="fas fa-chevron-right"></i>
-                            </a>
-                            @endif
+                @if($users->hasMorePages())
+                <a href="javascript:void(0)" onclick="loadUsers({{ $users->currentPage() + 1 }})"
+                    class="data-table-pagination-btn"
+                    id="nextBtn">
+                    Tiếp <i class="fas fa-chevron-right"></i>
+                </a>
+                @endif
             </div>
             @endif
         </div>
     </div>
 </div>
 
+@endsection
+
+
+@section('page-style')
+<style>
+    .checkbox-column {
+        width: 40px;
+        text-align: center;
+    }
+    
+    .data-table-checkbox {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .data-table-checkbox input[type="checkbox"] {
+        opacity: 0;
+        position: absolute;
+    }
+    
+    .data-table-checkbox label {
+        position: relative;
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 2px solid #ddd;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .data-table-checkbox input[type="checkbox"]:checked + label {
+        background-color: #4361ee;
+        border-color: #4361ee;
+    }
+    
+    .data-table-checkbox input[type="checkbox"]:checked + label:after {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 2px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+    
+    .data-table-bulk-actions {
+        display: flex;
+        gap: 8px;
+    }
+</style>
+@endsection
+
+@section('page-script')
 <script>
-    function handleSearch(event) {
-        const searchValue = event.target.value.trim();
-        const currentUrl = new URL(window.location.href);
+let searchTimeout = null;
+let currentPage = {{ $users->currentPage() }};
+let currentSearch = '{{ request('search') }}';
 
-        if (searchValue) {
-            currentUrl.searchParams.set('search', searchValue);
-        } else {
-            currentUrl.searchParams.delete('search');
-        }
-
-        if (event.key === 'Enter') {
-            window.location.href = currentUrl.toString();
-        }
-    }
-
-    function toggleSelectAll() {
-        const selectAllCheckbox = document.getElementById('selectAll');
-        const rowCheckboxes = document.getElementsByClassName('row-checkbox');
-
-        selectAllCheckbox.checked = !selectAllCheckbox.checked;
-        for (let checkbox of rowCheckboxes) {
-            checkbox.checked = selectAllCheckbox.checked;
-        }
-    }
-
-    document.getElementById('selectAll').addEventListener('change', function() {
-        const rowCheckboxes = document.getElementsByClassName('row-checkbox');
-        for (let checkbox of rowCheckboxes) {
-            checkbox.checked = this.checked;
+// Hàm tải dữ liệu người dùng
+function loadUsers(page = 1, search = currentSearch) {
+    currentPage = page;
+    currentSearch = search;
+    
+    $.ajax({
+        url: '{{ route("admin.users.index") }}',
+        type: 'GET',
+        data: {
+            page: page,
+            search: search
+        },
+        success: function(response) {
+            if (response.success) {
+                updateTable(response.users);
+                updatePagination(response.pagination);
+                
+                // Cập nhật URL mà không reload trang
+                const url = new URL(window.location);
+                url.searchParams.set('page', page);
+                if (search) url.searchParams.set('search', search);
+                else url.searchParams.delete('search');
+                window.history.pushState({}, '', url);
+            }
+        },
+        error: function(xhr) {
+            alert('Có lỗi xảy ra khi tải dữ liệu người dùng');
         }
     });
+}
+
+// Xử lý tìm kiếm
+function handleSearch(event) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const searchValue = event.target.value;
+        loadUsers(1, searchValue);
+    }, 500);
+}
+
+// Hàm xử lý thay đổi trạng thái người dùng
+function toggleUserStatus(button, userId, userName, currentStatus) {
+    // Configuration object for messages
+    const messages = {
+        confirmTitle: 'Xác nhận thay đổi trạng thái',
+        confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của người dùng này?',
+        confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của người dùng.',
+        successMessage: 'Đã thay đổi trạng thái người dùng thành công',
+        errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái người dùng'
+    };
+
+    // Sử dụng modal thay vì confirm
+    dtmodalCreateModal({
+        type: 'warning',
+        title: messages.confirmTitle,
+        subtitle: messages.confirmSubtitle,
+        message: `Bạn đang thay đổi trạng thái của: <strong>"${userName}"</strong><br>${messages.confirmMessage}`,
+        confirmText: 'Xác nhận thay đổi',
+        cancelText: 'Hủy bỏ',
+        onConfirm: function() {
+            // Send AJAX request to toggle status
+            $.ajax({
+                url: `{{ url('admin/users') }}/${userId}/toggle-status`,
+                type: 'PATCH',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    _method: 'PATCH'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Update UI
+                        const newStatus = !currentStatus;
+                        const statusButton = $(button);
+                        
+                        statusButton
+                            .removeClass(currentStatus ? 'data-table-status-success' : 'data-table-status-failed')
+                            .addClass(newStatus ? 'data-table-status-success' : 'data-table-status-failed');
+                        
+                        statusButton.html(
+                            newStatus ? 
+                            '<i class="fas fa-check"></i> Hoạt động' :
+                            '<i class="fas fa-times"></i> Vô hiệu hóa'
+                        );
+
+                        // Update onclick handler with new status
+                        statusButton.attr('onclick', `toggleUserStatus(this, ${userId}, '${userName}', ${newStatus})`);
+                        
+                        // Show success toast message instead of alert
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: messages.successMessage
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    let errorMessage = messages.errorMessage;
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.status === 404) {
+                        errorMessage = 'Không tìm thấy người dùng';
+                    } else if (xhr.status === 403) {
+                        errorMessage = 'Bạn không có quyền thực hiện thao tác này';
+                    } else if (xhr.status === 422) {
+                        errorMessage = 'Dữ liệu không hợp lệ';
+                    }
+
+                    // Show error toast message instead of alert
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: errorMessage
+                    });
+                }
+            });
+        }
+    });
+}
+// Hàm cập nhật bảng
+function updateTable(users) {
+    const tbody = $('#dataTableBody');
+    let html = '';
+
+    if (users.length === 0) {
+        html = `
+            <tr>
+                <td colspan="8" class="text-center">
+                    <div class="data-table-empty">
+                        <div class="data-table-empty-icon">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                        <h3>Không có người dùng nào</h3>
+                    </div>
+                </td>
+            </tr>
+        `;
+    } else {
+        users.forEach(user => {
+            const avatarUrl = user.avatar ? `/storage/${user.avatar}` : '/images/default-avatar.png';
+            html += `
+                <tr data-user-id="${user.id}">
+                    <td class="checkbox-column">
+                        <div class="data-table-checkbox">
+                            <input type="checkbox" class="user-checkbox" id="user-${user.id}" value="${user.id}">
+                            <label for="user-${user.id}"></label>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="data-table-id">${user.id}</div>
+                    </td>
+                    <td>
+                        <div class="data-table-user-avatar">
+                            <img src="${avatarUrl}" 
+                                 alt="${user.full_name}"
+                                 class="rounded-circle"
+                                 style="width: 40px; height: 40px; object-fit: cover;">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="data-table-user-name">${user.full_name}</div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>${user.phone || 'N/A'}</td>
+                    <td>
+                        <button type="button"
+                            class="data-table-status ${user.active ? 'data-table-status-success' : 'data-table-status-failed'}"
+                            style="border: none; cursor: pointer; width: 100px;"
+                            onclick="toggleUserStatus(this, ${user.id}, '${user.full_name}', ${user.active})">
+                            ${user.active 
+                                ? '<i class="fas fa-check"></i> Hoạt động' 
+                                : '<i class="fas fa-times"></i> Vô hiệu hóa'
+                            }
+                        </button>
+                    </td>
+                    <td>
+                        <div class="data-table-action-buttons">
+                            <a href="/admin/users/show/${user.id}" 
+                               class="data-table-action-btn data-table-tooltip"
+                               data-tooltip="Xem chi tiết">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    tbody.html(html);
+}
+
+// Hàm cập nhật phân trang
+function updatePagination(pagination) {
+    const paginationInfo = $('.data-table-pagination-info');
+    const paginationControls = $('.data-table-pagination-controls');
+    
+    // Cập nhật thông tin phân trang
+    const start = (pagination.current_page - 1) * pagination.per_page + 1;
+    const end = Math.min(pagination.current_page * pagination.per_page, pagination.total);
+    
+    paginationInfo.html(`
+        Hiển thị <span id="startRecord">${start}</span>
+        đến <span id="endRecord">${end}</span>
+        của <span id="totalRecords">${pagination.total}</span> mục
+    `);
+
+    // Tạo nút phân trang
+    if (pagination.last_page > 1) {
+        let html = '';
+        
+        // Nút Previous
+        if (pagination.current_page > 1) {
+            html += `
+                <a href="javascript:void(0)" 
+                   onclick="loadUsers(${pagination.current_page - 1})"
+                   class="data-table-pagination-btn">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </a>
+            `;
+        }
+
+        // Các nút số trang
+        const start = Math.max(1, pagination.current_page - 2);
+        const end = Math.min(pagination.last_page, pagination.current_page + 2);
+
+        for (let i = start; i <= end; i++) {
+            html += `
+                <a href="javascript:void(0)"
+                   onclick="loadUsers(${i})"
+                   class="data-table-pagination-btn ${pagination.current_page === i ? 'active' : ''}">
+                    ${i}
+                </a>
+            `;
+        }
+
+        // Nút Next
+        if (pagination.current_page < pagination.last_page) {
+            html += `
+                <a href="javascript:void(0)"
+                   onclick="loadUsers(${pagination.current_page + 1})"
+                   class="data-table-pagination-btn">
+                    Tiếp <i class="fas fa-chevron-right"></i>
+                </a>
+            `;
+        }
+
+        paginationControls.html(html);
+    } else {
+        paginationControls.empty();
+    }
+}
+
+// Hàm xử lý chọn tất cả
+function toggleSelectAll(checkbox) {
+    const isChecked = checkbox.checked;
+    $('.user-checkbox').prop('checked', isChecked);
+    updateBulkActionsVisibility();
+}
+
+// Hàm cập nhật hiển thị các nút hành động hàng loạt
+function updateBulkActionsVisibility() {
+    const checkedCount = $('.user-checkbox:checked').length;
+    if (checkedCount > 0) {
+        $('#bulkActionsContainer').show();
+    } else {
+        $('#bulkActionsContainer').hide();
+    }
+}
+
+// Hàm xử lý hành động hàng loạt
+function handleBulkAction(action) {
+    const selectedIds = [];
+    $('.user-checkbox:checked').each(function() {
+        selectedIds.push($(this).val());
+    });
+
+    if (selectedIds.length === 0) {
+        dtmodalShowToast('error', {
+            title: 'Lỗi',
+            message: 'Vui lòng chọn ít nhất một người dùng'
+        });
+        return;
+    }
+
+    let confirmMessage = '';
+    const actionUrl = '{{ route("admin.users.bulk-status-update") }}';
+
+    switch (action) {
+        case 'activate':
+            confirmMessage = 'Bạn có chắc chắn muốn kích hoạt các người dùng đã chọn?';
+            break;
+        case 'deactivate':
+            confirmMessage = 'Bạn có chắc chắn muốn vô hiệu hóa các người dùng đã chọn?';
+            break;
+        default:
+            return;
+    }
+
+    dtmodalCreateModal({
+        type: 'warning',
+        title: 'Xác nhận hành động hàng loạt',
+        message: `${confirmMessage}<br>Số lượng: <strong>${selectedIds.length}</strong> người dùng`,
+        confirmText: 'Xác nhận',
+        onConfirm: () => {
+            $.ajax({
+                url: actionUrl,
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    _method: 'PATCH',
+                    action: action,
+                    ids: selectedIds
+                },
+                success: (response) => {
+                    if (response.success) {
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: response.message
+                        });
+                        loadUsers(currentPage, currentSearch);
+                        $('#selectAllCheckbox').prop('checked', false);
+                    }
+                },
+                error: (xhr) => {
+                    const errorMessage = xhr.responseJSON?.message || 'Lỗi hệ thống';
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: errorMessage
+                    });
+                }
+            });
+        }
+    });
+}
+
+// Thêm sự kiện lắng nghe cho các checkbox
+$(document).on('change', '.user-checkbox', function() {
+    updateBulkActionsVisibility();
+    
+    // Cập nhật trạng thái của checkbox "Chọn tất cả"
+    const totalCheckboxes = $('.user-checkbox').length;
+    const checkedCheckboxes = $('.user-checkbox:checked').length;
+    
+    $('#selectAllCheckbox').prop('checked', totalCheckboxes === checkedCheckboxes);
+});
 </script>
 @endsection
