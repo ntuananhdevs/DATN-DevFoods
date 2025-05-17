@@ -17,34 +17,54 @@ use Workbench\App\Models\User as ModelsUser;
 
 class UserController extends Controller
 {
-    public function index()
-    {
-        try {
-            $search = request()->input('search');
-            
-            $users = User::with('role')
-                ->whereHas('role', function($query) {
-                    $query->where('name', 'customer');
-                })
-                ->when($search, function($query) use ($search) {
-                    $query->where(function($q) use ($search) {
-                        $q->where('user_name', 'LIKE', "%$search%")
-                          ->orWhere('full_name', 'LIKE', "%$search%")
-                          ->orWhere('email', 'LIKE', "%$search%")
-                          ->orWhere('phone', 'LIKE', "%$search%");
-                    });
-                })
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-    
-            return view('admin.users.index', compact('users'));
-        } catch (\Exception $e) {
-            Log::error('Error in UserController@index: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi tải danh sách người dùng');
-        }
-    }
+   public function index(Request $request)
+{
+    try {
+        $search = $request->input('search');
+        $query = User::with('role')
+            ->whereHas('role', function ($query) {
+                $query->where('name', 'customer');
+            })
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('user_name', 'LIKE', "%$search%")
+                        ->orWhere('full_name', 'LIKE', "%$search%")
+                        ->orWhere('email', 'LIKE', "%$search%")
+                        ->orWhere('phone', 'LIKE', "%$search%");
+                });
+            })
+            ->orderBy('id', 'asc');
 
+        $users = $query->paginate(10);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'users' => $users->items(),
+                'pagination' => [
+                    'total' => $users->total(),
+                    'per_page' => $users->perPage(),
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage()
+                ]
+            ]);
+        }
+
+        return view('admin.users.index', compact('users'));
+    } catch (\Exception $e) {
+        Log::error('Error in UserController@index: ' . $e->getMessage());
+       
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi tải danh sách người dùng'
+            ], 500);
+        }
+
+        return redirect()->back()
+            ->with('error', 'Có lỗi xảy ra khi tải danh sách người dùng');
+    }
+}
     // Thêm phương thức mới để xử lý thay đổi trạng thái
     public function toggleStatus($id)
     {
@@ -52,6 +72,14 @@ class UserController extends Controller
             $user = User::findOrFail($id);
             $user->active = !$user->active;
             $user->save();
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'user' => $user,
+                    'message' => 'Đã thay đổi trạng thái người dùng thành công'
+                ]);
+            }
 
             session()->flash('toast', [
                 'type' => 'success',
@@ -62,13 +90,20 @@ class UserController extends Controller
             return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Lỗi khi thay đổi trạng thái người dùng: ' . $e->getMessage());
-            
+
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+                ], 500);
+            }
+
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
-            
+
             return redirect()->back();
         }
     }
@@ -134,36 +169,63 @@ class UserController extends Controller
                 'title' => 'Thành công',
                 'message' => 'Người dùng đã được tạo thành công'
             ]);
-            
+
             return redirect()->route('admin.users.index');
         } catch (\Exception $e) {
             Log::error('Lỗi khi tạo người dùng: ' . $e->getMessage());
-            
+
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
-            
+
             return redirect()->back()->withInput();
         }
     }
 
 
 
-    public function show(User $user , $id)
+    public function show(Request $request, $id)
     {
         try {
-            $user = User::findOrFail($id);
+            $user = User::with('role')->findOrFail($id);
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $user->id,
+                        'user_name' => $user->user_name,
+                        'full_name' => $user->full_name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'role' => $user->role->name,
+                        'status' => $user->active ? 'Hoạt động' : 'Vô hiệu hóa',
+                      
+                    ],
+                    'html' => view('admin.users.partials.user_info', compact('user'))->render(),
+                    'message' => 'Tải dữ liệu người dùng thành công'
+                ]);
+            }
+
             return view('admin.users.show', compact('user'));
         } catch (\Exception $e) {
             Log::error('Error in UserController@show: ' . $e->getMessage());
-            var_dump($e->getMessage());
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy người dùng',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
 
+            return redirect()->back()->with('error', 'Không tìm thấy người dùng');
         }
     }
 
-  
+
     /**
      * Export users data
      */
@@ -171,36 +233,36 @@ class UserController extends Controller
     {
         try {
             $type = $request->type ?? 'excel';
-            $query = User::with('role')->whereHas('role', function($q) {
+            $query = User::with('role')->whereHas('role', function ($q) {
                 $q->where('name', 'customer');
             });
-            
+
             // Áp dụng các bộ lọc tương tự như trong index
             if ($request->has('search') && $request->search) {
-                $query->where(function($q) use ($request) {
+                $query->where(function ($q) use ($request) {
                     $q->where('user_name', 'LIKE', "%$request->search%")
-                      ->orWhere('full_name', 'LIKE', "%$request->search%")
-                      ->orWhere('email', 'LIKE', "%$request->search%")
-                      ->orWhere('phone', 'LIKE', "%$request->search%");
+                        ->orWhere('full_name', 'LIKE', "%$request->search%")
+                        ->orWhere('email', 'LIKE', "%$request->search%")
+                        ->orWhere('phone', 'LIKE', "%$request->search%");
                 });
             }
-            
+
             $users = $query->latest()->get();
-            
+
             switch ($type) {
                 case 'excel':
                     return Excel::download(new UsersExport($users), 'users.xlsx');
-                    
+
                 case 'pdf':
                     $pdf = Pdf::loadView('admin.exports.users', compact('users'));
                     return $pdf->download('users.pdf');
-                    
+
                 case 'csv':
                     return Excel::download(new UsersExport($users), 'users.csv', \Maatwebsite\Excel\Excel::CSV);
-                    
+
                 case 'json':
                     return $this->exportJson($users, 'users.json');
-                    
+
                 default:
                     return redirect()->back()->with('error', 'Định dạng xuất không hợp lệ');
             }
@@ -211,7 +273,7 @@ class UserController extends Controller
 
     private function exportJson($users, $filename)
     {
-        $data = $users->map(function($user) {
+        $data = $users->map(function ($user) {
             return [
                 'id' => $user->id,
                 'user_name' => $user->user_name,
@@ -225,37 +287,60 @@ class UserController extends Controller
                 'updated_at' => $user->updated_at->format('d/m/Y H:i:s')
             ];
         });
-        
+
         return response()->json($data, 200, [
             'Content-Type' => 'application/json',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"'
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
         ], JSON_PRETTY_PRINT);
     }
 
     public function bulkStatusUpdate(Request $request)
     {
         try {
-            $userIds = explode(',', $request->user_ids);
-            $status = (bool)$request->status;
+            // Kiểm tra xem dữ liệu đến từ form hay từ AJAX
+            $userIds = $request->has('ids') ? $request->ids : explode(',', $request->user_ids);
             
+            // Xác định trạng thái từ action hoặc status
+            $status = $request->has('action') 
+                ? ($request->action === 'activate') 
+                : (bool)$request->status;
+
             User::whereIn('id', $userIds)->update(['active' => $status]);
-            
+
+            // Xử lý phản hồi cho AJAX
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã cập nhật trạng thái người dùng thành công'
+                ]);
+            }
+
+            // Xử lý phản hồi cho form thông thường
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Đã cập nhật trạng thái người dùng thành công'
             ]);
-            
+
             return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Lỗi khi cập nhật trạng thái hàng loạt: ' . $e->getMessage());
-            
+
+            // Xử lý lỗi cho AJAX
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+                ], 500);
+            }
+
+            // Xử lý lỗi cho form thông thường
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
-            
+
             return redirect()->back();
         }
     }
