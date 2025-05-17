@@ -41,12 +41,6 @@
                         </div>
                         <div class="hero-image">
                             <img src="{{ asset('images/banner/banner01.png') }}" alt="DevFood Featured Product">
-                            {{-- <div class="floating-image floating-image-1">
-                                <img src="images/decoration-1.png" alt="Decoration">
-                            </div>
-                            <div class="floating-image floating-image-2">
-                                <img src="images/decoration-2.png" alt="Decoration">
-                            </div> --}}
                         </div>
                     </div>
                 </div>
@@ -124,12 +118,9 @@
                                             <button class="action-btn favorite-btn">
                                                 <i class="fas fa-heart"></i>
                                             </button>
-                                            <button class="action-btn cart-btn">
+                                            <button class="action-btn cart-btn" onclick="window.location.href='{{ url('/shop/product/product-detail/' . $product->id) }}'">
                                                 <i class="fas fa-shopping-bag"></i>
                                             </button>
-                                            {{--                                            <button class="action-btn info-btn"> --}}
-                                            {{--                                                <i class="fas fa-info"></i> --}}
-                                            {{--                                            </button> --}}
                                         </div>
                                     </div>
                                 </div>
@@ -141,7 +132,7 @@
                                             <span
                                                 class="current-price">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
                                         </div>
-                                        <button class="add-to-cart-btn">
+                                        <button class="add-to-cart-btn" onclick="window.location.href='{{ url('/shop/product/product-detail/' . $product->id) }}'">
                                             <i class="fas fa-shopping-bag"></i>
                                         </button>
                                     </div>
