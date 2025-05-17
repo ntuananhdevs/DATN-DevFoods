@@ -52,6 +52,46 @@
         background-color: #17a2b8;
         color: white;
     }
+    
+    /* CSS cho checkbox và các phần tử mới */
+    .select-col {
+        width: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .item-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+    
+    .select-all-container {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .select-all-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .select-all-label input {
+        margin-right: 10px;
+        width: 20px;
+        height: 20px;
+    }
+    
+    .checkout-btn:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
 </style>
 @endsection
 
@@ -66,6 +106,55 @@
     });
     
     $(document).ready(function() {
+        // Hàm tính toán tổng tiền dựa trên các sản phẩm được chọn
+        function calculateTotal() {
+            let subtotal = 0;
+            $('.item-checkbox:checked').each(function() {
+                const cartKey = $(this).data('cart-key');
+                const price = parseFloat($(this).data('price'));
+                subtotal += price;
+            });
+            
+            // Phí vận chuyển và giảm giá
+            const shipping = 30000;
+            const discount = 30000;
+            
+            // Tổng cộng
+            const total = subtotal + shipping - discount;
+            
+            // Cập nhật hiển thị
+            $('.summary-value:first').text(formatCurrency(subtotal));
+            $('.summary-row.total .summary-value').text(formatCurrency(total));
+            
+            // Cập nhật nút thanh toán
+            if (subtotal > 0) {
+                $('.checkout-btn').prop('disabled', false);
+            } else {
+                $('.checkout-btn').prop('disabled', true);
+            }
+        }
+        
+        // Hàm định dạng tiền tệ
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'decimal' }).format(amount) + 'đ';
+        }
+        
+        // Xử lý sự kiện khi checkbox của sản phẩm thay đổi
+        $(document).on('change', '.item-checkbox', function() {
+            calculateTotal();
+            
+            // Kiểm tra nếu tất cả checkbox đã được chọn
+            const allChecked = $('.item-checkbox:checked').length === $('.item-checkbox').length;
+            $('#select-all-checkbox').prop('checked', allChecked);
+        });
+        
+        // Xử lý sự kiện khi checkbox "Chọn tất cả" thay đổi
+        $('#select-all-checkbox').on('change', function() {
+            const isChecked = $(this).prop('checked');
+            $('.item-checkbox').prop('checked', isChecked);
+            calculateTotal();
+        });
+        
         // Xử lý sự kiện khi nhấn nút xóa sản phẩm
         $(document).on('click', '.remove-btn', function(e) {
             e.preventDefault();
@@ -208,7 +297,7 @@
 @endsection
 
 @section('content')
-<div class="container">
+<div class="container-cart">
     <!-- Breadcrumb -->
     <div class="breadcrumb">
         <a href="/">Trang chủ</a>
@@ -223,7 +312,15 @@
     <div class="cart-container">
         <!-- Cart Items Section -->
         <div class="cart-items-section">
+            <div class="select-all-container">
+                <label class="select-all-label">
+                    <input type="checkbox" id="select-all-checkbox" checked>
+                    <span>Chọn tất cả</span>
+                </label>
+            </div>
+            
             <div class="cart-header">
+                <div class="cart-header-item select-col">Chọn</div>
                 <div class="cart-header-item product-col">Sản phẩm</div>
                 <div class="cart-header-item price-col">Đơn giá</div>
                 <div class="cart-header-item quantity-col">Số lượng</div>
@@ -235,6 +332,9 @@
                 @if(count($cartData ?? []) > 0)
                     @foreach($cartData as $key => $item)
                         <div class="cart-item" data-cart-key="{{ $key }}">
+                            <div class="select-col">
+                                <input type="checkbox" class="item-checkbox" data-cart-key="{{ $key }}" data-price="{{ $item['total'] }}" checked>
+                            </div>
                             <div class="product-col">
                                 <div class="product-image">
                                     <img src="{{ $item['image'] ?? 'https://via.placeholder.com/100' }}" alt="{{ $item['name'] }}">
@@ -318,7 +418,7 @@
 
                 <div class="summary-row total">
                     <div class="summary-label">Tổng cộng</div>
-                    <div class="summary-value">364.000đ</div>
+                    <div class="summary-value">{{ number_format(($totalPrice ?? 0) + 30000 - 30000, 0, ',', '.') }}đ</div>
                 </div>
 
                 <div class="coupon-section">
@@ -329,7 +429,7 @@
                     </div>
                 </div>
 
-                <button class="checkout-btn">
+                <button class="checkout-btn" id="checkout-btn">
                     <i class="fas fa-lock"></i>
                     Tiến hành thanh toán
                 </button>
