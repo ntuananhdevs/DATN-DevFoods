@@ -4,6 +4,8 @@
     <title>{{ $subjectLine ?? 'Mail' }}</title>
 </head>
 <body>
+    @include('emails.components.header')
+
     <div>
         {!! $content !!}
     </div>
@@ -15,5 +17,7 @@
             @endforeach
         </ul>
     @endif
+
+    @include('emails.components.footer')
 </body>
 </html>
