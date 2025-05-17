@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('avatar')->nullable();
             $table->string('google_id')->nullable();
-            $table->decimal('balance', 10, 2)->default(0); // Thêm trường balance
+            $table->decimal('balance', 10, 2)->default(0); 
             $table->boolean('active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

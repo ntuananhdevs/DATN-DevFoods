@@ -245,6 +245,17 @@
         box-shadow: 0 4px 12px rgba(130, 134, 139, 0.4);
     }
 
+   /* Thêm vào phần style */
+.btn-success {
+    background-color: #28c76f !important;
+    border-color: #28c76f !important;
+}
+
+.btn-danger {
+    background-color: #ea5455 !important;
+    border-color: #ea5455 !important;
+}
+
     /* Responsive adjustments */
     @media (max-width: 991.98px) {
         .user-info-label {
@@ -299,28 +310,18 @@
                         </div>
                         <div class="user-profile-stat">
                             <div class="user-profile-stat-value">
-                                <form action="{{ route('admin.users.toggle-status', $user->id) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="button"
-                                        class="btn btn-sm rounded-pill d-flex align-items-center justify-content-center {{ $user->active ? 'btn-soft-success' : 'btn-soft-danger' }}"
-                                        style="min-width: 120px; padding: 0.5rem 1rem; border: none; transition: all 0.3s ease; background: {{ $user->active ? 'rgba(40, 199, 111, 0.12)' : 'rgba(234, 84, 85, 0.12)' }}; color: {{ $user->active ? '#28c76f' : '#ea5455' }}; font-weight: 500; box-shadow: 0 2px 4px {{ $user->active ? 'rgba(40, 199, 111, 0.1)' : 'rgba(234, 84, 85, 0.1)' }};"
-                                        onclick="dtmodalHandleStatusToggle({
-                                                button: this,
-                                                userName: '{{ $user->full_name }}',
-                                                currentStatus: {{ $user->active ? 'true' : 'false' }},
-                                                confirmTitle: 'Xác nhận thay đổi trạng thái',
-                                                confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của người dùng này?',
-                                                confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của người dùng.',
-                                                successMessage: 'Đã thay đổi trạng thái người dùng thành công',
-                                                errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái người dùng'
-                                            })">
-                                        <i class="fas {{ $user->active ? 'fa-check' : 'fa-times' }} me-2" style="font-size: 0.875rem;"></i>
-                                        <span style="font-size: 0.875rem;">{{ $user->active ? 'Hoạt động' : 'Vô hiệu hóa' }}</span>
-                                    </button>
-                                </form>
+                                <button type="button"
+                                    class="btn btn-sm {{ $user->active ? 'btn-success' : 'btn-danger' }} 
+                                        btn-hover-state btn-focus-effect"
+                                    style="min-width: 110px; transition: all 0.3s ease;"
+                                    onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }})">
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <i class="fas {{ $user->active ? 'fa-check' : 'fa-times' }} mr-2"></i>
+                                        {{ $user->active ? 'Hoạt động' : 'Vô hiệu hóa' }}
+                                    </div>
+                                </button>
                             </div>
-                            <div class="user-profile-stat-label">Status</div>
+                            <div class="user-profile-stat-label">Trạng thái</div>
                         </div>
 
                         <a href="{{ route('admin.users.index') }}" class="btn btn-custom btn-secondary-custom">
@@ -426,24 +427,119 @@
 </div>
 </div>
 @endsection
-
-@section('vendor-script')
-{{-- vendor files --}}
-<script src="{{ asset(mix('vendors/js/charts/apexcharts.min.js')) }}"></script>
-<script src="{{ asset(mix('vendors/js/extensions/sweetalert2.all.min.js')) }}"></script>
-@endsection
-
 @section('page-script')
-{{-- Page js files --}}
-<script src="{{ asset(mix('js/scripts/pages/dashboard-ecommerce.js')) }}"></script>
 <script>
-    $(window).on('load', function() {
-        if (feather) {
-            feather.replace({
-                width: 14,
-                height: 14
-            });
-        }
-    });
+    function toggleUserStatus(button, userId, userName, currentStatus) {
+        // Configuration object for messages
+        const messages = {
+            confirmTitle: 'Xác nhận thay đổi trạng thái',
+            confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của người dùng này?',
+            confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của người dùng.',
+            successMessage: 'Đã thay đổi trạng thái người dùng thành công',
+            errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái người dùng'
+        };
+
+        // Sử dụng modal thay vì confirm
+        dtmodalCreateModal({
+            type: 'warning',
+            title: messages.confirmTitle,
+            subtitle: messages.confirmSubtitle,
+            message: `Bạn đang thay đổi trạng thái của: <strong>"${userName}"</strong><br>${messages.confirmMessage}`,
+            confirmText: 'Xác nhận thay đổi',
+            cancelText: 'Hủy bỏ',
+            onConfirm: function() {
+                // Send AJAX request to toggle status
+                $.ajax({
+                    url: `{{ url('admin/users') }}/${userId}/toggle-status`,
+                    type: 'PATCH',
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content'),
+                        _method: 'PATCH'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update UI
+                            const newStatus = !currentStatus;
+                            const statusButton = $(button);
+
+                            statusButton
+                                .removeClass(currentStatus ? 'data-table-status-success' : 'data-table-status-failed')
+                                .addClass(newStatus ? 'data-table-status-success' : 'data-table-status-failed');
+
+                            statusButton.html(
+                                newStatus ?
+                                '<i class="fas fa-check"></i> Hoạt động' :
+                                '<i class="fas fa-times"></i> Vô hiệu hóa'
+                            );
+
+                            // Update onclick handler with new status
+                            statusButton.attr('onclick', `toggleUserStatus(this, ${userId}, '${userName}', ${newStatus})`);
+
+                            // Show success toast message instead of alert
+                            dtmodalShowToast('success', {
+                                title: 'Thành công',
+                                message: messages.successMessage
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = messages.errorMessage;
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.status === 404) {
+                            errorMessage = 'Không tìm thấy người dùng';
+                        } else if (xhr.status === 403) {
+                            errorMessage = 'Bạn không có quyền thực hiện thao tác này';
+                        } else if (xhr.status === 422) {
+                            errorMessage = 'Dữ liệu không hợp lệ';
+                        }
+
+                        // Show error toast message instead of alert
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: errorMessage
+                        });
+                    }
+                });
+            }
+        });
+    }
+    function fetchUserData() {
+        $.ajax({
+            url: window.location.href,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if(response.success) {
+                    // Cập nhật thông tin chính
+                    $('.user-profile-name').text(response.data.full_name);
+                    $('.user-profile-username').text('@' + response.data.user_name);
+                    $('.user-profile-stat-value').first().text('$' + response.data.balance.toFixed(2));
+                    
+                    // Cập nhật trạng thái
+                    const statusButton = $('.btn-status-toggle');
+                    statusButton
+                        .toggleClass('btn-success btn-danger', response.data.active)
+                        .find('i')
+                        .toggleClass('fa-check fa-times', response.data.active);
+                    statusButton.find('div').last().text(response.data.active ? 'Hoạt động' : 'Vô hiệu hóa');
+                    
+                    // Cập nhật thông tin chi tiết
+                    $('#user-email').text(response.data.email);
+                    $('#user-phone').text(response.data.phone || 'Not provided');
+                    $('#user-created-at').text(response.data.created_at);
+                }
+            },
+            error: function(xhr) {
+                console.error('Lỗi khi tải dữ liệu:', xhr.responseText);
+            }
+        });
+    }
+
+    // Khởi chạy lần đầu và lặp lại mỗi giây
+    fetchUserData();
+    setInterval(fetchUserData, 1);
+    
 </script>
 @endsection
