@@ -7,6 +7,7 @@ use App\Http\Controllers\Customer\HomeController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
+use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
@@ -205,6 +206,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
         Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
         Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
+    });
+    Route::prefix('branches')->name('branches.')->group(function () {
+        Route::get('/',[BranchController::class , 'index'])->name('index');
+        Route::get('/create', [BranchController::class, 'create'])->name('create');
+        Route::post('/store', [BranchController::class, 'store'])->name('store');
+        Route::get('/show/{id}', [BranchController::class, 'show'])->name('show');
+        Route::patch('branches/{branch}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('branches/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 });
 Route::get('/driver', function () {

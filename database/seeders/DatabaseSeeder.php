@@ -11,22 +11,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Gọi RoleSeeder trước để tạo roles
-        $this->call(RoleSeeder::class);
-
-        // Gọi UserSeeder để tạo users
-        $this->call(UserSeeder::class);
-
-        // Gọi CategorySeeder và ProductSeeder
-        $this->call(CategorySeeder::class);
-        
-        // Gọi AttributeSeeder trước ProductSeeder
-        $this->call(AttributeSeeder::class);
-        
-        $this->call(ProductSeeder::class);
-
-        // Gọi DriverApplicationSeeder và DriverSeeder
-        $this->call(DriverApplicationSeeder::class);
-        $this->call(DriverSeeder::class);
+        $this->call([
+            RoleSeeder::class,
+            UserSeeder::class,
+            CategorySeeder::class,
+            AttributeSeeder::class,
+            ProductSeeder::class,
+            BranchSeeder::class,
+            DriverApplicationSeeder::class,
+            DriverSeeder::class,
+         
+        ]);
     }
 }
