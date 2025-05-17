@@ -46,7 +46,7 @@ class BannerController extends Controller
         try {
             $validated = $request->validate([
                 'image_path' => 'required|image|max:5120',
-                'link' => 'nullable|url|starts_with:https://',
+                'link' => 'nullable|url|regex:/^https?:\/\/.*\/products\/[0-9]+/',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
@@ -62,7 +62,7 @@ class BannerController extends Controller
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
                 'image' => ':attribute phải là hình ảnh.',
-                'starts_with' => ':attribute phải bắt đầu bằng https://',
+                'regex' => ':attribute phải là đường dẫn đến trang sản phẩm (ví dụ: https://example.com/products/123)',
                 'boolean' => ':attribute không hợp lệ.'
             ], [
                 'image_path' => 'Hình ảnh',
@@ -86,14 +86,11 @@ class BannerController extends Controller
                 'message' => 'Banner đã được tạo thành công'
             ]);
             return redirect()->route('admin.banners.index');
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công',
-                'message' => 'Banner đã được cập nhật thành công'
-            ]);
-            return redirect()->route('admin.banners.index');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Đây là lỗi validation, để Laravel tự động redirect với errors
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Error in BannerController@store/update: ' . $e->getMessage());
+            Log::error('Error in BannerController@store: ' . $e->getMessage());
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
@@ -145,7 +142,7 @@ class BannerController extends Controller
 
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
-                'link' => 'nullable|url|starts_with:https://',
+                'link' => 'nullable|url|regex:/^https?:\/\/.*\/products\/[0-9]+/',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
@@ -161,7 +158,7 @@ class BannerController extends Controller
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
                 'image' => ':attribute phải là hình ảnh.',
-                'starts_with' => ':attribute phải bắt đầu bằng https://',
+                'regex' => ':attribute phải là đường dẫn đến trang sản phẩm (ví dụ: https://example.com/products/123)',
                 'boolean' => ':attribute không hợp lệ.'
             ], [
                 'image_path' => 'Hình ảnh',
@@ -185,6 +182,8 @@ class BannerController extends Controller
                 'message' => 'Banner đã được cập nhật thành công'
             ]);
             return redirect()->route('admin.banners.index');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             Log::error('Error in BannerController@update: ' . $e->getMessage());
             session()->flash('toast', [
@@ -195,6 +194,7 @@ class BannerController extends Controller
             return back()->withInput();
         }
     }
+    
     public function destroy(string $id)
     {
         try {

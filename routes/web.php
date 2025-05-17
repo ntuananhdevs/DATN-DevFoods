@@ -37,6 +37,7 @@ Route::prefix('/')->group(function () {
         Route::post('/ajax/update', [CustomerCartController::class, 'ajaxUpdate'])->name('ajax.update');
         Route::post('/ajax/remove', [CustomerCartController::class, 'ajaxRemove'])->name('ajax.remove');
         Route::get('/count', [CustomerCartController::class, 'count'])->name('count');
+        Route::post('/selected', [CustomerCartController::class, 'saveSelectedItems'])->name('selected');
     });
 
     // Route Customer (login / logout / register)
