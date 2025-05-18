@@ -13,12 +13,23 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained('users');
+            $table->foreignId('customer_id')->nullable()->constrained('users');
             $table->foreignId('branch_id')->constrained();
             $table->foreignId('driver_id')->nullable()->constrained('drivers');
             $table->foreignId('address_id')->nullable()->constrained('addresses');
             $table->foreignId('discount_code_id')->nullable()->constrained('discount_codes');
             $table->foreignId('payment_id')->nullable()->constrained('payments');
+
+            $table->string('guest_name')->nullable();
+            $table->string('guest_phone')->nullable();
+            $table->string('guest_email')->nullable();
+            $table->string('guest_address')->nullable();
+            $table->string('guest_ward')->nullable();
+            $table->string('guest_district')->nullable();
+            $table->string('guest_city')->nullable();
+            $table->decimal('guest_latitude', 10, 8)->nullable();
+            $table->decimal('guest_longitude', 11, 8)->nullable();
+
             $table->timestamp('estimated_delivery_time')->nullable();
             $table->timestamp('actual_delivery_time')->nullable();
             $table->decimal('delivery_fee', 12, 2)->default(0);
