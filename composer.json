@@ -15,6 +15,7 @@
         "laravel/passport": "*",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
+        "pusher/pusher-php-server": "*",
         "spatie/laravel-permission": "*"
     },
     "require-dev": {

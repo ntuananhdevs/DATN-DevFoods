@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
             BranchSeeder::class,
             DriverApplicationSeeder::class,
             DriverSeeder::class,
-         
         ]);
     }
 }

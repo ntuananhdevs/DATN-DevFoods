@@ -27,7 +27,7 @@ Route::prefix('/')->group(function () {
         Route::get('/product', [CustomerProductController::class, 'index']);
         Route::get('/product/product-detail/{id}', [CustomerProductController::class, 'show']);
     });
-    
+
     // Route giỏ hàng
     Route::prefix('cart')->name('customer.cart.')->group(function () {
         Route::get('/', [CustomerCartController::class, 'index'])->name('index');
@@ -72,9 +72,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);
     Route::prefix('categories')->name('categories.')->group(function () {
-    Route::delete('{id}', [CategoryController::class, 'destroy'])->name('destroy');
-    Route::patch('categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
-    Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::delete('{id}', [CategoryController::class, 'destroy'])->name('destroy');
+        Route::patch('categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
     // Users Management
@@ -100,7 +100,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/store', [UserController::class, 'store'])->name('store');
         Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
         Route::get('/export', [UserController::class, 'export'])->name('export');
-       
+
         Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
         Route::get('/users/data', [UserController::class, 'getData'])->name('data');
         Route::patch('/users/{user}/toggle-status-ajax', [UserController::class, 'toggleStatusAjax'])->name('toggle-status-ajax');
@@ -175,15 +175,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
         Route::post('/store', [UserController::class, 'store'])->name('store');
         Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
         Route::get('/export', [UserController::class, 'export'])->name('export');
-        
+
         // Sửa lại route toggle-status để đúng path
         Route::patch('/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
         Route::get('/data', [UserController::class, 'getData'])->name('data');
-    
-        
+
+
         Route::get('/users/data', [UserController::class, 'getData'])->name('data');
-     
     });
 
     // Products Management
@@ -217,13 +216,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
         Route::post('/store', [BannerController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [BannerController::class,'show'])->name('show');
+        Route::get('/show/{id}', [BannerController::class, 'show'])->name('show');
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
-
-
 });
 Route::get('/driver', function () {
     return view('driver.home');
