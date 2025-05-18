@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('attribute_values', function (Blueprint $table) {
+        Schema::create('order_details', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('attribute_id')->constrained('attributes');
-            $table->string('value', 100);
+            $table->foreignId('order_id')->constrained('orders');
+            $table->foreignId('product_variant_id')->constrained('product_variants');
+            $table->integer('quantity');
+            $table->decimal('unit_price', 10, 2);
+            $table->decimal('total_price', 10, 2);
             $table->timestamps();
-            
-            // Tạo unique index cho cặp attribute_id và value
-            $table->unique(['attribute_id', 'value']);
         });
     }
 
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('attribute_values');
+        Schema::dropIfExists('order_details');
     }
 };

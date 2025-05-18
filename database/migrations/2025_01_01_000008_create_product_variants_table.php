@@ -4,20 +4,20 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateProductVariantsTable extends Migration
+return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up()
     {
         Schema::create('product_variants', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('product_id');
-            $table->decimal('price', 10, 2);
-            $table->string('image', 191)->nullable();
-            $table->integer('stock_quantity')->default(0);
+            $table->id();
+            $table->foreignId('product_id')->constrained();
+            $table->string('sku')->nullable();
+            $table->text('image')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();
-
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
     }
 
@@ -25,4 +25,4 @@ class CreateProductVariantsTable extends Migration
     {
         Schema::dropIfExists('product_variants');
     }
-}
+};

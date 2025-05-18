@@ -9,23 +9,22 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('discounts', function (Blueprint $table) {
             $table->id();
-            $table->enum('rank', ['bronze', 'silver', 'gold', 'diamond']); // Đồng nhất với bảng customer_ranks
-            $table->decimal('discount_rate', 5, 2); // Tỷ lệ giảm giá (0-100%)
-            $table->date('valid_from');
-            $table->date('valid_to');
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->string('discount_type'); // percent, fixed_amount, ...
+            $table->decimal('discount_value', 12, 2);
+            $table->date('start_date');
+            $table->date('end_date');
             $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('discounts');
     }
