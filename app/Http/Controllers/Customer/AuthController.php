@@ -67,7 +67,7 @@ class AuthController extends Controller
                 'phone' => '',
                 'avatar' => '',
                 'balance' => 0,
-                'role_id' => 2,
+                'role_id' => 4,
             ]);
             Auth::login($user);
             return redirect('/login')->with('success', 'Đăng ký thành công!');
