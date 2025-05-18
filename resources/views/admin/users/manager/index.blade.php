@@ -8,7 +8,7 @@
             <div class="data-table-logo">
                 <i class="fas fa-users"></i>
             </div>
-            <h1 class="data-table-title">Quản lý người dùng</h1>
+            <h1 class="data-table-title">Tài khoản Quản Lý</h1>
         </div>
         <a href="{{ route('admin.managers.create') }}" class="data-table-btn data-table-btn-primary">
                 <i class="fas fa-plus"></i> Thêm mới
@@ -19,7 +19,7 @@
     <div class="data-table-card">
         <!-- Table Header -->
         <div class="data-table-header">
-            <h2 class="data-table-card-title">Danh sách người dùng</h2>
+            <h2 class="data-table-card-title">Danh sách quản lý </h2>
             
         </div>
 

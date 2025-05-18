@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\User\ManagerController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
+use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\User\UserController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\CategoryController;
@@ -107,10 +108,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::prefix('managers')->name('managers.')->group(function () {
         Route::get('/', [ManagerController::class, 'index'])->name('index');
         Route::get('/create', [ManagerController::class, 'create'])->name('create');
-        Route::post('/store', [ManagerController::class,'store'])->name('store');
-        Route::get('/show/{id}', [ManagerController::class, 'show'])->name('show');
-        Route::get('/export', [ManagerController::class, 'export'])->name('export');
-      
+        Route::post('/store', [UserController::class,'store'])->name('store');
     });
     
 
@@ -127,6 +125,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('/restore/{id}', [ProductController::class, 'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
+    });
+     // Banner Management
+     Route::prefix('banners')->name('banners.')->group(function () {
+        Route::get('/', [BannerController::class, 'index'])->name('index');
+        Route::get('/create', [BannerController::class, 'create'])->name('create');
+        Route::post('/store', [BannerController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [BannerController::class,'show'])->name('show');
+        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
     // Driver Application Management

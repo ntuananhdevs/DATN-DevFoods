@@ -269,7 +269,7 @@
       <div class="data-table-logo">
         <i class="fas fa-user-plus"></i>
       </div>
-      <h1 class="data-table-title">Thêm người dùng mới</h1>
+      <h1 class="data-table-title">Thêm Quản Lý </h1>
     </div>
   </div>
 
