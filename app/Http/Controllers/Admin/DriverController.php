@@ -135,6 +135,11 @@ class DriverController extends Controller
             // Gửi email thông báo từ chối đến người đăng ký
             EmailFactory::sendDriverRejection($application, $request->admin_notes);
 
+            // Mail::raw('Đơn đăng ký tài xế của bạn đã bị từ chối. Lý do: ' . $request->admin_notes, function($message) use ($application) {
+            //     $message->to($application->email)
+            //             ->subject('Đơn đăng ký tài xế bị từ chối');
+            // });
+
             DB::commit();
 
             // Hiển thị thông báo thành công
