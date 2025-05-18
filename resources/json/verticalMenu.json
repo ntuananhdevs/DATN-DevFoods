@@ -15,6 +15,12 @@
             "i18n": "nav.users"
         },
         {
+            "url": "/admin/branches",
+            "name": "Quản lý chi nhánh",
+            "icon": "feather icon-map-pin",
+            "i18n": "nav.users"
+        },
+        {
             "url": "/admin/products",
             "name": "Quản lý sản phẩm",
             "icon": "feather icon-box",
@@ -51,6 +57,12 @@
                     "i18n": "nav.pending_applications"
                 }
             ]
+        },
+        {
+            "url": "/admin/banners",
+            "name": "Quản lý Banner",
+            "icon": "feather icon-image",
+            "i18n": "nav.banners"
         }
     ]
 }

@@ -1,4 +1,15 @@
 <link href="{{ asset('css/customer/banner.css') }}" rel="stylesheet">
+<style>
+    .carousel-slide .slide-content {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+    .carousel-slide[data-link]:hover .slide-content {
+        opacity: 0.95;
+    }
+</style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const slides = document.querySelectorAll('.carousel-slide');
@@ -52,33 +63,38 @@
                 });
             });
 
+            // Xử lý sự kiện click vào banner để chuyển trang
+            slides.forEach(slide => {
+                slide.querySelector('.slide-content').addEventListener('click', () => {
+                    const link = slide.getAttribute('data-link');
+                    if (link && link.trim() !== '') {
+                        window.location.href = link;
+                    }
+                });
+            });
+
             startAutoSlide();
         });
     </script>
     <section class="promo-carousel">
         <div class="carousel-container">
             <div class="carousel-slides">
-                <div class="carousel-slide active">
-                    <img src="{{ asset('images/banner/promo-1.png') }}" alt="Combo Gia Đình Vui Vẻ">
-                    <div class="carousel-caption">
-                        <h2>Combo Gia Đình Vui Vẻ</h2>
-                        <p>Tiết kiệm đến 15% với combo dành cho gia đình</p>
+                @inject('bannerService', 'App\Services\BannerService')
+                @php
+                    $banners = $bannerService->getActiveBanners();
+                @endphp
+               
+                @foreach($banners as $key => $banner)
+                <div class="carousel-slide {{ $key === 0 ? 'active' : '' }}" data-link="{{ $banner->link }}">
+                    <div class="slide-content" style="cursor: {{ $banner->link ? 'pointer' : 'default' }}">
+                        <img src="{{ asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}">
+                        <div class="carousel-caption">
+                            <h2>{{ $banner->title }}</h2>
+                            <p>{{ $banner->description }}</p>
+                        </div>
                     </div>
                 </div>
-                <div class="carousel-slide">
-                    <img src="{{ asset('images/banner/promo-2.png') }}" alt="Mua 1 Tặng 1">
-                    <div class="carousel-caption">
-                        <h2>Mua 1 Tặng 1</h2>
-                        <p>Thứ 2 hàng tuần - Mua 1 gà giòn tặng 1 mỳ Ý</p>
-                    </div>
-                </div>
-                <div class="carousel-slide">
-                    <img src="{{ asset('images/banner/promo-3.png') }}" alt="Sinh Nhật Vui Vẻ">
-                    <div class="carousel-caption">
-                        <h2>Sinh Nhật Vui Vẻ</h2>
-                        <p>Đặt tiệc sinh nhật tại DevFood - Nhận quà hấp dẫn</p>
-                    </div>
-                </div>
+                @endforeach
             </div>
             <button class="carousel-control prev">
                 <i class="fas fa-chevron-left"></i>
