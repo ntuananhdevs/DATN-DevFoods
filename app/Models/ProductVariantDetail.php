@@ -6,19 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ProductVariantValue extends Model
+class ProductVariantDetail extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['product_variant_id', 'attribute_value_id'];
+    protected $table = 'product_variant_details';
+    protected $fillable = ['product_variant_id', 'variant_value_id'];
 
     public function productVariant()
     {
         return $this->belongsTo(ProductVariant::class);
     }
 
-    public function attributeValue()
+    public function variantValue()
     {
-        return $this->belongsTo(AttributeValue::class);
+        return $this->belongsTo(VariantValue::class, 'variant_value_id');
     }
 }

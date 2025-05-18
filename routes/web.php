@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 
 //Customer
@@ -21,7 +22,7 @@ use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\UserController as CustomerUserController;
 
 Route::prefix('/')->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
     Route::get('shop/product', [CustomerProductController::class, 'index']);
     Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
     

@@ -16,7 +16,8 @@ class CheckRolePermissions
         }
 
         // Kiểm tra vai trò hoặc quyền của người dùng
-        if (!$request->user()->hasRole('required_role') && !$request->user()->hasPermission('required_permission')) {
+        if (!$request->user()->roles()->where('name', 'required_role')->exists() &&
+            !$request->user()->roles()->whereJsonContains('permissions', 'required_permission')->exists()) {
             return response()->json(['error' => 'Bạn không có quyền truy cập.'], Response::HTTP_FORBIDDEN);
         }
 
