@@ -148,7 +148,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/store', [BannerController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [BannerController::class,'show'])->name('show');
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
