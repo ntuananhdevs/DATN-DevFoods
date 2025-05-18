@@ -13,6 +13,7 @@ class BannerController extends Controller
     public function index(Request $request)
     {
         try {
+            Banner::where('end_at', '<', now())->update(['is_active' => false]);
             $search = $request->input('search');
             $query = Banner::orderBy('created_at', 'desc');
 
@@ -44,6 +45,21 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         try {
+            $availableOrder = null;
+            $orders = [0, 1, 2];
+            
+            foreach ($orders as $order) {
+                $banner = Banner::where('order', $order)->first();
+                if (!$banner || !$banner->is_active) {
+                    $availableOrder = $order;
+                    break;
+                }
+            }
+            
+            if ($availableOrder === null) {
+                throw new \Exception('Tất cả vị trí đều đã có banner hiển thị');
+            }
+            
             $validated = $request->validate([
                 'image_path' => 'required|image|max:5120',
                 'link' => 'nullable|url',
@@ -52,7 +68,7 @@ class BannerController extends Controller
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|max:2|unique:banners',
+                'order' => 'required|integer|min:0|max:2|unique:banners,order,' . ($availableOrder === null ? '' : $availableOrder),
             ], [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
@@ -87,7 +103,6 @@ class BannerController extends Controller
             ]);
             return redirect()->route('admin.banners.index');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Đây là lỗi validation, để Laravel tự động redirect với errors
             throw $e;
         } catch (\Exception $e) {
             Log::error('Error in BannerController@store: ' . $e->getMessage());
