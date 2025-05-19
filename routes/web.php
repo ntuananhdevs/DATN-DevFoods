@@ -132,7 +132,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/export', [ProductController::class, 'export'])->name('export');
     });
 
-    // Driver Application Management
+    // Driver Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
