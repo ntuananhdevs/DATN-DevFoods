@@ -269,7 +269,7 @@
       <div class="data-table-logo">
         <i class="fas fa-user-plus"></i>
       </div>
-      <h1 class="data-table-title">Thêm Quản Lý </h1>
+      <h1 class="data-table-title">Thêm Quản Lý</h1>
     </div>
   </div>
 
@@ -280,7 +280,7 @@
       <div class="data-table-header" style="border-bottom: none; margin-left: -1.5rem; margin-right: -1.5rem;">
         <h2 class="data-table-card-title">Thông tin người dùng</h2>
       </div>
-      <form action="{{ route('admin.managers.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
+      <form action="{{ route('admin.users.managers.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
         @csrf
 
         <div class="form-group">

@@ -10,7 +10,7 @@
             </div>
             <h1 class="data-table-title">Tài khoản Quản Lý</h1>
         </div>
-        <a href="{{ route('admin.managers.create') }}" class="data-table-btn data-table-btn-primary">
+        <a href="{{ route('admin.users.managers.create') }}" class="data-table-btn data-table-btn-primary">
                 <i class="fas fa-plus"></i> Thêm mới
             </a>
     </div>

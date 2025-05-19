@@ -21,7 +21,7 @@
                     "i18n": "nav.all_users"
                 },
                 {   
-                    "url": "/admin/managers",
+                    "url": "/admin/users/managers",
                     "name": "Tài khoản quản lý",
                     "icon": "feather icon-file",
                     "i18n": "nav.pending_managers"

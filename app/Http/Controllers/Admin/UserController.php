@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
@@ -59,6 +59,129 @@ class UserController extends Controller
                     'message' => 'Lỗi hệ thống: ' . $e->getMessage()
                 ], 500)
                 : redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
+        }
+    }
+    public function manager(Request $request)
+    {
+        try {
+            $query = User::with(['roles'])
+                ->whereHas('roles', function($q) {
+                    $q->where('name', 'manager');
+                })
+                ->when($request->search, function($q) use ($request) {
+                    $q->where(function($subQ) use ($request) {
+                        $subQ->where('user_name', 'LIKE', "%{$request->search}%")
+                            ->orWhere('full_name', 'LIKE', "%{$request->search}%")
+                            ->orWhere('email', 'LIKE', "%{$request->search}%")
+                            ->orWhere('phone', 'LIKE', "%{$request->search}%");
+                    });
+                })
+                ->orderBy('created_at', 'desc');
+
+            $users = $query->paginate(10)->onEachSide(1);
+
+            return $request->ajax()
+                ? response()->json([
+                    'success' => true,
+                    'users' => $users->items(),
+                    'pagination' => [
+                        'total' => $users->total(),
+                        'per_page' => $users->perPage(),
+                        'current_page' => $users->currentPage(),
+                        'last_page' => $users->lastPage()
+                    ]
+                ])
+                : view('admin.users.manager.index', compact('users'));
+
+        } catch (\Exception $e) {
+            Log::error('ManagerController@index Error: ' . $e->getMessage());
+            return $request->ajax()
+                ? response()->json([
+                    'success' => false,
+                    'message' => 'Lỗi hệ thống: ' . $e->getMessage()
+                ], 500)
+                : redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
+        }
+    }
+    public function createManager()
+    {
+        try {
+            $roles = Role::where('name', 'manager')->get();
+            return view('admin.users.manager.create', compact('roles'));
+        } catch (\Exception $e) {
+            Log::error('Lỗi form tạo người quản lý: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Không tải được form: ' . $e->getMessage());
+        }
+    }
+
+    public function storeManager(Request $request)
+    {
+        try {
+            // Validate dữ liệu trước khi bắt đầu transaction
+            $validated = $request->validate([
+                'user_name' => 'required|string|max:255|unique:users',
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'phone' => 'nullable|string|max:20|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            ], [
+                'password.confirmed' => 'Xác nhận mật khẩu không khớp'
+            ]);
+
+            // Bắt đầu transaction sau khi validate thành công
+            DB::beginTransaction();
+
+            // Kiểm tra role trước khi tạo user
+            $managerRole = Role::where('name', 'manager')->first();
+            if (!$managerRole) {
+                throw new \Exception('Không tìm thấy vai trò quản lý');
+            }
+
+            $user = User::create([
+                'user_name' => $validated['user_name'],
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'password' => Hash::make($validated['password']),
+                'avatar' => $request->hasFile('avatar') 
+                    ? $request->file('avatar')->store('avatars', 'public')
+                    : null
+            ]);
+
+            // Gán role manager cho user
+            $user->roles()->attach($managerRole->id);
+
+            // Commit transaction khi tất cả thành công
+            DB::commit();
+
+            return redirect()->route('admin.managers.index')->with([
+                'toast' => [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => 'Tạo người quản lý thành công'
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Xử lý riêng lỗi validation
+            return redirect()->back()->withErrors($e->validator)->withInput();
+            
+        } catch (\Exception $e) {
+            // Đảm bảo rollback transaction nếu có lỗi
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            
+            Log::error('Lỗi tạo người quản lý: ' . $e->getMessage());
+            
+            return redirect()->back()->withInput()->with([
+                'toast' => [
+                    'type' => 'error',
+                    'title' => 'Lỗi',
+                    'message' => 'Không thể tạo người quản lý: ' . $e->getMessage()
+                ]
+            ]);
         }
     }
     // Thêm phương thức mới để xử lý thay đổi trạng thái
