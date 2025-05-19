@@ -15,6 +15,8 @@ use App\Mail\GenericMail;
 use App\Mail\EmailFactory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+
 class DriverController extends Controller
 {
     // Hiển thị danh sách đơn đăng ký tài xế, phân loại theo trạng thái chờ xử lý và đã xử lý
@@ -75,14 +77,14 @@ class DriverController extends Controller
             ]);
 
             // Tạo tài khoản tài xế mới
-            $lastName = explode(' ', $application->full_name);
-            $lastName = end($lastName);
-            $cccdLast4 = substr($application->id_number, -4);
-            $specialChar = '@';
-            $randomUpper = chr(rand(65, 90)); // Random uppercase letter
-            $randomNumber = rand(0, 9);
-            $password = $lastName . $cccdLast4 . $randomUpper . $specialChar . $randomNumber;
+            $password = Str::random(8) . rand(0, 9) . chr(rand(65, 90)) . chr(rand(97, 122)) . '!@#&*)(^';
             $hashedPassword = Hash::make($password);
+            
+            Log::info('Tạo tài khoản tài xế mới', [
+                'application_id' => $application->id,
+                'email' => $application->email
+            ]);
+
             $driver = Driver::create([
                 'application_id' => $application->id,
                 'license_number' => $application->driver_license_number,
@@ -101,18 +103,17 @@ class DriverController extends Controller
                 'auto_deposit_earnings' => false,
                 'email' => $application->email,
                 'password' => $hashedPassword,
-                'phone_number' => $application->phone_number
+                'phone_number' => $application->phone_number,
+                'full_name' => $application->full_name
+            ]);
+
+            Log::info('Gửi email thông báo chấp nhận', [
+                'application_id' => $application->id,
+                'email' => $application->email
             ]);
 
             // Gửi email thông báo chấp nhận
-            Mail::send('emails.driver-approval', [
-                'application' => $application,  
-                'email' => $application->email,
-                'password' => $password
-            ], function($message) use ($application) {
-                $message->to($application->email)
-                        ->subject('Đơn đăng ký tài xế được chấp nhận');
-            });
+            EmailFactory::sendDriverApproval($application, $password);
 
             DB::commit();
 
@@ -125,6 +126,10 @@ class DriverController extends Controller
             return redirect()->back();
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Lỗi khi phê duyệt đơn: ' . $e->getMessage(), [
+                'application_id' => $application->id,
+                'exception' => $e
+            ]);
             return redirect()->back()->with('error', 'Không thể phê duyệt đơn: ' . $e->getMessage());
         }
     }
@@ -164,5 +169,39 @@ class DriverController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'Không thể từ chối đơn: ' . $e->getMessage());
         }
+    }
+
+    public function index(Request $request)
+    {
+        try {
+            $search = $request->search;
+            $drivers = Driver::when($search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%");
+                    });
+                })
+                ->when($request->vehicle_type, function ($query, $vehicleType) {
+                    $query->where('vehicle_type', $vehicleType);
+                })
+                ->when($request->status, function ($query, $status) {
+                    $query->where('status', $status);
+                })
+                ->when($request->rating_min, function ($query, $ratingMin) {
+                    $query->where('rating', '>=', $ratingMin);
+                })
+                ->latest()
+                ->paginate(10);
+
+            return view('admin.driver.index', compact('drivers'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Không thể tải danh sách tài xế: ' . $e->getMessage());
+        }
+    }
+
+    public function show(Driver $driver)
+    {
+        return view('admin.driver.show', compact('driver'));
     }
 }
