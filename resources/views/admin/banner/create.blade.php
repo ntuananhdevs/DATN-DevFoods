@@ -17,19 +17,37 @@
 
             <div class="banner-form-group">
                 <label class="banner-form-label">Ảnh banner</label>
-
-                <div class="banner-form-file-wrapper">
-                    <label class="banner-form-file-button" for="image_path">Chọn file ảnh</label>
-                    <input class="banner-form-file @error('image_path') is-invalid @enderror" type="file" id="image_path"
-                        name="image_path" accept="image/*">
+                
+                <div class="banner-form-tabs">
+                    <div class="banner-form-tab active" data-tab="upload">Upload ảnh</div>
+                    <div class="banner-form-tab" data-tab="link">Nhập link ảnh</div>
+                </div>
+                
+                <div class="banner-form-tab-content active" data-tab-content="upload">
+                    <div class="banner-form-file-wrapper">
+                        <label class="banner-form-file-button" for="image_path">Chọn file ảnh</label>
+                        <input class="banner-form-file @error('image_path') is-invalid @enderror" type="file" id="image_path"
+                            name="image_path" accept="image/*">
+                        @error('image_path')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="banner-form-preview">
+                        <img class="banner-form-preview-img" id="image-preview" style="display: none;">
+                        <div class="banner-form-preview-placeholder" id="preview-placeholder">Xem trước ảnh banner</div>
+                    </div>
+                </div>
+                
+                <div class="banner-form-tab-content" data-tab-content="link">
+                    <input class="banner-form-input @error('image_link') is-invalid @enderror" type="url" 
+                        id="image_link" name="image_link" placeholder="Nhập link ảnh" value="{{ old('image_link') }}">
                     @error('image_path')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
-                </div>
-                <div class="banner-form-file-name" id="file-name"></div>
-                <div class="banner-form-preview">
-                    <img class="banner-form-preview-img" id="image-preview" style="display: none;">
-                    <div class="banner-form-preview-placeholder" id="preview-placeholder">Xem trước ảnh banner</div>
+                    <div class="banner-form-preview">
+                        <img class="banner-form-preview-img" id="link-preview" style="display: none;">
+                        <div class="banner-form-preview-placeholder" id="link-placeholder">Xem trước ảnh từ link</div>
+                    </div>
                 </div>
             </div>
 
@@ -204,12 +222,16 @@
             align-items: center;
             justify-content: center;
             min-height: 150px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .banner-form-preview-img {
-            max-width: 100%;
-            max-height: 200px;
+            width: 100%;
+            height: 100%;
+            max-height: 300px;
             object-fit: contain;
+            display: none;
         }
 
         .banner-form-tabs {
@@ -291,10 +313,45 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            const tabs = document.querySelectorAll('.banner-form-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update active content
+                    document.querySelectorAll('.banner-form-tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.querySelector(`.banner-form-tab-content[data-tab-content="${tabName}"]`)
+                        .classList.add('active');
+                });
+            });
+            
+            // Handle form submission
+            document.querySelector('.banner-form').addEventListener('submit', function(e) {
+                const activeTab = document.querySelector('.banner-form-tab.active').getAttribute('data-tab');
+                
+                if (activeTab === 'upload') {
+                    // Remove image_link field if uploading file
+                    document.getElementById('image_link').disabled = true;
+                    document.getElementById('image_link').value = '';
+                } else {
+                    // Remove image_path field if using link
+                    document.getElementById('image_path').disabled = true;
+                    // Đảm bảo không có file được chọn
+                    document.getElementById('image_path').value = '';
+                }
+            });
+            
+            // Image upload preview
             const imageInput = document.getElementById('image_path');
             const imagePreview = document.getElementById('image-preview');
             const previewPlaceholder = document.getElementById('preview-placeholder');
-            const fileName = document.getElementById('file-name');
             
             imageInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
@@ -310,7 +367,6 @@
                         imagePreview.style.objectFit = 'contain';
                         imagePreview.style.marginTop = '10px';
                         previewPlaceholder.style.display = 'none';
-                        fileName.textContent = file.name;
                     };
                     
                     reader.readAsDataURL(file);
@@ -318,7 +374,29 @@
                     imagePreview.src = '';
                     imagePreview.style.display = 'none';
                     previewPlaceholder.style.display = 'block';
-                    fileName.textContent = '';
+                }
+            });
+            
+            // Link image preview
+            const imageLink = document.getElementById('image_link');
+            const linkPreview = document.getElementById('link-preview');
+            const linkPlaceholder = document.getElementById('link-placeholder');
+            
+            imageLink.addEventListener('input', function(e) {
+                const url = this.value.trim();
+                
+                if (url) {
+                    linkPreview.src = url;
+                    linkPreview.style.display = 'block';
+                    linkPreview.style.maxWidth = '100%';
+                    linkPreview.style.maxHeight = '300px';
+                    linkPreview.style.objectFit = 'contain';
+                    linkPreview.style.marginTop = '10px';
+                    linkPlaceholder.style.display = 'none';
+                } else {
+                    linkPreview.src = '';
+                    linkPreview.style.display = 'none';
+                    linkPlaceholder.style.display = 'block';
                 }
             });
         });

@@ -1,34 +1,34 @@
 @extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
-@push('scripts')
-    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
-    <script>
-        // Initialize Pusher
-        const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
-            cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
-            encrypted: true
-        });
+    @push('scripts')
+        <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+        <script>
+            // Initialize Pusher
+            const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
+                cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
+                encrypted: true
+            });
 
-        // Subscribe to channel
-        const channel = pusher.subscribe('banner-channel');
+            // Subscribe to channel
+            const channel = pusher.subscribe('banner-channel');
 
-        // Handle new banner event
-        channel.bind('banner-created', function(data) {
-            location.reload();
-        });
+            // Handle new banner event
+            channel.bind('banner-created', function(data) {
+                location.reload();
+            });
 
-        // Handle updated banner event
-        channel.bind('banner-updated', function(data) {
-            location.reload();
-        });
+            // Handle updated banner event
+            channel.bind('banner-updated', function(data) {
+                location.reload();
+            });
 
-        // Handle deleted banner event
-        channel.bind('banner-deleted', function(data) {
-            location.reload();
-        });
-    </script>
-@endpush
+            // Handle deleted banner event
+            channel.bind('banner-deleted', function(data) {
+                location.reload();
+            });
+        </script>
+    @endpush
     <div class="data-table-wrapper">
         <!-- Main Header -->
         <div class="data-table-main-header">
@@ -145,9 +145,14 @@
                                 </td>
                                 <td>
                                     <div class="data-table-banner-image">
-                                        <img src="{{ $banner->image_path ? asset('storage/' . $banner->image_path) : asset('images/default-banner.png') }}"
-                                            alt="{{ $banner->title }}"
-                                            style="width: 100px; height: auto; object-fit: cover;">
+                                        @if (filter_var($banner->image_path, FILTER_VALIDATE_URL))
+                                            <img src="{{ $banner->image_path }}" alt="{{ $banner->title }}"
+                                                style="width: 100px; height: auto; object-fit: cover;">
+                                        @else
+                                            <img src="{{ $banner->image_path ? asset('storage/' . $banner->image_path) : asset('images/default-banner.png') }}"
+                                                alt="{{ $banner->title }}"
+                                                style="width: 100px; height: auto; object-fit: cover;">
+                                        @endif
                                     </div>
                                 </td>
                                 <td>
@@ -183,8 +188,9 @@
                                 <td>{{ $banner->start_at->format('d/m/Y') }}</td>
                                 <td>{{ $banner->end_at->format('d/m/Y') }}</td>
                                 <td>
-                                    <span class="badge {{ $banner->order === 0 ? 'badge-primary' : ($banner->order === 1 ? 'badge-info' : 'badge-secondary') }}">
-                                        @if($banner->order === 0)
+                                    <span
+                                        class="badge {{ $banner->order === 0 ? 'badge-primary' : ($banner->order === 1 ? 'badge-info' : 'badge-secondary') }}">
+                                        @if ($banner->order === 0)
                                             Đầu tiên
                                         @elseif($banner->order === 1)
                                             Giữa
@@ -195,10 +201,6 @@
                                 </td>
                                 <td>
                                     <div class="data-table-action-buttons">
-                                        <a href="{{ route('admin.banners.show', $banner->id) }}"
-                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
                                         <a href="{{ route('admin.banners.edit', $banner->id) }}"
                                             class="data-table-action-btn edit" title="Chỉnh sửa">
                                             <i class="fas fa-pen"></i>
@@ -217,7 +219,8 @@
                                             </button>
                                         </form>
                                     </div>
-                                    <form id="bulkStatusForm" action="{{ route('admin.banners.bulk-status-update') }}" method="POST" style="display: none;">
+                                    <form id="bulkStatusForm" action="{{ route('admin.banners.bulk-status-update') }}"
+                                        method="POST" style="display: none;">
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="ids" id="ids">
