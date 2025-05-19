@@ -22,25 +22,24 @@ class UserController extends Controller
     public function index(Request $request)
     {
         try {
-            $search = $request->input('search');
-            $query = User::with('role')
-                ->whereHas('role', function ($query) {
-                    $query->where('name', 'customer');
+            $query = User::with(['roles'])
+                ->whereHas('roles', function($q) {
+                    $q->where('name', 'customer');
                 })
-                ->when($search, function ($query) use ($search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->where('user_name', 'LIKE', "%$search%")
-                            ->orWhere('full_name', 'LIKE', "%$search%")
-                            ->orWhere('email', 'LIKE', "%$search%")
-                            ->orWhere('phone', 'LIKE', "%$search%");
+                ->when($request->search, function($q) use ($request) {
+                    $q->where(function($subQ) use ($request) {
+                        $subQ->where('user_name', 'LIKE', "%{$request->search}%")
+                            ->orWhere('full_name', 'LIKE', "%{$request->search}%")
+                            ->orWhere('email', 'LIKE', "%{$request->search}%")
+                            ->orWhere('phone', 'LIKE', "%{$request->search}%");
                     });
                 })
-                ->orderBy('id', 'asc');
+                ->orderBy('created_at', 'desc');
 
-            $users = $query->paginate(10);
+            $users = $query->paginate(10)->onEachSide(1);
 
-            if ($request->ajax()) {
-                return response()->json([
+            return $request->ajax()
+                ? response()->json([
                     'success' => true,
                     'users' => $users->items(),
                     'pagination' => [
@@ -49,22 +48,140 @@ class UserController extends Controller
                         'current_page' => $users->currentPage(),
                         'last_page' => $users->lastPage()
                     ]
-                ]);
-            }
+                ])
+                : view('admin.users.customer.index', compact('users'));
 
-            return view('admin.users.index', compact('users'));
         } catch (\Exception $e) {
-            Log::error('Error in UserController@index: ' . $e->getMessage());
-
-            if ($request->ajax()) {
-                return response()->json([
+            Log::error('UserController@index Error: ' . $e->getMessage());
+            return $request->ajax()
+                ? response()->json([
                     'success' => false,
-                    'message' => 'Có lỗi xảy ra khi tải danh sách người dùng'
-                ], 500);
+                    'message' => 'Lỗi hệ thống: ' . $e->getMessage()
+                ], 500)
+                : redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
+        }
+    }
+    public function manager(Request $request)
+    {
+        try {
+            $query = User::with(['roles'])
+                ->whereHas('roles', function($q) {
+                    $q->where('name', 'manager');
+                })
+                ->when($request->search, function($q) use ($request) {
+                    $q->where(function($subQ) use ($request) {
+                        $subQ->where('user_name', 'LIKE', "%{$request->search}%")
+                            ->orWhere('full_name', 'LIKE', "%{$request->search}%")
+                            ->orWhere('email', 'LIKE', "%{$request->search}%")
+                            ->orWhere('phone', 'LIKE', "%{$request->search}%");
+                    });
+                })
+                ->orderBy('created_at', 'desc');
+
+            $users = $query->paginate(10)->onEachSide(1);
+
+            return $request->ajax()
+                ? response()->json([
+                    'success' => true,
+                    'users' => $users->items(),
+                    'pagination' => [
+                        'total' => $users->total(),
+                        'per_page' => $users->perPage(),
+                        'current_page' => $users->currentPage(),
+                        'last_page' => $users->lastPage()
+                    ]
+                ])
+                : view('admin.users.manager.index', compact('users'));
+
+        } catch (\Exception $e) {
+            Log::error('ManagerController@index Error: ' . $e->getMessage());
+            return $request->ajax()
+                ? response()->json([
+                    'success' => false,
+                    'message' => 'Lỗi hệ thống: ' . $e->getMessage()
+                ], 500)
+                : redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
+        }
+    }
+    public function createManager()
+    {
+        try {
+            $roles = Role::where('name', 'manager')->get();
+            return view('admin.users.manager.create', compact('roles'));
+        } catch (\Exception $e) {
+            Log::error('Lỗi form tạo người quản lý: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Không tải được form: ' . $e->getMessage());
+        }
+    }
+
+    public function storeManager(Request $request)
+    {
+        try {
+            // Validate dữ liệu trước khi bắt đầu transaction
+            $validated = $request->validate([
+                'user_name' => 'required|string|max:255|unique:users',
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'phone' => 'nullable|string|max:20|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            ], [
+                'password.confirmed' => 'Xác nhận mật khẩu không khớp'
+            ]);
+
+            // Bắt đầu transaction sau khi validate thành công
+            DB::beginTransaction();
+
+            // Kiểm tra role trước khi tạo user
+            $managerRole = Role::where('name', 'manager')->first();
+            if (!$managerRole) {
+                throw new \Exception('Không tìm thấy vai trò quản lý');
             }
 
-            return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi tải danh sách người dùng');
+            $user = User::create([
+                'user_name' => $validated['user_name'],
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'password' => Hash::make($validated['password']),
+                'avatar' => $request->hasFile('avatar') 
+                    ? $request->file('avatar')->store('avatars', 'public')
+                    : null
+            ]);
+
+            // Gán role manager cho user
+            $user->roles()->attach($managerRole->id);
+
+            // Commit transaction khi tất cả thành công
+            DB::commit();
+
+            return redirect()->route('admin.managers.index')->with([
+                'toast' => [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => 'Tạo người quản lý thành công'
+                ]
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Xử lý riêng lỗi validation
+            return redirect()->back()->withErrors($e->validator)->withInput();
+            
+        } catch (\Exception $e) {
+            // Đảm bảo rollback transaction nếu có lỗi
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            
+            Log::error('Lỗi tạo người quản lý: ' . $e->getMessage());
+            
+            return redirect()->back()->withInput()->with([
+                'toast' => [
+                    'type' => 'error',
+                    'title' => 'Lỗi',
+                    'message' => 'Không thể tạo người quản lý: ' . $e->getMessage()
+                ]
+            ]);
         }
     }
     // Thêm phương thức mới để xử lý thay đổi trạng thái
@@ -113,91 +230,75 @@ class UserController extends Controller
     public function create()
     {
         try {
-            $roles = Role::all();  // Get all roles
+            $roles = Role::where('name', '!=', 'admin')->get();
             return view('admin.users.create', compact('roles'));
         } catch (\Exception $e) {
-            Log::error('Error in UserController@create: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'An error occurred while loading the create form.');
+            Log::error('Lỗi form tạo người dùng: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Không tải được form: ' . $e->getMessage());
         }
     }
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'role_id' => 'required|exists:roles,id',
+        $validated = $request->validate([
+            'role_ids' => 'required|array|exists:roles,id',
             'user_name' => 'required|string|max:255|unique:users',
             'full_name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|email|unique:users',
             'phone' => 'nullable|string|max:20|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
-            'active' => 'boolean',
-            'balance' => 'nullable|numeric|min:0'
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ], [
-            'required' => ':attribute không được để trống.',
-            'string' => ':attribute phải là chuỗi.',
-            'email' => ':attribute phải là email hợp lệ.',
-            'max' => ':attribute không được vượt quá :max ký tự.',
-            'min' => ':attribute phải có ít nhất :min ký tự.',
-            'unique' => ':attribute đã tồn tại trong hệ thống.',
-            'confirmed' => ':attribute xác nhận không khớp.',
-            'numeric' => ':attribute phải là số.',
-            'image' => ':attribute phải là hình ảnh.',
-            'mimes' => ':attribute phải có định dạng: :values.',
-            'boolean' => ':attribute phải là true hoặc false.'
-        ], [
-            'role_id' => 'Vai trò',
-            'user_name' => 'Tên đăng nhập',
-            'full_name' => 'Họ và tên',
-            'email' => 'Email',
-            'phone' => 'Số điện thoại',
-            'password' => 'Mật khẩu',
-            'avatar' => 'Ảnh đại diện',
-            'active' => 'Trạng thái',
-            'balance' => 'Số dư'
+            'role_ids.required' => 'Vui lòng chọn ít nhất một vai trò',
+            'password.confirmed' => 'Xác nhận mật khẩu không khớp'
         ]);
 
         try {
-            $validatedData['password'] = Hash::make($validatedData['password']);
-            if ($request->hasFile('avatar')) {
-                $validatedData['avatar'] = $request->file('avatar')->store('avatars', 'public');
-            }
+            DB::beginTransaction();
 
-            // Tạo người dùng mới
-            $user = User::create($validatedData);
-
-            // Thêm bản ghi vào bảng user_roles
-
-            UserRole::create([
-                'user_id' => $user->id,
-                'role_id' => $validatedData['role_id'],
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công',
-                'message' => 'Người dùng đã được tạo thành công'
+            $user = User::create([
+                'user_name' => $validated['user_name'],
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'password' => Hash::make($validated['password']),
+                'avatar' => $request->hasFile('avatar') 
+                    ? $request->file('avatar')->store('avatars', 'public')
+                    : null
             ]);
 
-            return redirect()->route('admin.users.index');
+            $user->roles()->sync($validated['role_ids']);
+
+            DB::commit();
+
+            return redirect()->route('admin.users.index')->with([
+                'toast' => [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => 'Tạo người dùng thành công'
+                ]
+            ]);
+            
         } catch (\Exception $e) {
-            Log::error('Lỗi khi tạo người dùng: ' . $e->getMessage());
-
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            DB::rollBack();
+            Log::error('Lỗi tạo người dùng: ' . $e->getMessage());
+            var_dump($e->getMessage());die;
+            return redirect()->back()->withInput()->with([
+                'toast' => [
+                    'type' => 'error',
+                    'title' => 'Lỗi',
+                    'message' => 'Không thể tạo người dùng: ' . $e->getMessage()
+                ]
             ]);
-
-            return redirect()->back()->withInput();
         }
     }
     public function show(Request $request, $id)
     {
         try {
-            $user = User::with('role')->findOrFail($id);
+            $user = User::with(['roles'])
+                ->withTrashed()
+                ->whereHas('roles')
+                ->findOrFail($id);
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -208,28 +309,31 @@ class UserController extends Controller
                         'full_name' => $user->full_name,
                         'email' => $user->email,
                         'phone' => $user->phone,
-                        'role' => $user->role->name,
+                        'balance' => $user->balance,
+                        'avatar_url' => $user->avatar ? Storage::url($user->avatar) : null,
+                        'roles' => $user->roles->pluck('name'),
                         'status' => $user->active ? 'Hoạt động' : 'Vô hiệu hóa',
-
+                        'created_at' => $user->created_at->format('d/m/Y H:i'),
+                        'deleted_at' => $user->deleted_at?->format('d/m/Y H:i')
                     ],
                     'html' => view('admin.users.partials.user_info', compact('user'))->render(),
-                    'message' => 'Tải dữ liệu người dùng thành công'
+                    'message' => 'Tải thông tin người dùng thành công'
                 ]);
             }
 
             return view('admin.users.show', compact('user'));
         } catch (\Exception $e) {
-            Log::error('Error in UserController@show: ' . $e->getMessage());
+            Log::error('UserController@show Error: ' . $e->getMessage());
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy người dùng',
                     'error' => $e->getMessage()
-                ], 500);
+                ], 404);
             }
 
-            return redirect()->back()->with('error', 'Không tìm thấy người dùng');
+            return redirect()->back()->with('error', 'Không tìm thấy người dùng: ' . $e->getMessage());
         }
     }
 

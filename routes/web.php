@@ -5,22 +5,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 
 //Admin
+
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
-use App\Http\Controllers\Admin\BranchController;
+use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\BannerController;
-
+use App\Http\Controllers\Admin\User\UserController as UserUserController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\UserController as CustomerUserController;
+use Illuminate\Database\Capsule\Manager;
 
 Route::prefix('/')->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
@@ -76,20 +79,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
-    // Users Management
-    Route::prefix('users')->name('users.')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index');
-        Route::get('/create', [UserController::class, 'create'])->name('create');
-        Route::post('/store', [UserController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
-        Route::get('trash', [UserController::class, 'trash'])->name('trash');
-        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
-        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
-        Route::get('/export', [UserController::class, 'export'])->name('export');
-    });
+ 
 
     // Roles Management
     Route::prefix('roles')->name('roles.')->group(function () {
@@ -113,10 +103,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
         Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
         Route::get('/export', [UserController::class, 'export'])->name('export');
-        Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
-        Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::patch('/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::prefix('managers')->name('managers.')->group(function () {
+            Route::get('/', [UserController::class, 'manager'])->name('index');
+            Route::get('/create', [UserController::class, 'createManager'])->name('create');
+            Route::post('/store', [UserController::class,'storeManager'])->name('store');
+  
+        });
+       
     });
-
+  
+  
     // Products Management
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');

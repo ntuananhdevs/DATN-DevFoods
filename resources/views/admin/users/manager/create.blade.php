@@ -269,7 +269,7 @@
       <div class="data-table-logo">
         <i class="fas fa-user-plus"></i>
       </div>
-      <h1 class="data-table-title">Thêm người dùng mới</h1>
+      <h1 class="data-table-title">Thêm Quản Lý</h1>
     </div>
   </div>
 
@@ -280,7 +280,7 @@
       <div class="data-table-header" style="border-bottom: none; margin-left: -1.5rem; margin-right: -1.5rem;">
         <h2 class="data-table-card-title">Thông tin người dùng</h2>
       </div>
-      <form action="{{ route('admin.users.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
+      <form action="{{ route('admin.users.managers.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
         @csrf
 
         <div class="form-group">
@@ -336,13 +336,26 @@
           @enderror
         </div>
 
-        <input type="hidden" name="role_id" value="{{ $roles->where('name', 'customer')->first()->id }}">
+<div class="form-group" style="display: none;">
+    <label for="role_ids">Vai trò</label>
+    <select class="@error('role_ids') is-invalid @enderror" id="role_ids" name="role_ids[]">
+        @foreach($roles as $role)
+            <option value="{{ $role->id }}" 
+                {{ $role->name === 'manager' ? 'selected' : '' }}>
+                {{ $role->name }}
+            </option>
+        @endforeach
+    </select>
+    @error('role_ids')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
         <!-- File input ẩn để chứa dữ liệu avatar từ right column -->
         <input type="file" id="avatar-input" name="avatar" style="display: none;">
 
         <div class="btn-container">
           <button type="button" class="btn btn-secondary" onclick="window.history.back()">Hủy</button>
-          <button type="submit" class="btn btn-primary">Tạo người dùng</button>
+          <button type="submit" class="btn btn-primary">Tạo Quản Lý Mới </button>
         </div>
       </form>
     </div>
