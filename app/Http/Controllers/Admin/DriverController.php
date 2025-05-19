@@ -13,7 +13,8 @@ use App\Services\MailService;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\GenericMail;
 use App\Mail\EmailFactory;
-
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 class DriverController extends Controller
 {
     // Hiển thị danh sách đơn đăng ký tài xế, phân loại theo trạng thái chờ xử lý và đã xử lý
@@ -73,32 +74,45 @@ class DriverController extends Controller
                 'admin_notes' => request('admin_notes', 'Đơn được phê duyệt bởi quản trị viên')
             ]);
 
-            // (Tuỳ chọn) Tạo bản ghi tài xế mới từ đơn đăng ký - hiện đang bị comment
-            // Nếu sử dụng, cần đảm bảo đã xử lý đầy đủ dữ liệu từ form
-
-            /*
-            Driver::create([
-                'user_id' => $application->user_id,
+            // Tạo tài khoản tài xế mới
+            $lastName = explode(' ', $application->full_name);
+            $lastName = end($lastName);
+            $cccdLast4 = substr($application->id_number, -4);
+            $specialChar = '@';
+            $randomUpper = chr(rand(65, 90)); // Random uppercase letter
+            $randomNumber = rand(0, 9);
+            $password = $lastName . $cccdLast4 . $randomUpper . $specialChar . $randomNumber;
+            $hashedPassword = Hash::make($password);
+            $driver = Driver::create([
                 'application_id' => $application->id,
-                'license_number' => request('license_number'),
-                'vehicle_type' => request('vehicle_type'),
-                'vehicle_registration' => request('vehicle_registration_image'),
-                'vehicle_color' => request('vehicle_color'),
+                'license_number' => $application->driver_license_number,
+                'vehicle_type' => $application->vehicle_type,
+                'vehicle_registration' => $application->vehicle_registration,
+                'vehicle_color' => $application->vehicle_color,
                 'status' => 'active',
                 'is_available' => true,
-                'current_latitude' => null,
-                'current_longitude' => null,
+                'current_latitude' => 0,
+                'current_longitude' => 0,
                 'balance' => 0,
                 'rating' => 5.00,
                 'cancellation_count' => 0,
                 'reliability_score' => 100,
                 'penalty_count' => 0,
-                'auto_deposit_earnings' => false
+                'auto_deposit_earnings' => false,
+                'email' => $application->email,
+                'password' => $hashedPassword,
+                'phone_number' => $application->phone_number
             ]);
-            */
 
-            // TODO: Gửi email thông báo phê duyệt đơn cho người đăng ký
-            // Có thể sử dụng EmailFactory hoặc Mail::to(...)->send(...)
+            // Gửi email thông báo chấp nhận
+            Mail::send('emails.driver-approval', [
+                'application' => $application,  
+                'email' => $application->email,
+                'password' => $password
+            ], function($message) use ($application) {
+                $message->to($application->email)
+                        ->subject('Đơn đăng ký tài xế được chấp nhận');
+            });
 
             DB::commit();
 
@@ -134,6 +148,7 @@ class DriverController extends Controller
 
             // Gửi email thông báo từ chối đến người đăng ký
             EmailFactory::sendDriverRejection($application, $request->admin_notes);
+
 
             DB::commit();
 

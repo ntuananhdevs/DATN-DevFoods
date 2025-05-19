@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Mail\Mailable;
 
 class SendEmailJob implements ShouldQueue
@@ -60,7 +61,7 @@ class SendEmailJob implements ShouldQueue
     public function failed(\Throwable $exception)
     {
         // Ghi log lỗi
-        \Log::error('Email gửi thất bại: ' . $exception->getMessage(), [
+        Log::error('Email gửi thất bại: ' . $exception->getMessage(), [
             'email' => $this->email,
             'class' => get_class($this->mailable)
         ]);
