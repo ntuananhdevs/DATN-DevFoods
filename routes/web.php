@@ -135,7 +135,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/export', [DriverController::class, 'export'])->name('export');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
+        Route::get('/applications/export', [DriverController::class, 'exportApplications'])->name('applications.export');
         Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
         Route::post('/applications/{application}/approve', [DriverController::class, 'approveApplication'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');

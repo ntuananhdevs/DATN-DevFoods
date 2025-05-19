@@ -23,8 +23,12 @@ class DriverFactory extends Factory
                         ->first();
         
         return [
-            'driver_application_id' => $application?->id,
-            'driver_license_number' => $this->faker->unique()->numerify('DL##########'),
+            'email' => $user->email,
+            'password' => $user->password,
+            'full_name' => $user->full_name,
+            'phone_number' => $user->phone,
+            'application_id' => $application?->id,
+            'license_number' => $this->faker->unique()->numerify('DL##########'),
             'vehicle_type' => $application?->vehicle_type ?? $this->faker->randomElement(['motorcycle', 'car', 'bicycle']),
             'vehicle_registration' => $application?->license_plate ?? $this->faker->bothify('??-###-##'),
             'vehicle_color' => $application?->vehicle_color ?? $this->faker->colorName(),
