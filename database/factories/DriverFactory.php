@@ -14,14 +14,8 @@ class DriverFactory extends Factory
 
     public function definition(): array
     {
-        // Tìm role_id của driver
-        $driverRoleId = Role::where('name', 'driver')->first()?->id ?? 
-                        Role::where('name', 'customer')->first()?->id ?? 1;
-        
-        // Tạo user mới với role driver
-        $user = User::factory()->create([
-            'role_id' => $driverRoleId
-        ]);
+        // Tạo user mới (KHÔNG gán role_id)
+        $user = User::factory()->create();
         
         // Lấy một đơn đăng ký đã được phê duyệt ngẫu nhiên hoặc null
         $application = DriverApplication::where('status', 'approved')
@@ -29,9 +23,12 @@ class DriverFactory extends Factory
                         ->first();
         
         return [
-            'user_id' => $user->id,
-            'driver_application_id' => $application?->id,
-            'driver_license_number' => $application?->driver_license_number ?? $this->faker->unique()->numerify('DL##########'),
+            'email' => $user->email,
+            'password' => $user->password,
+            'full_name' => $user->full_name,
+            'phone_number' => $user->phone,
+            'application_id' => $application?->id,
+            'license_number' => $this->faker->unique()->numerify('DL##########'),
             'vehicle_type' => $application?->vehicle_type ?? $this->faker->randomElement(['motorcycle', 'car', 'bicycle']),
             'vehicle_registration' => $application?->license_plate ?? $this->faker->bothify('??-###-##'),
             'vehicle_color' => $application?->vehicle_color ?? $this->faker->colorName(),

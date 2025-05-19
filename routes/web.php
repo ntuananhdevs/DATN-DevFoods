@@ -1,26 +1,33 @@
 <?php
 
-use App\Http\Controllers\Customer\HomeController;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
+
+//Admin
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ProductController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Auth\AuthController;
+use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\BannerController;
-use App\Http\Controllers\Admin\DriverController;
+
+//Customer
+use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\UserController as CustomerUserController;
 
 Route::prefix('/')->group(function () {
-    Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::prefix('shop')->group(function () {
-        Route::get('/product', [CustomerProductController::class, 'index']);
-        Route::get('/product/product-detail/{id}', [CustomerProductController::class, 'show']);
-    });
+    Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
+    Route::get('shop/product', [CustomerProductController::class, 'index']);
+    Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
     
     // Route giỏ hàng
     Route::prefix('cart')->name('customer.cart.')->group(function () {
@@ -76,14 +83,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/', [UserController::class, 'index'])->name('index');
         Route::get('/create', [UserController::class, 'create'])->name('create');
         Route::post('/store', [UserController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [UserController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [UserController::class, 'update'])->name('update');
         Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
+        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
+        Route::get('trash', [UserController::class, 'trash'])->name('trash');
+        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
+        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
         Route::get('/export', [UserController::class, 'export'])->name('export');
-        
-        // Sửa lại route toggle-status để đúng path
-        Route::patch('/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
-        Route::patch('/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
-        Route::get('/data', [UserController::class, 'getData'])->name('data');
-        Route::patch('/{user}/toggle-status-ajax', [UserController::class, 'toggleStatusAjax'])->name('toggle-status-ajax');
     });
 
     // Roles Management
@@ -95,6 +102,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::put('/update/{id}', [RoleController::class, 'update'])->name('update');
         Route::get('/show/{id}', [RoleController::class, 'show'])->name('show');
         Route::delete('/delete/{id}', [RoleController::class, 'destroy'])->name('destroy');
+    });
+
+    // Users Management
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/create', [UserController::class, 'create'])->name('create');
+        Route::post('/store', [UserController::class, 'store'])->name('store');
+        Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
+        Route::delete('/delete/{id}', [UserController::class, 'destroy'])->name('destroy');
+        Route::get('trash', [UserController::class, 'trash'])->name('trash');
+        Route::post('{id}/restore', [UserController::class, 'restore'])->name('restore');
+        Route::delete('{id}/force-delete', [UserController::class, 'forceDelete'])->name('force-delete');
+        Route::get('/export', [UserController::class, 'export'])->name('export');
+        Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/users/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
     // Products Management
@@ -115,14 +137,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/export', [DriverController::class, 'export'])->name('export');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
+        Route::get('/applications/export', [DriverController::class, 'exportApplications'])->name('applications.export');
         Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
         Route::post('/applications/{application}/approve', [DriverController::class, 'approveApplication'])->name('applications.approve');
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
 
-    // Banner Management
-    Route::prefix('banners')->name('banners.')->group(function () {
+     // Banner Management
+     Route::prefix('banners')->name('banners.')->group(function () {
         Route::get('/', [BannerController::class, 'index'])->name('index');
         Route::get('/create', [BannerController::class, 'create'])->name('create');
         Route::post('/store', [BannerController::class, 'store'])->name('store');
@@ -143,8 +167,4 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
-});
-
-Route::get('/driver', function () {
-    return view('driver.home');
 });

@@ -551,30 +551,32 @@
 }
 
 @media (max-width: 768px) {
+  /* Ẩn các cột không quan trọng */
+  .data-table th.col-other-1,
+  .data-table td.col-other-1,
+  .data-table th.col-other-2,
+  .data-table td.col-other-2 {
+    display: none;
+  }
 
-    .data-table-header,
-    .data-table-controls,
-    .data-table-footer {
-        padding: 15px;
-    }
+  /* Nếu còn nhiều cột khác cần ẩn thì thêm tương tự */
+}
 
-    .data-table td,
-    .data-table th {
-        padding: 12px 15px;
-    }
+/* Trường hợp muốn ưu tiên hiển thị cột Tên sản phẩm, Trạng thái, Thao tác
+   có thể set width hoặc style cho các cột này */
+.data-table th.col-product-name,
+.data-table td.col-product-name {
+  min-width: 140px; /* hoặc tùy chỉnh */
+}
 
-    .data-table-footer {
-        flex-direction: column;
-        gap: 16px;
-    }
+.data-table th.col-status,
+.data-table td.col-status {
+  min-width: 120px;
+  text-align: center;
+}
 
-    .data-table-pagination-info {
-        text-align: center;
-        width: 100%;
-    }
-
-    .data-table-pagination-controls {
-        width: 100%;
-        justify-content: center;
-    }
+.data-table th.col-actions,
+.data-table td.col-actions {
+  min-width: 100px;
+  text-align: center;
 }
