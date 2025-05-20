@@ -22,38 +22,74 @@ use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
-use App\Http\Controllers\Customer\UserController as CustomerUserController;
+use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
+use App\Http\Controllers\Customer\CheckoutController as CustomerCheckoutController;
+use App\Http\Controllers\Customer\PromotionController as CustomerPromotionController;
+use App\Http\Controllers\Customer\SupportController as CustomerSupportController;
+use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
+use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
+use App\Http\Controllers\Customer\ContactController as CustomerContactController;
 use Illuminate\Database\Capsule\Manager;
 
 Route::prefix('/')->group(function () {
+    // Home
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
-    Route::get('shop/product', [CustomerProductController::class, 'index']);
-    Route::get('shop/product/product-detail/{id}', [CustomerProductController::class, 'show']);
+
+    // Products
+    Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index'); 
+    Route::get('/shop/products/show', [CustomerProductController::class, 'show'])->name('products.show');
+
+    // // Store Locations
+    // Route::get('/store', [StoreController::class, 'index'])->name('store.index');
+
+    // // Blog
+    // Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+    // Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
+    // Route::get('/blog/category/{category}', [BlogController::class, 'category'])->name('blog.category');
+    // Route::get('/blog/tag/{tag}', [BlogController::class, 'tag'])->name('blog.tag');
+    // Route::get('/blog/search', [BlogController::class, 'search'])->name('blog.search');
+
+    // Cart
+    Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
+    // Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+    // Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+    // Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+
+    // Checkout
+    Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
+    Route::get('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
+
+    // // User Profile
+    // Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    // Route::get('/profile/orders', [ProfileController::class, 'orders'])->name('profile.orders');
+    // Route::get('/profile/orders/{id}', [ProfileController::class, 'orderDetail'])->name('profile.order.detail');
+
+    // About
+    Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
+
+    // Contact
+    Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
+    // Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
+
+    // Promotions
+    Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
     
-    // Route giỏ hàng
-    Route::prefix('cart')->name('customer.cart.')->group(function () {
-        Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-        Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-        Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-        Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-        Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
-        Route::post('/ajax/update', [CustomerCartController::class, 'ajaxUpdate'])->name('ajax.update');
-        Route::post('/ajax/remove', [CustomerCartController::class, 'ajaxRemove'])->name('ajax.remove');
-        Route::get('/count', [CustomerCartController::class, 'count'])->name('count');
-        Route::post('/selected', [CustomerCartController::class, 'saveSelectedItems'])->name('selected');
-    });
+    // Promotions
+    Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branchs.index');
+
+    // // Newsletter Subscription
+    // Route::post('/subscribe', [HomeController::class, 'subscribe'])->name('subscribe');
+
+    // Support
+    Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 
     // Route Customer (login / logout / register)
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
-    Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.submit');
     Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
-    Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.submit');
-    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
     // Route Customer (profile)
-    Route::get('/profile', [CustomerUserController::class, 'showProfile'])->name('customer.profile');
-    Route::get('/profile/update', [CustomerUserController::class, 'ShowForm'])->name('customer.profile.form');
-    Route::post('/profile/update', [CustomerUserController::class, 'updateProfile'])->name('customer.profile.update');
+    Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
 });
 
 // Route Auth (login / logout)
