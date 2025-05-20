@@ -90,6 +90,8 @@ Route::prefix('/')->group(function () {
 
     // Route Customer (profile)
     Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
+    Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
+    Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
 });
 
 // Route Auth (login / logout)

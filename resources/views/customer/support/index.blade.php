@@ -1,280 +1,477 @@
 @extends('layouts.customer.fullLayoutMaster')
-
-@section('title', 'FastFood - Câu Hỏi Thường Gặp')
+@section('title', 'FastFood - Trung Tâm Hỗ Trợ')
 
 @section('content')
-<div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
-    <div class="container mx-auto px-4 text-center">
-        <h1 class="text-3xl md:text-4xl font-bold mb-4">Câu Hỏi Thường Gặp</h1>
-        <p class="text-lg max-w-2xl mx-auto">
-            Tìm câu trả lời cho những thắc mắc của bạn về FastFood
-        </p>
+<style>
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+   }
+</style>
+<div class="relative h-[300px] md:h-[400px] overflow-hidden">
+    <img src="/placeholder.svg?height=800&width=1600" alt="Trung tâm hỗ trợ" class="object-cover w-full h-full">
+    <div class="absolute inset-0 bg-gradient-to-r from-orange-600/80 to-red-600/80 flex items-center justify-center">
+        <div class="text-center text-white max-w-4xl px-4">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">Trung Tâm Hỗ Trợ</h1>
+            <p class="text-lg md:text-xl max-w-2xl mx-auto">
+                Chúng tôi luôn sẵn sàng hỗ trợ bạn 24/7. Hãy cho chúng tôi biết bạn cần giúp đỡ điều gì?
+            </p>
+        </div>
     </div>
 </div>
 
 <div class="container mx-auto px-4 py-12">
-    <div class="max-w-6xl mx-auto">
-        <!-- Tìm kiếm -->
-        <div class="mb-8">
-            <div class="relative">
-                <input type="text" id="faq-search" placeholder="Tìm kiếm câu hỏi..." class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+    <!-- Search Box -->
+    <div class=" mx-auto mb-12">
+        <div class="relative">
+            <input type="text" id="support-search" placeholder="Tìm kiếm câu trả lời nhanh..." class="w-full px-6 py-4 pl-14 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 text-lg">
+            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <i class="fas fa-search text-orange-500 text-xl"></i>
+            </div>
+            <button class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors">
+                Tìm kiếm
+            </button>
+        </div>
+    </div>
+
+    <!-- Support Options -->
+    <div class="grid md:grid-cols-3 gap-8 mb-16">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden transform transition-transform hover:scale-105">
+            <div class="h-3 bg-orange-500"></div>
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-comments text-orange-500 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Chat Trực Tuyến</h3>
+                <p class="text-gray-600 mb-4">
+                    Trò chuyện trực tiếp với đội ngũ hỗ trợ của chúng tôi để được giải đáp nhanh chóng.
+                </p>
+                <button class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    Bắt đầu chat
+                </button>
+                <p class="text-sm text-gray-500 mt-3">
+                    Thời gian hoạt động: 7:00 - 22:00
+                </p>
             </div>
         </div>
-        
-        <!-- Danh mục câu hỏi -->
-        <div class="mb-8">
-            <div class="flex flex-wrap gap-2">
-                <button class="category-btn px-4 py-2 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors active" data-category="all">
-                    Tất cả
+
+        <div class="bg-white rounded-xl shadow-md overflow-hidden transform transition-transform hover:scale-105">
+            <div class="h-3 bg-orange-500"></div>
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-ticket-alt text-orange-500 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Gửi Yêu Cầu Hỗ Trợ</h3>
+                <p class="text-gray-600 mb-4">
+                    Tạo yêu cầu hỗ trợ và nhận phản hồi qua email trong vòng 24 giờ.
+                </p>
+                <button class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    Tạo yêu cầu
                 </button>
-                <button class="category-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-category="order">
-                    Đặt hàng
-                </button>
-                <button class="category-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-category="delivery">
-                    Giao hàng
-                </button>
-                <button class="category-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-category="payment">
-                    Thanh toán
-                </button>
-                <button class="category-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-category="product">
-                    Sản phẩm
-                </button>
-                <button class="category-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors" data-category="account">
-                    Tài khoản
-                </button>
+                <p class="text-sm text-gray-500 mt-3">
+                    Thời gian phản hồi: 24 giờ
+                </p>
             </div>
         </div>
+
+        <div class="bg-white rounded-xl shadow-md overflow-hidden transform transition-transform hover:scale-105">
+            <div class="h-3 bg-orange-500"></div>
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-phone-alt text-orange-500 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-3">Gọi Điện Thoại</h3>
+                <p class="text-gray-600 mb-4">
+                    Liên hệ trực tiếp với đội ngũ chăm sóc khách hàng của chúng tôi.
+                </p>
+                <a href="tel:19001234" class="inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    1900 1234
+                </a>
+                <p class="text-sm text-gray-500 mt-3">
+                    Thời gian hoạt động: 7:00 - 22:00
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Topics -->
+    <div class="mb-16">
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold mb-2">Chủ Đề Phổ Biến</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Tìm câu trả lời nhanh chóng cho những vấn đề thường gặp
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <a href="/faq#order" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-shopping-cart text-orange-500"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">Đặt Hàng & Thanh Toán</h3>
+                </div>
+                <p class="text-gray-600 mb-3">
+                    Thông tin về cách đặt hàng, phương thức thanh toán và xử lý đơn hàng.
+                </p>
+                <span class="text-orange-500 font-medium flex items-center">
+                    Xem thêm <i class="fas fa-arrow-right ml-2"></i>
+                </span>
+            </a>
+
+            <a href="/faq#delivery" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-truck text-orange-500"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">Giao Hàng</h3>
+                </div>
+                <p class="text-gray-600 mb-3">
+                    Thông tin về phí giao hàng, thời gian giao hàng và theo dõi đơn hàng.
+                </p>
+                <span class="text-orange-500 font-medium flex items-center">
+                    Xem thêm <i class="fas fa-arrow-right ml-2"></i>
+                </span>
+            </a>
+
+            <a href="/faq#account" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-user text-orange-500"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">Tài Khoản & Ưu Đãi</h3>
+                </div>
+                <p class="text-gray-600 mb-3">
+                    Thông tin về tài khoản, chương trình thành viên và các ưu đãi.
+                </p>
+                <span class="text-orange-500 font-medium flex items-center">
+                    Xem thêm <i class="fas fa-arrow-right ml-2"></i>
+                </span>
+            </a>
+
+            <a href="/faq#product" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-utensils text-orange-500"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">Sản Phẩm & Dịch Vụ</h3>
+                </div>
+                <p class="text-gray-600 mb-3">
+                    Thông tin về menu, thành phần, dinh dưỡng và các dịch vụ đặc biệt.
+                </p>
+                <span class="text-orange-500 font-medium flex items-center">
+                    Xem thêm <i class="fas fa-arrow-right ml-2"></i>
+                </span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Support Ticket Form -->
+    <div class="bg-gray-50 rounded-2xl p-8 mb-16">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">Gửi Yêu Cầu Hỗ Trợ</h2>
+                <p class="text-gray-600">
+                    Điền thông tin bên dưới và chúng tôi sẽ liên hệ lại với bạn trong thời gian sớm nhất
+                </p>
+            </div>
+
+            <form id="support-form" class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium mb-2">Họ và tên <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" placeholder="Nhập họ và tên" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium mb-2">Email <span class="text-red-500">*</span></label>
+                        <input type="email" id="email" name="email" placeholder="Nhập email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="phone" class="block text-sm font-medium mb-2">Số điện thoại <span class="text-red-500">*</span></label>
+                        <input type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                    <div>
+                        <label for="order_id" class="block text-sm font-medium mb-2">Mã đơn hàng (nếu có)</label>
+                        <input type="text" id="order_id" name="order_id" placeholder="Nhập mã đơn hàng" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="issue_type" class="block text-sm font-medium mb-2">Loại vấn đề <span class="text-red-500">*</span></label>
+                    <select id="issue_type" name="issue_type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">Chọn loại vấn đề</option>
+                        <option value="order_issue">Vấn đề về đơn hàng</option>
+                        <option value="delivery_issue">Vấn đề về giao hàng</option>
+                        <option value="product_issue">Vấn đề về sản phẩm</option>
+                        <option value="account_issue">Vấn đề về tài khoản</option>
+                        <option value="payment_issue">Vấn đề về thanh toán</option>
+                        <option value="other">Khác</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="message" class="block text-sm font-medium mb-2">Mô tả vấn đề <span class="text-red-500">*</span></label>
+                    <textarea id="message" name="message" rows="5" placeholder="Mô tả chi tiết vấn đề bạn đang gặp phải" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"></textarea>
+                </div>
+
+                <div>
+                    <label for="attachment" class="block text-sm font-medium mb-2">Đính kèm tệp (nếu có)</label>
+                    <div class="border border-dashed border-gray-300 rounded-lg p-4">
+                        <div class="flex items-center justify-center">
+                            <label for="file-upload" class="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                Chọn tệp
+                                <input id="file-upload" name="attachment" type="file" class="hidden">
+                            </label>
+                            <span id="file-name" class="ml-3 text-sm text-gray-500">Chưa có tệp nào được chọn</span>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center mt-2">
+                            Hỗ trợ định dạng: JPG, PNG, PDF. Kích thước tối đa: 5MB
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start">
+                    <input type="checkbox" id="privacy_policy" name="privacy_policy" class="mt-1">
+                    <label for="privacy_policy" class="ml-2 text-sm text-gray-600">
+                        Tôi đồng ý với <a href="/privacy-policy" class="text-orange-500 hover:underline">Chính sách bảo mật</a> và cho phép FastFood xử lý thông tin của tôi để giải quyết vấn đề.
+                    </label>
+                </div>
+
+                <div>
+                    <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Gửi yêu cầu hỗ trợ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Self-Help Resources -->
+    <div class="mb-16">
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold mb-2">Tài Nguyên Hỗ Trợ</h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Khám phá các tài nguyên hữu ích để tự giải quyết vấn đề
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="h-48 overflow-hidden">
+                    <img src="/placeholder.svg?height=400&width=600" alt="Hướng dẫn sử dụng" class="w-full h-full object-cover">
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">Hướng Dẫn Sử Dụng</h3>
+                    <p class="text-gray-600 mb-4">
+                        Tìm hiểu cách sử dụng ứng dụng và website FastFood một cách hiệu quả nhất.
+                    </p>
+                    <a href="/guides" class="text-orange-500 font-medium hover:underline flex items-center">
+                        Xem hướng dẫn <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="h-48 overflow-hidden">
+                    <img src="/placeholder.svg?height=400&width=600" alt="Video hướng dẫn" class="w-full h-full object-cover">
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">Video Hướng Dẫn</h3>
+                    <p class="text-gray-600 mb-4">
+                        Xem các video hướng dẫn chi tiết về cách sử dụng các tính năng của FastFood.
+                    </p>
+                    <a href="/video-guides" class="text-orange-500 font-medium hover:underline flex items-center">
+                        Xem video <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="h-48 overflow-hidden">
+                    <img src="/placeholder.svg?height=400&width=600" alt="Câu hỏi thường gặp" class="w-full h-full object-cover">
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold mb-2">Câu Hỏi Thường Gặp</h3>
+                    <p class="text-gray-600 mb-4">
+                        Tìm câu trả lời cho những câu hỏi thường gặp về FastFood và dịch vụ của chúng tôi.
+                    </p>
+                    <a href="/faq" class="text-orange-500 font-medium hover:underline flex items-center">
+                        Xem FAQ <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Community Support -->
+    <div class="bg-orange-50 rounded-2xl p-8 text-center">
+        <h2 class="text-3xl font-bold mb-4">Kết Nối Với Cộng Đồng FastFood</h2>
+        <p class="text-gray-600 max-w-2xl mx-auto mb-8">
+            Tham gia cộng đồng FastFood để chia sẻ kinh nghiệm, nhận hỗ trợ từ những người dùng khác và cập nhật những tin tức mới nhất.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="#" class="bg-white hover:bg-gray-50 px-6 py-3 rounded-lg shadow-sm transition-colors flex items-center">
+                <i class="fab fa-facebook text-blue-600 text-xl mr-2"></i>
+                Facebook
+            </a>
+            <a href="#" class="bg-white hover:bg-gray-50 px-6 py-3 rounded-lg shadow-sm transition-colors flex items-center">
+                <i class="fab fa-instagram text-pink-600 text-xl mr-2"></i>
+                Instagram
+            </a>
+            <a href="#" class="bg-white hover:bg-gray-50 px-6 py-3 rounded-lg shadow-sm transition-colors flex items-center">
+                <i class="fab fa-youtube text-red-600 text-xl mr-2"></i>
+                YouTube
+            </a>
+            <a href="#" class="bg-white hover:bg-gray-50 px-6 py-3 rounded-lg shadow-sm transition-colors flex items-center">
+                <i class="fab fa-tiktok text-black text-xl mr-2"></i>
+                TikTok
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" id="success-modal">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full">
+        <div class="text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check text-green-500 text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Yêu Cầu Đã Được Gửi!</h2>
+            <p class="text-gray-600 mb-6">
+                Cảm ơn bạn đã liên hệ với chúng tôi. Yêu cầu hỗ trợ của bạn đã được ghi nhận. Chúng tôi sẽ phản hồi trong thời gian sớm nhất.
+            </p>
+            <p class="text-gray-600 mb-6">
+                Mã yêu cầu của bạn: <span class="font-bold" id="ticket-id">SUP-12345</span>
+            </p>
+            <button id="close-modal" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-md font-medium transition-colors">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload preview
+    const fileUpload = document.getElementById('file-upload');
+    const fileName = document.getElementById('file-name');
+    
+    fileUpload.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            fileName.textContent = this.files[0].name;
+        } else {
+            fileName.textContent = 'Chưa có tệp nào được chọn';
+        }
+    });
+    
+    // Support form submission
+    const supportForm = document.getElementById('support-form');
+    const successModal = document.getElementById('success-modal');
+    const closeModalButton = document.getElementById('close-modal');
+    const ticketId = document.getElementById('ticket-id');
+    
+    supportForm.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        <!-- Câu hỏi thường gặp -->
-        <div class="space-y-4">
-            <!-- Đặt hàng -->
-            <div class="faq-category" data-category="order">
-                <h2 class="text-2xl font-bold mb-4">Đặt hàng</h2>
-                
-                <div class="space-y-4">
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Làm thế nào để đặt hàng trực tuyến?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Để đặt hàng trực tuyến, bạn có thể thực hiện theo các bước sau:
-                            </p>
-                            <ol class="list-decimal pl-5 mt-2 space-y-1 text-gray-600">
-                                <li>Truy cập website hoặc ứng dụng di động của FastFood</li>
-                                <li>Chọn các món ăn bạn muốn và thêm vào giỏ hàng</li>
-                                <li>Nhấn vào biểu tượng giỏ hàng ở góc phải màn hình</li>
-                                <li>Kiểm tra đơn hàng và nhấn "Thanh toán"</li>
-                                <li>Điền thông tin giao hàng và phương thức thanh toán</li>
-                                <li>Xác nhận đơn hàng</li>
-                            </ol>
-                            <p class="text-gray-600 mt-2">
-                                Sau khi đặt hàng thành công, bạn sẽ nhận được email xác nhận và có thể theo dõi trạng thái đơn hàng trong tài khoản của mình.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Tôi có thể thay đổi hoặc hủy đơn hàng không?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Bạn có thể thay đổi hoặc hủy đơn hàng trong vòng 5 phút sau khi đặt hàng bằng cách gọi đến số hotline 1900 1234. Sau thời gian này, chúng tôi không thể đảm bảo việc thay đổi hoặc hủy đơn hàng vì đơn hàng của bạn có thể đã được chuẩn bị hoặc giao đi.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Nếu bạn muốn thay đổi địa chỉ giao hàng hoặc thông tin liên hệ, vui lòng liên hệ với chúng tôi càng sớm càng tốt để được hỗ trợ.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Tôi có thể đặt hàng trước không?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Có, bạn có thể đặt hàng trước tối đa 7 ngày. Khi đặt hàng, bạn có thể chọn ngày và giờ giao hàng mong muốn. Chúng tôi sẽ chuẩn bị đơn hàng của bạn và giao đúng thời gian đã chọn.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Đặt hàng trước đặc biệt hữu ích cho các sự kiện, tiệc tùng hoặc họp mặt gia đình. Bạn cũng có thể nhận được ưu đãi đặc biệt khi đặt hàng trước với số lượng lớn.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        // Basic form validation
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value;
+        const issueType = document.getElementById('issue_type').value;
+        const message = document.getElementById('message').value;
+        const privacyPolicy = document.getElementById('privacy_policy').checked;
+        
+        if (!name || !email || !phone || !issueType || !message || !privacyPolicy) {
+            showToast('Vui lòng điền đầy đủ thông tin bắt buộc');
+            return;
+        }
+        
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showToast('Email không hợp lệ');
+            return;
+        }
+        
+        // Phone validation
+        const phoneRegex = /^[0-9]{10,11}$/;
+        if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+            showToast('Số điện thoại không hợp lệ');
+            return;
+        }
+        
+        // Generate random ticket ID
+        const randomTicketId = 'SUP-' + Math.floor(10000 + Math.random() * 90000);
+        ticketId.textContent = randomTicketId;
+        
+        // Show success modal
+        successModal.classList.remove('hidden');
+        
+        // Reset form
+        supportForm.reset();
+        fileName.textContent = 'Chưa có tệp nào được chọn';
+    });
+    
+    // Close modal
+    closeModalButton.addEventListener('click', function() {
+        successModal.classList.add('hidden');
+    });
+    
+    // Close modal when clicking outside
+    successModal.addEventListener('click', function(e) {
+        if (e.target === successModal) {
+            successModal.classList.add('hidden');
+        }
+    });
+    
+    // Search functionality
+    const supportSearch = document.getElementById('support-search');
+    
+    supportSearch.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const searchTerm = this.value.trim();
             
-            <!-- Giao hàng -->
-            <div class="faq-category" data-category="delivery">
-                <h2 class="text-2xl font-bold mb-4">Giao hàng</h2>
-                
-                <div class="space-y-4">
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Phí giao hàng là bao nhiêu?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Phí giao hàng phụ thuộc vào khoảng cách từ cửa hàng đến địa điểm giao hàng:
-                            </p>
-                            <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-600">
-                                <li>Dưới 2km: 15.000₫</li>
-                                <li>Từ 2km đến 5km: 20.000₫</li>
-                                <li>Từ 5km đến 10km: 30.000₫</li>
-                                <li>Trên 10km: Vui lòng liên hệ để được báo giá</li>
-                            </ul>
-                            <p class="text-gray-600 mt-2">
-                                Đơn hàng trên 200.000₫ sẽ được miễn phí giao hàng trong bán kính 5km. Chúng tôi thường xuyên có các chương trình khuyến mãi miễn phí giao hàng, vui lòng theo dõi website hoặc ứng dụng để cập nhật thông tin.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Thời gian giao hàng là bao lâu?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Thời gian giao hàng trung bình là 30-45 phút tùy thuộc vào khoảng cách và điều kiện giao thông. Trong giờ cao điểm hoặc điều kiện thời tiết xấu, thời gian giao hàng có thể kéo dài hơn.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Khi đặt hàng, bạn sẽ nhận được thông báo về thời gian giao hàng dự kiến. Bạn cũng có thể theo dõi trạng thái đơn hàng và vị trí người giao hàng trực tiếp trên ứng dụng hoặc website của chúng tôi.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">FastFood có giao hàng vào ngày lễ không?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Có, FastFood vẫn giao hàng vào các ngày lễ, Tết. Tuy nhiên, thời gian giao hàng có thể kéo dài hơn và một số khu vực có thể không được phục vụ tùy thuộc vào tình hình giao thông và nhân lực.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Vào các dịp lễ lớn, chúng tôi khuyến khích bạn đặt hàng trước để đảm bảo được phục vụ đúng thời gian mong muốn. Chúng tôi cũng có thể áp dụng phụ phí giao hàng vào các ngày lễ đặc biệt.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            if (searchTerm) {
+                window.location.href = '/faq?search=' + encodeURIComponent(searchTerm);
+            }
+        }
+    });
+    
+    // Simple toast notification function
+    function showToast(message) {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
+        toast.textContent = message;
+        
+        // Add to DOM
+        document.body.appendChild(toast);
+        
+        // Show toast
+        setTimeout(() => {
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+        }, 10);
+        
+        // Hide and remove toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
             
-            <!-- Thanh toán -->
-            <div class="faq-category" data-category="payment">
-                <h2 class="text-2xl font-bold mb-4">Thanh toán</h2>
-                
-                <div class="space-y-4">
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">FastFood chấp nhận những phương thức thanh toán nào?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                FastFood chấp nhận nhiều phương thức thanh toán khác nhau để mang đến sự thuận tiện cho khách hàng:
-                            </p>
-                            <ul class="list-disc pl-5 mt-2 space-y-1 text-gray-600">
-                                <li>Thanh toán khi nhận hàng (COD)</li>
-                                <li>Thẻ tín dụng/ghi nợ (Visa, Mastercard, JCB)</li>
-                                <li>Ví điện tử (MoMo, ZaloPay, VNPay)</li>
-                                <li>Chuyển khoản ngân hàng</li>
-                                <li>Thẻ quà tặng FastFood</li>
-                            </ul>
-                            <p class="text-gray-600 mt-2">
-                                Tất cả các giao dịch trực tuyến đều được bảo mật và mã hóa để đảm bảo an toàn cho thông tin của bạn.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Tôi có thể nhận hóa đơn VAT không?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Có, bạn có thể yêu cầu hóa đơn VAT khi đặt hàng. Vui lòng cung cấp thông tin xuất hóa đơn (tên công ty, địa chỉ, mã số thuế) trong phần ghi chú khi thanh toán hoặc thông báo trực tiếp với nhân viên giao hàng.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Đối với đơn hàng trực tuyến, bạn cũng có thể yêu cầu hóa đơn điện tử bằng cách liên hệ với bộ phận Chăm sóc Khách hàng của chúng tôi qua email hoặc hotline trong vòng 7 ngày kể từ ngày mua hàng.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Làm thế nào để sử dụng mã giảm giá?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Để sử dụng mã giảm giá, bạn cần thực hiện các bước sau:
-                            </p>
-                            <ol class="list-decimal pl-5 mt-2 space-y-1 text-gray-600">
-                                <li>Thêm các món ăn vào giỏ hàng</li>
-                                <li>Chuyển đến trang thanh toán</li>
-                                <li>Nhập mã giảm giá vào ô "Mã giảm giá" và nhấn "Áp dụng"</li>
-                                <li>Kiểm tra xem giảm giá đã được áp dụng chưa</li>
-                                <li>Hoàn tất thanh toán</li>
-                            </ol>
-                            <p class="text-gray-600 mt-2">
-                                Lưu ý rằng mỗi mã giảm giá có điều kiện áp dụng riêng (giá trị đơn hàng tối thiểu, thời hạn sử dụng, số lần sử dụng). Một số mã giảm giá không thể kết hợp với các khuyến mãi khác.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Sản phẩm -->
-            <div class="faq-category" data-category="product">
-                <h2 class="text-2xl font-bold mb-4">Sản phẩm</h2>
-                
-                <div class="space-y-4">
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">FastFood có món ăn chay không?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Có, FastFood có nhiều lựa chọn món ăn chay phù hợp với khách hàng ăn chay. Các món ăn chay của chúng tôi được chế biến riêng biệt để đảm bảo không bị lẫn với các nguyên liệu từ động vật.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Một số món ăn chay phổ biến của chúng tôi bao gồm: Burger Rau Củ, Pizza Rau Củ, Salad Trộn, Mì Ý Sốt Nấm, và nhiều món khác. Bạn có thể tìm thấy các món ăn chay trong mục "Món Chay" trên thực đơn của chúng tôi.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">Thực phẩm của FastFood có chứa chất bảo quản không?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                FastFood cam kết sử dụng nguyên liệu tươi ngon và hạn chế tối đa việc sử dụng chất bảo quản. Chúng tôi ưu tiên sử dụng các phương pháp bảo quản tự nhiên và quy trình chế biến nghiêm ngặt để đảm bảo thực phẩm luôn tươi ngon và an toàn.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Tất cả nguyên liệu của chúng tôi đều được kiểm tra chất lượng nghiêm ngặt và đáp ứng các tiêu chuẩn an toàn thực phẩm. Thông tin chi tiết về thành phần của từng món ăn được cung cấp trên website và ứng dụng của chúng tôi.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="faq-question p-4 cursor-pointer flex justify-between items-center">
-                            <h3 class="font-medium">FastFood có cung cấp thông tin dinh dưỡng cho các món ăn không?</h3>
-                            <i class="fas fa-chevron-down text-gray-500 transition-transform"></i>
-                        </div>
-                        <div class="faq-answer px-4 pb-4">
-                            <p class="text-gray-600">
-                                Có, FastFood cung cấp đầy đủ thông tin dinh dưỡng cho tất cả các món ăn trên thực đơn. Bạn có thể xem thông tin dinh dưỡng chi tiết bao gồm calo, protein, carbohydrate, chất béo, đường, muối và các thành phần khác trên website hoặc ứng dụng của chúng tôi.
-                            </p>
-                            <p class="text-gray-600 mt-2">
-                                Chúng tôi cũng đánh dấu rõ các món ăn có chứa các thành phần gây dị ứng phổ biến như đậu phộng, hải sản, trứng, sữa, gluten, v.v. Nếu bạn có nhu cầu dinh dưỡng đặc biệt hoặ
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+});
+</script>
+@endsection
