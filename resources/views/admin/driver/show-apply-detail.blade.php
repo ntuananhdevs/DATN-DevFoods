@@ -1,12 +1,36 @@
 @extends('layouts/admin/contentLayoutMaster')
 @section('content')
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="alert-message">
+            {{ session('success') }}
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="alert-icon">
+            <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <div class="alert-message">
+            {{ session('error') }}
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-10">
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="mb-0">Chi tiết đơn ứng tuyển tài xế</h3>
-                    <a href="{{ url()->previous() }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Quay lại</a>
+                    <a href="{{ route('admin.drivers.applications.index') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Quay lại</a>
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
@@ -132,8 +156,17 @@
                                         <div class="modal-body">
                                             <div class="form-group">
                                                 <label for="admin_notes">Ghi chú admin</label>
-                                                <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3"></textarea>
+                                                <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3">Đơn được phê duyệt bởi quản trị viên</textarea>
                                             </div>
+                                            <!-- Hidden fields for driver data -->
+                                            <input type="hidden" name="license_number" value="{{ $application->driver_license_number }}">
+                                            <input type="hidden" name="vehicle_type" value="{{ $application->vehicle_type }}">
+                                            <input type="hidden" name="vehicle_model" value="{{ $application->vehicle_model }}">                                             
+                                            <input type="hidden" name="vehicle_color" value="{{ $application->vehicle_color }}">
+                                            <input type="hidden" name="vehicle_registration" value="{{ $application->vehicle_registration_image }}">
+                                            <input type="hidden" name="email" value="{{ $application->email }}">
+                                            <input type="hidden" name="phone_number" value="{{ $application->phone_number }}">
+                                            <input type="hidden" name="full_name" value="{{ $application->full_name }}">
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
@@ -158,8 +191,8 @@
                                         </div>
                                         <div class="modal-body">
                                             <div class="form-group">
-                                                <label for="rejection_reason">Lý do từ chối</label>
-                                                <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3" required></textarea>
+                                                <label for="admin_notes">Ghi chú admin</label>
+                                                <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3" required></textarea>
                                             </div>
                                         </div>
                                         <div class="modal-footer">

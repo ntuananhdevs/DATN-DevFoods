@@ -9,9 +9,30 @@
             "i18n": "nav.dashboard_analytics"
         },
         {
-            "url": "/admin/users",
-            "name": "Quản lý người dùng",
+            "url": "#",
+            "name": "Quản lý tải khoản",
             "icon": "feather icon-user",
+            "i18n": "nav.users",
+            "submenu": [
+                {
+                    "url": "/admin/users",
+                    "name": "Tài khoản người dùng",
+                    "icon": "feather icon-list",
+                    "i18n": "nav.all_users"
+                },
+                {   
+                    "url": "/admin/users/managers",
+                    "name": "Tài khoản quản lý",
+                    "icon": "feather icon-file",
+                    "i18n": "nav.pending_managers"
+                
+                }
+            ]
+        },
+        {
+            "url": "/admin/branches",
+            "name": "Quản lý chi nhánh",
+            "icon": "feather icon-map-pin",
             "i18n": "nav.users"
         },
         {

@@ -20,7 +20,6 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'role_id',
         'user_name',
         'full_name',
         'email',
@@ -64,5 +63,10 @@ class User extends Authenticatable
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+       public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_roles')
+            ->withTimestamps();
     }
 }

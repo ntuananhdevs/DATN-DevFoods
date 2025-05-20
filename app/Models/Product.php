@@ -14,9 +14,12 @@ class Product extends Model
         'name',
         'description',
         'base_price',
-        'stock',
-        'image',
-        'preparation_time'
+        'available',
+        'preparation_time',
+        'status',
+        'is_featured',
+        'created_by',
+        'updated_by',
     ];
 
     public function category()
