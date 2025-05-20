@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('address');
             $table->string('phone');
             $table->string('email')->nullable();
-            $table->foreignId('manager_user_id')->constrained('users');
+            $table->unsignedBigInteger('manager_user_id')->nullable(); // Thêm nullable()
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
             $table->time('opening_hour');

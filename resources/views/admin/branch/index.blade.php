@@ -82,9 +82,7 @@
                         <th data-sort="phone">
                             Liên hệ <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
-                        <th data-sort="manager">
-                            Quản lý <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
+                      
                         <th>Giờ làm việc</th>
                         <th data-sort="rating">
                             Đánh giá <i class="fas fa-sort data-table-sort-icon"></i>
@@ -118,13 +116,7 @@
                                 @endif
                             </div>
                         </td>
-                        <td>
-                            @if($branch->manager)
-                                {{ $branch->manager->name }}
-                            @else
-                                <span class="text-muted">Chưa phân công</span>
-                            @endif
-                        </td>
+                       
                         <td>{{ $branch->opening_hour }} - {{ $branch->closing_hour }}</td>
                         <td>
                             <div class="d-flex align-items-center">

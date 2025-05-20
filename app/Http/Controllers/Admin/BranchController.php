@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -75,9 +77,30 @@ class BranchController extends Controller
         return redirect()->route('admin.branches.index')->with('success', 'Thêm chi nhánh thành công');
     }
 
-    public function show(Branch $branch)
+    public function show($id)
     {
-        return view('admin.branch.show', compact('branch'));
+        try {
+            // Lấy chi nhánh kèm thông tin quản lý (chỉ khi tài khoản active)
+            $branch = Branch::with(['manager' => function($query) {
+                $query->where('active', true);
+            }])->findOrFail($id);
+    
+            // Kiểm tra và xóa tham chiếu nếu quản lý không active
+            if ($branch->manager_user_id && !$branch->manager) {
+                $branch->manager_user_id = null; // Cho phép null
+                $branch->save();
+            }
+    
+            $hasActiveManager = $branch->manager_user_id && $branch->manager;
+            
+            return view('admin.branch.show', compact('branch', 'hasActiveManager'));
+        } catch (\Exception $e) {
+            Log::error('Error in BranchController@show: ' . $e->getMessage());
+            var_dump($e->getMessage());
+            die;
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi tải thông tin chi nhánh');
+        }
     }
 
     public function edit(Branch $branch)
@@ -155,4 +178,63 @@ class BranchController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Hiển thị form chọn người quản lý cho chi nhánh
+     */
+    public function assignManager($id)
+    {
+        try {
+            $branch = Branch::with('manager')->findOrFail($id);
+            
+            // Lấy danh sách người dùng có vai trò manager
+            $managers = User::whereHas('roles', function($query) {
+                $query->where('name', 'manager');
+            })
+            ->orderBy('full_name', 'asc')
+            ->get();
+            
+            // Lấy danh sách chi nhánh đã có người quản lý
+            $assignedBranches = Branch::whereNotNull('manager_user_id')
+                ->where('id', '!=', $id)
+                ->pluck('manager_user_id')
+                ->toArray();
+            
+            // Lọc ra những quản lý chưa được phân công hoặc đang quản lý chi nhánh hiện tại
+            $availableManagers = $managers->filter(function($manager) use ($assignedBranches, $branch) {
+                return !in_array($manager->id, $assignedBranches) || $manager->id == $branch->manager_user_id;
+            });
+            
+            return view('admin.branch.assign_manager', compact('branch', 'availableManagers'));
+        } catch (\Exception $e) {
+            Log::error('Error in BranchController@assignManager: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi tải form phân công quản lý.');
+        }
+    }
+
+
+    /**
+     * Lưu thông tin người quản lý cho chi nhánh
+     */
+    public function updateManager(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'manager_user_id' => 'required|exists:users,id'
+            ]);
+            
+            $branch = Branch::findOrFail($id);
+            $branch->manager_user_id = $validated['manager_user_id'];
+            $branch->save();
+            
+            return redirect()->route('admin.branches.show', $branch->id)
+                ->with('success', 'Đã cập nhật người quản lý chi nhánh thành công.');
+        } catch (\Exception $e) {
+            Log::error('Error in BranchController@updateManager: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi cập nhật người quản lý chi nhánh.');
+        }
+    }
+
 }

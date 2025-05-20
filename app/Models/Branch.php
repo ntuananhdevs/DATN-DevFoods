@@ -14,7 +14,7 @@ class Branch extends Model
         'address',
         'phone',
         'email',
-        'manager_name',
+        'manager_user_id',
         'latitude',
         'longitude',
         'opening_hour',
@@ -25,13 +25,13 @@ class Branch extends Model
         'reliability_score'
     ];
 
-    protected $casts = [
-        'opening_hour' => 'datetime:H:i',
-        'closing_hour' => 'datetime:H:i',
-        'active' => 'boolean',
-        'balance' => 'decimal:2',
-        'rating' => 'decimal:2',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
-    ];
+    /**
+     * Lấy thông tin người quản lý chi nhánh
+     */
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'manager_user_id');
+    }
 }
+
+
