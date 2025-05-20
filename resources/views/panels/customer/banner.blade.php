@@ -1,4 +1,4 @@
-<link href="{{ asset('css/customer/banner.css') }}" rel="stylesheet">
+<!-- <link href="{{ asset('css/customer/banner.css') }}" rel="stylesheet">
 <style>
     .carousel-slide .slide-content {
         display: block;
@@ -121,4 +121,4 @@
                 <button class="indicator" data-slide="2"></button>
             </div>
         </div>
-    </section>
+    </section> -->

@@ -3,460 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Nhập Tài Xế</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: -400px;
-            background: #ff4444;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000;
-            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        }
-        
-        .notification.show {
-            right: 20px;
-        }
-        
-        .notification.success {
-            background: #00C851;
-        }
-        
-        .notification.error {
-            background: #ff4444;
-        }
-        
-        body {
-            font-family: 'Nunito', 'Segoe UI', sans-serif;
-            background-color: #f0f2f5;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background-image: url('/placeholder.svg?height=1080&width=1920');
-            background-size: cover;
-            background-position: center;
-            position: relative;
-        }
-        
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1;
-        }
-        
-        .login-container {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 420px;
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-        
-        .login-header {
-            background: linear-gradient(45deg, #FF5722, #FF9800);
-            padding: 30px 20px;
-            text-align: center;
-            color: white;
-            position: relative;
-        }
-        
-        .login-header::after {
-            content: '';
-            position: absolute;
-            bottom: -20px;
-            left: 0;
-            right: 0;
-            height: 40px;
-            background-color: white;
-            border-radius: 50% 50% 0 0;
-        }
-        
-        .login-header img {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 3px solid white;
-            padding: 5px;
-            background-color: white;
-            margin-bottom: 10px;
-        }
-        
-        .login-header h1 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        
-        .login-header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .login-form {
-            padding: 30px 25px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #555;
-        }
-        
-        .input-with-icon {
-            position: relative;
-        }
-        
-        .input-with-icon input {
-            width: 100%;
-            padding: 14px 14px 14px 45px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: all 0.3s;
-            background-color: #f9f9f9;
-        }
-        
-        .input-with-icon input:focus {
-            border-color: #FF7043;
-            box-shadow: 0 0 0 3px rgba(255, 112, 67, 0.2);
-            outline: none;
-            background-color: white;
-        }
-        
-        .input-with-icon i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #FF7043;
-            font-size: 18px;
-        }
-        
-        .remember-forgot {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-        
-        .remember {
-            display: flex;
-            align-items: center;
-        }
-        
-        .remember input {
-            margin-right: 8px;
-            accent-color: #FF7043;
-        }
-        
-        .remember label {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .forgot {
-            font-size: 14px;
-            color: #FF7043;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .forgot:hover {
-            text-decoration: underline;
-        }
-        
-        .login-button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(45deg, #FF5722, #FF9800);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(255, 87, 34, 0.3);
-        }
-        
-        .login-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(255, 87, 34, 0.4);
-        }
-        
-        .login-button:active {
-            transform: translateY(0);
-        }
-        
-        /* Phần khuyến nghị đổi mật khẩu */
-        .password-reminder {
-            margin: 25px 0;
-            padding: 15px;
-            background-color: #FFF3E0;
-            border-left: 4px solid #FF9800;
-            border-radius: 6px;
-            display: flex;
-            align-items: flex-start;
-        }
-        
-        .password-reminder i {
-            color: #FF9800;
-            font-size: 20px;
-            margin-right: 12px;
-            margin-top: 2px;
-        }
-        
-        .password-reminder-content h4 {
-            color: #E65100;
-            font-size: 15px;
-            margin-bottom: 5px;
-        }
-        
-        .password-reminder-content p {
-            color: #666;
-            font-size: 13px;
-            line-height: 1.5;
-            margin-bottom: 8px;
-        }
-        
-        .change-password-btn {
-            display: inline-block;
-            padding: 6px 12px;
-            background-color: #FF9800;
-            color: white;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-        
-        .change-password-btn:hover {
-            background-color: #F57C00;
-        }
-        
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 25px 0;
-        }
-        
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background-color: #ddd;
-        }
-        
-        .divider span {
-            padding: 0 15px;
-            color: #777;
-            font-size: 13px;
-        }
-        
-        .quick-login {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 10px;
-        }
-        
-        .quick-login-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #eee;
-            background-color: white;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        
-        .quick-login-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        
-        .quick-login-btn i {
-            font-size: 20px;
-        }
-        
-        .google i {
-            color: #DB4437;
-        }
-        
-        .facebook i {
-            color: #4267B2;
-        }
-        
-        .qrcode i {
-            color: #333;
-        }
-        
-        .fingerprint i {
-            color: #009688;
-        }
-        
-        .help-text {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #777;
-        }
-        
-        .help-text a {
-            color: #FF7043;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .help-text a:hover {
-            text-decoration: underline;
-        }
-        
-        @media (max-width: 480px) {
-            .login-container {
-                border-radius: 12px;
-            }
-            
-            .login-header {
-                padding: 25px 15px;
-            }
-            
-            .login-form {
-                padding: 25px 20px;
-            }
-        }
-    </style>
+    <title>Đăng nhập tài xế</title>
+    <link rel="stylesheet" href="{{ asset('css/drivers/Auth.css') }}">
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            {{-- <img src="/placeholder.svg?height=70&width=70" alt="Logo Công Ty"> --}}
-            <h1>Đăng Nhập Tài Xế</h1>
-            <p>Đăng nhập để bắt đầu nhận đơn hàng</p>
-        </div>
-        
-        <div class="login-form">
-            <form action="{{ route('login.submit') }}" method="post">
-                @csrf
-                @if($errors->any())
-                    <div class="notification error">
-                        {{ $errors->first() }}
-                    </div>
-                @endif
-                @if(session('success'))
-                    <div class="notification success">
-                        {{ session('success') }}
-                    </div>
-                @endif
-                <div class="form-group">
-                    <label for="username">Tên đăng nhập</label>
-                    <div class="input-with-icon">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="username" placeholder="Nhập số điện thoại hoặc email">
-                    </div>
+    <div class="container">
+        <div class="login-container">
+            <div class="header">
+                <div class="logo">
+                    <img src="placeholder-logo.png" alt="Logo">
                 </div>
-                
-                <div class="form-group">
-                    <label for="password">Mật khẩu</label>
-                    <div class="input-with-icon">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="password" placeholder="Nhập mật khẩu">
-                    </div>
-                </div>
-                
-                <div class="remember-forgot">
-                    <div class="remember">
-                        <input type="checkbox" id="remember">
-                        <label for="remember">Ghi nhớ đăng nhập</label>
-                    </div>
-                    
-                    <a href="#" class="forgot">Quên mật khẩu?</a>
-                </div>
-                
-                <button type="submit" class="login-button">
-                    <i class="fas fa-sign-in-alt"></i> ĐĂNG NHẬP
-                </button>
-            </form>
-            
-            <!-- Phần khuyến nghị đổi mật khẩu -->
-            <div class="password-reminder">
-                <i class="fas fa-shield-alt"></i>
-                <div class="password-reminder-content">
-                    <h4>Khuyến nghị đổi mật khẩu</h4>
-                    <p>Để đảm bảo an toàn cho tài khoản, bạn nên đổi mật khẩu định kỳ 3 tháng một lần. Mật khẩu mạnh sẽ giúp bảo vệ thông tin cá nhân của bạn.</p>
-                    <a href="#" class="change-password-btn">Đổi mật khẩu ngay</a>
-                </div>
+                <h1>Đăng nhập tài xế</h1>
+                <p>Vui lòng đăng nhập bằng số điện thoại và mật khẩu đã được cung cấp qua email</p>
             </div>
             
-          
-            
-            {{-- <div class="quick-login">
-                <div class="quick-login-btn google">
-                    <i class="fab fa-google"></i>
+            <form id="loginForm" class="form">
+                @csrf
+                <div class="form-group">
+                    <label for="phone">Số điện thoại</label>
+                    <input type="tel" id="phone" name="phone_number" placeholder="Nhập số điện thoại đăng ký">
                 </div>
-                <div class="quick-login-btn facebook">
-                    <i class="fab fa-facebook-f"></i>
+                
+                <div class="form-group">
+                    <div class="label-row">
+                        <label for="password">Mật khẩu</label>
+                        <a href="{{ route('driver.forgot_password') }}" class="forgot-link">Quên mật khẩu?</a>
+                    </div>
+                    <div class="password-input">
+                        <input type="password" name="password" id="password" placeholder="Nhập mật khẩu">
+                        <button type="button" class="toggle-password" aria-label="Hiện mật khẩu">
+                            <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                                <line x1="2" x2="22" y1="2" y2="22"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="quick-login-btn qrcode">
-                    <i class="fas fa-qrcode"></i>
+                
+                <button type="submit" class="btn btn-primary" id="loginButton">
+                    <span class="btn-text">Đăng nhập</span>
+                    <span class="btn-loading hidden">
+                        <svg class="spinner" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"></circle>
+                        </svg>
+                        Đang đăng nhập...
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dialog đổi mật khẩu -->
+    <div class="dialog-overlay hidden" id="passwordChangeDialog">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h2>Đổi mật khẩu</h2>
+                <p>Đây là lần đầu tiên bạn đăng nhập. Vui lòng đổi mật khẩu để đảm bảo an toàn cho tài khoản.</p>
+            </div>
+            <form id="passwordChangeForm" class="form">
+                <div class="form-group">
+                    <label for="newPassword">Mật khẩu mới</label>
+                    <div class="password-input">
+                        <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới">
+                        <button type="button" class="toggle-password" aria-label="Hiện mật khẩu">
+                            <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                                <line x1="2" x2="22" y1="2" y2="22"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="quick-login-btn fingerprint">
-                    <i class="fas fa-fingerprint"></i>
+                <div class="form-group">
+                    <label for="confirmPassword">Xác nhận mật khẩu</label>
+                    <div class="password-input">
+                        <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu mới">
+                        <button type="button" class="toggle-password" aria-label="Hiện mật khẩu">
+                            <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg class="eye-off-icon hidden" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                                <line x1="2" x2="22" y1="2" y2="22"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-            </div> --}}
-            
-            <div class="help-text">
-                Bạn chưa có tài khoản? <a href="#">Đăng ký ngay</a>
+                <div class="dialog-footer">
+                    <button type="submit" class="btn btn-primary" id="changePasswordButton">
+                        <span class="btn-text">Đổi mật khẩu</span>
+                        <span class="btn-loading hidden">
+                            <svg class="spinner" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"></circle>
+                            </svg>
+                            Đang xử lý...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast thông báo -->
+    <div class="toast hidden" id="toast">
+        <div class="toast-content">
+            <div class="toast-icon success">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+            <div class="toast-icon error hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+            </div>
+            <div class="toast-message">
+                <h4 id="toastTitle">Thành công</h4>
+                <p id="toastDescription">Thao tác đã được thực hiện thành công.</p>
             </div>
         </div>
     </div>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const notifications = document.querySelectorAll('.notification');
-        
-        notifications.forEach(notification => {
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 100);
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 500);
-            }, 5000);
-        });
-    });
-</script>
+
+    <script src="{{ asset('js/Driver/main.js') }}"></script>
 </body>
 </html>

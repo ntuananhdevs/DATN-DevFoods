@@ -118,5 +118,5 @@ class EmailFactory
         
         SendEmailJob::dispatch($to, $mailable);
     }
-
-} 
+    
+}
