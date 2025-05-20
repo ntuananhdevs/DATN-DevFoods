@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ProductController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\UserController;
@@ -19,7 +18,6 @@ use App\Http\Controllers\Admin\BannerController;
 
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\UserController as CustomerUserController;
@@ -167,4 +165,12 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+});
+
+//hiring driver
+Route::prefix('hiring-driver')->name('driver.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\HiringController::class, 'landing'])->name('landing');
+    Route::get('/apply', [App\Http\Controllers\Admin\HiringController::class, 'applicationForm'])->name('application.form');
+    Route::post('/apply', [App\Http\Controllers\Admin\HiringController::class, 'submitApplication'])->name('application.submit');
+    Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
 });
