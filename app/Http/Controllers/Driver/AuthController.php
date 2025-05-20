@@ -50,9 +50,21 @@ class AuthController extends Controller
                 ])->withInput();
             }
 
+            // Debug password
+            logger()->debug('Password input: ' . $request->password);
+            logger()->debug('Password in DB: ' . $driver->password);
+            logger()->debug('Hash check result: ' . (Hash::check($request->password, $driver->password) ? 'true' : 'false'));
+            
             if (!Hash::check($request->password, $driver->password)) {
                 return back()->withErrors([
                     'password' => 'Mật khẩu không chính xác',
+                ])->withInput();
+            }
+            
+            // Kiểm tra status của driver
+            if ($driver->status !== 'active') {
+                return back()->withErrors([
+                    'phone_number' => 'Tài khoản của bạn chưa được kích hoạt hoặc đã bị khóa',
                 ])->withInput();
             }
 
@@ -61,13 +73,6 @@ class AuthController extends Controller
             session(['driver_phone' => $driver->phone_number]);
             session(['driver_logged_in' => true]);
             
-            // Kiểm tra xem đây có phải là lần đăng nhập đầu tiên không
-            // Nếu là lần đăng nhập đầu tiên, hiển thị thông báo đổi mật khẩu
-            if (!$driver->password_changed) {
-                session(['first_login' => true]);
-                return redirect()->route('driver.home')->with('warning', 'Vui lòng đổi mật khẩu để bảo mật tài khoản của bạn.');
-            }
-
             return redirect()->route('driver.home')->with('success', 'Đăng nhập thành công!');
         } catch (Exception $e) {
             return back()->with('error', 'Đã xảy ra lỗi: ' . $e->getMessage());

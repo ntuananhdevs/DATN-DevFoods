@@ -170,9 +170,6 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
 Route::prefix('driver')->name('driver.')->group(function () {
     Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
-    Route::get('/apply', function() {
-        return redirect('https://forms.gle/1234567890'); // Thay bằng URL form đăng ký tài xế thực tế
-    })->name('apply');
 });
 
 // Route dành cho tài xế đã đăng nhập

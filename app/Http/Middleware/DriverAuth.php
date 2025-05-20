@@ -19,7 +19,7 @@ class DriverAuth
         if (!session()->has('driver_id')) {
             return redirect()->route('driver.login')->with('error', 'Vui lòng đăng nhập để tiếp tục.');
         }
-
+        
         return $next($request);
     }
 }
