@@ -49,7 +49,26 @@ class SendEmailJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Mail::to($this->email)->send($this->mailable);
+        try {
+            Log::info('Bắt đầu gửi email', [
+                'to' => $this->email,
+                'mailable' => get_class($this->mailable)
+            ]);
+            
+            Mail::to($this->email)->send($this->mailable);
+            
+            Log::info('Gửi email thành công', [
+                'to' => $this->email,
+                'mailable' => get_class($this->mailable)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi gửi email: ' . $e->getMessage(), [
+                'to' => $this->email,
+                'mailable' => get_class($this->mailable),
+                'exception' => $e
+            ]);
+            throw $e;
+        }
     }
     
     /**

@@ -16,7 +16,7 @@ class Driver extends Model
         'status', 'is_available', 'current_latitude', 'current_longitude',
         'balance', 'rating', 'cancellation_count', 'reliability_score',
         'penalty_count', 'auto_deposit_earnings', 'email', 'password',
-        'phone_number'
+        'phone_number', 'full_name'
     ];
 
     protected $casts = [

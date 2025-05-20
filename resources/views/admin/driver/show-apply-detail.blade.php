@@ -166,6 +166,7 @@
                                             <input type="hidden" name="vehicle_registration" value="{{ $application->vehicle_registration_image }}">
                                             <input type="hidden" name="email" value="{{ $application->email }}">
                                             <input type="hidden" name="phone_number" value="{{ $application->phone_number }}">
+                                            <input type="hidden" name="full_name" value="{{ $application->full_name }}">
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
