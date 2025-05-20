@@ -15,6 +15,10 @@ use App\Mail\GenericMail;
 use App\Mail\EmailFactory;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Response;
+
 class DriverController extends Controller
 {
     // Hiển thị danh sách đơn đăng ký tài xế, phân loại theo trạng thái chờ xử lý và đã xử lý
@@ -75,14 +79,14 @@ class DriverController extends Controller
             ]);
 
             // Tạo tài khoản tài xế mới
-            $lastName = explode(' ', $application->full_name);
-            $lastName = end($lastName);
-            $cccdLast4 = substr($application->id_number, -4);
-            $specialChar = '@';
-            $randomUpper = chr(rand(65, 90)); // Random uppercase letter
-            $randomNumber = rand(0, 9);
-            $password = $lastName . $cccdLast4 . $randomUpper . $specialChar . $randomNumber;
+            $password = Str::random(8) . rand(0, 9) . chr(rand(65, 90)) . chr(rand(97, 122)) . '!@#&*)(^';
             $hashedPassword = Hash::make($password);
+            
+            Log::info('Tạo tài khoản tài xế mới', [
+                'application_id' => $application->id,
+                'email' => $application->email
+            ]);
+
             $driver = Driver::create([
                 'application_id' => $application->id,
                 'license_number' => $application->driver_license_number,
@@ -101,18 +105,17 @@ class DriverController extends Controller
                 'auto_deposit_earnings' => false,
                 'email' => $application->email,
                 'password' => $hashedPassword,
-                'phone_number' => $application->phone_number
+                'phone_number' => $application->phone_number,
+                'full_name' => $application->full_name
+            ]);
+
+            Log::info('Gửi email thông báo chấp nhận', [
+                'application_id' => $application->id,
+                'email' => $application->email
             ]);
 
             // Gửi email thông báo chấp nhận
-            Mail::send('emails.driver-approval', [
-                'application' => $application,  
-                'email' => $application->email,
-                'password' => $password
-            ], function($message) use ($application) {
-                $message->to($application->email)
-                        ->subject('Đơn đăng ký tài xế được chấp nhận');
-            });
+            EmailFactory::sendDriverApproval($application, $password);
 
             DB::commit();
 
@@ -125,6 +128,10 @@ class DriverController extends Controller
             return redirect()->back();
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Lỗi khi phê duyệt đơn: ' . $e->getMessage(), [
+                'application_id' => $application->id,
+                'exception' => $e
+            ]);
             return redirect()->back()->with('error', 'Không thể phê duyệt đơn: ' . $e->getMessage());
         }
     }
@@ -164,5 +171,199 @@ class DriverController extends Controller
             DB::rollBack();
             return redirect()->back()->with('error', 'Không thể từ chối đơn: ' . $e->getMessage());
         }
+    }
+
+    public function index(Request $request)
+    {
+        try {
+            $search = $request->search;
+            $drivers = Driver::when($search, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%");
+                    });
+                })
+                ->when($request->vehicle_type, function ($query, $vehicleType) {
+                    $query->where('vehicle_type', $vehicleType);
+                })
+                ->when($request->status, function ($query, $status) {
+                    $query->where('status', $status);
+                })
+                ->when($request->rating_min, function ($query, $ratingMin) {
+                    $query->where('rating', '>=', $ratingMin);
+                })
+                ->latest()
+                ->paginate(10);
+
+            return view('admin.driver.index', compact('drivers'));
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Không thể tải danh sách tài xế: ' . $e->getMessage());
+        }
+    }
+
+    public function show(Driver $driver)
+    {
+        return view('admin.driver.show', compact('driver'));
+    }
+    
+    /**
+     * Export drivers data
+     */
+    public function export(Request $request)
+    {
+        try {
+            $type = $request->type ?? 'excel';
+            $query = Driver::query();
+            
+            // Lọc theo loại phương tiện
+            if ($request->has('vehicle_type') && $request->vehicle_type) {
+                $query->where('vehicle_type', $request->vehicle_type);
+            }
+            
+            // Lọc theo đánh giá tối thiểu
+            if ($request->has('rating_min') && $request->rating_min) {
+                $query->where('rating', '>=', $request->rating_min);
+            }
+            
+            // Lọc theo trạng thái
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
+            }
+            
+            // Tìm kiếm theo tên hoặc email hoặc số điện thoại
+            if ($request->has('search') && $request->search) {
+                $query->where(function($q) use ($request) {
+                    $q->where('full_name', 'like', '%' . $request->search . '%')
+                      ->orWhere('email', 'like', '%' . $request->search . '%')
+                      ->orWhere('phone_number', 'like', '%' . $request->search . '%');
+                });
+            }
+            
+            $drivers = $query->latest()->get();
+            
+            // Xử lý xuất dữ liệu theo định dạng
+            switch ($type) {
+                case 'excel':
+                    return Excel::download(new \App\Exports\DriverExport($drivers), 'drivers.xlsx');
+                    
+                case 'pdf':
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.drivers', compact('drivers'));
+                    return $pdf->download('drivers.pdf');
+                    
+                case 'csv':
+                    return Excel::download(new \App\Exports\DriverExport($drivers), 'drivers.csv', \Maatwebsite\Excel\Excel::CSV);
+                    
+                default:
+                    return $this->exportDriversJson($drivers, 'drivers.json');
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Có lỗi xuất dữ liệu: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Temporary JSON export method for drivers
+     */
+    private function exportDriversJson($drivers, $filename)
+    {
+        $data = [];
+        
+        foreach ($drivers as $driver) {
+            $data[] = [
+                'id' => $driver->id,
+                'full_name' => $driver->full_name,
+                'email' => $driver->email,
+                'phone_number' => $driver->phone_number,
+                'vehicle_type' => $driver->vehicle_type,
+                'vehicle_color' => $driver->vehicle_color,
+                'license_number' => $driver->license_number,
+                'rating' => $driver->rating,
+                'status' => $driver->status,
+                'balance' => $driver->balance,
+                'created_at' => $driver->created_at->format('d/m/Y H:i:s'),
+                'updated_at' => $driver->updated_at->format('d/m/Y H:i:s'),
+            ];
+        }
+        
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $file = storage_path('drivers-export.json');
+        file_put_contents($file, $json);
+        
+        return Response::download($file, $filename);
+    }
+
+    /**
+     * Export driver applications data
+     */
+    public function exportApplications(Request $request)
+    {
+        try {
+            $type = $request->type ?? 'excel';
+            $query = DriverApplication::query();
+            
+            // Lọc theo trạng thái đơn
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
+            }
+            
+            // Tìm kiếm theo tên hoặc số điện thoại
+            if ($request->has('search') && $request->search) {
+                $query->where(function($q) use ($request) {
+                    $q->where('full_name', 'like', '%' . $request->search . '%')
+                      ->orWhere('phone_number', 'like', '%' . $request->search . '%')
+                      ->orWhere('license_plate', 'like', '%' . $request->search . '%');
+                });
+            }
+            
+            $applications = $query->latest()->get();
+            
+            // Xử lý xuất dữ liệu theo định dạng
+            switch ($type) {
+                case 'excel':
+                    return Excel::download(new \App\Exports\DriverApplicationsExport($applications), 'driver-applications.xlsx');
+                    
+                case 'pdf':
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.driver-applications', compact('applications'));
+                    return $pdf->download('driver-applications.pdf');
+                    
+                case 'csv':
+                    return Excel::download(new \App\Exports\DriverApplicationsExport($applications), 'driver-applications.csv', \Maatwebsite\Excel\Excel::CSV);
+                    
+                default:
+                    return $this->exportApplicationsJson($applications, 'driver-applications.json');
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Có lỗi xuất dữ liệu: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Temporary JSON export method for driver applications
+     */
+    private function exportApplicationsJson($applications, $filename)
+    {
+        $data = [];
+        
+        foreach ($applications as $application) {
+            $data[] = [
+                'id' => $application->id,
+                'full_name' => $application->full_name,
+                'phone_number' => $application->phone_number,
+                'email' => $application->email,
+                'license_plate' => $application->license_plate,
+                'vehicle_type' => $application->vehicle_type,
+                'status' => $application->status,
+                'admin_notes' => $application->admin_notes,
+                'created_at' => $application->created_at->format('d/m/Y H:i:s'),
+                'updated_at' => $application->updated_at->format('d/m/Y H:i:s'),
+            ];
+        }
+        
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $file = storage_path('driver-applications-export.json');
+        file_put_contents($file, $json);
+        
+        return Response::download($file, $filename);
     }
 }

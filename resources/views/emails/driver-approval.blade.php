@@ -10,7 +10,7 @@
 
     <p>Thông tin đăng nhập của bạn:</p>
     <ul>
-        <li>Email: {{ $email }}</li>
+        <li>Tên đăng nhập: {{ $phone_number }}</li>
         <li>Mật khẩu: {{ $password }}</li>
     </ul>
 

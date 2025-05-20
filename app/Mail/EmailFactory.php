@@ -25,7 +25,6 @@ class EmailFactory
                 'full_name' => $application->full_name,
                 'email' => $application->email,
                 'phone_number' => $application->phone_number ?? '',
-                // Thêm các trường khác nếu cần
             ],
             'reason' => $reason,
             'application' => $application // Truyền cả đối tượng application để có thể truy cập các trường khác
@@ -39,25 +38,32 @@ class EmailFactory
         SendEmailJob::dispatch($to, $mailable);
     }
     
-    /**
-     * Gửi email xác nhận đơn hàng
-     * 
-     * @param object $order Thông tin đơn hàng
-     * @param string $email Địa chỉ email nhận
-     * @return void
-     */
-    public static function sendOrderConfirmation($order, $email = null)
+
+    public static function sendDriverApproval($application, $password, $email = null)
     {
-        $to = $email ?? $order->customer_email;
+        $to = $email ?? $application->email;
+        
+        // Đảm bảo dữ liệu phù hợp với template
+        $driverData = [
+            'driver' => [
+                'full_name' => $application->full_name,
+                'email' => $application->email,
+                'phone_number' => $application->phone_number ?? '',
+            ],
+            'password' => $password,
+            'application' => $application // Truyền cả đối tượng application để có thể truy cập các trường khác
+        ];
+        
         $mailable = new NotificationMail(
-            'order_confirmation',
-            [
-                'order' => $order
-            ]
+            'driver_approval',
+            $driverData,
+            "Đơn đăng ký tài xế được chấp nhận"
         );
         
         SendEmailJob::dispatch($to, $mailable);
     }
+
+    
     
     /**
      * Gửi email chào mừng người dùng mới
@@ -108,8 +114,9 @@ class EmailFactory
      */
     public static function sendNotification($subject, $content, $data = [], $to)
     {
-        $mailable = new GenericMail($subject, $content, $data);
+        $mailable = new NotificationMail($subject, $content, $data);
         
         SendEmailJob::dispatch($to, $mailable);
     }
+
 } 
