@@ -16,13 +16,13 @@
                         <i class="fas fa-download"></i> Xuất
                     </button>
                     <div class="dropdown-menu" aria-labelledby="exportDropdown">
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('admin.drivers.applications.export', ['type' => 'excel']) }}">
                             <i class="fas fa-file-excel"></i> Xuất Excel
                         </a>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('admin.drivers.applications.export', ['type' => 'pdf']) }}">
                             <i class="fas fa-file-pdf"></i> Xuất PDF
                         </a>
-                        <a class="dropdown-item" href="#">
+                        <a class="dropdown-item" href="{{ route('admin.drivers.applications.export', ['type' => 'csv']) }}">
                             <i class="fas fa-file-csv"></i> Xuất CSV
                         </a>
                     </div>

@@ -397,8 +397,10 @@
                             <span>Role</span>
                         </div>
                         <div class="user-info-value">
-                            <span class="badge badge-role">{{ $user->role->name ?? 'N/A' }}</span>
-                        </div>
+                        @foreach($user->roles as $role)
+                            <span class="badge badge-role">{{ $role->name }}</span>
+                        @endforeach
+                    </div>
                     </div>
                     <div class="user-info-row">
                         <div class="user-info-label">

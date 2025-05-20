@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('drivers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('driver_application_id')->constrained('driver_applications')->onDelete('cascade');
-            $table->string('driver_license_number')->unique();
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->string('full_name');
+            $table->string('phone_number');
+            $table->foreignId('application_id')->constrained('driver_applications')->onDelete('cascade');
+            $table->string('license_number')->unique();
             $table->string('vehicle_type')->nullable();
             $table->string('vehicle_registration')->nullable();
             $table->string('vehicle_color')->nullable();

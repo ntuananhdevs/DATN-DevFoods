@@ -2,11 +2,13 @@
 
 @section('content')
     <div class="banner-form-container">
-        <h1 class="banner-form-title">Chỉnh sửa Banner</h1>
+        <h1 class="banner-form-title">Sửa Banner</h1>
 
-        <form class="banner-form" action="{{ route('admin.banners.update', $banner->id) }}" method="POST" enctype="multipart/form-data">
+        <form class="banner-form" action="{{ route('admin.banners.update', $banner->id) }}" method="POST"
+            enctype="multipart/form-data">
             @method('PUT')
             @csrf
+            <input type="hidden" name="image_link" value="{{ old('image_link', $banner->image_path) }}">
             <div class="banner-form-group">
                 <label class="banner-form-label" for="title">Tiêu đề banner</label>
                 <input class="banner-form-input @error('title') is-invalid @enderror" type="text" id="title"
@@ -18,19 +20,37 @@
 
             <div class="banner-form-group">
                 <label class="banner-form-label">Ảnh banner</label>
-
-                <div class="banner-form-file-wrapper">
-                    <label class="banner-form-file-button" for="image_path">Chọn file ảnh</label>
-                    <input class="banner-form-file @error('image_path') is-invalid @enderror" type="file" id="image_path"
-                        name="image_path" accept="image/*">
+                
+                <div class="banner-form-tabs">
+                    <div class="banner-form-tab active" data-tab="upload">Upload ảnh</div>
+                    <div class="banner-form-tab" data-tab="link">Nhập link ảnh</div>
+                </div>
+                
+                <div class="banner-form-tab-content active" data-tab-content="upload">
+                    <div class="banner-form-file-wrapper">
+                        <label class="banner-form-file-button" for="image_path">Chọn file ảnh</label>
+                        <input class="banner-form-file @error('image_path') is-invalid @enderror" type="file" id="image_path"
+                            name="image_path" accept="image/*">
+                        @error('image_path')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="banner-form-preview">
+                        <img class="banner-form-preview-img" id="image-preview" style="display: none;">
+                        <div class="banner-form-preview-placeholder" id="preview-placeholder">Xem trước ảnh banner</div>
+                    </div>
+                </div>
+                
+                <div class="banner-form-tab-content" data-tab-content="link">
+                    <input class="banner-form-input @error('image_link') is-invalid @enderror" type="url" 
+                        id="image_link" name="image_link" placeholder="Nhập link ảnh" value="{{ old('image_link', $banner->image_path) }}">
                     @error('image_path')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
-                </div>
-                <div class="banner-form-file-name" id="file-name"></div>
-                <div class="banner-form-preview">
-                    <img class="banner-form-preview-img" id="image-preview" style="display: none;">
-                    <div class="banner-form-preview-placeholder" id="preview-placeholder">Xem trước ảnh banner</div>
+                    <div class="banner-form-preview">
+                        <img class="banner-form-preview-img" id="link-preview" style="display: none;">
+                        <div class="banner-form-preview-placeholder" id="link-placeholder">Xem trước ảnh từ link</div>
+                    </div>
                 </div>
             </div>
 
@@ -81,7 +101,7 @@
                 <div class="banner-form-group">
                     <label class="banner-form-label" for="start_at">Thời gian bắt đầu hiển thị</label>
                     <input class="banner-form-input @error('start_at') is-invalid @enderror" type="date" id="start_at"
-                        name="start_at" value="{{ old('start_at', $banner->start_at->format('Y-m-d')) }}">
+                        name="start_at" value="{{ old('start_at', $banner->start_at ? date('Y-m-d', strtotime($banner->start_at)) : '') }}">
                     @error('start_at')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
@@ -90,7 +110,7 @@
                 <div class="banner-form-group">
                     <label class="banner-form-label" for="end_at">Thời gian kết thúc hiển thị</label>
                     <input class="banner-form-input @error('end_at') is-invalid @enderror" type="date" id="end_at"
-                        name="end_at" value="{{ old('end_at', $banner->end_at->format('Y-m-d')) }}">
+                        name="end_at" value="{{ old('end_at', $banner->end_at ? date('Y-m-d', strtotime($banner->end_at)) : '') }}">
                     @error('end_at')
                         <span class="text-danger">{{ $message }}</span>
                     @enderror
@@ -205,12 +225,16 @@
             align-items: center;
             justify-content: center;
             min-height: 150px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .banner-form-preview-img {
-            max-width: 100%;
-            max-height: 200px;
+            width: 100%;
+            height: 100%;
+            max-height: 300px;
             object-fit: contain;
+            display: none;
         }
 
         .banner-form-tabs {
@@ -292,21 +316,71 @@
     </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Hiển thị ảnh ban đầu nếu có
+            const bannerImagePath = "{{ $banner->image_path }}";
+            
+            if (bannerImagePath) {
+                // Kiểm tra xem image_path có phải là URL không
+                if (bannerImagePath.startsWith('http')) {
+                    // Nếu là URL, hiển thị trong tab link
+                    document.querySelector('.banner-form-tab[data-tab="link"]').click();
+                    const linkPreview = document.getElementById('link-preview');
+                    linkPreview.src = bannerImagePath;
+                    linkPreview.style.display = 'block';
+                    linkPreview.style.maxWidth = '100%';
+                    linkPreview.style.maxHeight = '300px';
+                    linkPreview.style.objectFit = 'contain';
+                    linkPreview.style.marginTop = '10px';
+                    document.getElementById('link-placeholder').style.display = 'none';
+                } else {
+                    // Nếu là file đã upload, hiển thị trong tab upload
+                    document.querySelector('.banner-form-tab[data-tab="upload"]').click();
+                    const imagePreview = document.getElementById('image-preview');
+                    imagePreview.src = "{{ asset('storage/' . $banner->image_path) }}";
+                    imagePreview.style.display = 'block';
+                    imagePreview.style.maxWidth = '100%';
+                    imagePreview.style.maxHeight = '300px';
+                    imagePreview.style.objectFit = 'contain';
+                    imagePreview.style.marginTop = '10px';
+                    document.getElementById('preview-placeholder').style.display = 'none';
+                }
+            }
+            // Tab switching
+            const tabs = document.querySelectorAll('.banner-form-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Update active tab
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update active content
+                    document.querySelectorAll('.banner-form-tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.querySelector(`.banner-form-tab-content[data-tab-content="${tabName}"]`)
+                        .classList.add('active');
+                });
+            });
+            
+            // Handle form submission
+            document.querySelector('.banner-form').addEventListener('submit', function(e) {
+                const activeTab = document.querySelector('.banner-form-tab.active').getAttribute('data-tab');
+                
+                if (activeTab === 'upload') {
+                    // Nếu đang ở tab upload, xóa giá trị của image_link
+                    document.getElementById('image_link').value = '';
+                } else {
+                    // Nếu đang ở tab link, xóa file đã chọn
+                    document.getElementById('image_path').value = '';
+                }
+            });
+            
+            // Image upload preview
             const imageInput = document.getElementById('image_path');
             const imagePreview = document.getElementById('image-preview');
             const previewPlaceholder = document.getElementById('preview-placeholder');
-            const fileName = document.getElementById('file-name');
-            
-            // Hiển thị ảnh hiện tại nếu có
-            @if($banner->image_path)
-                imagePreview.src = '{{ asset('storage/' . $banner->image_path) }}';
-                imagePreview.style.display = 'block';
-                imagePreview.style.maxWidth = '100%';
-                imagePreview.style.maxHeight = '300px';
-                imagePreview.style.objectFit = 'contain';
-                imagePreview.style.marginTop = '10px';
-                previewPlaceholder.style.display = 'none';
-            @endif
             
             imageInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
@@ -322,20 +396,42 @@
                         imagePreview.style.objectFit = 'contain';
                         imagePreview.style.marginTop = '10px';
                         previewPlaceholder.style.display = 'none';
+                        
+                        // Khi upload ảnh mới, tự động xóa link ảnh
+                        document.getElementById('image_link').value = '';
                     };
                     
                     reader.readAsDataURL(file);
                 } else {
-                    @if($banner->image_path)
-                        imagePreview.src = '{{ asset('storage/' . $banner->image_path) }}';
-                         imagePreview.style.display = 'block';
-                         previewPlaceholder.style.display = 'none';
-                    @else
-                        imagePreview.src = '';
-                        imagePreview.style.display = 'none';
-                        previewPlaceholder.style.display = 'block';
-                        fileName.textContent = '';
-                    @endif
+                    imagePreview.src = '';
+                    imagePreview.style.display = 'none';
+                    previewPlaceholder.style.display = 'block';
+                }
+            });
+            
+            // Link image preview
+            const imageLink = document.getElementById('image_link');
+            const linkPreview = document.getElementById('link-preview');
+            const linkPlaceholder = document.getElementById('link-placeholder');
+            
+            imageLink.addEventListener('input', function(e) {
+                const url = this.value.trim();
+                
+                if (url) {
+                    linkPreview.src = url;
+                    linkPreview.style.display = 'block';
+                    linkPreview.style.maxWidth = '100%';
+                    linkPreview.style.maxHeight = '300px';
+                    linkPreview.style.objectFit = 'contain';
+                    linkPreview.style.marginTop = '10px';
+                    linkPlaceholder.style.display = 'none';
+                    
+                    // Khi nhập link ảnh, tự động xóa file đã chọn
+                    document.getElementById('image_path').value = '';
+                } else {
+                    linkPreview.src = '';
+                    linkPreview.style.display = 'none';
+                    linkPlaceholder.style.display = 'block';
                 }
             });
         });
