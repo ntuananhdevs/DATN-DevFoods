@@ -16,6 +16,7 @@ class NotificationMail extends Mailable implements ShouldQueue
     public $title;
     protected $templateMap = [
         'driver_rejection' => 'emails.layouts.drivers.apply-reject',
+        'driver_approval' => 'emails.layouts.drivers.apply-approve',
         'order_confirmation' => 'emails.orders.confirmation',
         'password_reset' => 'emails.auth.password-reset',
         'welcome' => 'emails.auth.welcome',
@@ -51,6 +52,9 @@ class NotificationMail extends Mailable implements ShouldQueue
         switch ($this->type) {
             case 'driver_rejection':
                 $this->subject = 'Thông báo kết quả ứng tuyển tài xế - ' . config('app.name');
+                break;
+            case 'driver_approval':
+                $this->subject = 'Đơn đăng ký tài xế được chấp nhận - ' . config('app.name');
                 break;
             case 'order_confirmation':
                 $orderId = $this->data['order']->id ?? 'N/A';
