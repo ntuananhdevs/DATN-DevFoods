@@ -25,6 +25,9 @@ use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\UserController as CustomerUserController;
 use Illuminate\Database\Capsule\Manager;
 
+//Driver 
+use App\Http\Controllers\Driver\AuthController as DriverAuthController;
+
 Route::prefix('/')->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
     Route::get('shop/product', [CustomerProductController::class, 'index']);
@@ -162,4 +165,21 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+});
+
+Route::prefix('driver')->name('driver.')->group(function () {
+    Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
+    Route::get('/apply', function() {
+        return redirect('https://forms.gle/1234567890'); // Thay bằng URL form đăng ký tài xế thực tế
+    })->name('apply');
+});
+
+// Route dành cho tài xế đã đăng nhập
+Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
+    Route::get('/', function() {
+        return view('driver.home');
+    })->name('home');
+    Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
+    // Các route khác dành cho tài xế sẽ được thêm vào đây
 });

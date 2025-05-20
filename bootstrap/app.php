@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\Authenticate;
+use App\Http\Middleware\DriverAuth;
 use App\Http\Middleware\RoleAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth' => Authenticate::class,
             'role' => RoleAdmin::class,
+            'driver.auth' => DriverAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
