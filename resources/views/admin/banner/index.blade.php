@@ -4,12 +4,6 @@
     @push('scripts')
         <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
         <script>
-            // Initialize Pusher
-            const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
-                cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
-                encrypted: true
-            });
-
             // Subscribe to channel
             const channel = pusher.subscribe('banner-channel');
 
@@ -39,22 +33,22 @@
                 <h1 class="data-table-title">Quản lý banner</h1>
             </div>
             <div class="data-table-header-actions">
-                <div class="btn-group mr-2">
-                    {{-- <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                                    <i class="fas fa-download"></i> Xuất
-                                </button> --}}
-                    {{-- <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'excel']) }}">
-                                        <i class="fas fa-file-excel"></i> Excel
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'pdf']) }}">
-                                        <i class="fas fa-file-pdf"></i> PDF
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'csv']) }}">
-                                        <i class="fas fa-file-csv"></i> CSV
-                                    </a>
-                                </div> --}}
-                </div>
+                {{-- <div class="btn-group mr-2">
+                    <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
+                        <i class="fas fa-download"></i> Xuất
+                    </button>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'excel']) }}">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </a>
+                        <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'pdf']) }}">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a>
+                        <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'csv']) }}">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </a>
+                    </div>
+                </div> --}}
 
                 <a href="{{ route('admin.banners.create') }}" class="data-table-btn data-table-btn-primary">
                     <i class="fas fa-plus"></i> Thêm mới
@@ -166,17 +160,7 @@
                                         @method('PATCH')
                                         <button type="button"
                                             class="data-table-status {{ $banner->is_active ? 'data-table-status-success' : 'data-table-status-failed' }}"
-                                            style="border: none; cursor: pointer; width: 100px;"
-                                            onclick="dtmodalHandleStatusToggle({
-                                        button: this,
-                                        bannerTitle: '{{ $banner->title }}',
-                                        currentStatus: {{ $banner->is_active ? 'true' : 'false' }},
-                                        confirmTitle: 'Xác nhận thay đổi trạng thái',
-                                        confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của banner này?',
-                                        confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của banner.',
-                                        successMessage: 'Đã thay đổi trạng thái banner thành công',
-                                        errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái banner'
-                                    })">
+                                            style="border: none; cursor: pointer; width: 100px;">
                                             @if ($banner->is_active)
                                                 <i class="fas fa-check"></i> Hoạt động
                                             @else
