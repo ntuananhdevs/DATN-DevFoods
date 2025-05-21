@@ -1,1172 +1,109 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết chi nhánh</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --background: #ffffff;
-            --foreground: #0f172a;
-            --muted: #f1f5f9;
-            --muted-foreground: #64748b;
-            --card: #ffffff;
-            --card-foreground: #0f172a;
-            --border: #e2e8f0;
-            --input: #e2e8f0;
-            --primary: #3b82f6;
-            --primary-foreground: #ffffff;
-            --secondary: #f1f5f9;
-            --secondary-foreground: #0f172a;
-            --accent: #f1f5f9;
-            --accent-foreground: #0f172a;
-            --destructive: #ef4444;
-            --destructive-foreground: #ffffff;
-            --success: #22c55e;
-            --success-foreground: #ffffff;
-            --radius: 0.5rem;
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font-sans);
-            background-color: var(--background);
-            color: var(--foreground);
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem 1rem;
-        }
-
-        .flex {
-            display: flex;
-        }
-
-        .flex-col {
-            flex-direction: column;
-        }
-
-        .items-center {
-            align-items: center;
-        }
-
-        .justify-between {
-            justify-content: space-between;
-        }
-
-        .justify-center {
-            justify-content: center;
-        }
-
-        .gap-2 {
-            gap: 0.5rem;
-        }
-
-        .gap-3 {
-            gap: 0.75rem;
-        }
-
-        .gap-4 {
-            gap: 1rem;
-        }
-
-        .gap-6 {
-            gap: 1.5rem;
-        }
-
-        .mb-1 {
-            margin-bottom: 0.25rem;
-        }
-
-        .mb-2 {
-            margin-bottom: 0.5rem;
-        }
-
-        .mb-3 {
-            margin-bottom: 0.75rem;
-        }
-
-        .mb-4 {
-            margin-bottom: 1rem;
-        }
-
-        .mb-6 {
-            margin-bottom: 1.5rem;
-        }
-
-        .mb-8 {
-            margin-bottom: 2rem;
-        }
-
-        .ml-1 {
-            margin-left: 0.25rem;
-        }
-
-        .ml-2 {
-            margin-left: 0.5rem;
-        }
-
-        .ml-3 {
-            margin-left: 0.75rem;
-        }
-
-        .ml-11 {
-            margin-left: 2.75rem;
-        }
-
-        .mr-1 {
-            margin-right: 0.25rem;
-        }
-
-        .mr-2 {
-            margin-right: 0.5rem;
-        }
-
-        .mt-1 {
-            margin-top: 0.25rem;
-        }
-
-        .mt-2 {
-            margin-top: 0.5rem;
-        }
-
-        .mt-3 {
-            margin-top: 0.75rem;
-        }
-
-        .mt-4 {
-            margin-top: 1rem;
-        }
-
-        .mt-5 {
-            margin-top: 1.25rem;
-        }
-
-        .mt-10 {
-            margin-top: 2.5rem;
-        }
-
-        .-mt-8 {
-            margin-top: -2rem;
-        }
-
-        .-mt-10 {
-            margin-top: -2.5rem;
-        }
-
-        .px-2 {
-            padding-left: 0.5rem;
-            padding-right: 0.5rem;
-        }
-
-        .px-3 {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
-
-        .px-4 {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-
-        .px-6 {
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-        }
-
-        .py-1 {
-            padding-top: 0.25rem;
-            padding-bottom: 0.25rem;
-        }
-
-        .py-1\.5 {
-            padding-top: 0.375rem;
-            padding-bottom: 0.375rem;
-        }
-
-        .py-2 {
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-        }
-
-        .py-4 {
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-        }
-
-        .py-6 {
-            padding-top: 1.5rem;
-            padding-bottom: 1.5rem;
-        }
-
-        .py-8 {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
-
-        .pb-2 {
-            padding-bottom: 0.5rem;
-        }
-
-        .pb-6 {
-            padding-bottom: 1.5rem;
-        }
-
-        .pl-4 {
-            padding-left: 1rem;
-        }
-
-        .pr-4 {
-            padding-right: 1rem;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-xs {
-            font-size: 0.75rem;
-        }
-
-        .text-sm {
-            font-size: 0.875rem;
-        }
-
-        .text-lg {
-            font-size: 1.125rem;
-        }
-
-        .text-xl {
-            font-size: 1.25rem;
-        }
-
-        .text-2xl {
-            font-size: 1.5rem;
-        }
-
-        .font-medium {
-            font-weight: 500;
-        }
-
-        .font-semibold {
-            font-weight: 600;
-        }
-
-        .font-bold {
-            font-weight: 700;
-        }
-
-        .font-mono {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        }
-
-        .text-white {
-            color: #ffffff;
-        }
-
-        .text-primary {
-            color: var(--primary);
-        }
-
-        .text-muted-foreground {
-            color: var(--muted-foreground);
-        }
-
-        .text-green-600 {
-            color: #16a34a;
-        }
-
-        .text-red-600 {
-            color: #dc2626;
-        }
-
-        .text-amber-600 {
-            color: #d97706;
-        }
-
-        .text-amber-800 {
-            color: #92400e;
-        }
-
-        .text-blue-600 {
-            color: #2563eb;
-        }
-
-        .text-blue-700 {
-            color: #1d4ed8;
-        }
-
-        .text-blue-800 {
-            color: #1e40af;
-        }
-
-        .bg-primary {
-            background-color: var(--primary);
-        }
-
-        .bg-card {
-            background-color: var(--card);
-        }
-
-        .bg-green-100 {
-            background-color: #dcfce7;
-        }
-
-        .bg-red-100 {
-            background-color: #fee2e2;
-        }
-
-        .bg-amber-50 {
-            background-color: #fffbeb;
-        }
-
-        .bg-amber-100 {
-            background-color: #fef3c7;
-        }
-
-        .bg-blue-50 {
-            background-color: #eff6ff;
-        }
-
-        .bg-blue-100 {
-            background-color: #dbeafe;
-        }
-
-        .bg-blue-600 {
-            background-color: #2563eb;
-        }
-
-        .bg-primary\/10 {
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-
-        .bg-gradient-to-r {
-            background-image: linear-gradient(to right, var(--tw-gradient-stops));
-        }
-
-        .from-primary {
-            --tw-gradient-from: var(--primary);
-            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(59, 130, 246, 0));
-        }
-
-        .to-primary\/70 {
-            --tw-gradient-to: rgba(59, 130, 246, 0.7);
-        }
-
-        .rounded-full {
-            border-radius: 9999px;
-        }
-
-        .rounded-lg {
-            border-radius: var(--radius);
-        }
-
-        .rounded-md {
-            border-radius: calc(var(--radius) - 0.125rem);
-        }
-
-        .border {
-            border: 1px solid var(--border);
-        }
-
-        .border-blue-200 {
-            border-color: #bfdbfe;
-        }
-
-        .shadow-sm {
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-
-        .shadow-md {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        .shadow-lg {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-
-        .transition-all {
-            transition-property: all;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 300ms;
-        }
-
-        .transition-colors {
-            transition-property: color, background-color, border-color;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 150ms;
-        }
-
-        .transition-transform {
-            transition-property: transform;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 300ms;
-        }
-
-        .duration-300 {
-            transition-duration: 300ms;
-        }
-
-        .hover\:scale-105:hover {
-            transform: scale(1.05);
-        }
-
-        .hover\:-translate-y-1:hover {
-            transform: translateY(-0.25rem);
-        }
-
-        .hover\:bg-blue-50:hover {
-            background-color: #eff6ff;
-        }
-
-        .hover\:bg-green-200:hover {
-            background-color: #bbf7d0;
-        }
-
-        .hover\:bg-primary:hover {
-            background-color: var(--primary);
-        }
-
-        .hover\:bg-blue-600:hover {
-            background-color: #2563eb;
-        }
-
-        .hover\:bg-green-600:hover {
-            background-color: #16a34a;
-        }
-
-        .hover\:bg-amber-600:hover {
-            background-color: #d97706;
-        }
-
-        .hover\:text-white:hover {
-            color: #ffffff;
-        }
-
-        .hover\:underline:hover {
-            text-decoration: underline;
-        }
-
-        .hover\:shadow-md:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        .grid {
-            display: grid;
-        }
-
-        .grid-cols-1 {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
-        }
-
-        .grid-cols-2 {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .grid-cols-3 {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .divide-x > * + * {
-            border-left-width: 1px;
-            border-left-style: solid;
-            border-left-color: var(--border);
-        }
-
-        .divide-y > * + * {
-            border-top-width: 1px;
-            border-top-style: solid;
-            border-top-color: var(--border);
-        }
-
-        .w-full {
-            width: 100%;
-        }
-
-        .w-10 {
-            width: 2.5rem;
-        }
-
-        .w-12 {
-            width: 3rem;
-        }
-
-        .w-16 {
-            width: 4rem;
-        }
-
-        .w-20 {
-            width: 5rem;
-        }
-
-        .h-1\.5 {
-            height: 0.375rem;
-        }
-
-        .h-2 {
-            height: 0.5rem;
-        }
-
-        .h-4 {
-            height: 1rem;
-        }
-
-        .h-5 {
-            height: 1.25rem;
-        }
-
-        .h-6 {
-            height: 1.5rem;
-        }
-
-        .h-8 {
-            height: 2rem;
-        }
-
-        .h-10 {
-            height: 2.5rem;
-        }
-
-        .h-12 {
-            height: 3rem;
-        }
-
-        .h-16 {
-            height: 4rem;
-        }
-
-        .h-20 {
-            height: 5rem;
-        }
-
-        .h-24 {
-            height: 6rem;
-        }
-
-        .h-px {
-            height: 1px;
-        }
-
-        .flex-shrink-0 {
-            flex-shrink: 0;
-        }
-
-        .flex-wrap {
-            flex-wrap: wrap;
-        }
-
-        .overflow-hidden {
-            overflow: hidden;
-        }
-
-        .truncate {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .whitespace-nowrap {
-            white-space: nowrap;
-        }
-
-        .italic {
-            font-style: italic;
-        }
-
-        .absolute {
-            position: absolute;
-        }
-
-        .relative {
-            position: relative;
-        }
-
-        .left-1\/2 {
-            left: 50%;
-        }
-
-        .-bottom-8 {
-            bottom: -2rem;
-        }
-
-        .-translate-x-1\/2 {
-            transform: translateX(-50%);
-        }
-
-        .z-10 {
-            z-index: 10;
-        }
-
-        /* Card Styles */
-        .card {
-            background-color: var(--card);
-            border-radius: var(--radius);
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transform: translateY(-2px);
-        }
-
-        .card-header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .card-content {
-            padding: 1.5rem;
-        }
-
-        .card-content-no-padding {
-            padding: 0;
-        }
-
-        /* Button Styles */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: var(--radius);
-            font-weight: 500;
-            font-size: 0.875rem;
-            line-height: 1.25rem;
-            padding: 0.5rem 1rem;
-            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-            transition-duration: 150ms;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: var(--primary-foreground);
-            border: 1px solid transparent;
-        }
-
-        .btn-primary:hover {
-            background-color: #2563eb;
-        }
-
-        .btn-outline {
-            background-color: transparent;
-            color: var(--foreground);
-            border: 1px solid var(--border);
-        }
-
-        .btn-outline:hover {
-            background-color: var(--muted);
-        }
-
-        .btn-sm {
-            padding: 0.375rem 0.75rem;
-            font-size: 0.75rem;
-        }
-
-        .btn-lg {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-        }
-
-        /* Badge Styles */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            border-radius: 9999px;
-            font-weight: 500;
-            font-size: 0.75rem;
-            line-height: 1;
-            padding: 0.25rem 0.75rem;
-            white-space: nowrap;
-        }
-
-        .badge-outline {
-            background-color: transparent;
-            border: 1px solid var(--border);
-            color: var(--foreground);
-        }
-
-        .badge-secondary {
-            background-color: var(--secondary);
-            color: var(--secondary-foreground);
-        }
-
-        /* Tooltip */
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-
-        .tooltip .tooltip-text {
-            visibility: hidden;
-            width: 120px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -60px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.75rem;
-        }
-
-        .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* Quick Action Items */
-        .quick-action {
-            border-radius: var(--radius);
-            padding: 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .quick-action:hover {
-            transform: translateY(-0.25rem);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        /* Responsive Styles */
-        @media (min-width: 768px) {
-            .md\:flex-row {
-                flex-direction: row;
-            }
-
-            .md\:items-center {
-                align-items: center;
-            }
-
-            .md\:grid-cols-2 {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .md\:w-20 {
-                width: 5rem;
-            }
-
-            .md\:h-20 {
-                height: 5rem;
-            }
-
-            .md\:mt-0 {
-                margin-top: 0;
-            }
-
-            .md\:text-2xl {
-                font-size: 1.5rem;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .lg\:col-span-2 {
-                grid-column: span 2 / span 2;
-            }
-
-            .lg\:col-span-6 {
-                grid-column: span 6 / span 6;
-            }
-
-            .lg\:col-span-8 {
-                grid-column: span 8 / span 8;
-            }
-
-            .lg\:grid-cols-3 {
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-            }
-
-            .lg\:grid-cols-8 {
-                grid-template-columns: repeat(8, minmax(0, 1fr));
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Page Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
-            <div>
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="bg-primary/10 p-2 rounded-full">
-                        <i class="fas fa-building text-primary"></i>
-                    </div>
-                    <h1 class="text-2xl font-bold">Chi tiết chi nhánh</h1>
+@extends('layouts.admin.contentLayoutMaster')
+
+@section('content')
+<!-- Main Container -->
+<div class="branch-details-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-icon">
+                    <i class="fas fa-building"></i>
                 </div>
-                <p class="text-muted-foreground ml-11">Quản lý thông tin chi nhánh {{ $branch->name }}</p>
+                <div class="header-text">
+                    <h1>Chi tiết chi nhánh</h1>
+                    <p>Quản lý thông tin chi nhánh {{ $branch->name }}</p>
+                </div>
             </div>
-            <div class="flex gap-2 mt-4 md:mt-0">
-                <a href="#" class="btn btn-primary">
-                    <i class="fas fa-edit mr-2"></i>
-                    Chỉnh sửa
+            <div class="header-actions">
+                <a href="{{ route('admin.branches.edit', $branch->id) }}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i>
+                    <span>Chỉnh sửa</span>
                 </a>
-                <a href="branches.html" class="btn btn-outline">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    Quay lại
+                <a href="{{ route('admin.branches.index') }}" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Quay lại</span>
                 </a>
             </div>
         </div>
+    </div>
 
-        <!-- Branch Status Card -->
-        <div class="card mb-6 overflow-hidden transition-all duration-300">
-            <div class="h-16 bg-gradient-to-r from-primary to-primary/70"></div>
-            <div class="px-6 -mt-8 pb-6">
-                <div class="grid grid-cols-1 lg:grid-cols-8 gap-6">
-                    <div class="lg:col-span-6">
-                        <div class="flex flex-col md:flex-row md:items-center gap-4">
-                            <div class="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 bg-primary text-white rounded-lg flex items-center justify-center shadow-lg transition-transform duration-300 hover:scale-105">
-                                <i class="fas fa-building fa-2x"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-xl md:text-2xl font-bold mt-2 md:mt-0">{{ $branch->name }}</h2>
-                                <div class="flex items-center text-muted-foreground mt-1">
-                                    <i class="fas fa-map-marker-alt text-red-600 mr-2"></i>
-                                    <span>{{ $branch->address }}</span>
-                                </div>
-                                <div class="flex flex-wrap gap-2 mt-3">
-                                    <div class="badge px-3 py-1.5 bg-green-100 text-green-600">
-                                        <div class="flex items-center">
-                                            <div class="h-2 w-2 rounded-full bg-green-600 mr-2"></div>
-                                            Đang hoạt động
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center gap-1 bg-amber-50 text-amber-800 px-3 py-1.5 rounded-full">
-                                        <div class="flex">
-                                            <i class="fas fa-star text-amber-600"></i>
-                                            <i class="fas fa-star text-amber-600"></i>
-                                            <i class="fas fa-star text-amber-600"></i>
-                                            <i class="fas fa-star text-amber-600"></i>
-                                            <i class="fas fa-star-half-alt text-amber-600"></i>
-                                        </div>
-                                        <span class="font-medium ml-1">{{ number_format($branch->rating, 1) }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="lg:col-span-2">
-                        <div class="bg-card rounded-lg shadow-sm p-4">
-                            <div class="grid grid-cols-2 divide-x">
-                                <div class="pr-4 text-center">
-                                    <div class="mx-auto w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2">
-                                        <i class="fas fa-sun text-green-600"></i>
-                                    </div>
-                                    <div class="text-xs text-muted-foreground">Giờ mở cửa</div>
-                                    <div class="font-bold text-green-600 mt-1">{{ $branch->opening_hour }}</div>
-                                </div>
-                                <div class="pl-4 text-center">
-                                    <div class="mx-auto w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mb-2">
-                                        <i class="fas fa-moon text-red-600"></i>
-                                    </div>
-                                    <div class="text-xs text-muted-foreground">Giờ đóng cửa</div>
-                                    <div class="font-bold text-red-600 mt-1">{{ $branch->closing_hour }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Branch Overview Card -->
+    <div class="card branch-overview">
+        <div class="branch-banner">
+            <div class="branch-status">
+                @if($branch->active)
+                    <span class="status-badge active">
+                        <i class="fas fa-check-circle"></i>
+                        Đang hoạt động
+                    </span>
+                @else
+                    <span class="status-badge inactive">
+                        <i class="fas fa-times-circle"></i>
+                        Ngưng hoạt động
+                    </span>
+                @endif
             </div>
         </div>
-
-        <!-- Main Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left Column - 2/3 width on large screens -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Basic Information -->
-                <div class="card overflow-hidden transition-all duration-300">
-                    <div class="card-header pb-2">
-                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <i class="fas fa-info-circle text-primary"></i>
-                        </div>
-                        <h3 class="card-title">Thông tin cơ bản</h3>
-                    </div>
-                    <div class="card-content-no-padding">
-                        <div class="divide-y">
-                            <div class="grid grid-cols-3 py-4 px-6">
-                                <div class="font-medium flex items-center">
-                                    <i class="fas fa-hashtag mr-2 text-primary/70"></i>
-                                    #{{ $branch->id }}
-                                </div>
-                                <div class="col-span-2">
-                                    <span class="badge badge-outline font-mono">#1</span>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 py-4 px-6">
-                                <div class="font-medium flex items-center">
-                                    <i class="fas fa-building mr-2 text-primary/70"></i>
-                                    Tên chi nhánh
-                                </div>
-                                <div class="col-span-2 font-semibold">{{ $branch->name }}</div>
-                            </div>
-
-                            <div class="grid grid-cols-3 py-4 px-6">
-                                <div class="font-medium flex items-center">
-                                    <i class="fas fa-map-marker-alt mr-2 text-primary/70"></i>
-                                    Địa chỉ
-                                </div>
-                                <div class="col-span-2">{{ $branch->address }}</div>
-                            </div>
-
-                            <div class="grid grid-cols-3 py-4 px-6">
-                                <div class="font-medium flex items-center">
-                                    <i class="fas fa-phone mr-2 text-primary/70"></i>
-                                    Số điện thoại
-                                </div>
-                                <div class="col-span-2">
-                                    <a href="tel:0901234567" class="text-primary hover:underline transition-colors">
-                                    {{ $branch->phone }}
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 py-4 px-6">
-                                <div class="font-medium flex items-center">
-                                    <i class="fas fa-envelope mr-2 text-primary/70"></i>
-                                    Email
-                                </div>
-                                <div class="col-span-2">
-                                    <a href="mailto:{{ $branch->email }}" class="text-primary hover:underline transition-colors">
-                                    {{ $branch->email }}
-                                    </a>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 py-4 px-6">
-                                <div class="font-medium flex items-center">
-                                    <i class="fas fa-calendar mr-2 text-primary/70"></i>
-                                    Ngày tạo
-                                </div>
-                                <div class="col-span-2">
-                                    <div class="flex items-center gap-3">
-                                        <span class="badge badge-secondary flex items-center">
-                                            <i class="fas fa-calendar-alt mr-1"></i>
-                                            {{ $branch->created_at->format('d/m/Y') }}
-                                        </span>
-                                        <span class="text-muted-foreground text-sm flex items-center">
-                                            <i class="fas fa-clock mr-1"></i>
-                                            {{ $branch->created_at->format('H:i') }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <div class="branch-overview-content">
+            <div class="branch-overview-left">
+                <div class="branch-avatar">
+                    <i class="fas fa-store-alt"></i>
                 </div>
-
-                <!-- Operating Hours -->
-                <div class="card transition-all duration-300">
-                    <div class="card-header pb-2">
-                        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                            <i class="fas fa-clock text-amber-600"></i>
-                        </div>
-                        <h3 class="card-title">Giờ hoạt động</h3>
+                <div class="branch-info">
+                    <h2>{{ $branch->name }}</h2>
+                    <div class="branch-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ $branch->address }}</span>
                     </div>
-                    <div class="card-content">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-card border rounded-lg p-4 flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-                                <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center shadow-sm">
-                                    <i class="fas fa-sun fa-lg text-green-600"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm text-muted-foreground">Giờ mở cửa</div>
-                                    <div class="text-2xl font-bold text-green-600">{{ $branch->opening_hour }}</div>
-                                </div>
-                            </div>
-
-                            <div class="bg-card border rounded-lg p-4 flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-1">
-                                <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shadow-sm">
-                                    <i class="fas fa-moon fa-lg text-red-600"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm text-muted-foreground">Giờ đóng cửa</div>
-                                    <div class="text-2xl font-bold text-red-600">{{ $branch->closing_hour }}</div>
-                                </div>
-                            </div>
+                    <div class="branch-contact">
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <a href="tel:{{ $branch->phone }}">{{ $branch->phone }}</a>
                         </div>
+                        @if($branch->email)
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <a href="mailto:{{ $branch->email }}">{{ $branch->email }}</a>
+                        </div>
+                        @endif
                     </div>
-                </div>
-            </div>
-
-            <!-- Right Column - 1/3 width on large screens -->
-            <div class="space-y-6">
-                <!-- Manager Information -->
-                <div class="card transition-all duration-300 overflow-hidden">
-                    <div class="card-header pb-2">
-                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <i class="fas fa-user-tie text-blue-600"></i>
+                    @if($branch->rating)
+                    <div class="branch-rating">
+                        <div class="stars">
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= $branch->rating)
+                                    <i class="fas fa-star"></i>
+                                @elseif($i - 0.5 <= $branch->rating)
+                                    <i class="fas fa-star-half-alt"></i>
+                                @else
+                                    <i class="far fa-star"></i>
+                                @endif
+                            @endfor
                         </div>
-                        <h3 class="card-title">Quản lý chi nhánh</h3>
+                        <span class="rating-value">{{ number_format($branch->rating, 1) }}</span>
                     </div>
-                    @if($branch->manager)
-                    <div class="card-content-no-padding">
-                        <div>
-                            <div class="h-20 bg-blue-100"></div>
-                            <div class="px-6 pb-6 -mt-10">
-                                <div class="flex flex-col items-center">
-                                    <div class="w-20 h-20 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg mb-3">
-                                        <i class="fas fa-user-tie fa-2x"></i>
-                                    </div>
-                                    <h3 class="font-bold text-lg">{{ $branch->manager->full_name }}</h3>
-                                    <div class="mt-1 mb-4 px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
-                                        <div class="flex items-center">
-                                            <div class="h-1.5 w-1.5 rounded-full bg-blue-600 mr-1.5"></div>
-                                            Quản lý chi nhánh
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-2 w-full mb-3">
-                                        <a
-                                            href="mailto:{{ $branch->manager->email }}"
-                                            class="flex items-center justify-center gap-2 text-sm py-2 border border-blue-200 rounded-md text-blue-700 hover:bg-blue-50 transition-colors"
-                                        >
-                                            <i class="fas fa-envelope"></i>
-                                            Gửi email
-                                        </a>
-                                        <a
-                                            href="tel:{{ $branch->manager->phone }}"
-                                            class="flex items-center justify-center gap-2 text-sm py-2 border border-blue-200 rounded-md text-blue-700 hover:bg-blue-50 transition-colors"
-                                        >
-                                            <i class="fas fa-phone"></i>
-                                            Liên hệ
-                                        </a>
-                                    </div>
-
-                                    <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-outline w-full">
-                                        <i class="fas fa-exchange-alt mr-2"></i>
-                                        Thay đổi quản lý
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    @else
-                        <div class="text-center p-4">
-                            <div class="mb-3">
-                                <div class="avatar-circle bg-light mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
-                                    <i class="fas fa-user-slash fa-2x text-muted"></i>
-                                </div>
-                            </div>
-                            <h6 class="fw-bold mb-1">Chưa phân công quản lý</h6>
-                            <p class="text-muted small mb-3">Chi nhánh này chưa có người quản lý</p>
-                            <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-primary">
-                                <i class="fas fa-plus me-1"></i>Phân công quản lý
-                            </a>
-                        </div>
                     @endif
                 </div>
-
-                <!-- Rating & Reviews -->
-                <div class="card transition-all duration-300 overflow-hidden">
-                    <div class="card-header pb-2">
-                        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                            <i class="fas fa-star text-amber-600"></i>
+            </div>
+            <div class="branch-overview-right">
+                <div class="hours-container">
+                    <div class="hours-item opening">
+                        <div class="hours-icon">
+                            <i class="fas fa-sun"></i>
                         </div>
-                        <h3 class="card-title">Đánh giá khách hàng</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="text-center">
-                            <div class="relative mb-8">
-                                <div class="h-24 bg-amber-50 rounded-lg"></div>
-                                <div class="absolute left-1/2 -translate-x-1/2 -bottom-8">
-                                    <div class="w-16 h-16 rounded-full bg-white shadow-md flex items-center justify-center">
-                                        <div class="text-center">
-                                            <div class="text-2xl font-bold text-amber-600">{{ number_format($branch->rating, 1) }}</div>
-                                            <div class="text-xs text-muted-foreground">/ 5.0</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex justify-center mt-10 mb-3">
-                                <i class="fas fa-star text-amber-600 mx-1"></i>
-                                <i class="fas fa-star text-amber-600 mx-1"></i>
-                                <i class="fas fa-star text-amber-600 mx-1"></i>
-                                <i class="fas fa-star text-amber-600 mx-1"></i>
-                                <i class="fas fa-star-half-alt text-amber-600 mx-1"></i>
-                            </div>
-                            <p class="text-sm text-muted-foreground">Dựa trên đánh giá của khách hàng</p>
+                        <div class="hours-info">
+                            <span class="hours-label">Giờ mở cửa</span>
+                            <span class="hours-value">{{ $branch->opening_hour }}</span>
                         </div>
                     </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="card transition-all duration-300">
-                    <div class="card-header pb-2">
-                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <i class="fas fa-bolt text-green-600"></i>
+                    <div class="hours-item closing">
+                        <div class="hours-icon">
+                            <i class="fas fa-moon"></i>
                         </div>
-                        <h3 class="card-title">Thao tác nhanh</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="tooltip">
-                                <div class="quick-action bg-primary/10 text-primary rounded-lg p-4 text-center cursor-pointer hover:bg-primary hover:text-white">
-                                    <div class="flex justify-center mb-2">
-                                        <i class="fas fa-chart-bar fa-lg"></i>
-                                    </div>
-                                    <h6 class="font-medium text-sm">Báo cáo</h6>
-                                </div>
-                                <span class="tooltip-text">Xem báo cáo chi nhánh</span>
-                            </div>
-
-                            <div class="tooltip">
-                                <div class="quick-action bg-blue-100 text-blue-600 rounded-lg p-4 text-center cursor-pointer hover:bg-blue-600 hover:text-white">
-                                    <div class="flex justify-center mb-2">
-                                        <i class="fas fa-users fa-lg"></i>
-                                    </div>
-                                    <h6 class="font-medium text-sm">Nhân viên</h6>
-                                </div>
-                                <span class="tooltip-text">Quản lý nhân viên chi nhánh</span>
-                            </div>
-
-                            <div class="tooltip">
-                                <div class="quick-action bg-green-100 text-green-600 rounded-lg p-4 text-center cursor-pointer hover:bg-green-600 hover:text-white">
-                                    <div class="flex justify-center mb-2">
-                                        <i class="fas fa-calendar-alt fa-lg"></i>
-                                    </div>
-                                    <h6 class="font-medium text-sm">Lịch làm việc</h6>
-                                </div>
-                                <span class="tooltip-text">Xem lịch làm việc</span>
-                            </div>
-
-                            <div class="tooltip">
-                                <div class="quick-action bg-amber-100 text-amber-600 rounded-lg p-4 text-center cursor-pointer hover:bg-amber-600 hover:text-white">
-                                    <div class="flex justify-center mb-2">
-                                        <i class="fas fa-cog fa-lg"></i>
-                                    </div>
-                                    <h6 class="font-medium text-sm">Cài đặt</h6>
-                                </div>
-                                <span class="tooltip-text">Cài đặt chi nhánh</span>
-                            </div>
+                        <div class="hours-info">
+                            <span class="hours-label">Giờ đóng cửa</span>
+                            <span class="hours-value">{{ $branch->closing_hour }}</span>
                         </div>
                     </div>
                 </div>
@@ -1174,38 +111,1752 @@
         </div>
     </div>
 
-    <script>
-        // Add animation to cards on scroll
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.card');
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            }, {
-                threshold: 0.1
-            });
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+        <!-- Left Column -->
+        <div class="main-column">
+            <!-- Branch Images Gallery -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-images"></i>
+                    </div>
+                    <h3>Hình ảnh chi nhánh</h3>
+                    <div class="card-actions">
+                        <button type="button" class="btn btn-sm btn-outline" id="uploadImagesBtn">
+                            <i class="fas fa-upload"></i>
+                            <span>Tải lên</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="uploadImageForm" action="{{ route('admin.branches.upload-image', $branch->id) }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <input type="file" id="imageUpload" name="image" accept="image/*" style="display: none;">
+    </form>
+    
+    @if(isset($branch->images) && count($branch->images) > 0)
+                    <div class="gallery-grid">
+                        @foreach($branch->images as $index => $image)
+                        <div class="gallery-item">
+                            <img src="{{ asset('storage/' . $image->image_path) }}" 
+                                 alt="{{ $branch->name }} - Hình {{ $index + 1 }}" 
+                                 class="gallery-img">
+                            <div class="gallery-overlay">
+                                <div class="gallery-actions">
+                                    <a href="{{ asset('storage/' . $image->path) }}" 
+                                       class="gallery-btn view-btn" 
+                                       data-fancybox="branch-gallery"
+                                       data-caption="{{ $branch->name }} - {{ $image->caption ?? 'Hình ' . ($index + 1) }}">
+                                        <i class="fas fa-search-plus"></i>
+                                    </a>
+                                    @if($image->is_featured)
+                                        <span class="gallery-btn featured-btn">
+                                            <i class="fas fa-star"></i>
+                                        </span>
+                                    @else
+                                        <button type="button" 
+                                                class="gallery-btn set-featured-btn"
+                                                data-image-id="{{ $image->id }}"
+                                                data-url="{{ route('admin.branches.set-featured-image', [$branch->id, $image->id]) }}">
+                                            <i class="far fa-star"></i>
+                                        </button>
+                                    @endif
+                                    <button type="button" 
+                                            class="gallery-btn delete-btn"
+                                            data-image-id="{{ $image->id }}"
+                                            data-url="{{ route('admin.branches.delete-image', [$branch->id, $image->id]) }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            @if($image->caption)
+                                <div class="gallery-caption">
+                                    {{ $image->caption }}
+                                </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                    @else
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <h4>Chưa có hình ảnh</h4>
+                        <p>Chi nhánh này chưa có hình ảnh nào</p>
+                        <button type="button" class="btn btn-primary" id="emptyStateUploadBtn">
+                            <i class="fas fa-upload"></i>
+                            <span>Tải lên hình ảnh</span>
+                        </button>
+                    </div>
+                    @endif
+                </div>
+            </div>
 
-            cards.forEach(card => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                observer.observe(card);
-            });
+            <!-- Basic Information -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h3>Thông tin cơ bản</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="info-table">
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-hashtag"></i>
+                                <span>ID Chi nhánh</span>
+                            </div>
+                            <div class="info-value">
+                                <span class="id-badge">#{{ $branch->id }}</span>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-building"></i>
+                                <span>Tên chi nhánh</span>
+                            </div>
+                            <div class="info-value">
+                                <span class="fw-bold">{{ $branch->name }}</span>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>Địa chỉ</span>
+                            </div>
+                            <div class="info-value">
+                                {{ $branch->address }}
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-phone"></i>
+                                <span>Số điện thoại</span>
+                            </div>
+                            <div class="info-value">
+                                <a href="tel:{{ $branch->phone }}" class="link-hover">
+                                    {{ $branch->phone }}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-envelope"></i>
+                                <span>Email</span>
+                            </div>
+                            <div class="info-value">
+                                @if($branch->email)
+                                    <a href="mailto:{{ $branch->email }}" class="link-hover">
+                                        {{ $branch->email }}
+                                    </a>
+                                @else
+                                    <span class="text-muted">
+                                        <i class="fas fa-minus"></i> Chưa cập nhật
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">
+                                <i class="fas fa-calendar-plus"></i>
+                                <span>Ngày tạo</span>
+                            </div>
+                            <div class="info-value">
+                                <div class="date-time">
+                                    <span class="date">
+                                        <i class="far fa-calendar-alt"></i>
+                                        {{ $branch->created_at->format('d/m/Y') }}
+                                    </span>
+                                    <span class="time">
+                                        <i class="far fa-clock"></i>
+                                        {{ $branch->created_at->format('H:i') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            // Add click effect for quick action items
-            const quickActions = document.querySelectorAll('.quick-action');
-            quickActions.forEach(action => {
-                action.addEventListener('click', function() {
-                    this.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        this.style.transform = '';
-                    }, 150);
+            <!-- Operating Hours -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Giờ hoạt động</h3>
+                </div>
+                <div class="card-body">
+                    <div class="hours-grid">
+                        <div class="hours-card opening-hours">
+                            <div class="hours-card-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div class="hours-card-content">
+                                <span class="hours-card-label">Giờ mở cửa</span>
+                                <span class="hours-card-value">{{ $branch->opening_hour }}</span>
+                            </div>
+                        </div>
+                        <div class="hours-card closing-hours">
+                            <div class="hours-card-icon">
+                                <i class="fas fa-moon"></i>
+                            </div>
+                            <div class="hours-card-content">
+                                <span class="hours-card-label">Giờ đóng cửa</span>
+                                <span class="hours-card-value">{{ $branch->closing_hour }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="side-column">
+            <!-- Manager Information -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h3>Quản lý chi nhánh</h3>
+                </div>
+                <div class="card-body">
+                    @if($branch->manager)
+                    <div class="manager-profile">
+                        <div class="manager-cover"></div>
+                        <div class="manager-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="manager-info">
+                            <h4>{{ $branch->manager->full_name }}</h4>
+                            <div class="manager-role">
+                                <i class="fas fa-briefcase"></i>
+                                <span>Quản lý chi nhánh</span>
+                            </div>
+                            <div class="manager-actions">
+                                <div class="action-row">
+                                    <a href="mailto:{{ $branch->manager->email }}" class="btn btn-outline btn-sm">
+                                        <i class="fas fa-envelope"></i>
+                                        <span>Gửi email</span>
+                                    </a>
+                                    <a href="tel:{{ $branch->manager->phone }}" class="btn btn-outline btn-sm">
+                                        <i class="fas fa-phone"></i>
+                                        <span>Liên hệ</span>
+                                    </a>
+                                </div>
+                                <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-outline btn-block btn-sm">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    <span>Thay đổi quản lý</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    @else
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                        <h4>Chưa phân công quản lý</h4>
+                        <p>Chi nhánh này chưa có người quản lý</p>
+                        <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            <span>Phân công quản lý</span>
+                        </a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Rating & Reviews -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3>Đánh giá khách hàng</h3>
+                </div>
+                <div class="card-body">
+                    @if($branch->rating)
+                    <div class="rating-summary">
+                        <div class="rating-circle">
+                            <div class="rating-value">{{ number_format($branch->rating, 1) }}</div>
+                            <div class="rating-max">/ 5.0</div>
+                        </div>
+                        <div class="rating-stars">
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= $branch->rating)
+                                    <i class="fas fa-star"></i>
+                                @elseif($i - 0.5 <= $branch->rating)
+                                    <i class="fas fa-star-half-alt"></i>
+                                @else
+                                    <i class="far fa-star"></i>
+                                @endif
+                            @endfor
+                        </div>
+                        <p class="rating-caption">Dựa trên đánh giá của khách hàng</p>
+                    </div>
+                    @else
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <h4>Chưa có đánh giá</h4>
+                        <p>Chi nhánh này chưa nhận được đánh giá nào</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Thao tác nhanh</h3>
+                </div>
+                <div class="card-body">
+                    <div class="quick-actions">
+                        <div class="action-item" data-action="report">
+                            <div class="action-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <span class="action-label">Báo cáo</span>
+                        </div>
+                        <div class="action-item" data-action="staff">
+                            <div class="action-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <span class="action-label">Nhân viên</span>
+                        </div>
+                        <div class="action-item" data-action="schedule">
+                            <div class="action-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <span class="action-label">Lịch làm việc</span>
+                        </div>
+                        <div class="action-item" data-action="settings">
+                            <div class="action-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <span class="action-label">Cài đặt</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Images Modal -->
+<div class="modal" id="uploadImagesModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Tải lên hình ảnh chi nhánh</h3>
+                <button type="button" class="modal-close" id="closeUploadModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadImagesForm" action="{{ route('admin.branches.upload-image', $branch->id) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="form-group">
+                        <label for="branchImages">Chọn hình ảnh</label>
+                        <input type="file" id="branchImages" name="images[]" multiple accept="image/*" required>
+                        <div class="form-hint">Bạn có thể chọn nhiều hình ảnh cùng lúc. Định dạng hỗ trợ: JPG, PNG, GIF.</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="setAsFeatured" name="set_as_featured">
+                            <label for="setAsFeatured">
+                                Đặt hình ảnh đầu tiên làm ảnh đại diện
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="image-preview-container hidden">
+                        <h4>Xem trước</h4>
+                        <div class="image-preview-grid" id="imagePreviewGrid"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancelUploadBtn">Hủy</button>
+                <button type="submit" form="uploadImagesForm" class="btn btn-primary">
+                    <i class="fas fa-upload"></i>
+                    <span>Tải lên</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Image Confirmation Modal -->
+<div class="modal" id="deleteImageModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Xác nhận xóa</h3>
+                <button type="button" class="modal-close" id="closeDeleteModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa hình ảnh này?</p>
+                <p class="text-danger">Lưu ý: Hành động này không thể hoàn tác.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancelDeleteBtn">Hủy</button>
+                <form id="deleteImageForm" action="" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables */
+:root {
+    --primary: #4361ee;
+    --primary-light: #4895ef;
+    --primary-dark: #3f37c9;
+    --secondary: #4cc9f0;
+    --success: #4ade80;
+    --danger: #f43f5e;
+    --warning: #f59e0b;
+    --info: #3b82f6;
+    --light: #f9fafb;
+    --dark: #1f2937;
+    --gray: #6b7280;
+    --gray-light: #e5e7eb;
+    --gray-dark: #4b5563;
+    --white: #ffffff;
+    --black: #000000;
+    
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --border-radius-lg: 16px;
+    --border-radius-xl: 24px;
+    --border-radius-full: 9999px;
+    
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    --transition: all 0.3s ease;
+    --transition-fast: all 0.15s ease;
+    --transition-slow: all 0.5s ease;
+}
+
+/* Base Styles */
+.branch-details-container {
+    font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--dark);
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 1.5rem;
+}
+
+h2 {
+    font-size: 1.25rem;
+}
+
+h3 {
+    font-size: 1.125rem;
+}
+
+h4 {
+    font-size: 1rem;
+}
+
+p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+a:hover {
+    color: var(--primary-dark);
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    border: none;
+    font-size: 0.875rem;
+    gap: 0.5rem;
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    color: var(--white);
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--gray-dark);
+    border: 1px solid var(--gray-light);
+}
+
+.btn-outline:hover {
+    background-color: var(--gray-light);
+    color: var(--dark);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: var(--white);
+}
+
+.btn-danger:hover {
+    background-color: #e11d48;
+    color: var(--white);
+}
+
+/* Page Header */
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    width: 3rem;
+    height: 3rem;
+    background-color: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.header-text p {
+    color: var(--gray);
+    margin-top: 0.25rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* Cards */
+.card {
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: var(--transition);
+    margin-bottom: 1.5rem;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--gray-light);
+    gap: 0.75rem;
+}
+
+.card-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.card-header h3 {
+    flex-grow: 1;
+}
+
+.card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-body.p-0 {
+    padding: 0;
+}
+
+/* Branch Overview */
+.branch-overview {
+    margin-bottom: 2rem;
+}
+
+.branch-banner {
+    height: 8rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    position: relative;
+}
+
+.branch-status {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-full);
+    font-weight: 500;
+    font-size: 0.875rem;
+    gap: 0.5rem;
+}
+
+.status-badge.active {
+    background-color: rgba(74, 222, 128, 0.2);
+    color: var(--success);
+}
+
+.status-badge.inactive {
+    background-color: rgba(244, 63, 94, 0.2);
+    color: var(--danger);
+}
+
+.branch-overview-content {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: -3rem;
+    padding: 0 1.5rem 1.5rem;
+    z-index: 1000;
+}
+
+.branch-overview-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.branch-avatar {
+    width: 6rem;
+    height: 6rem;
+    background-color: var(--primary);
+    color: var(--white);
+    border-radius: var(--border-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: var(--shadow);
+    border: 4px solid var(--white);
+    flex-shrink: 0;
+}
+
+.branch-info {
+    padding-top: 1rem;
+}
+
+.branch-address {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--gray);
+    margin: 0.5rem 0 1rem;
+}
+
+.branch-address i {
+    color: var(--danger);
+}
+
+.branch-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.contact-item i {
+    color: var(--primary);
+}
+
+.branch-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stars {
+    color: var(--warning);
+    display: flex;
+    gap: 0.125rem;
+}
+
+.rating-value {
+    font-weight: 600;
+}
+
+.branch-overview-right {
+    margin-top: 1rem;
+    flex-basis: 100%;
+}
+
+@media (min-width: 768px) {
+    .branch-overview-right {
+        flex-basis: auto;
+        margin-top: 0;
+        margin-left: auto;
+    }
+}
+
+.hours-container {
+    display: flex;
+    gap: 1rem;
+    background-color: var(--light);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.hours-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    flex: 1;
+}
+
+.hours-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.hours-item.opening .hours-icon {
+    background-color: rgba(74, 222, 128, 0.2);
+    color: var(--success);
+}
+
+.hours-item.closing .hours-icon {
+    background-color: rgba(244, 63, 94, 0.2);
+    color: var(--danger);
+}
+
+.hours-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.hours-label {
+    font-size: 0.75rem;
+    color: var(--gray);
+}
+
+.hours-value {
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.hours-item.opening .hours-value {
+    color: var(--success);
+}
+
+.hours-item.closing .hours-value {
+    color: var(--danger);
+}
+
+/* Content Grid */
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+    .content-grid {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+/* Gallery */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.gallery-item {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.gallery-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.gallery-item:hover .gallery-overlay {
+    opacity: 1;
+}
+
+.gallery-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.gallery-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--white);
+    color: var(--dark);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.gallery-btn:hover {
+    transform: scale(1.1);
+}
+
+.gallery-btn.view-btn:hover {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.gallery-btn.featured-btn {
+    background-color: var(--warning);
+    color: var(--white);
+}
+
+.gallery-btn.set-featured-btn:hover {
+    background-color: var(--warning);
+    color: var(--white);
+}
+
+.gallery-btn.delete-btn:hover {
+    background-color: var(--danger);
+    color: var(--white);
+}
+
+.gallery-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: var(--white);
+    padding: 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* Info Table */
+.info-table {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-row {
+    display: flex;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    font-weight: 500;
+    flex: 0 0 200px;
+}
+
+.info-label i {
+    color: var(--primary);
+}
+
+.info-value {
+    padding: 1rem 1.5rem;
+    flex: 1;
+}
+
+.id-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--gray-light);
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+}
+
+.fw-bold {
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--gray);
+}
+
+.link-hover:hover {
+    text-decoration: underline;
+}
+
+.date-time {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.date {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    background-color: var(--gray-light);
+    border-radius: var(--border-radius-full);
+    font-size: 0.875rem;
+}
+
+.time {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--gray);
+    font-size: 0.875rem;
+}
+
+/* Hours Grid */
+.hours-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 576px) {
+    .hours-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.hours-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: var(--border-radius);
+    background-color: var(--light);
+    transition: var(--transition);
+}
+
+.hours-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+}
+
+.hours-card-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.opening-hours .hours-card-icon {
+    background-color: rgba(74, 222, 128, 0.2);
+    color: var(--success);
+}
+
+.closing-hours .hours-card-icon {
+    background-color: rgba(244, 63, 94, 0.2);
+    color: var(--danger);
+}
+
+.hours-card-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.hours-card-label {
+    font-size: 0.875rem;
+    color: var(--gray);
+}
+
+.hours-card-value {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.opening-hours .hours-card-value {
+    color: var(--success);
+}
+
+.closing-hours .hours-card-value {
+    color: var(--danger);
+}
+
+/* Manager Profile */
+.manager-profile {
+    text-align: center;
+}
+
+.manager-cover {
+    height: 5rem;
+    background-color: rgba(59, 130, 246, 0.1);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+.manager-avatar {
+    width: 5rem;
+    height: 5rem;
+    background-color: var(--info);
+    color: var(--white);
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: -2.5rem auto 0.75rem;
+    border: 4px solid var(--white);
+    box-shadow: var(--shadow);
+}
+
+.manager-info h4 {
+    margin-bottom: 0.5rem;
+}
+
+.manager-role {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--info);
+    border-radius: var(--border-radius-full);
+    font-size: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.manager-actions {
+    padding: 0 0.5rem;
+}
+
+.action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Rating Summary */
+.rating-summary {
+    text-align: center;
+}
+
+.rating-circle {
+    width: 6rem;
+    height: 6rem;
+    background-color: var(--white);
+    border-radius: var(--border-radius-full);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: var(--shadow);
+    border: 4px solid rgba(245, 158, 11, 0.1);
+}
+
+.rating-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--warning);
+    line-height: 1;
+}
+
+.rating-max {
+    font-size: 0.75rem;
+    color: var(--gray);
+}
+
+.rating-stars {
+    color: var(--warning);
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.rating-caption {
+    color: var(--gray);
+    font-size: 0.875rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.25rem 1rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.action-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow);
+}
+
+.action-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    transition: var(--transition);
+}
+
+.action-item:hover .action-icon {
+    transform: scale(1.1);
+}
+
+.action-item[data-action="report"] .action-icon {
+    background-color: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+}
+
+.action-item[data-action="staff"] .action-icon {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--info);
+}
+
+.action-item[data-action="schedule"] .action-icon {
+    background-color: rgba(74, 222, 128, 0.1);
+    color: var(--success);
+}
+
+.action-item[data-action="settings"] .action-icon {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+}
+
+.action-item[data-action="report"]:hover {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.action-item[data-action="staff"]:hover {
+    background-color: var(--info);
+    color: var(--white);
+}
+
+.action-item[data-action="schedule"]:hover {
+    background-color: var(--success);
+    color: var(--white);
+}
+
+.action-item[data-action="settings"]:hover {
+    background-color: var(--warning);
+    color: var(--white);
+}
+
+.action-item:hover .action-icon {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: var(--white);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+.empty-icon {
+    width: 5rem;
+    height: 5rem;
+    background-color: var(--gray-light);
+    color: var(--gray);
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+    transition: var(--transition);
+}
+
+.empty-state:hover .empty-icon {
+    transform: scale(1.05);
+}
+
+.empty-state h4 {
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--gray);
+    margin-bottom: 1.25rem;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 32rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+.modal-dialog.modal-sm {
+    max-width: 24rem;
+}
+
+.modal-content {
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.modal-close {
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--gray);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.modal-close:hover {
+    background-color: var(--gray-light);
+    color: var(--dark);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--gray-light);
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-hint {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--gray);
+}
+
+input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--gray-light);
+    border-radius: var(--border-radius);
+    background-color: var(--light);
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-check input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Image Preview */
+.image-preview-container {
+    margin-top: 1.5rem;
+}
+
+.image-preview-container.hidden {
+    display: none;
+}
+
+.image-preview-container h4 {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+
+.image-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.preview-item {
+    position: relative;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    aspect-ratio: 1;
+}
+
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.preview-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--border-radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    color: var(--dark);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.preview-remove:hover {
+    background-color: var(--danger);
+    color: var(--white);
+}
+
+/* Utilities */
+.hidden {
+    display: none;
+}
+
+.text-danger {
+    color: var(--danger);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal functionality
+    const uploadImagesBtn = document.getElementById('uploadImagesBtn');
+    const emptyStateUploadBtn = document.getElementById('emptyStateUploadBtn');
+    const closeUploadModal = document.getElementById('closeUploadModal');
+    const cancelUploadBtn = document.getElementById('cancelUploadBtn');
+    const uploadImagesModal = document.getElementById('uploadImagesModal');
+    
+    const deleteImageModal = document.getElementById('deleteImageModal');
+    const closeDeleteModal = document.getElementById('closeDeleteModal');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    
+    // Open upload modal
+    function openUploadModal() {
+        uploadImagesModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Close upload modal
+    function closeUploadModal() {
+        uploadImagesModal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+    
+    // Open delete modal
+    function openDeleteModal() {
+        deleteImageModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Close delete modal
+    function closeDeleteModal() {
+        deleteImageModal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+    
+    if (uploadImagesBtn) {
+        uploadImagesBtn.addEventListener('click', openUploadModal);
+    }
+    
+    if (emptyStateUploadBtn) {
+        emptyStateUploadBtn.addEventListener('click', openUploadModal);
+    }
+    
+    if (closeUploadModal) {
+        closeUploadModal.addEventListener('click', closeUploadModal);
+    }
+    
+    if (cancelUploadBtn) {
+        cancelUploadBtn.addEventListener('click', closeUploadModal);
+    }
+    
+    if (closeDeleteModal) {
+        closeDeleteModal.addEventListener('click', closeDeleteModal);
+    }
+    
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+    }
+    
+    // Close modals when clicking on backdrop
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal-backdrop')) {
+            closeUploadModal();
+            closeDeleteModal();
+        }
+    });
+    
+    // Image upload preview
+    const imageInput = document.getElementById('branchImages');
+    const previewContainer = document.querySelector('.image-preview-container');
+    const previewGrid = document.getElementById('imagePreviewGrid');
+    
+    if (imageInput) {
+        imageInput.addEventListener('change', function() {
+            previewGrid.innerHTML = '';
+            
+            if (this.files.length > 0) {
+                previewContainer.classList.remove('hidden');
+                
+                Array.from(this.files).forEach((file, index) => {
+                    if (!file.type.match('image.*')) return;
+                    
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const previewItem = document.createElement('div');
+                        previewItem.className = 'preview-item';
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.alt = `Preview ${index + 1}`;
+                        img.className = 'preview-img';
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'preview-remove';
+                        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                        removeBtn.addEventListener('click', function() {
+                            previewItem.remove();
+                            
+                            // If no previews left, hide the container
+                            if (previewGrid.children.length === 0) {
+                                previewContainer.classList.add('hidden');
+                            }
+                        });
+                        
+                        previewItem.appendChild(img);
+                        previewItem.appendChild(removeBtn);
+                        previewGrid.appendChild(previewItem);
+                    };
+                    
+                    reader.readAsDataURL(file);
                 });
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        });
+    }
+
+    // Single image upload handling
+    document.getElementById('uploadImagesBtn').addEventListener('click', function() {
+        document.getElementById('imageUpload').click();
+    });
+
+    document.getElementById('imageUpload').addEventListener('change', function(e) {
+        const formData = new FormData(document.getElementById('uploadImageForm'));
+        
+        fetch("{{ route('admin.branches.upload-image', $branch->id) }}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                window.location.reload();
+            } else {
+                alert('Upload thất bại: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi upload ảnh');
+        });
+    });
+    
+    // Delete image functionality
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    const deleteForm = document.getElementById('deleteImageForm');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const imageId = this.getAttribute('data-image-id');
+            deleteForm.action = `/admin/branch-images/${imageId}`;
+            openDeleteModal();
+        });
+    });
+    
+    // Set featured image functionality
+    const featuredButtons = document.querySelectorAll('.set-featured-btn');
+    
+    featuredButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const imageId = this.getAttribute('data-image-id');
+            
+            // Send AJAX request to set as featured
+            fetch(`/admin/branch-images/${imageId}/set-featured`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    branch_id: {{ $branch->id }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to reflect changes
+                    window.location.reload();
+                } else {
+                    alert('Có lỗi xảy ra khi đặt ảnh đại diện');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi đặt ảnh đại diện');
             });
         });
-    </script>
-</body>
-</html>
+    });
+    
+    // Quick action items
+    const actionItems = document.querySelectorAll('.action-item');
+    
+    actionItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const action = this.getAttribute('data-action');
+            
+            // Handle different actions
+            switch (action) {
+                case 'report':
+                    console.log('Opening reports');
+                    // Add your report action here
+                    break;
+                case 'staff':
+                    console.log('Managing staff');
+                    // Add your staff management action here
+                    break;
+                case 'schedule':
+                    console.log('Viewing schedule');
+                    // Add your schedule action here
+                    break;
+                case 'settings':
+                    console.log('Opening settings');
+                    // Add your settings action here
+                    break;
+            }
+        });
+    });
+    
+    // Initialize Fancybox for gallery
+    if (typeof Fancybox !== 'undefined') {
+        Fancybox.bind("[data-fancybox]", {
+            // Options here
+        });
+    }
+    
+    // Add animation to cards on scroll
+    const cards = document.querySelectorAll('.card');
+    
+    function animateOnScroll() {
+        cards.forEach(card => {
+            const cardTop = card.getBoundingClientRect().top;
+            const windowHeight = window.innerHeight;
+            
+            if (cardTop < windowHeight * 0.9) {
+                card.classList.add('animate-in');
+            }
+        });
+    }
+    
+    // Add initial animation class
+    cards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    });
+    
+    // Add animation class on scroll
+    window.addEventListener('scroll', animateOnScroll);
+    
+    // Trigger initial animation
+    setTimeout(animateOnScroll, 100);
+});
+</script>
+@endsection

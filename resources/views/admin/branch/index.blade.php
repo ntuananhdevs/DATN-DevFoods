@@ -82,7 +82,9 @@
                         <th data-sort="phone">
                             Liên hệ <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
-                      
+                        <th data-sort="manager">
+                            Quản lý <i class="fas fa-sort data-table-sort-icon"></i>
+                        </th>
                         <th>Giờ làm việc</th>
                         <th data-sort="rating">
                             Đánh giá <i class="fas fa-sort data-table-sort-icon"></i>
@@ -456,40 +458,7 @@ function updateTable(branches) {
                                 onclick="deleteBranch(${branch.id}, '${branch.name}')">
                                 <i class="fas fa-trash"></i>
                             </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-    tbody.html(html);
-}
-
-// Hàm xóa chi nhánh
-function deleteBranch(branchId, branchName) {
-    dtmodalConfirmDelete({
-        itemName: branchName,
-        onConfirm: () => {
-            $.ajax({
-                url: `/admin/branches/${branchId}`,
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    _method: 'DELETE'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: 'Đã xóa chi nhánh thành công'
-                        });
-                        loadBranches(currentPage, currentSearch);
-                    }
-                },
-                error: function(xhr) {
-                    dtmodalShowToast('error', {
-                        title: 'Lỗi',
-                        message: 'Có lỗi xảy ra khi xóa chi nhánh'
+                                      message: 'Có lỗi xảy ra khi xóa chi nhánh'
                     });
                 }
             });

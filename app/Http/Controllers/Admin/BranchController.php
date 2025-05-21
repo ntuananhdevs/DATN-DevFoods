@@ -128,9 +128,10 @@ class BranchController extends Controller
     /**
      * Thay đổi trạng thái của một chi nhánh
      */
-    public function toggleStatus(Branch $branch)
+    public function toggleStatus($id)
     {
         try {
+            $branch = Branch::findOrFail($id);
             $branch->active = !$branch->active;
             $branch->save();
             
@@ -143,7 +144,13 @@ class BranchController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra khi thay đổi trạng thái chi nhánh'
+                'message' => 'Có lỗi xảy ra khi thay đổi trạng thái chi nhánh: ' . $e->getMessage(),
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]
             ], 500);
         }
     }
@@ -187,22 +194,23 @@ class BranchController extends Controller
         try {
             $branch = Branch::with('manager')->findOrFail($id);
             
-            // Lấy danh sách người dùng có vai trò manager
+            // Lấy danh sách người dùng có vai trò manager (bao gồm cả inactive)
             $managers = User::whereHas('roles', function($query) {
                 $query->where('name', 'manager');
-            })
-            ->orderBy('full_name', 'asc')
-            ->get();
+            })->orderBy('full_name', 'asc') // Bỏ điều kiện active
+              ->get();
             
-            // Lấy danh sách chi nhánh đã có người quản lý
+            // Lấy danh sách chi nhánh ĐANG HOẠT ĐỘNG đã có người quản lý
             $assignedBranches = Branch::whereNotNull('manager_user_id')
                 ->where('id', '!=', $id)
+                ->where('active', true) // Thêm điều kiện active
                 ->pluck('manager_user_id')
                 ->toArray();
             
-            // Lọc ra những quản lý chưa được phân công hoặc đang quản lý chi nhánh hiện tại
+            // Lọc ra những quản lý có thể phân công
             $availableManagers = $managers->filter(function($manager) use ($assignedBranches, $branch) {
-                return !in_array($manager->id, $assignedBranches) || $manager->id == $branch->manager_user_id;
+                return !in_array($manager->id, $assignedBranches) || 
+                       $manager->id == $branch->manager_user_id;
             });
             
             return view('admin.branch.assign_manager', compact('branch', 'availableManagers'));
@@ -237,4 +245,46 @@ class BranchController extends Controller
         }
     }
 
+    public function removeManager(Branch $branch)
+    {
+        try {
+            $branch->update(['manager_user_id' => null]);
+            
+            return redirect()->route('admin.branches.show', $branch->id)
+                ->with('success', 'Đã gỡ bỏ quản lý thành công');
+            
+        } catch (\Exception $e) {
+            Log::error('Error removing manager: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gỡ bỏ quản lý thất bại: ' . $e->getMessage());
+        }
+    }
+
+    public function uploadImage(Request $request, Branch $branch)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+    
+        try {
+            $path = $request->file('image')->store('branch-images', 'public');
+            
+            $branch->images()->create([
+                'image_path' => $path, // Đổi từ 'path' -> 'image_path'
+                'caption' => 'Hình ảnh chi nhánh' // Đổi tên trường description -> caption
+            ]);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Upload ảnh thành công'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error uploading image: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi upload ảnh: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

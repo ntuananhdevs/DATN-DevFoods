@@ -145,6 +145,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class,'storeManager'])->name('store');
+            
         });
     });
     // Branch Management
@@ -162,6 +163,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/{id}/assign-manager', [BranchController::class, 'assignManager'])->name('assign-manager');
         Route::post('/{id}/update-manager', [BranchController::class, 'updateManager'])->name('update-manager');
         Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
+        Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
     });
   
   
@@ -213,3 +215,4 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });
+

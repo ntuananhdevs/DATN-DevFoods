@@ -22,7 +22,8 @@ class Branch extends Model
         'active',
         'balance',
         'rating',
-        'reliability_score'
+        'reliability_score',
+        'branch_code' // Thêm trường này vào
     ];
 
     /**
