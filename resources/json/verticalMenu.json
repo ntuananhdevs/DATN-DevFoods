@@ -80,10 +80,10 @@
             "i18n": "nav.banners"
         },
         {
-            "url": "/admin/banners",
+            "url": "/admin/discounts",
             "name": "Quản lý giảm giá",
             "icon": "feather icon-image",
-            "i18n": "nav.banners"
+            "i18n": "nav.discounts"
         }
     ]
 }
