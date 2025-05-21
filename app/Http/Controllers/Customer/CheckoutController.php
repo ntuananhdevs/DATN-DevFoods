@@ -3,19 +3,26 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Attribute;
 use Illuminate\Http\Request;
-use App\Models\Product;
-use App\Models\ProductVariant;
 
-class ProductController extends Controller
+class CheckoutController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        return view("customer.shop.index");
+        return view("customer.checkout.index");
+    }
+
+    public function success()
+    {
+        return view("customer.checkout.success");
+
+    }
+    public function process()
+    {
+        return view("customer.checkout.process");
     }
 
     /**
@@ -37,9 +44,9 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show()
+    public function show(string $id)
     {
-        return view("customer.shop.show");
+        //
     }
 
     /**

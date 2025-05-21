@@ -269,29 +269,47 @@ function loadUsers(page = 1, search = currentSearch) {
     currentPage = page;
     currentSearch = search;
     
+    // Hiển thị loading
+    $('#dataTableBody').addClass('loading');
+    
     $.ajax({
         url: '{{ route("admin.users.index") }}',
         type: 'GET',
         data: {
             page: page,
-            search: search
+            search: search,
+            _token: '{{ csrf_token() }}'
         },
         success: function(response) {
             if (response.success) {
                 updateTable(response.users);
                 updatePagination(response.pagination);
-                
-                // Cập nhật URL mà không reload trang
-                const url = new URL(window.location);
-                url.searchParams.set('page', page);
-                if (search) url.searchParams.set('search', search);
-                else url.searchParams.delete('search');
-                window.history.pushState({}, '', url);
+                updateURL(page, search);
             }
         },
         error: function(xhr) {
-            alert('Có lỗi xảy ra khi tải dữ liệu người dùng');
+            showErrorAlert('Lỗi tải dữ liệu', xhr.responseJSON?.message || 'Vui lòng thử lại sau');
+        },
+        complete: function() {
+            // Ẩn loading khi hoàn thành
+            $('#dataTableBody').removeClass('loading');
         }
+    });
+}
+
+function updateURL(page, search) {
+    const url = new URL(window.location);
+    url.searchParams.set('page', page);
+    search ? url.searchParams.set('search', search) : url.searchParams.delete('search');
+    window.history.replaceState({}, '', url);
+}
+
+function showErrorAlert(title, message) {
+    Swal.fire({
+        icon: 'error',
+        title: title,
+        text: message,
+        confirmButtonColor: '#4361ee',
     });
 }
 
