@@ -147,9 +147,25 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class,'storeManager'])->name('store');
-  
+            
         });
-       
+    });
+    // Branch Management
+    Route::prefix('branches')->name('branches.')->group(function () {
+        Route::get('/', [BranchController::class, 'index'])->name('index');
+        Route::get('/create', [BranchController::class, 'create'])->name('create');
+        Route::post('/store', [BranchController::class,'store'])->name('store');
+        Route::get('/edit/{id}', [BranchController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [BranchController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [BranchController::class,'show'])->name('show');
+
+        Route::get('/export', [BranchController::class, 'export'])->name('export');
+        Route::patch('/{id}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::get('/{id}/assign-manager', [BranchController::class, 'assignManager'])->name('assign-manager');
+        Route::post('/{id}/update-manager', [BranchController::class, 'updateManager'])->name('update-manager');
+        Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
+        Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
     });
   
   
@@ -201,3 +217,4 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
     });
 });
+

@@ -10,7 +10,7 @@ class BranchStock extends Model
     /** @use HasFactory<\Database\Factories\BranchStockFactory> */
     use HasFactory;
 
-    protected $table = 'branch_stock';
+    protected $table = 'branch_stocks';
     protected $fillable = [
         'branch_id',
         'product_variant_id',

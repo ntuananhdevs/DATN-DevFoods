@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -75,9 +77,30 @@ class BranchController extends Controller
         return redirect()->route('admin.branches.index')->with('success', 'Thêm chi nhánh thành công');
     }
 
-    public function show(Branch $branch)
+    public function show($id)
     {
-        return view('admin.branch.show', compact('branch'));
+        try {
+            // Lấy chi nhánh kèm thông tin quản lý (chỉ khi tài khoản active)
+            $branch = Branch::with(['manager' => function($query) {
+                $query->where('active', true);
+            }])->findOrFail($id);
+    
+            // Kiểm tra và xóa tham chiếu nếu quản lý không active
+            if ($branch->manager_user_id && !$branch->manager) {
+                $branch->manager_user_id = null; // Cho phép null
+                $branch->save();
+            }
+    
+            $hasActiveManager = $branch->manager_user_id && $branch->manager;
+            
+            return view('admin.branch.show', compact('branch', 'hasActiveManager'));
+        } catch (\Exception $e) {
+            Log::error('Error in BranchController@show: ' . $e->getMessage());
+            var_dump($e->getMessage());
+            die;
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi tải thông tin chi nhánh');
+        }
     }
 
     public function edit(Branch $branch)
@@ -105,9 +128,10 @@ class BranchController extends Controller
     /**
      * Thay đổi trạng thái của một chi nhánh
      */
-    public function toggleStatus(Branch $branch)
+    public function toggleStatus($id)
     {
         try {
+            $branch = Branch::findOrFail($id);
             $branch->active = !$branch->active;
             $branch->save();
             
@@ -120,7 +144,13 @@ class BranchController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra khi thay đổi trạng thái chi nhánh'
+                'message' => 'Có lỗi xảy ra khi thay đổi trạng thái chi nhánh: ' . $e->getMessage(),
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]
             ], 500);
         }
     }
@@ -152,6 +182,108 @@ class BranchController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi cập nhật trạng thái hàng loạt'
+            ], 500);
+        }
+    }
+
+    /**
+     * Hiển thị form chọn người quản lý cho chi nhánh
+     */
+    public function assignManager($id)
+    {
+        try {
+            $branch = Branch::with('manager')->findOrFail($id);
+            
+            // Lấy danh sách người dùng có vai trò manager (bao gồm cả inactive)
+            $managers = User::whereHas('roles', function($query) {
+                $query->where('name', 'manager');
+            })->orderBy('full_name', 'asc') // Bỏ điều kiện active
+              ->get();
+            
+            // Lấy danh sách chi nhánh ĐANG HOẠT ĐỘNG đã có người quản lý
+            $assignedBranches = Branch::whereNotNull('manager_user_id')
+                ->where('id', '!=', $id)
+                ->where('active', true) // Thêm điều kiện active
+                ->pluck('manager_user_id')
+                ->toArray();
+            
+            // Lọc ra những quản lý có thể phân công
+            $availableManagers = $managers->filter(function($manager) use ($assignedBranches, $branch) {
+                return !in_array($manager->id, $assignedBranches) || 
+                       $manager->id == $branch->manager_user_id;
+            });
+            
+            return view('admin.branch.assign_manager', compact('branch', 'availableManagers'));
+        } catch (\Exception $e) {
+            Log::error('Error in BranchController@assignManager: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi tải form phân công quản lý.');
+        }
+    }
+
+
+    /**
+     * Lưu thông tin người quản lý cho chi nhánh
+     */
+    public function updateManager(Request $request, $id)
+    {
+        try {
+            $validated = $request->validate([
+                'manager_user_id' => 'required|exists:users,id'
+            ]);
+            
+            $branch = Branch::findOrFail($id);
+            $branch->manager_user_id = $validated['manager_user_id'];
+            $branch->save();
+            
+            return redirect()->route('admin.branches.show', $branch->id)
+                ->with('success', 'Đã cập nhật người quản lý chi nhánh thành công.');
+        } catch (\Exception $e) {
+            Log::error('Error in BranchController@updateManager: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi cập nhật người quản lý chi nhánh.');
+        }
+    }
+
+    public function removeManager(Branch $branch)
+    {
+        try {
+            $branch->update(['manager_user_id' => null]);
+            
+            return redirect()->route('admin.branches.show', $branch->id)
+                ->with('success', 'Đã gỡ bỏ quản lý thành công');
+            
+        } catch (\Exception $e) {
+            Log::error('Error removing manager: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gỡ bỏ quản lý thất bại: ' . $e->getMessage());
+        }
+    }
+
+    public function uploadImage(Request $request, Branch $branch)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+    
+        try {
+            $path = $request->file('image')->store('branch-images', 'public');
+            
+            $branch->images()->create([
+                'image_path' => $path, // Đổi từ 'path' -> 'image_path'
+                'caption' => 'Hình ảnh chi nhánh' // Đổi tên trường description -> caption
+            ]);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Upload ảnh thành công'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error uploading image: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi upload ảnh: ' . $e->getMessage()
             ], 500);
         }
     }
