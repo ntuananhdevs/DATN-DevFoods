@@ -33,23 +33,6 @@
                 <h1 class="data-table-title">Quản lý banner</h1>
             </div>
             <div class="data-table-header-actions">
-                {{-- <div class="btn-group mr-2">
-                    <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                        <i class="fas fa-download"></i> Xuất
-                    </button>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'excel']) }}">
-                            <i class="fas fa-file-excel"></i> Excel
-                        </a>
-                        <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'pdf']) }}">
-                            <i class="fas fa-file-pdf"></i> PDF
-                        </a>
-                        <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'csv']) }}">
-                            <i class="fas fa-file-csv"></i> CSV
-                        </a>
-                    </div>
-                </div> --}}
-
                 <a href="{{ route('admin.banners.create') }}" class="data-table-btn data-table-btn-primary">
                     <i class="fas fa-plus"></i> Thêm mới
                 </a>
@@ -174,16 +157,10 @@
                                 <td>
                                     <span
                                         class="badge {{ $banner->order === 0 ? 'badge-primary' : ($banner->order === 1 ? 'badge-info' : 'badge-secondary') }}">
-                                        @if ($banner->order === 0)
-                                            Đầu tiên
-                                        @elseif($banner->order === 1)
-                                            Giữa
-                                        @else
-                                            Cuối cùng
-                                        @endif
+                                        {{ $banner->order }}
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-align:center" style="text-align: center;">
                                     <div class="data-table-action-buttons">
                                         <a href="{{ route('admin.banners.edit', $banner->id) }}"
                                             class="data-table-action-btn edit" title="Chỉnh sửa">
