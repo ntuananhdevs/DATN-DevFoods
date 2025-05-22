@@ -19,7 +19,7 @@
         margin-top: 5px;
         display: block;
     }
-    
+
     .alert-danger {
         background-color: #fff2f2;
         border: 1px solid #ffcccc;
@@ -28,16 +28,17 @@
         border-radius: 4px;
         margin-bottom: 20px;
     }
-    
+
     .alert-danger ul {
         margin: 0;
         padding-left: 20px;
     }
-    
+
     .alert-danger li {
         margin-bottom: 5px;
     }
 </style>
+
 <body>
     <div class="container">
         <div class="login-container">
@@ -66,10 +67,8 @@
                         <a href="{{ route('driver.forgot_password') }}" class="forgot-link">Quên mật khẩu?</a>
                     </div>
                     <div class="password-input">
-                        <input type="password" name="password" id="password" class="@error('password') input-error @enderror" placeholder="Nhập mật khẩu">
-                        @error('password')
-                            <small class="error-message">{{ $message }}</small>
-                        @enderror
+                        <input type="password" name="password" id="password"
+                            class="@error('password') input-error @enderror" placeholder="Nhập mật khẩu">
                         <button type="button" class="toggle-password" aria-label="Hiện mật khẩu">
                             <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -88,6 +87,9 @@
                             </svg>
                         </button>
                     </div>
+                    @error('password')
+                        <small class="error-message">{{ $message }}</small>
+                    @enderror
                 </div>
 
                 <button type="submit" class="btn btn-primary" id="loginButton">
@@ -205,22 +207,22 @@
     </div>
 
     <script src="{{ asset('js/Driver/main.js') }}"></script>
-    
+
     <!-- Hiển thị toast từ session nếu có -->
-    @if(session('toast'))
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Đảm bảo DOM đã tải xong
-            setTimeout(function() {
-                // Hiển thị toast từ session data
-                showToast(
-                    "{{ session('toast.title') }}", 
-                    "{{ session('toast.message') }}", 
-                    "{{ session('toast.type') }}"
-                );
-            }, 100); // Đợi 100ms để đảm bảo các script khác đã tải xong
-        });
-    </script>
+    @if (session('toast'))
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                // Đảm bảo DOM đã tải xong
+                setTimeout(function() {
+                    // Hiển thị toast từ session data
+                    showToast(
+                        "{{ session('toast.title') }}",
+                        "{{ session('toast.message') }}",
+                        "{{ session('toast.type') }}"
+                    );
+                }, 100); // Đợi 100ms để đảm bảo các script khác đã tải xong
+            });
+        </script>
     @endif
 </body>
 

@@ -1,4 +1,3 @@
-// Xử lý hiện/ẩn mật khẩu
 document.addEventListener("DOMContentLoaded", function () {
     // Xử lý hiện/ẩn mật khẩu
     const togglePasswordButtons = document.querySelectorAll(".toggle-password");
@@ -21,97 +20,86 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // Xử lý form đăng nhập
-    document
-        .getElementById("loginForm")
-        .addEventListener("submit", function (e) {
-            e.preventDefault();
-            const form = e.target;
-            const loginBtn = document.getElementById("loginButton");
-            const loading = loginBtn.querySelector(".btn-loading");
-            const text = loginBtn.querySelector(".btn-text");
+    const loginForm = document.getElementById("loginForm");
+    const loginBtn = document.getElementById("loginButton");
+    const passwordDialog = document.getElementById("passwordChangeDialog");
+    const driverPhoneInput = document.getElementById("driverPhoneInput");
 
-            // Ẩn toast cũ nếu đang hiển thị
-            const toast = document.getElementById("toast");
-            if (toast && !toast.classList.contains("hidden")) {
-                toast.classList.add("hidden");
+    loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        // Hiển thị loading button
+        const loading = loginBtn.querySelector(".btn-loading");
+        const text = loginBtn.querySelector(".btn-text");
+        loading.classList.remove("hidden");
+        text.classList.add("hidden");
+
+        // Xóa các thông báo lỗi cũ
+        const errorElements = loginForm.querySelectorAll('.error-message');
+        errorElements.forEach(el => el.remove());
+
+        // Lấy dữ liệu form
+        const formData = new FormData(loginForm);
+
+        fetch(loginForm.action, {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: formData,
+        })
+        .then(async res => {
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await res.text();
+                throw new Error(`Server returned HTML instead of JSON: ${text.substring(0, 50)}...`);
             }
-
-            loading.classList.remove("hidden");
-            text.classList.add("hidden");
-
-            // Sử dụng FormData thay vì JSON để phù hợp với xử lý của Laravel
-            const formData = new FormData(form);
             
-            fetch(form.action, {
-                method: "POST",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector(
-                        'meta[name="csrf-token"]'
-                    ).content,
-                },
-                body: formData,
-                // Thêm credentials để đảm bảo cookie được gửi
-                credentials: 'same-origin'
-            })
-                .then((res) => {
-                    // Lưu status code để xử lý lỗi
-                    const status = res.status;
-                    
-                    if (res.redirected) {
-                        // Nếu server redirect, chuyển hướng theo URL
-                        window.location.href = res.url;
-                        return { redirected: true };
+            const data = await res.json();
+            
+            if (!res.ok) {
+                if (res.status === 422) {
+                    // Hiển thị validate lỗi trên form
+                    if (data.errors) {
+                        Object.entries(data.errors).forEach(([field, messages]) => {
+                            const input = loginForm.querySelector(`[name="${field}"]`);
+                            if (input) {
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'error-message text-red-500 text-sm mt-1';
+                                errorDiv.textContent = messages.join(' ');
+                                input.parentNode.appendChild(errorDiv);
+                            }
+                        });
                     }
-                    
-                    // Thử parse JSON response
-                    return res.json().then(data => {
-                        return { data, status };
-                    }).catch(err => {
-                        // Nếu không parse được JSON, trả về lỗi
-                        return { error: 'Invalid JSON response', status };
-                    });
-                })
-                .then((result) => {
-                    if (result.redirected) return; // Đã xử lý redirect
-                    
-                    loading.classList.add("hidden");
-                    text.classList.remove("hidden");
-                    
-                    const { data, status, error } = result;
-                    
-                    // Nếu có lỗi parse JSON
-                    if (error) {
-                        showToast("Lỗi", "Phản hồi không hợp lệ từ máy chủ", "error");
-                        return;
-                    }
-                    
-                    // Xử lý response dựa trên status code
-                    if (status === 422) { // Validation error
-                        // Hiển thị lỗi validation đầu tiên
-                        const errorMessage = data.message || (data.errors ? Object.values(data.errors)[0][0] : "Dữ liệu không hợp lệ");
-                        showToast("Lỗi", errorMessage, "error");
-                        return;
-                    }
-                    
-                    if (data.success) {
-                        if (data.first_login) {
-                            document
-                                .getElementById("passwordChangeDialog")
-                                .classList.remove("hidden");
-                        } else {
-                            window.location.href = "/driver"; // trang chủ tài xế
-                        }
-                    } else {
-                        showToast("Lỗi", data.message || "Đăng nhập thất bại", "error");
-                    }
-                })
-                .catch((error) => {
-                    console.error("Lỗi:", error);
-                    loading.classList.add("hidden");
-                    text.classList.remove("hidden");
-                    showToast("Lỗi", "Không thể kết nối máy chủ", "error");
-                });})
+                    throw new Error(data.message || "Lỗi xác thực");
+                }
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            
+            return data;
+        })
+        .then(data => {
+            loading.classList.add("hidden");
+            text.classList.remove("hidden");
+            if (data.first_login) {
+                showToast("Thông báo", data.message, "success");  // Hiển thị toast
+                passwordDialog.classList.remove("hidden");  // Mở popup
+                driverPhoneInput.value = loginForm.phone_number.value; // truyền phone cho dialog
+            } else if (data.success) {
+                window.location.href = "/driver";  // Đăng nhập thành công bình thường
+            } else {
+                showToast("Lỗi", data.message || "Đăng nhập thất bại", "error");
+            }
+        })
+        .catch((error) => {
+            loading.classList.add("hidden");
+            text.classList.remove("hidden");
+            console.error('Fetch error:', error);
+            showToast("Lỗi", error.message || "Không thể kết nối máy chủ", "error");
         });
+    });
 
     // Xử lý form đổi mật khẩu
     document
@@ -120,10 +108,8 @@ document.addEventListener("DOMContentLoaded", function () {
             e.preventDefault();
 
             const newPassword = document.getElementById("newPassword").value;
-            const confirmPassword =
-                document.getElementById("confirmPassword").value;
-            const phoneNumber =
-                document.getElementById("driverPhoneInput").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+            const phoneNumber = document.getElementById("driverPhoneInput").value;
 
             const btn = document.getElementById("changePasswordButton");
             const loading = btn.querySelector(".btn-loading");
@@ -136,9 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector(
-                        'meta[name="csrf-token"]'
-                    ).content,
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
                 },
                 body: JSON.stringify({
                     phone_number: phoneNumber,
@@ -146,41 +130,32 @@ document.addEventListener("DOMContentLoaded", function () {
                     password_confirmation: confirmPassword,
                 }),
             })
-                .then((res) => res.json())
-                .then((data) => {
-                    loading.classList.add("hidden");
-                    text.classList.remove("hidden");
+            .then(res => res.json())
+            .then(data => {
+                loading.classList.add("hidden");
+                text.classList.remove("hidden");
 
-                    if (data.success) {
-                        showToast(
-                            "Thành công",
-                            "Mật khẩu đã được thay đổi",
-                            "success"
-                        );
-                        setTimeout(() => {
-                            window.location.href = "/driver";
-                        }, 1500);
-                    } else {
-                        showToast(
-                            "Lỗi",
-                            data.message || "Thay đổi mật khẩu thất bại",
-                            "error"
-                        );
-                    }
-                })
-                .catch(() => {
-                    loading.classList.add("hidden");
-                    text.classList.remove("hidden");
-                    showToast("Lỗi", "Không thể kết nối máy chủ", "error");
-                });
+                if (data.success) {
+                    showToast("Thành công", "Mật khẩu đã được thay đổi", "success");
+                    setTimeout(() => {
+                        window.location.href = "/driver";
+                    }, 1500);
+                } else {
+                    showToast("Lỗi", data.message || "Thay đổi mật khẩu thất bại", "error");
+                }
+            })
+            // Enhance error handling in fetch requests
+            .catch((error) => {
+                console.error('Error:', error);
+                showToast("Lỗi", "Không thể kết nối máy chủ: " + error.message, "error");
+            });
         });
 
     // Hàm hiển thị thông báo
     function showToast(title, description, type = "success") {
         const toast = document.getElementById("toast");
         if (!toast) return;
-        
-        // Hủy bỏ timeout ẩn toast trước đó nếu có
+
         if (window.toastTimeout) {
             clearTimeout(window.toastTimeout);
         }
@@ -205,12 +180,11 @@ document.addEventListener("DOMContentLoaded", function () {
             toast.classList.remove("error");
         }
 
-        // Đảm bảo toast hiển thị ngay lập tức
         toast.classList.remove("hidden");
 
-        // Tự động ẩn toast sau 4 giây
-        window.toastTimeout = setTimeout(function () {
+        // Enhance toast notification to persist longer for errors
+        window.toastTimeout = setTimeout(() => {
             toast.classList.add("hidden");
-        }, 4000);
+        }, type === "error" ? 8000 : 4000); // Longer display for errors
     }
-
+});

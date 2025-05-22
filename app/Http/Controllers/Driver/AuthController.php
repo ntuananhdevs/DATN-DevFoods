@@ -52,6 +52,7 @@ class AuthController extends Controller
             // Xử lý lỗi validation
             if ($validator->fails()) {
                 if ($isAjax) {
+                    // Ensure consistent error message format
                     return response()->json([
                         'success' => false,
                         'message' => $validator->errors()->first(),
@@ -259,7 +260,7 @@ class AuthController extends Controller
             ]);
 
             $driver = Driver::findOrFail($driver_id);
-            $driver->password = $request->password; // Fix: Add hashing
+            $driver->password = Hash::make($request->password); // Fix: Add hashing
             $driver->save();
 
             // Clear OTP cache
@@ -318,7 +319,7 @@ class AuthController extends Controller
             }
 
             // Gán password, model của bạn tự hash
-            $driver->password = $request->password;
+            $driver->password = Hash::make($request->password);
             $driver->save();
 
             // Cập nhật lại session nếu cần

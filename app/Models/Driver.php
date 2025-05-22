@@ -34,10 +34,10 @@ class Driver extends Model
     ];
 
     // Mutator để tự động hash mật khẩu khi được gán
-    public function setPasswordAttribute($value)
-    {
-        $this->attributes['password'] = Hash::make($value);
-    }
+    // public function setPasswordAttribute($value)
+    // {
+    //     $this->attributes['password'] = Hash::make($value);
+    // }
 
     public function user()
     {

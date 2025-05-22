@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace App\Http\Middleware\Driver;
 
 use Closure;
 use Illuminate\Http\Request;
