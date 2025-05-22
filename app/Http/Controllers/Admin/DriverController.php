@@ -80,7 +80,7 @@ class DriverController extends Controller
 
             // Tạo tài khoản tài xế mới
             $password = Str::random(8) . rand(0, 9) . chr(rand(65, 90)) . chr(rand(97, 122)) . '!@#&*)(^';
-            $hashedPassword = Hash::make($password);
+            $hashedPassword = $password;
             
             Log::info('Tạo tài khoản tài xế mới', [
                 'application_id' => $application->id,

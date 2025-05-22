@@ -37,7 +37,10 @@
                 @csrf
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" placeholder="Nhập email đăng ký của bạn" required>
+                    <input type="email" id="email" name="email" placeholder="Nhập email đăng ký của bạn" required>
+                    @error('email')
+                        <span class="error-message">{{ $message }}</span>
+                    @enderror
                 </div>
                 
                 <button type="submit" class="btn btn-primary" id="sendOtpButton">
@@ -77,73 +80,5 @@
     </div>
 
     <script src="{{ asset('js/Driver/main.js') }}"></script>
-    {{-- <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const forgotPasswordForm = document.getElementById('forgotPasswordForm');
-            const emailInput = document.getElementById('email');
-            const sendOtpButton = document.getElementById('sendOtpButton');
-            const successAlert = document.getElementById('successAlert');
-            const emailSent = document.getElementById('emailSent');
-            
-            forgotPasswordForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const email = emailInput.value.trim();
-                if (!email) return;
-                
-                // Hiển thị trạng thái loading
-                sendOtpButton.querySelector('.btn-text').classList.add('hidden');
-                sendOtpButton.querySelector('.btn-loading').classList.remove('hidden');
-                sendOtpButton.disabled = true;
-                
-                // Gửi yêu cầu OTP thực tế
-                // Thêm kiểm tra null
-                const element = document.querySelector('#element');
-                if(element) {
-                  // Thao tác với element
-                }
-                
-                // Sửa lại fetch API
-                fetch('/driver/forgot-password', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                  },
-                  body: JSON.stringify({email: email, _token: document.querySelector('meta[name="csrf-token"]').content})
-                })
-                .then(response => {
-                  if(!response.ok) throw new Error('Network error');
-                  return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Hiển thị thông báo thành công
-                        emailSent.textContent = email;
-                        successAlert.classList.remove('hidden');
-                        forgotPasswordForm.classList.add('hidden');
-                        
-                        // Chuyển hướng đến trang xác thực OTP sau 2 giây
-                        setTimeout(function() {
-                            window.location.href = '/driver/verify-otp?email=' + encodeURIComponent(email);
-                        }, 2000);
-                    } else {
-                        // Hiển thị thông báo lỗi
-                        showToast('Lỗi', data.message || 'Gửi OTP thất bại', 'error');
-                        sendOtpButton.querySelector('.btn-text').classList.remove('hidden');
-                        sendOtpButton.querySelector('.btn-loading').classList.add('hidden');
-                        sendOtpButton.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error details:', error);
-                    showToast('Lỗi', error.message || 'Có lỗi xảy ra khi gửi OTP', 'error');
-                    sendOtpButton.querySelector('.btn-text').classList.remove('hidden');
-                    sendOtpButton.querySelector('.btn-loading').classList.add('hidden');
-                    sendOtpButton.disabled = false;
-                });
-            });
-        });
-    </script> --}}
 </body>
 </html>

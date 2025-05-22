@@ -35,11 +35,12 @@
                 </div>
             </div>
             
-            <form id="resetPasswordForm" class="form">
+            <form method="POST" action="{{ route('driver.reset_password.submit', ['driver_id' => $driver_id]) }}">
+                @csrf
                 <div class="form-group">
                     <label for="newPassword">Mật khẩu mới</label>
                     <div class="password-input">
-                        <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới" required>
+                        <input type="password" id="newPassword" placeholder="Nhập mật khẩu mới" name="password">
                         <button type="button" class="toggle-password" aria-label="Hiện mật khẩu">
                             <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
@@ -58,7 +59,7 @@
                 <div class="form-group">
                     <label for="confirmPassword">Xác nhận mật khẩu</label>
                     <div class="password-input">
-                        <input type="password" id="confirmPassword" placeholder="Nhập lại mật khẩu mới" required>
+                        <input type="password" name="password_confirmation" id="confirmPassword" placeholder="Nhập lại mật khẩu mới">
                         <button type="button" class="toggle-password" aria-label="Hiện mật khẩu">
                             <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
@@ -148,41 +149,6 @@
                         eyeOffIcon.classList.add('hidden');
                     }
                 });
-            });
-            
-            // Xử lý gửi form đặt lại mật khẩu
-            resetPasswordForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const newPassword = newPasswordInput.value;
-                const confirmPassword = confirmPasswordInput.value;
-                
-                // Kiểm tra mật khẩu khớp nhau
-                if (newPassword !== confirmPassword) {
-                    showToast('Mật khẩu không khớp', 'Vui lòng kiểm tra lại mật khẩu xác nhận', 'error');
-                    return;
-                }
-                
-                // Kiểm tra độ dài mật khẩu
-                if (newPassword.length < 8) {
-                    showToast('Mật khẩu quá ngắn', 'Mật khẩu phải có ít nhất 8 ký tự', 'error');
-                    return;
-                }
-                
-                // Hiển thị trạng thái loading
-                resetPasswordButton.querySelector('.btn-text').classList.add('hidden');
-                resetPasswordButton.querySelector('.btn-loading').classList.remove('hidden');
-                resetPasswordButton.disabled = true;
-                
-                // Giả lập đặt lại mật khẩu
-                setTimeout(function() {
-                    showToast('Đặt lại mật khẩu thành công', 'Mật khẩu của bạn đã được cập nhật, vui lòng đăng nhập lại', 'success');
-                    
-                    // Chuyển hướng về trang đăng nhập sau 2 giây
-                    setTimeout(function() {
-                        window.location.href = 'index.html';
-                    }, 2000);
-                }, 1000);
             });
             
             // Hàm hiển thị thông báo

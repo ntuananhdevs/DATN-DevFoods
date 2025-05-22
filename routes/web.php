@@ -34,6 +34,7 @@ use Illuminate\Database\Capsule\Manager;
 //Driver 
 use App\Http\Controllers\Driver\AuthController as DriverAuthController;
 
+
 Route::prefix('/')->group(function () {
     // Home
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
@@ -206,18 +207,19 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
 Route::prefix('driver')->name('driver.')->group(function () {
     Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
-    
+    Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
+
     // Quên mật khẩu
     Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
-    Route::post('/forgot-password', [DriverAuthController::class, 'sendOtp'])->name('send_otp');
-
+    Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
+    
     // Xác minh OTP
-    Route::get('/verify-otp', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
+    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
     Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
 
     // Đặt lại mật khẩu
-    Route::get('/reset-password', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
-    Route::post('/reset-password', [DriverAuthController::class, 'resetPassword'])->name('reset_password.submit');
+    Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
+    Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
 });
 
 // Route dành cho tài xế đã đăng nhập
