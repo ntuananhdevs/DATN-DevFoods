@@ -1009,7 +1009,7 @@
     </div>
 
 
-    <form id="branchForm" action="{{route('admin.branches.update', $branch)}}" method="POST" enctype="multipart/form-data">
+    <form id="branchForm" action="{{route('admin.branches.update', $branch->id)}}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         
