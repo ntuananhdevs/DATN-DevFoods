@@ -132,7 +132,7 @@
 
         .banner-form-container {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 20px auto;
             padding: 20px;
             border-radius: 8px;
