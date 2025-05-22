@@ -10,24 +10,20 @@ class DashboardController extends Controller
     // Dashboard - Analytics
     public function dashboard()
     {
-        $pageConfigs = [
-            'pageHeader' => false
-        ];
-
-        return view('admin.dashboard.dashboard', [
-            'pageConfigs' => $pageConfigs
-        ]);
+        return view('admin.dashboard.index');
     }
 
     // Dashboard - Ecommerce
-    public function dashboardEcommerce()
+    public function analytics()
     {
-        $pageConfigs = [
-            'pageHeader' => false
-        ];
-
-        return view('dashboard.admin.dashboard-ecommerce', [
-            'pageConfigs' => $pageConfigs
-        ]);
+        return view('admin.dashboard.analytics');
+    }
+    public function ecommerce()
+    {
+        return view('admin.dashboard.ecommerce');
+    }
+    public function store_analytics()
+    {
+        return view('admin.dashboard.store_analytics');
     }
 }

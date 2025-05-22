@@ -160,7 +160,7 @@ class ProductController extends Controller
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi!',
-                'message' => 'Không thể xóa sản phẩm. ' . $e->getMessage()
+                'message' => 'Không thể xóa sản phẩmmm. ' . $e->getMessage()
             ]);
             
             return back();
