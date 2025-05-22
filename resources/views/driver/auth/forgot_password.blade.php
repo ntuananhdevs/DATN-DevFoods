@@ -37,7 +37,7 @@
                 @csrf
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="Nhập email đăng ký của bạn" required>
+                    <input type="email" id="email" name="email" placeholder="Nhập email đăng ký của bạn">
                     @error('email')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
@@ -79,6 +79,6 @@
         </div>
     </div>
 
-    <script src="{{ asset('js/Driver/main.js') }}"></script>
+    {{-- <script src="{{ asset('js/Driver/main.js') }}"></script> --}}
 </body>
 </html>

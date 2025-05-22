@@ -110,7 +110,6 @@
             </div>
         </div>
     </div>
-
     <script src="{{ asset('js/Driver/main.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {

@@ -56,7 +56,7 @@ class AuthController extends Controller
                     'phone_number' => 'Số điện thoại không tồn tại trong hệ thống',
                 ])->withInput();
             }
-            
+
             if (!Hash::check($request->password, $driver->password)) {
                 return back()->withErrors([
                     'password' => 'Mật khẩu không chính xác',
@@ -68,13 +68,13 @@ class AuthController extends Controller
                 'driver_phone' => $driver->phone_number,
                 'driver_logged_in' => true
             ]);
-    
+
             // Kiểm tra: nếu chưa đổi mật khẩu (created_at == updated_at)
             $firstLogin = $driver->created_at->eq($driver->updated_at);
             if ($firstLogin) {
                 session(['first_login' => true]);
             }
-    
+
             return response()->json([
                 'success' => true,
                 'first_login' => $firstLogin
@@ -118,7 +118,6 @@ class AuthController extends Controller
         }
 
         $otp = rand(100000, 999999);
-
         Cache::put('password_reset_otp_' . $driver->id, $otp, now()->addMinutes(30));
         $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
     Mã OTP của bạn là: ' . $otp . '
@@ -132,7 +131,7 @@ class AuthController extends Controller
         );
 
         return redirect()->route('driver.verify_otp', ['driver_id' => $driver->id])
-            ->with('success', 'Mã OTP đã được gửi đến email của bạn');
+            ->with('success', 'Mã OTP đã được gửi đến email của bạn')->with('toast', ['type' => 'success', 'title' => 'Thành công', 'message' => 'Mã OTP đã được gửi!']);
     }
 
     public function showVerifyOTPForm($driver_id)
@@ -156,7 +155,7 @@ class AuthController extends Controller
         }
 
         if ($enteredOtp != $cachedOtp) {
-            return back()->withErrors(['otp' => 'Mã OTP không chính xác.']);
+            return back()->withErrors(['otp' => 'OTP không chính xác. Vui lòng nhập lại.']);
         }
 
         return redirect()->route('driver.reset_password', ['driver_id' => $driverId])
@@ -196,61 +195,99 @@ class AuthController extends Controller
      * Xử lý đổi mật khẩu khi đăng nhập lần đầu
      */
     public function changePassword(Request $request)
-{
-    try {
-        $validator = Validator::make($request->all(), [
-            'password' => 'required|string|min:8',
-            'password_confirmation' => 'required|same:password'
-        ], [
-            'password.required' => 'Mật khẩu không được để trống',
-            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
-            'password_confirmation.required' => 'Xác nhận mật khẩu không được để trống',
-            'password_confirmation.same' => 'Xác nhận mật khẩu không khớp với mật khẩu'
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'password' => 'required|string|min:8',
+                'password_confirmation' => 'required|same:password'
+            ], [
+                'password.required' => 'Mật khẩu không được để trống',
+                'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
+                'password_confirmation.required' => 'Xác nhận mật khẩu không được để trống',
+                'password_confirmation.same' => 'Xác nhận mật khẩu không khớp với mật khẩu'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 422);
+            }
+
+            $driverId = session('driver_id');
+            if (!$driverId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+                ], 401);
+            }
+
+            $driver = Driver::find($driverId);
+            if (!$driver) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tài xế không tồn tại.'
+                ], 404);
+            }
+
+            // Gán password, model của bạn tự hash
+            $driver->password = $request->password;
+            $driver->save();
+
+            // Cập nhật lại session nếu cần
+            session(['driver_id' => $driver->id]);
+            session(['driver_name' => $driver->full_name]);
+            session(['driver_phone' => $driver->phone_number]);
+            session(['driver_logged_in' => true]);
+
+            // Trả về kết quả thành công
+            return response()->json([
+                'success' => true,
+                'message' => 'Đổi mật khẩu thành công'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function resendOTP(Request $request)
+    {
+        $request->validate([
+            'driver_id' => 'required|integer|exists:drivers,id',
         ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => $validator->errors()->first()
-            ], 422);
-        }
-        
-        $driverId = session('driver_id');
-        if (!$driverId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
-            ], 401);
-        }
-        
+
+        $driverId = $request->input('driver_id');
         $driver = Driver::find($driverId);
+
         if (!$driver) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tài xế không tồn tại.'
             ], 404);
         }
-        
-        // Gán password, model của bạn tự hash
-        $driver->password = $request->password;
-        $driver->save();
-        
-        // Cập nhật lại session nếu cần
-        session(['driver_id' => $driver->id]);
-        session(['driver_name' => $driver->full_name]);
-        session(['driver_phone' => $driver->phone_number]);
-        session(['driver_logged_in' => true]);
+        // Tạo OTP
+        $otp = random_int(100000, 999999);
+        // Lưu vào cache 2 phút
+        $cacheKey = 'password_reset_otp_' . $driverId;
+        Cache::put($cacheKey, $otp, now()->addMinutes(2));
 
-        // Trả về kết quả thành công
+        Cache::put('password_reset_otp_' . $driver->id, $otp, now()->addMinutes(30));
+        $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
+        Mã OTP của bạn là: ' . $otp . '
+        </div>';
+        EmailFactory::sendNotification(
+            'generic', // <- type
+            ['content' => $content], // <- data
+            'Mã OTP đặt lại mật khẩu', // <- subject
+            $driver->email
+        );
         return response()->json([
             'success' => true,
-            'message' => 'Đổi mật khẩu thành công'
+            'message' => 'Đã gửi lại mã OTP thành công.'
         ]);
-    } catch (Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Đã xảy ra lỗi: ' . $e->getMessage()
-        ], 500);
     }
-}
 }
