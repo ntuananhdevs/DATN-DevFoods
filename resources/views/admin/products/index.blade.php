@@ -3,6 +3,7 @@
 @section('title', 'Danh sách sản phẩm')
 @section('description', 'Quản lý danh sách sản phẩm của bạn')
 
+
 @section('content')
 <div class="fade-in flex flex-col gap-4 pb-4">
     <!-- Header chính -->
@@ -273,15 +274,20 @@
                                     <path d="m15 5 4 4"></path>
                                 </svg>
                             </a>
-                                <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST">
+                                <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent" title="Xóa" 
-                                                onclick="dtmodalConfirmDelete({
-                                                    itemName: '{{ $product->name }}',
-                                                    onConfirm: () => this.closest('form').submit()
-                                                })">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
+                                            onclick="dtmodalConfirmDelete({
+                                                title: 'Xác nhận xóa sản phẩm',
+                                                subtitle: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
+                                                message: 'Hành động này không thể hoàn tác.',
+                                                itemName: '{{ $product->name }}',
+                                                onConfirm: () => this.closest('form').submit()
+                                            })"
+                                            title="Xóa">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M3 6h18"></path>
                                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                                             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
@@ -450,5 +456,22 @@
                 selectAllCheckbox.addEventListener('change', toggleSelectAll);
             }
         });
+
+        // Confirm delete action
+        function confirmDelete(button) {
+            const form = button.closest('form');
+            const itemName = form.querySelector('input[name="item_name"]').value;
+
+            if (confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${itemName}" không?`)) {
+                form.submit();
+            }
+        }
+
+        function handleDeleteProduct(button, productName) {
+            if (confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${productName}" không?`)) {
+                const form = button.closest('form');
+                form.submit();
+            }
+        }
     </script>
 @endsection

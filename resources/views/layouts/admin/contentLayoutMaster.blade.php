@@ -17,7 +17,8 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    
+    <link rel="stylesheet" href="{{ asset('css/modal.css') }}">
+
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
     
@@ -478,5 +479,7 @@
     <script src="{{ asset('js/modal.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @yield('scripts')
+    @include('components.modal')
+
 </body>
 </html>

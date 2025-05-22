@@ -65,16 +65,9 @@ class ProductController extends Controller
      */
     public function create()
     {
-        try {
             $categories = Category::all();
             return view('admin.products.create', compact('categories'));
-        } catch (\Exception $e) {
-            return response()->json([
-                'type' => 'error',
-                'title' => 'Lỗi',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-        }
+        
     }
 
     /**
@@ -167,7 +160,7 @@ class ProductController extends Controller
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi!',
-                'message' => 'Không thể xóa sản phẩm. ' . $e->getMessage()
+                'message' => 'Không thể xóa sản phẩmmm. ' . $e->getMessage()
             ]);
             
             return back();

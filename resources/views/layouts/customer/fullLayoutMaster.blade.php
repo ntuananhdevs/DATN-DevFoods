@@ -47,7 +47,7 @@
                     </button>
 
                     <a href="/" class="flex items-center gap-2 ml-4 md:ml-0">
-                        <span class="font-bold text-xl text-orange-500">FastFood</span>
+                        <span class="font-bold text-xl text-orange-500">PolyCrispyWings</span>
                     </a>
 
                     <nav class="hidden md:flex items-center gap-6 ml-10">
