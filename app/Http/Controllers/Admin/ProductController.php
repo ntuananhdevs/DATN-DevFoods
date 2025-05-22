@@ -14,49 +14,127 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+public function index(Request $request)
     {
         try {
             $query = Product::with('category');
-            
+
             // Lọc theo danh mục
             if ($request->has('category_id') && $request->category_id) {
                 $query->where('category_id', $request->category_id);
             }
-            
+
             // Lọc theo giá tối thiểu
             if ($request->has('price_min') && $request->price_min) {
                 $query->where('base_price', '>=', $request->price_min);
             }
-            
+
             // Lọc theo giá tối đa
             if ($request->has('price_max') && $request->price_max) {
                 $query->where('base_price', '<=', $request->price_max);
             }
-            
+
             // Lọc theo tình trạng kho
-            if ($request->has('stock_status')) {
-                if ($request->stock_status == 'in_stock') {
-                    $query->where('stock', '>', 0);
-                } elseif ($request->stock_status == 'out_of_stock') {
-                    $query->where('stock', '<=', 0);
-                }
+            if ($request->has('stock_status') && !empty($request->stock_status)) {
+                $query->where(function ($q) use ($request) {
+                    if (in_array('in_stock', $request->stock_status)) {
+                        $q->orWhere('stock', '>', 0);
+                    }
+                    if (in_array('out_of_stock', $request->stock_status)) {
+                        $q->orWhere('stock', '=', 0);
+                    }
+                    if (in_array('low_stock', $request->stock_status)) {
+                        $q->orWhereBetween('stock', [1, 9]);
+                    }
+                });
             }
-            
+
+            // Lọc theo ngày thêm
+            if ($request->has('date_added') && $request->date_added) {
+                $query->whereDate('created_at', $request->date_added);
+            }
+
             // Tìm kiếm theo tên hoặc mã sản phẩm
             if ($request->has('search') && $request->search) {
-                $query->where(function($q) use ($request) {
+                $query->where(function ($q) use ($request) {
                     $q->where('name', 'like', '%' . $request->search . '%')
                       ->orWhere('id', 'like', '%' . $request->search . '%');
                 });
             }
-            
+
             $products = $query->latest()->paginate(10);
-            $categories = Category::all(); 
-                
-            return view('admin.products.index', compact('products', 'categories'));
+            $categories = Category::all();
+            $minPrice = Product::min('base_price') ?? 0;
+            $maxPrice = Product::max('base_price') ?? 10000000;
+
+            return view('admin.products.index', compact('products', 'categories', 'minPrice', 'maxPrice'));
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
+
+    public function filter(Request $request)
+    {
+        try {
+            $query = Product::with('category');
+
+            // Lọc theo danh mục
+            if ($request->has('category_id') && $request->category_id) {
+                $query->where('category_id', $request->category_id);
+            }
+
+            // Lọc theo giá tối thiểu
+            if ($request->has('price_min') && $request->price_min) {
+                $query->where('base_price', '>=', $request->price_min);
+            }
+
+            // Lọc theo giá tối đa
+            if ($request->has('price_max') && $request->price_max) {
+                $query->where('base_price', '<=', $request->price_max);
+            }
+
+            // Lọc theo tình trạng kho
+            if ($request->has('stock_status') && !empty($request->stock_status)) {
+                $query->where(function ($q) use ($request) {
+                    if (in_array('in_stock', $request->stock_status)) {
+                        $q->orWhere('stock', '>', 0);
+                    }
+                    if (in_array('out_of_stock', $request->stock_status)) {
+                        $q->orWhere('stock', '=', 0);
+                    }
+                    if (in_array('low_stock', $request->stock_status)) {
+                        $q->orWhereBetween('stock', [1, 9]);
+                    }
+                });
+            }
+
+            // Lọc theo ngày thêm
+            if ($request->has('date_added') && $request->date_added) {
+                $query->whereDate('created_at', $request->date_added);
+            }
+
+            // Tìm kiếm theo tên hoặc mã sản phẩm
+            if ($request->has('search') && $request->search) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->search . '%')
+                      ->orWhere('id', 'like', '%' . $request->search . '%');
+                });
+            }
+
+            $products = $query->latest()->paginate(10);
+
+            return response()->json([
+                'products' => $products->items(),
+                'pagination' => [
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'from' => $products->firstItem(),
+                    'to' => $products->lastItem(),
+                    'total' => $products->total(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Có lỗi xảy ra: ' . $e->getMessage()], 500);
         }
     }
 
