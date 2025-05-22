@@ -82,9 +82,7 @@
                         <th data-sort="phone">
                             Liên hệ <i class="fas fa-sort data-table-sort-icon"></i>
                         </th>
-                        <th data-sort="manager">
-                            Quản lý <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
+                      
                         <th>Giờ làm việc</th>
                         <th data-sort="rating">
                             Đánh giá <i class="fas fa-sort data-table-sort-icon"></i>
@@ -407,7 +405,6 @@ function updateTable(branches) {
                             ${branch.email ? `<div><i class="fas fa-envelope"></i> ${branch.email}</div>` : ''}
                         </div>
                     </td>
-                    <td>${branch.manager ? branch.manager.name : '<span class="text-muted">Chưa phân công</span>'}</td>
                     <td>${branch.opening_hour} - ${branch.closing_hour}</td>
                     <td>
                         <div class="d-flex align-items-center">
@@ -417,18 +414,7 @@ function updateTable(branches) {
                             <span class="ml-1">${parseFloat(branch.rating).toFixed(1)}</span>
                         </div>
                     </td>
-                    <td>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar ${reliabilityClass}" 
-                                role="progressbar" 
-                                style="width: ${branch.reliability_score}%;" 
-                                aria-valuenow="${branch.reliability_score}" 
-                                aria-valuemin="0" 
-                                aria-valuemax="100">
-                            </div>
-                        </div>
-                        <small class="text-center d-block">${branch.reliability_score}%</small>
-                    </td>
+                  
                     <td>
                         <button type="button"
                             class="data-table-status ${branch.active ? 'data-table-status-success' : 'data-table-status-failed'}"
@@ -442,23 +428,46 @@ function updateTable(branches) {
                     </td>
                     <td>
                         <div class="data-table-action-buttons">
-                            <a href="/admin/branches/${branch.id}" 
+                            <a href="/admin/branches/show/${branch.id}" 
                                class="data-table-action-btn data-table-tooltip"
                                data-tooltip="Xem chi tiết">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            <a href="/admin/branches/${branch.id}/edit" 
-                               class="data-table-action-btn edit data-table-tooltip"
-                               data-tooltip="Chỉnh sửa">
-                                <i class="fas fa-pen"></i>
-                            </a>
-                            <button type="button" 
-                                class="data-table-action-btn delete data-table-tooltip"
-                                data-tooltip="Xóa"
-                                onclick="deleteBranch(${branch.id}, '${branch.name}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                                      message: 'Có lỗi xảy ra khi xóa chi nhánh'
+                   
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    tbody.html(html);
+}
+
+// Hàm xóa chi nhánh
+function deleteBranch(branchId, branchName) {
+    dtmodalConfirmDelete({
+        itemName: branchName,
+        onConfirm: () => {
+            $.ajax({
+                url: `/admin/branches/${branchId}`,
+                type: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    _method: 'DELETE'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: 'Đã xóa chi nhánh thành công'
+                        });
+                        loadBranches(currentPage, currentSearch);
+                    }
+                },
+                error: function(xhr) {
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Có lỗi xảy ra khi xóa chi nhánh'
                     });
                 }
             });

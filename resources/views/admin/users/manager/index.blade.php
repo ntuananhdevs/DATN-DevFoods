@@ -273,7 +273,7 @@ function loadUsers(page = 1, search = currentSearch) {
     $('#dataTableBody').addClass('loading');
     
     $.ajax({
-        url: '{{ route("admin.users.index") }}',
+        url: '{{ route("admin.users.managers.index") }}',
         type: 'GET',
         data: {
             page: page,
