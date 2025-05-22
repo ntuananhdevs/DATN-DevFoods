@@ -257,6 +257,11 @@ class AuthController extends Controller
             $request->validate([
                 'password' => 'required|string|min:8|confirmed',
                 'password_confirmation' => 'required|string|min:8'
+            ],[
+                'password.required' => 'Mật khẩu không được để trống',
+                'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
+                'password_confirmation.required' => 'Xác nhận mật khẩu không được để trống',
+                'password_confirmation.confirmed' => 'Xác nhận mật khẩu không khớp với mật khẩu'
             ]);
 
             $driver = Driver::findOrFail($driver_id);

@@ -267,15 +267,33 @@ input:focus {
 /* Toast */
 .toast {
     position: fixed;
-    bottom: 1.5rem;
+    top: 1.5rem;
     right: 1.5rem;
     background-color: white;
-    border-radius: 0.375rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     padding: 1rem;
     z-index: 50;
-    max-width: 24rem;
+    width: 300px;
     border-left: 4px solid #10b981;
+    transform: translateX(100%);
+    animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards, fadeOut 0.5s 3s ease-out forwards;
+    transition: all 0.3s ease;
+}
+
+.toast:hover {
+    transform: translateX(0) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }
 
 .toast.error {
