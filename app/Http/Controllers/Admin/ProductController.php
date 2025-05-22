@@ -65,16 +65,9 @@ class ProductController extends Controller
      */
     public function create()
     {
-        try {
             $categories = Category::all();
             return view('admin.products.create', compact('categories'));
-        } catch (\Exception $e) {
-            return response()->json([
-                'type' => 'error',
-                'title' => 'Lỗi',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-        }
+        
     }
 
     /**

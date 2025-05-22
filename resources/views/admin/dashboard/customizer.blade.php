@@ -133,7 +133,7 @@
                 <div class="mx-50">
                 <fieldset>
                     <div class="vs-radio-con vs-radio-primary">
-                    <input type="radio" name="navbarType" value="false" id="navbar-sticky">
+                    <input type="radio" name="navbarType" value="false" id="navbar-sticky" checked>
                     <span class="vs-radio">
                         <span class="vs-radio--border"></span>
                         <span class="vs-radio--circle"></span>
@@ -145,7 +145,7 @@
                 <div class="mx-50">
                 <fieldset>
                     <div class="vs-radio-con vs-radio-primary">
-                    <input type="radio" name="navbarType" value="false" id="navbar-floating" checked>
+                    <input type="radio" name="navbarType" value="false" id="navbar-floating">
                     <span class="vs-radio">
                         <span class="vs-radio--border"></span>
                         <span class="vs-radio--circle"></span>
