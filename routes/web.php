@@ -90,6 +90,8 @@ Route::prefix('/')->group(function () {
 
     // Route Customer (profile)
     Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
+    Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
+    Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
 });
 
 // Route Auth (login / logout)
@@ -102,7 +104,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
+    Route::get('/ecommerce', [DashboardController::class, 'ecommerce'])->name('ecommerce');
+    Route::get('/store_analytics', [DashboardController::class, 'store_analytics'])->name('store_analytics');
 
     // Đăng xuất
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
@@ -203,15 +207,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
-});
 
-// Customer Cart Routes
-Route::prefix('cart')->name('customer.cart.')->group(function () {
-    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
-    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+     // Banner Management
+     Route::prefix('discount')->name('discount.')->group(function () {
+        Route::get('/', [BannerController::class, 'index'])->name('index');
+        Route::get('/create', [BannerController::class, 'create'])->name('create');
+        Route::post('/store', [BannerController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
+    });
 });
 

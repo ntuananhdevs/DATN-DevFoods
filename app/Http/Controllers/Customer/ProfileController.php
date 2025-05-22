@@ -16,4 +16,14 @@ class ProfileController extends Controller
     {
         return view('customer.profile.index');
     }
+    
+    public function edit()
+    {
+        return view('customer.profile.edit');
+    }
+
+    public function setting()
+    {
+        return view('customer.profile.setting');
+    }
 }
