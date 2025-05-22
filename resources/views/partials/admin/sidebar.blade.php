@@ -20,7 +20,7 @@
             <div class="space-y-1">
                 <!-- Dashboard Dropdown -->
                 <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
-                    <button type="button" class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('/') || request()->is('analytics') || request()->is('ecommerce') || request()->is('store-analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                    <button type="button" class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.dashboard') || request()->routeIs('admin.analytics') || request()->routeIs('admin.ecommerce') || request()->routeIs('admin.store_analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home">
                                 <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -33,23 +33,23 @@
                         </svg>
                     </button>
                     <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
-                        <a href="{{ asset('admin') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('/') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <a href="{{ asset('admin') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Tổng quan</span>
                         </a>
-                        <a href="{{ asset('admin/analytics') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <a href="{{ asset('admin/analytics') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Analytics</span>
                         </a>
-                        <a href="{{ asset('admin/ecommerce') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('ecommerce') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <a href="{{ asset('admin/ecommerce') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.ecommerce') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">eCommerce</span>
                         </a>
-                        <a href="{{ asset('admin/store_analytics') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('store-analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <a href="{{ asset('admin/store_analytics') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.store_analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Thống kê cửa hàng</span>
                         </a>
                     </div>
                 </div>
                 
                 <!-- Banner -->
-                <a href="{{ asset('admin/banners') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('products') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Products">
+                <a href="{{ asset('admin/banners') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.banners.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Banners">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-boxes">
                             <path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"></path>
@@ -70,7 +70,7 @@
                 </a>
 
                 <!-- Products -->
-                <a href="{{ asset('admin/products') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('products') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Products">
+                <a href="{{ asset('admin/products') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Products">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-boxes">
                             <path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"></path>
@@ -91,7 +91,7 @@
                 </a>
                 
                 <!-- Orders -->
-                <a href="" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('orders') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Orders">
+                <a href="{{ asset('admin/orders') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.orders.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Orders">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package">
                             <path d="m7.5 4.27 9 5.15"></path>
@@ -104,7 +104,7 @@
                 </a>
                 
                 <!-- Customers -->
-                <a href="" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('customers') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Customers">
+                <a href="{{ asset('admin/customers') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.customers.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Customers">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
@@ -117,7 +117,7 @@
                 </a>
                 
                 <!-- Analytics Reports -->
-                <a href="" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('analytics-reports') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Analytics">
+                <a href="{{ asset('admin/analytics-reports') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics-reports.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Analytics">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3">
                             <path d="M3 3v18h18"></path>
@@ -130,7 +130,7 @@
                 </a>
                 
                 <!-- Stores -->
-                <a href="" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('stores') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Stores">
+                <a href="{{ asset('admin/stores') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.stores.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Stores">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-store">
                             <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path>
@@ -148,7 +148,7 @@
 </div>
 
 <div class="sidebar-footer p-4 mt-auto border-t border-sidebar-border">
-    <a href="" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('settings') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Settings">
+    <a href="{{ asset('admin/settings') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.settings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Settings">
         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
                 <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
@@ -165,8 +165,26 @@
         // Lấy tất cả các dropdown trigger
         const dropdownTriggers = document.querySelectorAll('.sidebar-dropdown-trigger');
         
-        // Thêm event listener cho mỗi dropdown trigger
+        // Kiểm tra xem có submenu nào cần được mở không
         dropdownTriggers.forEach(function(trigger) {
+            const content = trigger.nextElementSibling;
+            const hasActiveChild = content && content.querySelector('.bg-sidebar-accent');
+            
+            // Nếu có item con active, mở submenu
+            if (hasActiveChild && content) {
+                content.classList.remove('hidden');
+                
+                // Xoay icon
+                const icon = trigger.querySelector('.sidebar-dropdown-icon');
+                if (icon) {
+                    icon.style.transform = 'rotate(180deg)';
+                }
+                
+                // Thêm class active cho trigger
+                trigger.classList.add('bg-sidebar-accent', 'text-sidebar-accent-foreground', 'font-medium');
+            }
+            
+            // Thêm event listener cho mỗi dropdown trigger
             trigger.onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
