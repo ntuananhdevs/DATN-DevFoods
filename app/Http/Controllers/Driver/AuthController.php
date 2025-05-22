@@ -269,9 +269,7 @@ class AuthController extends Controller
                 'message' => 'Tài xế không tồn tại.'
             ], 404);
         }
-        // Tạo OTP
         $otp = random_int(100000, 999999);
-        // Lưu vào cache 2 phút
         $cacheKey = 'password_reset_otp_' . $driverId;
         Cache::put($cacheKey, $otp, now()->addMinutes(2));
 
@@ -280,9 +278,9 @@ class AuthController extends Controller
         Mã OTP của bạn là: ' . $otp . '
         </div>';
         EmailFactory::sendNotification(
-            'generic', // <- type
-            ['content' => $content], // <- data
-            'Mã OTP đặt lại mật khẩu', // <- subject
+            'generic',
+            ['content' => $content],
+            'Mã OTP đặt lại mật khẩu',
             $driver->email
         );
         return response()->json([

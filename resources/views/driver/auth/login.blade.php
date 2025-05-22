@@ -21,6 +21,18 @@
             </div>
 
             <form id="loginForm" action="{{ route('driver.login.submit') }}" method="POST" class="form">
+
+                @if ($errors->has('phone_number'))
+                    <div class="alert alert-danger">
+                        {{ $errors->first('phone_number') }}
+                    </div>
+                @endif
+
+                @if ($errors->has('password'))
+                    <div class="alert alert-danger">
+                        {{ $errors->first('password') }}
+                    </div>
+                @endif
                 @csrf
                 <div class="form-group">
                     <label for="phone">Số điện thoại</label>
