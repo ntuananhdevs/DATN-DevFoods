@@ -39,7 +39,7 @@ class AuthController extends Controller
         try {
             // Kiểm tra nếu request là AJAX
             $isAjax = $request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
-            
+
             // Định nghĩa quy tắc validation và thông báo lỗi
             $validator = Validator::make($request->all(), [
                 'phone_number' => 'required',
@@ -58,7 +58,7 @@ class AuthController extends Controller
                         'errors' => $validator->errors()->toArray()
                     ], 422);
                 }
-                
+
                 // Thêm toast thông báo cho non-AJAX request
                 $errorMessage = $validator->errors()->first();
                 session()->flash('toast', [
@@ -66,7 +66,7 @@ class AuthController extends Controller
                     'title' => 'Lỗi',
                     'message' => $errorMessage
                 ]);
-                
+
                 return back()->withErrors($validator)->withInput();
             }
 
@@ -75,21 +75,21 @@ class AuthController extends Controller
 
             if (!$driver) {
                 $errorMessage = 'Số điện thoại không tồn tại trong hệ thống';
-                
+
                 if ($isAjax) {
                     return response()->json([
                         'success' => false,
                         'message' => $errorMessage
                     ], 422);
                 }
-                
+
                 // Thêm toast thông báo
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
                     'message' => $errorMessage
                 ]);
-                
+
                 return back()->withErrors([
                     'phone_number' => $errorMessage,
                 ])->withInput();
@@ -98,26 +98,26 @@ class AuthController extends Controller
             // Kiểm tra mật khẩu
             if (!Hash::check($request->password, $driver->password)) {
                 $errorMessage = 'Mật khẩu không chính xác';
-                
+
                 if ($isAjax) {
                     return response()->json([
                         'success' => false,
                         'message' => $errorMessage
                     ], 422);
                 }
-                
+
                 // Thêm toast thông báo
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
                     'message' => $errorMessage
                 ]);
-                
+
                 return back()->withErrors([
                     'password' => $errorMessage,
                 ])->withInput();
             }
-            
+
             // Đăng nhập thành công, thiết lập session
             session([
                 'driver_id' => $driver->id,
@@ -146,26 +146,26 @@ class AuthController extends Controller
                 'title' => 'Thành công',
                 'message' => 'Đăng nhập thành công!'
             ]);
-            
+
             return redirect()->route('driver.home')->with('success', 'Đăng nhập thành công!');
         } catch (Exception $e) {
             // Xử lý lỗi không mong muốn
             $errorMessage = 'Đã xảy ra lỗi: ' . $e->getMessage();
-            
+
             if ($isAjax) {
                 return response()->json([
                     'success' => false,
                     'message' => $errorMessage
                 ], 500);
             }
-            
+
             // Thêm toast thông báo lỗi
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi hệ thống',
                 'message' => $errorMessage
             ]);
-            
+
             return back()->with('error', $errorMessage)->withInput();
         }
     }
@@ -193,6 +193,9 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email'
+        ],[
+            'email.required' => 'Vui lòng nhập email',
+            'email.email' => 'Email không đúng định dạng'
         ]);
 
         $driver = Driver::where('email', $request->email)->first();
