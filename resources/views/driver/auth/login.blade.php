@@ -8,7 +8,36 @@
     <title>Đăng nhập tài xế</title>
     <link rel="stylesheet" href="{{ asset('css/drivers/Auth.css') }}">
 </head>
+<style>
+    .input-error {
+        border: 1px solid red;
+    }
 
+    .error-message {
+        color: red;
+        font-size: 0.9em;
+        margin-top: 5px;
+        display: block;
+    }
+    
+    .alert-danger {
+        background-color: #fff2f2;
+        border: 1px solid #ffcccc;
+        color: #cc0000;
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-danger ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .alert-danger li {
+        margin-bottom: 5px;
+    }
+</style>
 <body>
     <div class="container">
         <div class="login-container">
@@ -21,22 +50,14 @@
             </div>
 
             <form id="loginForm" action="{{ route('driver.login.submit') }}" method="POST" class="form">
-
-                @if ($errors->has('phone_number'))
-                    <div class="alert alert-danger">
-                        {{ $errors->first('phone_number') }}
-                    </div>
-                @endif
-
-                @if ($errors->has('password'))
-                    <div class="alert alert-danger">
-                        {{ $errors->first('password') }}
-                    </div>
-                @endif
                 @csrf
                 <div class="form-group">
                     <label for="phone">Số điện thoại</label>
-                    <input type="tel" id="phone" name="phone_number" placeholder="Nhập số điện thoại đăng ký">
+                    <input type="tel" id="phone" class="@error('phone_number') input-error @enderror"
+                        name="phone_number" placeholder="Nhập số điện thoại đăng ký" value="{{ old('phone_number') }}">
+                    @error('phone_number')
+                        <small class="error-message">{{ $message }}</small>
+                    @enderror
                 </div>
 
                 <div class="form-group">
@@ -45,7 +66,10 @@
                         <a href="{{ route('driver.forgot_password') }}" class="forgot-link">Quên mật khẩu?</a>
                     </div>
                     <div class="password-input">
-                        <input type="password" name="password" id="password" placeholder="Nhập mật khẩu">
+                        <input type="password" name="password" id="password" class="@error('password') input-error @enderror" placeholder="Nhập mật khẩu">
+                        @error('password')
+                            <small class="error-message">{{ $message }}</small>
+                        @enderror
                         <button type="button" class="toggle-password" aria-label="Hiện mật khẩu">
                             <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -89,7 +113,8 @@
             </div>
             <form id="passwordChangeForm" class="form">
                 @csrf
-                <input type="hidden" id="driverPhoneInput" name="phone_number" value="{{ $driver->phone_number ?? '' }}">
+                <input type="hidden" id="driverPhoneInput" name="phone_number"
+                    value="{{ $driver->phone_number ?? '' }}">
                 <div class="form-group">
                     <label for="newPassword">Mật khẩu mới</label>
                     <div class="password-input">
@@ -180,6 +205,23 @@
     </div>
 
     <script src="{{ asset('js/Driver/main.js') }}"></script>
+    
+    <!-- Hiển thị toast từ session nếu có -->
+    @if(session('toast'))
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Đảm bảo DOM đã tải xong
+            setTimeout(function() {
+                // Hiển thị toast từ session data
+                showToast(
+                    "{{ session('toast.title') }}", 
+                    "{{ session('toast.message') }}", 
+                    "{{ session('toast.type') }}"
+                );
+            }, 100); // Đợi 100ms để đảm bảo các script khác đã tải xong
+        });
+    </script>
+    @endif
 </body>
 
 </html>
