@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('branches', function (Blueprint $table) {
             $table->id();
             $table->string('branch_code')->unique();
-            $table->string('name');
-            $table->text('address');
-            $table->string('phone');
-            $table->string('email')->nullable();
+            $table->string('name')->unique();
+            $table->text('address')->unique();
+            $table->string('phone')->unique();
+            $table->string('email')->unique();
             $table->unsignedBigInteger('manager_user_id')->nullable(); // Thêm nullable()
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();

@@ -1,174 +1,164 @@
 @extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
-<div class="data-table-wrapper">
+<style>
+    .status-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .status-tag.success {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+    .status-tag.failed {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+</style>
+
+<div class="fade-in flex flex-col gap-4 pb-4">
     <!-- Main Header -->
-    <div class="data-table-main-header">
-        <div class="data-table-brand">
-            <div class="data-table-logo">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <i class="fas fa-code-branch"></i>
             </div>
-            <h1 class="data-table-title">Quản lý chi nhánh</h1>
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight">Quản lý chi nhánh</h2>
+                <p class="text-muted-foreground">Danh sách và thông tin các chi nhánh</p>
+            </div>
         </div>
-        <div class="data-table-header-actions">
-            <a href="{{ route('admin.branches.create') }}" class="data-table-btn data-table-btn-primary">
-                <i class="fas fa-plus"></i> Thêm mới
+        <div class="flex items-center gap-2">
+            <a href="{{ route('admin.branches.create') }}" class="btn btn-primary flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="M5 12h14"></path>
+                    <path d="M12 5v14"></path>
+                </svg>
+                Thêm mới
             </a>
         </div>
     </div>
 
-    <!-- Data Table Card -->
-    <div class="data-table-card">
-        <!-- Table Header -->
-        <div class="data-table-header">
-            <h2 class="data-table-card-title">Danh sách chi nhánh</h2>
+    <!-- Card containing table -->
+    <div class="card border rounded-lg overflow-hidden">
+        <!-- Table header -->
+        <div class="p-6 border-b">
+            <h3 class="text-lg font-medium">Danh sách chi nhánh</h3>
         </div>
 
-        <!-- Controls -->
-        <div class="data-table-controls">
-            <div class="data-table-search">
-                <i class="fas fa-search data-table-search-icon"></i>
+        <!-- Toolbar -->
+        <div class="p-4 border-b flex flex-col sm:flex-row justify-between gap-4">
+            <div class="relative w-full sm:w-auto sm:min-w-[300px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
                 <input type="text" 
-                    placeholder="Tìm kiếm theo tên, địa chỉ, email..." 
-                    id="dataTableSearch"
-                    value="{{ request('search') }}"
-                    onkeyup="handleSearch(event)">
+                    placeholder="Tìm kiếm theo tên, địa chỉ..." 
+                    class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" 
+                    id="searchInput"
+                    value="{{ request('search') }}">
             </div>
-            <div class="data-table-actions">
-                <button class="data-table-btn data-table-btn-outline" 
-                        onclick="document.getElementById('selectAllCheckbox').click()" 
-                        style="margin-right: 10px;">
-                    <i class="fas fa-check-square"></i> Chọn tất cả
+            <div class="flex items-center gap-2">
+                <button class="btn btn-outline flex items-center" id="selectAllButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                        <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+                        <path d="m9 12 2 2 4-4"></path>
+                    </svg>
+                    <span>Chọn tất cả</span>
                 </button>
-                <div class="data-table-header-actions">
-                    <div class="btn-group mr-2">
-                        <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                            <i class="fas fa-tasks"></i> Thao tác
-                        </button>
-                        <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item" onclick="handleBulkAction('activate')">
-                                <i class="fas fa-check-circle text-success"></i> Kích hoạt đã chọn
+                <div class="dropdown relative">
+                    <button class="btn btn-outline flex items-center" id="actionsDropdown" onclick="toggleDropdown('actionsMenu')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <circle cx="12" cy="19" r="2"></circle>
+                        </svg>
+                        Thao tác
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
+                            <path d="m6 9 6 6 6-6"></path>
+                        </svg>
+                    </button>
+                    <div id="actionsMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
+                        <div class="p-2">
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(1)">
+                                <i class="fas fa-check-circle text-success mr-2"></i>
+                                Kích hoạt đã chọn
                             </a>
-                            <a href="#" class="dropdown-item" onclick="handleBulkAction('deactivate')">
-                                <i class="fas fa-times-circle text-danger"></i> Vô hiệu hóa đã chọn
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(0)">
+                                <i class="fas fa-times-circle text-danger mr-2"></i>
+                                Vô hiệu hóa đã chọn
                             </a>
                         </div>
                     </div>
                 </div>
-                <button class="data-table-btn data-table-btn-outline">
-                    <i class="fas fa-columns"></i> Cột
-                </button>
             </div>
         </div>
 
-        <!-- Table Container -->
-        <div class="data-table-container">
-            <table class="data-table" id="dataTable">
+        <!-- Table container -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
                 <thead>
-                    <tr>
-                        <th class="checkbox-column">
-                            <div class="data-table-checkbox">
-                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
-                                <label for="selectAllCheckbox"></label>
+                    <tr class="border-b bg-muted/50">
+                        <th class="py-3 px-4 text-left">
+                            <div class="flex items-center">
+                                <input type="checkbox" id="selectAll" class="rounded border-gray-300">
                             </div>
                         </th>
-                        <th data-sort="id" class="active-sort">
-                            ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
-                        </th>
-                        <th data-sort="name">
-                            Tên <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
-                        <th>Địa chỉ</th>
-                        <th data-sort="phone">
-                            Liên hệ <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
-                        <th data-sort="manager">
-                            Quản lý <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
-                        <th>Giờ làm việc</th>
-                        <th data-sort="rating">
-                            Đánh giá <i class="fas fa-sort data-table-sort-icon"></i>
-                        </th>
-                     
-                        <th>Trạng thái</th>
-                        <th>Thao tác</th>
+                        <th class="py-3 px-4 text-left font-medium">ID</th>
+                        <th class="py-3 px-4 text-left font-medium">Tên</th>
+                        <th class="py-3 px-4 text-left font-medium">Địa chỉ</th>
+                        <th class="py-3 px-4 text-left font-medium">Liên hệ</th>
+                        <th class="py-3 px-4 text-left font-medium">Giờ làm việc</th>
+                        <th class="py-3 px-4 text-left font-medium">Trạng thái</th>
+                        <th class="py-3 px-4 text-left font-medium">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody id="dataTableBody">
+                <tbody>
                     @forelse($branches as $branch)
-                    <tr data-branch-id="{{ $branch->id }}">
-                        <td class="checkbox-column">
-                            <div class="data-table-checkbox">
-                                <input type="checkbox" class="branch-checkbox" id="branch-{{ $branch->id }}" value="{{ $branch->id }}">
-                                <label for="branch-{{ $branch->id }}"></label>
-                            </div>
+                    <tr class="border-b">
+                        <td class="py-3 px-4">
+                            <input type="checkbox" class="branch-checkbox" value="{{ $branch->id }}">
                         </td>
-                        <td>
-                            <div class="data-table-id">
-                                {{ $branch->id }}
-                            </div>
-                        </td>
-                        <td>{{ $branch->name }}</td>
-                        <td>{{ Str::limit($branch->address, 50) }}</td>
-                        <td>
-                            <div>
-                                <div><i class="fas fa-phone"></i> {{ $branch->phone }}</div>
-                                @if($branch->email)
-                                <div><i class="fas fa-envelope"></i> {{ $branch->email }}</div>
-                                @endif
-                            </div>
-                        </td>
-                       
-                        <td>{{ $branch->opening_hour }} - {{ $branch->closing_hour }}</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="rating-stars">
-                                    @for($i = 1; $i <= 5; $i++)
-                                        @if($i <= floor($branch->rating))
-                                            <i class="fas fa-star text-warning"></i>
-                                        @elseif($i - 0.5 <= $branch->rating)
-                                            <i class="fas fa-star-half-alt text-warning"></i>
-                                        @else
-                                            <i class="far fa-star text-warning"></i>
-                                        @endif
-                                    @endfor
+                        <td class="py-3 px-4">{{ $branch->id }}</td>
+                        <td class="py-3 px-4">{{ $branch->name }}</td>
+                        <td class="py-3 px-4">{{ Str::limit($branch->address, 40) }}</td>
+                        <td class="py-3 px-4">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-1">
+                                    <i class="fas fa-phone text-sm text-muted-foreground"></i>
+                                    <span>{{ $branch->phone }}</span>
                                 </div>
-                                <span class="ml-1">{{ number_format($branch->rating, 1) }}</span>
-                            </div>
-                        </td>
-                        
-                        <td>
-                            <button type="button" 
-                                class="data-table-status {{ $branch->active ? 'data-table-status-success' : 'data-table-status-failed' }}"
-                                style="border: none; cursor: pointer; width: 100px;"
-                                onclick="toggleBranchStatus(this, {{ $branch->id }}, '{{ $branch->name }}', {{ $branch->active ? 'true' : 'false' }})">
-                                @if($branch->active)
-                                    <i class="fas fa-check"></i> Hoạt động
-                                @else
-                                    <i class="fas fa-times"></i> Vô hiệu hóa
+                                @if($branch->email)
+                                <div class="flex items-center gap-1">
+                                    <i class="fas fa-envelope text-sm text-muted-foreground"></i>
+                                    <span>{{ $branch->email }}</span>
+                                </div>
                                 @endif
-                            </button>
-                        </td>
-                        <td>
-                            <div class="data-table-action-buttons">
-                                <a href="{{ route('admin.branches.show', $branch->id) }}" 
-                                   class="data-table-action-btn data-table-tooltip"
-                                   data-tooltip="Xem chi tiết">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                              
                             </div>
+                        </td>
+                        <td class="py-3 px-4">{{ date('H:i', strtotime($branch->opening_hour)) }} - {{ date('H:i', strtotime($branch->closing_hour)) }}</td>
+                        <td class="py-3 px-4">
+                            <span class="status-tag {{ $branch->active ? 'success' : 'failed' }}">
+                                {{ $branch->active ? 'Hoạt động' : 'Vô hiệu hóa' }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <a href="{{ route('admin.branches.show', $branch->id) }}" class="btn btn-ghost btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11" class="text-center">
-                            <div class="data-table-empty">
-                                <div class="data-table-empty-icon">
-                                    <i class="fas fa-store-slash"></i>
-                                </div>
-                                <h3>Không có chi nhánh nào</h3>
-                            </div>
+                        <td colspan="8" class="py-6 text-center text-muted-foreground">
+                            <i class="fas fa-store-slash mr-2"></i>
+                            Không có chi nhánh nào
                         </td>
                     </tr>
                     @endforelse
@@ -176,452 +166,111 @@
             </table>
         </div>
 
-        <!-- Pagination -->
-        <div class="data-table-footer">
-            <div class="data-table-pagination-info">
-                Hiển thị <span id="startRecord">{{ ($branches->currentPage() - 1) * $branches->perPage() + 1 }}</span>
-                đến <span id="endRecord">{{ min($branches->currentPage() * $branches->perPage(), $branches->total()) }}</span>
-                của <span id="totalRecords">{{ $branches->total() }}</span> mục
-            </div>
-            @if($branches->lastPage() > 1)
-            <div class="data-table-pagination-controls">
-                @if(!$branches->onFirstPage())
-                <a href="javascript:void(0)" onclick="loadBranches({{ $branches->currentPage() - 1 }})"
-                    class="data-table-pagination-btn"
-                    id="prevBtn">
-                    <i class="fas fa-chevron-left"></i> Trước
-                </a>
-                @endif
-
-                @php
-                $start = max(1, $branches->currentPage() - 2);
-                $end = min($branches->lastPage(), $branches->currentPage() + 2);
-                @endphp
-
-                @for ($i = $start; $i <= $end; $i++)
-                    <a href="javascript:void(0)" onclick="loadBranches({{ $i }})"
-                        class="data-table-pagination-btn {{ $branches->currentPage() == $i ? 'active' : '' }}">
-                        {{ $i }}
-                    </a>
-                @endfor
-
-                @if($branches->hasMorePages())
-                <a href="javascript:void(0)" onclick="loadBranches({{ $branches->currentPage() + 1 }})"
-                    class="data-table-pagination-btn"
-                    id="nextBtn">
-                    Tiếp <i class="fas fa-chevron-right"></i>
-                </a>
-                @endif
-            </div>
-            @endif
-        </div>
     </div>
 </div>
 @endsection
 
 @section('page-script')
 <script>
-let searchTimeout = null;
-let currentPage = {{ $branches->currentPage() }};
-let currentSearch = '{{ request('search') }}';
-
-// Hàm tải dữ liệu chi nhánh
-function loadBranches(page = 1, search = currentSearch) {
-    currentPage = page;
-    currentSearch = search;
+document.addEventListener('DOMContentLoaded', function() {
+    // Xử lý chọn tất cả
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
     
-    $.ajax({
-        url: '{{ route("admin.branches.index") }}',
-        type: 'GET',
-        data: {
-            page: page,
-            search: search
-        },
-        success: function(response) {
-            if (response.success) {
-                updateTable(response.branches);
-                updatePagination(response.pagination);
-                
-                // Cập nhật URL mà không reload trang
-                const url = new URL(window.location);
-                url.searchParams.set('page', page);
-                if (search) url.searchParams.set('search', search);
-                else url.searchParams.delete('search');
-                window.history.pushState({}, '', url);
-            }
-        },
-        error: function(xhr) {
-            dtmodalShowToast('error', {
-                title: 'Lỗi',
-                message: 'Có lỗi xảy ra khi tải dữ liệu chi nhánh'
-            });
-        }
+    selectAllCheckbox.addEventListener('change', function() {
+        branchCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
     });
-}
 
-// Xử lý tìm kiếm
-function handleSearch(event) {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        const searchValue = event.target.value;
-        loadBranches(1, searchValue);
-    }, 500);
-}
+    // Xử lý tìm kiếm với debounce
+    const searchInput = document.getElementById('searchInput');
+    let searchTimeout = null;
+    
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            loadBranches(1, e.target.value);
+        }, 500);
+    });
 
-// Hàm xử lý thay đổi trạng thái chi nhánh
-function toggleBranchStatus(button, branchId, branchName, currentStatus) {
-    // Configuration object for messages
-    const messages = {
-        confirmTitle: 'Xác nhận thay đổi trạng thái',
-        confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của chi nhánh này?',
-        confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của chi nhánh.',
-        successMessage: 'Đã thay đổi trạng thái chi nhánh thành công',
-        errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái chi nhánh'
+    // Toggle dropdown actions
+    window.toggleDropdown = function(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        dropdown.classList.toggle('hidden');
     };
+});
 
-    // Sử dụng modal thay vì confirm
-    dtmodalCreateModal({
-        type: 'warning',
-        title: messages.confirmTitle,
-        subtitle: messages.confirmSubtitle,
-        message: `Bạn đang thay đổi trạng thái của: <strong>"${branchName}"</strong><br>${messages.confirmMessage}`,
-        confirmText: 'Xác nhận thay đổi',
-        cancelText: 'Hủy bỏ',
-        onConfirm: function() {
-            // Send AJAX request to toggle status
-            $.ajax({
-                url: `{{ url('admin/branches') }}/${branchId}/toggle-status`,
-                type: 'PATCH',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    _method: 'PATCH'
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Update UI
-                        const newStatus = !currentStatus;
-                        const statusButton = $(button);
-                        
-                        statusButton
-                            .removeClass(currentStatus ? 'data-table-status-success' : 'data-table-status-failed')
-                            .addClass(newStatus ? 'data-table-status-success' : 'data-table-status-failed');
-                        
-                        statusButton.html(
-                            newStatus ? 
-                            '<i class="fas fa-check"></i> Hoạt động' :
-                            '<i class="fas fa-times"></i> Vô hiệu hóa'
-                        );
-
-                        // Update onclick handler with new status
-                        statusButton.attr('onclick', `toggleBranchStatus(this, ${branchId}, '${branchName}', ${newStatus})`);
-                        
-                        // Show success toast message instead of alert
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: messages.successMessage
-                        });
-                    }
-                },
-                error: function(xhr) {
-                    let errorMessage = messages.errorMessage;
-                    
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    } else if (xhr.status === 404) {
-                        errorMessage = 'Không tìm thấy chi nhánh';
-                    } else if (xhr.status === 403) {
-                        errorMessage = 'Bạn không có quyền thực hiện thao tác này';
-                    } else if (xhr.status === 422) {
-                        errorMessage = 'Dữ liệu không hợp lệ';
-                    }
-
-                    // Show error toast message instead of alert
-                    dtmodalShowToast('error', {
-                        title: 'Lỗi',
-                        message: errorMessage
-                    });
-                }
-            });
+// AJAX load dữ liệu
+async function loadBranches(page = 1, search = '') {
+    try {
+        const response = await fetch(`{{ route('admin.branches.index') }}?page=${page}&search=${encodeURIComponent(search)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            updateTable(data.branches.data);
+            updatePagination(data.branches);
+            updateURL(page, search);
         }
-    });
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('error', 'Lỗi tải dữ liệu');
+    }
 }
 
-// Hàm cập nhật bảng
+// Cập nhật bảng
 function updateTable(branches) {
-    const tbody = $('#dataTableBody');
-    let html = '';
-
-    if (branches.length === 0) {
-        html = `
+    const tbody = document.querySelector('tbody');
+    tbody.innerHTML = branches.length > 0 
+        ? branches.map(branch => `
             <tr>
-                <td colspan="11" class="text-center">
-                    <div class="data-table-empty">
-                        <div class="data-table-empty-icon">
-                            <i class="fas fa-store-slash"></i>
-                        </div>
-                        <h3>Không có chi nhánh nào</h3>
+                <td class="py-3 px-4">
+                    <input type="checkbox" class="branch-checkbox" value="${branch.id}">
+                </td>
+                <td class="py-3 px-4">${branch.id}</td>
+                <td class="py-3 px-4">${branch.name}</td>
+                <td class="py-3 px-4">${branch.address.substring(0, 40)}${branch.address.length > 40 ? '...' : ''}</td>
+                <td class="py-3 px-4">
+                    <div class="space-y-1">
+                        <div>📞 ${branch.phone}</div>
+                        ${branch.email ? `<div>📧 ${branch.email}</div>` : ''}
                     </div>
                 </td>
+                <td class="py-3 px-4">${branch.opening_hour} - ${branch.closing_hour}</td>
+                <td class="py-3 px-4">
+                    <span class="status-tag ${branch.active ? 'success' : 'failed'}">
+                        ${branch.active ? 'Hoạt động' : 'Vô hiệu hóa'}
+                    </span>
+                </td>
+                <td class="py-3 px-4">
+                    <a href="/admin/branches/${branch.id}" class="btn btn-ghost btn-sm">
+                        👁️ Xem
+                    </a>
+                </td>
             </tr>
-        `;
-    } else {
-        branches.forEach(branch => {
-            // Tạo hiển thị đánh giá sao
-            let ratingStars = '';
-            for (let i = 1; i <= 5; i++) {
-                if (i <= Math.floor(branch.rating)) {
-                    ratingStars += '<i class="fas fa-star text-warning"></i>';
-                } else if (i - 0.5 <= branch.rating) {
-                    ratingStars += '<i class="fas fa-star-half-alt text-warning"></i>';
-                } else {
-                    ratingStars += '<i class="far fa-star text-warning"></i>';
-                }
-            }
-
-            // Xác định màu cho thanh độ tin cậy
-            let reliabilityClass = 'bg-danger';
-            if (branch.reliability_score >= 90) {
-                reliabilityClass = 'bg-success';
-            } else if (branch.reliability_score >= 70) {
-                reliabilityClass = 'bg-info';
-            } else if (branch.reliability_score >= 50) {
-                reliabilityClass = 'bg-warning';
-            }
-
-            html += `
-                <tr data-branch-id="${branch.id}">
-                    <td class="checkbox-column">
-                        <div class="data-table-checkbox">
-                            <input type="checkbox" class="branch-checkbox" id="branch-${branch.id}" value="${branch.id}">
-                            <label for="branch-${branch.id}"></label>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="data-table-id">${branch.id}</div>
-                    </td>
-                    <td>${branch.name}</td>
-                    <td>${branch.address ? branch.address.substring(0, 50) + (branch.address.length > 50 ? '...' : '') : 'N/A'}</td>
-                    <td>
-                        <div>
-                            <div><i class="fas fa-phone"></i> ${branch.phone || 'N/A'}</div>
-                            ${branch.email ? `<div><i class="fas fa-envelope"></i> ${branch.email}</div>` : ''}
-                        </div>
-                    </td>
-                    <td>${branch.manager ? branch.manager.name : '<span class="text-muted">Chưa phân công</span>'}</td>
-                    <td>${branch.opening_hour} - ${branch.closing_hour}</td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="rating-stars">
-                                ${ratingStars}
-                            </div>
-                            <span class="ml-1">${parseFloat(branch.rating).toFixed(1)}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar ${reliabilityClass}" 
-                                role="progressbar" 
-                                style="width: ${branch.reliability_score}%;" 
-                                aria-valuenow="${branch.reliability_score}" 
-                                aria-valuemin="0" 
-                                aria-valuemax="100">
-                            </div>
-                        </div>
-                        <small class="text-center d-block">${branch.reliability_score}%</small>
-                    </td>
-                    <td>
-                        <button type="button"
-                            class="data-table-status ${branch.active ? 'data-table-status-success' : 'data-table-status-failed'}"
-                            style="border: none; cursor: pointer; width: 100px;"
-                            onclick="toggleBranchStatus(this, ${branch.id}, '${branch.name}', ${branch.active})">
-                            ${branch.active 
-                                ? '<i class="fas fa-check"></i> Hoạt động' 
-                                : '<i class="fas fa-times"></i> Vô hiệu hóa'
-                            }
-                        </button>
-                    </td>
-                    <td>
-                        <div class="data-table-action-buttons">
-                            <a href="/admin/branches/${branch.id}" 
-                               class="data-table-action-btn data-table-tooltip"
-                               data-tooltip="Xem chi tiết">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="/admin/branches/${branch.id}/edit" 
-                               class="data-table-action-btn edit data-table-tooltip"
-                               data-tooltip="Chỉnh sửa">
-                                <i class="fas fa-pen"></i>
-                            </a>
-                            <button type="button" 
-                                class="data-table-action-btn delete data-table-tooltip"
-                                data-tooltip="Xóa"
-                                onclick="deleteBranch(${branch.id}, '${branch.name}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                                      message: 'Có lỗi xảy ra khi xóa chi nhánh'
-                    });
-                }
-            });
-        }
-    });
+        `).join('')
+        : `<tr>
+            <td colspan="8" class="py-6 text-center text-muted-foreground">
+                🏪 Không có chi nhánh nào
+            </td>
+           </tr>`;
 }
 
-// Hàm cập nhật phân trang
-function updatePagination(pagination) {
-    const paginationInfo = $('.data-table-pagination-info');
-    const paginationControls = $('.data-table-pagination-controls');
+// Helper functions
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} fixed bottom-4 right-4`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
     
-    // Cập nhật thông tin phân trang
-    const start = (pagination.current_page - 1) * pagination.per_page + 1;
-    const end = Math.min(pagination.current_page * pagination.per_page, pagination.total);
-    
-    paginationInfo.html(`
-        Hiển thị <span id="startRecord">${start}</span>
-        đến <span id="endRecord">${end}</span>
-        của <span id="totalRecords">${pagination.total}</span> mục
-    `);
-
-    // Tạo nút phân trang
-    if (pagination.last_page > 1) {
-        let html = '';
-        
-        // Nút Previous
-        if (pagination.current_page > 1) {
-            html += `
-                <a href="javascript:void(0)" 
-                   onclick="loadBranches(${pagination.current_page - 1})"
-                   class="data-table-pagination-btn">
-                    <i class="fas fa-chevron-left"></i> Trước
-                </a>
-            `;
-        }
-
-        // Các nút số trang
-        const start = Math.max(1, pagination.current_page - 2);
-        const end = Math.min(pagination.last_page, pagination.current_page + 2);
-
-        for (let i = start; i <= end; i++) {
-            html += `
-                <a href="javascript:void(0)"
-                   onclick="loadBranches(${i})"
-                 
-                    ${i}
-                </a>
-            `;
-        }
-
-        // Nút Next
-        if (pagination.current_page < pagination.last_page) {
-            html += `
-                <a href="javascript:void(0)"
-                   onclick="loadBranches(${pagination.current_page + 1})"
-                   class="data-table-pagination-btn">
-                    Tiếp <i class="fas fa-chevron-right"></i>
-                </a>
-            `;
-        }
-
-        paginationControls.html(html);
-    } else {
-        paginationControls.empty();
-    }
+    setTimeout(() => toast.remove(), 3000);
 }
 
-// Hàm xử lý chọn tất cả
-function toggleSelectAll(checkbox) {
-    const isChecked = checkbox.checked;
-    $('.branch-checkbox').prop('checked', isChecked);
-    updateBulkActionsVisibility();
+function updateURL(page, search) {
+    const url = new URL(window.location);
+    url.searchParams.set('page', page);
+    search ? url.searchParams.set('search', search) : url.searchParams.delete('search');
+    window.history.pushState({}, '', url);
 }
-
-// Hàm cập nhật hiển thị các nút hành động hàng loạt
-function updateBulkActionsVisibility() {
-    const checkedCount = $('.branch-checkbox:checked').length;
-    if (checkedCount > 0) {
-        $('#bulkActionsContainer').show();
-    } else {
-        $('#bulkActionsContainer').hide();
-    }
-}
-
-// Hàm xử lý hành động hàng loạt
-function handleBulkAction(action) {
-    const selectedIds = [];
-    $('.branch-checkbox:checked').each(function() {
-        selectedIds.push($(this).val());
-    });
-
-    if (selectedIds.length === 0) {
-        dtmodalShowToast('error', {
-            title: 'Lỗi',
-            message: 'Vui lòng chọn ít nhất một chi nhánh'
-        });
-        return;
-    }
-
-    let confirmMessage = '';
-    const actionUrl = '{{ route("admin.branches.bulk-status-update") }}';
-
-    switch (action) {
-        case 'activate':
-            confirmMessage = 'Bạn có chắc chắn muốn kích hoạt các chi nhánh đã chọn?';
-            break;
-        case 'deactivate':
-            confirmMessage = 'Bạn có chắc chắn muốn vô hiệu hóa các chi nhánh đã chọn?';
-            break;
-        default:
-            return;
-    }
-
-    dtmodalCreateModal({
-        type: 'warning',
-        title: 'Xác nhận hành động hàng loạt',
-        message: `${confirmMessage}<br>Số lượng: <strong>${selectedIds.length}</strong> chi nhánh`,
-        confirmText: 'Xác nhận',
-        onConfirm: () => {
-            $.ajax({
-                url: actionUrl,
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    _method: 'PATCH',
-                    branch_ids: selectedIds,
-                    action: action
-                },
-                success: function(response) {
-                    if (response.success) {
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: response.message || 'Đã cập nhật trạng thái các chi nhánh thành công'
-                        });
-                        loadBranches(currentPage, currentSearch);
-                    } else {
-                        dtmodalShowToast('error', {
-                            title: 'Lỗi',
-                            message: response.message || 'Có lỗi xảy ra khi cập nhật trạng thái'
-                        });
-                    }
-                },
-                error: function(xhr) {
-                    dtmodalShowToast('error', {
-                        title: 'Lỗi',
-                        message: 'Có lỗi xảy ra khi cập nhật trạng thái'
-                    });
-                }
-            });
-        }
-    });
-}
-
-// Khởi tạo khi trang tải xong
-$(document).ready(function() {
-    // Khởi tạo tooltip
-    $('[data-tooltip]').each(function() {
-        new bootstrap.Tooltip(this, {
-            title: $(this).data('tooltip'),
-            placement: 'top'
-        });
-    });
-});
 </script>
 @endsection

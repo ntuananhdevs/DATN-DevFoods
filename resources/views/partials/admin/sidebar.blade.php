@@ -47,7 +47,7 @@
                         </a>
                     </div>
                 </div>
-                
+
                 <!-- Banner -->
                 <a href="{{ asset('admin/banners') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.banners.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Banners">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
@@ -99,7 +99,7 @@
                     </span>
                     <span class="sidebar-text">Products</span>
                 </a>
-                
+
                 <!-- Orders -->
                 <a href="{{ asset('admin/orders') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.orders.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Orders">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
@@ -112,20 +112,36 @@
                     </span>
                     <span class="sidebar-text">Orders</span>
                 </a>
-                
+
                 <!-- Customers -->
-                <a href="{{ asset('admin/customers') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.customers.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Customers">
-                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Account Management">
+                    <button type="button" class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </span>
+                        <span class="sidebar-text">Quản lý tài khoản</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down ml-auto transition-transform sidebar-dropdown-icon">
+                            <path d="m6 9 6 6 6-6"></path>
                         </svg>
-                    </span>
-                    <span class="sidebar-text">Customers</span>
-                </a>
-                
+                    </button>
+                    <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
+                        <a href="{{ asset('admin/users') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.users.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Khách hàng </span>
+                        </a>
+                        <a href="{{ asset('admin/users/managers') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.roles.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Quản lý</span>
+                        </a>
+                        <a href="{{ asset('admin/permissions') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.permissions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Quyền hạn</span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Analytics Reports -->
                 <a href="{{ asset('admin/analytics-reports') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics-reports.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Analytics">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
@@ -138,9 +154,9 @@
                     </span>
                     <span class="sidebar-text">Analytics</span>
                 </a>
-                
+
                 <!-- Stores -->
-                <a href="{{ asset('admin/stores') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.stores.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Stores">
+                <a href="{{ asset('admin/branches') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->is('stores') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Stores">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-store">
                             <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path>
@@ -150,7 +166,7 @@
                             <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"></path>
                         </svg>
                     </span>
-                    <span class="sidebar-text">Stores</span>
+                    <span class="sidebar-text">Chinh nhánh </span>
                 </a>
             </div>
         </div>
@@ -174,38 +190,38 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Lấy tất cả các dropdown trigger
         const dropdownTriggers = document.querySelectorAll('.sidebar-dropdown-trigger');
-        
+
         // Kiểm tra xem có submenu nào cần được mở không
         dropdownTriggers.forEach(function(trigger) {
             const content = trigger.nextElementSibling;
             const hasActiveChild = content && content.querySelector('.bg-sidebar-accent');
-            
+
             // Nếu có item con active, mở submenu
             if (hasActiveChild && content) {
                 content.classList.remove('hidden');
-                
+
                 // Xoay icon
                 const icon = trigger.querySelector('.sidebar-dropdown-icon');
                 if (icon) {
                     icon.style.transform = 'rotate(180deg)';
                 }
-                
+
                 // Thêm class active cho trigger
                 trigger.classList.add('bg-sidebar-accent', 'text-sidebar-accent-foreground', 'font-medium');
             }
-            
+
             // Thêm event listener cho mỗi dropdown trigger
             trigger.onclick = function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                
+
                 // Lấy dropdown content tương ứng
                 const content = this.nextElementSibling;
-                
+
                 // Toggle class hidden
                 if (content) {
                     content.classList.toggle('hidden');
-                    
+
                     // Xoay icon nếu có
                     const icon = this.querySelector('.sidebar-dropdown-icon');
                     if (icon) {
