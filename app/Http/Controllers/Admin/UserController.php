@@ -309,7 +309,7 @@ class UserController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.users.customer.index')->with([
+            return redirect()->route('admin.users.index')->with([
                 'toast' => [
                     'type' => 'success',
                     'title' => 'Thành công',
