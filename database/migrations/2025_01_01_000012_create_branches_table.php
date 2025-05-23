@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('branch_code')->unique();
             $table->string('name')->unique();
-            $table->text('address')->unique();
+            $table->string('address', 255)->unique();
             $table->string('phone')->unique();
             $table->string('email')->unique();
             $table->unsignedBigInteger('manager_user_id')->nullable(); // Thêm nullable()

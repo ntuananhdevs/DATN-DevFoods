@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('category_id')->constrained();
             $table->string('name');
-            $table->string('sku')->unique();
             $table->decimal('base_price', 12, 2);
             $table->boolean('available')->default(true);
             $table->integer('preparation_time')->nullable();
