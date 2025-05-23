@@ -68,40 +68,64 @@ class UserController extends Controller
             $query = User::with(['roles'])
                 ->whereHas('roles', function($q) {
                     $q->where('name', 'manager');
-                })
-                ->when($request->search, function($q) use ($request) {
-                    $q->where(function($subQ) use ($request) {
-                        $subQ->where('user_name', 'LIKE', "%{$request->search}%")
-                            ->orWhere('full_name', 'LIKE', "%{$request->search}%")
-                            ->orWhere('email', 'LIKE', "%{$request->search}%")
-                            ->orWhere('phone', 'LIKE', "%{$request->search}%");
-                    });
-                })
-                ->orderBy('created_at', 'desc');
+                });
+                
+            // Xử lý tìm kiếm
+            if ($request->has('search') && !empty($request->search)) {
+                $search = $request->search;
+                $query->where(function($subQ) use ($search) {
+                    $subQ->where('user_name', 'LIKE', "%{$search}%")
+                        ->orWhere('full_name', 'LIKE', "%{$search}%")
+                        ->orWhere('email', 'LIKE', "%{$search}%")
+                        ->orWhere('phone', 'LIKE', "%{$search}%");
+                });
+            }
+            
+            // Xử lý sắp xếp
+            $sortField = $request->input('sort_field', 'created_at');
+            $sortOrder = $request->input('sort_order', 'desc');
+            
+            // Đảm bảo field sắp xếp hợp lệ
+            $allowedSortFields = ['id', 'user_name', 'full_name', 'email', 'phone', 'created_at'];
+            if (!in_array($sortField, $allowedSortFields)) {
+                $sortField = 'created_at';
+            }
+            
+            $query->orderBy($sortField, $sortOrder);
 
-            $users = $query->paginate(10)->onEachSide(1);
+            // Phân trang
+            $perPage = $request->input('per_page', 10);
+            $users = $query->paginate($perPage)->onEachSide(1);
 
-            return $request->ajax()
-                ? response()->json([
+            // Trả về kết quả dựa trên loại request
+            if ($request->ajax()) {
+                return response()->json([
                     'success' => true,
                     'users' => $users->items(),
                     'pagination' => [
                         'total' => $users->total(),
                         'per_page' => $users->perPage(),
                         'current_page' => $users->currentPage(),
-                        'last_page' => $users->lastPage()
+                        'last_page' => $users->lastPage(),
+                        'from' => $users->firstItem(),
+                        'to' => $users->lastItem()
                     ]
-                ])
-                : view('admin.users.manager.index', compact('users'));
+                ]);
+            }
+            
+            return view('admin.users.manager.index', compact('users'));
 
         } catch (\Exception $e) {
-            Log::error('ManagerController@index Error: ' . $e->getMessage());
-            return $request->ajax()
-                ? response()->json([
+            Log::error('UserController@manager Error: ' . $e->getMessage());
+            
+            if ($request->ajax()) {
+                return response()->json([
                     'success' => false,
                     'message' => 'Lỗi hệ thống: ' . $e->getMessage()
-                ], 500)
-                : redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
+                ], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
         }
     }
     public function createManager()
@@ -244,9 +268,10 @@ class UserController extends Controller
     {
         try {
             $roles = Role::where('name', '!=', 'admin')->get();
-            return view('admin.users.create', compact('roles'));
+            return view('admin.users.customer.create', compact('roles'));
         } catch (\Exception $e) {
             Log::error('Lỗi form tạo người dùng: ' . $e->getMessage());
+            var_dump($e->getMessage());die;
             return redirect()->back()->with('error', 'Không tải được form: ' . $e->getMessage());
         }
     }

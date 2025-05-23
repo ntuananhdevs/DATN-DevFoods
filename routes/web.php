@@ -31,6 +31,10 @@ use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
 use Illuminate\Database\Capsule\Manager;
 
+//Driver 
+use App\Http\Controllers\Driver\AuthController as DriverAuthController;
+
+
 Route::prefix('/')->group(function () {
     // Home
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
@@ -160,7 +164,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [BranchController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BranchController::class, 'update'])->name('update');
         Route::get('/show/{id}', [BranchController::class,'show'])->name('show');
-
         Route::get('/export', [BranchController::class, 'export'])->name('export');
         Route::patch('/{id}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
@@ -220,3 +223,40 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
+// Customer Cart Routes
+Route::prefix('cart')->name('customer.cart.')->group(function () {
+    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
+    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+});
+
+Route::prefix('driver')->name('driver.')->group(function () {
+    Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
+    Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
+
+    // Quên mật khẩu
+    Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
+    Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
+    
+    // Xác minh OTP
+    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
+    Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
+    Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
+
+    // Đặt lại mật khẩu
+    Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
+    Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
+});
+
+// Route dành cho tài xế đã đăng nhập
+Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
+    Route::get('/', function() {
+        return view('driver.home');
+    })->name('home');
+    Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
+    // Các route khác dành cho tài xế sẽ được thêm vào đây
+});

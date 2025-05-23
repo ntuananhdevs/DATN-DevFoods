@@ -1,403 +1,248 @@
 @extends('layouts/admin/contentLayoutMaster')
 
 @section('content')
-    <div class="banner-form-container">
-        <h1 class="banner-form-title">Thêm Banner Mới</h1>
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-800 shadow-xl rounded-lg">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-700">Thêm Banner Mới</h1>
 
-        <form class="banner-form" action="{{ route('admin.banners.store') }}" method="POST" enctype="multipart/form-data">
+        <form class="space-y-6" action="{{ route('admin.banners.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <div class="banner-form-group">
-                <label class="banner-form-label" for="title">Tiêu đề banner</label>
-                <input class="banner-form-input @error('title') is-invalid @enderror" type="text" id="title"
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="title">Tiêu đề banner</label>
+                <input class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('title') border-red-500 @enderror" type="text" id="title"
                     name="title" value="{{ old('title') }}">
                 @error('title')
-                    <span class="text-danger">{{ $message }}</span>
+                    <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                 @enderror
             </div>
 
-            <div class="banner-form-group">
-                <label class="banner-form-label">Ảnh banner</label>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ảnh banner</label>
                 
-                <div class="banner-form-tabs">
-                    <div class="banner-form-tab active" data-tab="upload">Upload ảnh</div>
-                    <div class="banner-form-tab" data-tab="link">Nhập link ảnh</div>
+                <div class="flex border-b border-gray-200 dark:border-gray-700 mb-3">
+                    <button type="button" class="banner-form-tab px-4 py-2 -mb-px font-semibold text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:border-indigo-500 focus:outline-none active" data-tab="upload">Upload ảnh</button>
+                    <button type="button" class="banner-form-tab px-4 py-2 font-semibold text-gray-600 dark:text-gray-300 border-b-2 border-transparent hover:border-indigo-500 focus:outline-none" data-tab="link">Nhập link ảnh</button>
                 </div>
                 
                 <div class="banner-form-tab-content active" data-tab-content="upload">
-                    <div class="banner-form-file-wrapper">
-                        <label class="banner-form-file-button" for="image_path">Chọn file ảnh</label>
-                        <input class="banner-form-file @error('image_path') is-invalid @enderror" type="file" id="image_path"
-                            name="image_path" accept="image/*">
+                    <div class="relative">
+                        <label class="w-full flex flex-col items-center px-4 py-6 bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 rounded-lg shadow-lg tracking-wide uppercase border border-indigo-600 dark:border-indigo-400 cursor-pointer hover:bg-indigo-600 dark:hover:bg-indigo-500 hover:text-white dark:hover:text-gray-100 transition-colors duration-200">
+                            <svg class="w-8 h-8" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
+                            </svg>
+                            <span class="mt-2 text-base leading-normal">Chọn file ảnh</span>
+                            <input class="hidden @error('image_path') border-red-500 @enderror" type="file" id="image_path"
+                                name="image_path" accept="image/*">
+                        </label>
                         @error('image_path')
-                            <span class="text-danger">{{ $message }}</span>
+                            <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                         @enderror
                     </div>
-                    <div class="banner-form-preview">
-                        <img class="banner-form-preview-img" id="image-preview" style="display: none;">
-                        <div class="banner-form-preview-placeholder" id="preview-placeholder">Xem trước ảnh banner</div>
+                    <div class="mt-4 p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-md flex flex-col items-center justify-center min-h-[150px]">
+                        <img class="max-w-full max-h-[300px] object-contain hidden" id="image-preview">
+                        <div class="text-gray-500 dark:text-gray-400" id="preview-placeholder">Xem trước ảnh banner</div>
                     </div>
                 </div>
                 
-                <div class="banner-form-tab-content" data-tab-content="link">
-                    <input class="banner-form-input @error('image_link') is-invalid @enderror" type="url" 
+                <div class="banner-form-tab-content hidden" data-tab-content="link">
+                    <input class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('image_link') border-red-500 @enderror" type="url" 
                         id="image_link" name="image_link" placeholder="Nhập link ảnh" value="{{ old('image_link') }}">
-                    @error('image_path')
-                        <span class="text-danger">{{ $message }}</span>
+                    @error('image_link')
+                        <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
-                    <div class="banner-form-preview">
-                        <img class="banner-form-preview-img" id="link-preview" style="display: none;">
-                        <div class="banner-form-preview-placeholder" id="link-placeholder">Xem trước ảnh từ link</div>
+                    <div class="mt-4 p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-md flex flex-col items-center justify-center min-h-[150px]">
+                        <img class="max-w-full max-h-[300px] object-contain hidden" id="link-preview">
+                        <div class="text-gray-500 dark:text-gray-400" id="link-placeholder">Xem trước ảnh từ link</div>
                     </div>
                 </div>
             </div>
 
-            <div class="banner-form-group">
-                <label class="banner-form-label" for="description">Mô tả banner</label>
-                <textarea class="banner-form-textarea @error('description') is-invalid @enderror" id="description" name="description">{{ old('description') }}</textarea>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="description">Mô tả banner</label>
+                <textarea class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm min-h-[100px] resize-y text-gray-900 dark:text-gray-100 @error('description') border-red-500 @enderror" id="description" name="description">{{ old('description') }}</textarea>
                 @error('description')
-                    <span class="text-danger">{{ $message }}</span>
+                    <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                 @enderror
             </div>
 
-            <div class="banner-form-group">
-                <label class="banner-form-label" for="link">Link khi click banner</label>
-                <input class="banner-form-input @error('link') is-invalid @enderror" type="url" id="link"
-                    name="link" placeholder=" `https://example.com` " value="{{ old('link') }}">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="link">Link sản phẩm (VD: /products/123)</label>
+                <input class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('link') border-red-500 @enderror" type="text" id="link"
+                    name="link" placeholder="/products/your-product-id" value="{{ old('link') }}">
                 @error('link')
-                    <span class="text-danger">{{ $message }}</span>
+                    <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                 @enderror
             </div>
 
-            <div class="banner-form-row">
-                <div class="banner-form-group">
-                    <label class="banner-form-label" for="is_active">Trạng thái hiển thị</label>
-                    <select class="banner-form-select @error('is_active') is-invalid @enderror" id="is_active"
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="position">Vị trí hiển thị (trên trang)</label>
+                <select class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('position') border-red-500 @enderror" id="position" name="position">
+                    <option value="homepage" {{ old('position') == 'homepage' ? 'selected' : '' }}>Trang chủ (Homepage)</option>
+                    <option value="footers" {{ old('position') == 'footers' ? 'selected' : '' }}>Chân trang (Footers)</option>
+                    <option value="promotions" {{ old('position') == 'promotions' ? 'selected' : '' }}>Khuyến mãi (Promotions)</option>
+                    <option value="menu" {{ old('position') == 'menu' ? 'selected' : '' }}>Menu</option>
+                    <option value="branch" {{ old('position') == 'branch' ? 'selected' : '' }}>Chi nhánh (Branch)</option>
+                    <option value="abouts" {{ old('position') == 'abouts' ? 'selected' : '' }}>Giới thiệu (Abouts)</option>
+                    <option value="supports" {{ old('position') == 'supports' ? 'selected' : '' }}>Hỗ trợ (Supports)</option> {{-- Changed from suports to supports for consistency --}}
+                    <option value="contacts" {{ old('position') == 'contacts' ? 'selected' : '' }}>Liên hệ (Contacts)</option>
+                </select>
+                @error('position')
+                    <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="is_active">Trạng thái hiển thị</label>
+                    <select class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('is_active') border-red-500 @enderror" id="is_active"
                         name="is_active">
-                        <option value="1" {{ old('is_active') == '1' ? 'selected' : '' }}>Hiển thị</option>
+                        <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Hiển thị</option>
                         <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Ẩn</option>
                     </select>
                     @error('is_active')
-                        <span class="text-danger">{{ $message }}</span>
+                        <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
                 </div>
 
-                <div class="banner-form-group">
-                    <label class="banner-form-label" for="order">Vị trí hiển thị</label>
-                    <select class="banner-form-select @error('order') is-invalid @enderror" id="order" name="order">
-                        <option value="0" {{ old('order') == '0' ? 'selected' : '' }}>Đầu trang</option>
-                        <option value="1" {{ old('order') == '1' ? 'selected' : '' }}>Giữa trang</option>
-                        <option value="2" {{ old('order') == '2' ? 'selected' : '' }}>Cuối trang</option>
-                    </select>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="order">Thứ tự hiển thị</label>
+                    <input type="number" class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('order') border-red-500 @enderror" id="order" name="order" value="{{ old('order', 0) }}">
                     @error('order')
-                        <span class="text-danger">{{ $message }}</span>
+                        <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
                 </div>
             </div>
 
-            <div class="banner-form-row">
-                <div class="banner-form-group">
-                    <label class="banner-form-label" for="start_at">Thời gian bắt đầu hiển thị</label>
-                    <input class="banner-form-input @error('start_at') is-invalid @enderror" type="date" id="start_at"
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="start_at">Thời gian bắt đầu hiển thị</label>
+                    <input class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('start_at') border-red-500 @enderror" type="date" id="start_at"
                         name="start_at" value="{{ old('start_at') }}">
                     @error('start_at')
-                        <span class="text-danger">{{ $message }}</span>
+                        <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
                 </div>
 
-                <div class="banner-form-group">
-                    <label class="banner-form-label" for="end_at">Thời gian kết thúc hiển thị</label>
-                    <input class="banner-form-input @error('end_at') is-invalid @enderror" type="date" id="end_at"
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="end_at">Thời gian kết thúc hiển thị</label>
+                    <input class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('end_at') border-red-500 @enderror" type="date" id="end_at"
                         name="end_at" value="{{ old('end_at') }}">
                     @error('end_at')
-                        <span class="text-danger">{{ $message }}</span>
+                        <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
                 </div>
             </div>
 
-            <button class="banner-form-button" type="submit">Lưu Banner</button>
+            <button class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-offset-gray-800 transition-colors duration-200" type="submit">Lưu Banner</button>
         </form>
+    </div>
     @endsection
-    <style>
-        .is-invalid {
-            border-color: #dc3545 !important;
-        }
+    
+    {{-- Removed all <style> tags and custom CSS --}}
 
-        .invalid-feedback {
-            display: block;
-            width: 100%;
-            margin-top: 0.25rem;
-            font-size: 0.875em;
-            color: #dc3545;
-        }
-
-        .banner-form-container {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            background-color: #ffffff;
-        }
-
-        .banner-form-title {
-            color: #333;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .banner-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .banner-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .banner-form-label {
-            font-weight: bold;
-            color: #555;
-        }
-
-        .banner-form-input,
-        .banner-form-textarea,
-        .banner-form-select {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            width: 100%;
-        }
-
-        .banner-form-textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .banner-form-input:focus,
-        .banner-form-textarea:focus,
-        .banner-form-select:focus {
-            outline: none;
-            border-color: #4a90e2;
-            box-shadow: 0 0 3px rgba(74, 144, 226, 0.3);
-        }
-
-        .banner-form-row {
-            display: flex;
-            gap: 15px;
-        }
-
-        .banner-form-row .banner-form-group {
-            flex: 1;
-        }
-
-        .banner-form-button {
-            background-color: #4a90e2;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-            transition: background-color 0.3s;
-        }
-
-        .banner-form-button:hover {
-            background-color: #3a7bc8;
-        }
-
-        .banner-form-preview {
-            margin-top: 15px;
-            border: 1px dashed #ddd;
-            padding: 15px;
-            border-radius: 4px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 150px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .banner-form-preview-img {
-            width: 100%;
-            height: 100%;
-            max-height: 300px;
-            object-fit: contain;
-            display: none;
-        }
-
-        .banner-form-tabs {
-            display: flex;
-            margin-bottom: 10px;
-        }
-
-        .banner-form-tab {
-            padding: 8px 15px;
-            background-color: #f5f5f5;
-            border: 1px solid #ddd;
-            cursor: pointer;
-            border-radius: 4px 4px 0 0;
-            margin-right: 5px;
-        }
-
-        .banner-form-tab.active {
-            background-color: #fff;
-            border-bottom-color: #fff;
-            font-weight: bold;
-        }
-
-        .banner-form-tab-content {
-            display: none;
-        }
-
-        .banner-form-tab-content.active {
-            display: block;
-        }
-
-        .banner-form-file-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-            width: 100%;
-        }
-
-        .banner-form-file-button {
-            background-color: #f5f5f5;
-            color: #333;
-            border: 1px solid #ddd;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: inline-block;
-            text-align: center;
-            width: 100%;
-        }
-
-        .banner-form-file-button:hover {
-            background-color: #e9e9e9;
-        }
-
-        .banner-form-file {
-            position: absolute;
-            font-size: 100px;
-            right: 0;
-            top: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .banner-form-file-name {
-            margin-top: 5px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .banner-form-preview-placeholder {
-            color: #999;
-            text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .banner-form-row {
-                flex-direction: column;
-            }
-        }
-    </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Tab switching
             const tabs = document.querySelectorAll('.banner-form-tab');
+            const tabContents = document.querySelectorAll('.banner-form-tab-content');
+
             tabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     const tabName = this.getAttribute('data-tab');
                     
-                    // Update active tab
+                    // Update active tab button styling
                     tabs.forEach(t => t.classList.remove('active'));
                     this.classList.add('active');
                     
-                    // Update active content
-                    document.querySelectorAll('.banner-form-tab-content').forEach(content => {
-                        content.classList.remove('active');
+                    // Update visible tab content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active'); 
+                        content.classList.add('hidden');   
                     });
-                    document.querySelector(`.banner-form-tab-content[data-tab-content="${tabName}"]`)
-                        .classList.add('active');
+
+                    const activeContent = document.querySelector(`.banner-form-tab-content[data-tab-content="${tabName}"]`);
+                    if (activeContent) {
+                        activeContent.classList.add('active');   
+                        activeContent.classList.remove('hidden'); 
+                    }
                 });
             });
             
             // Handle form submission
-            document.querySelector('.banner-form').addEventListener('submit', function(e) {
-                const activeTab = document.querySelector('.banner-form-tab.active').getAttribute('data-tab');
-                
-                if (activeTab === 'upload') {
-                    // Remove image_link field if uploading file
-                    document.getElementById('image_link').disabled = true;
-                    document.getElementById('image_link').value = '';
-                } else {
-                    // Remove image_path field if using link
-                    document.getElementById('image_path').disabled = true;
-                    // Đảm bảo không có file được chọn
-                    document.getElementById('image_path').value = '';
-                }
-            });
+            const bannerForm = document.querySelector('form[action="{{ route('admin.banners.store') }}"]');
+            if (bannerForm) {
+                bannerForm.addEventListener('submit', function(e) {
+                    const activeTabButton = document.querySelector('.banner-form-tab.active');
+                    const imagePathInput = document.getElementById('image_path');
+                    const imageLinkInput = document.getElementById('image_link');
+
+                    if (activeTabButton && imagePathInput && imageLinkInput) {
+                        const activeTab = activeTabButton.getAttribute('data-tab');
+                        
+                        if (activeTab === 'upload') {
+                            imageLinkInput.disabled = true;
+                            imageLinkInput.value = '';
+                            imagePathInput.disabled = false; // Ensure upload input is enabled
+                        } else { // activeTab === 'link'
+                            imagePathInput.disabled = true;
+                            imagePathInput.value = ''; 
+                            imageLinkInput.disabled = false; // Ensure link input is enabled
+                        }
+                    } else {
+                        console.error('Required elements for form submission logic not found.');
+                        // Consider preventing submission if critical elements are missing and it's appropriate
+                        // e.preventDefault(); 
+                    }
+                });
+            } else {
+                console.error('Banner form not found for attaching submit listener.');
+            }
             
             // Image upload preview
             const imageInput = document.getElementById('image_path');
             const imagePreview = document.getElementById('image-preview');
             const previewPlaceholder = document.getElementById('preview-placeholder');
             
-            imageInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                
-                if (file) {
-                    const reader = new FileReader();
+            if (imageInput && imagePreview && previewPlaceholder) {
+                imageInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
                     
-                    reader.onload = function(e) {
-                        imagePreview.src = e.target.result;
-                        imagePreview.style.display = 'block';
-                        imagePreview.style.maxWidth = '100%';
-                        imagePreview.style.maxHeight = '300px';
-                        imagePreview.style.objectFit = 'contain';
-                        imagePreview.style.marginTop = '10px';
-                        previewPlaceholder.style.display = 'none';
-                    };
-                    
-                    reader.readAsDataURL(file);
-                } else {
-                    imagePreview.src = '';
-                    imagePreview.style.display = 'none';
-                    previewPlaceholder.style.display = 'block';
-                }
-            });
+                    if (file) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            imagePreview.src = e.target.result;
+                            imagePreview.style.display = 'block';
+                            previewPlaceholder.style.display = 'none';
+                        };
+                        
+                        reader.readAsDataURL(file);
+                    } else {
+                        imagePreview.src = '';
+                        imagePreview.style.display = 'none';
+                        previewPlaceholder.style.display = 'block';
+                    }
+                });
+            }
             
             // Link image preview
             const imageLink = document.getElementById('image_link');
             const linkPreview = document.getElementById('link-preview');
             const linkPlaceholder = document.getElementById('link-placeholder');
             
-            imageLink.addEventListener('input', function(e) {
-                const url = this.value.trim();
-                
-                if (url) {
-                    linkPreview.src = url;
-                    linkPreview.style.display = 'block';
-                    linkPreview.style.maxWidth = '100%';
-                    linkPreview.style.maxHeight = '300px';
-                    linkPreview.style.objectFit = 'contain';
-                    linkPreview.style.marginTop = '10px';
-                    linkPlaceholder.style.display = 'none';
-                } else {
-                    linkPreview.src = '';
-                    linkPreview.style.display = 'none';
-                    linkPlaceholder.style.display = 'block';
-                }
-            });
+            if (imageLink && linkPreview && linkPlaceholder) {
+                imageLink.addEventListener('input', function(e) {
+                    const url = this.value.trim();
+                    
+                    if (url) {
+                        linkPreview.src = url;
+                        linkPreview.style.display = 'block';
+                        linkPlaceholder.style.display = 'none';
+                    } else {
+                        linkPreview.src = '';
+                        linkPreview.style.display = 'none';
+                        linkPlaceholder.style.display = 'block';
+                    }
+                });
+            }
         });
     </script>
