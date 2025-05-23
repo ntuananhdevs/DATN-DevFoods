@@ -24,7 +24,7 @@ class BannerController extends Controller
                 });
             }
 
-            $banners = $query->paginate(10);
+            $banners = $query->paginate(5);
             $banners->appends(['search' => $search]);
 
             return view('admin.banner.index', compact('banners', 'search'));
@@ -45,36 +45,23 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         try {
-            $availableOrder = null;
-            $orders = [0, 1, 2];
-
-            foreach ($orders as $order) {
-                $banner = Banner::where('order', $order)->first();
-                if (!$banner || !$banner->is_active) {
-                    $availableOrder = $order;
-                    break;
-                }
-            }
-
-            if ($availableOrder === null) {
-                throw new \Exception('Tất cả vị trí đều đã có banner hiển thị');
-            }
-
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => 'nullable|url',
+                'link' => ['nullable', 'string', 'regex:/^\/products\/\d+$/'],
+                'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|max:2|unique:banners,order,' . ($availableOrder ?? ''),
+                'order' => 'required|integer|min:0|unique:banners,order',
             ], [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
+                'link.regex' => 'Link sản phẩm không hợp lệ. Định dạng đúng là /products/ID (ví dụ: /products/123).',
                 'max' => ':attribute không được vượt quá :max KB.',
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
@@ -83,7 +70,7 @@ class BannerController extends Controller
             ], [
                 'image_path' => 'Hình ảnh tải lên',
                 'image_link' => 'Đường dẫn ảnh',
-                'link' => 'Liên kết',
+                'link' => 'Link sản phẩm',
                 'title' => 'Tiêu đề',
                 'description' => 'Mô tả',
                 'start_at' => 'Ngày bắt đầu',
@@ -181,28 +168,29 @@ class BannerController extends Controller
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => 'nullable|url',
+                'link' => ['nullable', 'string', 'regex:/^\/products\/\d+$/'],
+                'position' =>'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|max:2|unique:banners,order,' . $id,
+                'order' => 'required|integer|min:0|unique:banners,order,' . $id,
             ], [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
+                'link.regex' => 'Link sản phẩm không hợp lệ. Định dạng đúng là /products/ID (ví dụ: /products/123).',
                 'max' => ':attribute không được vượt quá :max KB.',
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
                 'image' => ':attribute phải là hình ảnh.',
-                'regex' => ':attribute phải là đường dẫn đến trang sản phẩm (ví dụ: https://example.com/products/123)',
                 'boolean' => ':attribute không hợp lệ.'
             ], [
                 'image_path' => 'Hình ảnh tải lên',
                 'image_link' => 'Đường dẫn ảnh',
-                'link' => 'Liên kết',
+                'link' => 'Link sản phẩm',
                 'title' => 'Tiêu đề',
                 'description' => 'Mô tả',
                 'start_at' => 'Ngày bắt đầu',
@@ -276,7 +264,7 @@ class BannerController extends Controller
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
-                'message' => 'Banner đã được tạo thành công'
+                'message' => 'Banner đã được xóa thành công'
             ]);
             return redirect()->route('admin.banners.index');
         } catch (\Exception $e) {
