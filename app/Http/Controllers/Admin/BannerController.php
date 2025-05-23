@@ -109,7 +109,7 @@ class BannerController extends Controller
                 ])->withInput();
             }
             if ($hasFile) {
-                $path = $request->file('image_path')->store('banners', 'public');
+                $path = $request->file('image_path')->store('images/banners', 'public');
                 $validated['image_path'] = $path;
                 unset($validated['image_link']);
             } else {
@@ -228,7 +228,7 @@ class BannerController extends Controller
                     Storage::disk('public')->delete($banner->image_path);
                 }
                 
-                $path = $request->file('image_path')->store('banners', 'public');
+                $path = $request->file('image_path')->store('images/banners', 'public');
                 $validated['image_path'] = $path;
                 unset($validated['image_link']);
             } else if ($hasLink) {
