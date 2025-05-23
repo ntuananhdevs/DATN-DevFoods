@@ -12,18 +12,22 @@
     select {
         transition: all 0.2s ease;
     }
+
     input[type="text"]:hover,
     input[type="number"]:hover,
     input[type="date"]:hover,
     select:hover {
-        border-color: #3b82f6; /* Blue-500 from Tailwind */
+        border-color: #3b82f6;
+        /* Blue-500 from Tailwind */
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
     }
+
     input[type="text"]:focus,
     input[type="number"]:focus,
     input[type="date"]:focus,
     select:focus {
-        border-color: #2563eb; /* Blue-600 */
+        border-color: #2563eb;
+        /* Blue-600 */
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
         outline: none;
     }
@@ -39,33 +43,76 @@
         line-height: 1.25rem;
         transition: all 0.2s ease;
     }
+
     .status-tag.success {
         background-color: #dcfce7;
         color: #15803d;
     }
+
     .status-tag.failed {
         background-color: #fee2e2;
         color: #b91c1c;
     }
+
     .status-tag:hover {
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    /* Slider styling */
-    .noUi-target {
-        border: none;
-        box-shadow: none;
-        background: #e5e7eb; /* Gray-200 */
+    /* Price slider styling */
+    .price-range-container {
+        margin: 10px 0;
+        padding: 10px 0;
     }
-    .noUi-connect {
-        background: #3b82f6; /* Blue-500 */
+    
+    .price-slider {
+        position: relative;
+        height: 4px;
+        background: #e5e7eb;
+        margin: 20px 10px 30px;
+        border-radius: 2px;
     }
-    .noUi-handle {
-        background: #2563eb; /* Blue-600 */
-        border: 2px solid #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    
+    .price-slider-track {
+        position: absolute;
+        height: 100%;
+        background: #3b82f6;
+        border-radius: 2px;
+    }
+    
+    .price-slider-handle {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: #2563eb;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
         cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 2;
+    }
+    
+    .price-inputs {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .price-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+    }
+    
+    .price-display {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.875rem;
+        margin-top: 5px;
     }
 </style>
 
@@ -225,7 +272,7 @@
                             </div>
                         </th>
                         <th class="py-3 px-4 text-left font-medium">
-                            <div class="flex items-center">
+                            <div class="flex items-center cursor-pointer" data-sort="id">
                                 ID
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
                                     <path d="m18 8-6 6-6-6"></path>
@@ -234,7 +281,7 @@
                         </th>
                         <th class="py-3 px-4 text-left font-medium">Hình ảnh</th>
                         <th class="py-3 px-4 text-left font-medium">
-                            <div class="flex items-center">
+                            <div class="flex items-center cursor-pointer" data-sort="name">
                                 Tên sản phẩm
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
                                     <path d="m18 8-6 6-6-6"></path>
@@ -243,7 +290,7 @@
                         </th>
                         <th class="py-3 px-4 text-left font-medium">Danh mục</th>
                         <th class="py-3 px-4 text-right font-medium">
-                            <div class="flex items-center justify-end">
+                            <div class="flex items-center justify-end cursor-pointer" data-sort="base_price">
                                 Giá
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
                                     <path d="m18 8-6 6-6-6"></path>
@@ -281,47 +328,47 @@
                         <td class="py-3 px-4 text-right">{{ number_format($product->base_price, 0, ',', '.') }} đ</td>
                         <td class="py-3 px-4 text-center">
                             @if ($product->stock)
-                                <span class="status-tag success">
-                                    <i class="fas fa-check mr-1"></i> Còn hàng
-                                </span>
+                            <span class="status-tag success">
+                                <i class="fas fa-check mr-1"></i> Còn hàng
+                            </span>
                             @else
-                                <span class="status-tag failed">
-                                    <i class="fas fa-times mr-1"></i> Hết hàng
-                                </span>
+                            <span class="status-tag failed">
+                                <i class="fas fa-times mr-1"></i> Hết hàng
+                            </span>
                             @endif
                         </td>
                         <td class="py-3 px-4">
                             <span class="status-tag {{ $product->stock ? 'success' : 'failed' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
                                     @if ($product->stock)
-                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                        <path d="m9 11 3 3L22 4"></path>
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <path d="m9 11 3 3L22 4"></path>
                                     @else
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <path d="m15 9-6 6"></path>
-                                        <path d="m9 9 6 6"></path>
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="m15 9-6 6"></path>
+                                    <path d="m9 9 6 6"></path>
                                     @endif
                                 </svg>
                                 @if ($product->stock)
-                                    Đang bán
+                                Đang bán
                                 @else
-                                    Khóa
+                                Khóa
                                 @endif
                             </span>
                         </td>
                         <td class="py-3 px-4">
                             <div class="flex justify-center space-x-1">
-                                <a href="{{ route('admin.products.show', $product->id) }}" 
-                                   class="flex items-center justify-center rounded-md hover:bg-accent p-2" 
-                                   title="Xem chi tiết">
+                                <a href="{{ route('admin.products.show', $product->id) }}"
+                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
+                                    title="Xem chi tiết">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
                                         <circle cx="12" cy="12" r="3"></circle>
                                     </svg>
                                 </a>
-                                <a href="{{ route('admin.products.edit', $product->id) }}" 
-                                   class="flex items-center justify-center rounded-md hover:bg-accent p-2" 
-                                   title="Chỉnh sửa">
+                                <a href="{{ route('admin.products.edit', $product->id) }}"
+                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
+                                    title="Chỉnh sửa">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
                                         <path d="m15 5 4 4"></path>
@@ -331,14 +378,14 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
-                                            onclick="dtmodalConfirmDelete({
+                                        onclick="dtmodalConfirmDelete({
                                                 title: 'Xác nhận xóa sản phẩm',
                                                 subtitle: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
                                                 message: 'Hành động này không thể hoàn tác.',
                                                 itemName: '{{ $product->name }}',
                                                 onConfirm: () => this.closest('form').submit()
                                             })"
-                                            title="Xóa">
+                                        title="Xóa">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M3 6h18"></path>
                                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
@@ -350,16 +397,16 @@
                         </td>
                     </tr>
                     @empty
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <div class="data-table-empty" id="dataTableEmpty">
-                                    <div class="data-table-empty-icon">
-                                        <i class="fas fa-box-open"></i>
-                                    </div>
-                                    <h3>Không có sản phẩm nào</h3>
+                    <tr>
+                        <td colspan="7" class="text-center">
+                            <div class="data-table-empty" id="dataTableEmpty">
+                                <div class="data-table-empty-icon">
+                                    <i class="fas fa-box-open"></i>
                                 </div>
-                            </td>
-                        </tr>
+                                <h3>Không có sản phẩm nào</h3>
+                            </div>
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
@@ -377,7 +424,7 @@
                     </svg>
                 </button>
                 @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
-                    <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">{{ $page }}</button>
+                <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">{{ $page }}</button>
                 @endforeach
                 <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted {{ $products->hasMorePages() ? '' : 'disabled opacity-50 cursor-not-allowed' }}" onclick="changePage({{ $products->currentPage() + 1 }})">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
@@ -409,21 +456,35 @@
                     <select id="filter_category" name="category_id" class="w-full border rounded-md px-3 py-2 bg-background text-sm">
                         <option value="">Tất cả danh mục</option>
                         @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
                         @endforeach
                     </select>
                 </div>
                 <!-- Price Range Slider -->
                 <div class="space-y-2">
                     <label class="text-sm font-medium">Khoảng giá</label>
-                    <div class="flex items-center gap-4">
-                        <input type="text" id="price_min_display" class="w-24 border rounded-md px-3 py-2 bg-background text-sm" value="{{ number_format($minPrice, 0, ',', '.') }} ₫" readonly>
-                        <div id="price_range" class="w-full"></div>
-                        <input type="text" id="price_max_display" class="w-24 border rounded-md px-3 py-2 bg-background text-sm" value="{{ number_format($maxPrice, 0, ',', '.') }} ₫" readonly>
+
+                    <div class="price-range-container">
+                        <div class="price-slider" id="priceSlider">
+                            <div class="price-slider-track" id="priceTrack"></div>
+                            <div class="price-slider-handle" id="minHandle" data-handle="min"></div>
+                            <div class="price-slider-handle" id="maxHandle" data-handle="max"></div>
+                        </div>
+                        <div class="price-display">
+                            <span id="minPriceDisplay">{{ number_format($minPrice, 0, ',', '.') }} đ</span>
+                            <span id="maxPriceDisplay">{{ number_format($maxPrice, 0, ',', '.') }} đ</span>
+                        </div>
                     </div>
+
+                    <div class="price-inputs">
+                        <input type="text" id="minPriceInput" class="price-input" placeholder="Giá tối thiểu">
+                        <input type="text" id="maxPriceInput" class="price-input" placeholder="Giá tối đa">
+                    </div>
+
                     <input type="hidden" name="price_min" id="price_min" value="{{ $minPrice }}">
                     <input type="hidden" name="price_max" id="price_max" value="{{ $maxPrice }}">
                 </div>
+
                 <!-- Stock Status -->
                 <div class="space-y-2">
                     <label class="text-sm font-medium">Tình trạng kho</label>
@@ -439,7 +500,7 @@
                         <label class="flex items-center">
                             <input type="checkbox" name="stock_status[]" value="low_stock" class="rounded border-gray-300 mr-2">
                             Sắp hết hàng (< 10)
-                        </label>
+                                </label>
                     </div>
                 </div>
                 <!-- Date Added -->
@@ -459,348 +520,398 @@
 @endsection
 
 @section('scripts')
-    <script>
-        // Utility function for debouncing
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Toggle dropdown
-        function toggleDropdown(id) {
-            const dropdown = document.getElementById(id);
-            if (dropdown) {
-                dropdown.classList.toggle('hidden');
-            }
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdowns = document.querySelectorAll('.dropdown');
-            dropdowns.forEach(function(dropdown) {
-                if (!dropdown.contains(event.target)) {
-                    dropdown.querySelector('.dropdown-menu')?.classList.add('hidden');
+<script>
+    // ----- Dropdown Toggle -----
+    function toggleDropdown(id) {
+        const dropdown = document.getElementById(id);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown > div').forEach(menu => {
+                if (menu.id !== id && !menu.classList.contains('hidden')) {
+                    menu.classList.add('hidden');
                 }
             });
+        }
+    }
+    
+    // ----- Modal Toggle -----
+    function toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.toggle('hidden');
+        }
+    }
+    
+    // ----- Select All Checkboxes -----
+    function toggleSelectAll() {
+        const selectAll = document.getElementById('selectAll');
+        const isChecked = selectAll.checked;
+        
+        document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+            checkbox.checked = isChecked;
         });
-
-        // Toggle modal
-        function toggleModal(id) {
-            const modal = document.getElementById(id);
-            if (modal) {
-                modal.classList.toggle('hidden');
-            }
-        }
-
-        // Toggle select all checkboxes
-        function toggleSelectAll() {
-            const selectAllCheckbox = document.getElementById('selectAll');
-            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
-            const selectAllButton = document.getElementById('selectAllButton');
-            
-            const newCheckedState = !selectAllCheckbox.checked;
-            selectAllCheckbox.checked = newCheckedState;
-            
-            rowCheckboxes.forEach(checkbox => {
-                checkbox.checked = newCheckedState;
+    }
+    
+    // ----- Update Select All State -----
+    function updateSelectAllState() { 
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        const selectAll = document.getElementById('selectAll');
+        
+        if (checkboxes.length === 0) return;
+        
+        const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+        selectAll.checked = allChecked;
+    }
+    
+    // ----- Update Selected Status -----
+    function updateSelectedStatus(status) {
+        const checked = document.querySelectorAll('.row-checkbox:checked');
+        const ids = Array.from(checked).map(cb => cb.value);
+        
+        if (!ids.length) {
+            dtmodalShowToast('warning', {
+                title: 'Cảnh báo',
+                message: 'Vui lòng chọn ít nhất một sản phẩm'
             });
-            
-            selectAllButton.querySelector('span').textContent = newCheckedState ? 'Bỏ chọn tất cả' : 'Chọn tất cả';
+            return;
         }
-
-        // Update select all checkbox state based on row checkboxes
-        function updateSelectAllState() {
-            const selectAllCheckbox = document.getElementById('selectAll');
-            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
-            const selectAllButton = document.getElementById('selectAllButton');
-            const allChecked = Array.from(rowCheckboxes).every(checkbox => checkbox.checked);
-            const someChecked = Array.from(rowCheckboxes).some(checkbox => checkbox.checked);
-
-            selectAllCheckbox.checked = allChecked;
-            selectAllButton.querySelector('span').textContent = allChecked ? 'Bỏ chọn tất cả' : 'Chọn tất cả';
-        }
-
-        // Update selected status
-        function updateSelectedStatus(status) {
-            const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
-            const ids = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
-            
-            if (ids.length === 0) {
-                alert('Vui lòng chọn ít nhất một sản phẩm');
-                return;
-            }
-            
-            fetch('/admin/products/update-status', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({ ids, status })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`Đã cập nhật trạng thái cho ${ids.length} sản phẩm`);
-                    fetchProducts();
-                } else {
-                    alert('Có lỗi xảy ra khi cập nhật trạng thái');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra');
-            });
-        }
-
-        // Fetch products with filters
-        function fetchProducts(page = 1) {
-            const form = document.getElementById('filterForm');
-            const formData = new FormData(form);
-            const searchInput = document.getElementById('searchInput').value;
-            formData.append('search', searchInput);
-            formData.append('page', page);
-
-            fetch('/admin/products/filter', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                updateTable(data.products);
-                updatePagination(data.pagination);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi khi tải dữ liệu sản phẩm');
-            });
-        }
-
-        // Update table with new data
-        function updateTable(products) {
-            const tbody = document.getElementById('productTableBody');
-            tbody.innerHTML = '';
-
-            if (products.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="9" class="text-center">
-                            <div class="data-table-empty" id="dataTableEmpty">
-                                <div class="data-table-empty-icon">
-                                    <i class="fas fa-box-open"></i>
-                                </div>
-                                <h3>Không có sản phẩm nào</h3>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            products.forEach(product => {
-                const row = `
-                    <tr class="border-b">
-                        <td class="py-3 px-4">
-                            <input type="checkbox" class="row-checkbox rounded border-gray-300" value="${product.id}">
-                        </td>
-                        <td class="py-3 px-4 font-medium">${product.id}</td>
-                        <td class="py-3 px-4">
-                            <div class="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-                                <img src="${product.image}" alt="${product.name}" class="h-full w-full object-cover">
-                            </div>
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="font-medium">${product.name}</div>
-                        </td>
-                        <td class="py-3 px-4">${product.category?.name ?? 'N/A'}</td>
-                        <td class="py-3 px-4 text-right">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(product.base_price)}</td>
-                        <td class="py-3 px-4 text-center">
-                            ${product.stock > 0 ? 
-                                `<span class="status-tag success"><i class="fas fa-check mr-1"></i> Còn hàng</span>` :
-                                `<span class="status-tag failed"><i class="fas fa-times mr-1"></i> Hết hàng</span>`}
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="status-tag ${product.stock > 0 ? 'success' : 'failed'}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
-                                    ${product.stock > 0 ? 
-                                        `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path>` :
-                                        `<circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path>`}
-                                </svg>
-                                ${product.stock > 0 ? 'Đang bán' : 'Khóa'}
-                            </span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="flex justify-center space-x-1">
-                                <a href="/admin/products/${product.id}" class="flex items-center justify-center rounded-md hover:bg-accent p-2" title="Xem chi tiết">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </a>
-                                <a href="/admin/products/${product.id}/edit" class="flex items-center justify-center rounded-md hover:bg-accent p-2" title="Chỉnh sửa">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                        <path d="m15 5 4 4"></path>
-                                    </svg>
-                                </a>
-                                <form action="/admin/products/${product.id}" method="POST" class="delete-form">
-                                    <input type="hidden" name="_method" value="DELETE">
-                                    <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
-                                    <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent" onclick="dtmodalConfirmDelete({
-                                        title: 'Xác nhận xóa sản phẩm',
-                                        subtitle: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
-                                        message: 'Hành động này không thể hoàn tác.',
-                                        itemName: '${product.name}',
-                                        onConfirm: () => this.closest('form').submit()
-                                    })" title="Xóa">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                        </svg>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                tbody.insertAdjacentHTML('beforeend', row);
-            });
-
-            // Re-attach event listeners to new checkboxes
-            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-                checkbox.addEventListener('change', updateSelectAllState);
-            });
-        }
-
-        // Update pagination
-        function updatePagination(pagination) {
-            const start = document.getElementById('paginationStart');
-            const end = document.getElementById('paginationEnd');
-            const total = document.getElementById('paginationTotal');
-            const controls = document.getElementById('paginationControls');
-
-            start.textContent = pagination.from || 1;
-            end.textContent = pagination.to || 0;
-            total.textContent = pagination.total || 0;
-
-            controls.innerHTML = `
-                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted ${pagination.current_page === 1 ? 'disabled opacity-50 cursor-not-allowed' : ''}" onclick="changePage(${pagination.current_page - 1})">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
-                        <path d="m15 18-6-6 6-6"></path>
-                    </svg>
-                </button>
-                ${Array.from({ length: pagination.last_page }, (_, i) => i + 1).map(page => `
-                    <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium ${pagination.current_page === page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}" onclick="changePage(${page})">${page}</button>
-                `).join('')}
-                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted ${pagination.current_page === pagination.last_page ? 'disabled opacity-50 cursor-not-allowed' : ''}" onclick="changePage(${pagination.current_page + 1})">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
-                        <path d="m9 18 6-6-6-6"></path>
-                    </svg>
-                </button>
-            `;
-        }
-
-        // Change page
-        function changePage(page) {
-            if (page < 1 || page > {{ $products->lastPage() }}) return;
-            fetchProducts(page);
-        }
-
-        // Reset filters
-        function resetFilters() {
-            const form = document.getElementById('filterForm');
-            form.reset();
-            const priceRange = document.getElementById('price_range');
-            priceRange.noUiSlider.set([{{ $minPrice }}, {{ $maxPrice }}]);
-            updatePriceDisplay({{ $minPrice }}, {{ $maxPrice }});
-            fetchProducts();
-        }
-
-        // Update price display
-        function updatePriceDisplay(min, max) {
-            const priceMinDisplay = document.getElementById('price_min_display');
-            const priceMaxDisplay = document.getElementById('price_max_display');
-            const priceMin = document.getElementById('price_min');
-            const priceMax = document.getElementById('price_max');
-            
-            priceMinDisplay.value = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(min);
-            priceMaxDisplay.value = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(max);
-            priceMin.value = min;
-            priceMax.value = max;
-        }
-
-        // Initialize price range slider
-        document.addEventListener('DOMContentLoaded', function() {
-            const priceRange = document.getElementById('price_range');
-            if (priceRange) {
-                noUiSlider.create(priceRange, {
-                    start: [{{ $minPrice }}, {{ $maxPrice }}],
-                    connect: true,
-                    range: {
-                        'min': {{ $minPrice }},
-                        'max': {{ $maxPrice }}
+        
+        const statusText = status === 1 ? 'kích hoạt' : 'vô hiệu hóa';
+        
+        dtmodalCreateModal({
+            type: 'warning',
+            title: `Xác nhận ${statusText} sản phẩm`,
+            message: `Bạn có chắc chắn muốn ${statusText} ${ids.length} sản phẩm đã chọn không?`,
+            confirmText: 'Xác nhận',
+            cancelText: 'Hủy',
+            onConfirm: function() {
+                // Implement AJAX call to update status
+                // Example:
+                /*
+                fetch('/admin/products/update-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
-                    step: 10000,
-                    behaviour: 'drag',
-                    format: {
-                        to: value => Math.round(value),
-                        from: value => Number(value)
+                    body: JSON.stringify({ ids, status })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
                     }
                 });
-
-                priceRange.noUiSlider.on('update', function(values, handle) {
-                    updatePriceDisplay(values[0], values[1]);
+                */
+                
+                // Hiển thị thông báo thành công sau khi cập nhật
+                dtmodalShowToast('success', {
+                    title: 'Thành công',
+                    message: `Đã ${statusText} ${ids.length} sản phẩm thành công`
                 });
-            }
-
-            // Initialize select all functionality
-            const selectAllCheckbox = document.getElementById('selectAll');
-            const selectAllButton = document.getElementById('selectAllButton');
-            const rowCheckboxes = document.querySelectorAll('.row-checkbox');
-
-            selectAllButton.addEventListener('click', toggleSelectAll);
-
-            selectAllCheckbox.addEventListener('change', toggleSelectAll);
-
-            rowCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', updateSelectAllState);
-            });
-
-            // Debounced search
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', debounce(function() {
-                    fetchProducts();
-                }, 300));
-            }
-
-            // Filter form submission
-            const filterForm = document.getElementById('filterForm');
-            if (filterForm) {
-                filterForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    fetchProducts();
-                    toggleModal('filterModal');
-                });
+                
+                // Reload trang sau khi cập nhật trạng thái
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
             }
         });
-
-        // Confirm delete action
-        function dtmodalConfirmDelete(options) {
-            if (confirm(`${options.title}\n${options.subtitle}\n${options.message}\nSản phẩm: ${options.itemName}`)) {
-                options.onConfirm();
+    }
+    
+    // ----- Reset Filters -----
+    function resetFilters() {
+        const form = document.getElementById('filterForm');
+        form.reset();
+        
+        // Reset price slider
+        const minPrice = {{ $minPrice }};
+        const maxPrice = {{ $maxPrice }};
+        
+        if (window.priceSlider) {
+            window.priceSlider.minValue = minPrice;
+            window.priceSlider.maxValue = maxPrice;
+            window.priceSlider.updateVisual();
+        }
+        
+        // Reset hidden inputs
+        document.getElementById('price_min').value = minPrice;
+        document.getElementById('price_max').value = maxPrice;
+        
+        // Close the filter modal
+        toggleModal('filterModal');
+        
+        // Reload the page with default filters
+        window.location.href = '{{ route("admin.products.index") }}';
+    }
+    
+    // ----- Sorting -----
+    function sortBy(column, direction) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort_by', column);
+        url.searchParams.set('sort_direction', direction);
+        window.location.href = url.toString();
+    }
+    
+    // ----- Price Range Slider -----
+    class PriceRangeSlider {
+        constructor(config) {
+            this.min = config.min || 0;
+            this.max = config.max || 1000000;
+            this.step = config.step || 10000;
+            this.minValue = config.minValue || this.min;
+            this.maxValue = config.maxValue || this.max;
+            this.slider = document.getElementById(config.sliderId);
+            this.track = document.getElementById(config.trackId);
+            this.minHandle = document.getElementById(config.minHandleId);
+            this.maxHandle = document.getElementById(config.maxHandleId);
+            this.isDragging = false;
+            this.activeHandle = null;
+            
+            this.init();
+        }
+        
+        init() {
+            this.updateVisual();
+            this.attachEvents();
+        }
+        
+        formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
+        }
+        
+        updateVisual() {
+            const range = this.max - this.min;
+            const minPct = ((this.minValue - this.min) / range) * 100;
+            const maxPct = ((this.maxValue - this.min) / range) * 100;
+            
+            this.minHandle.style.left = `${minPct}%`;
+            this.maxHandle.style.left = `${maxPct}%`;
+            this.track.style.left = `${minPct}%`;
+            this.track.style.width = `${maxPct - minPct}%`;
+            
+            document.getElementById('minPriceDisplay').textContent = this.formatPrice(this.minValue);
+            document.getElementById('maxPriceDisplay').textContent = this.formatPrice(this.maxValue);
+            document.getElementById('price_min').value = this.minValue;
+            document.getElementById('price_max').value = this.maxValue;
+            
+            // Update the inputs
+            const minInput = document.getElementById('minPriceInput');
+            const maxInput = document.getElementById('maxPriceInput');
+            
+            if (minInput) {
+                minInput.value = this.formatPrice(this.minValue);
+            }
+            
+            if (maxInput) {
+                maxInput.value = this.formatPrice(this.maxValue);
             }
         }
-    </script>
+        
+        attachEvents() {
+            // Mouse events
+            this.minHandle.addEventListener('mousedown', e => {
+                e.preventDefault();
+                this.startDrag('min');
+            });
+            
+            this.maxHandle.addEventListener('mousedown', e => {
+                e.preventDefault();
+                this.startDrag('max');
+            });
+            
+            document.addEventListener('mousemove', e => this.handleMouseMove(e));
+            document.addEventListener('mouseup', () => this.handleMouseUp());
+            
+            // Touch events
+            this.minHandle.addEventListener('touchstart', e => {
+                e.preventDefault();
+                this.startDrag('min');
+            });
+            
+            this.maxHandle.addEventListener('touchstart', e => {
+                e.preventDefault();
+                this.startDrag('max');
+            });
+            
+            document.addEventListener('touchmove', e => this.handleMouseMove(e.touches[0]));
+            document.addEventListener('touchend', () => this.handleMouseUp());
+            
+            // Click on track
+            this.slider.addEventListener('click', e => {
+                if (this.isDragging) return;
+                
+                const val = this.getValueFromPosition(e.clientX);
+                const dMin = Math.abs(val - this.minValue);
+                const dMax = Math.abs(val - this.maxValue);
+                
+                if (dMin < dMax) {
+                    this.minValue = Math.min(val, this.maxValue - this.step);
+                } else {
+                    this.maxValue = Math.max(val, this.minValue + this.step);
+                }
+                
+                this.updateVisual();
+            });
+            
+            // Manual inputs
+            const minInput = document.getElementById('minPriceInput');
+            const maxInput = document.getElementById('maxPriceInput');
+            
+            if (minInput) {
+                minInput.addEventListener('blur', e => {
+                    const v = this.parsePrice(e.target.value);
+                    if (!isNaN(v)) {
+                        this.minValue = Math.max(this.min, Math.min(v, this.maxValue - this.step));
+                        this.updateVisual();
+                    }
+                });
+            }
+            
+            if (maxInput) {
+                maxInput.addEventListener('blur', e => {
+                    const v = this.parsePrice(e.target.value);
+                    if (!isNaN(v)) {
+                        this.maxValue = Math.min(this.max, Math.max(v, this.minValue + this.step));
+                        this.updateVisual();
+                    }
+                });
+            }
+        }
+        
+        startDrag(handle) {
+            this.isDragging = true;
+            this.activeHandle = handle;
+            document.body.style.cursor = 'grabbing';
+        }
+        
+        handleMouseMove(e) {
+            if (!this.isDragging) return;
+            
+            const val = this.getValueFromPosition(e.clientX);
+            
+            if (this.activeHandle === 'min') {
+                this.minValue = Math.min(Math.max(val, this.min), this.maxValue - this.step);
+            } else {
+                this.maxValue = Math.max(Math.min(val, this.max), this.minValue + this.step);
+            }
+            
+            this.updateVisual();
+        }
+        
+        handleMouseUp() {
+            if (this.isDragging) {
+                this.isDragging = false;
+                this.activeHandle = null;
+                document.body.style.cursor = 'default';
+            }
+        }
+        
+        getValueFromPosition(x) {
+            const rect = this.slider.getBoundingClientRect();
+            let pct = (x - rect.left) / rect.width;
+            pct = Math.min(Math.max(pct, 0), 1);
+            
+            const val = this.min + pct * (this.max - this.min);
+            return Math.round(val / this.step) * this.step;
+        }
+        
+        parsePrice(str) {
+            return parseInt(str.replace(/[^\d]/g, ''), 10);
+        }
+        
+        getValues() {
+            return { min: this.minValue, max: this.maxValue };
+        }
+        
+        reset() {
+            this.minValue = this.min;
+            this.maxValue = this.max;
+            this.updateVisual();
+        }
+    }
+    
+    // ----- Initialize on DOM Ready -----
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize price slider
+        window.priceSlider = new PriceRangeSlider({
+            min: {{ $minPrice }},
+            max: {{ $maxPrice }},
+            minValue: {{ request('price_min', $minPrice) }},
+            maxValue: {{ request('price_max', $maxPrice) }},
+            step: 1,
+            sliderId: 'priceSlider',
+            trackId: 'priceTrack',
+            minHandleId: 'minHandle',
+            maxHandleId: 'maxHandle'
+        });
+        
+        // Initialize checkbox behavior
+        document.getElementById('selectAll').addEventListener('change', toggleSelectAll);
+        document.getElementById('selectAllButton').addEventListener('click', function() {
+            const selectAll = document.getElementById('selectAll');
+            selectAll.checked = !selectAll.checked;
+            toggleSelectAll();
+        });
+        
+        document.querySelectorAll('.row-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAllState);
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdowns = document.querySelectorAll('.dropdown > div:not(.hidden)');
+            dropdowns.forEach(dropdown => {
+                const isClickInside = dropdown.contains(event.target) || 
+                                     dropdown.previousElementSibling.contains(event.target);
+                
+                if (!isClickInside) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+        
+        // Set initial checkbox state
+        updateSelectAllState();
+        
+        // Initialize sorting indicators
+        const currentSortBy = '{{ request("sort_by", "") }}';
+        const currentSortDirection = '{{ request("sort_direction", "asc") }}';
+        
+        const sortColumns = document.querySelectorAll('[data-sort]');
+        sortColumns.forEach(column => {
+            const sortBy = column.getAttribute('data-sort');
+            
+            if (sortBy === currentSortBy) {
+                // Add active sort indicator
+                const icon = column.querySelector('svg');
+                if (icon) {
+                    if (currentSortDirection === 'asc') {
+                        icon.innerHTML = '<path d="m6 15 6-6 6 6"></path>';
+                    } else {
+                        icon.innerHTML = '<path d="m6 9 6 6 6-6"></path>';
+                    }
+                    icon.classList.add('text-primary');
+                }
+            }
+            
+            // Add click handler
+            column.addEventListener('click', function() {
+                let direction = 'asc';
+                if (sortBy === currentSortBy && currentSortDirection === 'asc') {
+                    direction = 'desc';
+                }
+                sortBy(sortBy, direction);
+            });
+        });
+    });
+    
+    // Function to handle pagination
+    function changePage(page) {
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        window.location.href = url.toString();
+    }
+</script>
 @endsection
