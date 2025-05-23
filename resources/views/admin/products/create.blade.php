@@ -99,18 +99,24 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label for="category" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
+                <select id="category" name="category" required class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                  <option value="">Chọn danh mục</option>
+                  <option value="1">Quần áo</option>
+                  <option value="2">Giày dép</option>
+                  <option value="3">Phụ kiện</option>
+                  <option value="4">Đồ điện tử</option>
+                  <option value="5">Đồ gia dụng</option>
+                </select>
+              </div>
               <div>
                 <label for="originalPrice" class="block text-sm font-medium text-gray-700">Giá gốc <span class="text-red-500">*</span></label>
                 <div class="relative mt-1">
                   <input type="number" id="originalPrice" name="originalPrice" min="0" required placeholder="0" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                 </div>
               </div>
-              <div>
-                <label for="salePrice" class="block text-sm font-medium text-gray-700">Giá bán</label>
-                <div class="relative mt-1">
-                  <input type="number" id="salePrice" name="salePrice" min="0" placeholder="0" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </div>
-              </div>
+              
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -145,30 +151,6 @@
               <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"></textarea>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label for="category" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
-                <select id="category" name="category" required class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="">Chọn danh mục</option>
-                  <option value="1">Quần áo</option>
-                  <option value="2">Giày dép</option>
-                  <option value="3">Phụ kiện</option>
-                  <option value="4">Đồ điện tử</option>
-                  <option value="5">Đồ gia dụng</option>
-                </select>
-              </div>
-              <div>
-                <label for="brand" class="block text-sm font-medium text-gray-700">Thương hiệu</label>
-                <select id="brand" name="brand" class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="">Chọn thương hiệu</option>
-                  <option value="1">Nike</option>
-                  <option value="2">Adidas</option>
-                  <option value="3">Puma</option>
-                  <option value="4">Samsung</option>
-                  <option value="5">Apple</option>
-                </select>
-              </div>
-            </div>
             <div>
               <span class="block text-sm font-medium text-gray-700">Trạng thái</span>
               <div class="flex gap-4 mt-2">
