@@ -13,13 +13,12 @@ return new class extends Migration
     {
         Schema::create('branch_stocks', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('branch_id');
-            $table->unsignedBigInteger('product_variant_id');
+            $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
+            $table->foreignId('product_variant_id')->constrained('product_variants')->onDelete('cascade');
             $table->integer('stock_quantity')->default(0);
-            $table->timestamp('updated_at')->useCurrent();
+            $table->timestamps();
 
-            $table->foreign('branch_id')->references('id')->on('branches');
-            $table->foreign('product_variant_id')->references('id')->on('product_variants');
+
             $table->unique(['branch_id', 'product_variant_id']);
         });
     }
