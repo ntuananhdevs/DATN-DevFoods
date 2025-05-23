@@ -18,10 +18,18 @@ return new class extends Migration
             $table->string('status');  // ví dụ: active, ordered, cancelled
             $table->timestamps();
         });
+        Schema::create('cart_items', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('cart_id')->constrained()->onDelete('cascade');
+            $table->foreignId('product_variant_id')->constrained()->onDelete('cascade');
+            $table->integer('quantity')->default(1);
+            $table->timestamps();
+        });
     }
 
     public function down()
     {
+        Schema::dropIfExists('cart_items');
         Schema::dropIfExists('carts');
     }
 };
