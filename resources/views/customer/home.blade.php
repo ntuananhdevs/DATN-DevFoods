@@ -332,7 +332,7 @@
                 </div>
 
                 <div class="relative h-60 md:h-auto">
-                    <img src="/placeholder.svg?height=400&width=600" alt="Đặt hàng ngay" class="object-cover w-full h-full">
+                    <img src="https://marketingai.mediacdn.vn/thumb_w/784/603488451643117568/2024/8/7/thumb-1280-x-800-px-61-1723017058646933002606.png" alt="Đặt hàng ngay" class="object-cover w-full h-full">
                 </div>
             </div>
         </div>

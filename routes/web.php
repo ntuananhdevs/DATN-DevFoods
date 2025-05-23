@@ -108,7 +108,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
+    Route::get('/ecommerce', [DashboardController::class, 'ecommerce'])->name('ecommerce');
+    Route::get('/store_analytics', [DashboardController::class, 'store_analytics'])->name('store_analytics');
 
     // Đăng xuất
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');

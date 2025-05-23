@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('banners', function (Blueprint $table) {
             $table->id();
             $table->string('title')->nullable();             // Tiêu đề banner
-            $table->string('image_path');
-            $table->string('position')->default('homepage');     // Vị trí hiển thị banner (top, bottom, ...)                    // Đường dẫn ảnh banner
+            $table->string('image_path');                    // Đường dẫn ảnh banner
+            $table->string('position')->default('homepage');  // Vị trí hiển thị banner (top, bottom, ...)
             $table->text('description')->nullable();        // Mô tả banner
             $table->string('link')->nullable();              // Link khi click banner
             $table->boolean('is_active')->default(true);    // Trạng thái hiển thị
