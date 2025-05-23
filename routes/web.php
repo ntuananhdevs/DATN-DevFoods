@@ -160,7 +160,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [BranchController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BranchController::class, 'update'])->name('update');
         Route::get('/show/{id}', [BranchController::class,'show'])->name('show');
-
         Route::get('/export', [BranchController::class, 'export'])->name('export');
         Route::patch('/{id}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');

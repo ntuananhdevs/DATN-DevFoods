@@ -158,16 +158,11 @@
                                         <button type="button" 
                                                 class="gallery-btn set-featured-btn"
                                                 data-image-id="{{ $image->id }}"
-                                                data-url="{{ route('admin.branches.set-featured-image', [$branch->id, $image->id]) }}">
+                                               
                                             <i class="far fa-star"></i>
                                         </button>
                                     @endif
-                                    <button type="button" 
-                                            class="gallery-btn delete-btn"
-                                            data-image-id="{{ $image->id }}"
-                                            data-url="{{ route('admin.branches.delete-image', [$branch->id, $image->id]) }}">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                 
                                 </div>
                             </div>
                             @if($image->caption)
