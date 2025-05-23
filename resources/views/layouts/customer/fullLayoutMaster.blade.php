@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'FastFood')</title>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -45,7 +47,7 @@
                     </button>
 
                     <a href="/" class="flex items-center gap-2 ml-4 md:ml-0">
-                        <span class="font-bold text-xl text-orange-500">FastFood</span>
+                        <span class="font-bold text-xl text-orange-500">PolyCrispyWings</span>
                     </a>
 
                     <nav class="hidden md:flex items-center gap-6 ml-10">
@@ -76,7 +78,7 @@
                 <div class="flex items-center gap-4">
                     <div id="search-container" class="relative">
                         <button id="search-button" class="p-2">
-                            <i class="fas fa-search h-5 w-5"></i>
+                            <ion-icon class="h-6 w-6" name="search-outline"></ion-icon>
                             <span class="sr-only">Tìm kiếm</span>
                         </button>
                         <div id="search-input-container" class="hidden absolute right-0 top-full mt-1 w-64 bg-white shadow-lg rounded-lg p-2 z-50">
@@ -90,12 +92,12 @@
                     </div>
 
                     <a href="{{ asset('/profile') }}" class="p-2">
-                        <i class="fas fa-user h-5 w-5"></i>
+                        <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
                         <span class="sr-only">Tài khoản</span>
                     </a>
 
                     <a href="{{ asset('/cart') }}" class="relative p-2">
-                        <i class="fas fa-shopping-cart h-5 w-5"></i>
+                        <ion-icon class="h-6 w-6" name="cart-outline"></ion-icon>
                         <span class="absolute -top-0 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-orange-500 text-white text-xs rounded-full">3</span>
                         <span class="sr-only">Giỏ hàng</span>
                     </a>

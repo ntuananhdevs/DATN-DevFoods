@@ -90,6 +90,8 @@ Route::prefix('/')->group(function () {
 
     // Route Customer (profile)
     Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
+    Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
+    Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
 });
 
 // Route Auth (login / logout)
@@ -102,7 +104,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
+    Route::get('/ecommerce', [DashboardController::class, 'ecommerce'])->name('ecommerce');
+    Route::get('/store_analytics', [DashboardController::class, 'store_analytics'])->name('store_analytics');
 
     // Đăng xuất
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
@@ -145,9 +149,25 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class,'storeManager'])->name('store');
-  
+            
         });
-       
+    });
+    // Branch Management
+    Route::prefix('branches')->name('branches.')->group(function () {
+        Route::get('/', [BranchController::class, 'index'])->name('index');
+        Route::get('/create', [BranchController::class, 'create'])->name('create');
+        Route::post('/store', [BranchController::class,'store'])->name('store');
+        Route::get('/edit/{id}', [BranchController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [BranchController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [BranchController::class,'show'])->name('show');
+
+        Route::get('/export', [BranchController::class, 'export'])->name('export');
+        Route::patch('/{id}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::get('/{id}/assign-manager', [BranchController::class, 'assignManager'])->name('assign-manager');
+        Route::post('/{id}/update-manager', [BranchController::class, 'updateManager'])->name('update-manager');
+        Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
+        Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
     });
   
   
@@ -187,6 +207,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+    });
+
+     // Banner Management
+     Route::prefix('discount')->name('discount.')->group(function () {
+        Route::get('/', [BannerController::class, 'index'])->name('index');
+        Route::get('/create', [BannerController::class, 'create'])->name('create');
+        Route::post('/store', [BannerController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
     });
 });
 

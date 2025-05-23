@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\UsersExport;
+use App\Models\Branch;
 use App\Models\UserRole;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -155,7 +156,7 @@ class UserController extends Controller
             // Commit transaction khi tất cả thành công
             DB::commit();
 
-            return redirect()->route('admin.managers.index')->with([
+            return redirect()->route('admin.users.managers.index')->with([
                 'toast' => [
                     'type' => 'success',
                     'title' => 'Thành công',
@@ -189,6 +190,18 @@ class UserController extends Controller
     {
         try {
             $user = User::findOrFail($id);
+            
+            // Kiểm tra nếu là quản lý và đang quản lý chi nhánh
+            if ($user->roles()->where('name', 'manager')->exists()) {
+                $managedActiveBranches = Branch::where('manager_user_id', $user->id)
+                    ->where('active', true) // Thêm điều kiện chi nhánh đang hoạt động
+                    ->count();
+                
+                if ($managedActiveBranches > 0) {
+                    throw new \Exception('Không thể thay đổi trạng thái quản lý đang quản lý chi nhánh HOẠT ĐỘNG');
+                }
+            }
+
             $user->active = !$user->active;
             $user->save();
 
@@ -213,7 +226,7 @@ class UserController extends Controller
             if (request()->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+                    'message' => $e->getMessage() // Trả về message lỗi cụ thể
                 ], 500);
             }
 

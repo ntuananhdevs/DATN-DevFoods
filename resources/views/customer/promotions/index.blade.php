@@ -7,7 +7,6 @@
     .container {
       max-width: 1280px;
       margin: 0 auto;
-      padding: 20px;
     }
 </style>
 <div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
