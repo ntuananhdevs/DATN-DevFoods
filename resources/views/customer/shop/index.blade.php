@@ -10,14 +10,21 @@
       margin: 0 auto;
     }
 </style>
-<div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
+{{-- <div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
     <div class="container mx-auto px-4 text-center">
         <h1 class="text-3xl md:text-4xl font-bold mb-4">Thực Đơn</h1>
         <p class="text-lg max-w-2xl mx-auto">
             Khám phá các món ăn ngon, chất lượng và giá cả hợp lý tại FastFood
         </p>
     </div>
-</div>
+</div> --}}
+
+
+    @php
+        $menuBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('menu');
+    @endphp
+    @include('components.banner', ['banners' => $menuBanner])
+
 
 <div class="container mx-auto px-4 py-12">
     <!-- Bộ lọc và tìm kiếm -->
