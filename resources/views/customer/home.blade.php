@@ -11,10 +11,10 @@
 </style>
 <!-- Banner/Slider -->
 <div class="relative h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden" id="banner-slider">
-    @foreach ($banners as $index => $banner)
+    {{-- @foreach ($banners as $index => $banner)
         <div class="banner-slide absolute inset-0 transition-opacity duration-1000 {{ $index === 0 ? 'opacity-100' : 'opacity-0' }}">
             <div class="relative h-full w-full">
-                <img src="{{ asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}" class="object-cover w-full h-full">
+                <img src="{{ Str::startsWith($banner->image_path, ['http://', 'https://']) ? $banner->image_path :  asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}" class="object-cover w-full h-full">
                 <div class="absolute inset-0 bg-black/30"></div>
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
                     <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">{{ $banner->title }}</h2>
@@ -25,7 +25,12 @@
                 </div>
             </div>
         </div>
-    @endforeach
+    @endforeach --}}
+
+    @php
+        $banners = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('homepage');
+    @endphp
+    @include('components.banner', ['banners' => $banners])
 
     <button class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 z-10 p-2 rounded-full" id="prev-slide">
         <i class="fas fa-chevron-left h-6 w-6"></i>
@@ -41,6 +46,8 @@
         @endforeach
     </div>
 </div>
+
+
 
 
 <div class="container mx-auto px-4 py-8">
