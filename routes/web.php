@@ -239,7 +239,7 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-// Test routes for AWS S3 upload
+// Test routes for AWS S3 uploadd
 Route::prefix('test')->name('test.')->group(function () {
     Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
