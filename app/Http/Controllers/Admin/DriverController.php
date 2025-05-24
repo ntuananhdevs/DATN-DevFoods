@@ -22,39 +22,78 @@ use Illuminate\Support\Facades\Response;
 class DriverController extends Controller
 {
     // Hiển thị danh sách đơn đăng ký tài xế, phân loại theo trạng thái chờ xử lý và đã xử lý
-    public function listApplications(Request $request){
-        try {
-            $search = $request->search;
+    // Hiển thị danh sách đơn đăng ký tài xế, phân loại theo trạng thái chờ xử lý và đã xử lý
+public function listApplications(Request $request){
+    try {
+        $pendingSearch = $request->pending_search;
+        $processedSearch = $request->processed_search;
 
-            // Lọc danh sách đơn đang chờ xử lý
-            $pendingApplications = DriverApplication::where('status', 'pending')
-                ->when($request->search, function ($query, $search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->where('full_name', 'like', "%{$search}%")
-                            ->orWhere('license_plate', 'like', "%{$search}%")
-                            ->orWhere('phone_number', 'like', "%{$search}%");
-                    });
-                })
-                ->latest()
-                ->paginate(5, ['*'], 'pending_page');
+        // Lọc danh sách đơn đang chờ xử lý
+        $pendingApplications = DriverApplication::where('status', 'pending')
+            ->when($pendingSearch, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('license_plate', 'like', "%{$search}%")
+                        ->orWhere('phone_number', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(5, ['*'], 'pending_page');
 
-            // Lọc danh sách đơn đã được xử lý (phê duyệt hoặc từ chối)
-            $processedApplications = DriverApplication::whereIn('status', ['approved', 'rejected'])
-                ->when($request->search, function ($query, $search) {
-                    $query->where(function ($q) use ($search) {
-                        $q->where('full_name', 'like', "%{$search}%")
-                            ->orWhere('license_plate', 'like', "%{$search}%")
-                            ->orWhere('phone_number', 'like', "%{$search}%");
-                    });
-                })
-                ->latest()
-                ->paginate(5, ['*'], 'processed_page');
+        // Lọc danh sách đơn đã được xử lý (phê duyệt hoặc từ chối)
+        $processedApplications = DriverApplication::whereIn('status', ['approved', 'rejected'])
+            ->when($processedSearch, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('license_plate', 'like', "%{$search}%")
+                        ->orWhere('phone_number', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(5, ['*'], 'processed_page');
 
-            return view('admin.driver.applications', compact('pendingApplications', 'processedApplications'));
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Không thể tải danh sách đơn: ' . $e->getMessage());
+        // Xử lý phản hồi dựa trên loại yêu cầu
+        if ($request->ajax()) {
+            // Định dạng dữ liệu để trả về JSON phù hợp cho phân trang và hiển thị
+            return response()->json([
+                'pendingApplications' => [
+                    'current_page' => $pendingApplications->currentPage(),
+                    'data' => $pendingApplications->items(),
+                    'from' => $pendingApplications->firstItem(),
+                    'to' => $pendingApplications->lastItem(),
+                    'last_page' => $pendingApplications->lastPage(),
+                    'per_page' => $pendingApplications->perPage(),
+                    'total' => $pendingApplications->total(),
+                    'first_page_url' => $pendingApplications->url(1),
+                    'last_page_url' => $pendingApplications->url($pendingApplications->lastPage()),
+                    'next_page_url' => $pendingApplications->nextPageUrl(),
+                    'prev_page_url' => $pendingApplications->previousPageUrl(),
+                ],
+                'processedApplications' => [
+                    'current_page' => $processedApplications->currentPage(),
+                    'data' => $processedApplications->items(),
+                    'from' => $processedApplications->firstItem(),
+                    'to' => $processedApplications->lastItem(),
+                    'last_page' => $processedApplications->lastPage(),
+                    'per_page' => $processedApplications->perPage(),
+                    'total' => $processedApplications->total(),
+                    'first_page_url' => $processedApplications->url(1),
+                    'last_page_url' => $processedApplications->url($processedApplications->lastPage()),
+                    'next_page_url' => $processedApplications->nextPageUrl(),
+                    'prev_page_url' => $processedApplications->previousPageUrl(),
+                ]
+            ]);
         }
+
+        return view('admin.driver.applications', compact('pendingApplications', 'processedApplications', 'pendingSearch', 'processedSearch'));
+    } catch (\Exception $e) {
+        if ($request->ajax()) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+        return redirect()->back()->with('error', 'Không thể tải danh sách đơn: ' . $e->getMessage());
     }
+}
+
 
     // Xem chi tiết một đơn đăng ký tài xế cụ thể
     public function viewApplicationDetails(DriverApplication $application)
