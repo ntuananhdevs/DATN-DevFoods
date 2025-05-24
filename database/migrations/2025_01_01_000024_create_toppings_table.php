@@ -36,6 +36,13 @@ return new class extends Migration
             $table->decimal('price', 12, 2);
             $table->timestamps();
         });
+        Schema::create('cart_item_toppings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('cart_item_id')->constrained()->onDelete('cascade');
+            $table->foreignId('topping_id')->constrained('toppings')->onDelete('cascade');
+            $table->integer('quantity')->default(1);
+            $table->timestamps();
+        });
     }
 
     /**
