@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Artisan;
 //Admin
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
@@ -17,9 +18,9 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
+use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\Auth\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
@@ -142,9 +143,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);
     Route::prefix('categories')->name('categories.')->group(function () {
-    Route::delete('{id}', [CategoryController::class, 'destroy'])->name('destroy');
-    Route::patch('categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
-    Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::delete('{id}', [CategoryController::class, 'destroy'])->name('destroy');
+        Route::patch('categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
  
@@ -257,30 +258,19 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });
 
-Route::prefix('driver')->name('driver.')->group(function () {
-    Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
-    Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
-
-    // Quên mật khẩu
-    Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
-    Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
-    
-    // Xác minh OTP
-    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
-    Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
-    Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
-
-    // Đặt lại mật khẩu
-    Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
-    Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
+//hiring driver
+Route::prefix('hiring-driver')->name('driver.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\HiringController::class, 'landing'])->name('landing');
+    Route::get('/apply', [App\Http\Controllers\Admin\HiringController::class, 'applicationForm'])->name('application.form');
+    Route::post('/apply', [App\Http\Controllers\Admin\HiringController::class, 'submitApplication'])->name('application.submit');
+    Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-// Route dành cho tài xế đã đăng nhập
-Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
-    Route::get('/', function() {
-        return view('driver.home');
-    })->name('home');
-    Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
-    // Các route khác dành cho tài xế sẽ được thêm vào đây
+// Test routes for AWS S3 uploadd
+Route::prefix('test')->name('test.')->group(function () {
+    Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
+    Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
+    Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
+    Route::delete('/images', [TestController::class, 'deleteImage'])->name('images.delete');
+    Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });
