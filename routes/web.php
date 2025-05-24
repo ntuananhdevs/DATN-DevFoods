@@ -32,7 +32,7 @@ use App\Http\Controllers\Customer\ContactController as CustomerContactController
 use Illuminate\Database\Capsule\Manager;
 
 //Driver 
-use App\Http\Controllers\Driver\AuthController as DriverAuthController;
+use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
 
 Route::prefix('/')->group(function () {
@@ -210,6 +210,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::get('/search-product', [BannerController::class, 'searchProducts'])->name('search.product');
     });
 
      // Banner Management

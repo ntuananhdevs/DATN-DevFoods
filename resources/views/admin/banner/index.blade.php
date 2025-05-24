@@ -24,32 +24,30 @@
         </script>
     @endpush
 
-    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 animate-fadeIn">
-        <div
-            class="bg-white rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 animate-slideInDown delay-100 duration-700 ease-out">
+    <div class="min-h-screen bg-gradient-to-br ">
+        <div class="fade-in flex flex-col gap-4 pb-4  animate-slideInUp delay-200 duration-700 ease-in-out">
+            <!-- Main Header -->
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <div
-                        class="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-lg shadow-md transform transition-transform duration-300 hover:scale-110">
+                <div class="flex items-center gap-3">
+                    <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                         <i class="fas fa-image text-white text-xl"></i>
                     </div>
-                    <h1
-                        class="text-3xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        Quản lý banner
-                    </h1>
+                    <div>
+                        <h2 class="text-3xl font-bold tracking-tight">Quản lý banner</h2>
+                        <p class="text-muted-foreground">Quản lý danh sách banner của bạn</p>
+                    </div>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <a href="{{ route('admin.banners.create') }}"
-                        class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-medium shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95 flex items-center space-x-2">
-                        <i class="fas fa-plus"></i>
-                        <span>Thêm mới</span>
-                    </a>
-                </div>
+                <a href="{{ route('admin.banners.create') }}" class="btn btn-primary flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                    </svg>
+                    Thêm mới
+                </a>
             </div>
-        </div>
 
         <!-- Data Table Card with enhanced animations -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-500 hover:shadow-2xl animate-slideInUp delay-200 duration-700 ease-out">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-500 hover:shadow-2xl animate-slideInUp delay-200 duration-700 ease-in-out">
             <!-- Table Header -->
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-800">Danh sách banner</h2>
@@ -98,17 +96,10 @@
                                 </a>
                             </div>
                         </div>
-
-                        <button
-                            class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transform transition-all duration-200 hover:scale-105 flex items-center space-x-2">
-                            <i class="fas fa-columns"></i>
-                            <span>Cột</span>
-                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Table Container with enhanced styling -->
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200" id="dataTable">
                     <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -175,14 +166,13 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex-shrink-0 h-20 w-20">
                                         @php
-                                            $imageSrc = asset('images/default-banner.png'); // Default image
+                                            $imageSrc = asset('images/default-banner.png');
                                             if ($banner->image_path) {
                                                 if (filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
                                                     $imageSrc = $banner->image_path;
                                                 } elseif (strpos($banner->image_path, 'storage/') === 0) {
                                                     $imageSrc = asset($banner->image_path);
                                                 } else {
-                                                    // Ensure no double slashes if image_path already starts with a slash
                                                     $imagePath = ltrim($banner->image_path, '/');
                                                     $imageSrc = asset('storage/' . $imagePath);
                                                 }
@@ -224,7 +214,6 @@
                                             $positionText = str_replace('_', ' ', $banner->position);
                                             $bgColor = 'bg-gray-100';
                                             $textColor = 'text-gray-800';
-                                            // Add more specific colors if needed, e.g., based on position value
                                             if ($banner->position === 'homepage') {
                                                 $bgColor = 'bg-indigo-100';
                                                 $textColor = 'text-indigo-800';
@@ -235,7 +224,6 @@
                                                 $bgColor = 'bg-yellow-100';
                                                 $textColor = 'text-yellow-800';
                                             }
-                                            // Add other positions as needed
                                         @endphp
                                         <span
                                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transform transition-all duration-200 hover:scale-105 {{ $bgColor }} {{ $textColor }}">
@@ -254,21 +242,21 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ $banner->end_at->format('d/m/Y') }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <div class="flex items-center justify-center space-x-2">
+                                <td class="py-3 px-4">
+                                    <div class="flex justify-center space-x-1">
                                         <a href="{{ route('admin.banners.edit', $banner->id) }}"
-                                            class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg shadow-md transform transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                                            class="flex items-center justify-center rounded-md hover:bg-gray-400 p-2 hover:shadow-lg transition-all duration-300"
                                             title="Chỉnh sửa">
                                             <i class="fas fa-pen text-sm"></i>
                                         </a>
                                         <form action="{{ route('admin.banners.destroy', $banner->id) }}" method="POST"
-                                            class="inline-block">
+                                            class="delete-form">
                                             @csrf
                                             @method('DELETE')
                                             <button type="button"
-                                                class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-md transform transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                                                class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-gray-400 hover:shadow-lg transition-all duration-300"
                                                 title="Xóa"
-                                                onclick="dtmodalConfirmDelete({
+                                                onclick="dtmodalConfirmDelete({ 
                                                         itemName: '{{ $banner->name }}',
                                                         onConfirm: () => this.closest('form').submit()
                                                     })">

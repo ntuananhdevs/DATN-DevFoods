@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Banner;
+use App\Models\Product;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -48,7 +49,7 @@ class BannerController extends Controller
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/products\/\d+$/'],
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/show\/\d+$/'],
                 'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
@@ -61,7 +62,7 @@ class BannerController extends Controller
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
-                'link.regex' => 'Link sản phẩm không hợp lệ. Định dạng đúng là /products/ID (ví dụ: /products/123).',
+                'link.regex' => 'Link sản phẩm không hợp lệ.',
                 'max' => ':attribute không được vượt quá :max KB.',
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
@@ -168,8 +169,8 @@ class BannerController extends Controller
             $validated = $request->validate([
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/products\/\d+$/'],
-                'position' =>'required|string',
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/show\/\d+$/'],
+                'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
@@ -215,7 +216,7 @@ class BannerController extends Controller
                 if ($banner->image_path && !filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
                     Storage::disk('public')->delete($banner->image_path);
                 }
-                
+
                 $path = $request->file('image_path')->store('banners', 'public');
                 $validated['image_path'] = $path;
                 unset($validated['image_link']);
@@ -224,7 +225,7 @@ class BannerController extends Controller
                 if ($banner->image_path && !filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
                     Storage::disk('public')->delete($banner->image_path);
                 }
-                
+
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             } else {
@@ -354,5 +355,23 @@ class BannerController extends Controller
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
         }
+    }
+    public function searchProducts(Request $request)
+    {
+        $query = $request->get('q', '');
+        $id = $request->get('id');
+        $products = Product::query();
+        if ($id) {
+            $products->where('id', $id);
+        } elseif ($query) {
+            $products->where('name', 'like', '%' . $query . '%');
+        } else {
+            return response()->json([]);
+        }
+        return response()->json(
+            $products->select('id', 'name')
+                ->limit(10)
+                ->get()
+        );
     }
 }
