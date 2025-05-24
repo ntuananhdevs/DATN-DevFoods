@@ -115,6 +115,37 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down ml-auto transition-transform sidebar-dropdown-icon">
                             <path d="m6 9 6 6 6-6"></path>
                         </svg>
+<<<<<<< HEAD
+                    </span>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+            <!-- driver -->
+            <div class="sidebar-dropdown">
+                <button class="sidebar-dropdown-trigger flex w-full items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-text">Tài xế</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-auto lucide lucide-chevron-down">
+                        <path d="m6 9 6 6 6-6"></path>
+                    </svg>
+                </button>
+                <div class="sidebar-dropdown-content hidden pl-4">
+                    <a href="{{ asset('admin/drivers') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.index') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-text">Tất cả tài xế</span>
+                    </a>
+                    <a href="{{ asset('admin/drivers/applications') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.applications') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-text">Đơn ứng tuyển</span>
+                    </a>
+                </div>
+            </div>
+                
+=======
                     </button>
                     <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
                         <a href="{{ route('admin.users.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.users.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
@@ -129,6 +160,7 @@
                     </div>
                 </div>
 
+>>>>>>> 98ba110dddf238b0ff6a17c154d45eee5b64c2b4
                 <!-- Analytics Reports -->
                 <a href="{{ ('admin.analytics-reports') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics-reports.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Analytics">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
