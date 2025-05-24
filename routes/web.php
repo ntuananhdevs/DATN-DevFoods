@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Artisan;
 //Admin
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
@@ -17,11 +18,11 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
+use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
-use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
+use App\Http\Controllers\Customer\Auth\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
 use App\Http\Controllers\Customer\CheckoutController as CustomerCheckoutController;
 use App\Http\Controllers\Customer\PromotionController as CustomerPromotionController;
@@ -40,7 +41,7 @@ Route::prefix('/')->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
     // Products
-    Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index'); 
+    Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/show', [CustomerProductController::class, 'show'])->name('products.show');
 
     // // Store Locations
@@ -78,7 +79,7 @@ Route::prefix('/')->group(function () {
 
     // Promotions
     Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
-    
+
     // Promotions
     Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branchs.index');
 
@@ -88,14 +89,38 @@ Route::prefix('/')->group(function () {
     // Support
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 
-    // Route Customer (login / logout / register)
-    Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
-    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
+    // Route Customer (login / logout / register) - Thêm middleware guest
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
+        Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.post');
+        Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
+        Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.post');
 
-    // Route Customer (profile)
-    Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
-    Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
-    Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+        // Thêm route xác thực OTP
+        Route::get('/verify-otp', [CustomerAuthController::class, 'showOTPForm'])->name('customer.verify.otp.show');
+        Route::post('/verify-otp', [CustomerAuthController::class, 'verifyOTP'])->name('customer.verify.otp.post');
+        Route::post('/resend-otp', [CustomerAuthController::class, 'resendOTP'])->name('customer.resend.otp');
+
+        // Thêm routes cho quên mật khẩu
+        Route::get('/forgot-password', [CustomerAuthController::class, 'showForgotPasswordForm'])
+            ->name('customer.password.request');
+        Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])
+            ->name('customer.password.email');
+        Route::get('/reset-password/{token}', [CustomerAuthController::class, 'showResetPasswordForm'])
+            ->name('customer.password.reset');
+        Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])
+            ->name('customer.password.update');
+    });
+
+    // Đăng xuất không cần middleware guest
+    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
+
+    // Route Customer (profile) - Cần đăng nhập để truy cập
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
+        Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
+        Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+    });
 });
 
 // Route Auth (login / logout)
@@ -118,12 +143,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);
     Route::prefix('categories')->name('categories.')->group(function () {
-    Route::delete('{id}', [CategoryController::class, 'destroy'])->name('destroy');
-    Route::patch('categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
-    Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::delete('{id}', [CategoryController::class, 'destroy'])->name('destroy');
+        Route::patch('categories/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
- 
+
 
     // Roles Management
     Route::prefix('roles')->name('roles.')->group(function () {
@@ -152,18 +177,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::prefix('managers')->name('managers.')->group(function () {
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
-            Route::post('/store', [UserController::class,'storeManager'])->name('store');
-            
+            Route::post('/store', [UserController::class, 'storeManager'])->name('store');
         });
     });
     // Branch Management
     Route::prefix('branches')->name('branches.')->group(function () {
         Route::get('/', [BranchController::class, 'index'])->name('index');
         Route::get('/create', [BranchController::class, 'create'])->name('create');
-        Route::post('/store', [BranchController::class,'store'])->name('store');
+        Route::post('/store', [BranchController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [BranchController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BranchController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [BranchController::class,'show'])->name('show');
+        Route::get('/show/{id}', [BranchController::class, 'show'])->name('show');
         Route::get('/export', [BranchController::class, 'export'])->name('export');
         Route::patch('/{id}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
@@ -172,8 +196,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
         Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
     });
-  
-  
+
+
     // Products Management
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
@@ -200,8 +224,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
 
-     // Banner Management
-     Route::prefix('banners')->name('banners.')->group(function () {
+    // Banner Management
+    Route::prefix('banners')->name('banners.')->group(function () {
         Route::get('/', [BannerController::class, 'index'])->name('index');
         Route::get('/create', [BannerController::class, 'create'])->name('create');
         Route::post('/store', [BannerController::class, 'store'])->name('store');
@@ -213,8 +237,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/search-product', [BannerController::class, 'searchProducts'])->name('search.product');
     });
 
-     // Banner Management
-     Route::prefix('discount')->name('discount.')->group(function () {
+    // Banner Management
+    Route::prefix('discount')->name('discount.')->group(function () {
         Route::get('/', [BannerController::class, 'index'])->name('index');
         Route::get('/create', [BannerController::class, 'create'])->name('create');
         Route::post('/store', [BannerController::class, 'store'])->name('store');
@@ -233,21 +257,24 @@ Route::prefix('cart')->name('customer.cart.')->group(function () {
     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
 });
-
 Route::prefix('driver')->name('driver.')->group(function () {
     Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
     Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
 
+
+
     // Quên mật khẩu
     Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
     Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
-    
-    // Xác minh OTP
-    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
-    Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
-    Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
 
+    // Xác minh OTP
+
+    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
+
+    Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
+
+    Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
     // Đặt lại mật khẩu
     Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
     Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
@@ -255,9 +282,28 @@ Route::prefix('driver')->name('driver.')->group(function () {
 
 // Route dành cho tài xế đã đăng nhập
 Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
-    Route::get('/', function() {
+
+    Route::get('/', function () {
+
         return view('driver.home');
     })->name('home');
+
     Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
-    // Các route khác dành cho tài xế sẽ được thêm vào đây
+});
+
+//hiring driver
+Route::prefix('hiring-driver')->name('driver.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\HiringController::class, 'landing'])->name('landing');
+    Route::get('/apply', [App\Http\Controllers\Admin\HiringController::class, 'applicationForm'])->name('application.form');
+    Route::post('/apply', [App\Http\Controllers\Admin\HiringController::class, 'submitApplication'])->name('application.submit');
+    Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
+});
+
+// Test routes for AWS S3 uploadd
+Route::prefix('test')->name('test.')->group(function () {
+    Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
+    Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
+    Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
+    Route::delete('/images', [TestController::class, 'deleteImage'])->name('images.delete');
+    Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });

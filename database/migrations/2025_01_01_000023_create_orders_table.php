@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('customer_id')->nullable()->constrained('users');
-            $table->foreignId('branch_id')->constrained();
+            $table->foreignId('branch_id')->constrained('branches');
             $table->foreignId('driver_id')->nullable()->constrained('drivers');
             $table->foreignId('address_id')->nullable()->constrained('addresses');
             $table->foreignId('discount_code_id')->nullable()->constrained('discount_codes');
@@ -45,10 +45,29 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
         });
+        // Tạo bảng order_items
+        Schema::create('order_items', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
+
+            // Nếu đơn hàng là sản phẩm đơn lẻ
+            $table->foreignId('product_variant_id')->nullable()->constrained('product_variants')->onDelete('cascade');
+
+            // Nếu đơn hàng là combo cố định
+            $table->foreignId('combo_id')->nullable()->constrained('combos')->onDelete('cascade');
+
+            $table->integer('quantity')->default(1);
+            $table->decimal('unit_price', 12, 2);
+            $table->decimal('total_price', 12, 2);
+            $table->timestamps();
+
+            // Chú ý: trong một dòng order_detail, chỉ nên có product_variant_id hoặc combo_id, không cùng lúc.
+        });
     }
 
     public function down()
     {
         Schema::dropIfExists('orders');
+        Schema::dropIfExists('order_items');
     }
 };
