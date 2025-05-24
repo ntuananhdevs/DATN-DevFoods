@@ -68,7 +68,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 1;
     transition: all 0.2s ease;
   }
   
@@ -102,7 +102,7 @@
   }
 </style>
 
-<main class="container mx-auto px-4 py-8">
+<main class="container">
     <h1 class="text-3xl font-extrabold mb-1">Thêm Sản Phẩm Mới</h1>
     <p class="text-gray-500 mb-8">Nhập thông tin chi tiết để tạo sản phẩm mới</p>
 
@@ -205,9 +205,6 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh sản phẩm <span class="text-red-500">*</span></label>
-              <p class="text-xs text-gray-500 mb-2">
-                <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
-              </p>
               <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <!-- Primary Image -->
                 <div class="md:col-span-1">
@@ -231,6 +228,9 @@
                       <input type="file" id="primary-image-upload" name="primary_image" accept="image/*" class="hidden" />
                     </div>
                   </div>
+                  <p class="text-xs text-gray-500 mb-2">
+                  <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
+                </p>
                 </div>
 
                 <!-- Additional Images -->
