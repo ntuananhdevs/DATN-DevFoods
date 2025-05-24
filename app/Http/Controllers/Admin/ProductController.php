@@ -176,9 +176,9 @@ public function index(Request $request)
                 }
             }
 
-            // Debug: Log request data
-            \Log::info('Attributes data:', $request->input('attributes', []));
-            \Log::info('Toppings data:', $request->input('toppings', []));
+            // // Debug: Log request data
+            // \Log::info('Attributes data:', $request->input('attributes', []));
+            // \Log::info('Toppings data:', $request->input('toppings', []));
 
             // Handle attributes and variant values
             $attributes = $request->input('attributes', []);
