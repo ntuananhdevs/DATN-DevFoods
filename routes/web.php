@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
+use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
@@ -236,4 +237,13 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/apply', [App\Http\Controllers\Admin\HiringController::class, 'applicationForm'])->name('application.form');
     Route::post('/apply', [App\Http\Controllers\Admin\HiringController::class, 'submitApplication'])->name('application.submit');
     Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
+});
+
+// Test routes for AWS S3 upload
+Route::prefix('test')->name('test.')->group(function () {
+    Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
+    Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
+    Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
+    Route::delete('/images', [TestController::class, 'deleteImage'])->name('images.delete');
+    Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });
