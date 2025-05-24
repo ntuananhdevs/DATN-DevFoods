@@ -22,7 +22,7 @@ use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
-use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
+use App\Http\Controllers\Customer\Auth\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
 use App\Http\Controllers\Customer\CheckoutController as CustomerCheckoutController;
 use App\Http\Controllers\Customer\PromotionController as CustomerPromotionController;
@@ -31,6 +31,10 @@ use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
 use Illuminate\Database\Capsule\Manager;
+
+//Driver 
+use App\Http\Controllers\Driver\AuthController as DriverAuthController;
+
 
 Route::prefix('/')->group(function () {
     // Home
@@ -85,14 +89,38 @@ Route::prefix('/')->group(function () {
     // Support
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 
-    // Route Customer (login / logout / register)
-    Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
-    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
+    // Route Customer (login / logout / register) - Thêm middleware guest
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
+        Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.post');
+        Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
+        Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.post');
+        
+        // Thêm route xác thực OTP
+        Route::get('/verify-otp', [CustomerAuthController::class, 'showOTPForm'])->name('customer.verify.otp.show');
+        Route::post('/verify-otp', [CustomerAuthController::class, 'verifyOTP'])->name('customer.verify.otp.post');
+        Route::post('/resend-otp', [CustomerAuthController::class, 'resendOTP'])->name('customer.resend.otp');
+        
+        // Thêm routes cho quên mật khẩu
+        Route::get('/forgot-password', [CustomerAuthController::class, 'showForgotPasswordForm'])
+            ->name('customer.password.request');
+        Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])
+            ->name('customer.password.email');
+        Route::get('/reset-password/{token}', [CustomerAuthController::class, 'showResetPasswordForm'])
+            ->name('customer.password.reset');
+        Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])
+            ->name('customer.password.update');
+    });
+    
+    // Đăng xuất không cần middleware guest
+    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
-    // Route Customer (profile)
-    Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
-    Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
-    Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+    // Route Customer (profile) - Cần đăng nhập để truy cập
+    Route::middleware('auth')->group(function () {
+        Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
+        Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
+        Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+    });
 });
 
 // Route Auth (login / logout)
@@ -161,7 +189,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [BranchController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BranchController::class, 'update'])->name('update');
         Route::get('/show/{id}', [BranchController::class,'show'])->name('show');
-
         Route::get('/export', [BranchController::class, 'export'])->name('export');
         Route::patch('/{id}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
