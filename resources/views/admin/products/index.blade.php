@@ -122,9 +122,9 @@
         <div class="flex items-center gap-3">
             <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag">
-                                    <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-                                    <path d="M3 6h18"></path>
-                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                    <path d="M3 6h18"></path>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
                 </svg>
             </div>
             <div>
@@ -257,45 +257,15 @@
             <table class="w-full">
                 <thead>
                     <tr class="border-b bg-muted/50">
-                        <th class="py-3 px-4 text-left">
-                            <div class="flex items-center">
-                                <input type="checkbox" id="selectAll" class="rounded border-gray-300">
-                            </div>
-                        </th>
                         <th class="py-3 px-4 text-left font-medium">
-                            <div class="flex items-center cursor-pointer" data-sort="id">
-                                ID
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
-                                    <path d="m18 8-6 6-6-6"></path>
-                                </svg>
-                            </div>
+                            <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300">
                         </th>
+                        <th class="py-3 px-4 text-left font-medium">Mã sản phẩm</th>
                         <th class="py-3 px-4 text-left font-medium">Hình ảnh</th>
-                        <th class="py-3 px-4 text-left font-medium">
-                            <div class="flex items-center cursor-pointer" data-sort="name">
-                                Tên sản phẩm
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
-                                    <path d="m18 8-6 6-6-6"></path>
-                                </svg>
-                            </div>
-                        </th>
+                        <th class="py-3 px-4 text-left font-medium">Tên sản phẩm</th>
                         <th class="py-3 px-4 text-left font-medium">Danh mục</th>
-                        <th class="py-3 px-4 text-right font-medium">
-                            <div class="flex items-center justify-end cursor-pointer" data-sort="base_price">
-                                Giá
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
-                                    <path d="m18 8-6 6-6-6"></path>
-                                </svg>
-                            </div>
-                        </th>
-                        <th class="py-3 px-4 text-center font-medium">
-                            <div class="flex items-center justify-center">
-                                Tồn kho
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
-                                    <path d="m18 8-6 6-6-6"></path>
-                                </svg>
-                            </div>
-                        </th>
+                        <th class="py-3 px-4 text-right font-medium">Giá</th>
+                        <th class="py-3 px-4 text-center font-medium">Tồn kho</th>
                         <th class="py-3 px-4 text-left font-medium">Trạng thái</th>
                         <th class="py-3 px-4 text-center font-medium">Thao tác</th>
                     </tr>
@@ -304,9 +274,9 @@
                     @forelse($products as $product)
                     <tr class="border-b">
                         <td class="py-3 px-4">
-                            <input type="checkbox" class="row-checkbox rounded border-gray-300" value="{{ $product->id }}">
+                            <input type="checkbox" name="selected_products[]" value="{{ $product->id }}" class="product-checkbox rounded border-gray-300">
                         </td>
-                        <td class="py-3 px-4 font-medium">{{ $product->id }}</td>
+                        <td class="py-3 px-4 font-medium">{{ $product->sku }}</td>
                         <td class="py-3 px-4">
                             <div class="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden">
                                 <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
@@ -314,24 +284,27 @@
                         </td>
                         <td class="py-3 px-4">
                             <div class="font-medium">{{ $product->name }}</div>
+                            <div class="text-sm text-muted-foreground">{{ $product->sku }}</div>
                         </td>
                         <td class="py-3 px-4">{{ $product->category->name ?? 'N/A' }}</td>
-                        <td class="py-3 px-4 text-right">{{ number_format($product->base_price, 0, ',', '.') }} đ</td>
+                       
+                        <td class="py-3 px-4 text-right">
+                            {{ number_format($product->base_price, 0, ',', '.') }} đ
+                        </td>
                         <td class="py-3 px-4 text-center">
-                            @if ($product->stock)
-                            <span class="status-tag success">
-                                <i class="fas fa-check mr-1"></i> Còn hàng
+                            @php
+                                $totalStock = $product->variants->sum(function($variant) {
+                                    return $variant->branchStocks->sum('stock_quantity');
+                                });
+                            @endphp
+                            <span class="status-tag {{ $totalStock > 0 ? 'success' : 'failed' }}">
+                                {{ $totalStock }}
                             </span>
-                            @else
-                            <span class="status-tag failed">
-                                <i class="fas fa-times mr-1"></i> Hết hàng
-                            </span>
-                            @endif
                         </td>
                         <td class="py-3 px-4">
-                            <span class="status-tag {{ $product->stock ? 'success' : 'failed' }}">
+                            <span class="status-tag {{ $product->available ? 'success' : 'failed' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
-                                    @if ($product->stock)
+                                    @if ($product->available)
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <path d="m9 11 3 3L22 4"></path>
                                     @else
@@ -340,11 +313,7 @@
                                     <path d="m9 9 6 6"></path>
                                     @endif
                                 </svg>
-                                @if ($product->stock)
-                                Đang bán
-                                @else
-                                Khóa
-                                @endif
+                                {{ $product->available ? 'Đang bán' : 'Khóa' }}
                             </span>
                         </td>
                         <td class="py-3 px-4">
@@ -389,12 +358,15 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center">
-                            <div class="data-table-empty" id="dataTableEmpty">
-                                <div class="data-table-empty-icon">
-                                    <i class="fas fa-box-open"></i>
-                                </div>
-                                <h3>Không có sản phẩm nào</h3>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="flex flex-col items-center justify-center text-muted-foreground">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                                    <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                                    <path d="M3 6h18"></path>
+                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                </svg>
+                                <h3 class="text-lg font-medium">Không có sản phẩm nào</h3>
+                                <p class="text-sm">Hãy thêm sản phẩm mới để bắt đầu</p>
                             </div>
                         </td>
                     </tr>
@@ -403,7 +375,7 @@
             </table>
         </div>
 
-        <!-- Pagination and info -->
+        <!-- Pagination -->
         <div class="flex items-center justify-between px-4 py-4 border-t">
             <div class="text-sm text-muted-foreground">
                 Hiển thị <span id="paginationStart">{{ $products->firstItem() }}</span> đến <span id="paginationEnd">{{ $products->lastItem() }}</span> của <span id="paginationTotal">{{ $products->total() }}</span> mục
@@ -431,7 +403,7 @@
 <div id="filterModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
     <div class="bg-background rounded-lg shadow-lg w-full max-w-lg mx-4">
         <div class="flex items-center justify-between p-4 border-b">
-            <h3 class="text-lg font-medium">Lọc sản phẩm nâng cao</h3>
+            <h3 class="text-lg font-medium">Lọc sản phẩm</h3>
             <button type="button" class="text-muted-foreground hover:text-foreground" onclick="toggleModal('filterModal')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 6 6 18"></path>
@@ -451,10 +423,10 @@
                         @endforeach
                     </select>
                 </div>
-                <!-- Price Range Slider -->
+
+                <!-- Price Range -->
                 <div class="space-y-2">
                     <label class="text-sm font-medium">Khoảng giá</label>
-
                     <div class="price-range-container">
                         <div class="price-slider" id="priceSlider">
                             <div class="price-slider-track" id="priceTrack"></div>
@@ -466,38 +438,27 @@
                             <span id="maxPriceDisplay">{{ number_format($maxPrice, 0, ',', '.') }} đ</span>
                         </div>
                     </div>
-
                     <div class="price-inputs">
                         <input type="text" id="minPriceInput" class="price-input" placeholder="Giá tối thiểu">
                         <input type="text" id="maxPriceInput" class="price-input" placeholder="Giá tối đa">
                     </div>
-
                     <input type="hidden" name="price_min" id="price_min" value="{{ $minPrice }}">
                     <input type="hidden" name="price_max" id="price_max" value="{{ $maxPrice }}">
                 </div>
 
-                <!-- Stock Status -->
+                <!-- Status -->
                 <div class="space-y-2">
-                    <label class="text-sm font-medium">Tình trạng kho</label>
+                    <label class="text-sm font-medium">Trạng thái</label>
                     <div class="flex flex-col gap-2">
                         <label class="flex items-center">
-                            <input type="checkbox" name="stock_status[]" value="in_stock" class="rounded border-gray-300 mr-2">
-                            Còn hàng
+                            <input type="checkbox" name="status[]" value="available" class="rounded border-gray-300 mr-2">
+                            Đang bán
                         </label>
                         <label class="flex items-center">
-                            <input type="checkbox" name="stock_status[]" value="out_of_stock" class="rounded border-gray-300 mr-2">
-                            Hết hàng
+                            <input type="checkbox" name="status[]" value="unavailable" class="rounded border-gray-300 mr-2">
+                            Không bán
                         </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="stock_status[]" value="low_stock" class="rounded border-gray-300 mr-2">
-                            Sắp hết hàng (< 10)
-                                </label>
                     </div>
-                </div>
-                <!-- Date Added -->
-                <div class="space-y-2">
-                    <label for="date_added" class="text-sm font-medium">Ngày thêm</label>
-                    <input type="date" id="date_added" name="date_added" class="w-full border rounded-md px-3 py-2 bg-background text-sm">
                 </div>
             </div>
             <div class="flex items-center justify-end p-4 border-t space-x-2">
@@ -512,103 +473,12 @@
 
 @section('scripts')
 <script>
-    // ----- Dropdown Toggle -----
-    function toggleDropdown(id) {
-        const dropdown = document.getElementById(id);
-        if (dropdown) {
-            dropdown.classList.toggle('hidden');
-            
-            // Close all other dropdowns
-            document.querySelectorAll('.dropdown > div').forEach(menu => {
-                if (menu.id !== id && !menu.classList.contains('hidden')) {
-                    menu.classList.add('hidden');
-                }
-            });
-        }
-    }
-    
     // ----- Modal Toggle -----
     function toggleModal(id) {
         const modal = document.getElementById(id);
         if (modal) {
             modal.classList.toggle('hidden');
         }
-    }
-    
-    // ----- Select All Checkboxes -----
-    function toggleSelectAll() {
-        const selectAll = document.getElementById('selectAll');
-        const isChecked = selectAll.checked;
-        
-        document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-            checkbox.checked = isChecked;
-        });
-    }
-    
-    // ----- Update Select All State -----
-    function updateSelectAllState() { 
-        const checkboxes = document.querySelectorAll('.row-checkbox');
-        const selectAll = document.getElementById('selectAll');
-        
-        if (checkboxes.length === 0) return;
-        
-        const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-        selectAll.checked = allChecked;
-    }
-    
-    // ----- Update Selected Status -----
-    function updateSelectedStatus(status) {
-        const checked = document.querySelectorAll('.row-checkbox:checked');
-        const ids = Array.from(checked).map(cb => cb.value);
-        
-        if (!ids.length) {
-            dtmodalShowToast('warning', {
-                title: 'Cảnh báo',
-                message: 'Vui lòng chọn ít nhất một sản phẩm'
-            });
-            return;
-        }
-        
-        const statusText = status === 1 ? 'kích hoạt' : 'vô hiệu hóa';
-        
-        dtmodalCreateModal({
-            type: 'warning',
-            title: `Xác nhận ${statusText} sản phẩm`,
-            message: `Bạn có chắc chắn muốn ${statusText} ${ids.length} sản phẩm đã chọn không?`,
-            confirmText: 'Xác nhận',
-            cancelText: 'Hủy',
-            onConfirm: function() {
-                // Implement AJAX call to update status
-                // Example:
-                /*
-                fetch('/admin/products/update-status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ ids, status })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.reload();
-                    }
-                });
-                */
-                
-                // Hiển thị thông báo thành công sau khi cập nhật
-                dtmodalShowToast('success', {
-                    title: 'Thành công',
-                    message: `Đã ${statusText} ${ids.length} sản phẩm thành công`
-                });
-                
-                // Reload trang sau khi cập nhật trạng thái
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            }
-        });
     }
     
     // ----- Reset Filters -----
@@ -635,14 +505,6 @@
         
         // Reload the page with default filters
         window.location.href = '{{ route("admin.products.index") }}';
-    }
-    
-    // ----- Sorting -----
-    function sortBy(column, direction) {
-        const url = new URL(window.location);
-        url.searchParams.set('sort_by', column);
-        url.searchParams.set('sort_direction', direction);
-        window.location.href = url.toString();
     }
     
     // ----- Price Range Slider -----
@@ -831,23 +693,11 @@
             max: {{ $maxPrice }},
             minValue: {{ request('price_min', $minPrice) }},
             maxValue: {{ request('price_max', $maxPrice) }},
-            step: 1,
+            step: 10000,
             sliderId: 'priceSlider',
             trackId: 'priceTrack',
             minHandleId: 'minHandle',
             maxHandleId: 'maxHandle'
-        });
-        
-        // Initialize checkbox behavior
-        document.getElementById('selectAll').addEventListener('change', toggleSelectAll);
-        document.getElementById('selectAllButton').addEventListener('click', function() {
-            const selectAll = document.getElementById('selectAll');
-            selectAll.checked = !selectAll.checked;
-            toggleSelectAll();
-        });
-        
-        document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', updateSelectAllState);
         });
         
         // Close dropdowns when clicking outside
@@ -862,40 +712,6 @@
                 }
             });
         });
-        
-        // Set initial checkbox state
-        updateSelectAllState();
-        
-        // Initialize sorting indicators
-        const currentSortBy = '{{ request("sort_by", "") }}';
-        const currentSortDirection = '{{ request("sort_direction", "asc") }}';
-        
-        const sortColumns = document.querySelectorAll('[data-sort]');
-        sortColumns.forEach(column => {
-            const sortBy = column.getAttribute('data-sort');
-            
-            if (sortBy === currentSortBy) {
-                // Add active sort indicator
-                const icon = column.querySelector('svg');
-                if (icon) {
-                    if (currentSortDirection === 'asc') {
-                        icon.innerHTML = '<path d="m6 15 6-6 6 6"></path>';
-                    } else {
-                        icon.innerHTML = '<path d="m6 9 6 6 6-6"></path>';
-                    }
-                    icon.classList.add('text-primary');
-                }
-            }
-            
-            // Add click handler
-            column.addEventListener('click', function() {
-                let direction = 'asc';
-                if (sortBy === currentSortBy && currentSortDirection === 'asc') {
-                    direction = 'desc';
-                }
-                sortBy(sortBy, direction);
-            });
-        });
     });
     
     // Function to handle pagination
@@ -903,6 +719,105 @@
         const url = new URL(window.location);
         url.searchParams.set('page', page);
         window.location.href = url.toString();
+    }
+
+    // ----- Checkbox Functionality -----
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const productCheckboxes = document.querySelectorAll('.product-checkbox');
+        const selectAllButton = document.getElementById('selectAllButton');
+        const actionsDropdown = document.getElementById('actionsMenu');
+
+        // Handle select all checkbox
+        selectAllCheckbox.addEventListener('change', function() {
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectAllButton();
+        });
+
+        // Handle individual checkboxes
+        productCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateSelectAllCheckbox();
+                updateSelectAllButton();
+            });
+        });
+
+        // Update select all checkbox state
+        function updateSelectAllCheckbox() {
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            selectAllCheckbox.checked = checkedBoxes.length === productCheckboxes.length;
+        }
+
+        // Update select all button state
+        function updateSelectAllButton() {
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            selectAllButton.disabled = checkedBoxes.length === 0;
+        }
+
+        // Handle select all button click
+        selectAllButton.addEventListener('click', function() {
+            const allChecked = selectAllCheckbox.checked;
+            selectAllCheckbox.checked = !allChecked;
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+            });
+            updateSelectAllButton();
+        });
+
+        // Handle action buttons
+        document.querySelectorAll('#actionsMenu a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const action = this.getAttribute('onclick');
+                if (action) {
+                    const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+                    if (checkedBoxes.length === 0) {
+                        alert('Vui lòng chọn ít nhất một sản phẩm');
+                        return;
+                    }
+                    eval(action);
+                }
+            });
+        });
+    });
+
+    // ----- Update Selected Status -----
+    function updateSelectedStatus(status) {
+        const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+        const productIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+        if (productIds.length === 0) {
+            alert('Vui lòng chọn ít nhất một sản phẩm');
+            return;
+        }
+
+        if (confirm('Bạn có chắc chắn muốn thay đổi trạng thái của các sản phẩm đã chọn?')) {
+            fetch('{{ ("admin.products.update-status") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    product_ids: productIds,
+                    status: status
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Có lỗi xảy ra khi cập nhật trạng thái');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi cập nhật trạng thái');
+            });
+        }
     }
 </script>
 @endsection

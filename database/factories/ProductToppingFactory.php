@@ -3,21 +3,24 @@
 namespace Database\Factories;
 
 use App\Models\Product;
-use App\Models\ProductVariant;
+use App\Models\ProductTopping;
+use App\Models\Topping;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class ProductVariantFactory extends Factory
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ProductTopping>
+ */
+class ProductToppingFactory extends Factory
 {
-    protected $model = ProductVariant::class;
+    protected $model = ProductTopping::class;
 
     public function definition(): array
     {
         return [
             'product_id' => Product::factory(),
-            'image' => $this->faker->imageUrl(640, 480, 'food'),
-            'active' => true,
+            'topping_id' => Topping::factory(),
             'created_at' => now(),
             'updated_at' => now(),
         ];
     }
-}
+} 
