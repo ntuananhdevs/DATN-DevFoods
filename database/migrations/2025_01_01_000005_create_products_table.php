@@ -14,10 +14,13 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('category_id')->constrained();
+            $table->string('sku')->unique();
             $table->string('name');
             $table->decimal('base_price', 12, 2);
             $table->boolean('available')->default(true);
             $table->integer('preparation_time')->nullable();
+            $table->json('ingredients')->nullable();
+            $table->text('short_description')->nullable();
             $table->text('description')->nullable();
             $table->boolean('status')->default(true);
             $table->boolean('is_featured')->default(false);

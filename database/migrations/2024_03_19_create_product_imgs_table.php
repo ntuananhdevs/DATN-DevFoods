@@ -11,17 +11,20 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('payment_methods', function (Blueprint $table) {
+        Schema::create('product_imgs', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->boolean('active')->default(true);
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->string('img');
+            $table->boolean('is_primary')->default(false);
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down()
     {
-        Schema::dropIfExists('payment_methods');
+        Schema::dropIfExists('product_imgs');
     }
-};
+}; 

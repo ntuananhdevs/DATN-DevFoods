@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 shadow-sm">
+<header class="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b bg-background px-4 shadow-sm" style="height:59px;min-height:59px;max-height:59px;">
     <div class="flex items-center gap-2">
         <!-- Mobile menu button -->
         <button id="mobile-menu-btn" class="lg:hidden flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground">
@@ -133,5 +133,6 @@
         </div>
     </div>
 </header>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="public/js/modal.js"></script>
