@@ -34,6 +34,11 @@ use Illuminate\Database\Capsule\Manager;
 //Driver 
 use App\Http\Controllers\Driver\AuthController as DriverAuthController;
 
+// Product Stock Management Routes
+use App\Http\Controllers\Admin\BranchStockController;
+
+// Product Variant Routes
+use App\Http\Controllers\Admin\ProductVariantController;
 
 Route::prefix('/')->group(function () {
     // Home
@@ -244,6 +249,22 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
+    });
+
+    // Product Stock Management Routes
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('{product}/stock', [BranchStockController::class, 'index'])->name('stock');
+        Route::post('{product}/stocks', [BranchStockController::class, 'update'])->name('update-stocks');
+        Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
+        Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
+        Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
+    });
+
+    // Product Variant Routes
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
+        Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
+        Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
     });
 });
 
