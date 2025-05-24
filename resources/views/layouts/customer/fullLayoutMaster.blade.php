@@ -32,12 +32,202 @@
     </script>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Notification Styles -->
+    <style>
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutUp {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes progressBar {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .notification-alert {
+            animation: slideInDown 0.5s ease-out forwards;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .notification-alert.hide {
+            animation: slideOutUp 0.5s ease-in forwards;
+        }
+
+        .notification-alert:hover .progress-bar {
+            animation-play-state: paused;
+        }
+
+        .notification-icon {
+            animation: pulse 2s infinite;
+        }
+
+        .notification-alert:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+    
     <!-- Custom CSS -->
     @yield('styles')
 </head>
 <body class="min-h-screen">
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+        @if(session('success'))
+        <div class="notification-alert bg-white border-l-4 border-green-500 rounded-lg overflow-hidden mb-4 transition-all duration-300" 
+             data-type="success" 
+             id="successNotification">
+            <div class="p-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center notification-icon">
+                            <i class="fas fa-check text-green-500 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900">Thành công!</h3>
+                            <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2" 
+                                    data-target="successNotification">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-600">{{ session('success') }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="h-1 bg-gray-100">
+                <div class="h-full bg-green-500 progress-bar" style="animation: progressBar 5s linear forwards;"></div>
+            </div>
+        </div>
+        @endif
+
+        @if(session('error'))
+        <div class="notification-alert bg-white border-l-4 border-red-500 rounded-lg overflow-hidden mb-4 transition-all duration-300" 
+             data-type="error" 
+             id="errorNotification">
+            <div class="p-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center notification-icon">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900">Có lỗi xảy ra!</h3>
+                            <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2" 
+                                    data-target="errorNotification">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-600">{{ session('error') }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="h-1 bg-gray-100">
+                <div class="h-full bg-red-500 progress-bar" style="animation: progressBar 5s linear forwards;"></div>
+            </div>
+        </div>
+        @endif
+
+        @if(session('warning'))
+        <div class="notification-alert bg-white border-l-4 border-orange-500 rounded-lg overflow-hidden mb-4 transition-all duration-300" 
+             data-type="warning" 
+             id="warningNotification">
+            <div class="p-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center notification-icon">
+                            <i class="fas fa-exclamation text-orange-500 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900">Cảnh báo!</h3>
+                            <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2" 
+                                    data-target="warningNotification">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-600">{{ session('warning') }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="h-1 bg-gray-100">
+                <div class="h-full bg-orange-500 progress-bar" style="animation: progressBar 5s linear forwards;"></div>
+            </div>
+        </div>
+        @endif
+
+        @if(session('info'))
+        <div class="notification-alert bg-white border-l-4 border-blue-500 rounded-lg overflow-hidden mb-4 transition-all duration-300" 
+             data-type="info" 
+             id="infoNotification">
+            <div class="p-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center notification-icon">
+                            <i class="fas fa-info text-blue-500 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-gray-900">Thông tin!</h3>
+                            <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2" 
+                                    data-target="infoNotification">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-600">{{ session('info') }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Progress bar -->
+            <div class="h-1 bg-gray-100">
+                <div class="h-full bg-blue-500 progress-bar" style="animation: progressBar 5s linear forwards;"></div>
+            </div>
+        </div>
+        @endif
+    </div>
+
     <!-- Navbar -->
-    <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header class="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div class="container mx-auto px-4">
             <div class="flex h-16 items-center justify-between">
                 <div class="flex items-center">
@@ -91,10 +281,41 @@
                         </div>
                     </div>
 
-                    <a href="{{ asset('/profile') }}" class="p-2">
-                        <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
-                        <span class="sr-only">Tài khoản</span>
-                    </a>
+                    @auth
+                        <div class="relative" id="user-dropdown-container">
+                            <button class="flex items-center p-2" id="user-dropdown-button">
+                                <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
+                                <span class="ml-2 text-sm">{{ Auth::user()->full_name }}</span>
+                                <ion-icon class="h-4 w-4 ml-1" name="chevron-down-outline"></ion-icon>
+                            </button>
+                            <div class="absolute right-0 top-full mt-1 w-48 bg-white shadow-lg rounded-lg py-2 z-50 hidden" id="user-dropdown-menu">
+                                <a href="{{ route('customer.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Tài khoản của tôi
+                                </a>
+                                <a href="{{ route('customer.profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Chỉnh sửa hồ sơ
+                                </a>
+                                <a href="{{ route('customer.profile.setting') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Cài đặt
+                                </a>
+                                <form action="{{ route('customer.logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        Đăng xuất
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        <a href="{{ route('customer.login') }}" class="p-2 flex items-center">
+                            <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
+                            <span class="ml-2 text-sm">Đăng nhập</span>
+                        </a>
+                        <a href="{{ route('customer.register') }}" class="p-2 flex items-center">
+                            <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
+                            <span class="ml-2 text-sm">Đăng ký</span>
+                        </a>
+                    @endauth
 
                     <a href="{{ asset('/cart') }}" class="relative p-2">
                         <ion-icon class="h-6 w-6" name="cart-outline"></ion-icon>
@@ -331,6 +552,60 @@
     <script>
         // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Notification functionality
+            const notifications = document.querySelectorAll('.notification-alert');
+            
+            notifications.forEach((notification, index) => {
+                // Auto dismiss after 5 seconds
+                setTimeout(() => {
+                    dismissNotification(notification);
+                }, 5000);
+            });
+            
+            // Close button functionality
+            document.querySelectorAll('.close-notification').forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const notification = document.getElementById(targetId);
+                    dismissNotification(notification);
+                });
+            });
+            
+            // Pause auto-dismiss on hover
+            notifications.forEach(notification => {
+                notification.addEventListener('mouseenter', function() {
+                    const progressBar = this.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.animationPlayState = 'paused';
+                    }
+                });
+                
+                notification.addEventListener('mouseleave', function() {
+                    const progressBar = this.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.animationPlayState = 'running';
+                    }
+                });
+            });
+            
+            function dismissNotification(notification) {
+                if (notification) {
+                    notification.classList.add('hide');
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 500);
+                }
+            }
+            
+            // Click to dismiss functionality
+            notifications.forEach(notification => {
+                notification.addEventListener('click', function(e) {
+                    if (!e.target.closest('.close-notification')) {
+                        dismissNotification(this);
+                    }
+                });
+            });
+
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const closeMobileMenuButton = document.getElementById('close-mobile-menu');
             const mobileMenu = document.getElementById('mobile-menu');
@@ -357,8 +632,27 @@
                     closeMobileMenu();
                 }
             });
-
-            // Search functionality
+            
+            const userDropdownButton = document.getElementById('user-dropdown-button');
+            const userDropdownMenu = document.getElementById('user-dropdown-menu');
+            
+            if (userDropdownButton && userDropdownMenu) {
+                userDropdownButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdownMenu.classList.toggle('hidden');
+                });
+                
+                document.addEventListener('click', function(e) {
+                    if (!userDropdownButton.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                        userDropdownMenu.classList.add('hidden');
+                    }
+                });
+                
+                userDropdownMenu.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+            
             const searchButton = document.getElementById('search-button');
             const searchInputContainer = document.getElementById('search-input-container');
             const closeSearchButton = document.getElementById('close-search');
@@ -381,6 +675,91 @@
                 }
             });
         });
+
+        // Function to show notifications programmatically
+        function showNotification(type, title, message, duration = 5000) {
+            const container = document.getElementById('notificationContainer');
+            const notificationId = 'notification_' + Date.now();
+            
+            const colors = {
+                success: { bg: 'green', icon: 'check' },
+                error: { bg: 'red', icon: 'exclamation-triangle' },
+                warning: { bg: 'orange', icon: 'exclamation' },
+                info: { bg: 'blue', icon: 'info' }
+            };
+            
+            const color = colors[type] || colors.info;
+            
+            const notificationHTML = `
+                <div class="notification-alert bg-white border-l-4 border-${color.bg}-500 rounded-lg overflow-hidden mb-4 transition-all duration-300" 
+                     data-type="${type}" 
+                     id="${notificationId}">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-${color.bg}-100 rounded-full flex items-center justify-center notification-icon">
+                                    <i class="fas fa-${color.icon} text-${color.bg}-500 text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-sm font-bold text-gray-900">${title}</h3>
+                                    <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2" 
+                                            data-target="${notificationId}">
+                                        <i class="fas fa-times text-sm"></i>
+                                    </button>
+                                </div>
+                                <p class="mt-1 text-sm text-gray-600">${message}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="h-1 bg-gray-100">
+                        <div class="h-full bg-${color.bg}-500 progress-bar" style="animation: progressBar ${duration}ms linear forwards;"></div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', notificationHTML);
+            
+            const notification = document.getElementById(notificationId);
+            
+            // Auto dismiss
+            setTimeout(() => {
+                dismissNotification(notification);
+            }, duration);
+            
+            // Add event listeners
+            notification.querySelector('.close-notification').addEventListener('click', function() {
+                dismissNotification(notification);
+            });
+            
+            notification.addEventListener('click', function(e) {
+                if (!e.target.closest('.close-notification')) {
+                    dismissNotification(this);
+                }
+            });
+            
+            notification.addEventListener('mouseenter', function() {
+                const progressBar = this.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.animationPlayState = 'paused';
+                }
+            });
+            
+            notification.addEventListener('mouseleave', function() {
+                const progressBar = this.querySelector('.progress-bar');
+                if (progressBar) {
+                    progressBar.style.animationPlayState = 'running';
+                }
+            });
+            
+            function dismissNotification(notif) {
+                if (notif) {
+                    notif.classList.add('hide');
+                    setTimeout(() => notif.remove(), 500);
+                }
+            }
+        }
     </script>
     
     @yield('scripts')

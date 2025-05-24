@@ -8,6 +8,9 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Facades\Response;
 use Maatwebsite\Excel\Facades\Excel; // Cần cài thêm package maatwebsite/excel
+use App\Models\Branch;
+use Illuminate\Support\Facades\DB;
+use App\Models\VariantAttribute;
 
 class ProductController extends Controller
 {
@@ -78,9 +81,9 @@ public function index(Request $request)
      */
     public function create()
     {
-            $categories = Category::all();
-            return view('admin.products.create', compact('categories'));
-        
+        $categories = Category::all();
+        $branches = Branch::where('active', true)->get();
+        return view('admin.products.create', compact('categories', 'branches'));
     }
 
     /**
@@ -89,6 +92,104 @@ public function index(Request $request)
     public function store(Request $request)
     {
         try {
+            // Validate request
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'base_price' => 'required|numeric|min:0',
+                'preparation_time' => 'nullable|integer|min:0',
+                'short_description' => 'nullable|string',
+                'description' => 'nullable|string',
+                'ingredients' => 'nullable|string',
+                'is_featured' => 'boolean',
+                'available' => 'boolean',
+                'status' => 'boolean',
+                'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+                'branch_stocks.*' => 'nullable|integer|min:0',
+                'attributes.*.name' => 'required|string|max:255',
+                'attributes.*.values.*.value' => 'required|string|max:255',
+                'attributes.*.values.*.price_adjustment' => 'required|numeric',
+            ]);
+
+            DB::beginTransaction();
+
+            // Get category for SKU generation
+            $category = Category::findOrFail($validated['category_id']);
+            
+            // Generate SKU
+            $lastProduct = Product::where('sku', 'like', $category->short_name . '-%')
+                ->orderBy('id', 'desc')
+                ->first();
+            
+            $skuNumber = 1;
+            if ($lastProduct) {
+                $lastNumber = (int) substr($lastProduct->sku, strrpos($lastProduct->sku, '-') + 1);
+                $skuNumber = $lastNumber + 1;
+            }
+            
+            // Format SKU with 5 digits
+            $sku = $category->short_name . '-' . str_pad($skuNumber, 5, '0', STR_PAD_LEFT);
+
+            // Create product with SKU
+            $product = Product::create([
+                'name' => $validated['name'],
+                'category_id' => $validated['category_id'],
+                'sku' => $sku,
+                'base_price' => $validated['base_price'],
+                'preparation_time' => $validated['preparation_time'],
+                'short_description' => $validated['short_description'],
+                'description' => $validated['description'],
+                'ingredients' => $validated['ingredients'] ? json_decode($validated['ingredients']) : null,
+                'is_featured' => $request->boolean('is_featured'),
+                'available' => $request->boolean('available'),
+                'status' => $request->boolean('status'),
+                'created_by' => auth()->id(),
+            ]);
+
+            // Handle images
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $index => $image) {
+                    $path = $image->store('products', 'public');
+                    $product->images()->create([
+                        'img' => $path,
+                        'is_primary' => $index === 0, // First image is primary
+                    ]);
+                }
+            }
+
+            // Handle branch stocks
+            if ($request->has('branch_stocks')) {
+                // Create a default variant for the product
+                $defaultVariant = $product->variants()->create([
+                    'active' => true
+                ]);
+
+                foreach ($request->branch_stocks as $branchId => $quantity) {
+                    $defaultVariant->branchStocks()->create([
+                        'branch_id' => $branchId,
+                        'stock_quantity' => $quantity,
+                    ]);
+                }
+            }
+
+            // Handle attributes and variant values
+            if ($request->has('attributes')) {
+                foreach ($request->attributes as $attributeData) {
+                    // Create or get attribute
+                    $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
+
+                    // Create variant values
+                    foreach ($attributeData['values'] as $valueData) {
+                        $attribute->values()->create([
+                            'value' => $valueData['value'],
+                            'price_adjustment' => $valueData['price_adjustment'],
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
             session()->flash('modal', [
                 'type' => 'success',
                 'title' => 'Thành công',
@@ -96,14 +197,31 @@ public function index(Request $request)
             ]);
             
             return redirect()->route('admin.products.index');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            
+            session()->flash('modal', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Vui lòng kiểm tra lại thông tin nhập vào'
+            ]);
+            
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
         } catch (\Exception $e) {
+            DB::rollBack();
+            
             session()->flash('modal', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
             
-            return redirect()->back()->withInput();
+            return redirect()->back()
+                ->withInput()
+                ->with('old_attributes', $request->attributes)
+                ->with('old_branch_stocks', $request->branch_stocks);
         }
     }
 
@@ -126,9 +244,10 @@ public function index(Request $request)
     public function edit(string $id)
     {
         try {
-            $product = Product::findOrFail($id);
+            $product = Product::with(['category', 'variants.branchStocks', 'images'])->findOrFail($id);
             $categories = Category::all();
-            return view('admin.products.edit', compact('product', 'categories'));
+            $branches = Branch::where('active', true)->get();
+            return view('admin.products.edit', compact('product', 'categories', 'branches'));
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
@@ -140,17 +259,124 @@ public function index(Request $request)
     public function update(Request $request, string $id)
     {
         try {
-            // Xử lý cập nhật sản phẩm
-            // Code xử lý cập nhật sản phẩm sẽ được thêm vào đây
+            // Validate request
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'base_price' => 'required|numeric|min:0',
+                'preparation_time' => 'nullable|integer|min:0',
+                'short_description' => 'nullable|string',
+                'description' => 'nullable|string',
+                'ingredients' => 'nullable|string',
+                'is_featured' => 'boolean',
+                'available' => 'boolean',
+                'status' => 'boolean',
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+                'branch_stocks.*' => 'nullable|integer|min:0',
+                'attributes.*.name' => 'required|string|max:255',
+                'attributes.*.values.*.value' => 'required|string|max:255',
+                'attributes.*.values.*.price_adjustment' => 'required|numeric',
+            ]);
+
+            DB::beginTransaction();
+
+            // Find product
+            $product = Product::findOrFail($id);
+
+            // Update product
+            $product->update([
+                'name' => $validated['name'],
+                'category_id' => $validated['category_id'],
+                'base_price' => $validated['base_price'],
+                'preparation_time' => $validated['preparation_time'],
+                'short_description' => $validated['short_description'],
+                'description' => $validated['description'],
+                'ingredients' => $validated['ingredients'] ? json_decode($validated['ingredients']) : null,
+                'is_featured' => $request->boolean('is_featured'),
+                'available' => $request->boolean('available'),
+                'status' => $request->boolean('status'),
+                'updated_by' => auth()->id(),
+            ]);
+
+            // Handle images
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store('products', 'public');
+                    $product->images()->create([
+                        'img' => $path,
+                        'is_primary' => false,
+                    ]);
+                }
+            }
+
+            // Handle branch stocks
+            if ($request->has('branch_stocks')) {
+                // Get or create default variant
+                $defaultVariant = $product->variants()->first() ?? $product->variants()->create([
+                    'active' => true
+                ]);
+
+                foreach ($request->branch_stocks as $branchId => $quantity) {
+                    $defaultVariant->branchStocks()->updateOrCreate(
+                        ['branch_id' => $branchId],
+                        ['stock_quantity' => $quantity]
+                    );
+                }
+            }
+
+            // Handle attributes and variant values
+            if ($request->has('attributes')) {
+                // Delete existing attributes and values
+                $product->variants()->delete();
+
+                foreach ($request->attributes as $attributeData) {
+                    // Create or get attribute
+                    $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
+
+                    // Create variant values
+                    foreach ($attributeData['values'] as $valueData) {
+                        $attribute->values()->create([
+                            'value' => $valueData['value'],
+                            'price_adjustment' => $valueData['price_adjustment'],
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            session()->flash('modal', [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Sản phẩm đã được cập nhật thành công'
+            ]);
             
-            // Thêm dòng này trước khi return
+            return redirect()->route('admin.products.index');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
             
-            return redirect()->route('admin.products.index')
-                ->with('success', 'Sản phẩm đã được cập nhật thành công');
-        } catch (\Exception $e) {
+            session()->flash('modal', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Vui lòng kiểm tra lại thông tin nhập vào'
+            ]);
+            
             return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage())
+                ->withErrors($e->validator)
                 ->withInput();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            session()->flash('modal', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('old_attributes', $request->attributes)
+                ->with('old_branch_stocks', $request->branch_stocks);
         }
     }
 

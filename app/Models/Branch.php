@@ -104,4 +104,9 @@ class Branch extends Model
     {
         $this->attributes['branch_code'] = strtoupper($value);
     }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(BranchStock::class);
+    }
 }
