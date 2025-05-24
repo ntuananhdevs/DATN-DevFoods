@@ -9,7 +9,7 @@
       margin: 0 auto;
    }
 </style>
-<div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
+{{-- <div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
     <div class="container mx-auto px-4 text-center">
         <h1 class="text-3xl md:text-4xl font-bold mb-4">Liên Hệ Với Chúng Tôi</h1>
         <p class="text-lg max-w-2xl mx-auto">
@@ -17,7 +17,14 @@
             góp ý nào.
         </p>
     </div>
-</div>
+</div> --}}
+
+
+    @php
+        $contactsBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('contacts');
+    @endphp
+    @include('components.banner', ['banners' => $contactsBanner])
+
 
 <div class="container mx-auto px-4 py-12">
     <div class="grid md:grid-cols-3 gap-8 mb-12">
