@@ -22,7 +22,8 @@ return new class extends Migration
             $table->json('ingredients')->nullable();
             $table->text('short_description')->nullable();
             $table->text('description')->nullable();
-            $table->boolean('status')->default(true);
+            $table->enum('status', ['coming_soon', 'selling', 'discontinued'])->default('selling');
+            $table->timestamp('release_at')->nullable();
             $table->boolean('is_featured')->default(false);
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
