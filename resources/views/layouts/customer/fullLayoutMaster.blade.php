@@ -311,10 +311,7 @@
                             <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
                             <span class="ml-2 text-sm">Đăng nhập</span>
                         </a>
-                        <a href="{{ route('customer.register') }}" class="p-2 flex items-center">
-                            <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
-                            <span class="ml-2 text-sm">Đăng ký</span>
-                        </a>
+                        
                     @endauth
 
                     <a href="{{ asset('/cart') }}" class="relative p-2">
