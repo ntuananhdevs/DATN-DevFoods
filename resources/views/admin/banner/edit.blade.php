@@ -1,5 +1,5 @@
 @extends('layouts/admin/contentLayoutMaster')
-
+@section('title', 'Chỉnh sửa banner')
 @section('content')
     <div class="container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-800 shadow-xl rounded-lg">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-700">
@@ -221,7 +221,7 @@
 
             <button
                 class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-offset-gray-800 transition-colors duration-200"
-                type="submit">Lưu Banner</button>
+                type="submit">Sửa Banner</button>
         </form>
     </div>
 @endsection

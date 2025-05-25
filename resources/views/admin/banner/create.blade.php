@@ -1,5 +1,5 @@
 @extends('layouts/admin/contentLayoutMaster')
-
+@section('title', 'Thêm Banner')
 @section('content')
     <div class="container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-800 shadow-xl rounded-lg">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-700">

@@ -32,6 +32,8 @@ return new class extends Migration
             $table->decimal('reliability_score', 5, 2)->default(0);
             $table->integer('penalty_count')->default(0);
             $table->boolean('auto_deposit_earnings')->default(false);
+            $table->string('otp', 6)->nullable();
+            $table->timestamp('expires_at')->nullable();
             $table->timestamps();
         });
     }

@@ -1,5 +1,5 @@
 @extends('layouts.admin.contentLayoutMaster')
-
+@section('title', 'Quản lý banner')
 @section('content')
     @push('scripts')
         <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
