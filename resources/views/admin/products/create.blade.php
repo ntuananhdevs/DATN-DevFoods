@@ -8,6 +8,7 @@
   input[type="text"],
   input[type="number"],
   input[type="date"],
+  input[type="datetime-local"],
   select {
     padding: 0.625rem 0.75rem;
     height: 2.75rem;
@@ -67,20 +68,57 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 1;
     transition: all 0.2s ease;
   }
   
   .image-remove-btn:hover {
     background-color: rgba(220, 38, 38, 1);
   }
+
+  /* CSS cho attributes và variants */
+  .attribute-group {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .variant-value-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .remove-value-btn {
+    color: #ef4444;
+    cursor: pointer;
+  }
+
+  .remove-value-btn:hover {
+    color: #dc2626;
+  }
+
+  /* CSS cho preview hình topping */
+  .topping-image-preview {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    margin-top: 0.5rem;
+    display: block;
+  }
 </style>
 
-<main class="container mx-auto px-4 py-8">
+<main class="container">
     <h1 class="text-3xl font-extrabold mb-1">Thêm Sản Phẩm Mới</h1>
     <p class="text-gray-500 mb-8">Nhập thông tin chi tiết để tạo sản phẩm mới</p>
 
-    <form id="add-product-form" class="space-y-8">
+    <form id="add-product-form" class="space-y-8" action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
+        @csrf
 
       <!-- Basic Information -->
       <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
@@ -95,199 +133,177 @@
           <div class="space-y-5 md:col-span-2">
             <div>
               <label for="name" class="block text-sm font-medium text-gray-700">Tên sản phẩm <span class="text-red-500">*</span></label>
-              <input type="text" id="name" name="name" required placeholder="Nhập tên sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="text" id="name" name="name" required placeholder="Nhập tên sản phẩm" value="{{ old('name') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
             <div>
-                <label for="category" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
-                <select id="category" name="category" required class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <label for="category_id" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
+                            <select id="category_id" name="category_id" required class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                   <option value="">Chọn danh mục</option>
-                  <option value="1">Quần áo</option>
-                  <option value="2">Giày dép</option>
-                  <option value="3">Phụ kiện</option>
-                  <option value="4">Đồ điện tử</option>
-                  <option value="5">Đồ gia dụng</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                @endforeach
                 </select>
               </div>
               <div>
-                <label for="originalPrice" class="block text-sm font-medium text-gray-700">Giá gốc <span class="text-red-500">*</span></label>
+                            <label for="base_price" class="block text-sm font-medium text-gray-700">Giá cơ bản <span class="text-red-500">*</span></label>
                 <div class="relative mt-1">
-                  <input type="number" id="originalPrice" name="originalPrice" min="0" required placeholder="0" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" required placeholder="0" value="{{ old('base_price') }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            </div>
                 </div>
-              </div>
-              
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label for="sku" class="block text-sm font-medium text-gray-700">Mã SKU <span class="text-red-500">*</span></label>
-                <input type="text" id="sku" name="sku" required placeholder="Nhập mã SKU" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-              </div>
-              <div>
-                <label for="barcode" class="block text-sm font-medium text-gray-700">Mã vạch</label>
-                <input type="text" id="barcode" name="barcode" placeholder="Nhập mã vạch (nếu có)" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label for="stock" class="block text-sm font-medium text-gray-700">Tồn kho <span class="text-red-500">*</span></label>
-                <input type="number" id="stock" name="stock" min="0" required placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-              </div>
-              <div>
-                <label for="weight" class="block text-sm font-medium text-gray-700">Trọng lượng (gram)</label>
-                <input type="number" id="weight" name="weight" min="0" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <label for="preparation_time" class="block text-sm font-medium text-gray-700">Thời gian chuẩn bị (phút)</label>
+                            <input type="number" id="preparation_time" name="preparation_time" min="0" placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
               </div>
             </div>
 
             <div>
-              <label for="shortDescription" class="block text-sm font-medium text-gray-700">Mô tả ngắn</label>
-              <textarea id="shortDescription" name="shortDescription" rows="2" placeholder="Nhập mô tả ngắn gọn về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"></textarea>
+                        <label for="short_description" class="block text-sm font-medium text-gray-700">Mô tả ngắn</label>
+                        <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('short_description') }}</textarea>
             </div>
 
             <div>
               <label for="description" class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
-              <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none"></textarea>
+                        <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div>
+                        <label for="ingredients" class="block text-sm font-medium text-gray-700">Nguyên liệu</label>
+                        <textarea id="ingredients" name="ingredients" rows="3" placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('ingredients') }}</textarea>
             </div>
 
             <div>
-              <span class="block text-sm font-medium text-gray-700">Trạng thái</span>
-              <div class="flex gap-4 mt-2">
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="status" value="active" checked class="form-radio text-blue-600" />
-                  <span>Đang bán</span>
-                </label>
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="status" value="draft" class="form-radio text-blue-600" />
-                  <span>Bản nháp</span>
-                </label>
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="status" value="inactive" class="form-radio text-blue-600" />
-                  <span>Ngừng bán</span>
-                </label>
-              </div>
-            </div>
+                <span class="block text-sm font-medium text-gray-700">Tùy chọn</span>
+              <div class="space-y-4 mt-2">
+                <div class="flex gap-4">
+                  <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }} class="form-checkbox text-blue-600" />
+                    <span>Sản phẩm nổi bật</span>
+                  </label>
+                  
+                </div>
 
-            <div class="mt-3">
-              <label class="inline-flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="featured" name="featured" class="form-checkbox text-red-500" />
-                <span>Sản phẩm nổi bật</span>
-              </label>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái sản phẩm</label>
+                  <div class="flex gap-4">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="status" value="coming_soon" {{ old('status', 'selling') == 'coming_soon' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <span>Sắp ra mắt</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="status" value="selling" {{ old('status', 'selling') == 'selling' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <span>Đang bán</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="status" value="discontinued" {{ old('status', 'selling') == 'discontinued' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <span>Ngừng bán</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="release_at" class="block text-sm font-medium text-gray-700">Ngày ra mắt</label>
+                  <input type="datetime-local" id="release_at" name="release_at" value="{{ old('release_at') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh sản phẩm <span class="text-red-500">*</span></label>
-              <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
-                <div id="image-placeholder" class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-3" width="48" height="48" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                  <p class="text-base text-gray-600 mb-2">Kéo thả hình ảnh vào đây</p>
-                  <p class="text-sm text-gray-500 mb-4">hoặc</p>
-                  <button type="button" id="select-image-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Chọn hình ảnh</button>
-                  <p class="text-xs text-gray-500 mt-3">Hỗ trợ: JPG, PNG, GIF (Tối đa 5MB)</p>
-                  <input type="file" id="file-upload" name="images[]" accept="image/*" class="hidden" />
+              <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <!-- Primary Image -->
+                <div class="md:col-span-1">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
+                  <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                    <div id="image-placeholder" class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                      <div id="main-image-preview" class="absolute inset-0 w-full h-full hidden">
+                        <img src="" alt="Main image preview" class="w-full h-full object-cover" />
+                      </div>
+                      <div id="upload-content" class="flex flex-col items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-3" width="48" height="48" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="17 8 12 3 7 8" />
+                          <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <p class="text-base text-gray-600 mb-2">Kéo thả ảnh chính vào đây</p>
+                        <p class="text-sm text-gray-500 mb-4">hoặc</p>
+                        <button type="button" id="select-primary-image-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Chọn ảnh chính</button>
+                        <p class="text-xs text-gray-500 mt-3">Hỗ trợ: JPG, PNG, GIF (Tối đa 5MB)</p>
+                      </div>
+                      <input type="file" id="primary-image-upload" name="primary_image" accept="image/*" class="hidden" />
+                    </div>
+                  </div>
+                  <p class="text-xs text-gray-500 mb-2">
+                  <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
+                </p>
                 </div>
-              </div>
-              <div id="image-gallery" class="mt-3"></div>
-              <div class="flex justify-start mt-2">
-                <button type="button" id="add-more-images-btn" class="flex items-center gap-1 text-blue-600 hover:text-blue-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                  </svg>
-                  Thêm hình ảnh
-                </button>
+
+                <!-- Additional Images -->
+                <div class="md:col-span-2">
+                  <div class="flex justify-between items-center mb-2">
+                    <label class="block text-sm font-medium text-gray-700">Ảnh phụ</label>
+                    <button type="button" id="select-additional-images-btn" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                      </svg>
+                      Thêm ảnh
+                    </button>
+                    <input type="file" id="additional-images-upload" name="images[]" accept="image/*" multiple class="hidden" />
+                  </div>
+                  <div id="image-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Product Attributes and Variants -->
-      <section class="space-y-4">
-        <div class="flex space-x-1 bg-gray-100 rounded-md p-1">
-          <button type="button" data-tab="attributes" class="tab active flex-1 text-center py-2 rounded-md text-blue-700 bg-white font-semibold">Thuộc tính</button>
-          <button type="button" data-tab="variants" class="tab flex-1 text-center py-2 rounded-md text-gray-700 hover:bg-white hover:text-blue-700">Biến thể</button>
-        </div>
-
-        <!-- Attributes Tab -->
-        <div id="attributes-tab" class="tab-content block">
+        <!-- Attributes and Variant Values -->
           <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <div>
-                <h2 class="text-xl font-semibold text-gray-900">Thuộc tính sản phẩm</h2>
-                <p class="text-gray-500 text-sm mt-1">Thêm các thuộc tính và giá trị cho sản phẩm</p>
+            <header class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-xl font-semibold text-gray-900">Thuộc tính và Giá trị biến thể</h2>
+                <p class="text-gray-500 text-sm mt-1">Thêm các thuộc tính và giá trị biến thể cho sản phẩm</p>
+            </header>
+
+            <div class="px-6 py-6">
+                <div id="attributes-container">
+                    <!-- Attribute groups will be added here -->
               </div>
-              <button id="add-attribute-btn" type="button" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                <button type="button" id="add-attribute-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
                 Thêm thuộc tính
               </button>
-            </header>
-            <div class="px-6 py-6 space-y-6" id="attributes-container">
-              <!-- Attribute rows here, keep original or dynamically add -->
-              <!-- ... -->
             </div>
           </section>
-        </div>
-
-        <!-- Variants Tab -->
-        <div id="variants-tab" class="tab-content hidden">
+<!-- Toppings Section -->
           <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <div>
-                <h2 class="text-xl font-semibold text-gray-900">Biến thể sản phẩm</h2>
-                <p class="text-gray-500 text-sm mt-1">Quản lý các biến thể dựa trên thuộc tính</p>
-              </div>
-              <div class="flex gap-2">
-                <button id="generate-variants-btn" type="button" class="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-gray-700 hover:bg-gray-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
-                    <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
-                    <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
-                    <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
-                  </svg>
-                  Tạo tự động
-                </button>
-                <button id="add-variant-btn" type="button" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  Thêm biến thể
-                </button>
-              </div>
+            <header class="px-6 py-4 border-b border-gray-100">
+              <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+              <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
             </header>
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse border border-gray-200">
-                <thead class="bg-gray-100 text-gray-700 font-medium">
-                  <tr>
-                    <th class="py-3 px-4 text-left border border-gray-200">SKU</th>
-                    <th class="py-3 px-4 text-left border border-gray-200">Thuộc tính</th>
-                    <th class="py-3 px-4 text-left border border-gray-200">Giá</th>
-                    <th class="py-3 px-4 text-left border border-gray-200">Tồn kho</th>
-                    <th class="py-3 px-4 text-right border border-gray-200">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody id="variants-table" class="text-gray-800">
-                  <!-- Variant rows here -->
-                  <!-- ... -->
-                </tbody>
-              </table>
+
+            <div class="px-6 py-6">
+              <div id="toppings-container">
+                <!-- Topping groups will be added here -->
+              </div>
+              <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Thêm topping
+              </button>
             </div>
           </section>
-        </div>
-      </section>
-
       <!-- Save Buttons -->
       <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
         <button type="button" id="save-draft-btn" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100">Lưu nháp</button>
@@ -296,702 +312,455 @@
     </form>
   </main>
 
-  <!-- Variant Modal -->
-  <div id="variant-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 hidden z-30"></div>
-  <div id="variant-modal" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-md shadow-lg w-11/12 max-w-md z-40 hidden max-h-[90vh] overflow-y-auto">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <h3 class="text-lg font-semibold text-gray-900">Thêm biến thể sản phẩm</h3>
-      <p class="text-gray-500 text-sm mt-1">Nhập thông tin và chọn thuộc tính cho biến thể mới</p>
-    </div>
-    <div class="px-6 py-6 space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="variant-sku" class="block text-sm font-medium text-gray-700">Mã SKU <span class="text-red-500">*</span></label>
-          <input type="text" id="variant-sku" placeholder="Ví dụ: AT-D-XL" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-        </div>
-        <div>
-          <label for="variant-price" class="block text-sm font-medium text-gray-700">Giá <span class="text-red-500">*</span></label>
-          <div class="relative">
-            <input type="number" id="variant-price" min="0" value="199000" class="mt-1 block w-full rounded-md border border-gray-300 pl-7 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-          </div>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="variant-original-price" class="block text-sm font-medium text-gray-700">Giá gốc</label>
-          <div class="relative">
-            <input type="number" id="variant-original-price" min="0" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 pl-7 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-          </div>
-        </div>
-        <div>
-          <label for="variant-stock" class="block text-sm font-medium text-gray-700">Tồn kho <span class="text-red-500">*</span></label>
-          <input type="number" id="variant-stock" min="0" value="10" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-        </div>
-      </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 font-semibold mb-2">Thuộc tính biến thể</label>
-        <div class="border border-gray-300 rounded-md bg-gray-50 p-4 space-y-4">
-          <div>
-            <label for="variant-color" class="block text-sm font-medium text-gray-700">Màu sắc</label>
-            <select id="variant-color" class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-              <option value="">Chọn màu sắc</option>
-              <option value="1">Đen</option>
-              <option value="2">Trắng</option>
-              <option value="3">Xanh</option>
-            </select>
-          </div>
-          <div>
-            <label for="variant-size" class="block text-sm font-medium text-gray-700">Kích thước</label>
-            <select id="variant-size" class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-              <option value="">Chọn kích thước</option>
-              <option value="4">S</option>
-              <option value="5">M</option>
-              <option value="6">L</option>
-              <option value="7">XL</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
-      <button type="button" id="cancel-variant-btn" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100">Hủy</button>
-      <button type="button" id="confirm-variant-btn" class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">Thêm</button>
-    </div>
-  </div>
-
-  <script>
-    // JavaScript remains mostly unchanged from original, just hooks to updated classes and IDs
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const addAttributeBtn = document.getElementById('add-attribute-btn');
-    const attributesContainer = document.getElementById('attributes-container');
-    const addVariantBtn = document.getElementById('add-variant-btn');
-    const generateVariantsBtn = document.getElementById('generate-variants-btn');
-    const nameInput = document.getElementById('name');
-    const slugInput = document.getElementById('slug');
-    const metaTitleInput = document.getElementById('meta-title');
-    const metaDescriptionInput = document.getElementById('meta-description');
-    const seoPreviewTitle = document.getElementById('seo-preview-title');
-    const seoPreviewUrl = document.getElementById('seo-preview-url');
-    const seoPreviewDescription = document.getElementById('seo-preview-description');
-    const variantModalBackdrop = document.getElementById('variant-modal-backdrop');
-    const variantModal = document.getElementById('variant-modal');
-    const cancelVariantBtn = document.getElementById('cancel-variant-btn');
-    const confirmVariantBtn = document.getElementById('confirm-variant-btn');
-    const imageUploader = document.getElementById('image-placeholder');
-    const fileUpload = document.getElementById('file-upload');
-    const selectImageBtn = document.getElementById('select-image-btn');
-    const addMoreImagesBtn = document.getElementById('add-more-images-btn');
-    
-    // Xử lý upload hình ảnh
-    let imageCounter = 0;
-    const uploadedImages = new Map();
-
-    // Khi click vào nút "Chọn hình ảnh"
-    if (selectImageBtn) {
-      selectImageBtn.addEventListener('click', function() {
-        fileUpload.click();
-      });
-    }
-
-    // Khi click vào nút "Thêm hình ảnh"
-    if (addMoreImagesBtn) {
-      addMoreImagesBtn.addEventListener('click', function() {
-        fileUpload.click();
-      });
-    }
-
-    // Khi chọn file
-    if (fileUpload) {
-      fileUpload.addEventListener('change', function() {
-        if (this.files && this.files.length > 0) {
-          handleFiles(this.files);
-          this.value = ''; // Reset input để có thể chọn cùng file nhiều lần
-        }
-      });
-    }
-
-    // Thêm sự kiện drag and drop cho khu vực upload ảnh
-    if (imageUploader) {
-      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        imageUploader.addEventListener(eventName, preventDefaults, false);
-      });
-      
-      function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      
-      ['dragenter', 'dragover'].forEach(eventName => {
-        imageUploader.addEventListener(eventName, highlight, false);
-      });
-      
-      ['dragleave', 'drop'].forEach(eventName => {
-        imageUploader.addEventListener(eventName, unhighlight, false);
-      });
-      
-      function highlight() {
-        imageUploader.classList.add('bg-blue-50', 'border-blue-300');
-      }
-      
-      function unhighlight() {
-        imageUploader.classList.remove('bg-blue-50', 'border-blue-300');
-      }
-      
-      imageUploader.addEventListener('drop', handleDrop, false);
-      
-      function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        handleFiles(files);
-      }
-    }
-
-    function handleFiles(files) {
-      Array.from(files).forEach(file => {
-        uploadFile(file);
-      });
-    }
-
-    function uploadFile(file) {
-      // Kiểm tra kích thước file (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        dtmodalShowToast('error', {
-          title: 'Lỗi',
-          message: `File ${file.name} vượt quá kích thước cho phép (5MB)`
-        });
-        return;
-      }
-      
-      const reader = new FileReader();
-      
-      reader.onload = function(e) {
-        const imageId = `image-${imageCounter++}`;
-        uploadedImages.set(imageId, {
-          file: file,
-          src: e.target.result
-        });
-        
-        addImageToGallery(imageId, e.target.result);
-      };
-      
-      reader.readAsDataURL(file);
-    }
-
-    function addImageToGallery(imageId, src) {
-      const gallery = document.getElementById('image-gallery');
-      
-      // Ẩn placeholder nếu có ảnh
-      if (imageUploader) {
-        imageUploader.style.display = uploadedImages.size === 0 ? 'flex' : 'none';
-      }
-      
-      const div = document.createElement('div');
-      div.className = 'image-item';
-      div.dataset.imageId = imageId;
-      
-      div.innerHTML = `
-        <img src="${src}" alt="Product image">
-        <button type="button" class="image-remove-btn" onclick="removeImage('${imageId}')">×</button>
-        <input type="hidden" name="product_images[]" value="${imageId}">
-      `;
-      
-      gallery.appendChild(div);
-    }
-
-    // Xóa hình ảnh
-    window.removeImage = function(imageId) {
-      dtmodalCreateModal({
-        type: 'warning',
-        title: 'Xác nhận xóa ảnh',
-        message: 'Bạn có chắc muốn xóa ảnh này không?',
-        confirmText: 'Xóa',
-        cancelText: 'Hủy',
-        onConfirm: function() {
-          const imageItem = document.querySelector(`.image-item[data-image-id="${imageId}"]`);
-          
-          if (imageItem) {
-            imageItem.remove();
-            uploadedImages.delete(imageId);
-            
-            // Hiển thị placeholder nếu không còn ảnh
-            if (uploadedImages.size === 0 && imageUploader) {
-              imageUploader.style.display = 'flex';
-            }
-            
-            dtmodalShowToast('success', {
-              title: 'Đã xóa',
-              message: 'Hình ảnh đã được xóa thành công'
-            });
-          }
-        }
-      });
-    }
-
-    if (tabs) {
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          const tabId = tab.getAttribute('data-tab');
-          
-          // Xóa active class từ tất cả tab buttons
-          tabs.forEach(t => t.classList.remove('active', 'bg-white', 'text-blue-700', 'font-semibold'));
-          
-          // Thêm active class cho tab được chọn
-          tab.classList.add('active', 'bg-white', 'text-blue-700', 'font-semibold');
-          
-          // Ẩn tất cả các tab content
-          tabContents.forEach(content => content.classList.add('hidden'));
-          
-          // Hiển thị tab content tương ứng
-          const activeContent = document.getElementById(`${tabId}-tab`);
-          if (activeContent) {
-            activeContent.classList.remove('hidden');
-          }
-        });
-      });
-    }
-
-    function addTag(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-
-        const input = document.getElementById('tag-input');
-        const value = input.value.trim();
-
-        if (value) {
-          const container = document.getElementById('tags-container');
-          const hiddenInput = document.getElementById('tags-hidden');
-
-          const tag = document.createElement('div');
-          tag.className = 'ap-tag flex items-center gap-1 bg-gray-200 rounded px-2 py-0.5 text-xs text-gray-700';
-          tag.innerHTML = `
-            ${value}
-            <button type="button" class="text-gray-500 hover:text-red-600" onclick="removeTag(this)">×</button>
-          `;
-
-          container.insertBefore(tag, input);
-          input.value = '';
-
-          updateHiddenTags();
-        }
-      }
-    }
-
-    function removeTag(element) {
-      const tag = element.parentElement;
-      tag.remove();
-      updateHiddenTags();
-    }
-
-    function updateHiddenTags() {
-      const tags = document.querySelectorAll('#tags-container > div.ap-tag');
-      const values = Array.from(tags).map(tag => tag.textContent.trim().slice(0, -1));
-      document.getElementById('tags-hidden').value = values.join(',');
-    }
-
-    if (nameInput && slugInput && metaTitleInput && metaDescriptionInput) {
-      nameInput.addEventListener('input', updateSeoPreview);
-      slugInput.addEventListener('input', updateSeoPreview);
-      metaTitleInput.addEventListener('input', updateSeoPreview);
-      metaDescriptionInput.addEventListener('input', updateSeoPreview);
-    }
-
-    function updateSeoPreview() {
-      const name = nameInput.value || 'Tên sản phẩm';
-      const slug = slugInput.value || 'ten-san-pham';
-      const title = metaTitleInput.value || name;
-      const description = metaDescriptionInput.value || 'Mô tả sản phẩm sẽ hiển thị ở đây. Đây là phần mô tả ngắn gọn về sản phẩm của bạn để thu hút khách hàng nhấp vào liên kết.';
-
-      seoPreviewTitle.textContent = title;
-      seoPreviewUrl.textContent = `www.example.com/san-pham/${slug}`;
-      seoPreviewDescription.textContent = description;
-    }
-
-    // if (nameInput && slugInput) {
-    //   nameInput.addEventListener('blur', () => {
-    //     if (!slugInput.value && nameInput.value) {
-    //       const slug = nameInput.value
-    //         .toLowerCase()
-    //         .normalize('NFD')
-    //         .replace(/[\u0300-\u036f]/g, '')
-    //         // .replace(/[đĐ]/g, 'd')
-    //         .replace(/[^a-z0-9]+/g, '-')
-    //         .replace(/(^-|-$)/g, '');
-
-    //       slugInput.value = slug;
-    //       updateSeoPreview();
-    //     }
-    //   });
-    // }
-
-    let attributeCounter = 3;
-
-    if (addAttributeBtn) {
-      addAttributeBtn.addEventListener('click', () => {
-        const attributeRow = document.createElement('div');
-        attributeRow.className = 'ap-attribute-row flex flex-col md:flex-row gap-4 p-4 border border-gray-200 rounded-md bg-white';
-        attributeRow.dataset.attributeId = attributeCounter;
-
-        attributeRow.innerHTML = `
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-            <input type="text" name="attributes[${attributeCounter}][name]" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Nhập tên thuộc tính" />
-            <div class="mt-2 flex items-center gap-2">
-              <input type="checkbox" id="attribute-${attributeCounter}-variant" name="attributes[${attributeCounter}][is_variant]" class="form-checkbox text-blue-600" />
-              <label for="attribute-${attributeCounter}-variant" class="text-sm text-gray-700 cursor-pointer">Dùng cho biến thể</label>
-            </div>
-          </div>
-          <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700">Giá trị thuộc tính</label>
-            <div class="border border-gray-300 rounded-md p-2 space-y-2">
-              <div class="flex items-center gap-2">
-                <input type="text" name="attributes[${attributeCounter}][values][]" class="flex-grow rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Nhập giá trị thuộc tính" />
-                <div class="relative">
-                  <input type="number" name="attributes[${attributeCounter}][prices][]" min="0" class="w-24 pl-8 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Giá" />
-                </div>
-                <button type="button" class="text-red-500 hover:text-red-700 delete-value" aria-label="Xóa giá trị">×</button>
-              </div>
-            </div>
-            <button type="button" class="mt-2 text-blue-600 hover:underline add-value-btn" data-attribute-id="${attributeCounter}">Thêm giá trị</button>
-          </div>
-          <div class="flex items-start mt-4 md:mt-0">
-            <button type="button" class="text-red-500 hover:text-red-700 delete-attribute self-start" aria-label="Xóa thuộc tính" data-attribute-id="${attributeCounter}">Xóa</button>
-          </div>
-        `;
-
-        attributesContainer.appendChild(attributeRow);
-
-        const newAddValueBtn = attributeRow.querySelector('.add-value-btn');
-        newAddValueBtn.addEventListener('click', addAttributeValue);
-
-        const newDeleteAttributeBtn = attributeRow.querySelector('.delete-attribute');
-        newDeleteAttributeBtn.addEventListener('click', deleteAttribute);
-
-        const newDeleteValueBtn = attributeRow.querySelector('.delete-value');
-        newDeleteValueBtn.addEventListener('click', deleteAttributeValue);
-
-        attributeCounter++;
-      });
-    }
-
-    document.querySelectorAll('.add-value-btn').forEach(btn => {
-      btn.addEventListener('click', addAttributeValue);
-    });
-
-    function addAttributeValue(event) {
-      const btn = event.currentTarget;
-      const attributeId = btn.dataset.attributeId;
-      const valuesContainer = btn.previousElementSibling;
-
-      const valueItem = document.createElement('div');
-      valueItem.className = 'flex items-center gap-2';
-      valueItem.innerHTML = `
-        <input type="text" name="attributes[${attributeId}][values][]" class="flex-grow rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Nhập giá trị thuộc tính" />
-        <div class="relative">
-          <input type="number" name="attributes[${attributeId}][prices][]" min="0" class="w-24 pl-8 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Giá" />
-        </div>
-        <button type="button" class="text-red-500 hover:text-red-700 delete-value" aria-label="Xóa giá trị">×</button>
-      `;
-
-      valuesContainer.appendChild(valueItem);
-
-      const newDeleteValueBtn = valueItem.querySelector('.delete-value');
-      newDeleteValueBtn.addEventListener('click', deleteAttributeValue);
-    }
-
-    document.querySelectorAll('.delete-attribute').forEach(btn => {
-      btn.addEventListener('click', deleteAttribute);
-    });
-
-    function deleteAttribute(event) {
-      const btn = event.currentTarget;
-      const attributeRow = btn.closest('.ap-attribute-row');
-      attributeRow.remove();
-    }
-
-    document.querySelectorAll('.delete-value').forEach(btn => {
-      btn.addEventListener('click', deleteAttributeValue);
-    });
-
-    function deleteAttributeValue(event) {
-      const btn = event.currentTarget;
-      const valueItem = btn.closest('div.flex.items-center.gap-2');
-      valueItem.remove();
-    }
-
-    if (addVariantBtn) {
-      addVariantBtn.addEventListener('click', () => {
-        variantModalBackdrop.classList.remove('hidden');
-        variantModal.classList.remove('hidden');
-      });
-    }
-
-    if (cancelVariantBtn) {
-      cancelVariantBtn.addEventListener('click', () => {
-        variantModalBackdrop.classList.add('hidden');
-        variantModal.classList.add('hidden');
-      });
-    }
-
-    if (confirmVariantBtn) {
-      confirmVariantBtn.addEventListener('click', () => {
-        const sku = document.getElementById('variant-sku').value;
-        const price = document.getElementById('variant-price').value;
-        const originalPrice = document.getElementById('variant-original-price').value;
-        const stock = document.getElementById('variant-stock').value;
-        const colorSelect = document.getElementById('variant-color');
-        const sizeSelect = document.getElementById('variant-size');
-
-        if (!sku || !price || !stock) {
-          dtmodalShowToast('warning', {
-            title: 'Cảnh báo',
-            message: 'Vui lòng điền đầy đủ thông tin bắt buộc'
-          });
-          return;
-        }
-
-        const colorValue = colorSelect.options[colorSelect.selectedIndex].text;
-        const sizeValue = sizeSelect.options[sizeSelect.selectedIndex].text;
-
-        const variantsTable = document.getElementById('variants-table');
-        const newRow = document.createElement('tr');
-
-        newRow.innerHTML = `
-          <td class="py-3 px-4 border border-gray-200 font-mono">${sku}</td>
-          <td class="py-3 px-4 border border-gray-200">
-            <div class="flex flex-wrap gap-1">
-              <span class="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">${'Màu sắc'}: ${colorValue}</span>
-              <span class="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">${'Kích thước'}: ${sizeValue}</span>
-            </div>
-          </td>
-          <td class="py-3 px-4 border border-gray-200">${stock}</td>
-          <td class="py-3 px-4 border border-gray-200 text-right">
-            <div class="flex justify-end gap-2">
-              <button type="button" class="text-gray-700 hover:text-blue-600 edit-variant" aria-label="Sửa biến thể">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" />
-                </svg>
-              </button>
-              <button type="button" class="text-red-600 hover:text-red-800 delete-variant" aria-label="Xóa biến thể">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-          </td>
-        `;
-
-        variantsTable.appendChild(newRow);
-        variantModalBackdrop.classList.add('hidden');
-        variantModal.classList.add('hidden');
-
-        // Reset form
-        document.getElementById('variant-sku').value = '';
-        document.getElementById('variant-stock').value = '10';
-      });
-    }
-
-    if (variantModalBackdrop) {
-      variantModalBackdrop.addEventListener('click', () => {
-        variantModalBackdrop.classList.add('hidden');
-        variantModal.classList.add('hidden');
-      });
-    }
-
-    // Generate variants button
-    if (generateVariantsBtn) {
-      generateVariantsBtn.addEventListener('click', () => {
-        // Lấy tất cả các thuộc tính
-        const attributes = [];
-        document.querySelectorAll('[data-attribute-id]').forEach(item => {
-          const attributeId = item.getAttribute('data-attribute-id');
-          const nameInput = item.querySelector(`input[name="attributes[${attributeId}][name]"]`);
-          const valueInputs = item.querySelectorAll(`input[name="attributes[${attributeId}][values][]"]`);
-          const isVariant = item.querySelector(`input[name="attributes[${attributeId}][is_variant]"]`);
-          
-          if (nameInput && valueInputs.length > 0 && isVariant && isVariant.checked) {
-            const values = Array.from(valueInputs).map(input => input.value.trim()).filter(val => val);
-            
-            if (nameInput.value && values.length > 0) {
-              attributes.push({
-                name: nameInput.value,
-                values: values
-              });
-            }
-          }
-        });
-        
-        if (attributes.length === 0) {
-          dtmodalShowToast('warning', {
-            title: 'Cảnh báo',
-            message: 'Vui lòng thêm ít nhất một thuộc tính dùng cho biến thể'
-          });
-          return;
-        }
-        
-        // Tạo tất cả các tổ hợp có thể
-        const generateCombinations = (arrays, current = [], index = 0) => {
-          if (index === arrays.length) {
-            return [current];
-          }
-          
-          let result = [];
-          for (let i = 0; i < arrays[index].values.length; i++) {
-            result = result.concat(
-              generateCombinations(
-                arrays,
-                [...current, { name: arrays[index].name, value: arrays[index].values[i] }],
-                index + 1
-              )
-            );
-          }
-          
-          return result;
-        };
-        
-        const combinations = generateCombinations(attributes);
-        
-        if (combinations.length > 50) {
-          dtmodalCreateModal({
-            type: 'warning',
-            title: 'Cảnh báo',
-            message: `Bạn sắp tạo ${combinations.length} biến thể. Số lượng lớn có thể gây chậm hệ thống. Bạn có muốn tiếp tục?`,
-            confirmText: 'Tiếp tục',
-            cancelText: 'Hủy',
-            onConfirm: () => generateVariantsUI(combinations)
-          });
-        } else {
-          generateVariantsUI(combinations);
-        }
-      });
-    }
-
-    function generateVariantsUI(combinations) {
-      const variantsTable = document.getElementById('variants-table');
-      const baseSku = document.getElementById('sku').value || 'PROD';
-      const basePrice = document.getElementById('originalPrice').value || '0';
-      
-      // Xóa tất cả các biến thể hiện tại
-      variantsTable.innerHTML = '';
-      
-      // Thêm các biến thể mới
-      combinations.forEach((combination, index) => {
-        const variantCode = combination.map(attr => attr.value.substr(0, 2).toUpperCase()).join('-');
-        const sku = `${baseSku}-${variantCode}`;
-        
-        const newRow = document.createElement('tr');
-        
-        newRow.innerHTML = `
-          <td class="py-3 px-4 border border-gray-200 font-mono">${sku}</td>
-          <td class="py-3 px-4 border border-gray-200">
-            <div class="flex flex-wrap gap-1">
-              ${combination.map(attr => 
-                `<span class="inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-700">${attr.name}: ${attr.value}</span>`
-              ).join('')}
-            </div>
-          </td>
-          <td class="py-3 px-4 border border-gray-200">10</td>
-          <td class="py-3 px-4 border border-gray-200 text-right">
-            <div class="flex justify-end gap-2">
-              <button type="button" class="text-gray-700 hover:text-blue-600 edit-variant" aria-label="Sửa biến thể">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5Z" />
-                </svg>
-              </button>
-              <button type="button" class="text-red-600 hover:text-red-800 delete-variant" aria-label="Xóa biến thể">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-          </td>
-        `;
-        
-        variantsTable.appendChild(newRow);
-      });
-      
-      // Chuyển sang tab biến thể
-      const variantsTab = document.querySelector('[data-tab="variants"]');
-      if (variantsTab) {
-        variantsTab.click();
-      }
-      
-      // Hiển thị thông báo thành công
-      dtmodalShowToast('success', {
-        title: 'Thành công',
-        message: `Đã tạo ${combinations.length} biến thể từ thuộc tính.`
-      });
-    }
-
-    const form = document.getElementById('add-product-form');
-    const saveProductBtn = document.getElementById('save-product-btn');
-    const saveDraftBtn = document.getElementById('save-draft-btn');
-
-    if (form) {
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        // Kiểm tra các trường bắt buộc
-        const name = document.getElementById('name').value;
-        const originalPrice = document.getElementById('originalPrice').value;
-        const sku = document.getElementById('sku').value;
-        const stock = document.getElementById('stock').value;
-        const category = document.getElementById('category').value;
-        
-        if (!name || !originalPrice || !sku || !stock || !category) {
-          dtmodalShowToast('warning', {
-            title: 'Cảnh báo',
-            message: 'Vui lòng điền đầy đủ các trường bắt buộc'
-          });
-          return;
-        }
-        
-        // Xác nhận tạo sản phẩm
-        dtmodalCreateModal({
-          type: 'info',
-          title: 'Xác nhận tạo sản phẩm',
-          message: 'Bạn có chắc muốn tạo sản phẩm mới này?',
-          confirmText: 'Tạo sản phẩm',
-          cancelText: 'Hủy',
-          onConfirm: function() {
-            dtmodalShowToast('success', {
-              title: 'Thành công',
-              message: 'Đã tạo sản phẩm mới thành công'
-            });
-            
-            // Chuyển hướng sau 1s
-            setTimeout(() => {
-              window.location.href = '/admin/products';
-            }, 1000);
-          }
-        });
-      });
-    }
-
-    if (saveDraftBtn) {
-      saveDraftBtn.addEventListener('click', () => {
-        dtmodalCreateModal({
-          type: 'info',
-          title: 'Lưu bản nháp',
-          message: 'Bạn có muốn lưu sản phẩm này dưới dạng bản nháp?',
-          confirmText: 'Lưu nháp',
-          cancelText: 'Hủy',
-          onConfirm: function() {
-            dtmodalShowToast('success', {
-              title: 'Thành công',
-              message: 'Đã lưu sản phẩm dưới dạng bản nháp'
-            });
-          }
-        });
-      });
-    }
-  </script>
 @endsection
 
 @section('scripts')
-<script src="{{ asset('js/modal.js') }}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Image upload handling
+        const imagePlaceholder = document.getElementById('image-placeholder');
+        const primaryImageUpload = document.getElementById('primary-image-upload');
+        const additionalImagesUpload = document.getElementById('additional-images-upload');
+        const selectPrimaryImageBtn = document.getElementById('select-primary-image-btn');
+        const selectAdditionalImagesBtn = document.getElementById('select-additional-images-btn');
+        const imageGallery = document.getElementById('image-gallery');
+        const mainImagePreview = document.getElementById('main-image-preview');
+        const uploadContent = document.getElementById('upload-content');
+        let uploadedImages = [];
+
+        // Handle primary image
+        imagePlaceholder.addEventListener('click', (e) => {
+            if (e.target !== selectPrimaryImageBtn) {
+                primaryImageUpload.click();
+            }
+        });
+
+        selectPrimaryImageBtn.addEventListener('click', () => {
+            primaryImageUpload.click();
+        });
+
+        primaryImageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    mainImagePreview.querySelector('img').src = e.target.result;
+                    mainImagePreview.classList.remove('hidden');
+                    uploadContent.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle additional images
+        selectAdditionalImagesBtn.addEventListener('click', () => {
+            additionalImagesUpload.click();
+        });
+
+        additionalImagesUpload.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            Array.from(files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        uploadedImages.push({
+                            file: file,
+                            preview: e.target.result
+                        });
+                        updateImageGallery();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function updateImageGallery() {
+            imageGallery.innerHTML = uploadedImages.map((image, index) => `
+                <div class="image-item">
+                    <img src="${image.preview}" alt="Preview" class="w-full h-32 object-cover rounded-md" />
+                    <button type="button" class="image-remove-btn" onclick="removeImage(${index})">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.removeImage = function(index) {
+            uploadedImages.splice(index, 1);
+            updateImageGallery();
+        };
+
+        // Attributes and Variant Values handling
+        const attributesContainer = document.getElementById('attributes-container');
+        const addAttributeBtn = document.getElementById('add-attribute-btn');
+        let attributeCount = 0;
+
+        function createAttributeGroup(index) {
+            const attributeGroup = document.createElement('div');
+            attributeGroup.className = 'attribute-group';
+            attributeGroup.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex-1 mr-4">
+                        <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                        <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+                </div>
+                <div class="variant-values-container">
+                    <div class="variant-value-row">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                            <input type="text" name="attributes[${index}][values][0][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+                </div>
+                <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Thêm giá trị
+                </button>
+            `;
+            return attributeGroup;
+        }
+
+        addAttributeBtn.addEventListener('click', () => {
+            const attributeGroup = createAttributeGroup(attributeCount);
+            attributesContainer.appendChild(attributeGroup);
+            attributeCount++;
+        });
+
+        window.addVariantValue = function(button) {
+            const container = button.previousElementSibling;
+            const attributeIndex = container.closest('.attribute-group').querySelector('input[name^="attributes["]').name.match(/\[(\d+)\]/)[1];
+            const valueCount = container.children.length;
+            
+            const valueRow = document.createElement('div');
+            valueRow.className = 'variant-value-row';
+            valueRow.innerHTML = `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                    <input type="text" name="attributes[${attributeIndex}][values][${valueCount}][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                    <input type="number" name="attributes[${attributeIndex}][values][${valueCount}][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+            </div>
+                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            `;
+            container.appendChild(valueRow);
+        };
+
+        // Restore old attributes and values if they exist
+        @if(old('attributes'))
+            const oldAttributes = @json(old('attributes'));
+            oldAttributes.forEach((attribute, index) => {
+                const attributeGroup = createAttributeGroup(index);
+                attributesContainer.appendChild(attributeGroup);
+                const nameInput = attributeGroup.querySelector(`input[name="attributes[${index}][name]"]`);
+                nameInput.value = attribute.name;
+
+                attribute.values.forEach((value, valueIndex) => {
+                    if (valueIndex > 0) {
+                        addVariantValue(attributeGroup.querySelector('button'));
+                    }
+                    const valueInput = attributeGroup.querySelector(`input[name="attributes[${index}][values][${valueIndex}][value]"]`);
+                    const priceInput = attributeGroup.querySelector(`input[name="attributes[${index}][values][${valueIndex}][price_adjustment]"]`);
+                    valueInput.value = value.value;
+                    priceInput.value = value.price_adjustment;
+                });
+            });
+            attributeCount = oldAttributes.length;
+        @else
+            // Add default attribute if no old attributes exist
+            const defaultAttribute = createAttributeGroup(0);
+            attributesContainer.appendChild(defaultAttribute);
+            attributeCount = 1;
+        @endif
+
+        // Toppings handling
+        const toppingsContainer = document.getElementById('toppings-container');
+        const addToppingBtn = document.getElementById('add-topping-btn');
+        let toppingCount = 0;
+
+        // Thêm hàm xử lý preview ảnh topping
+        function handleToppingImagePreview(input) {
+            const previewId = input.getAttribute('data-preview-id');
+            const previewWrapId = input.getAttribute('data-preview-wrap-id');
+            const uploadContentId = input.getAttribute('data-upload-content-id');
+            const previewImg = document.getElementById(previewId);
+            const previewWrap = document.getElementById(previewWrapId);
+            const uploadContent = document.getElementById(uploadContentId);
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewWrap.classList.remove('hidden');
+                    uploadContent.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                previewImg.src = '';
+                previewWrap.classList.add('hidden');
+                uploadContent.classList.remove('hidden');
+            }
+        }
+
+        function createToppingGroup(index) {
+            const toppingGroup = document.createElement('div');
+            toppingGroup.className = 'border rounded-md p-4 mb-4';
+            toppingGroup.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1 mr-4">
+                        <label class="block text-sm font-medium text-gray-700">Tên topping</label>
+                        <input type="text" name="toppings[${index}][name]" required placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div class="flex-1 mr-4">
+                        <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
+                        <input type="number" name="toppings[${index}][price]" required min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <div class="w-48 mr-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+                        <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                          <div id="topping-image-placeholder-${index}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                            <div id="topping-image-preview-wrap-${index}" class="absolute inset-0 w-full h-full hidden">
+                              <img id="topping-image-preview-${index}" src="" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
+                            </div>
+                            <div id="topping-upload-content-${index}" class="flex flex-col items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                              </svg>
+                              <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
+                              <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
+                            </div>
+                            <input type="file" id="topping-image-upload-${index}" name="toppings[${index}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
+                          </div>
+                        </div>
+                      </div>
+                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-center gap-4">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="toppings[${index}][available]" value="1" checked class="form-checkbox text-blue-600" />
+                        <span class="text-sm text-gray-700">Đang bán</span>
+                    </label>
+                </div>
+            `;
+            // Sự kiện click chọn ảnh topping
+            setTimeout(() => {
+                const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
+                const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
+                const fileInput = document.getElementById(`topping-image-upload-${index}`);
+                
+                if (placeholder && fileInput) {
+                    placeholder.addEventListener('click', (e) => {
+                        if (e.target !== uploadBtn) {
+                            fileInput.click();
+                        }
+                    });
+                    
+                    uploadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+
+                    fileInput.addEventListener('change', function() {
+                        handleToppingImagePreview(this);
+                    });
+                }
+            }, 10);
+            return toppingGroup;
+        }
+
+        addToppingBtn.addEventListener('click', () => {
+            const toppingGroup = createToppingGroup(toppingCount);
+            toppingsContainer.appendChild(toppingGroup);
+            toppingCount++;
+        });
+
+        // Restore old toppings if they exist
+        @if(old('toppings'))
+            const oldToppings = @json(old('toppings'));
+            oldToppings.forEach((topping, index) => {
+                const toppingGroup = createToppingGroup(index);
+                toppingsContainer.appendChild(toppingGroup);
+                const nameInput = toppingGroup.querySelector(`input[name="toppings[${index}][name]"]`);
+                const priceInput = toppingGroup.querySelector(`input[name="toppings[${index}][price]"]`);
+                const availableInput = toppingGroup.querySelector(`input[name="toppings[${index}][available]"]`);
+                
+                nameInput.value = topping.name;
+                priceInput.value = topping.price;
+                availableInput.checked = topping.available;
+            });
+            toppingCount = oldToppings.length;
+        @endif
+
+        // Form submission
+        const form = document.getElementById('add-product-form');
+        form.addEventListener('submit', function(e) {
+            // Không ngăn chặn submit mặc định nữa
+            // e.preventDefault();
+            // Convert ingredients textarea to JSON array
+            const ingredientsText = document.getElementById('ingredients').value;
+            const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
+            const ingredientsInput = document.createElement('input');
+            ingredientsInput.type = 'hidden';
+            ingredientsInput.name = 'ingredients_json';
+            ingredientsInput.value = JSON.stringify(ingredientsArray);
+            form.appendChild(ingredientsInput);
+            // Đảm bảo description luôn gửi lên (kể cả rỗng)
+            const description = document.getElementById('description');
+            if (!description.value) description.value = '';
+            // Không gọi form.submit() ở đây nữa vì đã để mặc định
+        });
+
+        // Handle status and release date visibility
+        const statusInputs = document.querySelectorAll('input[name="status"]');
+        const releaseAtDiv = document.querySelector('label[for="release_at"]').parentElement;
+
+        function toggleReleaseDate() {
+            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+            if (selectedStatus === 'coming_soon') {
+                releaseAtDiv.classList.remove('hidden');
+                releaseAtDiv.querySelector('#release_at').required = true;
+            } else {
+                releaseAtDiv.classList.add('hidden');
+                releaseAtDiv.querySelector('#release_at').required = false;
+            }
+        }
+
+        statusInputs.forEach(input => {
+            input.addEventListener('change', toggleReleaseDate);
+        });
+
+        // Initial check
+        toggleReleaseDate();
+
+        // Variant stock management
+        const bulkStockInput = document.getElementById('bulk-stock-input');
+        const applyAllStockBtn = document.getElementById('apply-all-stock');
+        const variantStocksTable = document.getElementById('variant-stocks-table');
+        let variants = [];
+
+        // Function to generate variant combinations
+        function generateCombinations(attributes) {
+            if (attributes.length === 0) return [];
+            
+            const result = [];
+            const firstAttr = attributes[0];
+            
+            if (attributes.length === 1) {
+                return firstAttr.values.map(value => [{
+                    name: firstAttr.name,
+                    value: value
+                }]);
+            }
+            
+            const restCombinations = generateCombinations(attributes.slice(1));
+            
+            firstAttr.values.forEach(value => {
+                restCombinations.forEach(combination => {
+                    result.push([{
+                        name: firstAttr.name,
+                        value: value
+                    }, ...combination]);
+                });
+            });
+            
+            return result;
+        }
+
+        // Function to update the stock table
+        function updateStockTable() {
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            const attributeValues = Array.from(attributeGroups).map(group => {
+                const name = group.querySelector('input[name$="[name]"]').value;
+                const values = Array.from(group.querySelectorAll('input[name$="[value]"]')).map(input => input.value);
+                return { name, values };
+            });
+
+            variants = generateCombinations(attributeValues);
+            
+            // Generate table rows
+            variantStocksTable.innerHTML = variants.map((variant, variantIndex) => {
+                const variantName = variant.map(v => `${v.name}: ${v.value}`).join(' - ');
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${variantName}
+                        </td>
+                        @foreach($branches as $branch)
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <input type="number" 
+                                   name="variant_stocks[${variantIndex}][{{ $branch->id }}]" 
+                                   min="0" 
+                                   value="0" 
+                                   class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </td>
+                        @endforeach
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Update table when attributes change
+        document.querySelectorAll('.attribute-group input').forEach(input => {
+            input.addEventListener('change', updateStockTable);
+        });
+
+        // Handle apply all stock
+        applyAllStockBtn.addEventListener('click', () => {
+            const stockValue = parseInt(bulkStockInput.value);
+            if (isNaN(stockValue) || stockValue < 0) {
+                alert('Vui lòng nhập số lượng tồn kho hợp lệ');
+                return;
+            }
+
+            // Update all stock inputs
+            document.querySelectorAll('#variant-stocks-table input[type="number"]').forEach(input => {
+                input.value = stockValue;
+            });
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to apply stock to all
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                applyAllStockBtn.click();
+            }
+        });
+
+        // Initial table update
+        updateStockTable();
+    });
+  </script>
 @endsection

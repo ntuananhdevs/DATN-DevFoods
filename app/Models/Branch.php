@@ -69,4 +69,9 @@ class Branch extends Model
     {
         return $this->belongsTo(User::class, 'manager_user_id');
     }
+
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(BranchStock::class);
+    }
 }

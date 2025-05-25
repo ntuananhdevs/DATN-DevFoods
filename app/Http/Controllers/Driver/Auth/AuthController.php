@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Driver;
+namespace App\Http\Controllers\Driver\Auth;
 
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -36,11 +38,34 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        try {
-            // Kiểm tra nếu request là AJAX
-            $isAjax = $request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
+        $isAjax = $request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
 
-            // Định nghĩa quy tắc validation và thông báo lỗi
+        $phone = Str::lower($request->input('phone_number'));
+        $key = 'login_attempts:' . $phone . '|' . $request->ip();
+
+        // Kiểm tra vượt quá số lần thử
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            $message = "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau {$seconds} giây.";
+
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 429);
+            }
+
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Đã bị khóa tạm thời',
+                'message' => $message
+            ]);
+
+            return back()->with('error', $message);
+        }
+
+        try {
+            // Validation
             $validator = Validator::make($request->all(), [
                 'phone_number' => 'required',
                 'password' => 'required',
@@ -49,91 +74,89 @@ class AuthController extends Controller
                 'password.required' => 'Vui lòng nhập mật khẩu',
             ]);
 
-            // Xử lý lỗi validation
             if ($validator->fails()) {
+                $message = $validator->errors()->first();
+
                 if ($isAjax) {
-                    // Ensure consistent error message format
                     return response()->json([
                         'success' => false,
-                        'message' => $validator->errors()->first(),
+                        'message' => $message,
                         'errors' => $validator->errors()->toArray()
                     ], 422);
                 }
 
-                // Thêm toast thông báo cho non-AJAX request
-                $errorMessage = $validator->errors()->first();
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
-                    'message' => $errorMessage
+                    'message' => $message
                 ]);
 
                 return back()->withErrors($validator)->withInput();
             }
 
-            // Kiểm tra tài khoản tồn tại
-            $driver = Driver::where('phone_number', $request->phone_number)->first();
+            // Tìm tài xế
+            $driver = Driver::where('phone_number', $phone)->first();
 
             if (!$driver) {
-                $errorMessage = 'Số điện thoại không tồn tại trong hệ thống';
+                RateLimiter::hit($key, 60); // chỉ hit khi sai
+                $message = 'Số điện thoại không tồn tại trong hệ thống';
 
                 if ($isAjax) {
                     return response()->json([
                         'success' => false,
-                        'message' => $errorMessage
+                        'message' => $message
                     ], 422);
                 }
 
-                // Thêm toast thông báo
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
-                    'message' => $errorMessage
+                    'message' => $message
                 ]);
 
                 return back()->withErrors([
-                    'phone_number' => $errorMessage,
+                    'phone_number' => $message,
                 ])->withInput();
             }
 
             // Kiểm tra mật khẩu
             if (!Hash::check($request->password, $driver->password)) {
-                $errorMessage = 'Mật khẩu không chính xác';
+                RateLimiter::hit($key, 60); // chỉ hit khi sai
+                $message = 'Mật khẩu không chính xác';
 
                 if ($isAjax) {
                     return response()->json([
                         'success' => false,
-                        'message' => $errorMessage
+                        'message' => $message
                     ], 422);
                 }
 
-                // Thêm toast thông báo
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
-                    'message' => $errorMessage
+                    'message' => $message
                 ]);
 
                 return back()->withErrors([
-                    'password' => $errorMessage,
+                    'password' => $message,
                 ])->withInput();
             }
 
-            // Đăng nhập thành công, thiết lập session
+            // Đăng nhập thành công
+            RateLimiter::clear($key); // reset khi đúng
+
             session([
                 'driver_id' => $driver->id,
                 'driver_name' => $driver->full_name,
                 'driver_phone' => $driver->phone_number,
-                'driver_logged_in' => true
+                'driver_logged_in' => true,
             ]);
 
-            // Kiểm tra: nếu chưa đổi mật khẩu (created_at == updated_at)
             $firstLogin = $driver->created_at->eq($driver->updated_at);
             if ($firstLogin) {
                 session(['first_login' => true]);
             }
 
-            // Trả về kết quả thành công
             if ($isAjax) {
                 return response()->json([
                     'success' => true,
@@ -141,7 +164,6 @@ class AuthController extends Controller
                 ]);
             }
 
-            // Thêm toast thông báo thành công
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
@@ -150,26 +172,25 @@ class AuthController extends Controller
 
             return redirect()->route('driver.home')->with('success', 'Đăng nhập thành công!');
         } catch (Exception $e) {
-            // Xử lý lỗi không mong muốn
-            $errorMessage = 'Đã xảy ra lỗi: ' . $e->getMessage();
+            $message = 'Đã xảy ra lỗi: ' . $e->getMessage();
 
             if ($isAjax) {
                 return response()->json([
                     'success' => false,
-                    'message' => $errorMessage
+                    'message' => $message
                 ], 500);
             }
 
-            // Thêm toast thông báo lỗi
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi hệ thống',
-                'message' => $errorMessage
+                'message' => $message
             ]);
 
-            return back()->with('error', $errorMessage)->withInput();
+            return back()->with('error', $message)->withInput();
         }
     }
+
 
     /**
      * Đăng xuất
@@ -194,7 +215,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email'
-        ],[
+        ], [
             'email.required' => 'Vui lòng nhập email',
             'email.email' => 'Email không đúng định dạng'
         ]);
@@ -257,7 +278,7 @@ class AuthController extends Controller
             $request->validate([
                 'password' => 'required|string|min:8|confirmed',
                 'password_confirmation' => 'required|string|min:8'
-            ],[
+            ], [
                 'password.required' => 'Mật khẩu không được để trống',
                 'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
                 'password_confirmation.required' => 'Xác nhận mật khẩu không được để trống',
