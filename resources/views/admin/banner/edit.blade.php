@@ -197,12 +197,12 @@
                     @enderror
                 </div>
 
-                <div>
+                <div id="order-field" style="{{ old('position', $banner->position) != 'homepage' ? 'display: none;' : '' }}">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="order">Thứ tự
                         hiển thị</label>
                     <input type="number"
                         class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('order') border-red-500 @enderror"
-                        id="order" name="order" value="{{ old('order', $banner->order) }}">
+                        id="order" name="order" value="{{ old('order', $banner->order) }}" {{ old('position', $banner->position) != 'homepage' ? 'disabled' : '' }}>
                     @error('order')
                         <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
@@ -351,6 +351,29 @@
         } else {
             console.error('Banner form not found for attaching submit listener.');
         }
+        
+        // Xử lý hiển thị/ẩn trường thứ tự hiển thị dựa trên vị trí được chọn
+        const positionSelect = document.getElementById('position');
+        const orderField = document.getElementById('order-field');
+        const orderInput = document.getElementById('order');
+        
+        function handlePositionChange() {
+            if (positionSelect.value === 'homepage') {
+                orderField.style.display = '';
+                orderInput.disabled = false;
+                if (!orderInput.value) {
+                    orderInput.value = '0';
+                }
+            } else {
+                orderField.style.display = 'none';
+                orderInput.disabled = true;
+                orderInput.value = '';
+            }
+        }
+        
+        positionSelect.addEventListener('change', handlePositionChange);
+        // Gọi hàm khi trang được tải để đảm bảo trạng thái ban đầu đúng
+        handlePositionChange();
 
         if (imagePathInput && imagePreview && previewPlaceholder) {
             imagePathInput.addEventListener('change', function(e) {
