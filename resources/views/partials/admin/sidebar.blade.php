@@ -138,31 +138,7 @@
                         </a>
                     </div>
                 </div>
-                <!-- driver -->
-                <div class="sidebar-dropdown">
-                    <button class="sidebar-dropdown-trigger flex w-full items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                        <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck">
-                                <path d="M1 3h15v13H1z"></path>
-                                <path d="M16 8h4l3 3v5h-7V8z"></path>
-                                <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                                <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Tài xế</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-auto lucide lucide-chevron-down">
-                            <path d="m6 9 6 6 6-6"></path>
-                        </svg>
-                    </button>
-                    <div class="sidebar-dropdown-content hidden pl-4">
-                        <a href="{{ asset('admin/drivers') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.index') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                            <span class="sidebar-text">Tất cả tài xế</span>
-                        </a>
-                        <a href="{{ asset('admin/drivers/applications') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.applications') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                            <span class="sidebar-text">Đơn ứng tuyển</span>
-                        </a>
-                    </div>
-                </div>
+
                 <!-- Analytics Reports -->
                 <a href="{{ ('admin.analytics-reports') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics-reports.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Analytics">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
