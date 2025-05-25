@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Artisan;
 //Admin
 
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
@@ -17,10 +16,12 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
 use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\Auth\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Customer\SupportController as CustomerSupportController
 use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
+use App\Http\Controllers\Customer\ChatController as CustomerChatController;
 use Illuminate\Database\Capsule\Manager;
 
 //Driver 
@@ -94,6 +96,13 @@ Route::prefix('/')->group(function () {
     // Support
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 
+    // Chat routes
+    Route::prefix('api/chat')->group(function () {
+        Route::post('/send-message', [CustomerChatController::class, 'sendMessage'])->name('chat.send');
+        Route::post('/rating', [CustomerChatController::class, 'submitRating'])->name('chat.rating');
+        Route::get('/history', [CustomerChatController::class, 'getChatHistory'])->name('chat.history');
+    });
+
     // Route Customer (login / logout / register) - Thêm middleware guest
     Route::middleware('guest')->group(function () {
         Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
@@ -153,8 +162,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
-
-
     // Roles Management
     Route::prefix('roles')->name('roles.')->group(function () {
         Route::get('/', [RoleController::class, 'index'])->name('index');
@@ -201,7 +208,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
         Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
     });
-
 
     // Products Management
     Route::prefix('products')->name('products.')->group(function () {
@@ -266,6 +272,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
         Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
         Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
+    });
+
+    Route::get('/chat', [AdminChatController::class, 'index'])->name('chat');
+    // Chat API routes
+    Route::prefix('api/chat')->group(function () {
+        Route::get('/chats', [AdminChatController::class, 'getChats'])->name('chat.list');
+        Route::get('/chats/{chatId}/messages', [AdminChatController::class, 'getChatMessages'])->name('chat.messages');
+        Route::post('/send', [AdminChatController::class, 'sendMessage'])->name('chat.send');
+        Route::post('/status', [AdminChatController::class, 'updateStatus'])->name('chat.status');
+        Route::post('/chats/{chatId}/close', [AdminChatController::class, 'closeChat'])->name('chat.close');
+        Route::get('/statistics', [AdminChatController::class, 'getStatistics'])->name('chat.stats');
     });
 });
 

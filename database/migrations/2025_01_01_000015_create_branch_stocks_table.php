@@ -18,7 +18,6 @@ return new class extends Migration
             $table->integer('stock_quantity')->default(0);
             $table->timestamps();
 
-
             $table->unique(['branch_id', 'product_variant_id']);
         });
     }

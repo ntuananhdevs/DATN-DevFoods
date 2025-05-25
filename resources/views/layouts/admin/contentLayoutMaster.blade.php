@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Dashboard')</title>
-    <meta name="description" content="@yield('description', 'Admin dashboard with collapsible sidebar')">
-    
+    <title>@yield('title', 'FastFood Admin')</title>
+    <meta name="description" content="@yield('description', 'Admin dashboard')">
+    <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/custom-realtime.css') }}">
@@ -112,6 +112,12 @@
             --ring: 221.2 83.2% 53.3%;
             --radius: 0.5rem;
             
+            /* Scrollbar variables */
+            --scrollbar-width: 5px;
+            --scrollbar-track: transparent;
+            --scrollbar-thumb: rgba(156, 163, 175, 0.5);
+            --scrollbar-thumb-hover: rgba(156, 163, 175, 0.8);
+            
             /* Sidebar variables */
             --sidebar-background: 0 0% 98%;
             --sidebar-foreground: 240 5.3% 26.1%;
@@ -157,8 +163,39 @@
             --sidebar-accent-foreground: 240 4.8% 95.9%;
             --sidebar-border: 240 3.7% 15.9%;
             --sidebar-ring: 217.2 91.2% 59.8%;
+
+            /* Dark mode scrollbar */
+            --scrollbar-thumb: rgba(75, 85, 99, 0.5);
+            --scrollbar-thumb-hover: rgba(75, 85, 99, 0.8);
         }
-        
+
+        /* Global scrollbar styles */
+        * {
+            scrollbar-width: 5px;
+            -ms-overflow-style: auto;
+        }
+
+        *::-webkit-scrollbar {
+            width: var(--scrollbar-width);
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb);
+            border-radius: 0;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: var(--scrollbar-thumb-hover);
+        }
+
+        *::-webkit-scrollbar-button {
+            display: none;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
         }
@@ -176,6 +213,8 @@
             left: 0;
             z-index: 40;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
         .sidebar.collapsed {
@@ -183,8 +222,40 @@
         }
         
         .sidebar-content {
-            height: calc(100vh - 64px - 64px);
+            flex: 1;
             overflow-y: auto;
+            scrollbar-width: thin;
+            -ms-overflow-style: auto;
+        }
+
+        .sidebar-content::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 0;
+        }
+
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.8);
+        }
+
+        .sidebar-content::-webkit-scrollbar-button {
+            display: none;
+        }
+
+        /* Dark mode scrollbar */
+        .dark .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: rgba(75, 85, 99, 0.5);
+        }
+
+        .dark .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(75, 85, 99, 0.8);
         }
         
         /* Sidebar text hiding when collapsed */
@@ -373,6 +444,45 @@
             .main-content.expanded {
                 width: 100%;
                 margin-left: 0;
+            }
+        }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .chat-item.active {
+            background-color: #fff7ed;
+            border-left: 4px solid #f97316;
+        }
+
+        .message-enter {
+            animation: messageSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
     </style>
