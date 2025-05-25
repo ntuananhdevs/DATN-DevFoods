@@ -281,6 +281,7 @@
 
         let initialTab = 'upload';
         let prefillLink = false;
+        const bannerImageUrl = "{{ $bannerImageUrl ?? '' }}";
 
         if (existingImagePath) {
             let isUrl = false;
@@ -297,9 +298,9 @@
                 prefillLink = true;
             } else {
                 initialTab = 'upload';
-                if (imagePreview && previewPlaceholder) {
-                    console.log("Loading preview image for upload tab:", "{{ $bannerImageUrl ?? '' }}");
-                    imagePreview.src = "{{ $bannerImageUrl ?? '' }}";
+                if (imagePreview && previewPlaceholder && bannerImageUrl) {
+                    console.log("Loading preview image for upload tab:", bannerImageUrl);
+                    imagePreview.src = bannerImageUrl;
                     imagePreview.style.display = 'block';
                     previewPlaceholder.style.display = 'none';
                 }

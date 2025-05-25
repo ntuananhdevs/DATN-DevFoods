@@ -278,60 +278,75 @@
                         </td>
                         <td class="py-3 px-4 font-medium">{{ $product->sku }}</td>
                         <td class="py-3 px-4">
-                            <div class="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden">
-                                <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
+                            <div class="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden" style="width:100px; height:60px; border-radius:4px; background:#f3f4f6;">
+                                @php
+                                    $primaryImg = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+                                @endphp
+                                @if($primaryImg)
+                                    <img src="{{ asset('storage/'.$primaryImg->img) }}" alt="{{ $product->name }}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;" />
+                                @else
+                                    <span class="text-xs text-gray-400">No image</span>
+                                @endif
                             </div>
                         </td>
                         <td class="py-3 px-4">
                             <div class="font-medium">{{ $product->name }}</div>
-                            <div class="text-sm text-muted-foreground">{{ $product->sku }}</div>
                         </td>
                         <td class="py-3 px-4">{{ $product->category->name ?? 'N/A' }}</td>
-                       
                         <td class="py-3 px-4 text-right">
                             {{ number_format($product->base_price, 0, ',', '.') }} đ
                         </td>
                         <td class="py-3 px-4 text-center">
                             @php
-                                $totalStock = $product->variants->sum(function($variant) {
-                                    return $variant->branchStocks->sum('stock_quantity');
-                                });
+                                $totalStock = 0;
+                                foreach ($product->variants as $variant) {
+                                    $totalStock += $variant->branchStocks->sum('stock_quantity');
+                                }
+                                if ($totalStock == 0) {
+                                    $stockClass = 'background:#ef4444;color:#fff;';
+                                    $stockText = 'Hết hàng';
+                                } elseif ($totalStock > 0 && $totalStock < 10) {
+                                    $stockClass = 'background:#facc15;color:#222;';
+                                    $stockText = 'Sắp hết ('.$totalStock.')';
+                                } else {
+                                    $stockClass = 'background:#22c55e;color:#fff;';
+                                    $stockText = $totalStock;
+                                }
                             @endphp
-                            <span class="status-tag {{ $totalStock > 0 ? 'success' : 'failed' }}">
-                                {{ $totalStock }}
+                            <span style="display:inline-block; border-radius:7px; {{ $stockClass }} padding:4px 16px; font-size:13px; font-weight:600; white-space:nowrap;">
+                                {{ $stockText }}
                             </span>
                         </td>
                         <td class="py-3 px-4">
-                            <span class="status-tag {{ $product->available ? 'success' : 'failed' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
-                                    @if ($product->available)
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                    <path d="m9 11 3 3L22 4"></path>
-                                    @else
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <path d="m15 9-6 6"></path>
-                                    <path d="m9 9 6 6"></path>
-                                    @endif
-                                </svg>
-                                {{ $product->available ? 'Đang bán' : 'Khóa' }}
+                            @php
+                                switch ($product->status) {
+                                    case 'selling':
+                                        $statusText = 'Đang bán';
+                                        $badgeStyle = 'background:#16a34a;color:#fff;';
+                                        break;
+                                    case 'coming_soon':
+                                        $statusText = 'Sắp ra mắt';
+                                        $badgeStyle = 'background:#fb923c;color:#fff;';
+                                        break;
+                                    case 'discontinued':
+                                    default:
+                                        $statusText = 'Ngừng bán';
+                                        $badgeStyle = 'background:#ef4444;color:#fff;';
+                                        break;
+                                }
+                            @endphp
+                            <span style="display:inline-block; border-radius:7px; {{ $badgeStyle }} padding:4px 16px; font-size:13px; font-weight:600; white-space:nowrap;">
+                                {{ $statusText }}
                             </span>
                         </td>
                         <td class="py-3 px-4">
                             <div class="flex justify-center space-x-1">
-                                <a href="{{ route('admin.products.show', $product->id) }}"
-                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
-                                    title="Xem chi tiết">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </a>
                                 <a href="{{ route('admin.products.edit', $product->id) }}"
                                     class="flex items-center justify-center rounded-md hover:bg-accent p-2"
                                     title="Chỉnh sửa">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
-                                        <path d="m15 5 4 4"></path>
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                     </svg>
                                 </a>
                                 <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form">
@@ -381,19 +396,27 @@
                 Hiển thị <span id="paginationStart">{{ $products->firstItem() }}</span> đến <span id="paginationEnd">{{ $products->lastItem() }}</span> của <span id="paginationTotal">{{ $products->total() }}</span> mục
             </div>
             <div class="flex items-center space-x-2" id="paginationControls">
-                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted {{ $products->onFirstPage() ? 'disabled opacity-50 cursor-not-allowed' : '' }}" onclick="changePage({{ $products->currentPage() - 1 }})">
+                @unless($products->onFirstPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $products->currentPage() - 1 }})">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
                         <path d="m15 18-6-6 6-6"></path>
                     </svg>
                 </button>
+                @endunless
+
                 @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
-                <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">{{ $page }}</button>
+                <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">
+                    {{ $page }}
+                </button>
                 @endforeach
-                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted {{ $products->hasMorePages() ? '' : 'disabled opacity-50 cursor-not-allowed' }}" onclick="changePage({{ $products->currentPage() + 1 }})">
+
+                @unless($products->currentPage() === $products->lastPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $products->currentPage() + 1 }})">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
                         <path d="m9 18 6-6-6-6"></path>
                     </svg>
                 </button>
+                @endunless
             </div>
         </div>
     </div>
@@ -693,7 +716,7 @@
             max: {{ $maxPrice }},
             minValue: {{ request('price_min', $minPrice) }},
             maxValue: {{ request('price_max', $maxPrice) }},
-            step: 10000,
+            step: 1,
             sliderId: 'priceSlider',
             trackId: 'priceTrack',
             minHandleId: 'minHandle',

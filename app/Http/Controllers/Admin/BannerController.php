@@ -154,7 +154,20 @@ class BannerController extends Controller
     {
         try {
             $banner = Banner::findOrFail($id);
-            return view('admin.banner.edit', compact('banner'));
+            
+            // Generate image URL for display
+            $bannerImageUrl = null;
+            if ($banner->image_path) {
+                // Check if it's already a full URL
+                if (filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
+                    $bannerImageUrl = $banner->image_path;
+                } else {
+                    // It's an S3 path, generate the full URL
+                    $bannerImageUrl = Storage::disk('s3')->url($banner->image_path);
+                }
+            }
+            
+            return view('admin.banner.edit', compact('banner', 'bannerImageUrl'));
         } catch (\Exception $e) {
             Log::error('Error in BannerController@edit: ' . $e->getMessage());
             return redirect()->route('admin.banners.index')
