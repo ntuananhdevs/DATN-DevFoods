@@ -25,11 +25,11 @@ return new class extends Migration
         Schema::create('combo_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('combo_id')->constrained('combos')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->foreignId('product_variant_id')->constrained('product_variants')->onDelete('cascade');
             $table->integer('quantity')->default(1); // số lượng sản phẩm trong combo
             $table->timestamps();
 
-            $table->unique(['combo_id', 'product_id']);
+            $table->unique(['combo_id', 'product_variant_id']);
         });
     }
 
