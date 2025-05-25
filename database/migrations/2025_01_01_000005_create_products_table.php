@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('sku')->unique();
             $table->string('name');
             $table->decimal('base_price', 12, 2);
-            $table->boolean('available')->default(true);
             $table->integer('preparation_time')->nullable();
             $table->json('ingredients')->nullable();
             $table->text('short_description')->nullable();

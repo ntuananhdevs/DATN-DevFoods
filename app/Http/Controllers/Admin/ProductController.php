@@ -12,7 +12,9 @@ use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use App\Models\VariantAttribute;
 use App\Models\VariantValue;
-use App\Models\Topping; // Thêm dòng này
+use App\Models\Topping;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -158,21 +160,60 @@ public function index(Request $request)
 
             // Handle primary image
             if ($request->hasFile('primary_image')) {
-                $path = $request->file('primary_image')->store('products', 'public');
-                $product->images()->create([
-                    'img' => $path,
-                    'is_primary' => true,
+                $image = $request->file('primary_image');
+                \Log::info('Uploading primary image', [
+                    'original_name' => $image->getClientOriginalName(),
+                    'size' => $image->getSize(),
+                    'mime' => $image->getMimeType()
                 ]);
+                
+                // Generate unique filename
+                $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                
+                // Upload to S3
+                $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                
+                if ($path) {
+                    // Get the URL of uploaded file
+                    $url = Storage::disk('s3')->url('products/' . $filename);
+                    \Log::info('S3 file url', ['url' => $url]);
+                    
+                    $product->images()->create([
+                        'img' => 'products/' . $filename,
+                        'img_url' => $url,
+                        'is_primary' => true,
+                    ]);
+                }
             }
 
             // Handle additional images
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $path = $image->store('products', 'public');
-                    $product->images()->create([
-                        'img' => $path,
-                        'is_primary' => false,
+                    \Log::info('Uploading additional image', [
+                        'original_name' => $image->getClientOriginalName(),
+                        'size' => $image->getSize(),
+                        'mime' => $image->getMimeType()
                     ]);
+                    
+                    // Generate unique filename
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    
+                    // Upload to S3
+                    $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                    \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                    
+                    if ($path) {
+                        // Get the URL of uploaded file
+                        $url = Storage::disk('s3')->url('products/' . $filename);
+                        \Log::info('S3 file url', ['url' => $url]);
+                        
+                        $product->images()->create([
+                            'img' => 'products/' . $filename,
+                            'img_url' => $url,
+                            'is_primary' => false,
+                        ]);
+                    }
                 }
             }
 
