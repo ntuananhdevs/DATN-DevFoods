@@ -1,0 +1,2135 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thêm Sản Phẩm Mới</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* CSS được scoped cho trang thêm sản phẩm */
+    .ap-container {
+      font-family: 'Inter', sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      color: #1f2937;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    .ap-header {
+      background-color: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      height: 4rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .ap-header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 100%;
+      padding: 0 1rem;
+    }
+
+    .ap-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .ap-logo svg {
+      color: #0070f3;
+    }
+
+    .ap-nav {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .ap-nav {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+    }
+
+    .ap-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #4b5563;
+      text-decoration: none;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .ap-nav-link:hover {
+      background-color: #f3f4f6;
+      color: #111827;
+    }
+
+    .ap-nav-link.active {
+      background-color: rgba(0, 112, 243, 0.1);
+      color: #0070f3;
+    }
+
+    .ap-user-menu {
+      position: relative;
+    }
+
+    .ap-avatar {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 9999px;
+      background-color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: #374151;
+      cursor: pointer;
+    }
+
+    .ap-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 0.5rem;
+      width: 14rem;
+      background-color: #ffffff;
+      border-radius: 0.375rem;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      z-index: 20;
+      display: none;
+    }
+
+    .ap-dropdown.show {
+      display: block;
+    }
+
+    .ap-dropdown-header {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .ap-dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      color: #374151;
+      text-decoration: none;
+      transition: background-color 0.2s;
+    }
+
+    .ap-dropdown-item:hover {
+      background-color: #f9fafb;
+    }
+
+    .ap-dropdown-item svg {
+      margin-right: 0.5rem;
+    }
+
+    /* Main content */
+    .ap-main {
+      padding: 2rem 0;
+    }
+
+    .ap-page-header {
+      margin-bottom: 2rem;
+    }
+
+    .ap-page-title {
+      font-size: 1.875rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    .ap-page-description {
+      color: #6b7280;
+    }
+
+    /* Card */
+    .ap-card {
+      background-color: #ffffff;
+      border-radius: 0.375rem;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .ap-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .ap-card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .ap-card-description {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .ap-card-content {
+      padding: 1.5rem;
+    }
+
+    .ap-card-footer {
+      padding: 1rem 1.5rem;
+      background-color: #f9fafb;
+      border-top: 1px solid #f3f4f6;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* Form elements */
+    .ap-form-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .ap-form-grid-2 {
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 768px) {
+      .ap-form-grid-2 {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+
+    .ap-form-grid-cols-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .ap-form-grid-cols-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .ap-form-grid-cols-3 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .ap-form-grid-cols-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+
+    .ap-form-group {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .ap-form-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .ap-form-input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      border-radius: 0.375rem;
+      border: 1px solid #d1d5db;
+      background-color: #ffffff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .ap-form-input:focus {
+      outline: none;
+      border-color: #0070f3;
+      box-shadow: 0 0 0 1px #0070f3;
+    }
+
+    .ap-form-input-with-icon {
+      position: relative;
+    }
+
+    .ap-form-input-with-icon .ap-form-input {
+      padding-left: 2.5rem;
+    }
+
+    .ap-form-input-with-icon .ap-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+    }
+
+    .ap-form-textarea {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      border-radius: 0.375rem;
+      border: 1px solid #d1d5db;
+      background-color: #ffffff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      resize: none;
+      min-height: 100px;
+    }
+
+    .ap-form-textarea:focus {
+      outline: none;
+      border-color: #0070f3;
+      box-shadow: 0 0 0 1px #0070f3;
+    }
+
+    .ap-form-select {
+      width: 100%;
+      padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      border-radius: 0.375rem;
+      border: 1px solid #d1d5db;
+      background-color: #ffffff;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.5rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      appearance: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .ap-form-select:focus {
+      outline: none;
+      border-color: #0070f3;
+      box-shadow: 0 0 0 1px #0070f3;
+    }
+
+    .ap-form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .ap-form-checkbox input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      border-radius: 0.25rem;
+      border: 1px solid #d1d5db;
+      background-color: #ffffff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .ap-form-checkbox input[type="checkbox"]:focus {
+      outline: none;
+      border-color: #0070f3;
+      box-shadow: 0 0 0 1px #0070f3;
+    }
+
+    .ap-form-checkbox label {
+      font-size: 0.875rem;
+      color: #374151;
+    }
+
+    /* Image upload */
+    .ap-image-upload {
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffffff;
+    }
+
+    .ap-image-upload-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+      border: 2px dashed #d1d5db;
+      border-radius: 0.375rem;
+      background-color: #f9fafb;
+    }
+
+    .ap-image-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .ap-image-item {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 0.375rem;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+
+    .ap-image-item img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ap-image-item-remove {
+      position: absolute;
+      top: 0.25rem;
+      right: 0.25rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 9999px;
+      background-color: rgba(239, 68, 68, 0.9);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    /* Buttons */
+    .ap-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1.5;
+      border-radius: 0.375rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .ap-btn-primary {
+      background-color: #0070f3;
+      color: #ffffff;
+    }
+
+    .ap-btn-primary:hover {
+      background-color: #0060df;
+    }
+
+    .ap-btn-outline {
+      background-color: transparent;
+      border-color: #d1d5db;
+      color: #374151;
+    }
+
+    .ap-btn-outline:hover {
+      background-color: #f9fafb;
+    }
+
+    .ap-btn-ghost {
+      background-color: transparent;
+      color: #374151;
+    }
+
+    .ap-btn-ghost:hover {
+      background-color: #f3f4f6;
+    }
+
+    .ap-btn-danger {
+      background-color: #ef4444;
+      color: #ffffff;
+    }
+
+    .ap-btn-danger:hover {
+      background-color: #b91c1c;
+    }
+
+    .ap-btn-icon {
+      padding: 0.5rem;
+      width: 2rem;
+      height: 2rem;
+    }
+
+    .ap-btn-lg {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+    }
+
+    .ap-btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    /* Tabs */
+    .ap-tabs {
+      margin-bottom: 1.5rem;
+    }
+
+    .ap-tabs-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background-color: #f3f4f6;
+      padding: 0.25rem;
+      border-radius: 0.375rem;
+    }
+
+    .ap-tab {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-align: center;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .ap-tab.active {
+      background-color: #ffffff;
+      color: #0070f3;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .ap-tab-content {
+      display: none;
+    }
+
+    .ap-tab-content.active {
+      display: block;
+    }
+
+    /* Attribute value pairs */
+    .ap-attribute-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+      background-color: #ffffff;
+    }
+
+    @media (min-width: 768px) {
+      .ap-attribute-row {
+        flex-direction: row;
+        align-items: flex-start;
+      }
+    }
+
+    .ap-attribute-name {
+      flex: 1;
+    }
+
+    .ap-attribute-values {
+      flex: 2;
+    }
+
+    .ap-attribute-value-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .ap-attribute-value-item:last-child {
+      border-bottom: none;
+    }
+
+    .ap-attribute-value-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .ap-attribute-add-value {
+      margin-top: 0.5rem;
+    }
+
+    /* Tags input */
+    .ap-tags-input {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.25rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      background-color: #ffffff;
+      min-height: 2.5rem;
+    }
+
+    .ap-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      background-color: #f3f4f6;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      color: #374151;
+    }
+
+    .ap-tag-remove {
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .ap-tag-remove:hover {
+      color: #ef4444;
+    }
+
+    .ap-tags-input input {
+      flex: 1;
+      min-width: 100px;
+      border: none;
+      outline: none;
+      padding: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    /* SEO section */
+    .ap-seo-preview {
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      padding: 1rem;
+      background-color: #f9fafb;
+    }
+
+    .ap-seo-title {
+      color: #1a0dab;
+      font-size: 1.125rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ap-seo-url {
+      color: #006621;
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ap-seo-description {
+      color: #545454;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    /* Variant table */
+    .ap-table-container {
+      overflow-x: auto;
+    }
+
+    .ap-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ap-table th,
+    .ap-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .ap-table th {
+      font-weight: 500;
+      color: #374151;
+      background-color: #f9fafb;
+    }
+
+    .ap-table tr:hover {
+      background-color: #f9fafb;
+    }
+
+    /* Badge */
+    .ap-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1.5;
+      border-radius: 9999px;
+      background-color: #f3f4f6;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+    }
+
+    /* Modal */
+    .ap-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 30;
+      display: none;
+    }
+
+    .ap-modal-backdrop.show {
+      display: block;
+    }
+
+    .ap-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #ffffff;
+      border-radius: 0.375rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 32rem;
+      z-index: 40;
+      display: none;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .ap-modal.show {
+      display: block;
+    }
+
+    .ap-modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .ap-modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .ap-modal-description {
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .ap-modal-body {
+      padding: 1.5rem;
+    }
+
+    .ap-modal-footer {
+      padding: 1rem 1.5rem;
+      background-color: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    /* Sticky footer */
+    .ap-sticky-footer {
+      position: sticky;
+      bottom: 0;
+      background-color: #ffffff;
+      border-top: 1px solid #e5e7eb;
+      padding: 1rem;
+      margin-top: 2rem;
+      margin-left: -1rem;
+      margin-right: -1rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Utilities */
+    .ap-flex {
+      display: flex;
+    }
+
+    .ap-items-center {
+      align-items: center;
+    }
+
+    .ap-justify-between {
+      justify-content: space-between;
+    }
+
+    .ap-justify-end {
+      justify-content: flex-end;
+    }
+
+    .ap-gap-1 {
+      gap: 0.25rem;
+    }
+
+    .ap-gap-2 {
+      gap: 0.5rem;
+    }
+
+    .ap-gap-4 {
+      gap: 1rem;
+    }
+
+    .ap-flex-wrap {
+      flex-wrap: wrap;
+    }
+
+    .ap-space-y-4 > * + * {
+      margin-top: 1rem;
+    }
+
+    .ap-space-y-5 > * + * {
+      margin-top: 1.25rem;
+    }
+
+    .ap-mt-2 {
+      margin-top: 0.5rem;
+    }
+
+    .ap-mr-2 {
+      margin-right: 0.5rem;
+    }
+
+    .ap-mb-2 {
+      margin-bottom: 0.5rem;
+    }
+
+    .ap-ml-2 {
+      margin-left: 0.5rem;
+    }
+
+    .ap-text-center {
+      text-align: center;
+    }
+
+    .ap-text-right {
+      text-align: right;
+    }
+
+    .ap-font-medium {
+      font-weight: 500;
+    }
+
+    .ap-font-semibold {
+      font-weight: 600;
+    }
+
+    .ap-font-bold {
+      font-weight: 700;
+    }
+
+    .ap-text-xs {
+      font-size: 0.75rem;
+    }
+
+    .ap-text-sm {
+      font-size: 0.875rem;
+    }
+
+    .ap-text-lg {
+      font-size: 1.125rem;
+    }
+
+    .ap-text-xl {
+      font-size: 1.25rem;
+    }
+
+    .ap-text-2xl {
+      font-size: 1.5rem;
+    }
+
+    .ap-text-3xl {
+      font-size: 1.875rem;
+    }
+
+    .ap-text-gray-500 {
+      color: #6b7280;
+    }
+
+    .ap-text-gray-700 {
+      color: #374151;
+    }
+
+    .ap-text-gray-900 {
+      color: #111827;
+    }
+
+    .ap-text-primary {
+      color: #0070f3;
+    }
+
+    .ap-text-red-500 {
+      color: #ef4444;
+    }
+
+    .ap-bg-white {
+      background-color: #ffffff;
+    }
+
+    .ap-bg-gray-50 {
+      background-color: #f9fafb;
+    }
+
+    .ap-bg-gray-100 {
+      background-color: #f3f4f6;
+    }
+
+    .ap-rounded {
+      border-radius: 0.375rem;
+    }
+
+    .ap-border {
+      border: 1px solid #e5e7eb;
+    }
+
+    .ap-border-t {
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .ap-border-b {
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .ap-shadow-sm {
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .ap-shadow {
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .ap-hidden {
+      display: none;
+    }
+
+    .ap-w-full {
+      width: 100%;
+    }
+
+    .ap-h-full {
+      height: 100%;
+    }
+
+    .ap-p-4 {
+      padding: 1rem;
+    }
+
+    .ap-px-4 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+
+    .ap-py-4 {
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="ap-header">
+    <div class="ap-header-content">
+      <div class="ap-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0L3.1 4.13a2.12 2.12 0 0 0-.05 3.69l12.22 6.93a2 2 0 0 0 1.94 0L21 12.51a2.12 2.12 0 0 0-.09-3.67Z"></path>
+          <path d="m3.09 8.84 12.35-6.61a1.93 1.93 0 0 1 1.81 0l3.65 1.9a2.12 2.12 0 0 1 .1 3.69L8.73 14.75a2 2 0 0 1-1.94 0L3 12.51a2.12 2.12 0 0 1 .09-3.67Z"></path>
+          <line x1="12" y1="22" x2="12" y2="13"></line>
+          <path d="M20 13.5v3.37a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13.5"></path>
+        </svg>
+        <span>Admin Portal</span>
+      </div>
+
+      <nav class="ap-nav">
+        <a href="/admin" class="ap-nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9"></rect>
+            <rect x="14" y="3" width="7" height="5"></rect>
+            <rect x="14" y="12" width="7" height="9"></rect>
+            <rect x="3" y="16" width="7" height="5"></rect>
+          </svg>
+          <span>Dashboard</span>
+        </a>
+        <a href="/admin/products" class="ap-nav-link active">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.91 8.84 8.56 2.23a1.93 1.93 0 0 0-1.81 0L3.1 4.13a2.12 2.12 0 0 0-.05 3.69l12.22 6.93a2 2 0 0 0 1.94 0L21 12.51a2.12 2.12 0 0 0-.09-3.67Z"></path>
+            <path d="m3.09 8.84 12.35-6.61a1.93 1.93 0 0 1 1.81 0l3.65 1.9a2.12 2.12 0 0 1 .1 3.69L8.73 14.75a2 2 0 0 1-1.94 0L3 12.51a2.12 2.12 0 0 1 .09-3.67Z"></path>
+            <line x1="12" y1="22" x2="12" y2="13"></line>
+            <path d="M20 13.5v3.37a2.06 2.06 0 0 1-1.11 1.83l-6 3.08a1.93 1.93 0 0 1-1.78 0l-6-3.08A2.06 2.06 0 0 1 4 16.87V13.5"></path>
+          </svg>
+          <span>Sản phẩm</span>
+        </a>
+        <a href="/admin/orders" class="ap-nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="21" r="1"></circle>
+            <circle cx="19" cy="21" r="1"></circle>
+            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+          </svg>
+          <span>Đơn hàng</span>
+        </a>
+        <a href="/admin/customers" class="ap-nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>Khách hàng</span>
+        </a>
+        <a href="/admin/settings" class="ap-nav-link">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>Cài đặt</span>
+        </a>
+      </nav>
+
+      <div class="ap-user-menu">
+        <div class="ap-avatar" id="avatar-button">
+          <span>AD</span>
+        </div>
+        <div class="ap-dropdown" id="user-dropdown">
+          <div class="ap-dropdown-header">
+            <div class="ap-font-medium">Admin</div>
+            <div class="ap-text-xs ap-text-gray-500">admin@example.com</div>
+          </div>
+          <a href="#" class="ap-dropdown-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Cài đặt tài khoản</span>
+          </a>
+          <a href="#" class="ap-dropdown-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Đăng xuất</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="ap-main">
+    <div class="ap-container">
+      <!-- Page header -->
+      <div class="ap-page-header">
+        <h1 class="ap-page-title">Thêm Sản Phẩm Mới</h1>
+        <p class="ap-page-description">Nhập thông tin chi tiết để tạo sản phẩm mới</p>
+      </div>
+
+      <form id="add-product-form">
+        <!-- Basic Information -->
+        <div class="ap-card">
+          <div class="ap-card-header">
+            <div>
+              <h2 class="ap-card-title">Thông tin cơ bản</h2>
+              <p class="ap-card-description">Nhập thông tin cơ bản của sản phẩm</p>
+            </div>
+          </div>
+          <div class="ap-card-content">
+            <div class="ap-form-grid ap-form-grid-2">
+              <div class="ap-space-y-5">
+                <div class="ap-form-group">
+                  <label for="name" class="ap-form-label">Tên sản phẩm <span class="ap-text-red-500">*</span></label>
+                  <input type="text" id="name" name="name" class="ap-form-input" required placeholder="Nhập tên sản phẩm">
+                </div>
+
+                <div class="ap-form-grid-cols-2">
+                  <div class="ap-form-group">
+                    <label for="originalPrice" class="ap-form-label">Giá gốc <span class="ap-text-red-500">*</span></label>
+                    <div class="ap-form-input-with-icon">
+                      <span class="ap-icon">₫</span>
+                      <input type="number" id="originalPrice" name="originalPrice" class="ap-form-input" required placeholder="0">
+                    </div>
+                  </div>
+                  <div class="ap-form-group">
+                    <label for="salePrice" class="ap-form-label">Giá bán</label>
+                    <div class="ap-form-input-with-icon">
+                      <span class="ap-icon">₫</span>
+                      <input type="number" id="salePrice" name="salePrice" class="ap-form-input" placeholder="0">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ap-form-grid-cols-2">
+                  <div class="ap-form-group">
+                    <label for="sku" class="ap-form-label">Mã SKU <span class="ap-text-red-500">*</span></label>
+                    <input type="text" id="sku" name="sku" class="ap-form-input" required placeholder="Nhập mã SKU">
+                  </div>
+                  <div class="ap-form-group">
+                    <label for="barcode" class="ap-form-label">Mã vạch</label>
+                    <input type="text" id="barcode" name="barcode" class="ap-form-input" placeholder="Nhập mã vạch (nếu có)">
+                  </div>
+                </div>
+
+                <div class="ap-form-grid-cols-2">
+                  <div class="ap-form-group">
+                    <label for="stock" class="ap-form-label">Tồn kho <span class="ap-text-red-500">*</span></label>
+                    <input type="number" id="stock" name="stock" class="ap-form-input" required placeholder="0">
+                  </div>
+                  <div class="ap-form-group">
+                    <label for="weight" class="ap-form-label">Trọng lượng (gram)</label>
+                    <input type="number" id="weight" name="weight" class="ap-form-input" placeholder="0">
+                  </div>
+                </div>
+
+                <div class="ap-form-group">
+                  <label for="shortDescription" class="ap-form-label">Mô tả ngắn</label>
+                  <textarea id="shortDescription" name="shortDescription" class="ap-form-textarea" rows="2" placeholder="Nhập mô tả ngắn gọn về sản phẩm"></textarea>
+                </div>
+
+                <div class="ap-form-group">
+                  <label for="description" class="ap-form-label">Mô tả chi tiết</label>
+                  <textarea id="description" name="description" class="ap-form-textarea" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm"></textarea>
+                </div>
+
+                <div class="ap-form-grid-cols-2">
+                  <div class="ap-form-group">
+                    <label for="category" class="ap-form-label">Danh mục <span class="ap-text-red-500">*</span></label>
+                    <select id="category" name="category" class="ap-form-select" required>
+                      <option value="">Chọn danh mục</option>
+                      <option value="1">Quần áo</option>
+                      <option value="2">Giày dép</option>
+                      <option value="3">Phụ kiện</option>
+                      <option value="4">Đồ điện tử</option>
+                      <option value="5">Đồ gia dụng</option>
+                    </select>
+                  </div>
+                  <div class="ap-form-group">
+                    <label for="brand" class="ap-form-label">Thương hiệu</label>
+                    <select id="brand" name="brand" class="ap-form-select">
+                      <option value="">Chọn thương hiệu</option>
+                      <option value="1">Nike</option>
+                      <option value="2">Adidas</option>
+                      <option value="3">Puma</option>
+                      <option value="4">Samsung</option>
+                      <option value="5">Apple</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="ap-form-group">
+                  <label for="tags" class="ap-form-label">Thẻ (tags)</label>
+                  <div class="ap-tags-input" id="tags-container">
+                    <input type="text" id="tag-input" placeholder="Nhập tag và nhấn Enter" onkeydown="addTag(event)">
+                    <input type="hidden" name="tags" id="tags-hidden">
+                  </div>
+                  <p class="ap-text-xs ap-text-gray-500 ap-mt-2">Nhập tag và nhấn Enter để thêm</p>
+                </div>
+
+                <div class="ap-form-group">
+                  <label class="ap-form-label">Trạng thái</label>
+                  <div class="ap-flex ap-gap-4">
+                    <div class="ap-form-checkbox">
+                      <input type="radio" id="status-active" name="status" value="active" checked>
+                      <label for="status-active">Đang bán</label>
+                    </div>
+                    <div class="ap-form-checkbox">
+                      <input type="radio" id="status-draft" name="status" value="draft">
+                      <label for="status-draft">Bản nháp</label>
+                    </div>
+                    <div class="ap-form-checkbox">
+                      <input type="radio" id="status-inactive" name="status" value="inactive">
+                      <label for="status-inactive">Ngừng bán</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ap-form-group">
+                  <div class="ap-form-checkbox">
+                    <input type="checkbox" id="featured" name="featured">
+                    <label for="featured">Sản phẩm nổi bật</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ap-space-y-4">
+                <div class="ap-form-group">
+                  <label class="ap-form-label">Hình ảnh sản phẩm <span class="ap-text-red-500">*</span></label>
+                  <div class="ap-image-upload">
+                    <div class="ap-image-upload-placeholder" id="image-placeholder">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                      </svg>
+                      <p class="ap-text-sm ap-text-gray-500 ap-mb-2">Kéo thả hoặc nhấp để tải lên</p>
+                      <button type="button" class="ap-btn ap-btn-outline ap-btn-sm" onclick="document.getElementById('file-upload').click()">Chọn hình ảnh</button>
+                      <input type="file" id="file-upload" name="images[]" multiple accept="image/*" class="ap-hidden" onchange="handleFileUpload(this)">
+                    </div>
+                  </div>
+                  <div class="ap-image-gallery" id="image-gallery"></div>
+                  <p class="ap-text-xs ap-text-gray-500 ap-mt-2">Có thể tải lên nhiều hình ảnh. Hình đầu tiên sẽ là hình ảnh chính.</p>
+                </div>
+
+                <div class="ap-form-group">
+                  <label class="ap-form-label">Video sản phẩm</label>
+                  <input type="text" id="video" name="video" class="ap-form-input" placeholder="Nhập URL video YouTube hoặc Vimeo">
+                </div>
+
+                <div class="ap-form-group">
+                  <label class="ap-form-label">Tài liệu đính kèm</label>
+                  <input type="file" id="documents" name="documents[]" multiple class="ap-form-input" accept=".pdf,.doc,.docx,.xls,.xlsx">
+                  <p class="ap-text-xs ap-text-gray-500 ap-mt-2">Định dạng hỗ trợ: PDF, DOC, DOCX, XLS, XLSX</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEO Information -->
+        <div class="ap-card">
+          <div class="ap-card-header">
+            <div>
+              <h2 class="ap-card-title">Thông tin SEO</h2>
+              <p class="ap-card-description">Tối ưu hóa cho công cụ tìm kiếm</p>
+            </div>
+          </div>
+          <div class="ap-card-content">
+            <div class="ap-form-grid">
+              <div class="ap-form-group">
+                <label for="meta-title" class="ap-form-label">Tiêu đề SEO</label>
+                <input type="text" id="meta-title" name="meta_title" class="ap-form-input" placeholder="Tiêu đề hiển thị trên kết quả tìm kiếm" maxlength="70">
+                <p class="ap-text-xs ap-text-gray-500 ap-mt-2">Tối đa 70 ký tự</p>
+              </div>
+
+              <div class="ap-form-group">
+                <label for="meta-description" class="ap-form-label">Mô tả SEO</label>
+                <textarea id="meta-description" name="meta_description" class="ap-form-textarea" rows="3" placeholder="Mô tả hiển thị trên kết quả tìm kiếm" maxlength="160"></textarea>
+                <p class="ap-text-xs ap-text-gray-500 ap-mt-2">Tối đa 160 ký tự</p>
+              </div>
+
+              <div class="ap-form-group">
+                <label for="slug" class="ap-form-label">Đường dẫn (URL)</label>
+                <div class="ap-form-input-with-icon">
+                  <span class="ap-icon">/san-pham/</span>
+                  <input type="text" id="slug" name="slug" class="ap-form-input ap-pl-10" placeholder="ten-san-pham">
+                </div>
+              </div>
+
+              <div class="ap-form-group">
+                <label class="ap-form-label">Xem trước kết quả tìm kiếm</label>
+                <div class="ap-seo-preview">
+                  <div class="ap-seo-title" id="seo-preview-title">Tiêu đề sản phẩm sẽ hiển thị ở đây</div>
+                  <div class="ap-seo-url" id="seo-preview-url">www.example.com/san-pham/ten-san-pham</div>
+                  <div class="ap-seo-description" id="seo-preview-description">Mô tả sản phẩm sẽ hiển thị ở đây. Đây là phần mô tả ngắn gọn về sản phẩm của bạn để thu hút khách hàng nhấp vào liên kết.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Attributes and Variants -->
+        <div class="ap-tabs">
+          <div class="ap-tabs-list">
+            <div class="ap-tab active" data-tab="attributes">Thuộc tính</div>
+            <div class="ap-tab" data-tab="variants">Biến thể</div>
+            <div class="ap-tab" data-tab="advanced">Nâng cao</div>
+          </div>
+
+          <!-- Attributes Tab -->
+          <div class="ap-tab-content active" id="attributes-tab">
+            <div class="ap-card">
+              <div class="ap-card-header">
+                <div>
+                  <h2 class="ap-card-title">Thuộc tính sản phẩm</h2>
+                  <p class="ap-card-description">Thêm các thuộc tính và giá trị cho sản phẩm</p>
+                </div>
+                <button type="button" class="ap-btn ap-btn-primary" id="add-attribute-btn">
+                  <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Thêm thuộc tính
+                </button>
+              </div>
+              <div class="ap-card-content">
+                <div id="attributes-container">
+                  <!-- Attribute rows will be added here -->
+                  <div class="ap-attribute-row" data-attribute-id="1">
+                    <div class="ap-attribute-name">
+                      <div class="ap-form-group">
+                        <label class="ap-form-label">Tên thuộc tính</label>
+                        <input type="text" name="attributes[1][name]" class="ap-form-input" value="Mau sac">
+                      </div>
+                      <div class="ap-form-checkbox ap-mt-2">
+                        <input type="checkbox" id="attribute-1-variant" name="attributes[1][is_variant]" checked>
+                        <label for="attribute-1-variant">Dùng cho biến thể</label>
+                      </div>
+                      <div class="ap-flex ap-justify-end ap-mt-2">
+                        <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-attribute" data-attribute-id="1">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                          </svg>
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                    <div class="ap-attribute-values">
+                      <label class="ap-form-label">Giá trị thuộc tính</label>
+                      <div class="ap-border ap-rounded">
+                        <div class="ap-attribute-value-item">
+                          <input type="text" name="attributes[1][values][]" class="ap-form-input" value="Đen">
+                          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                        <div class="ap-attribute-value-item">
+                          <input type="text" name="attributes[1][values][]" class="ap-form-input" value="Trắng">
+                          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                        <div class="ap-attribute-value-item">
+                          <input type="text" name="attributes[1][values][]" class="ap-form-input" value="Xanh">
+                          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="ap-attribute-add-value">
+                        <button type="button" class="ap-btn ap-btn-outline ap-btn-sm add-value-btn" data-attribute-id="1">
+                          <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                          </svg>
+                          Thêm giá trị
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="ap-attribute-row" data-attribute-id="2">
+                    <div class="ap-attribute-name">
+                      <div class="ap-form-group">
+                        <label class="ap-form-label">Tên thuộc tính</label>
+                        <input type="text" name="attributes[2][name]" class="ap-form-input" value="Kích thước">
+                      </div>
+                      <div class="ap-form-checkbox ap-mt-2">
+                        <input type="checkbox" id="attribute-2-variant" name="attributes[2][is_variant]" checked>
+                        <label for="attribute-2-variant">Dùng cho biến thể</label>
+                      </div>
+                      <div class="ap-flex ap-justify-end ap-mt-2">
+                        <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-attribute" data-attribute-id="2">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                          </svg>
+                          Xóa
+                        </button>
+                      </div>
+                    </div>
+                    <div class="ap-attribute-values">
+                      <label class="ap-form-label">Giá trị thuộc tính</label>
+                      <div class="ap-border ap-rounded">
+                        <div class="ap-attribute-value-item">
+                          <input type="text" name="attributes[2][values][]" class="ap-form-input" value="S">
+                          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                        <div class="ap-attribute-value-item">
+                          <input type="text" name="attributes[2][values][]" class="ap-form-input" value="M">
+                          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                        <div class="ap-attribute-value-item">
+                          <input type="text" name="attributes[2][values][]" class="ap-form-input" value="L">
+                          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                        <div class="ap-attribute-value-item">
+                          <input type="text" name="attributes[2][values][]" class="ap-form-input" value="XL">
+                          <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="ap-attribute-add-value">
+                        <button type="button" class="ap-btn ap-btn-outline ap-btn-sm add-value-btn" data-attribute-id="2">
+                          <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                          </svg>
+                          Thêm giá trị
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Variants Tab -->
+          <div class="ap-tab-content" id="variants-tab">
+            <div class="ap-card">
+              <div class="ap-card-header">
+                <div>
+                  <h2 class="ap-card-title">Biến thể sản phẩm</h2>
+                  <p class="ap-card-description">Quản lý các biến thể dựa trên thuộc tính</p>
+                </div>
+                <div class="ap-flex ap-gap-2">
+                  <button type="button" class="ap-btn ap-btn-outline" id="generate-variants-btn">
+                    <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M8 3v3a2 2 0 0 1-2 2H3"></path>
+                      <path d="M21 8h-3a2 2 0 0 1-2-2V3"></path>
+                      <path d="M3 16h3a2 2 0 0 1 2 2v3"></path>
+                      <path d="M16 21v-3a2 2 0 0 1 2-2h3"></path>
+                    </svg>
+                    Tạo tự động
+                  </button>
+                  <button type="button" class="ap-btn ap-btn-primary" id="add-variant-btn">
+                    <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Thêm biến thể
+                  </button>
+                </div>
+              </div>
+              <div class="ap-card-content ap-p-0">
+                <div class="ap-table-container">
+                  <table class="ap-table" id="variants-table">
+                    <thead>
+                      <tr>
+                        <th>SKU</th>
+                        <th>Thuộc tính</th>
+                        <th>Giá</th>
+                        <th>Tồn kho</th>
+                        <th class="ap-text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="ap-font-mono">AT-D-S</td>
+                        <td>
+                          <div class="ap-flex ap-flex-wrap ap-gap-1">
+                            <span class="ap-badge">Màu sắc: Đen</span>
+                            <span class="ap-badge">Kích thước: S</span>
+                          </div>
+                        </td>
+                        <td>199.000 ₫</td>
+                        <td>10</td>
+                        <td class="ap-text-right">
+                          <div class="ap-flex ap-justify-end ap-gap-2">
+                            <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon edit-variant" data-id="1">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                              </svg>
+                            </button>
+                            <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon ap-text-red-500 delete-variant" data-id="1">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="ap-font-mono">AT-D-M</td>
+                        <td>
+                          <div class="ap-flex ap-flex-wrap ap-gap-1">
+                            <span class="ap-badge">Màu sắc: Đen</span>
+                            <span class="ap-badge">Kích thước: M</span>
+                          </div>
+                        </td>
+                        <td>199.000 ₫</td>
+                        <td>15</td>
+                        <td class="ap-text-right">
+                          <div class="ap-flex ap-justify-end ap-gap-2">
+                            <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon edit-variant" data-id="2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                              </svg>
+                            </button>
+                            <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon ap-text-red-500 delete-variant" data-id="2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        <!-- Save Button -->
+        <div class="ap-sticky-footer">
+          <button type="button" class="ap-btn ap-btn-outline" id="save-draft-btn">Lưu nháp</button>
+          <button type="submit" class="ap-btn ap-btn-primary ap-btn-lg" id="save-product-btn">
+            <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            Tạo sản phẩm
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- Add Variant Modal -->
+  <div class="ap-modal-backdrop" id="variant-modal-backdrop"></div>
+  <div class="ap-modal" id="variant-modal">
+    <div class="ap-modal-header">
+      <h3 class="ap-modal-title">Thêm biến thể sản phẩm</h3>
+      <p class="ap-modal-description">Nhập thông tin và chọn thuộc tính cho biến thể mới</p>
+    </div>
+    <div class="ap-modal-body">
+      <div class="ap-form-grid-cols-2 ap-mb-2">
+        <div class="ap-form-group">
+          <label for="variant-sku" class="ap-form-label">Mã SKU <span class="ap-text-red-500">*</span></label>
+          <input type="text" id="variant-sku" class="ap-form-input" placeholder="Ví dụ: AT-D-XL">
+        </div>
+        <div class="ap-form-group">
+          <label for="variant-price" class="ap-form-label">Giá <span class="ap-text-red-500">*</span></label>
+          <div class="ap-form-input-with-icon">
+            <span class="ap-icon">₫</span>
+            <input type="number" id="variant-price" class="ap-form-input" value="199000">
+          </div>
+        </div>
+      </div>
+      <div class="ap-form-grid-cols-2 ap-mb-2">
+        <div class="ap-form-group">
+          <label for="variant-original-price" class="ap-form-label">Giá gốc</label>
+          <div class="ap-form-input-with-icon">
+            <span class="ap-icon">₫</span>
+            <input type="number" id="variant-original-price" class="ap-form-input" placeholder="0">
+          </div>
+        </div>
+        <div class="ap-form-group">
+          <label for="variant-stock" class="ap-form-label">Tồn kho <span class="ap-text-red-500">*</span></label>
+          <input type="number" id="variant-stock" class="ap-form-input" value="10">
+        </div>
+      </div>
+      <div class="ap-form-group">
+        <label class="ap-form-label ap-font-medium">Thuộc tính biến thể</label>
+        <div class="ap-border ap-rounded ap-p-4 ap-bg-gray-50 ap-space-y-4">
+          <div class="ap-form-group">
+            <label for="variant-color" class="ap-form-label">Màu sắc</label>
+            <select id="variant-color" class="ap-form-select">
+              <option value="">Chọn màu sắc</option>
+              <option value="1">Đen</option>
+              <option value="2">Trắng</option>
+              <option value="3">Xanh</option>
+            </select>
+          </div>
+          <div class="ap-form-group">
+            <label for="variant-size" class="ap-form-label">Kích thước</label>
+            <select id="variant-size" class="ap-form-select">
+              <option value="">Chọn kích thước</option>
+              <option value="4">S</option>
+              <option value="5">M</option>
+              <option value="6">L</option>
+              <option value="7">XL</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ap-modal-footer">
+      <button type="button" class="ap-btn ap-btn-outline" id="cancel-variant-btn">Hủy</button>
+      <button type="button" class="ap-btn ap-btn-primary" id="confirm-variant-btn">Thêm</button>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const avatarButton = document.getElementById('avatar-button');
+    const userDropdown = document.getElementById('user-dropdown');
+    const tabs = document.querySelectorAll('.ap-tab');
+    const tabContents = document.querySelectorAll('.ap-tab-content');
+    const addAttributeBtn = document.getElementById('add-attribute-btn');
+    const attributesContainer = document.getElementById('attributes-container');
+    const addVariantBtn = document.getElementById('add-variant-btn');
+    const generateVariantsBtn = document.getElementById('generate-variants-btn');
+    const nameInput = document.getElementById('name');
+    const slugInput = document.getElementById('slug');
+    const metaTitleInput = document.getElementById('meta-title');
+    const metaDescriptionInput = document.getElementById('meta-description');
+    const seoPreviewTitle = document.getElementById('seo-preview-title');
+    const seoPreviewUrl = document.getElementById('seo-preview-url');
+    const seoPreviewDescription = document.getElementById('seo-preview-description');
+    const variantModalBackdrop = document.getElementById('variant-modal-backdrop');
+    const variantModal = document.getElementById('variant-modal');
+    const cancelVariantBtn = document.getElementById('cancel-variant-btn');
+    const confirmVariantBtn = document.getElementById('confirm-variant-btn');
+
+    // Toggle user dropdown
+    avatarButton.addEventListener('click', () => {
+      userDropdown.classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+      if (!avatarButton.contains(event.target) && !userDropdown.contains(event.target)) {
+        userDropdown.classList.remove('show');
+      }
+    });
+
+    // Tab functionality
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.getAttribute('data-tab');
+        
+        // Remove active class from all tabs and contents
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        // Add active class to clicked tab and corresponding content
+        tab.classList.add('active');
+        document.getElementById(`${tabId}-tab`).classList.add('active');
+      });
+    });
+
+    // Handle file upload
+    function handleFileUpload(input) {
+      const files = input.files;
+      const gallery = document.getElementById('image-gallery');
+      
+      if (files.length > 0) {
+        document.getElementById('image-placeholder').style.display = 'none';
+        gallery.innerHTML = '';
+        
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const reader = new FileReader();
+          
+          reader.onload = function(e) {
+            const div = document.createElement('div');
+            div.className = 'ap-image-item';
+            
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = 'Product image';
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'ap-image-item-remove';
+            removeBtn.innerHTML = '×';
+            removeBtn.onclick = function() {
+              div.remove();
+              if (gallery.children.length === 0) {
+                document.getElementById('image-placeholder').style.display = 'flex';
+              }
+            };
+            
+            div.appendChild(img);
+            div.appendChild(removeBtn);
+            gallery.appendChild(div);
+          };
+          
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+
+    // Tags functionality
+    function addTag(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        
+        const input = document.getElementById('tag-input');
+        const value = input.value.trim();
+        
+        if (value) {
+          const container = document.getElementById('tags-container');
+          const hiddenInput = document.getElementById('tags-hidden');
+          
+          const tag = document.createElement('div');
+          tag.className = 'ap-tag';
+          tag.innerHTML = `
+            ${value}
+            <span class="ap-tag-remove" onclick="removeTag(this)">×</span>
+          `;
+          
+          container.insertBefore(tag, input);
+          input.value = '';
+          
+          // Update hidden input with all tags
+          updateHiddenTags();
+        }
+      }
+    }
+
+    function removeTag(element) {
+      const tag = element.parentElement;
+      tag.remove();
+      updateHiddenTags();
+    }
+
+    function updateHiddenTags() {
+      const tags = document.querySelectorAll('.ap-tag');
+      const values = Array.from(tags).map(tag => tag.textContent.trim().slice(0, -1));
+      document.getElementById('tags-hidden').value = values.join(',');
+    }
+
+    // SEO preview functionality
+    nameInput.addEventListener('input', updateSeoPreview);
+    slugInput.addEventListener('input', updateSeoPreview);
+    metaTitleInput.addEventListener('input', updateSeoPreview);
+    metaDescriptionInput.addEventListener('input', updateSeoPreview);
+
+    function updateSeoPreview() {
+      const name = nameInput.value || 'Tên sản phẩm';
+      const slug = slugInput.value || 'ten-san-pham';
+      const title = metaTitleInput.value || name;
+      const description = metaDescriptionInput.value || 'Mô tả sản phẩm sẽ hiển thị ở đây. Đây là phần mô tả ngắn gọn về sản phẩm của bạn để thu hút khách hàng nhấp vào liên kết.';
+      
+      seoPreviewTitle.textContent = title;
+      seoPreviewUrl.textContent = `www.example.com/san-pham/${slug}`;
+      seoPreviewDescription.textContent = description;
+    }
+
+    // Auto-generate slug from name
+    nameInput.addEventListener('blur', () => {
+      if (!slugInput.value && nameInput.value) {
+        const slug = nameInput.value
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[đĐ]/g, 'd')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+        
+        slugInput.value = slug;
+        updateSeoPreview();
+      }
+    });
+
+    // Add attribute functionality
+    let attributeCounter = 3; // Starting from 3 since we already have 2 attributes
+
+    addAttributeBtn.addEventListener('click', () => {
+      const attributeRow = document.createElement('div');
+      attributeRow.className = 'ap-attribute-row';
+      attributeRow.dataset.attributeId = attributeCounter;
+      
+      attributeRow.innerHTML = `
+        <div class="ap-attribute-name">
+          <div class="ap-form-group">
+            <label class="ap-form-label">Tên thuộc tính</label>
+            <input type="text" name="attributes[${attributeCounter}][name]" class="ap-form-input" placeholder="Nhập tên thuộc tính">
+          </div>
+          <div class="ap-form-checkbox ap-mt-2">
+            <input type="checkbox" id="attribute-${attributeCounter}-variant" name="attributes[${attributeCounter}][is_variant]">
+            <label for="attribute-${attributeCounter}-variant">Dùng cho biến thể</label>
+          </div>
+          <div class="ap-flex ap-justify-end ap-mt-2">
+            <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-attribute" data-attribute-id="${attributeCounter}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+              Xóa
+            </button>
+          </div>
+        </div>
+        <div class="ap-attribute-values">
+          <label class="ap-form-label">Giá trị thuộc tính</label>
+          <div class="ap-border ap-rounded">
+            <div class="ap-attribute-value-item">
+              <input type="text" name="attributes[${attributeCounter}][values][]" class="ap-form-input" placeholder="Nhập giá trị thuộc tính">
+              <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="ap-attribute-add-value">
+            <button type="button" class="ap-btn ap-btn-outline ap-btn-sm add-value-btn" data-attribute-id="${attributeCounter}">
+              <svg class="ap-mr-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Thêm giá trị
+            </button>
+          </div>
+        </div>
+      `;
+      
+      attributesContainer.appendChild(attributeRow);
+      
+      // Add event listener to the new add value button
+      const newAddValueBtn = attributeRow.querySelector('.add-value-btn');
+      newAddValueBtn.addEventListener('click', addAttributeValue);
+      
+      // Add event listener to the new delete attribute button
+      const newDeleteAttributeBtn = attributeRow.querySelector('.delete-attribute');
+      newDeleteAttributeBtn.addEventListener('click', deleteAttribute);
+      
+      // Add event listener to the new delete value button
+      const newDeleteValueBtn = attributeRow.querySelector('.delete-value');
+      newDeleteValueBtn.addEventListener('click', deleteAttributeValue);
+      
+      attributeCounter++;
+    });
+
+    // Add attribute value functionality
+    document.querySelectorAll('.add-value-btn').forEach(btn => {
+      btn.addEventListener('click', addAttributeValue);
+    });
+
+    function addAttributeValue(event) {
+      const btn = event.currentTarget;
+      const attributeId = btn.dataset.attributeId;
+      const valuesContainer = btn.closest('.ap-attribute-values').querySelector('.ap-border');
+      
+      const valueItem = document.createElement('div');
+      valueItem.className = 'ap-attribute-value-item';
+      valueItem.innerHTML = `
+        <input type="text" name="attributes[${attributeId}][values][]" class="ap-form-input" placeholder="Nhập giá trị thuộc tính">
+        <button type="button" class="ap-btn ap-btn-ghost ap-btn-sm ap-text-red-500 delete-value">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          </svg>
+        </button>
+      `;
+      
+      valuesContainer.appendChild(valueItem);
+      
+      // Add event listener to the new delete value button
+      const newDeleteValueBtn = valueItem.querySelector('.delete-value');
+      newDeleteValueBtn.addEventListener('click', deleteAttributeValue);
+    }
+
+    // Delete attribute functionality
+    document.querySelectorAll('.delete-attribute').forEach(btn => {
+      btn.addEventListener('click', deleteAttribute);
+    });
+
+    function deleteAttribute(event) {
+      const btn = event.currentTarget;
+      const attributeRow = btn.closest('.ap-attribute-row');
+      attributeRow.remove();
+    }
+
+    // Delete attribute value functionality
+    document.querySelectorAll('.delete-value').forEach(btn => {
+      btn.addEventListener('click', deleteAttributeValue);
+    });
+
+    function deleteAttributeValue(event) {
+      const btn = event.currentTarget;
+      const valueItem = btn.closest('.ap-attribute-value-item');
+      valueItem.remove();
+    }
+
+    // Variant modal functionality
+    addVariantBtn.addEventListener('click', () => {
+      variantModalBackdrop.classList.add('show');
+      variantModal.classList.add('show');
+    });
+
+    cancelVariantBtn.addEventListener('click', () => {
+      variantModalBackdrop.classList.remove('show');
+      variantModal.classList.remove('show');
+    });
+
+    confirmVariantBtn.addEventListener('click', () => {
+      // Get values from modal
+      const sku = document.getElementById('variant-sku').value;
+      const price = document.getElementById('variant-price').value;
+      const originalPrice = document.getElementById('variant-original-price').value;
+      const stock = document.getElementById('variant-stock').value;
+      const colorSelect = document.getElementById('variant-color');
+      const sizeSelect = document.getElementById('variant-size');
+      
+      const colorValue = colorSelect.options[colorSelect.selectedIndex].text;
+      const sizeValue = sizeSelect.options[sizeSelect.selectedIndex].text;
+      
+      // Add new row to variants table
+      const variantsTable = document.getElementById('variants-table').getElementsByTagName('tbody')[0];
+      const newRow = variantsTable.insertRow();
+      
+      newRow.innerHTML = `
+        <td class="ap-font-mono">${sku}</td>
+        <td>
+          <div class="ap-flex ap-flex-wrap ap-gap-1">
+            <span class="ap-badge">Màu sắc: ${colorValue}</span>
+            <span class="ap-badge">Kích thước: ${sizeValue}</span>
+          </div>
+        </td>
+        <td>${Number(price).toLocaleString('vi-VN')} ₫</td>
+        <td>${stock}</td>
+        <td class="ap-text-right">
+          <div class="ap-flex ap-justify-end ap-gap-2">
+            <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon edit-variant" data-id="${variantsTable.rows.length}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon ap-text-red-500 delete-variant" data-id="${variantsTable.rows.length}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+        </td>
+      `;
+      
+      // Add event listeners to new buttons
+      const editBtn = newRow.querySelector('.edit-variant');
+      const deleteBtn = newRow.querySelector('.delete-variant');
+      
+      editBtn.addEventListener('click', editVariant);
+      deleteBtn.addEventListener('click', deleteVariant);
+      
+      // Reset and close modal
+      document.getElementById('variant-sku').value = '';
+      document.getElementById('variant-price').value = '199000';
+      document.getElementById('variant-original-price').value = '';
+      document.getElementById('variant-stock').value = '10';
+      document.getElementById('variant-color').selectedIndex = 0;
+      document.getElementById('variant-size').selectedIndex = 0;
+      
+      variantModalBackdrop.classList.remove('show');
+      variantModal.classList.remove('show');
+    });
+
+    // Edit variant functionality
+    document.querySelectorAll('.edit-variant').forEach(btn => {
+      btn.addEventListener('click', editVariant);
+    });
+
+    function editVariant(event) {
+      const btn = event.currentTarget;
+      const row = btn.closest('tr');
+      const sku = row.cells[0].textContent;
+      const price = row.cells[2].textContent.replace(/[^\d]/g, '');
+      const stock = row.cells[3].textContent;
+      
+      // Fill modal with current values
+      document.getElementById('variant-sku').value = sku;
+      document.getElementById('variant-price').value = price;
+      document.getElementById('variant-stock').value = stock;
+      
+      // Show modal
+      variantModalBackdrop.classList.add('show');
+      variantModal.classList.add('show');
+      
+      // Change confirm button text
+      confirmVariantBtn.textContent = 'Cập nhật';
+      
+      // Store the row to update
+      confirmVariantBtn.dataset.updateRow = Array.from(row.parentNode.children).indexOf(row);
+    }
+
+    // Delete variant functionality
+    document.querySelectorAll('.delete-variant').forEach(btn => {
+      btn.addEventListener('click', deleteVariant);
+    });
+
+    function deleteVariant(event) {
+      if (confirm('Bạn có chắc chắn muốn xóa biến thể này?')) {
+        const btn = event.currentTarget;
+        const row = btn.closest('tr');
+        row.remove();
+      }
+    }
+
+    // Generate variants functionality
+    generateVariantsBtn.addEventListener('click', () => {
+      // Get all attributes marked for variants
+      const variantAttributes = [];
+      document.querySelectorAll('input[name$="[is_variant]"]:checked').forEach(checkbox => {
+        const attributeId = checkbox.id.split('-')[1];
+        const attributeRow = document.querySelector(`[data-attribute-id="${attributeId}"]`);
+        const attributeName = attributeRow.querySelector('input[name$="[name]"]').value;
+        const attributeValues = Array.from(attributeRow.querySelectorAll('input[name$="[values][]"]')).map(input => input.value);
+        
+        variantAttributes.push({
+          id: attributeId,
+          name: attributeName,
+          values: attributeValues
+        });
+      });
+      
+      if (variantAttributes.length === 0) {
+        alert('Vui lòng chọn ít nhất một thuộc tính để tạo biến thể.');
+        return;
+      }
+      
+      // Generate all combinations
+      const combinations = generateCombinations(variantAttributes);
+      
+      // Add each combination as a variant
+      const variantsTable = document.getElementById('variants-table').getElementsByTagName('tbody')[0];
+      variantsTable.innerHTML = ''; // Clear existing variants
+      
+      combinations.forEach((combination, index) => {
+        const sku = generateSku(combination);
+        const newRow = variantsTable.insertRow();
+        
+        const badges = combination.map(item => `<span class="ap-badge">${item.name}: ${item.value}</span>`).join('');
+        
+        newRow.innerHTML = `
+          <td class="ap-font-mono">${sku}</td>
+          <td>
+            <div class="ap-flex ap-flex-wrap ap-gap-1">
+              ${badges}
+            </div>
+          </td>
+          <td>199.000 ₫</td>
+          <td>10</td>
+          <td class="ap-text-right">
+            <div class="ap-flex ap-justify-end ap-gap-2">
+              <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon edit-variant" data-id="${index + 1}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button type="button" class="ap-btn ap-btn-ghost ap-btn-icon ap-text-red-500 delete-variant" data-id="${index + 1}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </td>
+        `;
+      });
+      
+      // Add event listeners to new buttons
+      document.querySelectorAll('.edit-variant').forEach(btn => {
+        btn.addEventListener('click', editVariant);
+      });
+      
+      document.querySelectorAll('.delete-variant').forEach(btn => {
+        btn.addEventListener('click', deleteVariant);
+      });
+      
+      // Switch to variants tab
+      document.querySelector('[data-tab="variants"]').click();
+    });
+
+    function generateCombinations(attributes) {
+      // Helper function to generate all combinations
+      function cartesianProduct(arrays) {
+        return arrays.reduce((a, b) => {
+          return a.flatMap(x => b.map(y => [...x, y]));
+        }, [[]]);
+      }
+      
+      // Prepare arrays for cartesian product
+      const attributeArrays = attributes.map(attr => {
+        return attr.values.map(value => ({
+          id: attr.id,
+          name: attr.name,
+          value: value
+        }));
+      });
+      
+      return cartesianProduct(attributeArrays);
+    }
+
+    function generateSku(combination) {
+      const baseSku = document.getElementById('sku').value || 'PROD';
+      const suffix = combination.map(item => item.value.charAt(0).toUpperCase()).join('-');
+      return `${baseSku}-${suffix}`;
+    }
+
+    // Form submission
+    document.getElementById('add-product-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      // Here you would typically send the form data to the server
+      alert('Sản phẩm đã được tạo thành công!');
+    });
+
+    // Initialize SEO preview
+    updateSeoPreview();
+  </script>
+</body>
+</html>

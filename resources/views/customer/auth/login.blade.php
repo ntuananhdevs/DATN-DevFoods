@@ -3,110 +3,140 @@
 @section('title', 'FastFood - Đăng Nhập')
 
 @section('content')
-<div class="bg-gray-50 min-h-screen py-12">
-    <div class="container mx-auto px-4">
-        <div class="max-w-md mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-orange-500 to-red-500 py-4 px-6">
-                <h1 class="text-2xl font-bold text-white text-center">Đăng Nhập</h1>
-            </div>
-            
+<div class="min-h-screen flex flex-col items-center justify-center px-4">
+    <div class="w-full max-w-lg">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900">FastFood</h1>
+            <p class="text-orange-500 font-medium">Đăng nhập tài khoản</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="p-6">
-                <div class="mb-6">
-                    <p class="text-gray-600 text-center">
-                        Đăng nhập để theo dõi đơn hàng, lưu địa chỉ giao hàng và nhận các ưu đãi đặc biệt
-                    </p>
-                </div>
-                
-                <!-- Social Login Buttons -->
-                <div class="space-y-3 mb-6">
-                    <button class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors">
-                        <i class="fab fa-facebook-f"></i>
-                        <span>Đăng nhập với Facebook</span>
-                    </button>
-                    <button class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition-colors">
-                        <i class="fab fa-google"></i>
-                        <span>Đăng nhập với Google</span>
-                    </button>
-                </div>
-                
-                <div class="relative flex items-center justify-center mb-6">
-                    <div class="border-t border-gray-300 flex-grow"></div>
-                    <span class="mx-4 text-gray-500 text-sm">Hoặc đăng nhập với email</span>
-                    <div class="border-t border-gray-300 flex-grow"></div>
-                </div>
-                
                 <!-- Login Form -->
-                <form id="login-form" class="space-y-4" method="POST" action="">
+                <form id="loginForm" class="space-y-4" action="{{ route('customer.login.post') }}" method="POST">
                     @csrf
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
                             Email
                         </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-envelope text-gray-400"></i>
-                            </div>
-                            <input type="email" id="email" name="email" placeholder="Nhập email của bạn" 
-                                class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 @error('email') border-red-500 @enderror" 
-                                required autocomplete="email" autofocus>
-                        </div>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            autocomplete="email"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                            placeholder="example@email.com"
+                            value="{{ old('email') }}"
+                        />
                         @error('email')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            <div class="text-red-500 text-sm mt-1" id="emailError">{{ $message }}</div>
+                        @else
+                            <div class="text-red-500 text-sm mt-1 hidden" id="emailError"></div>
                         @enderror
                     </div>
-                    
+
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <label for="password" class="block text-sm font-medium text-gray-700">
                                 Mật khẩu
                             </label>
-                            <a href="" class="text-sm text-orange-600 hover:text-orange-500">
+                            <a href="{{ route('customer.password.request') }}" class="text-sm text-orange-500 hover:text-orange-600">
                                 Quên mật khẩu?
                             </a>
                         </div>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </div>
-                            <input type="password" id="password" name="password" placeholder="Nhập mật khẩu của bạn" 
-                                class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 @error('password') border-red-500 @enderror" 
-                                required autocomplete="current-password">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <button type="button" id="toggle-password" class="text-gray-400 hover:text-gray-500 focus:outline-none">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autocomplete="current-password"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                                placeholder="••••••••"
+                            />
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fa fa-eye"></i>
+                            </button>
                         </div>
                         @error('password')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            <div class="text-red-500 text-sm mt-1" id="passwordError">{{ $message }}</div>
+                        @else
+                            <div class="text-red-500 text-sm mt-1 hidden" id="passwordError"></div>
                         @enderror
                     </div>
-                    
+
                     <div class="flex items-center">
-                        <input type="checkbox" id="remember" name="remember" class="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded" {{ old('remember') ? 'checked' : '' }}>
+                        <input
+                            id="remember"
+                            name="remember"
+                            type="checkbox"
+                            class="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                        />
                         <label for="remember" class="ml-2 block text-sm text-gray-700">
                             Ghi nhớ đăng nhập
                         </label>
                     </div>
-                    
-                    <div>
-                        <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md font-medium transition-colors flex items-center justify-center">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            Đăng Nhập
-                        </button>
-                    </div>
+
+                    <button
+                        type="submit"
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        id="loginBtn"
+                    >
+                        <span id="loginBtnText">Đăng nhập</span>
+                        <span id="loginBtnLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Đang xử lý...
+                        </span>
+                    </button>
                 </form>
-                
-                <div class="mt-6 text-center">
-                    <p class="text-gray-600">
-                        Chưa có tài khoản? 
-                        <a href="{{ asset('/register') }}" class="text-orange-600 hover:text-orange-500 font-medium">
-                            Đăng ký ngay
-                        </a>
-                    </p>
+
+                <div class="relative mt-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase">
+                        <span class="bg-white px-2 text-gray-500">Hoặc tiếp tục với</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button
+                        type="button"
+                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                    >
+                        <i class="fab fa-google text-red-500 mr-2"></i>
+                        Google
+                    </button>
+                    <button
+                        type="button"
+                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                    >
+                        <i class="fab fa-facebook text-blue-600 mr-2"></i>
+                        Facebook
+                    </button>
+                </div>
+
+                <div class="text-center text-sm mt-6">
+                    Chưa có tài khoản?
+                    <a href="{{ route('customer.register') }}" class="text-orange-500 hover:text-orange-600 font-medium">
+                        Đăng ký ngay
+                    </a>
                 </div>
             </div>
         </div>
+
+        <p class="mt-6 text-center text-sm text-gray-500">
+            Bằng cách tiếp tục, bạn đồng ý với
+            <a href="/terms" class="text-orange-500 hover:text-orange-600 underline underline-offset-2">
+                Điều khoản dịch vụ
+            </a>
+            và
+            <a href="/privacy" class="text-orange-500 hover:text-orange-600 underline underline-offset-2">
+                Chính sách bảo mật
+            </a>
+            của chúng tôi.
+        </p>
     </div>
 </div>
 @endsection
@@ -114,9 +144,13 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginBtnText = document.getElementById('loginBtnText');
+    const loginBtnLoading = document.getElementById('loginBtnLoading');
     const togglePasswordButton = document.getElementById('toggle-password');
     const passwordInput = document.getElementById('password');
-    
+
     // Toggle password visibility
     if (togglePasswordButton && passwordInput) {
         togglePasswordButton.addEventListener('click', function() {
@@ -134,6 +168,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Form submission handling
+    loginForm.addEventListener('submit', function(e) {
+        // Không gọi e.preventDefault() để cho phép form tự submit
+        
+        // Clear previous errors
+        document.getElementById('emailError').classList.add('hidden');
+        document.getElementById('passwordError').classList.add('hidden');
+        
+        // Show loading state
+        loginBtn.disabled = true;
+        loginBtnText.classList.add('hidden');
+        loginBtnLoading.classList.remove('hidden');
+        
+        // Không cần gọi this.submit() vì form sẽ tự submit
+    });
 });
 </script>
 @endsection

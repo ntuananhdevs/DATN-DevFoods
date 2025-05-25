@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductVariant extends Model
 {
@@ -11,23 +14,28 @@ class ProductVariant extends Model
 
     protected $fillable = [
         'product_id',
-        'sku',
         'image',
-        'active',
+        'active'
     ];
 
-    public function product()
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function variantValues()
+    public function variantValues(): BelongsToMany
     {
-        return $this->hasMany(ProductVariantValue::class);
+        return $this->belongsToMany(VariantValue::class, 'product_variant_details')
+            ->withTimestamps();
     }
 
-    public function attributeValues()
+    public function branchStocks(): HasMany
     {
-        return $this->belongsToMany(AttributeValue::class, 'product_variant_values');
+        return $this->hasMany(BranchStock::class);
+    }
+
+    public function productVariantDetails(): HasMany
+    {
+        return $this->hasMany(ProductVariantDetail::class);
     }
 }

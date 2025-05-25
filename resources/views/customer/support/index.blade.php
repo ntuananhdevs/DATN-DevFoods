@@ -8,17 +8,10 @@
       margin: 0 auto;
    }
 </style>
-<div class="relative h-[300px] md:h-[400px] overflow-hidden">
-    <img src="/placeholder.svg?height=800&width=1600" alt="Trung tâm hỗ trợ" class="object-cover w-full h-full">
-    <div class="absolute inset-0 bg-gradient-to-r from-orange-600/80 to-red-600/80 flex items-center justify-center">
-        <div class="text-center text-white max-w-4xl px-4">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">Trung Tâm Hỗ Trợ</h1>
-            <p class="text-lg md:text-xl max-w-2xl mx-auto">
-                Chúng tôi luôn sẵn sàng hỗ trợ bạn 24/7. Hãy cho chúng tôi biết bạn cần giúp đỡ điều gì?
-            </p>
-        </div>
-    </div>
-</div>
+    @php
+        $supportBanner = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('supports');
+    @endphp
+    @include('components.banner', ['banners' => $supportBanner])
 
 <div class="container mx-auto px-4 py-12">
     <!-- Search Box -->

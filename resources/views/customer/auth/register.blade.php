@@ -3,168 +3,192 @@
 @section('title', 'FastFood - Đăng Ký')
 
 @section('content')
-<div class="bg-gray-50 min-h-screen py-12">
-    <div class="container mx-auto px-4">
-        <div class="max-w-md mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
-            <div class="bg-gradient-to-r from-orange-500 to-red-500 py-4 px-6">
-                <h1 class="text-2xl font-bold text-white text-center">Đăng Ký Tài Khoản</h1>
-            </div>
-            
+<div class="min-h-screen flex flex-col items-center justify-center px-4">
+    <div class="w-full max-w-xl">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900">FastFood</h1>
+            <p class="text-orange-500 font-medium">Đăng ký tài khoản</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="p-6">
-                <div class="mb-6">
-                    <p class="text-gray-600 text-center">
-                        Tạo tài khoản để nhận nhiều ưu đãi đặc biệt và theo dõi đơn hàng dễ dàng
-                    </p>
-                </div>
-                
-                <!-- Social Register Buttons -->
-                <div class="space-y-3 mb-6">
-                    <button class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition-colors">
-                        <i class="fab fa-facebook-f"></i>
-                        <span>Đăng ký với Facebook</span>
-                    </button>
-                    <button class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition-colors">
-                        <i class="fab fa-google"></i>
-                        <span>Đăng ký với Google</span>
-                    </button>
-                </div>
-                
-                <div class="relative flex items-center justify-center mb-6">
-                    <div class="border-t border-gray-300 flex-grow"></div>
-                    <span class="mx-4 text-gray-500 text-sm">Hoặc đăng ký với email</span>
-                    <div class="border-t border-gray-300 flex-grow"></div>
-                </div>
-                
                 <!-- Register Form -->
-                <form id="register-form" class="space-y-4" method="POST" action="">
+                <form id="registerForm" class="space-y-4" action="{{ route('customer.register.post') }}" method="POST">
                     @csrf
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">
-                                Họ
-                            </label>
-                            <input type="text" id="first_name" name="first_name" placeholder="Nhập họ" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 @error('first_name') border-red-500 @enderror" 
-                                required autocomplete="first_name" autofocus>
-                            @error('first_name')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">
-                                Tên
-                            </label>
-                            <input type="text" id="last_name" name="last_name" placeholder="Nhập tên" 
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 @error('last_name') border-red-500 @enderror" 
-                                required autocomplete="last_name">
-                            @error('last_name')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                    <div>
+                        <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Họ và tên
+                        </label>
+                        <input
+                            id="full_name"
+                            name="full_name"
+                            type="text"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                            placeholder="Nguyễn Văn A"
+                            value="{{ old('full_name') }}"
+                        />
+                        @error('full_name')
+                            <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                        @enderror
                     </div>
-                    
+
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
                             Email
                         </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-envelope text-gray-400"></i>
-                            </div>
-                            <input type="email" id="email" name="email" placeholder="Nhập email của bạn" 
-                                class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 @error('email') border-red-500 @enderror" 
-                                required autocomplete="email">
-                        </div>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            autocomplete="email"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                            placeholder="example@email.com"
+                            value="{{ old('email') }}"
+                        />
                         @error('email')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            <div class="text-red-500 text-sm mt-1" id="emailError">{{ $message }}</div>
+                        @else
+                            <div class="text-red-500 text-sm mt-1 hidden" id="emailError"></div>
                         @enderror
                     </div>
-                    
+
                     <div>
                         <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
                             Số điện thoại
                         </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-phone text-gray-400"></i>
-                            </div>
-                            <input type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại" 
-                                class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 @error('phone') border-red-500 @enderror" 
-                                required autocomplete="tel">
-                        </div>
+                        <input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            autocomplete="tel"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                            placeholder="0912345678"
+                            value="{{ old('phone') }}"
+                        />
                         @error('phone')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
                         @enderror
                     </div>
-                    
+
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
                             Mật khẩu
                         </label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </div>
-                            <input type="password" id="password" name="password" placeholder="Tạo mật khẩu (ít nhất 8 ký tự)" 
-                                class="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 @error('password') border-red-500 @enderror" 
-                                required autocomplete="new-password">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <button type="button" id="toggle-password" class="text-gray-400 hover:text-gray-500 focus:outline-none">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autocomplete="new-password"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                                placeholder="••••••••"
+                            />
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fa fa-eye"></i>
+                            </button>
                         </div>
                         @error('password')
-                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            <div class="text-red-500 text-sm mt-1" id="passwordError">{{ $message }}</div>
+                        @else
+                            <div class="text-red-500 text-sm mt-1 hidden" id="passwordError"></div>
                         @enderror
                     </div>
-                    
+
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">
                             Xác nhận mật khẩu
                         </label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </div>
-                            <input type="password" id="password_confirmation" name="password_confirmation" placeholder="Nhập lại mật khẩu" 
-                                class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" 
-                                required autocomplete="new-password">
+                            <input
+                                id="password_confirmation"
+                                name="password_confirmation"
+                                type="password"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                                placeholder="••••••••"
+                            />
+                            <button type="button" id="toggle-password-confirm" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fa fa-eye"></i>
+                            </button>
                         </div>
+                        @error('password_confirmation')
+                            <div class="text-red-500 text-sm mt-1" id="confirmPasswordError">{{ $message }}</div>
+                        @else
+                            <div class="text-red-500 text-sm mt-1 hidden" id="confirmPasswordError"></div>
+                        @enderror
                     </div>
-                    
-                    <div class="flex items-start">
-                        <div class="flex items-center h-5">
-                            <input type="checkbox" id="terms" name="terms" class="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded" required>
-                        </div>
-                        <div class="ml-3 text-sm">
-                            <label for="terms" class="text-gray-700">
-                                Tôi đồng ý với <a href="" class="text-orange-600 hover:text-orange-500">Điều khoản dịch vụ</a> và <a href="=" class="text-orange-600 hover:text-orange-500">Chính sách bảo mật</a>
-                            </label>
-                            @error('terms')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+
+                    <div class="flex items-center">
+                        <input
+                            id="terms"
+                            name="terms"
+                            type="checkbox"
+                            required
+                            class="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                        />
+                        <label for="terms" class="ml-2 block text-sm text-gray-700">
+                            Tôi đồng ý với
+                            <a href="/terms" class="text-orange-500 hover:text-orange-600">
+                                điều khoản
+                            </a>
+                            và
+                            <a href="/privacy" class="text-orange-500 hover:text-orange-600">
+                                chính sách bảo mật
+                            </a>
+                        </label>
                     </div>
-                    
-                    <div>
-                        <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md font-medium transition-colors flex items-center justify-center">
-                            <i class="fas fa-user-plus mr-2"></i>
-                            Đăng Ký
-                        </button>
-                    </div>
+
+                    <button
+                        type="submit"
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        id="registerBtn"
+                    >
+                        <span id="registerBtnText">Đăng ký</span>
+                        <span id="registerBtnLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Đang xử lý...
+                        </span>
+                    </button>
                 </form>
-                
-                <div class="mt-6 text-center">
-                    <p class="text-gray-600">
-                        Đã có tài khoản? 
-                        <a href="{{ asset('login') }}" class="text-orange-600 hover:text-orange-500 font-medium">
-                            Đăng nhập
-                        </a>
-                    </p>
+
+                <div class="relative mt-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase">
+                        <span class="bg-white px-2 text-gray-500">Hoặc đăng ký với</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button
+                        type="button"
+                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                    >
+                        <i class="fab fa-google text-red-500 mr-2"></i>
+                        Google
+                    </button>
+                    <button
+                        type="button"
+                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                    >
+                        <i class="fab fa-facebook text-blue-600 mr-2"></i>
+                        Facebook
+                    </button>
                 </div>
             </div>
         </div>
+
+        <p class="mt-6 text-center text-sm text-gray-500">
+            Đã có tài khoản?
+            <a href="{{ route('customer.login') }}" class="text-orange-500 hover:text-orange-600 underline underline-offset-2">
+                Đăng nhập
+            </a>
+        </p>
     </div>
 </div>
 @endsection
@@ -172,9 +196,15 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const registerForm = document.getElementById('registerForm');
+    const registerBtn = document.getElementById('registerBtn');
+    const registerBtnText = document.getElementById('registerBtnText');
+    const registerBtnLoading = document.getElementById('registerBtnLoading');
     const togglePasswordButton = document.getElementById('toggle-password');
     const passwordInput = document.getElementById('password');
-    
+    const togglePasswordConfirmButton = document.getElementById('toggle-password-confirm');
+    const passwordConfirmInput = document.getElementById('password_confirmation');
+
     // Toggle password visibility
     if (togglePasswordButton && passwordInput) {
         togglePasswordButton.addEventListener('click', function() {
@@ -192,6 +222,50 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Toggle confirm password visibility
+    if (togglePasswordConfirmButton && passwordConfirmInput) {
+        togglePasswordConfirmButton.addEventListener('click', function() {
+            const type = passwordConfirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordConfirmInput.setAttribute('type', type);
+            
+            // Toggle icon
+            const icon = this.querySelector('i');
+            if (type === 'text') {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    }
+
+    // Form submission handling
+    registerForm.addEventListener('submit', function(e) {
+        // Clear previous errors
+        document.getElementById('emailError').classList.add('hidden');
+        document.getElementById('passwordError').classList.add('hidden');
+        document.getElementById('confirmPasswordError').classList.add('hidden');
+        
+        // Validate passwords match
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('password_confirmation').value;
+        
+        if (password !== confirmPassword) {
+            e.preventDefault(); // Chỉ ngăn chặn khi mật khẩu không khớp
+            document.getElementById('confirmPasswordError').textContent = 'Mật khẩu không khớp';
+            document.getElementById('confirmPasswordError').classList.remove('hidden');
+            return;
+        }
+        
+        // Show loading state
+        registerBtn.disabled = true;
+        registerBtnText.classList.add('hidden');
+        registerBtnLoading.classList.remove('hidden');
+        
+        // Form sẽ tự submit nếu không có e.preventDefault()
+    });
 });
 </script>
 @endsection

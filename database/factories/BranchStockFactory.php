@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\BranchStock;
-use App\Models\Branch;
 use App\Models\ProductVariant;
+use App\Models\Branch;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -25,6 +25,8 @@ class BranchStockFactory extends Factory
             'branch_id' => Branch::factory(),
             'product_variant_id' => ProductVariant::factory(),
             'stock_quantity' => $this->faker->numberBetween(0, 100),
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
     }
 }

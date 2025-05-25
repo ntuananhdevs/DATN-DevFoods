@@ -59,7 +59,7 @@
                                 </button>
                                 <div class="btn-group mr-2">
                                     <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                                        <i class="fas fa-tasks"></i> Thao tác
+                                        <i class="fas fa-tasks"></i>Thao tác
                                     </button>
                                     <div class="dropdown-menu">
                                         <a href="#" class="dropdown-item" onclick="updateSelectedStatus(1)">

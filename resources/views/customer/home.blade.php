@@ -11,62 +11,44 @@
 </style>
 <!-- Banner/Slider -->
 <div class="relative h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden" id="banner-slider">
-    <div class="banner-slide absolute inset-0 transition-opacity duration-1000 opacity-100">
-        <div class="relative h-full w-full">
-            <img src="/placeholder.svg?height=600&width=1200" alt="Combo Burger Siêu Tiết Kiệm" class="object-cover w-full h-full">
-            <div class="absolute inset-0 bg-black/30"></div>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">Combo Burger Siêu Tiết Kiệm</h2>
-                <p class="text-sm sm:text-base md:text-lg mb-4 sm:mb-6 max-w-md">Mua 1 tặng 1 cho mọi combo burger từ thứ 2 đến thứ 6</p>
-                <a href="/products" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors">
-                    Đặt Ngay
-                </a>
+    {{-- @foreach ($banners as $index => $banner)
+        <div class="banner-slide absolute inset-0 transition-opacity duration-1000 {{ $index === 0 ? 'opacity-100' : 'opacity-0' }}">
+            <div class="relative h-full w-full">
+                <img src="{{ Str::startsWith($banner->image_path, ['http://', 'https://']) ? $banner->image_path :  asset('storage/' . $banner->image_path) }}" alt="{{ $banner->title }}" class="object-cover w-full h-full">
+                <div class="absolute inset-0 bg-black/30"></div>
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">{{ $banner->title }}</h2>
+                    <p class="text-sm sm:text-base md:text-lg mb-4 sm:mb-6 max-w-md">{{ $banner->description }}</p>
+                    <a href="{{ $banner->link }}" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors">
+                        Xem Thêm
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="banner-slide absolute inset-0 transition-opacity duration-1000 opacity-0">
-        <div class="relative h-full w-full">
-            <img src="/placeholder.svg?height=600&width=1200" alt="Pizza Hải Sản Cao Cấp" class="object-cover w-full h-full">
-            <div class="absolute inset-0 bg-black/30"></div>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">Pizza Hải Sản Cao Cấp</h2>
-                <p class="text-sm sm:text-base md:text-lg mb-4 sm:mb-6 max-w-md">Giảm 30% cho tất cả các loại pizza size lớn</p>
-                <a href="/products" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors">
-                    Khám Phá
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="banner-slide absolute inset-0 transition-opacity duration-1000 opacity-0">
-        <div class="relative h-full w-full">
-            <img src="/placeholder.svg?height=600&width=1200" alt="Món Mới: Gà Rán Sốt Cay" class="object-cover w-full h-full">
-            <div class="absolute inset-0 bg-black/30"></div>
-            <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">Món Mới: Gà Rán Sốt Cay</h2>
-                <p class="text-sm sm:text-base md:text-lg mb-4 sm:mb-6 max-w-md">Thử ngay hương vị mới cực kỳ hấp dẫn</p>
-                <a href="/products" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors">
-                    Thử Ngay
-                </a>
-            </div>
-        </div>
-    </div>
+    @endforeach --}}
+
+    @php
+        $banners = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('homepage');
+    @endphp
+    @include('components.banner', ['banners' => $banners])
 
     <button class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 z-10 p-2 rounded-full" id="prev-slide">
         <i class="fas fa-chevron-left h-6 w-6"></i>
-        <span class="sr-only">Trước</span>
     </button>
 
     <button class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 z-10 p-2 rounded-full" id="next-slide">
         <i class="fas fa-chevron-right h-6 w-6"></i>
-        <span class="sr-only">Sau</span>
     </button>
 
     <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10" id="slider-dots">
-        <button class="w-2 h-2 rounded-full bg-white" data-index="0"></button>
-        <button class="w-2 h-2 rounded-full bg-white/50" data-index="1"></button>
-        <button class="w-2 h-2 rounded-full bg-white/50" data-index="2"></button>
+        @foreach ($banners as $index => $banner)
+            <button class="w-2 h-2 rounded-full {{ $index === 0 ? 'bg-white' : 'bg-white/50' }}" data-index="{{ $index }}"></button>
+        @endforeach
     </div>
 </div>
+
+
+
 
 <div class="container mx-auto px-4 py-8">
     <!-- Categories Section -->
@@ -332,7 +314,7 @@
                 </div>
 
                 <div class="relative h-60 md:h-auto">
-                    <img src="/placeholder.svg?height=400&width=600" alt="Đặt hàng ngay" class="object-cover w-full h-full">
+                    <img src="https://marketingai.mediacdn.vn/thumb_w/784/603488451643117568/2024/8/7/thumb-1280-x-800-px-61-1723017058646933002606.png" alt="Đặt hàng ngay" class="object-cover w-full h-full">
                 </div>
             </div>
         </div>

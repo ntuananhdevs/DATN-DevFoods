@@ -12,11 +12,15 @@ class Product extends Model
     protected $fillable = [
         'category_id',
         'name',
+        'sku',
         'description',
         'base_price',
         'available',
         'preparation_time',
+        'ingredients',
+        'short_description',
         'status',
+        'release_at',
         'is_featured',
         'created_by',
         'updated_by',
@@ -32,22 +36,46 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
-
     public function attributes()
     {
-        return Attribute::whereIn('id', function ($query) {
-            $query->select('attribute_id')
-                ->from('attribute_values')
-                ->whereIn('id', function ($subQuery) {
-                    $subQuery->select('attribute_value_id')
-                        ->from('product_variant_values')
-                        ->whereIn('product_variant_id', $this->variants()->pluck('id'));
-                });
-        })->distinct();
+        return $this->hasManyThrough(
+            VariantAttribute::class,
+            ProductVariant::class,
+            'product_id', // Foreign key on product_variants table
+            'id', // Foreign key on variant_attributes table
+            'id', // Local key on products table
+            'id' // Local key on product_variants table
+        )->distinct();
     }
 
     public function reviews()
     {
         return $this->hasMany(ProductReview::class);
+    }
+
+    public function branchStocks()
+    {
+        return $this->hasMany(BranchStock::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImg::class);
+    }
+
+    public function toppings()
+    {
+        return $this->belongsToMany(Topping::class, 'product_toppings')
+            ->withTimestamps();
+    }
+
+    public function isActiveInBranch($branchId)
+    {
+        // Kiểm tra xem sản phẩm có variant nào được áp dụng tại chi nhánh này không
+        return $this->variants()
+            ->whereHas('branchStocks', function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            })
+            ->exists();
     }
 }
