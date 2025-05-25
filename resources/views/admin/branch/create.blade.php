@@ -145,18 +145,84 @@
         .upload-label { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background-color: var(--gray-light); border-radius: var(--border-radius); font-size: 0.875rem; transition: var(--transition-fast); }
         .upload-label:hover { background-color: var(--gray); color: var(--white); }
         .upload-input { display: none; }
-        .image-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
-        .image-preview-item { position: relative; border-radius: var(--border-radius); overflow: hidden; aspect-ratio: 4/3; box-shadow: var(--shadow-sm); }
-        .image-preview-img { width: 100%; height: 100%; object-fit: cover; }
-        .image-preview-overlay { position: absolute; inset: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: var(--transition); }
-        .image-preview-item:hover .image-preview-overlay { opacity: 1; }
-        .image-preview-actions { display: flex; gap: 0.5rem; }
-        .image-preview-btn { width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: var(--white); color: var(--dark); border: none; cursor: pointer; transition: var(--transition-fast); }
-        .image-preview-btn:hover { transform: scale(1.1); }
-        .image-preview-btn.remove-btn:hover { background-color: var(--danger); color: var(--white); }
-        .image-preview-btn.primary-btn { background-color: var(--warning); color: var(--white); }
-        .image-preview-btn.set-primary-btn:hover { background-color: var(--warning); color: var(--white); }
-        .image-preview-badge { position: absolute; top: 0.5rem; left: 0.5rem; padding: 0.25rem 0.5rem; background-color: var(--warning); color: var(--white); border-radius: var(--border-radius-full); font-size: 0.625rem; font-weight: 600; }
+        .image-preview-grid {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            scroll-behavior: smooth;
+        }
+        .image-preview-item {
+            position: relative;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            flex: 0 0 auto;
+            width: 150px;
+            aspect-ratio: 4/3;
+            box-shadow: var(--shadow-sm);
+        }
+        .image-preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .image-preview-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        .image-preview-item:hover .image-preview-overlay {
+            opacity: 1;
+        }
+        .image-preview-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .image-preview-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--white);
+            color: var(--dark);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+        .image-preview-btn:hover {
+            transform: scale(1.1);
+        }
+        .image-preview-btn.remove-btn:hover {
+            background-color: var(--danger);
+            color: var(--white);
+        }
+        .image-preview-btn.primary-btn {
+            background-color: var(--warning);
+            color: var(--white);
+        }
+        .image-preview-btn.set-primary-btn:hover {
+            background-color: var(--warning);
+            color: var(--white);
+        }
+        .image-preview-badge {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background-color: var(--warning);
+            color: var(--white);
+            border-radius: var(--border-radius-full);
+            font-size: 0.625rem;
+            font-weight: 600;
+        }
 
         .empty-state { text-align: center; padding: 3rem 1rem; }
         .empty-icon { width: 4rem; height: 4rem; background-color: var(--gray-light); color: var(--gray); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; }
@@ -237,8 +303,6 @@
             </div>
         </div>
     </div>
-
-
 
     <form id="branchForm" action="{{ route('admin.branches.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
@@ -604,22 +668,18 @@
         let marker;
         
         function initMap() {
-            // Default coordinates (Hanoi, Vietnam)
             const defaultLat = 21.0285;
             const defaultLng = 105.8542;
             
-            // Use old input values if available, otherwise use defaults
             let lat = defaultLat;
             let lng = defaultLng;
             
             try {
-                // Safely parse old values from input fields
                 if (latitudeInput.value && longitudeInput.value) {
                     lat = parseFloat(latitudeInput.value) || defaultLat;
                     lng = parseFloat(longitudeInput.value) || defaultLng;
                 }
                 
-                // Initialize map with explicit options
                 map = L.map('map', {
                     center: [lat, lng],
                     zoom: 13,
@@ -627,7 +687,6 @@
                     scrollWheelZoom: false
                 });
                 
-                // Add OpenStreetMap tile layer
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                     maxZoom: 19,
@@ -635,17 +694,14 @@
                     zoomOffset: 0
                 }).addTo(map);
                 
-                // Ensure map renders correctly after DOM is ready
                 setTimeout(() => {
                     map.invalidateSize();
                 }, 200);
                 
-                // Add marker if old coordinates are available
                 if (latitudeInput.value && longitudeInput.value) {
                     setMarker(lat, lng);
                 }
                 
-                // Handle map click to set marker
                 map.on('click', function(e) {
                     setMarker(e.latlng.lat, e.latlng.lng);
                 });
@@ -656,16 +712,13 @@
         
         function setMarker(lat, lng) {
             try {
-                // Remove existing marker if present
                 if (marker) {
                     map.removeLayer(marker);
                 }
                 
-                // Add new marker
                 marker = L.marker([lat, lng]).addTo(map);
                 map.panTo([lat, lng]);
                 
-                // Update input fields
                 latitudeInput.value = lat.toFixed(6);
                 longitudeInput.value = lng.toFixed(6);
             } catch (error) {

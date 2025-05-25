@@ -218,20 +218,23 @@ class BranchController extends Controller
                 ->with('error', 'Có lỗi xảy ra khi tải form chỉnh sửa: ' . $e->getMessage());
         }
     }
-public function update(Request $request, Branch $branch)
+    public function update(Request $request, $id)
 {
     try {
-        // Validate input data
+        // Find the branch by ID
+        $branch = Branch::findOrFail($id);
+        
+        // Validate only the fields that are sent
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:branches,name,' . $branch->id,
-            'address' => 'required|string|max:255|unique:branches,address,' . $branch->id,
-            'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone,' . $branch->id,
-            'email' => 'nullable|email|unique:branches,email,' . $branch->id,
-            'opening_hour' => 'required|date_format:H:i',
-            'closing_hour' => 'required|date_format:H:i|after:opening_hour',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
-            'manager_user_id' => 'nullable|exists:users,id',
+            'name' => 'sometimes|required|string|max:255|unique:branches,name,' . $id . ',id',
+            'address' => 'sometimes|required|string|max:255|unique:branches,address,' . $id . ',id',
+            'phone' => 'sometimes|required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone,' . $id . ',id',
+            'email' => 'sometimes|nullable|email|unique:branches,email,' . $id . ',id',
+            'opening_hour' => 'sometimes|required|date_format:H:i',
+            'closing_hour' => 'sometimes|required|date_format:H:i|after:opening_hour',
+            'latitude' => 'sometimes|nullable|numeric|between:-90,90',
+            'longitude' => 'sometimes|nullable|numeric|between:-180,180',
+            'manager_user_id' => 'sometimes|nullable|exists:users,id',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'delete_images' => 'nullable|array',
@@ -243,17 +246,15 @@ public function update(Request $request, Branch $branch)
 
         DB::beginTransaction();
 
-        // Update basic branch information
-        $branch->name = $validated['name'];
-        $branch->address = $validated['address'];
-        $branch->phone = $validated['phone'];
-        $branch->email = $validated['email'] ?? null;
-        $branch->opening_hour = $validated['opening_hour'];
-        $branch->closing_hour = $validated['closing_hour'];
-        $branch->latitude = $validated['latitude'] ?? null;
-        $branch->longitude = $validated['longitude'] ?? null;
-        $branch->manager_user_id = $validated['manager_user_id'] ?? null;
-        $branch->active = $request->has('active') ? true : false;
+        // Only fill fields with non-null and non-empty values
+        $fillable = collect($validated)->filter(function ($value) {
+            return !is_null($value) && $value !== '';
+        })->toArray();
+
+        $branch->fill($fillable);
+
+        // Handle active status
+        $branch->active = $request->has('active');
         $branch->save();
 
         // Handle image deletion
@@ -285,7 +286,7 @@ public function update(Request $request, Branch $branch)
             }
         }
 
-        // Set primary image from existing images
+        // Handle primary image selection from existing images
         if ($request->has('primary_image') && !$request->hasFile('images')) {
             $primaryImageId = $request->input('primary_image');
             $branch->images()->update(['is_primary' => false]);
@@ -294,22 +295,20 @@ public function update(Request $request, Branch $branch)
 
         DB::commit();
 
-        return redirect()->route('admin.branches.index')
+        return redirect()->route('admin.branches.show', $branch->id)
             ->with('success', 'Cập nhật chi nhánh thành công');
 
     } catch (\Exception $e) {
         DB::rollBack();
-        Log::error('Error updating branch: ' . $e->getMessage());
+        Log::error('Lỗi cập nhật chi nhánh: ' . $e->getMessage());
+        var_dump($e->getMessage());
+        die();
         return redirect()->back()
-            ->with('error', 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage() . 
-                "\nFile: " . $e->getFile() . 
-                "\nLine: " . $e->getLine() . 
-                "\nTrace: " . $e->getTraceAsString())
+            ->with('error', 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage())
             ->withInput();
     }
 }
-
-    public function destroy(Branch $branch)
+   public function destroy(Branch $branch)
     {
         try {
             DB::beginTransaction();
