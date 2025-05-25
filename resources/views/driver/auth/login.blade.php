@@ -44,10 +44,10 @@
         <div class="login-container">
             <div class="header">
                 <div class="logo">
-                    <img src="placeholder-logo.png" alt="Logo">
+                    <img src="{{ asset('DriverLogo.png') }}" alt="Logo">
                 </div>
-                <h1>Đăng nhập tài xế</h1>
-                <p>Vui lòng đăng nhập bằng số điện thoại và mật khẩu đã được cung cấp qua email</p>
+                <h1>PolyCrispyWings Bike</h1>
+                {{-- <p>Vui lòng đăng nhập bằng số điện thoại và mật khẩu đã được cung cấp qua email</p> --}}
             </div>
 
             <form id="loginForm" action="{{ route('driver.login.submit') }}" method="POST" class="form">

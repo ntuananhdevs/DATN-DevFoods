@@ -226,19 +226,24 @@ document.addEventListener("DOMContentLoaded", function () {
     function showToast(title, description, type = "success") {
         const toast = document.getElementById("toast");
         if (!toast) return;
-
+    
+        // Xoá toast khỏi DOM để reset animation
+        toast.classList.add("hidden");
+        toast.offsetHeight; // Force reflow để reset lại animation
+    
+        // Clear timeout cũ nếu có
         if (window.toastTimeout) {
             clearTimeout(window.toastTimeout);
         }
-
+    
         const toastTitle = document.getElementById("toastTitle");
         const toastDescription = document.getElementById("toastDescription");
         const successIcon = toast.querySelector(".toast-icon.success");
         const errorIcon = toast.querySelector(".toast-icon.error");
-
+    
         toastTitle.textContent = title;
         toastDescription.textContent = description;
-
+    
         if (type === "error") {
             successIcon.classList.add("hidden");
             errorIcon.classList.remove("hidden");
@@ -250,14 +255,13 @@ document.addEventListener("DOMContentLoaded", function () {
             toast.classList.add("success");
             toast.classList.remove("error");
         }
-
+    
+        // Hiển thị lại
         toast.classList.remove("hidden");
-
-        window.toastTimeout = setTimeout(
-            () => {
-                toast.classList.add("hidden");
-            },
-            type === "error" ? 8000 : 4000
-        );
-    }
+    
+        // Tự động ẩn sau vài giây
+        window.toastTimeout = setTimeout(() => {
+            toast.classList.add("hidden");
+        }, type === "error" ? 8000 : 4000);
+    }    
 });

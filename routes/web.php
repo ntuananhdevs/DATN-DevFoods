@@ -194,6 +194,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
+Route::get('/edit/{id}', [UserController::class, 'editManager'])->name('edit');
+Route::put('/update/{id}', [UserController::class, 'updateManager'])->name('update');
+Route::delete('/delete/{id}', [UserController::class, 'destroyManager'])->name('destroy');
         });
     });
     // Branch Management

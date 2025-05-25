@@ -374,6 +374,9 @@
                         <a href="{{ asset('/contact') }}" class="text-sm font-medium hover:text-orange-500 transition-colors">
                             Liên Hệ
                         </a>
+                        <a href="{{ asset('/recruitment') }}" class="text-sm font-medium hover:text-orange-500 transition-colors">
+                            Tuyển dụng
+                        </a>
                     </nav>
                 </div>
 
@@ -441,10 +444,7 @@
                         <span class="sr-only">Giỏ hàng</span>
                     </a>
 
-                    <div class="hidden md:flex items-center gap-2">
-                        <i class="fas fa-phone h-4 w-4 text-orange-500"></i>
-                        <span class="text-sm font-medium">1900 1234</span>
-                    </div>
+                   
                 </div>
             </div>
         </div>
@@ -477,6 +477,9 @@
                 </a>
                 <a href="/contact" class="text-lg font-medium hover:text-orange-500 transition-colors">
                     Liên Hệ
+                </a>
+                <a href="/recruitment" class="text-lg font-medium hover:text-orange-500 transition-colors">
+                    Tuyển dụng
                 </a>
             </nav>
         </div>
@@ -571,6 +574,12 @@
                             <a href="/contact" class="flex items-center hover:text-orange-500 transition-colors">
                                 <i class="fas fa-chevron-right h-4 w-4 mr-2 text-orange-500"></i>
                                 Liên Hệ
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/recruitment" class="flex items-center hover:text-orange-500 transition-colors">
+                                <i class="fas fa-chevron-right h-4 w-4 mr-2 text-orange-500"></i>
+                                Tuyển dụng
                             </a>
                         </li>
                     </ul>
