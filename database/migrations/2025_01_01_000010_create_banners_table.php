@@ -21,7 +21,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);    // Trạng thái hiển thị
             $table->timestamp('start_at')->nullable();      // Thời gian bắt đầu hiển thị
             $table->timestamp('end_at')->nullable();        // Thời gian kết thúc hiển thị
-            $table->integer('order')->default(0);           // Thứ tự hiển thị
+            $table->integer('order')->nullable();           // Thứ tự hiển thị
             $table->timestamps();
         });
     }
