@@ -335,6 +335,15 @@
                 </div>
             </div>
 
+            <!-- Chat Segments -->
+            <div class="px-4 py-2 border-b border-border">
+                <div class="flex gap-2">
+                    <button id="segmentAll" class="segment-btn px-3 py-1 bg-primary text-primary-foreground rounded-lg text-sm font-medium">Tất cả</button>
+                    <button id="segmentUnread" class="segment-btn px-3 py-1 bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg text-sm font-medium">Chưa đọc</button>
+                    <button id="segmentActive" class="segment-btn px-3 py-1 bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg text-sm font-medium">Đang hoạt động</button>
+                </div>
+            </div>
+
             <!-- Chat List -->
             <div id="chatList" class="flex-1 overflow-y-auto custom-scrollbar">
                 <!-- Chat items will be populated here -->
