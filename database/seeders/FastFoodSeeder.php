@@ -95,13 +95,17 @@ class FastFoodSeeder extends Seeder
         foreach ($combos as $combo) {
             $products = Product::inRandomOrder()->take(rand(2, 4))->get();
             foreach ($products as $product) {
-                ComboItem::create([
-                    'combo_id' => $combo->id,
-                    'product_id' => $product->id,
-                    'quantity' => rand(1, 3)
-                ]);
+                // Lấy ngẫu nhiên một biến thể của sản phẩm
+                $variant = $product->variants()->inRandomOrder()->first();
+                if ($variant) {
+                    ComboItem::create([
+                        'combo_id' => $combo->id,
+                        'product_variant_id' => $variant->id,
+                        'quantity' => rand(1, 3)
+                    ]);
+                }
             }
-        }
+        }        
 
         // Tạo toppings
         $toppings = Topping::factory(20)->create();

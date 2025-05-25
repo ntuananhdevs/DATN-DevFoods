@@ -30,6 +30,7 @@ use App\Http\Controllers\Customer\SupportController as CustomerSupportController
 use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
+use App\Http\Controllers\Customer\ChatController as CustomerChatController;
 use Illuminate\Database\Capsule\Manager;
 
 //Driver 
@@ -93,6 +94,13 @@ Route::prefix('/')->group(function () {
 
     // Support
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
+
+    // Chat routes
+    Route::prefix('api/chat')->group(function () {
+        Route::post('/send-message', [CustomerChatController::class, 'sendMessage'])->name('chat.send');
+        Route::post('/rating', [CustomerChatController::class, 'submitRating'])->name('chat.rating');
+        Route::get('/history', [CustomerChatController::class, 'getChatHistory'])->name('chat.history');
+    });
 
     // Route Customer (login / logout / register) - Thêm middleware guest
     Route::middleware('guest')->group(function () {
