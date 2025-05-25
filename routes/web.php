@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Artisan;
 //Admin
 
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\Auth\AuthController;
@@ -17,10 +16,12 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
 use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\Auth\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
@@ -34,7 +35,7 @@ use App\Http\Controllers\Customer\ChatController as CustomerChatController;
 use Illuminate\Database\Capsule\Manager;
 
 //Driver 
-use App\Http\Controllers\Driver\AuthController as DriverAuthController;
+use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
 // Product Stock Management Routes
 use App\Http\Controllers\Admin\BranchStockController;
@@ -47,7 +48,7 @@ Route::prefix('/')->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
     // Products
-    Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index'); 
+    Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/show', [CustomerProductController::class, 'show'])->name('products.show');
 
     // // Store Locations
@@ -85,7 +86,7 @@ Route::prefix('/')->group(function () {
 
     // Promotions
     Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
-    
+
     // Promotions
     Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branchs.index');
 
@@ -108,12 +109,12 @@ Route::prefix('/')->group(function () {
         Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.post');
         Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
         Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.post');
-        
+
         // Thêm route xác thực OTP
         Route::get('/verify-otp', [CustomerAuthController::class, 'showOTPForm'])->name('customer.verify.otp.show');
         Route::post('/verify-otp', [CustomerAuthController::class, 'verifyOTP'])->name('customer.verify.otp.post');
         Route::post('/resend-otp', [CustomerAuthController::class, 'resendOTP'])->name('customer.resend.otp');
-        
+
         // Thêm routes cho quên mật khẩu
         Route::get('/forgot-password', [CustomerAuthController::class, 'showForgotPasswordForm'])
             ->name('customer.password.request');
@@ -124,7 +125,7 @@ Route::prefix('/')->group(function () {
         Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])
             ->name('customer.password.update');
     });
-    
+
     // Đăng xuất không cần middleware guest
     Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
@@ -161,8 +162,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('categories/bulk-status-update', [CategoryController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
- 
-
     // Roles Management
     Route::prefix('roles')->name('roles.')->group(function () {
         Route::get('/', [RoleController::class, 'index'])->name('index');
@@ -190,18 +189,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::prefix('managers')->name('managers.')->group(function () {
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
-            Route::post('/store', [UserController::class,'storeManager'])->name('store');
-            
+            Route::post('/store', [UserController::class, 'storeManager'])->name('store');
         });
     });
     // Branch Management
     Route::prefix('branches')->name('branches.')->group(function () {
         Route::get('/', [BranchController::class, 'index'])->name('index');
         Route::get('/create', [BranchController::class, 'create'])->name('create');
-        Route::post('/store', [BranchController::class,'store'])->name('store');
+        Route::post('/store', [BranchController::class, 'store'])->name('store');
         Route::get('/edit/{id}', [BranchController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BranchController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [BranchController::class,'show'])->name('show');
+        Route::get('/show/{id}', [BranchController::class, 'show'])->name('show');
         Route::get('/export', [BranchController::class, 'export'])->name('export');
         Route::patch('/{id}/toggle-status', [BranchController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
@@ -210,8 +208,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
         Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
     });
-  
-  
+
     // Products Management
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
@@ -238,8 +235,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
     });
 
-     // Banner Management
-     Route::prefix('banners')->name('banners.')->group(function () {
+    // Banner Management
+    Route::prefix('banners')->name('banners.')->group(function () {
         Route::get('/', [BannerController::class, 'index'])->name('index');
         Route::get('/create', [BannerController::class, 'create'])->name('create');
         Route::post('/store', [BannerController::class, 'store'])->name('store');
@@ -248,10 +245,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::get('/search-product', [BannerController::class, 'searchProducts'])->name('search.product');
     });
 
-     // Banner Management
-     Route::prefix('discount')->name('discount.')->group(function () {
+    // Banner Management
+    Route::prefix('discount')->name('discount.')->group(function () {
         Route::get('/', [BannerController::class, 'index'])->name('index');
         Route::get('/create', [BannerController::class, 'create'])->name('create');
         Route::post('/store', [BannerController::class, 'store'])->name('store');
@@ -275,16 +273,50 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
         Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
     });
+
+    Route::get('/chat', [AdminChatController::class, 'index'])->name('chat');
+    // Chat API routes
+    Route::prefix('api/chat')->group(function () {
+        Route::get('/chats', [AdminChatController::class, 'getChats'])->name('chat.list');
+        Route::get('/chats/{chatId}/messages', [AdminChatController::class, 'getChatMessages'])->name('chat.messages');
+        Route::post('/send', [AdminChatController::class, 'sendMessage'])->name('chat.send');
+        Route::post('/status', [AdminChatController::class, 'updateStatus'])->name('chat.status');
+        Route::post('/chats/{chatId}/close', [AdminChatController::class, 'closeChat'])->name('chat.close');
+        Route::get('/statistics', [AdminChatController::class, 'getStatistics'])->name('chat.stats');
+    });
 });
 
 // Customer Cart Routes
-Route::prefix('cart')->name('customer.cart.')->group(function () {
-    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
-    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+// Route::prefix('cart')->name('customer.cart.')->group(function () {
+//     Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+//     Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+//     Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+//     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
+//     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+//     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+// });
+Route::prefix('driver')->name('driver.')->group(function () {
+    Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
+    Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
+    // Quên mật khẩu
+    Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
+    Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
+    // Xác minh OTP
+    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
+    Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
+    Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
+    // Đặt lại mật khẩu
+    Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
+    Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
+});
+
+// Route dành cho tài xế đã đăng nhập
+Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
+    Route::get('/', function () {
+        return view('driver.home');
+    })->name('home');
+    Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
 });
 
 //hiring driver

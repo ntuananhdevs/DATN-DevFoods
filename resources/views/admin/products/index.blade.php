@@ -396,19 +396,27 @@
                 Hiển thị <span id="paginationStart">{{ $products->firstItem() }}</span> đến <span id="paginationEnd">{{ $products->lastItem() }}</span> của <span id="paginationTotal">{{ $products->total() }}</span> mục
             </div>
             <div class="flex items-center space-x-2" id="paginationControls">
-                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted {{ $products->onFirstPage() ? 'disabled opacity-50 cursor-not-allowed' : '' }}" onclick="changePage({{ $products->currentPage() - 1 }})">
+                @unless($products->onFirstPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $products->currentPage() - 1 }})">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
                         <path d="m15 18-6-6 6-6"></path>
                     </svg>
                 </button>
+                @endunless
+
                 @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
-                <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">{{ $page }}</button>
+                <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">
+                    {{ $page }}
+                </button>
                 @endforeach
-                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted {{ $products->hasMorePages() ? '' : 'disabled opacity-50 cursor-not-allowed' }}" onclick="changePage({{ $products->currentPage() + 1 }})">
+
+                @unless($products->currentPage() === $products->lastPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $products->currentPage() + 1 }})">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
                         <path d="m9 18 6-6-6-6"></path>
                     </svg>
                 </button>
+                @endunless
             </div>
         </div>
     </div>
@@ -708,7 +716,7 @@
             max: {{ $maxPrice }},
             minValue: {{ request('price_min', $minPrice) }},
             maxValue: {{ request('price_max', $maxPrice) }},
-            step: 10000,
+            step: 1,
             sliderId: 'priceSlider',
             trackId: 'priceTrack',
             minHandleId: 'minHandle',

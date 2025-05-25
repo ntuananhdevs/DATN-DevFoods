@@ -68,7 +68,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 1;
     transition: all 0.2s ease;
   }
   
@@ -100,9 +100,20 @@
   .remove-value-btn:hover {
     color: #dc2626;
   }
+
+  /* CSS cho preview hình topping */
+  .topping-image-preview {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    margin-top: 0.5rem;
+    display: block;
+  }
 </style>
 
-<main class="container mx-auto px-4 py-8">
+<main class="container">
     <h1 class="text-3xl font-extrabold mb-1">Thêm Sản Phẩm Mới</h1>
     <p class="text-gray-500 mb-8">Nhập thông tin chi tiết để tạo sản phẩm mới</p>
 
@@ -205,9 +216,6 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh sản phẩm <span class="text-red-500">*</span></label>
-              <p class="text-xs text-gray-500 mb-2">
-                <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
-              </p>
               <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <!-- Primary Image -->
                 <div class="md:col-span-1">
@@ -231,6 +239,9 @@
                       <input type="file" id="primary-image-upload" name="primary_image" accept="image/*" class="hidden" />
                     </div>
                   </div>
+                  <p class="text-xs text-gray-500 mb-2">
+                  <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
+                </p>
                 </div>
 
                 <!-- Additional Images -->
@@ -274,25 +285,25 @@
             </div>
           </section>
 <!-- Toppings Section -->
-<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <header class="px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
-          <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
-        </header>
+          <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header class="px-6 py-4 border-b border-gray-100">
+              <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+              <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
+            </header>
 
-        <div class="px-6 py-6">
-          <div id="toppings-container">
-            <!-- Topping groups will be added here -->
-          </div>
-          <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Thêm topping
-          </button>
-        </div>
-      </section>
+            <div class="px-6 py-6">
+              <div id="toppings-container">
+                <!-- Topping groups will be added here -->
+              </div>
+              <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Thêm topping
+              </button>
+            </div>
+          </section>
       <!-- Save Buttons -->
       <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
         <button type="button" id="save-draft-btn" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100">Lưu nháp</button>
@@ -412,7 +423,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                         </div>
                         <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -494,6 +505,30 @@
         const addToppingBtn = document.getElementById('add-topping-btn');
         let toppingCount = 0;
 
+        // Thêm hàm xử lý preview ảnh topping
+        function handleToppingImagePreview(input) {
+            const previewId = input.getAttribute('data-preview-id');
+            const previewWrapId = input.getAttribute('data-preview-wrap-id');
+            const uploadContentId = input.getAttribute('data-upload-content-id');
+            const previewImg = document.getElementById(previewId);
+            const previewWrap = document.getElementById(previewWrapId);
+            const uploadContent = document.getElementById(uploadContentId);
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewWrap.classList.remove('hidden');
+                    uploadContent.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                previewImg.src = '';
+                previewWrap.classList.add('hidden');
+                uploadContent.classList.remove('hidden');
+            }
+        }
+
         function createToppingGroup(index) {
             const toppingGroup = document.createElement('div');
             toppingGroup.className = 'border rounded-md p-4 mb-4';
@@ -507,6 +542,26 @@
                         <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
                         <input type="number" name="toppings[${index}][price]" required min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
+                    <div class="w-48 mr-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+                        <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                          <div id="topping-image-placeholder-${index}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                            <div id="topping-image-preview-wrap-${index}" class="absolute inset-0 w-full h-full hidden">
+                              <img id="topping-image-preview-${index}" src="" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
+                            </div>
+                            <div id="topping-upload-content-${index}" class="flex flex-col items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                              </svg>
+                              <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
+                              <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
+                            </div>
+                            <input type="file" id="topping-image-upload-${index}" name="toppings[${index}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
+                          </div>
+                        </div>
+                      </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -520,6 +575,29 @@
                     </label>
                 </div>
             `;
+            // Sự kiện click chọn ảnh topping
+            setTimeout(() => {
+                const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
+                const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
+                const fileInput = document.getElementById(`topping-image-upload-${index}`);
+                
+                if (placeholder && fileInput) {
+                    placeholder.addEventListener('click', (e) => {
+                        if (e.target !== uploadBtn) {
+                            fileInput.click();
+                        }
+                    });
+                    
+                    uploadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+
+                    fileInput.addEventListener('change', function() {
+                        handleToppingImagePreview(this);
+                    });
+                }
+            }, 10);
             return toppingGroup;
         }
 

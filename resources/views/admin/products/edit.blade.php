@@ -68,7 +68,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 1;
     transition: all 0.2s ease;
   }
   
@@ -102,7 +102,7 @@
   }
 </style>
 
-<main class="container mx-auto px-4 py-8">
+<main class="container">
     <h1 class="text-3xl font-extrabold mb-1">Thêm Sản Phẩm Mới</h1>
     <p class="text-gray-500 mb-8">Nhập thông tin chi tiết để tạo sản phẩm mới</p>
 
@@ -166,17 +166,14 @@
             </div>
 
             <div>
-                        <span class="block text-sm font-medium text-gray-700">Tùy chọn</span>
+                <span class="block text-sm font-medium text-gray-700">Tùy chọn</span>
               <div class="space-y-4 mt-2">
                 <div class="flex gap-4">
                   <label class="inline-flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }} class="form-checkbox text-blue-600" />
                     <span>Sản phẩm nổi bật</span>
                   </label>
-                  <label class="inline-flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="available" value="1" {{ old('available', true) ? 'checked' : '' }} class="form-checkbox text-blue-600" />
-                    <span>Đang bán</span>
-                  </label>
+                  
                 </div>
 
                 <div>
@@ -208,9 +205,6 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh sản phẩm <span class="text-red-500">*</span></label>
-              <p class="text-xs text-gray-500 mb-2">
-                <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
-              </p>
               <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <!-- Primary Image -->
                 <div class="md:col-span-1">
@@ -234,6 +228,9 @@
                       <input type="file" id="primary-image-upload" name="primary_image" accept="image/*" class="hidden" />
                     </div>
                   </div>
+                  <p class="text-xs text-gray-500 mb-2">
+                  <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
+                </p>
                 </div>
 
                 <!-- Additional Images -->
@@ -400,7 +397,7 @@
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                         <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-            </div>
+                    </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -415,7 +412,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                         </div>
                         <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -552,8 +549,8 @@
         // Form submission
         const form = document.getElementById('add-product-form');
         form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
+            // Không ngăn chặn submit mặc định nữa
+            // e.preventDefault();
             // Convert ingredients textarea to JSON array
             const ingredientsText = document.getElementById('ingredients').value;
             const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
@@ -562,8 +559,10 @@
             ingredientsInput.name = 'ingredients_json';
             ingredientsInput.value = JSON.stringify(ingredientsArray);
             form.appendChild(ingredientsInput);
-
-            form.submit();
+            // Đảm bảo description luôn gửi lên (kể cả rỗng)
+            const description = document.getElementById('description');
+            if (!description.value) description.value = '';
+            // Không gọi form.submit() ở đây nữa vì đã để mặc định
         });
 
         // Handle status and release date visibility

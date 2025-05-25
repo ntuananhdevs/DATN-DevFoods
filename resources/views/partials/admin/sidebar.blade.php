@@ -13,7 +13,7 @@
     </a>
 </div>
 
-<div class="sidebar-content p-4 overflow-y-auto">
+<div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
     <div class="space-y-6">
         <div>
             <h3 class="text-xs font-medium text-sidebar-foreground/70 mb-2 px-2 sidebar-group-label">Main Menu</h3>
@@ -142,11 +142,11 @@
                 <div class="sidebar-dropdown">
                     <button class="sidebar-dropdown-trigger flex w-full items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck">
-                                <path d="M1 3h15v13H1z"></path>
-                                <path d="M16 8h4l3 3v5h-7V8z"></path>
-                                <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
                         </span>
                         <span class="sidebar-text">Tài xế</span>
@@ -189,6 +189,20 @@
                     </span>
                     <span class="sidebar-text">Chi nhánh</span>
                 </a>
+
+                <!-- Chat -->
+                <a href="{{ route('admin.chat') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.branches.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Branches">
+                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-store">
+                            <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path>
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                            <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path>
+                            <path d="M2 7h20"></path>
+                            <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-text">Chat</span>
+                </a>
             </div>
         </div>
     </div>
@@ -205,6 +219,44 @@
         <span class="sidebar-text">Cài đặt</span>
     </a>
 </div>
+
+<style>
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #d1d5db transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 2px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #d1d5db;
+        border-radius: 20px;
+        border: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #9ca3af;
+    }
+
+    /* Dark mode */
+    .dark .custom-scrollbar {
+        scrollbar-color: #4b5563 transparent;
+    }
+
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #4b5563;
+    }
+
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #6b7280;
+    }
+</style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
