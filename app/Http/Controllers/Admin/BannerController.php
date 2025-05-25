@@ -46,7 +46,8 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
+            // Xác định validation rules dựa trên vị trí
+            $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
                 'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/show\/\d+$/'],
@@ -56,8 +57,14 @@ class BannerController extends Controller
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|unique:banners,order',
-            ], [
+            ];
+            
+            // Chỉ thêm validation cho order khi vị trí là homepage
+            if ($request->position === 'homepage') {
+                $rules['order'] = 'required|integer|min:0';
+            }
+            
+            $validated = $request->validate($rules, [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
@@ -108,6 +115,26 @@ class BannerController extends Controller
                 unset($validated['image_link']);
             }
 
+            // Kiểm tra trùng thứ tự hiển thị nếu vị trí là homepage và có order
+            if ($request->position === 'homepage' && isset($validated['order'])) {
+                $existingBanner = Banner::where('order', $validated['order'])
+                    ->where('position', 'homepage')
+                    ->first();
+                
+                if ($existingBanner) {
+                    // Có banner trùng thứ tự, hiển thị thông báo cho người dùng
+                    return back()->withInput()->with('duplicate_order', [
+                        'banner_id' => $existingBanner->id,
+                        'banner_title' => $existingBanner->title,
+                        'order' => $validated['order']
+                    ])->with('toast', [
+                        'type' => 'warning',
+                        'title' => 'Cảnh báo',
+                        'message' => 'Thứ tự hiển thị ' . $validated['order'] . ' đã được sử dụng bởi banner "' . $existingBanner->title . '". Vui lòng chọn thứ tự khác hoặc điều chỉnh thứ tự của banner hiện có.'
+                    ]);
+                }
+            }
+            
             Banner::create($validated);
 
             session()->flash('toast', [
@@ -184,7 +211,8 @@ class BannerController extends Controller
         try {
             $banner = Banner::findOrFail($id);
 
-            $validated = $request->validate([
+            // Xác định validation rules dựa trên vị trí
+            $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
                 'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/show\/\d+$/'],
@@ -194,8 +222,14 @@ class BannerController extends Controller
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|unique:banners,order,' . $id,
-            ], [
+            ];
+            
+            // Chỉ thêm validation cho order khi vị trí là homepage
+            if ($request->position === 'homepage') {
+                $rules['order'] = 'required|integer|min:0';
+            }
+            
+            $validated = $request->validate($rules, [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
@@ -248,6 +282,32 @@ class BannerController extends Controller
                 unset($validated['image_link']);
             }
 
+            // Kiểm tra trùng thứ tự hiển thị nếu vị trí là homepage và có order
+            if ($request->position === 'homepage' && isset($validated['order'])) {
+                $existingBanner = Banner::where('order', $validated['order'])
+                    ->where('position', 'homepage')
+                    ->where('id', '!=', $id)
+                    ->first();
+                
+                if ($existingBanner) {
+                    // Có banner trùng thứ tự, hiển thị thông báo cho người dùng
+                    return back()->withInput()->with('duplicate_order', [
+                        'banner_id' => $existingBanner->id,
+                        'banner_title' => $existingBanner->title,
+                        'order' => $validated['order']
+                    ])->with('toast', [
+                        'type' => 'warning',
+                        'title' => 'Cảnh báo',
+                        'message' => 'Thứ tự hiển thị ' . $validated['order'] . ' đã được sử dụng bởi banner "' . $existingBanner->title . '". Vui lòng chọn thứ tự khác hoặc điều chỉnh thứ tự của banner hiện có.'
+                    ]);
+                }
+            }
+            
+            // Nếu vị trí không phải homepage, đặt order thành null
+            if ($request->position !== 'homepage') {
+                $validated['order'] = null;
+            }
+            
             $banner->update($validated);
 
             session()->flash('toast', [
