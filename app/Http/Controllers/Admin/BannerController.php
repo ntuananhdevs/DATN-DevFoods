@@ -99,7 +99,7 @@ class BannerController extends Controller
             if ($hasFile) {
                 $image = $request->file('image_path');
                 $filename = uniqid() . '.' . $image->getClientOriginalExtension();
-                $path = 'test-uploads/' . $filename;
+                $path = 'banner/' . $filename;
                 Storage::disk('s3')->put($path, file_get_contents($image));
                 $validated['image_path'] = $path; // hoặc Storage::disk('s3')->url($path) nếu bạn muốn lưu URL đầy đủ
                 unset($validated['image_link']);
