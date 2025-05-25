@@ -11,9 +11,10 @@
 
 /* For Input Group TouchPin */
 
-#touchspin{
-    .input-group.bootstrap-touchspin{
-        .input-group-prepend, .input-group-append{
+#touchspin {
+    .input-group.bootstrap-touchspin {
+        .input-group-prepend,
+        .input-group-append {
             display: block;
         }
     }
@@ -22,43 +23,48 @@
 /* For Input Group TouchPin */
 
 // form-input-groups
-.segmented-buttons-with-dropdown, .buttons-with-dropdown{
-  .input-group{
-     .form-control{
-      height: 3rem;
-    }
-  }
-} 
-
-.bootstrap-touchspin{
-  &.touchspin-with-icon{
-    .input-group-append{
-      .input-group-text{
-        i{
-          font-size: 1.25rem;
+.segmented-buttons-with-dropdown,
+.buttons-with-dropdown {
+    .input-group {
+        .form-control {
+            height: 3rem;
         }
-      }
     }
-  }
 }
-.bootstrap-touchspin-spinners{
-  .touchspin-spinners-wrapper{
-      .input-group{
-        .touchspin, .touchspin-stop-mousewheel{
-          height: calc(#{$input-height-inner - 0.05rem} + #{$input-height-border + 0.2px});
-        }        
-        &.touchspin-with-icon{
-          .input-group-text.bootstrap-touchspin-postfix{
-            padding: 0.85rem 1rem;
-          }
+
+.bootstrap-touchspin {
+    &.touchspin-with-icon {
+        .input-group-append {
+            .input-group-text {
+                i {
+                    font-size: 1.25rem;
+                }
+            }
         }
-      }
-      .default-height{
-        .input-group{
-            &.touchspin-vertical{
-              height: calc(2.9rem + 2px);
-          }          
+    }
+}
+.bootstrap-touchspin-spinners {
+    .touchspin-spinners-wrapper {
+        .input-group {
+            .touchspin,
+            .touchspin-stop-mousewheel {
+                height: calc(
+                    #{$input-height-inner} - 0.05rem + #{$input-height-border} +
+                        0.2px
+                );
+            }
+            &.touchspin-with-icon {
+                .input-group-text.bootstrap-touchspin-postfix {
+                    padding: 0.85rem 1rem;
+                }
+            }
         }
-      }
+        .default-height {
+            .input-group {
+                &.touchspin-vertical {
+                    height: calc(2.9rem + 2px);
+                }
+            }
+        }
     }
 }

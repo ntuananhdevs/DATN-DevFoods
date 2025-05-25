@@ -20,6 +20,7 @@ use App\Http\Controllers\Customer\ProductController as CustomerProductController
 use App\Http\Controllers\Customer\CartController as CustomerCartController;
 use App\Http\Controllers\Customer\AuthController as CustomerAuthController;
 use App\Http\Controllers\Customer\UserController as CustomerUserController;
+use App\Http\Controllers\ChatController;
 
 Route::prefix('/')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -222,6 +223,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 });
+
+// Chat routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/chat/customer', [ChatController::class, 'customerChat'])->name('chat.customer');
+    Route::get('/chat/admin', [ChatController::class, 'adminChat'])->name('chat.admin');
+    Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+});
+
 Route::get('/driver', function () {
     return view('driver.home');
 });

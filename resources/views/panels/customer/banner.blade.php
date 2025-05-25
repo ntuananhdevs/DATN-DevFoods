@@ -9,6 +9,12 @@
     .carousel-slide[data-link]:hover .slide-content {
         opacity: 0.95;
     }
+    .no-banners-message {
+        text-align: center;
+        padding: 2rem;
+        font-size: 1.2rem;
+        color: #666;
+    }
 </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -83,6 +89,12 @@
                 @php
                     $banners = $bannerService->getActiveBanners();
                 @endphp
+                
+                @if(count($banners) === 0)
+                    <div class="no-banners-message">
+                        <p>Banner chưa được setup</p>
+                    </div>
+                @else
                
                 @foreach($banners as $key => $banner)
                 <div class="carousel-slide {{ $key === 0 ? 'active' : '' }}" data-link="{{ $banner->link }}">
@@ -95,6 +107,7 @@
                     </div>
                 </div>
                 @endforeach
+                @endif
             </div>
             <button class="carousel-control prev">
                 <i class="fas fa-chevron-left"></i>

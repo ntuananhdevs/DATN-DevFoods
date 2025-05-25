@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\Attribute;
+use App\Models\VariantAttribute;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +22,8 @@ class DatabaseSeeder extends Seeder
             BranchSeeder::class,
             DriverApplicationSeeder::class,
             DriverSeeder::class,
+            UserRoleSeeder::class,
+            BranchStockSeeder::class,
         ]);
     }
 }

@@ -13,9 +13,10 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^12.0",
         "laravel/passport": "*",
+        "laravel/sanctum": "^4.1",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
-        "pusher/pusher-php-server": "*",
+        "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-permission": "*"
     },
     "require-dev": {

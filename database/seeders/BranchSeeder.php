@@ -12,6 +12,14 @@ class BranchSeeder extends Seeder
     {
         $faker = \Faker\Factory::create('vi_VN');
         
+        // Lấy danh sách user là manager
+        $managerRole = \App\Models\Role::where('name', 'manager')->first();
+        $managerIds = $managerRole ? $managerRole->users()->pluck('users.id')->toArray() : [];
+        
+        if (empty($managerIds)) {
+            \Log::warning('Không có user nào có vai trò manager để gán cho manager_user_id của branch.');
+            return;
+        }
         // Tạo 10 chi nhánh với dữ liệu phong phú
         foreach (range(1, 10) as $index) {
             Branch::create([
@@ -19,7 +27,7 @@ class BranchSeeder extends Seeder
                 'address' => $faker->address,
                 'phone' => $faker->phoneNumber,
                 'email' => $faker->companyEmail,
-                'manager_user_id' => User::where('role_id', 2)->inRandomOrder()->first()->id,
+                'manager_user_id' => $faker->randomElement($managerIds),
                 'latitude' => $faker->latitude(10, 11),
                 'longitude' => $faker->longitude(106, 108),
                 'opening_hour' => $faker->time('H:i', '07:00'),

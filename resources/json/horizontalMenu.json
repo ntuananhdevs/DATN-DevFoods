@@ -1,5 +1,6 @@
 {
-    "menu": [{
+    "menu": [
+        {
             "url": "/admin",
             "name": "Dashboard",
             "slug": "dashboard",
@@ -15,6 +16,12 @@
         },
         {
             "url": "/admin/products",
+            "name": "Quản lý sản phẩm",
+            "icon": "feather icon-box",
+            "i18n": "nav.products"
+        },
+        {
+            "url": "/admin/products/create",
             "name": "Quản lý sản phẩm",
             "icon": "feather icon-box",
             "i18n": "nav.products"
@@ -56,6 +63,12 @@
             "name": "Quản lý Banner",
             "icon": "feather icon-image",
             "i18n": "nav.banners"
+        },
+        {
+            "url": "/chat/admin",
+            "name": "Quản lý Chat",
+            "icon": "feather icon-message-circle",
+            "i18n": "nav.chat"
         }
     ]
 }

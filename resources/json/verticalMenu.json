@@ -63,6 +63,12 @@
             "name": "Quản lý Banner",
             "icon": "feather icon-image",
             "i18n": "nav.banners"
+        },
+        {
+            "url": "/chat/admin",
+            "name": "Quản lý Chat",
+            "icon": "feather icon-message-circle",
+            "i18n": "nav.chat"
         }
     ]
 }
