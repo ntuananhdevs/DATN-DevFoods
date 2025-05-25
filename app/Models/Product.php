@@ -78,4 +78,10 @@ class Product extends Model
             })
             ->exists();
     }
+
+    // app/Models/Product.php
+    public function wishlist()
+    {
+        return $this->hasMany(WishlistItem::class);
+    }
 }
