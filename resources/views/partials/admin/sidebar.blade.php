@@ -130,7 +130,7 @@
                         <a href="{{ route('admin.users.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.users.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Khách hàng</span>
                         </a>
-                        <a href="{{ ('admin.users.managers') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.roles.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <a href="{{ route('admin.users.managers.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.roles.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Quản lý</span>
                         </a>
                         <a href="{{ ('admin.permissions.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.permissions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
