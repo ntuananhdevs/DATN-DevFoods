@@ -11,7 +11,7 @@ class VariantValue extends Model
     use HasFactory;
 
     protected $table = 'variant_values';
-    protected $fillable = ['variant_attribute_id', 'value'];
+    protected $fillable = ['variant_attribute_id', 'value', 'price_adjustment'];
 
     public function attribute()
     {

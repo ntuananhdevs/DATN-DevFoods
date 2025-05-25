@@ -396,6 +396,15 @@
                         </div>
                     </div>
 
+                    <div id="wishlist-container" class="relative">
+                        <a href="{{ route('wishlist.index') }}" class="relative">
+                            <ion-icon class="h-6 w-6" name="heart-outline"></ion-icon>
+                            <span class="absolute bottom-4 left-3 bg-red-500 text-white rounded-full h-4 w-4 text-xs flex items-center justify-center">
+                                {{ auth()->user()->wishlist->count() }}
+                            </span>
+                        </a>
+                    </div>
+
                     @auth
                         <div class="relative" id="user-dropdown-container">
                             <button class="flex items-center p-2" id="user-dropdown-button">
