@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\BranchImage;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\Request;
@@ -88,148 +89,96 @@ class BranchController extends Controller
                 ->with('error', 'Có lỗi xảy ra khi tải form tạo chi nhánh: ' . $e->getMessage());
         }
     }
+    public function store(Request $request)
+    {
+        try {
+            // Validate dữ liệu đầu vào
+            $validated = $request->validate([
+                'name' => 'required|string|max:255|unique:branches,name',
+                'address' => 'required|string|max:255|unique:branches,address',
+                'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone',
+                'email' => 'nullable|email|unique:branches,email',
+                'opening_hour' => 'required|date_format:H:i',
+                'closing_hour' => 'required|date_format:H:i|after:opening_hour',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
+                'manager_user_id' => 'nullable|exists:users,id',
+                'images' => 'nullable|array',
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+                'primary_image' => 'nullable|integer|min:0',
+                'captions' => 'nullable|array',
+                'captions.*' => 'nullable|string|max:255',
+            ]);
 
-public function store(Request $request)
-{
-    try {
-        $validated = $request->validate([
-            'name' => 'required|max:255|unique:branches',
-            'address' => 'required|unique:branches',
-            'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches',
-            'email' => 'nullable|email|unique:branches',
-            'opening_hour' => 'required|date_format:H:i',
-            'closing_hour' => 'required|date_format:H:i|after:opening_hour',
-            'latitude' => 'nullable|numeric',
-            'longitude' => 'nullable|numeric',
-            'manager_user_id' => 'nullable|exists:users,id',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-            'primary_image' => 'nullable|integer|min:0',
-            'captions' => 'nullable|array',
-            'captions.*' => 'nullable|string|max:255',
-        ]);
-        
-        DB::beginTransaction();
-        
-        // Tạo mã chi nhánh tự động
-        $branchCode = 'BR' . Str::padLeft(Branch::count() + 1, 4, '0');
-        
-        // Tạo chi nhánh mới
-        $branch = Branch::create([
-            'name' => $validated['name'],
-            'address' => $validated['address'], 
-            'phone' => $validated['phone'],
-            'email' => $validated['email'] ?? null,
-            'opening_hour' => $validated['opening_hour'],
-            'closing_hour' => $validated['closing_hour'],
-            'branch_code' => $branchCode,
-            'latitude' => $validated['latitude'] ?? null, 
-            'longitude' => $validated['longitude'] ?? null,
-            'manager_user_id' => $validated['manager_user_id'] ?? null,
-            'active' => true,
-            'balance' => 0,
-            'rating' => 5.00,
-            'reliability_score' => 100
-        ]);
+            DB::beginTransaction();
 
-        $uploadedImages = [];
-        // Xử lý upload ảnh tối ưu
-        if ($request->hasFile('images')) {
-            try {
+            // Tạo mã chi nhánh
+            $branchCode = 'BR' . str_pad((Branch::max('id') ?? 0) + 1, 4, '0', STR_PAD_LEFT);
+
+            // Tạo chi nhánh mới
+            $branch = new Branch();
+            $branch->branch_code = $branchCode;
+            $branch->name = $validated['name'];
+            $branch->address = $validated['address'];
+            $branch->phone = $validated['phone'];
+            $branch->email = $validated['email'] ?? null;
+            $branch->opening_hour = $validated['opening_hour'];
+            $branch->closing_hour = $validated['closing_hour'];
+            $branch->latitude = $validated['latitude'] ?? null;
+            $branch->longitude = $validated['longitude'] ?? null;
+            $branch->manager_user_id = $validated['manager_user_id'] ?? null;
+            $branch->active = $request->has('active') ? true : false;
+            $branch->balance = 0.00; // Mặc định từ migration
+            $branch->rating = 5.00; // Mặc định từ migration
+            $branch->reliability_score = 100; // Mặc định từ migration
+            $branch->save();
+
+            // Xử lý upload ảnh
+            if ($request->hasFile('images')) {
                 $directory = 'branches/' . $branch->branch_code;
                 Storage::disk('public')->makeDirectory($directory);
 
                 $primaryImageIndex = $request->input('primary_image', 0);
-                $images = $request->file('images');
-                
-                // Validate primary image index
-                if ($primaryImageIndex >= count($images)) {
-                    throw new \Exception("Vị trí ảnh chính không hợp lệ");
-                }
-                
-                foreach ($images as $index => $image) {
-                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+
+                foreach ($request->file('images') as $index => $image) {
+                    $filename = Str::slug($branch->name) . '_' . time() . '_' . $index . '.' . $image->getClientOriginalExtension();
                     $path = $image->storeAs($directory, $filename, 'public');
-                    
-                    $uploadedImages[] = [
+
+                    BranchImage::create([
+                        'branch_id' => $branch->id,
                         'image_path' => $path,
-                        'caption' => $request->input('captions.'.$index, ''),
-                        'is_primary' => ($index === $primaryImageIndex)
-                    ];
+                        'caption' => $request->input("captions.$index", ''),
+                        'is_primary' => ($index == $primaryImageIndex),
+                    ]);
                 }
-
-                // Xử lý ảnh trong transaction riêng
-                DB::transaction(function () use ($branch, $uploadedImages) {
-                    foreach ($uploadedImages as $imageData) {
-                        $branch->images()->create($imageData);
-                    }
-                    
-                    // Đánh dấu ảnh chính sau khi tất cả ảnh đã được tạo
-                    if ($primaryImage = $branch->images()->where('is_primary', true)->first()) {
-                        $branch->images()
-                            ->where('id', '!=', $primaryImage->id)
-                            ->update(['is_primary' => false]);
-                    }
-                });
-
-            } catch (\Exception $e) {
-                // Rollback tự động và xóa file đã upload
-                if (isset($uploadedImages)) {
-                    foreach ($uploadedImages as $image) {
-                        Storage::disk('public')->delete($image['image_path']);
-                    }
-                }
-                throw $e;
             }
-        }
 
-        DB::commit();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Thêm chi nhánh thành công',
-            'data' => [
-                'branch' => $branch,
-                'images' => $branch->images
-            ]
-        ], 201);
-            
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        // Xóa toàn bộ thư mục nếu có lỗi
-        if (isset($directory) && Storage::disk('public')->exists($directory)) {
-            Storage::disk('public')->deleteDirectory($directory);
+            DB::commit();
+
+            return redirect()->route('admin.branches.index')
+                ->with('success', 'Đã thêm chi nhánh mới thành công');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating branch: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi tạo chi nhánh: ' . $e->getMessage() . 
+                    "\nFile: " . $e->getFile() . 
+                    "\nLine: " . $e->getLine() . 
+                    "\nTrace: " . $e->getTraceAsString())
+                ->withInput();
         }
-        
-        // Log detailed error
-        Log::error('Error in BranchController@store', [
-            'message' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine()
-        ]);
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Có lỗi xảy ra khi thêm chi nhánh: ' . $e->getMessage()
-        ], 500);
     }
-}
+
     public function show($id)
     {
         try {
-            // Lấy chi nhánh kèm thông tin quản lý (chỉ khi tài khoản active)
-            $branch = Branch::with(['manager' => function($query) {
-                $query->where('active', true);
-            }])->findOrFail($id);
-    
-            // Kiểm tra và xóa tham chiếu nếu quản lý không active
-            if ($branch->manager_user_id && !$branch->manager) {
-                $branch->manager_user_id = null; // Cho phép null
-                $branch->save();
-            }
-    
-            $hasActiveManager = $branch->manager_user_id && $branch->manager;
+            $branch = Branch::with(['manager'])->findOrFail($id);
+            
+            // Kiểm tra trạng thái active của quản lý
+            $hasActiveManager = $branch->manager_user_id && 
+                          $branch->manager && 
+                          $branch->manager->active;
             
             return view('admin.branch.show', compact('branch', 'hasActiveManager'));
         } catch (\Exception $e) {
@@ -269,89 +218,96 @@ public function store(Request $request)
                 ->with('error', 'Có lỗi xảy ra khi tải form chỉnh sửa: ' . $e->getMessage());
         }
     }
-    public function update(Request $request, Branch $branch)
-    {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|max:255',
-                'address' => 'required',
-                'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10',
-                'email' => 'nullable|email',
-                'opening_hour' => 'required|date_format:H:i',
-                'closing_hour' => 'required|date_format:H:i|after:opening_hour',
-                'latitude' => 'nullable|numeric',
-                'longitude' => 'nullable|numeric',
-                'manager_user_id' => 'nullable|exists:users,id',
-                'images' => 'nullable|array',
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-                'delete_images' => 'nullable|array',
-                'delete_images.*' => 'exists:branch_images,id',
-                'primary_image' => 'nullable|integer|min:0',
-                'captions' => 'nullable|array',
-                'captions.*' => 'nullable|string|max:255',
-            ]);
-    
-            DB::beginTransaction();
-    
-            // Cập nhật thông tin cơ bản
-            $branch->update($validated);
-    
-            // Xử lý xóa ảnh
-            if ($request->has('delete_images')) {
-                $imagesToDelete = $branch->images()->whereIn('id', $request->delete_images)->get();
-                
-                foreach ($imagesToDelete as $image) {
-                    Storage::disk('public')->delete($image->image_path);
-                    $image->delete();
-                }
+public function update(Request $request, Branch $branch)
+{
+    try {
+        // Validate input data
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:branches,name,' . $branch->id,
+            'address' => 'required|string|max:255|unique:branches,address,' . $branch->id,
+            'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone,' . $branch->id,
+            'email' => 'nullable|email|unique:branches,email,' . $branch->id,
+            'opening_hour' => 'required|date_format:H:i',
+            'closing_hour' => 'required|date_format:H:i|after:opening_hour',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'manager_user_id' => 'nullable|exists:users,id',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'delete_images' => 'nullable|array',
+            'delete_images.*' => 'exists:branch_images,id',
+            'primary_image' => 'nullable|integer|min:0',
+            'captions' => 'nullable|array',
+            'captions.*' => 'nullable|string|max:255',
+        ]);
+
+        DB::beginTransaction();
+
+        // Update basic branch information
+        $branch->name = $validated['name'];
+        $branch->address = $validated['address'];
+        $branch->phone = $validated['phone'];
+        $branch->email = $validated['email'] ?? null;
+        $branch->opening_hour = $validated['opening_hour'];
+        $branch->closing_hour = $validated['closing_hour'];
+        $branch->latitude = $validated['latitude'] ?? null;
+        $branch->longitude = $validated['longitude'] ?? null;
+        $branch->manager_user_id = $validated['manager_user_id'] ?? null;
+        $branch->active = $request->has('active') ? true : false;
+        $branch->save();
+
+        // Handle image deletion
+        if ($request->has('delete_images')) {
+            $imagesToDelete = $branch->images()->whereIn('id', $request->delete_images)->get();
+            foreach ($imagesToDelete as $image) {
+                Storage::disk('public')->delete($image->image_path);
+                $image->delete();
             }
-    
-            // Xử lý upload ảnh mới
-            if ($request->hasFile('images')) {
-                $directory = 'branches/' . $branch->branch_code;
-                Storage::disk('public')->makeDirectory($directory);
-    
-                $primaryImageIndex = $request->input('primary_image', 0);
-                
-                foreach ($request->file('images') as $index => $image) {
-                    $filename = Str::slug($branch->name).'_'.time().'_'.$index.'.'.$image->getClientOriginalExtension();
-                    $path = $image->storeAs($directory, $filename, 'public');
-                    
-                    $isPrimary = ($index == $primaryImageIndex);
-                    
-                    $branch->images()->create([
-                        'image_path' => $path,
-                        'caption' => $request->input('captions.'.$index, ''),
-                        'is_primary' => $isPrimary
-                    ]);
-                    
-                    if ($isPrimary) {
-                        $branch->images()->where('id', '!=', $branch->images()->latest()->first()->id)
-                            ->update(['is_primary' => false]);
-                    }
-                }
-            }
-    
-            // Xử lý ảnh chính từ những ảnh hiện có
-            if ($request->has('primary_image') && !$request->hasFile('images')) {
-                $primaryImageId = $request->input('primary_image');
-                $branch->images()->where('id', $primaryImageId)->first()->setAsPrimary();
-            }
-    
-            DB::commit();
-            
-            return redirect()->route('admin.branches.index')
-                ->with('success', 'Cập nhật chi nhánh thành công');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error updating branch: '.$e->getMessage());
-            
-            return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi cập nhật: '.$e->getMessage())
-                ->withInput();
         }
+
+        // Handle new image uploads
+        if ($request->hasFile('images')) {
+            $directory = 'branches/' . $branch->branch_code;
+            Storage::disk('public')->makeDirectory($directory);
+
+            $primaryImageIndex = $request->input('primary_image', 0);
+
+            foreach ($request->file('images') as $index => $image) {
+                $filename = Str::slug($branch->name) . '_' . time() . '_' . $index . '.' . $image->getClientOriginalExtension();
+                $path = $image->storeAs($directory, $filename, 'public');
+
+                BranchImage::create([
+                    'branch_id' => $branch->id,
+                    'image_path' => $path,
+                    'caption' => $request->input("captions.$index", ''),
+                    'is_primary' => ($index == $primaryImageIndex),
+                ]);
+            }
+        }
+
+        // Set primary image from existing images
+        if ($request->has('primary_image') && !$request->hasFile('images')) {
+            $primaryImageId = $request->input('primary_image');
+            $branch->images()->update(['is_primary' => false]);
+            $branch->images()->where('id', $primaryImageId)->update(['is_primary' => true]);
+        }
+
+        DB::commit();
+
+        return redirect()->route('admin.branches.index')
+            ->with('success', 'Cập nhật chi nhánh thành công');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error updating branch: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage() . 
+                "\nFile: " . $e->getFile() . 
+                "\nLine: " . $e->getLine() . 
+                "\nTrace: " . $e->getTraceAsString())
+            ->withInput();
     }
+}
 
     public function destroy(Branch $branch)
     {
@@ -455,23 +411,24 @@ public function store(Request $request)
         try {
             $branch = Branch::with('manager')->findOrFail($id);
             
-            // Lấy danh sách người dùng có vai trò manager (bao gồm cả inactive)
+            // Get list of active managers
             $managers = User::whereHas('roles', function($query) {
                 $query->where('name', 'manager');
-            })->orderBy('full_name', 'asc') // Bỏ điều kiện active
-              ->get();
+            })
+            ->where('active', true)
+            ->orderBy('full_name', 'asc')
+            ->get();
             
-            // Lấy danh sách chi nhánh ĐANG HOẠT ĐỘNG đã có người quản lý
+            // Get list of active branches that already have managers
             $assignedBranches = Branch::whereNotNull('manager_user_id')
                 ->where('id', '!=', $id)
-                ->where('active', true) // Thêm điều kiện active
+                ->where('active', true)
                 ->pluck('manager_user_id')
                 ->toArray();
             
-            // Lọc ra những quản lý có thể phân công
-            $availableManagers = $managers->filter(function($manager) use ($assignedBranches, $branch) {
-                return !in_array($manager->id, $assignedBranches) || 
-                       $manager->id == $branch->manager_user_id;
+            // Filter out managers who are already assigned to other branches
+            $availableManagers = $managers->reject(function($manager) use ($assignedBranches) {
+                return in_array($manager->id, $assignedBranches);
             });
             
             return view('admin.branch.assign_manager', compact('branch', 'availableManagers'));
@@ -481,7 +438,6 @@ public function store(Request $request)
                 ->with('error', 'Có lỗi xảy ra khi tải form phân công quản lý.');
         }
     }
-
     /**
      * Lưu thông tin người quản lý cho chi nhánh
      */
