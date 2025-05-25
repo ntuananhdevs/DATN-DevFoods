@@ -155,13 +155,13 @@ class TestController extends Controller
                     'region' => config('filesystems.disks.s3.region'),
                     'url' => config('filesystems.disks.s3.url')
                 ]
-            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi kết nối S3: ' . $e->getMessage()
-            ], 500, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            ], 500);
         }
     }
 }

@@ -80,7 +80,6 @@ class BannerController extends Controller
                 'order' => 'Thứ tự hiển thị'
             ]);
 
-            // CHỈ CHO PHÉP 1 TRONG 2
             $hasFile = $request->hasFile('image_path');
             $hasLink = $request->filled('image_link');
 
@@ -96,14 +95,19 @@ class BannerController extends Controller
                     'image_path' => 'Bạn phải chọn ảnh tải lên hoặc nhập đường dẫn ảnh.',
                 ])->withInput();
             }
+
             if ($hasFile) {
-                $path = $request->file('image_path')->store('banners', 'public');
-                $validated['image_path'] = $path;
+                $image = $request->file('image_path');
+                $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+                $path = 'test-uploads/' . $filename;
+                Storage::disk('s3')->put($path, file_get_contents($image));
+                $validated['image_path'] = $path; // hoặc Storage::disk('s3')->url($path) nếu bạn muốn lưu URL đầy đủ
                 unset($validated['image_link']);
             } else {
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             }
+
             Banner::create($validated);
 
             session()->flash('toast', [
@@ -124,6 +128,7 @@ class BannerController extends Controller
             return back()->withInput();
         }
     }
+
 
 
     public function show(string $id)
@@ -212,34 +217,32 @@ class BannerController extends Controller
             }
 
             if ($hasFile) {
-                // Nếu banner đã có ảnh cũ và không phải URL, xóa ảnh cũ
                 if ($banner->image_path && !filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
-                    Storage::disk('public')->delete($banner->image_path);
+                    Storage::disk('s3')->delete($banner->image_path);
                 }
-
-                $path = $request->file('image_path')->store('banners', 'public');
+                $path = $request->file('image_path')->store('banners', 's3');
                 $validated['image_path'] = $path;
                 unset($validated['image_link']);
             } else if ($hasLink) {
-                // Nếu banner đã có ảnh cũ và không phải URL, xóa ảnh cũ
                 if ($banner->image_path && !filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
-                    Storage::disk('public')->delete($banner->image_path);
+                    Storage::disk('s3')->delete($banner->image_path);
                 }
 
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             } else {
-                // Nếu không có file mới và không có link mới, giữ nguyên giá trị cũ
                 unset($validated['image_path']);
                 unset($validated['image_link']);
             }
 
             $banner->update($validated);
+
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Banner đã được cập nhật thành công'
             ]);
+
             return redirect()->route('admin.banners.index');
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -253,6 +256,7 @@ class BannerController extends Controller
             return back()->withInput();
         }
     }
+
 
     public function destroy(string $id)
     {

@@ -83,14 +83,38 @@
                 @enderror
             </div>
 
-            <div x-data="{ query: '', products: [], selectedProduct: null }" class="relative" @click.outside="products = []">
+            @php
+                $productId = null;
+                if ($banner->link) {
+                    $parts = explode('/', $banner->link);
+                    $productId = end($parts);
+                }
+            @endphp
+
+            <div x-data="{
+                query: '',
+                products: [],
+                selectedProduct: null,
+                productId: '{{ $productId }}',
+            }" class="relative" x-init="if (productId) {
+                fetch(`{{ route('admin.banners.search.product') }}?id=${productId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            selectedProduct = data[0];
+                            query = data[0].name;
+                        }
+                    });
+            }" @click.outside="products = []">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Link Sản Phẩm
                 </label>
+
                 <input type="text" x-model="query"
-                    @input.debounce.300ms="fetch(`{{ route('admin.banners.search.product') }}?q=${query}`)
-                           .then(res => res.json())
-                           .then(data => products = data)"
+                    @input.debounce.300ms="
+            fetch(`{{ route('admin.banners.search.product') }}?q=${query}`)
+                .then(res => res.json())
+                .then(data => products = data)"
                     placeholder="Nhập tên sản phẩm..."
                     class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-gray-100">
 
@@ -104,9 +128,12 @@
                         </li>
                     </template>
                 </ul>
+
+                <!-- Hidden input để submit -->
                 <input type="hidden" name="link"
-                    :value="selectedProduct ? `/shop/products/show/${selectedProduct.id}` : ''">
+                    :value="selectedProduct ? `/shop/products/show/${selectedProduct.id}` : '{{ $banner->link }}'">
             </div>
+
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="position">Vị trí hiển
@@ -143,7 +170,8 @@
                     <select
                         class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('is_active') border-red-500 @enderror"
                         id="is_active" name="is_active">
-                        <option value="1" {{ old('is_active', $banner->is_active) == '1' ? 'selected' : '' }}>Hiển thị
+                        <option value="1" {{ old('is_active', $banner->is_active) == '1' ? 'selected' : '' }}>Hiển
+                            thị
                         </option>
                         <option value="0" {{ old('is_active', $banner->is_active) == '0' ? 'selected' : '' }}>Ẩn
                         </option>
@@ -200,7 +228,8 @@
 <script src="//unpkg.com/alpinejs" defer></script>
 <script>
     document.addEventListener('DOMContentLoaded', function(e) {
-        e.preventDefault();
+        // e.preventDefault(); // Bỏ dòng này, vì nó làm chặn sự kiện load mặc định
+
         const tabs = document.querySelectorAll('.banner-form-tab');
         const tabContents = document.querySelectorAll('.banner-form-tab-content');
         const imagePathInput = document.getElementById('image_path');
@@ -252,27 +281,31 @@
 
         let initialTab = 'upload';
         let prefillLink = false;
+
         if (existingImagePath) {
             let isUrl = false;
             try {
                 new URL(existingImagePath);
                 isUrl = true;
             } catch (_) {
-                /* not a valid URL */ }
+                /* not a valid URL */
+            }
 
-            if (isUrl || !existingImagePath.startsWith('banners/')) {
+            if (isUrl) {
                 initialTab = 'link';
                 imageLinkInput.value = existingImagePath;
                 prefillLink = true;
             } else {
                 initialTab = 'upload';
                 if (imagePreview && previewPlaceholder) {
-                    imagePreview.src = "{{ asset('storage') }}/" + existingImagePath;
+                    console.log("Loading preview image for upload tab:", "{{ $bannerImageUrl ?? '' }}");
+                    imagePreview.src = "{{ $bannerImageUrl ?? '' }}";
                     imagePreview.style.display = 'block';
                     previewPlaceholder.style.display = 'none';
                 }
             }
         }
+
         setActiveTab(initialTab);
 
         if (prefillLink && imageLinkInput.value) {

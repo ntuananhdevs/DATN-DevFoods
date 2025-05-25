@@ -249,31 +249,24 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 });
 
 // Customer Cart Routes
-Route::prefix('cart')->name('customer.cart.')->group(function () {
-    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
-    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
-});
+// Route::prefix('cart')->name('customer.cart.')->group(function () {
+//     Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+//     Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+//     Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+//     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
+//     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+//     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+// });
 Route::prefix('driver')->name('driver.')->group(function () {
     Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
     Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
-
-
-
     // Quên mật khẩu
     Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
     Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
-
     // Xác minh OTP
-
     Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
-
     Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
-
     Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
     // Đặt lại mật khẩu
     Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
@@ -282,12 +275,9 @@ Route::prefix('driver')->name('driver.')->group(function () {
 
 // Route dành cho tài xế đã đăng nhập
 Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
-
     Route::get('/', function () {
-
         return view('driver.home');
     })->name('home');
-
     Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
 });
 
