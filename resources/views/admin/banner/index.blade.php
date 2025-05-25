@@ -155,8 +155,7 @@
                         </thead>
                         <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200">
                             @forelse($banners as $banner)
-                                <tr
-                                    class="hover:bg-gray-100 transition-all duration-300 ease-in-out transform hover:shadow-md hover:scale-[1.02]">
+                                <tr class="border-b">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <input type="checkbox"
                                             class="row-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
@@ -169,23 +168,25 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex-shrink-0 h-20 w-20">
-                                            @php
-                                                $defaultImage = asset('images/default-banner.png');
-                                                $imageSrc = $defaultImage;
+                                        <div class="flex items-center justify-center">
+                                            <div class="w-[100px] h-[60px] overflow-hidden">
+                                                @php
+                                                    $defaultImage = asset('images/default-banner.png');
+                                                    $imageSrc = $defaultImage;
 
-                                                if ($banner->image_path) {
-                                                    if (filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
-                                                        // Nếu image_path là URL hợp lệ (ví dụ lưu trên S3)
-                                                        $imageSrc = $banner->image_path;
-                                                    } else {
-                                                        // Nếu image_path không phải URL thì giả định file trong storage
-                                                        $imageSrc = Storage::disk('s3')->url($banner->image_path);
+                                                    if ($banner->image_path) {
+                                                        if (filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
+                                                            // Nếu image_path là URL hợp lệ (ví dụ lưu trên S3)
+                                                            $imageSrc = $banner->image_path;
+                                                        } else {
+                                                            // Nếu image_path không phải URL thì giả định file trong storage
+                                                            $imageSrc = Storage::disk('s3')->url($banner->image_path);
+                                                        }
                                                     }
-                                                }
-                                            @endphp
-                                            <img src="{{ $imageSrc }}" alt="{{ $banner->title }}"
-                                                class="h-20 w-20 rounded-lg object-cover shadow-md hover:shadow-xl transform transition-all duration-300 hover:scale-110 hover:rotate-3">
+                                                @endphp
+                                                <img src="{{ $imageSrc }}" alt="{{ $banner->title }}"
+                                                    class="w-full h-full object-cover rounded" style="border-radius:5px;">
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -251,22 +252,32 @@
                                     <td class="py-3 px-4">
                                         <div class="flex justify-center space-x-1">
                                             <a href="{{ route('admin.banners.edit', $banner->id) }}"
-                                                class="flex items-center justify-center rounded-md hover:bg-gray-400 p-2 hover:shadow-lg transition-all duration-300"
+                                                class="flex items-center justify-center rounded-md hover:bg-accent p-2"
                                                 title="Chỉnh sửa">
-                                                <i class="fas fa-pen text-sm"></i>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                </svg>
                                             </a>
                                             <form action="{{ route('admin.banners.destroy', $banner->id) }}"
                                                 method="POST" class="delete-form">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="button"
-                                                    class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-gray-400 hover:shadow-lg transition-all duration-300"
+                                                    class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
                                                     title="Xóa"
                                                     onclick="dtmodalConfirmDelete({ 
-                                                        itemName: '{{ $banner->name }}',
+                                                        title: 'Xác nhận xóa banner',
+                                                        subtitle: 'Bạn có chắc chắn muốn xóa banner này?',
+                                                        message: 'Hành động này không thể hoàn tác.',
+                                                        itemName: '{{ $banner->title }}',
                                                         onConfirm: () => this.closest('form').submit()
                                                     })">
-                                                    <i class="fas fa-trash text-sm"></i>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M3 6h18"></path>
+                                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                                    </svg>
                                                 </button>
                                             </form>
                                         </div>
