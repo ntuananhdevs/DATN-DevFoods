@@ -6,12 +6,15 @@ use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Combo;
 use App\Models\ComboItem;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTopping;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantDetail;
 use App\Models\ProductReview;
+use App\Models\ProductImg;
 use App\Models\Topping;
 use App\Models\User;
 use App\Models\VariantAttribute;
@@ -229,7 +232,7 @@ class FastFoodSeeder extends Seeder
                 ]);
                 echo "Created product: {$product->name}\n";
                 
-                // Tạo hình ảnh cho sản phẩm (product_imgs table)
+                // Tạo hình ảnh cho sản phẩm
                 $this->createProductImages($product);
             }
         }
@@ -251,9 +254,8 @@ class FastFoodSeeder extends Seeder
             }
         }
 
-        // Tạo variants cho mỗi product và branch stocks
+        // Tạo variants cho mỗi product
         $products = Product::all();
-        $branches = Branch::all();
         $variantAttributes = VariantAttribute::with('values')->get();
 
         foreach ($products as $product) {
@@ -281,25 +283,17 @@ class FastFoodSeeder extends Seeder
                         'variant_value_id' => $valueId
                     ]);
                 }
-
-                // Tạo stock cho mỗi branch
-                foreach ($branches as $branch) {
-                    $branch->stocks()->create([
-                        'product_variant_id' => $variant->id,
-                        'stock_quantity' => rand(10, 100)
-                    ]);
-                }
             }
         }
+
+        // Tạo branch stocks riêng biệt
+        $this->createBranchStocks();
 
         // Tạo toppings
         $this->createToppings();
         
         // Tạo product-topping relationships
         $this->createProductToppings();
-        
-        // Tạo product reviews (nếu có users)
-        $this->createProductReviews();
 
         // Tạo combos
         $combos = Combo::factory(10)->create();
@@ -318,7 +312,13 @@ class FastFoodSeeder extends Seeder
                     ]);
                 }
             }
-        }        
+        }
+
+        // Tạo orders trước
+        $this->createOrders();
+        
+        // Sau đó mới tạo reviews
+        $this->createProductReviews();
     }
     
     /**
@@ -329,7 +329,7 @@ class FastFoodSeeder extends Seeder
         $imageCount = rand(1, 4); // Mỗi sản phẩm có 1-4 hình ảnh
         
         for ($i = 0; $i < $imageCount; $i++) {
-            ProductImage::create([
+            ProductImg::create([
                 'product_id' => $product->id,
                 'img' => "products/{$product->sku}_image_{$i}.jpg",
                 'is_primary' => $i === 0 // Hình đầu tiên là primary
@@ -402,80 +402,6 @@ class FastFoodSeeder extends Seeder
     }
     
     /**
-     * Tạo product reviews (chỉ tạo nếu có users và orders)
-     */
-    private function createProductReviews()
-    {
-        // Kiểm tra xem có users không
-        $users = User::all();
-        if ($users->isEmpty()) {
-            echo "No users found, skipping product reviews creation\n";
-            return;
-        }
-        
-        // Tạo một số orders giả để có thể tạo reviews
-        // Vì không có model Order, ta sẽ tạo reviews mà không cần order_id
-        // Hoặc có thể bỏ qua việc tạo reviews nếu không có orders
-        
-        $products = Product::all();
-        $branches = Branch::all();
-        
-        foreach ($products as $product) {
-            // Mỗi sản phẩm có 0-10 reviews
-            $reviewCount = rand(0, 10);
-            
-            for ($i = 0; $i < $reviewCount; $i++) {
-                $user = $users->random();
-                $branch = $branches->random();
-                
-                // Vì không có orders, ta sẽ comment phần này
-                // hoặc tạo một order_id giả
-                /*
-                ProductReview::create([
-                    'user_id' => $user->id,
-                    'product_id' => $product->id,
-                    'order_id' => 1, // Giả sử có order với id = 1
-                    'branch_id' => $branch->id,
-                    'rating' => rand(1, 5),
-                    'review' => $this->getRandomReview(),
-                    'review_date' => Carbon::now()->subDays(rand(1, 365)),
-                    'approved' => rand(0, 1) === 1,
-                    'review_image' => rand(0, 1) === 1 ? "reviews/review_" . Str::random(10) . ".jpg" : null,
-                    'is_verified_purchase' => true,
-                    'is_anonymous' => rand(0, 1) === 1,
-                    'helpful_count' => rand(0, 50),
-                    'report_count' => rand(0, 5),
-                    'is_featured' => rand(0, 1) === 1
-                ]);
-                */
-            }
-        }
-        
-        echo "Product reviews creation skipped (no orders table found)\n";
-    }
-    
-    /**
-     * Lấy review ngẫu nhiên
-     */
-    private function getRandomReview()
-    {
-        $reviews = [
-            "Món ăn rất ngon, tôi sẽ quay lại!",
-            "Chất lượng tốt, giá cả hợp lý",
-            "Phục vụ nhanh, đồ ăn nóng hổi",
-            "Vị rất đậm đà, rất hài lòng",
-            "Không gian thoải mái, nhân viên thân thiện",
-            "Đồ ăn ngon nhưng hơi mặn",
-            "Tuyệt vời! Sẽ giới thiệu cho bạn bè",
-            "Bình thường, không có gì đặc biệt",
-            "Rất ngon, đáng đồng tiền bát gạo",
-            "Giao hàng nhanh, đồ ăn còn nóng"
-        ];
-        
-        return $reviews[array_rand($reviews)];
-    }
-    
-    /**
      * Lấy hình ảnh variant ngẫu nhiên
      */
     private function getRandomVariantImage()
@@ -504,5 +430,280 @@ class FastFoodSeeder extends Seeder
             $result = $tmp;
         }
         return $result;
+    }
+
+    /**
+     * Lấy review ngẫu nhiên với nội dung chi tiết
+     */
+    private function getRandomReview()
+    {
+        $positivePoints = [
+            "hương vị tuyệt vời, đậm đà",
+            "phục vụ chuyên nghiệp, nhanh chóng",
+            "đóng gói cẩn thận, sạch sẽ",
+            "giao hàng đúng giờ, shipper thân thiện",
+            "giá cả phải chăng cho chất lượng này",
+            "phần ăn đầy đặn, nhiều nhân",
+            "nguyên liệu tươi ngon, chọn lọc kỹ",
+            "chất lượng ổn định qua nhiều lần order",
+            "nhân viên nhiệt tình, chu đáo",
+            "đồ ăn nóng hổi khi nhận được"
+        ];
+
+        $negativePoints = [
+            "vị có thể đậm đà hơn một chút",
+            "thời gian chờ hơi lâu vào giờ cao điểm",
+            "giá hơi cao so với portion size",
+            "phần ăn có thể nhiều hơn một chút",
+            "bao bì đóng gói cần cải thiện thêm",
+            "nước chấm hơi ít so với khẩu phần",
+            "đồ ăn hơi nguội khi giao đến",
+            "rau củ garnish có thể tươi hơn",
+            "vị có thể đa dạng hơn",
+            "nên có thêm option về độ cay"
+        ];
+
+        $openings = [
+            "Đây là một trong những món tôi thích nhất ở đây vì",
+            "Tôi đã thử nhiều nơi nhưng vẫn thích ở đây nhất bởi",
+            "Điểm khiến tôi ấn tượng với món này là",
+            "Sau nhiều lần order, tôi vẫn đánh giá cao vì",
+            "Món này luôn là lựa chọn hàng đầu của tôi bởi",
+            "Tôi rất hài lòng với chất lượng món này vì",
+            "Điều làm tôi thích thú với món này là",
+            "Tôi thường xuyên đặt món này vì",
+            "Món ăn để lại ấn tượng tốt nhờ",
+            "Tôi đánh giá rất cao món này vì"
+        ];
+
+        // Tạo review chi tiết
+        $review = $openings[array_rand($openings)] . " " . 
+                 $positivePoints[array_rand($positivePoints)] . ". ";
+
+        // 40% chance để thêm một điểm tích cực khác
+        if (rand(1, 100) <= 40) {
+            $review .= "Không chỉ vậy, " . 
+                      $positivePoints[array_rand($positivePoints)] . ". ";
+        }
+
+        // 30% chance để thêm góp ý cải thiện
+        if (rand(1, 100) <= 30) {
+            $suggestions = [
+                "Tuy nhiên, ",
+                "Điểm cần cải thiện là ",
+                "Góp ý nhỏ là ",
+                "Mong rằng ",
+                "Hy vọng lần sau "
+            ];
+            $review .= $suggestions[array_rand($suggestions)] . 
+                      $negativePoints[array_rand($negativePoints)] . ". ";
+        }
+
+        // Thêm kết luận
+        $conclusions = [
+            "Nhìn chung vẫn rất đáng để thử!",
+            "Chắc chắn sẽ quay lại lần nữa!",
+            "Recommended cho mọi người!",
+            "Rất đáng đồng tiền!",
+            "Sẽ tiếp tục ủng hộ dài dài!"
+        ];
+
+        $review .= $conclusions[array_rand($conclusions)];
+
+        return $review;
+    }
+
+    /**
+     * Tạo orders và order items
+     */
+    private function createOrders()
+    {
+        $users = User::all();
+        $branches = Branch::all();
+        $drivers = \App\Models\Driver::all();
+        $productVariants = ProductVariant::all();
+        $combos = Combo::all();
+        
+        // Tạo 100 orders
+        for ($i = 0; $i < 100; $i++) {
+            $user = $users->random(); // Random user
+            $branch = $branches->random(); // Random branch
+            $driver = $drivers->random(); // Random driver
+            $orderDate = Carbon::now()->subDays(rand(1, 90)); // Random date in last 90 days
+            
+            // Calculate random amounts
+            $subtotal = 0;
+            $deliveryFee = rand(15000, 30000);
+            $discountAmount = rand(0, 50000);
+            $taxAmount = 0;
+            
+            // Create order
+            $order = \App\Models\Order::create([
+                'customer_id' => $user->id,
+                'branch_id' => $branch->id,
+                'driver_id' => $driver->id,
+                'order_date' => $orderDate,
+                'delivery_date' => $orderDate->copy()->addMinutes(rand(30, 120)),
+                'status' => $this->getRandomOrderStatus(),
+                'delivery_fee' => $deliveryFee,
+                'discount_amount' => $discountAmount,
+                'tax_amount' => $taxAmount,
+                'subtotal' => 0, // Will be updated after adding items
+                'total_amount' => 0, // Will be updated after adding items
+                'notes' => $this->getRandomOrderNote(),
+                'points_earned' => rand(10, 100),
+                'estimated_delivery_time' => $orderDate->copy()->addMinutes(45),
+                'actual_delivery_time' => $orderDate->copy()->addMinutes(rand(30, 90))
+            ]);
+            
+            // Add 1-5 items to order
+            $itemCount = rand(1, 5);
+            for ($j = 0; $j < $itemCount; $j++) {
+                // 80% chance for product variant, 20% chance for combo
+                if (rand(1, 100) <= 80) {
+                    $variant = $productVariants->random();
+                    $quantity = rand(1, 3);
+                    $unitPrice = $variant->product->base_price;
+                    
+                    \App\Models\OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_variant_id' => $variant->id,
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'total_price' => $unitPrice * $quantity
+                    ]);
+                    
+                    $subtotal += $unitPrice * $quantity;
+                } else {
+                    $combo = $combos->random();
+                    $quantity = rand(1, 2);
+                    $unitPrice = $combo->price;
+                    
+                    \App\Models\OrderItem::create([
+                        'order_id' => $order->id,
+                        'combo_id' => $combo->id,
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'total_price' => $unitPrice * $quantity
+                    ]);
+                    
+                    $subtotal += $unitPrice * $quantity;
+                }
+            }
+            
+            // Update order totals
+            $taxAmount = $subtotal * 0.1; // 10% tax
+            $totalAmount = $subtotal + $deliveryFee + $taxAmount - $discountAmount;
+            
+            $order->update([
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'total_amount' => $totalAmount
+            ]);
+            
+            echo "Created order #{$order->id} with {$itemCount} items\n";
+        }
+    }
+
+    /**
+     * Get random order status
+     */
+    private function getRandomOrderStatus()
+    {
+        $statuses = [
+            'pending',
+            'confirmed',
+            'preparing',
+            'ready_for_delivery',
+            'delivering',
+            'delivered',
+            'completed',
+            'cancelled'
+        ];
+        
+        return $statuses[array_rand($statuses)];
+    }
+
+    /**
+     * Get random order note
+     */
+    private function getRandomOrderNote()
+    {
+        $notes = [
+            'Không cần ớt',
+            'Giao trong giờ hành chính',
+            'Gọi điện trước khi giao',
+            'Thêm đồ dùng dùng một lần',
+            'Không cần gọi điện',
+            null,
+            null,
+            null
+        ];
+        
+        return $notes[array_rand($notes)];
+    }
+
+    /**
+     * Tạo product reviews với order reference
+     */
+    private function createProductReviews()
+    {
+        $users = User::all();
+        $branches = Branch::all();
+        $products = Product::all();
+        $orders = Order::all(); // Lấy tất cả orders thay vì chỉ lấy completed
+
+        foreach ($products as $product) {
+            // Mỗi sản phẩm có đúng 10 reviews
+            for ($i = 0; $i < 10; $i++) {
+                $user = $users->random();
+                $branch = $branches->random();
+                $order = $orders->random();
+
+                // Tạo review
+                ProductReview::create([
+                    'user_id' => $user->id,
+                    'product_id' => $product->id,
+                    'order_id' => $order->id,
+                    'branch_id' => $branch->id,
+                    'rating' => rand(3, 5), // Bias towards positive reviews
+                    'review' => $this->getRandomReview(),
+                    'review_date' => now()->subDays(rand(1, 30)),
+                    'approved' => true,
+                    'review_image' => rand(0, 1) === 1 ? "reviews/review_" . Str::random(10) . ".jpg" : null,
+                    'is_verified_purchase' => true,
+                    'is_anonymous' => rand(0, 1) === 1,
+                    'helpful_count' => rand(0, 50),
+                    'report_count' => rand(0, 5),
+                    'is_featured' => rand(0, 1) === 1
+                ]);
+            }
+            
+            echo "Created 10 reviews for product: {$product->name}\n";
+        }
+    }
+
+    private function createBranchStocks()
+    {
+        $branches = Branch::all();
+        $variants = ProductVariant::all();
+        
+        echo "Creating branch stocks...\n";
+        
+        foreach ($branches as $branch) {
+            echo "Creating stocks for branch: {$branch->name}\n";
+            
+            foreach ($variants as $variant) {
+                // Tạo stock với số lượng ngẫu nhiên từ 0 đến 100
+                $stockQuantity = rand(0, 100);
+                
+                $branch->stocks()->create([
+                    'product_variant_id' => $variant->id,
+                    'stock_quantity' => $stockQuantity
+                ]);
+                
+                echo "Created stock for variant {$variant->id} with quantity: {$stockQuantity}\n";
+            }
+        }
     }
 }
