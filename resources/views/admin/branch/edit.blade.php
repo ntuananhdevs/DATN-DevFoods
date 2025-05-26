@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chỉnh sửa chi nhánh</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+@extends('layouts.admin.contentLayoutMaster')
+
+@section('content')
     <style>
         /* Existing CSS styles remain unchanged */
         :root {
@@ -732,14 +726,27 @@ document.addEventListener('DOMContentLoaded', function() {
     function initMap() {
         const defaultLat = 21.0285;
         const defaultLng = 105.8542;
-        
         let lat = defaultLat;
         let lng = defaultLng;
         
         try {
+            // Validate existing coordinates
             if (latitudeInput.value && longitudeInput.value) {
-                lat = parseFloat(latitudeInput.value) || defaultLat;
-                lng = parseFloat(longitudeInput.value) || defaultLng;
+                const parsedLat = parseFloat(latitudeInput.value);
+                const parsedLng = parseFloat(longitudeInput.value);
+                if (!isNaN(parsedLat) && !isNaN(parsedLng) && 
+                    parsedLat >= -90 && parsedLat <= 90 && 
+                    parsedLng >= -180 && parsedLng <= 180) {
+                    lat = parsedLat;
+                    lng = parsedLng;
+                }
+            }
+            
+            // Initialize map
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) {
+                console.error('Map container not found');
+                return;
             }
             
             map = L.map('map', {
@@ -749,6 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 scrollWheelZoom: false
             });
             
+            // Add tile layer
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19,
@@ -756,31 +764,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 zoomOffset: 0
             }).addTo(map);
             
+            // Ensure map resizes correctly
             setTimeout(() => {
                 map.invalidateSize();
-            }, 200);
+            }, 300);
             
+            // Set initial marker if coordinates exist
             if (latitudeInput.value && longitudeInput.value) {
                 setMarker(lat, lng);
             }
             
+            // Add click event for marker placement
             map.on('click', function(e) {
                 setMarker(e.latlng.lat, e.latlng.lng);
             });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                setTimeout(() => map.invalidateSize(), 100);
+            });
         } catch (error) {
             console.error('Map initialization failed:', error);
+            latitudeInput.value = defaultLat.toFixed(6);
+            longitudeInput.value = defaultLng.toFixed(6);
         }
     }
     
     function setMarker(lat, lng) {
         try {
+            // Validate coordinates
+            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                console.warn('Invalid coordinates:', lat, lng);
+                return;
+            }
+            
+            // Remove existing marker
             if (marker) {
                 map.removeLayer(marker);
             }
             
+            // Add new marker
             marker = L.marker([lat, lng]).addTo(map);
-            map.panTo([lat, lng]);
+            map.panTo([lat, lng], { animate: true });
             
+            // Update input fields
             latitudeInput.value = lat.toFixed(6);
             longitudeInput.value = lng.toFixed(6);
         } catch (error) {
@@ -816,6 +843,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (openingHourInput.value && closingHourInput.value && openingHourInput.value >= closingHourInput.value) {
                 e.preventDefault();
                 alert('Giờ đóng cửa phải sau giờ mở cửa!');
+                return;
+            }
+
+            // Validate coordinates before submission
+            const lat = parseFloat(latitudeInput.value);
+            const lng = parseFloat(longitudeInput.value);
+            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                e.preventDefault();
+                alert('Vui lòng chọn một vị trí hợp lệ trên bản đồ!');
                 return;
             }
 
@@ -1091,5 +1127,4 @@ document.addEventListener('DOMContentLoaded', function() {
     initForm();
 });
 </script>
-</body>
-</html>
+@endsection

@@ -186,7 +186,7 @@
                                 <circle cx="12" cy="12" r="3"></circle>
                             </svg>
                         </a>
-                        <a href="{{ route('admin.users.managers.edit', $user->id) }}"
+                        <a href=""
                             class="flex items-center justify-center rounded-md hover:bg-accent p-2 ml-2"
                             title="Chỉnh sửa">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

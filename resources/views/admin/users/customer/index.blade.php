@@ -12,8 +12,8 @@
                 </svg>
             </div>
             <div>
-                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản quản lý </h2>
-                <p class="text-muted-foreground">Quản lý tài khoản quản lý của hệ thống</p>
+                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản người dùng  </h2>
+                <p class="text-muted-foreground">Quản lý tài khoản người dùng của hệ thống</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
@@ -65,7 +65,7 @@
     <div class="bg-white rounded-lg shadow-md">
         <!-- Table Header -->
         <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-800">Danh sách quản lý </h2>
+            <h2 class="text-xl font-semibold text-gray-800">Danh sách người dùng </h2>
         </div>
 
         <!-- Controls -->

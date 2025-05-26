@@ -11,13 +11,34 @@
         font-weight: 500;
         transition: all 0.2s ease;
     }
+
     .status-tag.success {
         background-color: #dcfce7;
         color: #15803d;
     }
+
     .status-tag.failed {
         background-color: #fee2e2;
         color: #b91c1c;
+    }
+
+    .search-loading::after {
+        content: '';
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ccc;
+        border-top-color: #333;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    @keyframes spin {
+        to { transform: translateY(-50%) rotate(360deg); }
     }
 </style>
 
@@ -58,11 +79,12 @@
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.3-4.3"></path>
                 </svg>
-                <input type="text" 
-                    placeholder="Tìm kiếm theo tên, địa chỉ..." 
-                    class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" 
+                <input type="text"
+                    placeholder="Tìm kiếm theo tên, địa chỉ..."
+                    class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9"
                     id="searchInput"
-                    value="{{ request('search') }}">
+                    value="{{ request('search') }}"
+                    autocomplete="off">
             </div>
             <div class="flex items-center gap-2">
                 <button class="btn btn-outline flex items-center" id="selectAllButton">
@@ -144,9 +166,17 @@
                         </td>
                         <td class="py-3 px-4">{{ date('H:i', strtotime($branch->opening_hour)) }} - {{ date('H:i', strtotime($branch->closing_hour)) }}</td>
                         <td class="py-3 px-4">
-                            <span class="status-tag {{ $branch->active ? 'success' : 'failed' }}">
-                                {{ $branch->active ? 'Hoạt động' : 'Vô hiệu hóa' }}
-                            </span>
+                            <button type="button"
+                                class="px-3 py-1.5 rounded-full text-xs {{ $branch->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 w-24 transition-opacity duration-200"
+                                data-branch-id="{{ $branch->id }}"
+                                data-branch-name="{{ $branch->name }}"
+                                data-branch-active="{{ $branch->active ? 'true' : 'false' }}">
+                                @if($branch->active)
+                                <i class="fas fa-check mr-1"></i> Hoạt động
+                                @else
+                                <i class="fas fa-times mr-1"></i> Vô hiệu hóa
+                                @endif
+                            </button>
                         </td>
                         <td class="py-3 px-4">
                             <a href="{{ route('admin.branches.show', $branch->id) }}" class="btn btn-ghost btn-sm">
@@ -165,112 +195,220 @@
                 </tbody>
             </table>
         </div>
-
     </div>
 </div>
 @endsection
 
 @section('page-script')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Xử lý chọn tất cả
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
-    
-    selectAllCheckbox.addEventListener('change', function() {
-        branchCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-    });
-
-    // Xử lý tìm kiếm với debounce
-    const searchInput = document.getElementById('searchInput');
-    let searchTimeout = null;
-    
-    searchInput.addEventListener('input', function(e) {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            loadBranches(1, e.target.value);
-        }, 500);
-    });
-
-    // Toggle dropdown actions
-    window.toggleDropdown = function(dropdownId) {
-        const dropdown = document.getElementById(dropdownId);
-        dropdown.classList.toggle('hidden');
-    };
-});
-
-// AJAX load dữ liệu
-async function loadBranches(page = 1, search = '') {
-    try {
-        const response = await fetch(`{{ route('admin.branches.index') }}?page=${page}&search=${encodeURIComponent(search)}`);
-        const data = await response.json();
-        
-        if (data.success) {
-            updateTable(data.branches.data);
-            updatePagination(data.branches);
-            updateURL(page, search);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showToast('error', 'Lỗi tải dữ liệu');
+    // Ensure CSRF token is available
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!csrfToken) {
+        console.error('CSRF token not found');
     }
-}
 
-// Cập nhật bảng
-function updateTable(branches) {
-    const tbody = document.querySelector('tbody');
-    tbody.innerHTML = branches.length > 0 
-        ? branches.map(branch => `
-            <tr>
-                <td class="py-3 px-4">
-                    <input type="checkbox" class="branch-checkbox" value="${branch.id}">
-                </td>
-                <td class="py-3 px-4">${branch.id}</td>
-                <td class="py-3 px-4">${branch.name}</td>
-                <td class="py-3 px-4">${branch.address.substring(0, 40)}${branch.address.length > 40 ? '...' : ''}</td>
-                <td class="py-3 px-4">
-                    <div class="space-y-1">
-                        <div>📞 ${branch.phone}</div>
-                        ${branch.email ? `<div>📧 ${branch.email}</div>` : ''}
-                    </div>
-                </td>
-                <td class="py-3 px-4">${branch.opening_hour} - ${branch.closing_hour}</td>
-                <td class="py-3 px-4">
-                    <span class="status-tag ${branch.active ? 'success' : 'failed'}">
-                        ${branch.active ? 'Hoạt động' : 'Vô hiệu hóa'}
-                    </span>
-                </td>
-                <td class="py-3 px-4">
-                    <a href="/admin/branches/${branch.id}" class="btn btn-ghost btn-sm">
-                        👁️ Xem
-                    </a>
-                </td>
-            </tr>
-        `).join('')
-        : `<tr>
-            <td colspan="8" class="py-6 text-center text-muted-foreground">
-                🏪 Không có chi nhánh nào
-            </td>
-           </tr>`;
-}
+    document.addEventListener('DOMContentLoaded', function() {
+        // Xử lý chọn tất cả
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
 
-// Helper functions
-function showToast(type, message) {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type} fixed bottom-4 right-4`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => toast.remove(), 3000);
-}
+        selectAllCheckbox.addEventListener('change', function() {
+            branchCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
 
-function updateURL(page, search) {
-    const url = new URL(window.location);
-    url.searchParams.set('page', page);
-    search ? url.searchParams.set('search', search) : url.searchParams.delete('search');
-    window.history.pushState({}, '', url);
-}
+        // Xử lý tìm kiếm
+        const searchInput = document.getElementById('searchInput');
+        let searchTimeout = null;
+
+        // Hàm debounce
+        function debounce(func, delay) {
+            return function(...args) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        // Hàm tìm kiếm
+        const handleSearch = debounce(async (searchTerm) => {
+            searchInput.classList.add('search-loading');
+            await loadBranches(1, searchTerm.trim().toLowerCase());
+            searchInput.classList.remove('search-loading');
+        }, 500);
+
+        // Sự kiện input
+        searchInput.addEventListener('input', function(e) {
+            handleSearch(e.target.value);
+        });
+
+        // Sự kiện nhấn Enter
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                handleSearch(e.target.value);
+            }
+        });
+
+        // Attach toggleBranchStatus event listeners to buttons
+        document.querySelectorAll('button[data-branch-id]').forEach(button => {
+            button.addEventListener('click', function() {
+                const branchId = this.getAttribute('data-branch-id');
+                const branchName = this.getAttribute('data-branch-name');
+                const currentStatus = this.getAttribute('data-branch-active') === 'true';
+                window.toggleBranchStatus(this, branchId, branchName, currentStatus);
+            });
+        });
+
+        // Toggle dropdown actions
+        window.toggleDropdown = function(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.classList.toggle('hidden');
+        };
+    });
+
+    // AJAX load dữ liệu
+    async function loadBranches(page = 1, search = '') {
+        try {
+            const response = await fetch(`{{ route('admin.branches.index') }}?page=${page}&search=${encodeURIComponent(search)}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                updateTable(data.branches.data);
+                updatePagination(data.branches);
+                updateURL(page, search);
+
+                // Re-attach event listeners to new buttons after table update
+                document.querySelectorAll('button[data-branch-id]').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const branchId = this.getAttribute('data-branch-id');
+                        const branchName = this.getAttribute('data-branch-name');
+                        const currentStatus = this.getAttribute('data-branch-active') === 'true';
+                        window.toggleBranchStatus(this, branchId, branchName, currentStatus);
+                    });
+                });
+            } else {
+                showToast('error', 'Không tìm thấy kết quả phù hợp');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('error', 'Lỗi tải dữ liệu. Vui lòng thử lại.');
+        }
+    }
+
+    // Cập nhật bảng
+    function updateTable(branches) {
+        const tbody = document.querySelector('tbody');
+        tbody.innerHTML = branches.length > 0 ?
+            branches.map(branch => `
+                <tr class="border-b">
+                    <td class="py-3 px-4">
+                        <input type="checkbox" class="branch-checkbox" value="${branch.id}">
+                    </td>
+                    <td class="py-3 px-4">${branch.id}</td>
+                    <td class="py-3 px-4">${branch.name}</td>
+                    <td class="py-3 px-4">${branch.address.substring(0, 40)}${branch.address.length > 40 ? '...' : ''}</td>
+                    <td class="py-3 px-4">
+                        <div class="space-y-1">
+                            <div>📞 ${branch.phone}</div>
+                            ${branch.email ? `<div>📧 ${branch.email}</div>` : ''}
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <button type="button"
+                            class="px-3 py-1.5 rounded-full text-xs ${branch.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} hover:opacity-80 w-24 transition-opacity duration-200"
+                            data-branch-id="${branch.id}"
+                            data-branch-name="${branch.name}"
+                            data-branch-active="${branch.active}">
+                            ${branch.active ? 
+                                '<i class="fas fa-check mr-1"></i> Hoạt động' : 
+                                '<i class="fas fa-times mr-1"></i> Vô hiệu hóa'}
+                        </button>
+                    </td>
+                    <td class="py-3 px-4">
+                        <a href="/admin/branches/${branch.id}" class="btn btn-ghost btn-sm">
+                            👁️ Xem
+                        </a>
+                    </td>
+                </tr>
+            `).join('') :
+            `<tr>
+                <td colspan="8" class="py-6 text-center text-muted-foreground">
+                    🏪 Không có chi nhánh nào
+                </td>
+            </tr>`;
+    }
+
+    // Toggle trạng thái chi nhánh
+    window.toggleBranchStatus = async function(button, branchId, branchName, currentStatus) {
+        try {
+            const response = await fetch(`/admin/branches/${branchId}/toggle-status`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ _method: 'PUT' })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                // Đảo ngược trạng thái hiển thị
+                const newStatus = !currentStatus;
+                button.classList.remove('bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+                button.classList.add(newStatus ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+                
+                button.innerHTML = newStatus ? 
+                    `<i class="fas fa-check mr-1"></i> Hoạt động` : 
+                    `<i class="fas fa-times mr-1"></i> Vô hiệu hóa`;
+                
+                button.setAttribute('data-branch-active', newStatus);
+
+                showToast('success', `Đã chuyển trạng thái ${branchName} thành ${newStatus ? 'Hoạt động' : 'Vô hiệu hóa'}`);
+                loadBranches(); // Refresh bảng
+            } else {
+                showToast('error', data.message || 'Không thể thay đổi trạng thái');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('error', 'Có lỗi xảy ra khi chuyển trạng thái');
+        }
+    };
+
+    // Helper functions
+    function showToast(type, message) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} fixed bottom-4 right-4 p-4 rounded-md shadow-md bg-${type === 'success' ? 'green-500' : 'red-500'} text-white`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function updateURL(page, search) {
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        search ? url.searchParams.set('search', search) : url.searchParams.delete('search');
+        window.history.pushState({}, '', url);
+    }
+
+    function updatePagination(pagination) {
+        console.log('Pagination data:', pagination);
+        // Thêm logic xử lý phân trang nếu cần
+    }
 </script>
 @endsection
