@@ -17,7 +17,6 @@ class ProductController extends Controller
     {        
         $products = Product::with(['category', 'images', 'reviews'])
             ->where('status', 'selling')
-            ->where('available', true)
             ->orderBy('created_at', 'desc')
             ->paginate(8); // Giảm số lượng sản phẩm mỗi trang để phù hợp với grid 2x4
         

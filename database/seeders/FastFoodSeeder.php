@@ -7,14 +7,18 @@ use App\Models\Category;
 use App\Models\Combo;
 use App\Models\ComboItem;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductTopping;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantDetail;
+use App\Models\ProductReview;
 use App\Models\Topping;
+use App\Models\User;
 use App\Models\VariantAttribute;
 use App\Models\VariantValue;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class FastFoodSeeder extends Seeder
 {
@@ -218,20 +222,21 @@ class FastFoodSeeder extends Seeder
                     'description' => "Đây là món {$productName} ngon tuyệt",
                     'short_description' => "Món {$productName} đặc biệt",
                     'base_price' => rand(30000, 200000),
-                    'available' => true,
                     'preparation_time' => rand(10, 30),
                     'ingredients' => json_encode($this->getIngredients($productName)),
                     'status' => 'selling',
                     'is_featured' => rand(0, 1) === 1
                 ]);
                 echo "Created product: {$product->name}\n";
+                
+                // Tạo hình ảnh cho sản phẩm (product_imgs table)
+                $this->createProductImages($product);
             }
         }
 
         // Tạo variants
         $variants = [
             'Size' => ['Small', 'Medium', 'Large'],
-            'Topping' => ['Extra Cheese', 'Extra Meat', 'Extra Vegetables'],
             'Spice Level' => ['Mild', 'Medium', 'Hot'],
         ];
 
@@ -265,7 +270,7 @@ class FastFoodSeeder extends Seeder
             foreach ($combinations as $combination) {
                 $variant = ProductVariant::create([
                     'product_id' => $product->id,
-                    'image' => null,
+                    'image' => $this->getRandomVariantImage(),
                     'active' => true
                 ]);
 
@@ -287,6 +292,15 @@ class FastFoodSeeder extends Seeder
             }
         }
 
+        // Tạo toppings
+        $this->createToppings();
+        
+        // Tạo product-topping relationships
+        $this->createProductToppings();
+        
+        // Tạo product reviews (nếu có users)
+        $this->createProductReviews();
+
         // Tạo combos
         $combos = Combo::factory(10)->create();
 
@@ -305,20 +319,176 @@ class FastFoodSeeder extends Seeder
                 }
             }
         }        
-
-        // Tạo toppings
-        $toppings = Topping::factory(20)->create();
-
-        // Tạo product toppings
+    }
+    
+    /**
+     * Tạo hình ảnh cho sản phẩm
+     */
+    private function createProductImages($product)
+    {
+        $imageCount = rand(1, 4); // Mỗi sản phẩm có 1-4 hình ảnh
+        
+        for ($i = 0; $i < $imageCount; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'img' => "products/{$product->sku}_image_{$i}.jpg",
+                'is_primary' => $i === 0 // Hình đầu tiên là primary
+            ]);
+        }
+        
+        echo "Created {$imageCount} images for product: {$product->name}\n";
+    }
+    
+    /**
+     * Tạo toppings
+     */
+    private function createToppings()
+    {
+        $toppings = [
+            ['name' => 'Phô Mai Thêm', 'price' => 15000, 'active' => true],
+            ['name' => 'Thịt Bò Thêm', 'price' => 25000, 'active' => true],
+            ['name' => 'Thịt Gà Thêm', 'price' => 20000, 'active' => true],
+            ['name' => 'Bacon', 'price' => 18000, 'active' => true],
+            ['name' => 'Trứng Ốp La', 'price' => 12000, 'active' => true],
+            ['name' => 'Xà Lách Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Cà Chua Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Hành Tây Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Dưa Chuột Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Sốt BBQ', 'price' => 8000, 'active' => true],
+            ['name' => 'Sốt Cay', 'price' => 8000, 'active' => true],
+            ['name' => 'Sốt Mayonnaise', 'price' => 8000, 'active' => true],
+            ['name' => 'Sốt Tỏi', 'price' => 8000, 'active' => true],
+            ['name' => 'Nấm Thêm', 'price' => 10000, 'active' => true],
+            ['name' => 'Ớt Jalapeño', 'price' => 7000, 'active' => true],
+            ['name' => 'Tôm Thêm', 'price' => 30000, 'active' => true],
+            ['name' => 'Mực Thêm', 'price' => 25000, 'active' => true],
+            ['name' => 'Xúc Xích', 'price' => 15000, 'active' => true],
+            ['name' => 'Pepperoni', 'price' => 20000, 'active' => true],
+            ['name' => 'Dứa Thêm', 'price' => 8000, 'active' => true],
+        ];
+        
+        foreach ($toppings as $toppingData) {
+            $topping = Topping::create([
+                'name' => $toppingData['name'],
+                'price' => $toppingData['price'],
+                'active' => $toppingData['active'],
+                'image' => "toppings/" . Str::slug($toppingData['name']) . ".jpg"
+            ]);
+            echo "Created topping: {$topping->name}\n";
+        }
+    }
+    
+    /**
+     * Tạo mối quan hệ product-topping
+     */
+    private function createProductToppings()
+    {
+        $products = Product::all();
+        $toppings = Topping::all();
+        
         foreach ($products as $product) {
-            $productToppings = $toppings->random(rand(2, 5));
+            // Mỗi sản phẩm có 3-8 toppings ngẫu nhiên
+            $productToppings = $toppings->random(rand(3, 8));
+            
             foreach ($productToppings as $topping) {
                 ProductTopping::create([
                     'product_id' => $product->id,
                     'topping_id' => $topping->id
                 ]);
             }
+            
+            echo "Created toppings for product: {$product->name}\n";
         }
+    }
+    
+    /**
+     * Tạo product reviews (chỉ tạo nếu có users và orders)
+     */
+    private function createProductReviews()
+    {
+        // Kiểm tra xem có users không
+        $users = User::all();
+        if ($users->isEmpty()) {
+            echo "No users found, skipping product reviews creation\n";
+            return;
+        }
+        
+        // Tạo một số orders giả để có thể tạo reviews
+        // Vì không có model Order, ta sẽ tạo reviews mà không cần order_id
+        // Hoặc có thể bỏ qua việc tạo reviews nếu không có orders
+        
+        $products = Product::all();
+        $branches = Branch::all();
+        
+        foreach ($products as $product) {
+            // Mỗi sản phẩm có 0-10 reviews
+            $reviewCount = rand(0, 10);
+            
+            for ($i = 0; $i < $reviewCount; $i++) {
+                $user = $users->random();
+                $branch = $branches->random();
+                
+                // Vì không có orders, ta sẽ comment phần này
+                // hoặc tạo một order_id giả
+                /*
+                ProductReview::create([
+                    'user_id' => $user->id,
+                    'product_id' => $product->id,
+                    'order_id' => 1, // Giả sử có order với id = 1
+                    'branch_id' => $branch->id,
+                    'rating' => rand(1, 5),
+                    'review' => $this->getRandomReview(),
+                    'review_date' => Carbon::now()->subDays(rand(1, 365)),
+                    'approved' => rand(0, 1) === 1,
+                    'review_image' => rand(0, 1) === 1 ? "reviews/review_" . Str::random(10) . ".jpg" : null,
+                    'is_verified_purchase' => true,
+                    'is_anonymous' => rand(0, 1) === 1,
+                    'helpful_count' => rand(0, 50),
+                    'report_count' => rand(0, 5),
+                    'is_featured' => rand(0, 1) === 1
+                ]);
+                */
+            }
+        }
+        
+        echo "Product reviews creation skipped (no orders table found)\n";
+    }
+    
+    /**
+     * Lấy review ngẫu nhiên
+     */
+    private function getRandomReview()
+    {
+        $reviews = [
+            "Món ăn rất ngon, tôi sẽ quay lại!",
+            "Chất lượng tốt, giá cả hợp lý",
+            "Phục vụ nhanh, đồ ăn nóng hổi",
+            "Vị rất đậm đà, rất hài lòng",
+            "Không gian thoải mái, nhân viên thân thiện",
+            "Đồ ăn ngon nhưng hơi mặn",
+            "Tuyệt vời! Sẽ giới thiệu cho bạn bè",
+            "Bình thường, không có gì đặc biệt",
+            "Rất ngon, đáng đồng tiền bát gạo",
+            "Giao hàng nhanh, đồ ăn còn nóng"
+        ];
+        
+        return $reviews[array_rand($reviews)];
+    }
+    
+    /**
+     * Lấy hình ảnh variant ngẫu nhiên
+     */
+    private function getRandomVariantImage()
+    {
+        $images = [
+            "variants/variant_1.jpg",
+            "variants/variant_2.jpg",
+            "variants/variant_3.jpg",
+            "variants/variant_4.jpg",
+            "variants/variant_5.jpg"
+        ];
+        
+        return $images[array_rand($images)];
     }
 
     // Move the helper function outside of run() method

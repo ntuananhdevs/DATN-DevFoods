@@ -15,7 +15,6 @@ class Product extends Model
         'sku',
         'description',
         'base_price',
-        'available',
         'preparation_time',
         'ingredients',
         'short_description',
