@@ -104,14 +104,14 @@ class BranchSeeder extends Seeder
         }
         
         // Tạo thêm chi nhánh ngẫu nhiên
-        $maxBranchCode = Branch::max('branch_code');
-        $startNumber = $maxBranchCode ? (int) str_replace('HN', '', $maxBranchCode) : 3;
-        $branchCount = $startNumber;
+        // $maxBranchCode = Branch::max('branch_code');
+        // $startNumber = $maxBranchCode ? (int) str_replace('HN', '', $maxBranchCode) : 3;
+        // $branchCount = $startNumber;
         
-        Branch::factory()->count(7)->make()->each(function ($branch) use (&$branchCount) {
-            $branchCount++;
-            $branch->branch_code = 'HN' . str_pad($branchCount, 3, '0', STR_PAD_LEFT);
-            $branch->save();
-        });
+        // Branch::factory()->count(7)->make()->each(function ($branch) use (&$branchCount) {
+        //     $branchCount++;
+        //     $branch->branch_code = 'HN' . str_pad($branchCount, 3, '0', STR_PAD_LEFT);
+        //     $branch->save();
+        // });
     }
 }

@@ -249,22 +249,31 @@ class FastFoodSeeder extends Seeder
         // Tạo variants cho mỗi product và branch stocks
         $products = Product::all();
         $branches = Branch::all();
+        $variantAttributes = VariantAttribute::with('values')->get();
 
         foreach ($products as $product) {
-            // Tạo 2 variant cho mỗi sản phẩm
-            for ($i = 0; $i < 2; $i++) {
+            // Tạo mảng chứa các giá trị của từng attribute
+            $attributeValues = [];
+            foreach ($variantAttributes as $attribute) {
+                $attributeValues[] = $attribute->values->pluck('id')->toArray();
+            }
+
+            // Tạo tất cả các tổ hợp có thể có của variant values
+            $combinations = $this->generateCombinations($attributeValues);
+
+            // Tạo variant cho mỗi tổ hợp
+            foreach ($combinations as $combination) {
                 $variant = ProductVariant::create([
                     'product_id' => $product->id,
                     'image' => null,
                     'active' => true
                 ]);
 
-                // Thêm variant values
-                $variantValues = VariantValue::inRandomOrder()->take(2)->get();
-                foreach ($variantValues as $value) {
+                // Thêm variant values cho variant này
+                foreach ($combination as $valueId) {
                     ProductVariantDetail::create([
                         'product_variant_id' => $variant->id,
-                        'variant_value_id' => $value->id
+                        'variant_value_id' => $valueId
                     ]);
                 }
 
@@ -311,4 +320,19 @@ class FastFoodSeeder extends Seeder
             }
         }
     }
-} 
+
+    // Move the helper function outside of run() method
+    private function generateCombinations($arrays) {
+        $result = [[]];
+        foreach ($arrays as $array) {
+            $tmp = [];
+            foreach ($result as $combination) {
+                foreach ($array as $value) {
+                    $tmp[] = array_merge($combination, [$value]);
+                }
+            }
+            $result = $tmp;
+        }
+        return $result;
+    }
+}

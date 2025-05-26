@@ -32,6 +32,7 @@ use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
 use App\Http\Controllers\Customer\ChatController as CustomerChatController;
+use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
 use Illuminate\Database\Capsule\Manager;
 
 //Driver 
@@ -49,8 +50,11 @@ Route::prefix('/')->group(function () {
 
     // Products
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
-    Route::get('/shop/products/show', [CustomerProductController::class, 'show'])->name('products.show');
+    Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
 
+    Route::get('/wishlist', [CustomerWishlistController::class,'index'])->name('wishlist.index');
+    Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
+    Route::delete('/wishlist/{id}', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
     // // Store Locations
     // Route::get('/store', [StoreController::class, 'index'])->name('store.index');
 
@@ -190,6 +194,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
+Route::get('/edit/{id}', [UserController::class, 'editManager'])->name('edit');
+Route::put('/update/{id}', [UserController::class, 'updateManager'])->name('update');
+Route::delete('/delete/{id}', [UserController::class, 'destroyManager'])->name('destroy');
         });
     });
     // Branch Management

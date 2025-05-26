@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Attribute;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ProductVariant;
@@ -13,9 +13,15 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        return view("customer.shop.index");
+    public function index(Request $request)
+    {        
+        $products = Product::with(['category', 'images', 'reviews'])
+            ->where('status', 'selling')
+            ->where('available', true)
+            ->orderBy('created_at', 'desc')
+            ->paginate(8); // Giảm số lượng sản phẩm mỗi trang để phù hợp với grid 2x4
+        
+        return view("customer.shop.index", compact('products'));
     }
 
     /**
@@ -37,9 +43,26 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show()
+    public function show($id)
     {
-        return view("customer.shop.show");
+        $product = Product::with([
+            'category', 
+            'images', 
+            'reviews.user',
+            'variants.variantValues.attribute',
+            'toppings'
+        ])->findOrFail($id);
+
+        // Lấy các sản phẩm liên quan cùng danh mục
+        $relatedProducts = Product::with(['category', 'images', 'reviews'])
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->where('status', 'selling')
+            ->where('available', true)
+            ->limit(4)
+            ->get();
+        
+        return view("customer.shop.show", compact('product', 'relatedProducts'));
     }
 
     /**

@@ -30,6 +30,7 @@ class BannerSeeder extends Seeder
             return;
         }
 
+        // === PHẦN HOMEPAGE GIỮ NGUYÊN NHƯ CŨ ===
         foreach ($imageFiles as $index => $file) {
             $extension = strtolower($file->getExtension());
 
@@ -38,23 +39,19 @@ class BannerSeeder extends Seeder
                 continue;
             }
 
-            $originalName = $file->getFilename(); // tên gốc trong thư mục local
+            $originalName = $file->getFilename();
             $s3Filename = 'banners/' . $originalName;
 
-            // Kiểm tra xem file đã tồn tại trên S3 chưa
             if (Storage::disk('s3')->exists($s3Filename)) {
                 $this->command->line("ℹ️  Ảnh đã tồn tại trên S3: $originalName");
             } else {
-                // Upload lên AWS S3 nếu chưa có
                 $imageContent = File::get($file);
                 Storage::disk('s3')->put($s3Filename, $imageContent);
                 $this->command->info("✅ Đã upload ảnh lên S3: $originalName");
             }
 
-            // Lấy URL dù upload hay đã có sẵn
             $imageUrl = Storage::disk('s3')->url($s3Filename);
 
-            // Tạo bản ghi trong database
             Banner::create([
                 'title' => 'Banner mẫu ' . ($index + 1),
                 'position' => 'homepage',
@@ -70,6 +67,75 @@ class BannerSeeder extends Seeder
             $this->command->info("📝 Đã tạo banner từ ảnh: " . $originalName);
         }
 
-        $this->command->info("🎉 Hoàn tất tạo banner từ " . count($imageFiles) . " ảnh.");
+        // === PHẦN VỊ TRÍ KHÁC DÙNG MẢNG CỐ ĐỊNH ===
+        $extraBanners = [
+            [
+                'title' => 'Banner chân trang',
+                'position' => 'footers',
+                'image_path' => 'https://example.com/banners/footer.jpg',
+                'link' => '/footer/info',
+                'description' => 'Banner cho phần chân trang'
+            ],
+            [
+                'title' => 'Banner khuyến mãi',
+                'position' => 'promotions',
+                'image_path' => 'https://example.com/banners/promotion.jpg',
+                'link' => '/promotions',
+                'description' => 'Banner chương trình khuyến mãi'
+            ],
+            [
+                'title' => 'Banner menu',
+                'position' => 'menu',
+                'image_path' => 'https://example.com/banners/menu.jpg',
+                'link' => '/menu',
+                'description' => 'Banner cho thanh menu chính'
+            ],
+            [
+                'title' => 'Banner chi nhánh',
+                'position' => 'branch',
+                'image_path' => 'https://example.com/banners/branch.jpg',
+                'link' => '/branches',
+                'description' => 'Banner giới thiệu chi nhánh'
+            ],
+            [
+                'title' => 'Banner giới thiệu',
+                'position' => 'abouts',
+                'image_path' => 'https://example.com/banners/about.jpg',
+                'link' => '/about-us',
+                'description' => 'Banner phần giới thiệu'
+            ],
+            [
+                'title' => 'Banner hỗ trợ',
+                'position' => 'supports',
+                'image_path' => 'https://example.com/banners/support.jpg',
+                'link' => '/support',
+                'description' => 'Banner phần hỗ trợ khách hàng'
+            ],
+            [
+                'title' => 'Banner liên hệ',
+                'position' => 'contacts',
+                'image_path' => 'https://example.com/banners/contact.jpg',
+                'link' => '/contact',
+                'description' => 'Banner phần liên hệ'
+            ]
+        ];
+
+        foreach ($extraBanners as $item) {
+            Banner::create([
+                'title' => $item['title'],
+                'position' => $item['position'],
+                'order' => null,
+                'image_path' => $item['image_path'],
+                'link' => $item['link'],
+                'description' => $item['description'],
+                'start_at' => now(),
+                'end_at' => now()->addDays(7),
+                'is_active' => true
+            ]);
+
+            $this->command->info("📝 Đã tạo banner tĩnh cho vị trí: {$item['position']}");
+        }
+
+        $this->command->info("🎉 Seeder hoàn tất tạo banner cho homepage và các vị trí đặc biệt.");
     }
 }
