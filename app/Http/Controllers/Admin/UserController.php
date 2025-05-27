@@ -16,6 +16,7 @@ use App\Models\Branch;
 use App\Models\UserRole;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Workbench\App\Models\User as ModelsUser;
 
 class UserController extends Controller
@@ -41,15 +42,16 @@ class UserController extends Controller
 
             return $request->ajax()
                 ? response()->json([
-                    'success' => true,
-                    'users' => $users->items(),
-                    'pagination' => [
-                        'total' => $users->total(),
-                        'per_page' => $users->perPage(),
-                        'current_page' => $users->currentPage(),
-                        'last_page' => $users->lastPage()
-                    ]
-                ])
+                 'success' => true,
+            'users' => $users->items(),
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'last_page' => $users->lastPage(),
+            ],
+            's3_url' => config('filesystems.disks.s3.url'), 
+        ])
                 : view('admin.users.customer.index', compact('users'));
 
         } catch (\Exception $e) {
@@ -69,7 +71,7 @@ class UserController extends Controller
                 ->whereHas('roles', function($q) {
                     $q->where('name', 'manager');
                 });
-                
+
             // Xử lý tìm kiếm
             if ($request->has('search') && !empty($request->search)) {
                 $search = $request->search;
@@ -80,17 +82,17 @@ class UserController extends Controller
                         ->orWhere('phone', 'LIKE', "%{$search}%");
                 });
             }
-            
+
             // Xử lý sắp xếp
             $sortField = $request->input('sort_field', 'created_at');
             $sortOrder = $request->input('sort_order', 'desc');
-            
+
             // Đảm bảo field sắp xếp hợp lệ
             $allowedSortFields = ['id', 'user_name', 'full_name', 'email', 'phone', 'created_at'];
             if (!in_array($sortField, $allowedSortFields)) {
                 $sortField = 'created_at';
             }
-            
+
             $query->orderBy($sortField, $sortOrder);
 
             // Phân trang
@@ -112,19 +114,19 @@ class UserController extends Controller
                     ]
                 ]);
             }
-            
+
             return view('admin.users.manager.index', compact('users'));
 
         } catch (\Exception $e) {
             Log::error('UserController@manager Error: ' . $e->getMessage());
-            
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Lỗi hệ thống: ' . $e->getMessage()
                 ], 500);
             }
-            
+
             return redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
         }
     }
@@ -149,12 +151,11 @@ class UserController extends Controller
                 'email' => 'required|email|unique:users',
                 'phone' => 'nullable|string|max:20|unique:users',
                 'password' => 'required|string|min:8|confirmed',
-                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ], [
                 'password.confirmed' => 'Xác nhận mật khẩu không khớp'
             ]);
 
-            // Bắt đầu transaction sau khi validate thành công
             DB::beginTransaction();
 
             // Kiểm tra role trước khi tạo user
@@ -163,21 +164,32 @@ class UserController extends Controller
                 throw new \Exception('Không tìm thấy vai trò quản lý');
             }
 
+            // Xử lý upload avatar
+            $avatarPath = null;
+            if ($request->hasFile('avatar')) {
+                try {
+                    $avatar = $request->file('avatar');
+                    $filename = 'users/avatars/' . Str::uuid() . '.' . $avatar->getClientOriginalExtension();
+                    $avatarPath = Storage::disk('s3')->put($filename, file_get_contents($avatar));
+                    $avatarPath = $filename;
+                } catch (\Exception $e) {
+                    Log::error('Error uploading avatar to S3: ' . $e->getMessage());
+                    throw new \Exception('Không thể tải lên ảnh đại diện: ' . $e->getMessage());
+                }
+            }
+
             $user = User::create([
                 'user_name' => $validated['user_name'],
                 'full_name' => $validated['full_name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
-                'avatar' => $request->hasFile('avatar') 
-                    ? $request->file('avatar')->store('avatars', 'public')
-                    : null
+                'avatar' => $avatarPath
             ]);
 
             // Gán role manager cho user
             $user->roles()->attach($managerRole->id);
 
-            // Commit transaction khi tất cả thành công
             DB::commit();
 
             return redirect()->route('admin.users.managers.index')->with([
@@ -187,19 +199,19 @@ class UserController extends Controller
                     'message' => 'Tạo người quản lý thành công'
                 ]
             ]);
-            
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Xử lý riêng lỗi validation
             return redirect()->back()->withErrors($e->validator)->withInput();
-            
+
         } catch (\Exception $e) {
             // Đảm bảo rollback transaction nếu có lỗi
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
             }
-            
+
             Log::error('Lỗi tạo người quản lý: ' . $e->getMessage());
-            
+
             return redirect()->back()->withInput()->with([
                 'toast' => [
                     'type' => 'error',
@@ -214,13 +226,13 @@ class UserController extends Controller
     {
         try {
             $user = User::findOrFail($id);
-            
+
             // Kiểm tra nếu là quản lý và đang quản lý chi nhánh
             if ($user->roles()->where('name', 'manager')->exists()) {
                 $managedActiveBranches = Branch::where('manager_user_id', $user->id)
                     ->where('active', true) // Thêm điều kiện chi nhánh đang hoạt động
                     ->count();
-                
+
                 if ($managedActiveBranches > 0) {
                     throw new \Exception('Không thể thay đổi trạng thái quản lý đang quản lý chi nhánh HOẠT ĐỘNG');
                 }
@@ -285,7 +297,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users',
             'phone' => 'nullable|string|max:20|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ], [
             'role_ids.required' => 'Vui lòng chọn ít nhất một vai trò',
             'password.confirmed' => 'Xác nhận mật khẩu không khớp'
@@ -294,15 +306,27 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
+            // Xử lý upload avatar
+            $avatarPath = null;
+            if ($request->hasFile('avatar')) {
+                try {
+                    $avatar = $request->file('avatar');
+                    $filename = 'users/avatars/' . Str::uuid() . '.' . $avatar->getClientOriginalExtension();
+                    $avatarPath = Storage::disk('s3')->put($filename, file_get_contents($avatar));
+                    $avatarPath = $filename;
+                } catch (\Exception $e) {
+                    Log::error('Error uploading avatar to S3: ' . $e->getMessage());
+                    throw new \Exception('Không thể tải lên ảnh đại diện: ' . $e->getMessage());
+                }
+            }
+
             $user = User::create([
                 'user_name' => $validated['user_name'],
                 'full_name' => $validated['full_name'],
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
                 'password' => Hash::make($validated['password']),
-                'avatar' => $request->hasFile('avatar') 
-                    ? $request->file('avatar')->store('avatars', 'public')
-                    : null
+                'avatar' => $avatarPath
             ]);
 
             $user->roles()->sync($validated['role_ids']);
@@ -316,11 +340,11 @@ class UserController extends Controller
                     'message' => 'Tạo người dùng thành công'
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Lỗi tạo người dùng: ' . $e->getMessage());
-            var_dump($e->getMessage());die;
+
             return redirect()->back()->withInput()->with([
                 'toast' => [
                     'type' => 'error',
@@ -348,7 +372,7 @@ class UserController extends Controller
                         'email' => $user->email,
                         'phone' => $user->phone,
                         'balance' => $user->balance,
-                        'avatar_url' => $user->avatar ? Storage::url($user->avatar) : null,
+                        'avatar_url' => $user->avatar ? config('filesystems.disks.s3.url') . '/' . $user->avatar : null,
                         'roles' => $user->roles->pluck('name'),
                         'status' => $user->active ? 'Hoạt động' : 'Vô hiệu hóa',
                         'created_at' => $user->created_at->format('d/m/Y H:i'),
