@@ -22,7 +22,7 @@
                         <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">{{ $banner->title }}</h2>
                         <p class="text-lg max-w-2xl mx-auto">{{ $banner->description }}</p>
                         @if ($banner->position === 'homepage')
-                            <a href="{{ url('/products/' . $banner->link) }}" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors">
+                            <a href="{{ url($banner->link) }}" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors">
                                 Xem Thêm
                             </a>
                         @endif
