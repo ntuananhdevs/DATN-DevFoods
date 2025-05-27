@@ -8,6 +8,7 @@
   input[type="text"],
   input[type="number"],
   input[type="date"],
+  input[type="datetime-local"],
   select {
     padding: 0.625rem 0.75rem;
     height: 2.75rem;
@@ -67,7 +68,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 1;
     transition: all 0.2s ease;
   }
   
@@ -99,9 +100,20 @@
   .remove-value-btn:hover {
     color: #dc2626;
   }
+
+  /* CSS cho preview hình topping */
+  .topping-image-preview {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    margin-top: 0.5rem;
+    display: block;
+  }
 </style>
 
-<main class="container mx-auto px-4 py-8">
+<main class="container">
     <h1 class="text-3xl font-extrabold mb-1">Thêm Sản Phẩm Mới</h1>
     <p class="text-gray-500 mb-8">Nhập thông tin chi tiết để tạo sản phẩm mới</p>
 
@@ -165,20 +177,38 @@
             </div>
 
             <div>
-                        <span class="block text-sm font-medium text-gray-700">Tùy chọn</span>
-              <div class="flex gap-4 mt-2">
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }} class="form-checkbox text-blue-600" />
-                                <span>Sản phẩm nổi bật</span>
-                            </label>
-                            <label class="inline-flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="available" value="1" {{ old('available', true) ? 'checked' : '' }} class="form-checkbox text-blue-600" />
-                  <span>Đang bán</span>
-                </label>
-                <label class="inline-flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="status" value="1" {{ old('status', true) ? 'checked' : '' }} class="form-checkbox text-blue-600" />
-                                <span>Trạng thái hoạt động</span>
-                </label>
+                <span class="block text-sm font-medium text-gray-700">Tùy chọn</span>
+              <div class="space-y-4 mt-2">
+                <div class="flex gap-4">
+                  <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }} class="form-checkbox text-blue-600" />
+                    <span>Sản phẩm nổi bật</span>
+                  </label>
+                  
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái sản phẩm</label>
+                  <div class="flex gap-4">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="status" value="coming_soon" {{ old('status', 'selling') == 'coming_soon' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <span>Sắp ra mắt</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="status" value="selling" {{ old('status', 'selling') == 'selling' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <span>Đang bán</span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="status" value="discontinued" {{ old('status', 'selling') == 'discontinued' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <span>Ngừng bán</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="release_at" class="block text-sm font-medium text-gray-700">Ngày ra mắt</label>
+                  <input type="datetime-local" id="release_at" name="release_at" value="{{ old('release_at') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
               </div>
             </div>
           </div>
@@ -186,9 +216,6 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh sản phẩm <span class="text-red-500">*</span></label>
-              <p class="text-xs text-gray-500 mb-2">
-                <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
-              </p>
               <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <!-- Primary Image -->
                 <div class="md:col-span-1">
@@ -212,6 +239,9 @@
                       <input type="file" id="primary-image-upload" name="primary_image" accept="image/*" class="hidden" />
                     </div>
                   </div>
+                  <p class="text-xs text-gray-500 mb-2">
+                  <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
+                </p>
                 </div>
 
                 <!-- Additional Images -->
@@ -255,51 +285,25 @@
             </div>
           </section>
 <!-- Toppings Section -->
-<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <header class="px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
-          <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
-        </header>
-
-        <div class="px-6 py-6">
-          <div id="toppings-container">
-            <!-- Topping groups will be added here -->
-          </div>
-          <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Thêm topping
-          </button>
-        </div>
-      </section>
-        <!-- Branch Stock -->
           <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <header class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-xl font-semibold text-gray-900">Tồn kho chi nhánh</h2>
-                <p class="text-gray-500 text-sm mt-1">Quản lý số lượng tồn kho tại các chi nhánh</p>
+              <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+              <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
             </header>
 
             <div class="px-6 py-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @foreach($branches as $branch)
-                    <div class="border rounded-md p-4">
-                        <h3 class="font-medium text-gray-900 mb-2">{{ $branch->name }}</h3>
-                        <div class="space-y-2">
-                            <div>
-                                <label class="block text-sm text-gray-700">Số lượng tồn kho</label>
-                                <input type="number" name="branch_stocks[{{ $branch->id }}]" min="0" value="{{ old("branch_stocks.{$branch->id}", 0) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-        </div>
-      </section>
-
-      
-
+              <div id="toppings-container">
+                <!-- Topping groups will be added here -->
+              </div>
+              <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Thêm topping
+              </button>
+            </div>
+          </section>
       <!-- Save Buttons -->
       <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
         <button type="button" id="save-draft-btn" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100">Lưu nháp</button>
@@ -404,7 +408,7 @@
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                         <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-            </div>
+                    </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -501,6 +505,30 @@
         const addToppingBtn = document.getElementById('add-topping-btn');
         let toppingCount = 0;
 
+        // Thêm hàm xử lý preview ảnh topping
+        function handleToppingImagePreview(input) {
+            const previewId = input.getAttribute('data-preview-id');
+            const previewWrapId = input.getAttribute('data-preview-wrap-id');
+            const uploadContentId = input.getAttribute('data-upload-content-id');
+            const previewImg = document.getElementById(previewId);
+            const previewWrap = document.getElementById(previewWrapId);
+            const uploadContent = document.getElementById(uploadContentId);
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewWrap.classList.remove('hidden');
+                    uploadContent.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                previewImg.src = '';
+                previewWrap.classList.add('hidden');
+                uploadContent.classList.remove('hidden');
+            }
+        }
+
         function createToppingGroup(index) {
             const toppingGroup = document.createElement('div');
             toppingGroup.className = 'border rounded-md p-4 mb-4';
@@ -514,6 +542,26 @@
                         <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
                         <input type="number" name="toppings[${index}][price]" required min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
+                    <div class="w-48 mr-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+                        <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                          <div id="topping-image-placeholder-${index}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                            <div id="topping-image-preview-wrap-${index}" class="absolute inset-0 w-full h-full hidden">
+                              <img id="topping-image-preview-${index}" src="" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
+                            </div>
+                            <div id="topping-upload-content-${index}" class="flex flex-col items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                              </svg>
+                              <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
+                              <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
+                            </div>
+                            <input type="file" id="topping-image-upload-${index}" name="toppings[${index}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
+                          </div>
+                        </div>
+                      </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -527,6 +575,31 @@
                     </label>
                 </div>
             `;
+            
+            // Sự kiện click chọn ảnh topping
+            setTimeout(() => {
+                const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
+                const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
+                const fileInput = document.getElementById(`topping-image-upload-${index}`);
+                
+                if (placeholder && fileInput) {
+                    placeholder.addEventListener('click', (e) => {
+                        if (e.target !== uploadBtn) {
+                            fileInput.click();
+                        }
+                    });
+                    
+                    uploadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+
+                    fileInput.addEventListener('change', function() {
+                        handleToppingImagePreview(this);
+                    });
+                }
+            }, 10);
+            
             return toppingGroup;
         }
 
@@ -551,13 +624,18 @@
                 availableInput.checked = topping.available;
             });
             toppingCount = oldToppings.length;
+        @else
+            // Add default topping if no old toppings exist
+            const defaultTopping = createToppingGroup(0);
+            toppingsContainer.appendChild(defaultTopping);
+            toppingCount = 1;
         @endif
 
         // Form submission
         const form = document.getElementById('add-product-form');
         form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
+            // Không ngăn chặn submit mặc định nữa
+            // e.preventDefault();
             // Convert ingredients textarea to JSON array
             const ingredientsText = document.getElementById('ingredients').value;
             const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
@@ -566,9 +644,130 @@
             ingredientsInput.name = 'ingredients_json';
             ingredientsInput.value = JSON.stringify(ingredientsArray);
             form.appendChild(ingredientsInput);
-
-            form.submit();
+            // Đảm bảo description luôn gửi lên (kể cả rỗng)
+            const description = document.getElementById('description');
+            if (!description.value) description.value = '';
+            // Không gọi form.submit() ở đây nữa vì đã để mặc định
         });
-      });
+
+        // Handle status and release date visibility
+        const statusInputs = document.querySelectorAll('input[name="status"]');
+        const releaseAtDiv = document.querySelector('label[for="release_at"]').parentElement;
+
+        function toggleReleaseDate() {
+            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+            if (selectedStatus === 'coming_soon') {
+                releaseAtDiv.classList.remove('hidden');
+                releaseAtDiv.querySelector('#release_at').required = true;
+            } else {
+                releaseAtDiv.classList.add('hidden');
+                releaseAtDiv.querySelector('#release_at').required = false;
+            }
+        }
+
+        statusInputs.forEach(input => {
+            input.addEventListener('change', toggleReleaseDate);
+        });
+
+        // Initial check
+        toggleReleaseDate();
+
+        // Variant stock management
+        const bulkStockInput = document.getElementById('bulk-stock-input');
+        const applyAllStockBtn = document.getElementById('apply-all-stock');
+        const variantStocksTable = document.getElementById('variant-stocks-table');
+        let variants = [];
+
+        // Function to generate variant combinations
+        function generateCombinations(attributes) {
+            if (attributes.length === 0) return [];
+            
+            const result = [];
+            const firstAttr = attributes[0];
+            
+            if (attributes.length === 1) {
+                return firstAttr.values.map(value => [{
+                    name: firstAttr.name,
+                    value: value
+                }]);
+            }
+            
+            const restCombinations = generateCombinations(attributes.slice(1));
+            
+            firstAttr.values.forEach(value => {
+                restCombinations.forEach(combination => {
+                    result.push([{
+                        name: firstAttr.name,
+                        value: value
+                    }, ...combination]);
+                });
+            });
+            
+            return result;
+        }
+
+        // Function to update the stock table
+        function updateStockTable() {
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            const attributeValues = Array.from(attributeGroups).map(group => {
+                const name = group.querySelector('input[name$="[name]"]').value;
+                const values = Array.from(group.querySelectorAll('input[name$="[value]"]')).map(input => input.value);
+                return { name, values };
+            });
+
+            variants = generateCombinations(attributeValues);
+            
+            // Generate table rows
+            variantStocksTable.innerHTML = variants.map((variant, variantIndex) => {
+                const variantName = variant.map(v => `${v.name}: ${v.value}`).join(' - ');
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${variantName}
+                        </td>
+                        @foreach($branches as $branch)
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <input type="number" 
+                                   name="variant_stocks[${variantIndex}][{{ $branch->id }}]" 
+                                   min="0" 
+                                   value="0" 
+                                   class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </td>
+                        @endforeach
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Update table when attributes change
+        document.querySelectorAll('.attribute-group input').forEach(input => {
+            input.addEventListener('change', updateStockTable);
+        });
+
+        // Handle apply all stock
+        applyAllStockBtn.addEventListener('click', () => {
+            const stockValue = parseInt(bulkStockInput.value);
+            if (isNaN(stockValue) || stockValue < 0) {
+                alert('Vui lòng nhập số lượng tồn kho hợp lệ');
+                return;
+            }
+
+            // Update all stock inputs
+            document.querySelectorAll('#variant-stocks-table input[type="number"]').forEach(input => {
+                input.value = stockValue;
+            });
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to apply stock to all
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                applyAllStockBtn.click();
+            }
+        });
+
+        // Initial table update
+        updateStockTable();
+    });
   </script>
 @endsection

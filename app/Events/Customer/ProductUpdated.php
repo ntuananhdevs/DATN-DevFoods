@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Customer;
 
 use App\Models\Product;
 use Illuminate\Broadcasting\Channel;
@@ -16,37 +16,33 @@ class ProductUpdated implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $product;
-    public $action; // 'created', 'updated', 'deleted'
 
     /**
      * Create a new event instance.
-     *
-     * @return void
      */
-    public function __construct(Product $product, $action)
+    public function __construct(Product $product)
     {
         $this->product = $product;
-        $this->action = $action;
     }
 
     /**
      * Get the channels the event should broadcast on.
      *
-     * @return \Illuminate\Broadcasting\Channel|array
+     * @return array<int, \Illuminate\Broadcasting\Channel>
      */
-    public function broadcastOn()
+    public function broadcastOn(): array
     {
-        return new Channel('products');
+        return [
+            new Channel('products-channel'),
+        ];
     }
 
     /**
      * The event's broadcast name.
-     *
-     * @return string
      */
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
-        return 'product.' . $this->action;
+        return 'product-updated';
     }
 
     /**
@@ -54,16 +50,18 @@ class ProductUpdated implements ShouldBroadcast
      *
      * @return array
      */
-    public function broadcastWith()
+    public function broadcastWith(): array
     {
         return [
-            'id' => $this->product->id,
-            'name' => $this->product->name,
-            'image' => $this->product->image,
-            'category' => $this->product->category ? $this->product->category->name : 'N/A',
-            'base_price' => $this->product->base_price,
-            'stock' => $this->product->stock,
-            'action' => $this->action
+            'product' => [
+                'id' => $this->product->id,
+                'name' => $this->product->name,
+                'base_price' => $this->product->base_price,
+                'discount_price' => $this->product->discount_price,
+                'average_rating' => $this->product->average_rating,
+                'reviews_count' => $this->product->reviews_count,
+                'created_at' => $this->product->created_at
+            ]
         ];
     }
 }

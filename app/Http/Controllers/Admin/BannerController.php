@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Banner;
+use App\Models\Product;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -45,23 +46,41 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
+            // Xác định validation rules dựa trên vị trí
+            $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/products\/\d+$/'],
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/\d+$/'],
                 'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|unique:banners,order',
-            ], [
+            ];
+
+            // Chỉ thêm validation cho order khi vị trí là homepage
+            if ($request->position === 'homepage') {
+                $rules['order'] = 'required|integer|min:0';
+            } else {
+                $rules['order'] = [
+                    'nullable',
+                    function ($attribute, $value, $fail) {
+                        // Nếu không phải homepage mà người dùng vẫn nhập order
+                        if (!is_null($value)) {
+                            $fail('Chỉ banner có vị trí là "homepage" mới được có thứ tự hiển thị.');
+                        }
+                    },
+                ];
+                // ✅ Đảm bảo luôn ghi đè giá trị order về null nếu không phải homepage
+                $request->merge(['order' => null]);
+            }            
+            $validated = $request->validate($rules, [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
                 'url' => ':attribute phải là URL hợp lệ.',
-                'link.regex' => 'Link sản phẩm không hợp lệ. Định dạng đúng là /products/ID (ví dụ: /products/123).',
+                'link.regex' => 'Link sản phẩm không hợp lệ.',
                 'max' => ':attribute không được vượt quá :max KB.',
                 'date' => ':attribute phải là ngày hợp lệ.',
                 'after' => ':attribute phải sau ngày bắt đầu.',
@@ -79,7 +98,6 @@ class BannerController extends Controller
                 'order' => 'Thứ tự hiển thị'
             ]);
 
-            // CHỈ CHO PHÉP 1 TRONG 2
             $hasFile = $request->hasFile('image_path');
             $hasLink = $request->filled('image_link');
 
@@ -95,14 +113,39 @@ class BannerController extends Controller
                     'image_path' => 'Bạn phải chọn ảnh tải lên hoặc nhập đường dẫn ảnh.',
                 ])->withInput();
             }
+
             if ($hasFile) {
-                $path = $request->file('image_path')->store('banners', 'public');
-                $validated['image_path'] = $path;
+                $image = $request->file('image_path');
+                $filename = uniqid() . '.' . $image->getClientOriginalExtension();
+                $path = 'banners/' . $filename;
+                Storage::disk('s3')->put($path, file_get_contents($image));
+                $validated['image_path'] = $path; // hoặc Storage::disk('s3')->url($path) nếu bạn muốn lưu URL đầy đủ
                 unset($validated['image_link']);
             } else {
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             }
+
+            // Kiểm tra trùng thứ tự hiển thị nếu vị trí là homepage và có order
+            if ($request->position === 'homepage' && isset($validated['order'])) {
+                $existingBanner = Banner::where('order', $validated['order'])
+                    ->where('position', 'homepage')
+                    ->first();
+
+                if ($existingBanner) {
+                    // Có banner trùng thứ tự, hiển thị thông báo cho người dùng
+                    return back()->withInput()->with('duplicate_order', [
+                        'banner_id' => $existingBanner->id,
+                        'banner_title' => $existingBanner->title,
+                        'order' => $validated['order']
+                    ])->with('toast', [
+                        'type' => 'warning',
+                        'title' => 'Cảnh báo',
+                        'message' => 'Thứ tự hiển thị ' . $validated['order'] . ' đã được sử dụng bởi banner "' . $existingBanner->title . '". Vui lòng chọn thứ tự khác hoặc điều chỉnh thứ tự của banner hiện có.'
+                    ]);
+                }
+            }
+
             Banner::create($validated);
 
             session()->flash('toast', [
@@ -123,6 +166,7 @@ class BannerController extends Controller
             return back()->withInput();
         }
     }
+
 
 
     public function show(string $id)
@@ -148,7 +192,20 @@ class BannerController extends Controller
     {
         try {
             $banner = Banner::findOrFail($id);
-            return view('admin.banner.edit', compact('banner'));
+
+            // Generate image URL for display
+            $bannerImageUrl = null;
+            if ($banner->image_path) {
+                // Check if it's already a full URL
+                if (filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
+                    $bannerImageUrl = $banner->image_path;
+                } else {
+                    // It's an S3 path, generate the full URL
+                    $bannerImageUrl = Storage::disk('s3')->url($banner->image_path);
+                }
+            }
+
+            return view('admin.banner.edit', compact('banner', 'bannerImageUrl'));
         } catch (\Exception $e) {
             Log::error('Error in BannerController@edit: ' . $e->getMessage());
             return redirect()->route('admin.banners.index')
@@ -165,18 +222,35 @@ class BannerController extends Controller
         try {
             $banner = Banner::findOrFail($id);
 
-            $validated = $request->validate([
+            // Xác định validation rules dựa trên vị trí
+            $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/products\/\d+$/'],
-                'position' =>'required|string',
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/\d+$/'],
+                'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
                 'start_at' => 'required|date',
                 'end_at' => 'required|date|after:start_at',
                 'is_active' => 'required|boolean',
-                'order' => 'required|integer|min:0|unique:banners,order,' . $id,
-            ], [
+            ];
+            // Chỉ thêm validation cho order khi vị trí là homepage
+            if ($request->position === 'homepage') {
+                $rules['order'] = 'required|integer|min:0';
+            } else {
+                $rules['order'] = [
+                    'nullable',
+                    function ($attribute, $value, $fail) {
+                        // Nếu không phải homepage mà người dùng vẫn nhập order
+                        if (!is_null($value)) {
+                            $fail('Chỉ banner có vị trí là "homepage" mới được có thứ tự hiển thị.');
+                        }
+                    },
+                ];
+                // ✅ Đảm bảo luôn ghi đè giá trị order về null nếu không phải homepage
+                $request->merge(['order' => null]);
+            }
+            $validated = $request->validate($rules, [
                 'order.unique' => 'Vị trí này đã được sử dụng bởi banner khác',
                 'required' => ':attribute không được để trống.',
                 'string' => ':attribute phải là chuỗi.',
@@ -211,34 +285,58 @@ class BannerController extends Controller
             }
 
             if ($hasFile) {
-                // Nếu banner đã có ảnh cũ và không phải URL, xóa ảnh cũ
                 if ($banner->image_path && !filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
-                    Storage::disk('public')->delete($banner->image_path);
+                    Storage::disk('s3')->delete($banner->image_path);
                 }
-                
-                $path = $request->file('image_path')->store('banners', 'public');
+                $path = $request->file('image_path')->store('banners', 's3');
                 $validated['image_path'] = $path;
                 unset($validated['image_link']);
             } else if ($hasLink) {
-                // Nếu banner đã có ảnh cũ và không phải URL, xóa ảnh cũ
                 if ($banner->image_path && !filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
-                    Storage::disk('public')->delete($banner->image_path);
+                    Storage::disk('s3')->delete($banner->image_path);
                 }
-                
+
                 $validated['image_path'] = $request->input('image_link');
                 unset($validated['image_link']);
             } else {
-                // Nếu không có file mới và không có link mới, giữ nguyên giá trị cũ
                 unset($validated['image_path']);
                 unset($validated['image_link']);
             }
 
+            // Kiểm tra trùng thứ tự hiển thị nếu vị trí là homepage và có order
+            if ($request->position === 'homepage' && isset($validated['order'])) {
+                $existingBanner = Banner::where('order', $validated['order'])
+                    ->where('position', 'homepage')
+                    ->where('id', '!=', $id)
+                    ->first();
+
+                if ($existingBanner) {
+                    // Có banner trùng thứ tự, hiển thị thông báo cho người dùng
+                    return back()->withInput()->with('duplicate_order', [
+                        'banner_id' => $existingBanner->id,
+                        'banner_title' => $existingBanner->title,
+                        'order' => $validated['order']
+                    ])->with('toast', [
+                        'type' => 'warning',
+                        'title' => 'Cảnh báo',
+                        'message' => 'Thứ tự hiển thị ' . $validated['order'] . ' đã được sử dụng bởi banner "' . $existingBanner->title . '". Vui lòng chọn thứ tự khác hoặc điều chỉnh thứ tự của banner hiện có.'
+                    ]);
+                }
+            }
+
+            // Nếu vị trí không phải homepage, đặt order thành null
+            if ($request->position !== 'homepage') {
+                $validated['order'] = null;
+            }
+
             $banner->update($validated);
+
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Banner đã được cập nhật thành công'
             ]);
+
             return redirect()->route('admin.banners.index');
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -253,31 +351,42 @@ class BannerController extends Controller
         }
     }
 
+
     public function destroy(string $id)
     {
         try {
             $banner = Banner::findOrFail($id);
-            if ($banner->image_path) {
-                Storage::disk('public')->delete($banner->image_path);
+
+            if ($banner->image_path && !filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
+                // Chỉ xóa nếu là ảnh lưu trên S3
+                if (Storage::disk('s3')->exists($banner->image_path)) {
+                    Storage::disk('s3')->delete($banner->image_path);
+                } else {
+                    Log::warning("Không tìm thấy ảnh trên S3 để xóa: " . $banner->image_path);
+                }
             }
+
             $banner->delete();
+
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => 'Banner đã được xóa thành công'
             ]);
+
             return redirect()->route('admin.banners.index');
         } catch (\Exception $e) {
             Log::error('Error in BannerController@destroy: ' . $e->getMessage());
+
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra khi xóa banner: ' . $e->getMessage()
             ]);
+
             return redirect()->route('admin.banners.index');
         }
     }
-
     public function toggleStatus($id)
     {
         try {
@@ -354,5 +463,23 @@ class BannerController extends Controller
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
         }
+    }
+    public function searchProducts(Request $request)
+    {
+        $query = $request->get('q', '');
+        $id = $request->get('id');
+        $products = Product::query();
+        if ($id) {
+            $products->where('id', $id);
+        } elseif ($query) {
+            $products->where('name', 'like', '%' . $query . '%');
+        } else {
+            return response()->json([]);
+        }
+        return response()->json(
+            $products->select('id', 'name')
+                ->limit(10)
+                ->get()
+        );
     }
 }

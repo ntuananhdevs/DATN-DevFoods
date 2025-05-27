@@ -12,9 +12,10 @@ class ProductReview extends Model
     protected $table = 'product_reviews';
 
     protected $fillable = [
-        'product_id',
         'user_id',
+        'product_id',
         'order_id',
+        'branch_id',
         'rating',
         'review',
         'review_date',
@@ -24,24 +25,49 @@ class ProductReview extends Model
         'is_anonymous',
         'helpful_count',
         'report_count',
-        'is_featured',
+        'is_featured'
     ];
 
     protected $casts = [
-        'is_anonymous' => 'boolean',
-        'is_verified_purchase' => 'boolean',
-        'approved' => 'boolean',
-        'is_featured' => 'boolean',
         'review_date' => 'datetime',
+        'approved' => 'boolean',
+        'is_verified_purchase' => 'boolean',
+        'is_anonymous' => 'boolean',
+        'is_featured' => 'boolean',
+        'rating' => 'integer',
+        'helpful_count' => 'integer',
+        'report_count' => 'integer'
     ];
 
+    /**
+     * Get the user who wrote the review.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the product being reviewed.
+     */
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function user()
+    /**
+     * Get the order associated with this review.
+     */
+    public function order()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * Get the branch associated with this review.
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

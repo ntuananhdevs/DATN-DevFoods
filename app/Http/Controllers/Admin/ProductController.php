@@ -7,10 +7,14 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Facades\Response;
-use Maatwebsite\Excel\Facades\Excel; // Cần cài thêm package maatwebsite/excel
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use App\Models\VariantAttribute;
+use App\Models\VariantValue;
+use App\Models\Topping;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -100,15 +104,23 @@ public function index(Request $request)
                 'preparation_time' => 'nullable|integer|min:0',
                 'short_description' => 'nullable|string',
                 'description' => 'nullable|string',
-                'ingredients' => 'nullable|string',
+                'ingredients_json' => 'nullable|string',
                 'is_featured' => 'boolean',
                 'available' => 'boolean',
-                'status' => 'boolean',
-                'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
-                'branch_stocks.*' => 'nullable|integer|min:0',
-                'attributes.*.name' => 'required|string|max:255',
+                'status' => 'required|in:coming_soon,selling,discontinued',
+                'release_at' => 'nullable|date|required_if:status,coming_soon',
+                'primary_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+                'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+                'attributes' => 'nullable|array',
+                'attributes.*.name' => 'required_with:attributes|string|max:255',
+                'attributes.*.values' => 'required_with:attributes|array',
                 'attributes.*.values.*.value' => 'required|string|max:255',
-                'attributes.*.values.*.price_adjustment' => 'required|numeric',
+                'attributes.*.values.*.price_adjustment' => 'nullable|numeric',
+                'toppings' => 'nullable|array',
+                'toppings.*.name' => 'required_with:toppings|string|max:255',
+                'toppings.*.price' => 'required_with:toppings|numeric|min:0',
+                'toppings.*.available' => 'nullable|boolean',
+                'toppings.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
             DB::beginTransaction();
@@ -130,73 +142,212 @@ public function index(Request $request)
             // Format SKU with 5 digits
             $sku = $category->short_name . '-' . str_pad($skuNumber, 5, '0', STR_PAD_LEFT);
 
-            // Create product with SKU
+            // Create product
             $product = Product::create([
                 'name' => $validated['name'],
                 'category_id' => $validated['category_id'],
                 'sku' => $sku,
                 'base_price' => $validated['base_price'],
                 'preparation_time' => $validated['preparation_time'],
-                'short_description' => $validated['short_description'],
-                'description' => $validated['description'],
-                'ingredients' => $validated['ingredients'] ? json_decode($validated['ingredients']) : null,
+                'short_description' => $validated['short_description'] ?? '',
+                'description' => $validated['description'] ?? null,
+                'ingredients' => $validated['ingredients_json'] ?? '[]',
                 'is_featured' => $request->boolean('is_featured'),
                 'available' => $request->boolean('available'),
-                'status' => $request->boolean('status'),
+                'status' => $validated['status'],
+                'release_at' => $validated['release_at'],
                 'created_by' => auth()->id(),
             ]);
 
-            // Handle images
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $index => $image) {
-                    $path = $image->store('products', 'public');
-                    $product->images()->create([
-                        'img' => $path,
-                        'is_primary' => $index === 0, // First image is primary
-                    ]);
-                }
-            }
-
-            // Handle branch stocks
-            if ($request->has('branch_stocks')) {
-                // Create a default variant for the product
-                $defaultVariant = $product->variants()->create([
-                    'active' => true
+            // Handle primary image
+            if ($request->hasFile('primary_image')) {
+                $image = $request->file('primary_image');
+                \Log::info('Uploading primary image', [
+                    'original_name' => $image->getClientOriginalName(),
+                    'size' => $image->getSize(),
+                    'mime' => $image->getMimeType()
                 ]);
-
-                foreach ($request->branch_stocks as $branchId => $quantity) {
-                    $defaultVariant->branchStocks()->create([
-                        'branch_id' => $branchId,
-                        'stock_quantity' => $quantity,
+                
+                // Generate unique filename
+                $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                
+                // Upload to S3
+                $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                
+                if ($path) {
+                    // Get the URL of uploaded file
+                    $url = Storage::disk('s3')->url('products/' . $filename);
+                    \Log::info('S3 file url', ['url' => $url]);
+                    
+                    $product->images()->create([
+                        'img' => 'products/' . $filename,
+                        'img_url' => $url,
+                        'is_primary' => true,
                     ]);
                 }
             }
 
-            // Handle attributes and variant values
-            if ($request->has('attributes')) {
-                foreach ($request->attributes as $attributeData) {
-                    // Create or get attribute
-                    $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
-
-                    // Create variant values
-                    foreach ($attributeData['values'] as $valueData) {
-                        $attribute->values()->create([
-                            'value' => $valueData['value'],
-                            'price_adjustment' => $valueData['price_adjustment'],
+            // Handle additional images
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    \Log::info('Uploading additional image', [
+                        'original_name' => $image->getClientOriginalName(),
+                        'size' => $image->getSize(),
+                        'mime' => $image->getMimeType()
+                    ]);
+                    
+                    // Generate unique filename
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    
+                    // Upload to S3
+                    $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                    \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                    
+                    if ($path) {
+                        // Get the URL of uploaded file
+                        $url = Storage::disk('s3')->url('products/' . $filename);
+                        \Log::info('S3 file url', ['url' => $url]);
+                        
+                        $product->images()->create([
+                            'img' => 'products/' . $filename,
+                            'img_url' => $url,
+                            'is_primary' => false,
                         ]);
                     }
                 }
             }
 
+            // // Debug: Log request data
+            // \Log::info('Attributes data:', $request->input('attributes', []));
+            // \Log::info('Toppings data:', $request->input('toppings', []));
+
+            // Handle attributes and variant values
+            $attributes = $request->input('attributes', []);
+            if (!empty($attributes)) {
+                \Log::info('Processing attributes...');
+                
+                $attributeGroups = [];
+                
+                foreach ($attributes as $attributeData) {
+                    // Create or get attribute
+                    $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
+                    \Log::info('Created/Found attribute:', ['id' => $attribute->id, 'name' => $attribute->name]);
+                    
+                    $values = [];
+                    foreach ($attributeData['values'] as $valueData) {
+                        // Create or update variant value
+                        $value = VariantValue::updateOrCreate(
+                            [
+                                'variant_attribute_id' => $attribute->id,
+                                'value' => $valueData['value']
+                            ],
+                            ['price_adjustment' => $valueData['price_adjustment'] ?? 0]
+                        );
+                        \Log::info('Created/Updated variant value:', ['id' => $value->id, 'value' => $value->value]);
+                        $values[] = $value;
+                    }
+                    
+                    $attributeGroups[] = [
+                        'attribute' => $attribute,
+                        'values' => $values
+                    ];
+                }
+            
+                // Generate all possible combinations
+                $combinations = $this->generateVariantCombinations($attributeGroups);
+                \Log::info('Generated combinations count:', ['count' => count($combinations)]);
+            
+                // Create variants for each combination
+                foreach ($combinations as $index => $combination) {
+                    // Create product variant
+                    $variant = $product->variants()->create([
+                        'active' => true
+                    ]);
+                    \Log::info('Created variant:', ['id' => $variant->id]);
+            
+                    // Create variant details for each value in the combination
+                    foreach ($combination as $variantValue) {
+                        $variantDetail = $variant->productVariantDetails()->create([
+                            'variant_value_id' => $variantValue->id
+                        ]);
+                        \Log::info('Created variant detail:', ['id' => $variantDetail->id, 'variant_value_id' => $variantValue->id]);
+                    }
+                }
+            } else {
+                \Log::info('No attributes provided, creating default variant');
+                // If no attributes, create a default variant
+                $defaultVariant = $product->variants()->create([
+                    'active' => true
+                ]);
+                \Log::info('Created default variant:', ['id' => $defaultVariant->id]);
+            }
+
+            // Handle toppings
+            $toppings = $request->input('toppings', []);
+            if (!empty($toppings)) {
+                \Log::info('Processing toppings...');
+                
+                foreach ($toppings as $index => $toppingData) {
+                    // Create topping if it doesn't exist
+                    $topping = Topping::firstOrCreate(
+                        ['name' => $toppingData['name']],
+                        [
+                            'price' => $toppingData['price'],
+                            'active' => isset($toppingData['available']) ? (bool)$toppingData['available'] : true
+                        ]
+                    );
+                    \Log::info('Created/Found topping:', ['id' => $topping->id, 'name' => $topping->name]);
+
+                    // Handle topping image if uploaded
+                    if ($request->hasFile("toppings.{$index}.image") || isset($request->file('toppings')[$index]['image'])) {
+                        // Laravel's request->file() method handles array inputs differently
+                        $image = isset($request->file('toppings')[$index]['image']) 
+                                ? $request->file('toppings')[$index]['image'] 
+                                : $request->file("toppings.{$index}.image");
+                        
+                        \Log::info('Uploading topping image', [
+                            'original_name' => $image->getClientOriginalName(),
+                            'size' => $image->getSize(),
+                            'mime' => $image->getMimeType()
+                        ]);
+                        
+                        // Generate unique filename
+                        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                        
+                        // Upload to S3
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
+                        \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                        
+                        if ($path) {
+                            // Get the URL of uploaded file
+                            $url = Storage::disk('s3')->url('toppings/' . $filename);
+                            \Log::info('S3 topping image url', ['url' => $url]);
+                            
+                            // Update topping with image path
+                            $topping->update([
+                                'image' => 'toppings/' . $filename
+                            ]);
+                        }
+                    }
+
+                    // Attach topping to product
+                    $product->toppings()->attach($topping->id);
+                    \Log::info('Attached topping to product:', ['product_id' => $product->id, 'topping_id' => $topping->id]);
+                }
+            }
+
             DB::commit();
+            \Log::info('Transaction committed successfully');
 
             session()->flash('modal', [
                 'type' => 'success',
                 'title' => 'Thành công',
-                'message' => 'Sản phẩm đã được tạo thành công'
+                'message' => 'Sản phẩm và các biến thể đã được tạo thành công'
             ]);
             
-            return redirect()->route('admin.products.index');
+            // Redirect to stock management page
+            return redirect()->route('admin.products.stock', $product->id);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             
@@ -221,8 +372,61 @@ public function index(Request $request)
             return redirect()->back()
                 ->withInput()
                 ->with('old_attributes', $request->attributes)
-                ->with('old_branch_stocks', $request->branch_stocks);
+                ->with('old_toppings', $request->toppings);
         }
+    }
+
+    /**
+     * Generate all possible combinations of variant values
+     */
+    private function generateVariantCombinations($attributeGroups)
+    {
+        if (empty($attributeGroups)) {
+            return [];
+        }
+
+        $combinations = [[]];
+        
+        foreach ($attributeGroups as $group) {
+            $newCombinations = [];
+            
+            foreach ($combinations as $combination) {
+                foreach ($group['values'] as $value) {
+                    $newCombinations[] = array_merge($combination, [$value]);
+                }
+            }
+            
+            $combinations = $newCombinations;
+        }
+        
+        return $combinations;
+    }
+
+    /**
+     * Generate attribute combinations
+     */
+    private function generateAttributeCombinations($attributeGroups, $currentIndex = 0, $currentCombination = [])
+    {
+        if ($currentIndex >= count($attributeGroups)) {
+            return !empty($currentCombination) ? [$currentCombination] : [];
+        }
+
+        $combinations = [];
+        $currentGroup = $attributeGroups[$currentIndex];
+        
+        foreach ($currentGroup['values'] as $valueId) {
+            $newCombination = array_merge($currentCombination, [$valueId]);
+            
+            $nextCombinations = $this->generateAttributeCombinations(
+                $attributeGroups,
+                $currentIndex + 1,
+                $newCombination
+            );
+            
+            $combinations = array_merge($combinations, $nextCombinations);
+        }
+
+        return $combinations;
     }
 
     /**
@@ -276,6 +480,11 @@ public function index(Request $request)
                 'attributes.*.name' => 'required|string|max:255',
                 'attributes.*.values.*.value' => 'required|string|max:255',
                 'attributes.*.values.*.price_adjustment' => 'required|numeric',
+                'toppings' => 'nullable|array',
+                'toppings.*.name' => 'required_with:toppings|string|max:255',
+                'toppings.*.price' => 'required_with:toppings|numeric|min:0',
+                'toppings.*.available' => 'nullable|boolean',
+                'toppings.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
             DB::beginTransaction();
@@ -289,7 +498,7 @@ public function index(Request $request)
                 'category_id' => $validated['category_id'],
                 'base_price' => $validated['base_price'],
                 'preparation_time' => $validated['preparation_time'],
-                'short_description' => $validated['short_description'],
+                'short_description' => $validated['short_description'] ?? '',
                 'description' => $validated['description'],
                 'ingredients' => $validated['ingredients'] ? json_decode($validated['ingredients']) : null,
                 'is_featured' => $request->boolean('is_featured'),
@@ -342,9 +551,47 @@ public function index(Request $request)
                     }
                 }
             }
+            
+            // Handle toppings
+            if ($request->has('toppings')) {
+                // Detach all existing toppings
+                $product->toppings()->detach();
+                
+                foreach ($request->input('toppings') as $index => $toppingData) {
+                    // Create or update topping
+                    $topping = Topping::updateOrCreate(
+                        ['name' => $toppingData['name']],
+                        [
+                            'price' => $toppingData['price'],
+                            'active' => isset($toppingData['available']) ? (bool)$toppingData['available'] : true
+                        ]
+                    );
+                    
+                    // Handle topping image if uploaded
+                    if (isset($request->file('toppings')[$index]['image'])) {
+                        $image = $request->file('toppings')[$index]['image'];
+                        
+                        // Generate unique filename
+                        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                        
+                        // Upload to S3
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
+                        
+                        if ($path) {
+                            // Update topping with image path
+                            $topping->update([
+                                'image' => 'toppings/' . $filename
+                            ]);
+                        }
+                    }
+                    
+                    // Attach topping to product
+                    $product->toppings()->attach($topping->id);
+                }
+            }
 
             DB::commit();
-
+    
             session()->flash('modal', [
                 'type' => 'success',
                 'title' => 'Thành công',

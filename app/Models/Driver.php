@@ -16,7 +16,7 @@ class Driver extends Model
         'status', 'is_available', 'current_latitude', 'current_longitude',
         'balance', 'rating', 'cancellation_count', 'reliability_score',
         'penalty_count', 'auto_deposit_earnings', 'email', 'password',
-        'phone_number', 'full_name'
+        'phone_number', 'full_name', 'otp', 'expires_at'
     ];
 
     protected $casts = [
@@ -26,7 +26,8 @@ class Driver extends Model
         'balance' => 'decimal:2',
         'rating' => 'decimal:2',
         'current_latitude' => 'decimal:8',
-        'current_longitude' => 'decimal:8'
+        'current_longitude' => 'decimal:8',
+        'expires_at' => 'datetime', 
     ];
 
     protected $hidden = [

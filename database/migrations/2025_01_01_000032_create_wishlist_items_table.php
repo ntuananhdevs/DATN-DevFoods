@@ -11,16 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_favorites', function (Blueprint $table) {
+        Schema::create('wishlist_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');  // Liên kết với người dùng
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');  // Liên kết với sản phẩm
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
             $table->timestamps();
-
-            // Đảm bảo rằng mỗi người dùng chỉ có một bản ghi cho mỗi sản phẩm
+            
+            // Cada usuario solo puede tener un favorito por producto
             $table->unique(['user_id', 'product_id']);
         });
-
     }
 
     /**
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('user_favorites');
+        Schema::dropIfExists('wishlist_items');
     }
 };

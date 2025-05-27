@@ -11,7 +11,15 @@ class VariantValue extends Model
     use HasFactory;
 
     protected $table = 'variant_values';
-    protected $fillable = ['variant_attribute_id', 'value'];
+    protected $fillable = [
+        'variant_attribute_id',
+        'value',
+        'price_adjustment'
+    ];
+
+    protected $casts = [
+        'price_adjustment' => 'decimal:2'
+    ];
 
     public function attribute()
     {
@@ -25,6 +33,7 @@ class VariantValue extends Model
 
     public function productVariants()
     {
-        return $this->belongsToMany(ProductVariant::class, 'product_variant_details', 'variant_value_id', 'product_variant_id');
+        return $this->belongsToMany(ProductVariant::class, 'product_variant_details')
+            ->withTimestamps();
     }
 }

@@ -67,7 +67,16 @@ class CategoryController extends Controller
             $data = $request->only(['name', 'description', 'status']);
 
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('images/categories', 'public');
+                $image = $request->file('image');
+                $filename = \Str::uuid() . '.' . $image->getClientOriginalExtension();
+                $path = Storage::disk('s3')->put("categories/{$filename}", file_get_contents($image));
+
+                if ($path) {
+                    $data['image'] = "categories/{$filename}";
+                }
+            } else {
+                // Gán ảnh mặc định nếu không có ảnh upload
+                $data['image'] = 'categories/default-logo.avif';
             }
 
 
@@ -81,7 +90,7 @@ class CategoryController extends Controller
 
             return redirect()->route('admin.categories.index');
         } catch (\Exception $e) {
-            session()->flash('toast', [
+            session()->flash('modal', [
                 'type' => 'error',
                 'title' => 'Lỗi!',
                 'message' => 'Lỗi khi tạo danh mục: ' . $e->getMessage()
@@ -117,11 +126,20 @@ class CategoryController extends Controller
         $data = $request->only(['name', 'description', 'status']);
 
         if ($request->hasFile('image')) {
-            if ($category->image) {
-                Storage::disk('public')->delete($category->image);
-            }
-            $data['image'] = $request->file('image')->store('images/categories', 'public');
-        }
+    // Xóa ảnh cũ nếu có
+    if ($category->image && Storage::disk('s3')->exists($category->image)) {
+        Storage::disk('s3')->delete($category->image);
+    }
+
+    // Upload ảnh mới
+    $image = $request->file('image');
+    $filename = \Str::uuid() . '.' . $image->getClientOriginalExtension();
+    $path = Storage::disk('s3')->put("categories/{$filename}", file_get_contents($image));
+
+    if ($path) {
+        $data['image'] = "categories/{$filename}";
+    }
+}
 
         $category->update($data);
 
@@ -135,7 +153,7 @@ class CategoryController extends Controller
         return redirect()->route('admin.categories.edit', $category->id);
 
     } catch (\Exception $e) {
-        session()->flash('toast', [
+        session()->flash('modal', [
             'type' => 'error',
             'title' => 'Lỗi!',
             'message' => 'Lỗi khi cập nhật danh mục: ' . $e->getMessage()
@@ -176,8 +194,12 @@ class CategoryController extends Controller
         }
 
         // Nếu tồn tại thì tiếp tục xóa
-        if ($category->image) {
-            Storage::disk('public')->delete($category->image);
+        if (
+            $category->image &&
+            $category->image !== 'categories/default-logo.avif' &&
+            Storage::disk('s3')->exists($category->image)
+        ) {
+            Storage::disk('s3')->delete($category->image);
         }
 
         $category->delete();

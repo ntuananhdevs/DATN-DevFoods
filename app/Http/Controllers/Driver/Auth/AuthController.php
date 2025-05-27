@@ -1,7 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Driver;
+namespace App\Http\Controllers\Driver\Auth;
 
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -36,11 +38,34 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        try {
-            // Kiểm tra nếu request là AJAX
-            $isAjax = $request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
+        $isAjax = $request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
 
-            // Định nghĩa quy tắc validation và thông báo lỗi
+        $phone = Str::lower($request->input('phone_number'));
+        $key = 'login_attempts:' . $phone . '|' . $request->ip();
+
+        // Kiểm tra vượt quá số lần thử
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            $message = "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau {$seconds} giây.";
+
+            if ($isAjax) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message,
+                ], 429);
+            }
+
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Đã bị khóa tạm thời',
+                'message' => $message
+            ]);
+
+            return back()->with('error', $message);
+        }
+
+        try {
+            // Validation
             $validator = Validator::make($request->all(), [
                 'phone_number' => 'required',
                 'password' => 'required',
@@ -49,91 +74,89 @@ class AuthController extends Controller
                 'password.required' => 'Vui lòng nhập mật khẩu',
             ]);
 
-            // Xử lý lỗi validation
             if ($validator->fails()) {
+                $message = $validator->errors()->first();
+
                 if ($isAjax) {
-                    // Ensure consistent error message format
                     return response()->json([
                         'success' => false,
-                        'message' => $validator->errors()->first(),
+                        'message' => $message,
                         'errors' => $validator->errors()->toArray()
                     ], 422);
                 }
 
-                // Thêm toast thông báo cho non-AJAX request
-                $errorMessage = $validator->errors()->first();
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
-                    'message' => $errorMessage
+                    'message' => $message
                 ]);
 
                 return back()->withErrors($validator)->withInput();
             }
 
-            // Kiểm tra tài khoản tồn tại
-            $driver = Driver::where('phone_number', $request->phone_number)->first();
+            // Tìm tài xế
+            $driver = Driver::where('phone_number', $phone)->first();
 
             if (!$driver) {
-                $errorMessage = 'Số điện thoại không tồn tại trong hệ thống';
+                RateLimiter::hit($key, 60); // chỉ hit khi sai
+                $message = 'Số điện thoại không tồn tại trong hệ thống';
 
                 if ($isAjax) {
                     return response()->json([
                         'success' => false,
-                        'message' => $errorMessage
+                        'message' => $message
                     ], 422);
                 }
 
-                // Thêm toast thông báo
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
-                    'message' => $errorMessage
+                    'message' => $message
                 ]);
 
                 return back()->withErrors([
-                    'phone_number' => $errorMessage,
+                    'phone_number' => $message,
                 ])->withInput();
             }
 
             // Kiểm tra mật khẩu
             if (!Hash::check($request->password, $driver->password)) {
-                $errorMessage = 'Mật khẩu không chính xác';
+                RateLimiter::hit($key, 60); // chỉ hit khi sai
+                $message = 'Mật khẩu không chính xác';
 
                 if ($isAjax) {
                     return response()->json([
                         'success' => false,
-                        'message' => $errorMessage
+                        'message' => $message
                     ], 422);
                 }
 
-                // Thêm toast thông báo
                 session()->flash('toast', [
                     'type' => 'error',
                     'title' => 'Lỗi',
-                    'message' => $errorMessage
+                    'message' => $message
                 ]);
 
                 return back()->withErrors([
-                    'password' => $errorMessage,
+                    'password' => $message,
                 ])->withInput();
             }
 
-            // Đăng nhập thành công, thiết lập session
+            // Đăng nhập thành công
+            RateLimiter::clear($key); // reset khi đúng
+
             session([
                 'driver_id' => $driver->id,
                 'driver_name' => $driver->full_name,
                 'driver_phone' => $driver->phone_number,
-                'driver_logged_in' => true
+                'driver_logged_in' => true,
             ]);
 
-            // Kiểm tra: nếu chưa đổi mật khẩu (created_at == updated_at)
             $firstLogin = $driver->created_at->eq($driver->updated_at);
             if ($firstLogin) {
                 session(['first_login' => true]);
             }
 
-            // Trả về kết quả thành công
             if ($isAjax) {
                 return response()->json([
                     'success' => true,
@@ -141,7 +164,6 @@ class AuthController extends Controller
                 ]);
             }
 
-            // Thêm toast thông báo thành công
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
@@ -150,26 +172,25 @@ class AuthController extends Controller
 
             return redirect()->route('driver.home')->with('success', 'Đăng nhập thành công!');
         } catch (Exception $e) {
-            // Xử lý lỗi không mong muốn
-            $errorMessage = 'Đã xảy ra lỗi: ' . $e->getMessage();
+            $message = 'Đã xảy ra lỗi: ' . $e->getMessage();
 
             if ($isAjax) {
                 return response()->json([
                     'success' => false,
-                    'message' => $errorMessage
+                    'message' => $message
                 ], 500);
             }
 
-            // Thêm toast thông báo lỗi
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi hệ thống',
-                'message' => $errorMessage
+                'message' => $message
             ]);
 
-            return back()->with('error', $errorMessage)->withInput();
+            return back()->with('error', $message)->withInput();
         }
     }
+
 
     /**
      * Đăng xuất
@@ -194,7 +215,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email'
-        ],[
+        ], [
             'email.required' => 'Vui lòng nhập email',
             'email.email' => 'Email không đúng định dạng'
         ]);
@@ -206,7 +227,9 @@ class AuthController extends Controller
         }
 
         $otp = rand(100000, 999999);
-        Cache::put('password_reset_otp_' . $driver->id, $otp, now()->addMinutes(30));
+        $driver->otp = $otp;
+        $driver->expires_at = now()->addMinutes(30);
+        $driver->save();
         $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
     Mã OTP của bạn là: ' . $otp . '
 </div>';
@@ -234,19 +257,26 @@ class AuthController extends Controller
             'driver_id' => 'required|integer',
         ]);
 
-        $driverId = $request->input('driver_id');
-        $enteredOtp = $request->input('otp');
-        $cachedOtp = Cache::get('password_reset_otp_' . $driverId);
+        $driver = Driver::find($request->driver_id);
 
-        if (!$cachedOtp) {
-            return back()->withErrors(['otp' => 'Mã OTP đã hết hạn hoặc không tồn tại.']);
+        if (!$driver || !$driver->otp || !$driver->expires_at) {
+            return back()->withErrors(['otp' => 'Không thể xác thực OTP.']);
         }
 
-        if ($enteredOtp != $cachedOtp) {
-            return back()->withErrors(['otp' => 'OTP không chính xác. Vui lòng nhập lại.']);
+        if (now()->gt($driver->expires_at)) {
+            return back()->withErrors(['otp' => 'Mã OTP đã hết hạn.']);
         }
 
-        return redirect()->route('driver.reset_password', ['driver_id' => $driverId])
+        if ($request->otp != $driver->otp) {
+            return back()->withErrors(['otp' => 'Mã OTP không chính xác.']);
+        }
+
+        // Xóa OTP sau khi xác thực thành công
+        $driver->otp = null;
+        $driver->expires_at = null;
+        $driver->save();
+
+        return redirect()->route('driver.reset_password', ['driver_id' => $driver->id])
             ->with('success', 'Mã OTP hợp lệ. Vui lòng đặt lại mật khẩu.');
     }
 
@@ -257,7 +287,7 @@ class AuthController extends Controller
             $request->validate([
                 'password' => 'required|string|min:8|confirmed',
                 'password_confirmation' => 'required|string|min:8'
-            ],[
+            ], [
                 'password.required' => 'Mật khẩu không được để trống',
                 'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
                 'password_confirmation.required' => 'Xác nhận mật khẩu không được để trống',
@@ -352,30 +382,47 @@ class AuthController extends Controller
         $request->validate([
             'driver_id' => 'required|integer|exists:drivers,id',
         ]);
-
+    
         $driverId = $request->input('driver_id');
         $driver = Driver::find($driverId);
-
+    
         if (!$driver) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tài xế không tồn tại.'
             ], 404);
         }
+    
+        // === BẮT ĐẦU: Thêm Rate Limit ===
+        $key = 'resend_otp:' . $driver->email . '|' . $request->ip();
+    
+        if (RateLimiter::tooManyAttempts($key, 3)) { // giới hạn 3 lần
+            $seconds = RateLimiter::availableIn($key);
+            return response()->json([
+                'success' => false,
+                'message' => "Bạn đã gửi lại OTP quá nhiều lần. Vui lòng thử lại sau {$seconds} giây."
+            ], 429);
+        }
+    
+        RateLimiter::hit($key, 60);
+        // === KẾT THÚC: Rate Limit ===
+    
         $otp = random_int(100000, 999999);
-        $cacheKey = 'password_reset_otp_' . $driverId;
-        Cache::put($cacheKey, $otp, now()->addMinutes(2));
-
-        Cache::put('password_reset_otp_' . $driver->id, $otp, now()->addMinutes(30));
+        $driver->otp = $otp;
+        $driver->expires_at = now()->addMinutes(30);
+        $driver->save();
+    
         $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
-        Mã OTP của bạn là: ' . $otp . '
+            Mã OTP của bạn là: ' . $otp . '
         </div>';
+    
         EmailFactory::sendNotification(
             'generic',
             ['content' => $content],
             'Mã OTP đặt lại mật khẩu',
             $driver->email
         );
+    
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi lại mã OTP thành công.'
