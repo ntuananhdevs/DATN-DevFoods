@@ -18,6 +18,10 @@ class ProductVariant extends Model
         'active'
     ];
 
+    protected $casts = [
+        'active' => 'boolean'
+    ];
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

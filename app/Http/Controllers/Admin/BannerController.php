@@ -50,7 +50,7 @@ class BannerController extends Controller
             $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/show\/\d+$/'],
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/\d+$/'],
                 'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
@@ -226,7 +226,7 @@ class BannerController extends Controller
             $rules = [
                 'image_path' => 'nullable|image|max:5120',
                 'image_link' => 'nullable|url',
-                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/show\/\d+$/'],
+                'link' => ['nullable', 'string', 'regex:/^\/shop\/products\/\d+$/'],
                 'position' => 'required|string',
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
