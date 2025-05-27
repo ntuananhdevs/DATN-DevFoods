@@ -705,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const existingCaptionInputs = document.getElementById('existingCaptionInputs');
     const submitButton = document.getElementById('submitButton');
     const uploadLabelText = document.querySelector('.upload-label-text');
-    
+
     const previewName = document.getElementById('previewName');
     const previewAddress = document.getElementById('previewAddress');
     const previewPhone = document.getElementById('previewPhone');
@@ -717,20 +717,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewClosingHour = document.getElementById('previewClosingHour');
     const previewStatus = document.getElementById('previewStatus');
     const statusHint = document.getElementById('statusHint');
-    
-    let uploadedImages = [];
-    let deletedImageIds = [];
+
+    let uploadedImages = []; // Mảng lưu trữ ảnh mới được chọn
+    let deletedImageIds = []; // Mảng lưu trữ ID của ảnh hiện có bị xóa
     let map;
     let marker;
-    
+
     function initMap() {
         const defaultLat = 21.0285;
         const defaultLng = 105.8542;
         let lat = defaultLat;
         let lng = defaultLng;
-        
+
         try {
-            // Validate existing coordinates
             if (latitudeInput.value && longitudeInput.value) {
                 const parsedLat = parseFloat(latitudeInput.value);
                 const parsedLng = parseFloat(longitudeInput.value);
@@ -741,45 +740,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     lng = parsedLng;
                 }
             }
-            
-            // Initialize map
+
             const mapContainer = document.getElementById('map');
             if (!mapContainer) {
                 console.error('Map container not found');
                 return;
             }
-            
+
             map = L.map('map', {
                 center: [lat, lng],
                 zoom: 13,
                 zoomControl: true,
                 scrollWheelZoom: false
             });
-            
-            // Add tile layer
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19,
                 tileSize: 256,
                 zoomOffset: 0
             }).addTo(map);
-            
-            // Ensure map resizes correctly
+
             setTimeout(() => {
                 map.invalidateSize();
             }, 300);
-            
-            // Set initial marker if coordinates exist
+
             if (latitudeInput.value && longitudeInput.value) {
                 setMarker(lat, lng);
             }
-            
-            // Add click event for marker placement
+
             map.on('click', function(e) {
                 setMarker(e.latlng.lat, e.latlng.lng);
             });
-            
-            // Handle window resize
+
             window.addEventListener('resize', () => {
                 setTimeout(() => map.invalidateSize(), 100);
             });
@@ -789,35 +782,31 @@ document.addEventListener('DOMContentLoaded', function() {
             longitudeInput.value = defaultLng.toFixed(6);
         }
     }
-    
+
     function setMarker(lat, lng) {
         try {
-            // Validate coordinates
             if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
                 console.warn('Invalid coordinates:', lat, lng);
                 return;
             }
-            
-            // Remove existing marker
+
             if (marker) {
                 map.removeLayer(marker);
             }
-            
-            // Add new marker
+
             marker = L.marker([lat, lng]).addTo(map);
             map.panTo([lat, lng], { animate: true });
-            
-            // Update input fields
+
             latitudeInput.value = lat.toFixed(6);
             longitudeInput.value = lng.toFixed(6);
         } catch (error) {
             console.error('Failed to set marker:', error);
         }
     }
-    
+
     function initForm() {
         updatePreview();
-        
+
         nameInput.addEventListener('input', updatePreview);
         addressInput.addEventListener('input', updatePreview);
         phoneInput.addEventListener('input', updatePreview);
@@ -828,9 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
         activeInput.addEventListener('change', updatePreview);
         imagesInput.addEventListener('change', handleImageUpload);
         primaryImageSelect.addEventListener('change', updatePrimaryImage);
-        
-        initMap();
-        
+
         document.querySelectorAll('.remove-btn').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -839,6 +826,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
+        initMap();
+
         form.addEventListener('submit', function(e) {
             if (openingHourInput.value && closingHourInput.value && openingHourInput.value >= closingHourInput.value) {
                 e.preventDefault();
@@ -846,7 +835,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Validate coordinates before submission
             const lat = parseFloat(latitudeInput.value);
             const lng = parseFloat(longitudeInput.value);
             if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
@@ -855,7 +843,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Append deleted image IDs to form submission
             deletedImageIds.forEach(id => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
@@ -865,22 +852,21 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Initialize primary image badge
         updatePrimaryImage();
     }
-    
+
     function updatePreview() {
         previewName.textContent = nameInput.value || 'Tên chi nhánh';
         previewAddress.textContent = addressInput.value || 'Địa chỉ chi nhánh';
         previewPhone.textContent = phoneInput.value || 'Số điện thoại';
-        
+
         if (emailInput.value) {
             previewEmail.textContent = emailInput.value;
             previewEmailContainer.classList.remove('hidden');
         } else {
             previewEmailContainer.classList.add('hidden');
         }
-        
+
         if (managerSelect.value) {
             const selectedOption = managerSelect.options[managerSelect.selectedIndex];
             previewManager.textContent = selectedOption.text;
@@ -889,10 +875,10 @@ document.addEventListener('DOMContentLoaded', function() {
             previewManager.textContent = 'Chưa chọn quản lý';
             previewManagerContainer.classList.remove('hidden');
         }
-        
+
         previewOpeningHour.textContent = openingHourInput.value || '08:00';
         previewClosingHour.textContent = closingHourInput.value || '22:00';
-        
+
         if (activeInput.checked) {
             previewStatus.textContent = 'Đang hoạt động';
             previewStatus.className = 'preview-status-value active';
@@ -903,48 +889,60 @@ document.addEventListener('DOMContentLoaded', function() {
             statusHint.textContent = 'Chi nhánh ngưng hoạt động';
         }
     }
-    
+
     function handleImageUpload(event) {
         const files = event.target.files;
         const maxImages = 10;
+        const existingImagesCount = existingImagesContainer.querySelectorAll('.image-preview-item').length;
         
-        if (files.length > maxImages) {
-            alert(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh.`);
-            imagesInput.value = '';
+        // Kiểm tra tổng số ảnh (hiện có + mới chọn) không vượt quá giới hạn
+        if (existingImagesCount + uploadedImages.length + files.length > maxImages) {
+            alert(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh (bao gồm cả ảnh hiện có).`);
+            imagesInput.value = ''; // Reset input
             return;
         }
-        
+
         const invalidFiles = [];
-        uploadedImages = Array.from(files).filter((file, index) => {
+        const newImages = Array.from(files).filter((file, index) => {
             const isValid = file.type.match('image/(jpeg|png|jpg|gif)') && file.size <= 2048 * 1024;
             if (!isValid) invalidFiles.push(`Ảnh ${index + 1}: ${file.name}`);
             return isValid;
         });
-        
+
         if (invalidFiles.length > 0) {
             alert(`Các hình ảnh không hợp lệ (phải là JPEG, PNG, JPG, GIF và nhỏ hơn 2MB):\n${invalidFiles.join('\n')}`);
-            imagesInput.value = '';
+            imagesInput.value = ''; // Reset input
             return;
         }
-        
-        if (uploadedImages.length > 0) {
+
+        if (newImages.length > 0) {
+            // Thêm ảnh mới vào mảng uploadedImages
+            uploadedImages = [...uploadedImages, ...newImages];
+            updateFileInput();
             displayImagePreviews(uploadedImages);
             showImageSections();
             uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
-            // Set the first new image as primary by default
-            primaryImageSelect.value = '0';
-            updatePrimaryImage();
+            updatePrimaryImageSelect();
+            // Đặt ảnh mới đầu tiên làm ảnh chính nếu chưa có ảnh chính được chọn
+            if (!primaryImageSelect.value && uploadedImages.length > 0) {
+                primaryImageSelect.value = '0';
+                updatePrimaryImage();
+            }
         } else {
-            hideImageSections();
-            imagesInput.value = '';
-            uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
+            imagesInput.value = ''; // Reset input nếu không có ảnh hợp lệ
         }
     }
-    
+
+    function updateFileInput() {
+        // Cập nhật input file với danh sách ảnh hiện tại
+        const dataTransfer = new DataTransfer();
+        uploadedImages.forEach(file => dataTransfer.items.add(file));
+        imagesInput.files = dataTransfer.files;
+    }
+
     function displayImagePreviews(files) {
         previewContainer.innerHTML = '';
         captionInputs.innerHTML = '';
-        updatePrimaryImageSelect();
 
         files.forEach((file, index) => {
             const reader = new FileReader();
@@ -952,18 +950,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const previewItem = document.createElement('div');
                 previewItem.className = 'image-preview-item';
                 previewItem.dataset.newImageIndex = index;
-                
+
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 img.className = 'image-preview-img';
                 img.alt = `Xem trước ảnh mới ${index + 1}`;
-                
+
                 const overlay = document.createElement('div');
                 overlay.className = 'image-preview-overlay';
-                
+
                 const actions = document.createElement('div');
                 actions.className = 'image-preview-actions';
-                
+
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'image-preview-btn remove-btn';
                 removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
@@ -972,22 +970,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.stopPropagation();
                     removeNewImage(index);
                 });
-                
+
                 actions.appendChild(removeBtn);
                 overlay.appendChild(actions);
                 previewItem.appendChild(img);
                 previewItem.appendChild(overlay);
-                
+
                 previewContainer.appendChild(previewItem);
-                
+
                 const captionGroup = document.createElement('div');
                 captionGroup.className = 'form-group';
                 captionGroup.dataset.newImageIndex = index;
-                
+
                 const captionLabel = document.createElement('label');
                 captionLabel.className = 'form-label';
                 captionLabel.textContent = `Mô tả ảnh mới ${index + 1}:`;
-                
+
                 const captionInput = document.createElement('input');
                 captionInput.type = 'text';
                 captionInput.className = 'form-control';
@@ -995,32 +993,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 captionInput.maxLength = 255;
                 captionInput.placeholder = 'Nhập mô tả cho ảnh...';
                 captionInput.setAttribute('aria-label', `Mô tả cho ảnh mới ${index + 1}`);
-                
+
                 captionGroup.appendChild(captionLabel);
                 captionGroup.appendChild(captionInput);
                 captionInputs.appendChild(captionGroup);
+
+                updatePrimaryImageSelect();
             };
             reader.readAsDataURL(file);
         });
-
-        // Ensure primary image badge is updated after all images are loaded
-        setTimeout(updatePrimaryImage, 0);
     }
-    
+
     function updatePrimaryImage() {
-        // Remove all existing badges
         const existingBadges = document.querySelectorAll('.image-preview-badge');
         existingBadges.forEach(badge => badge.remove());
-        
+
         const selectedValue = primaryImageSelect.value;
         let selectedPreview = null;
 
         if (selectedValue && selectedValue.match(/^\d+$/)) {
             if (existingImagesContainer.querySelector(`.image-preview-item[data-existing-image-id="${selectedValue}"]`)) {
-                // Existing image selected
                 selectedPreview = existingImagesContainer.querySelector(`.image-preview-item[data-existing-image-id="${selectedValue}"]`);
             } else if (previewContainer.querySelector(`.image-preview-item[data-new-image-index="${selectedValue}"]`)) {
-                // New image selected
                 selectedPreview = previewContainer.querySelector(`.image-preview-item[data-new-image-index="${selectedValue}"]`);
             }
         }
@@ -1032,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedPreview.appendChild(primaryBadge);
         }
     }
-    
+
     function removeExistingImage(imageId) {
         deletedImageIds.push(imageId);
         const imageElement = existingImagesContainer.querySelector(`.image-preview-item[data-existing-image-id="${imageId}"]`);
@@ -1051,14 +1045,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         updatePrimaryImage();
     }
-    
+
     function removeNewImage(index) {
         uploadedImages.splice(index, 1);
-        
-        const dataTransfer = new DataTransfer();
-        uploadedImages.forEach(file => dataTransfer.items.add(file));
-        imagesInput.files = dataTransfer.files;
-        
+        updateFileInput();
+
         if (uploadedImages.length > 0) {
             displayImagePreviews(uploadedImages);
             uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
@@ -1067,18 +1058,18 @@ document.addEventListener('DOMContentLoaded', function() {
             imagesInput.value = '';
             uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
         }
-        
+
+        updatePrimaryImageSelect();
         if (primaryImageSelect.value === index.toString()) {
             primaryImageSelect.value = uploadedImages.length > 0 ? '0' : (existingImagesContainer.children.length > 0 ? existingImagesContainer.querySelector('.image-preview-item').dataset.existingImageId : '');
         }
         updatePrimaryImage();
     }
-    
+
     function updatePrimaryImageSelect() {
         const selectedValue = primaryImageSelect.value;
         primaryImageSelect.innerHTML = '';
-        
-        // Add existing images
+
         const existingImages = existingImagesContainer.querySelectorAll('.image-preview-item');
         existingImages.forEach((item, index) => {
             const option = document.createElement('option');
@@ -1089,8 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             primaryImageSelect.appendChild(option);
         });
-        
-        // Add new images
+
         uploadedImages.forEach((file, index) => {
             const option = document.createElement('option');
             option.value = index.toString();
@@ -1101,7 +1091,6 @@ document.addEventListener('DOMContentLoaded', function() {
             primaryImageSelect.appendChild(option);
         });
 
-        // If no images are available, set a default option
         if (primaryImageSelect.options.length === 0) {
             const option = document.createElement('option');
             option.value = '';
@@ -1109,22 +1098,22 @@ document.addEventListener('DOMContentLoaded', function() {
             primaryImageSelect.appendChild(option);
         }
 
-        // Update primary image badge
         updatePrimaryImage();
     }
-    
+
     function showImageSections() {
         imagePreview.classList.remove('hidden');
         captionsContainer.classList.remove('hidden');
     }
-    
+
     function hideImageSections() {
         imagePreview.classList.add('hidden');
         captionsContainer.classList.add('hidden');
         uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
     }
-    
+
     initForm();
 });
+</script>
 </script>
 @endsection

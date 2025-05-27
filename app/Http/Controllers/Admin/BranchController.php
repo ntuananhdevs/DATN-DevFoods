@@ -157,11 +157,18 @@ class BranchController extends Controller
 
             DB::commit();
 
-            return redirect()->route('admin.branches.index')
-                ->with('toast', 'Đã thêm chi nhánh mới thành công');
+            return redirect()->route('admin.branches.index')->with([
+                'toast' => [
+                    'type' => 'success', 
+                    'title' => 'Thành công',
+                    'message' => 'Đã thêm chi nhánh mới thành công'
+                ]
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating branch: ' . $e->getMessage());
+            var_dump($e->getMessage());
+            die();
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra khi tạo chi nhánh: ' . $e->getMessage() .
                     "\nFile: " . $e->getFile() .
@@ -297,7 +304,13 @@ class BranchController extends Controller
             DB::commit();
 
             return redirect()->route('admin.branches.show', $branch->id)
-                ->with('toast', 'Cập nhật chi nhánh thành công');
+                ->with([
+                    'toast' => [
+                        'type' => 'success',
+                        'title' => 'Thành công', 
+                        'message' => 'Cập nhật chi nhánh thành công'
+                    ]
+                ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Lỗi cập nhật chi nhánh: ' . $e->getMessage());
@@ -308,31 +321,7 @@ class BranchController extends Controller
                 ->withInput();
         }
     }
-    public function destroy(Branch $branch)
-    {
-        try {
-            DB::beginTransaction();
-
-            // Kiểm tra xem chi nhánh có đang được sử dụng không
-            // Ví dụ: kiểm tra có đơn hàng nào đang liên kết với chi nhánh này không
-
-            $branch->delete();
-
-            DB::commit();
-
-            return redirect()->back()->with('toast', 'Đã xóa chi nhánh thành công');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error in BranchController@destroy: ' . $e->getMessage());
-
-            return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi xóa chi nhánh: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Thay đổi trạng thái của một chi nhánh
-     */
+ 
 public function toggleStatus($id)
 {
     try {
@@ -508,7 +497,13 @@ public function bulkStatusUpdate(Request $request)
             DB::commit();
 
             return redirect()->route('admin.branches.show', $branch->id)
-                ->with('toast', 'Đã cập nhật người quản lý chi nhánh thành công.');
+                ->with([
+                    'toast' => [
+                        'type' => 'success',
+                        'title' => 'Thành công',
+                        'message' => 'Đã cập nhật người quản lý chi nhánh thành công'
+                    ]
+                ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error in BranchController@updateManager: ' . $e->getMessage());
@@ -527,7 +522,13 @@ public function bulkStatusUpdate(Request $request)
             DB::commit();
 
             return redirect()->route('admin.branches.show', $branch->id)
-                ->with('toast', 'Đã gỡ bỏ quản lý thành công');
+                ->with([
+                    'toast' => [
+                        'type' => 'success',
+                        'title' => 'Thành công',
+                        'message' => 'Đã gỡ bỏ quản lý thành công'
+                    ]
+                ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error removing manager: ' . $e->getMessage());
@@ -566,7 +567,13 @@ public function bulkStatusUpdate(Request $request)
             }
         }
         return redirect()->route('admin.branches.show', $branch->id)
-            ->with('toast', 'Hình ảnh đã được tải lên thành công!');
+            ->with([
+                'toast' => [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => 'Hình ảnh đã được tải lên thành công'
+                ]
+            ]);
     }
     public function setFeatured(Request $request, $branchId, $imageId)
     {
@@ -578,8 +585,11 @@ public function bulkStatusUpdate(Request $request)
             $image->update(['is_featured' => true]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Ảnh đại diện đã được cài đặt'
+                'toast' => [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => 'Đã thêm chi nhánh mới thành công'
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Set featured failed', ['error' => $e->getMessage()]);
@@ -589,30 +599,37 @@ public function bulkStatusUpdate(Request $request)
             ], 500);
         }
     }
-    public function deleteImage(Request $request, $branchId, $imageId)
+    public function deleteImage(Request $request, Branch $branch, $imageId)
     {
-        $branch = Branch::findOrFail($branchId);
-        $image = $branch->images()->where('id', $imageId)->first(); // Use first() instead of firstOrFail()
-        if (!$image) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Hình ảnh không tồn tại hoặc đã bị xóa.'
-                ], 404);
-            }
-            return redirect()->route('admin.branches.show', $branch->id)
-                ->with('error', 'Hình ảnh không tồn tại hoặc đã bị xóa.');
-        }
-        Storage::disk('s3')->delete($image->image_path);
-        $image->delete();
-        if ($request->ajax()) {
+        try {
+            // Find the image associated with the branch
+            $image = BranchImage::where('branch_id', $branch->id)->findOrFail($imageId);
+
+            // Delete the image file from S3
+            Storage::disk('s3')->delete($image->image_path);
+
+            // Delete the image record from the database
+            $image->delete();
+
+            // Return success response
             return response()->json([
                 'success' => true,
-                'message' => 'Hình ảnh đã được xóa thành công!',
-                'image_id' => $imageId
+                'message' => 'Hình ảnh đã được xóa thành công.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('Error deleting branch image', [
+                'branch_id' => $branch->id,
+                'image_id' => $imageId,
+                'error' => $e->getMessage()
             ]);
+
+            // Return error response
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa hình ảnh: ' . $e->getMessage()
+            ], 500);
         }
-        return redirect()->route('admin.branches.show', $branch->id)
-            ->with('success', 'Hình ảnh đã được xóa thành công!');
     }
 }

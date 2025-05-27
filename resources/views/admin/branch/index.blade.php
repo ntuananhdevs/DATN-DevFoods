@@ -108,16 +108,14 @@
                     </button>
                     <div id="actionsMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
                         <div class="p-2">
-                        <a href="#" class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                           @click.prevent="handleBulkAction('activate'); open = false">
-                            <i class="fas fa-check-circle text-green-500"></i>
-                            <span>Kích hoạt đã chọn</span>
-                        </a>
-                        <a href="#" class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                           @click.prevent="handleBulkAction('deactivate'); open = false">
-                            <i class="fas fa-times-circle text-red-500"></i>
-                            <span>Vô hiệu hóa đã chọn</span>
-                        </a>
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-green-50 hover:text-green-700 transition-colors duration-200" onclick="updateSelectedStatus(1)">
+                                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                <span class="text-green-700">Kích hoạt đã chọn</span>
+                            </a>
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-red-50 hover:text-red-700 transition-colors duration-200" onclick="updateSelectedStatus(0)">
+                                <i class="fas fa-times-circle text-red-600 mr-2"></i>
+                                <span class="text-red-700">Vô hiệu hóa đã chọn</span>
+                            </a>
                         </div>
                     </div>
                 </div>
