@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="branch-details-container">
-    <!-- Page Header -->
+    <!-- Page Header (unchanged) -->
     <div class="page-header">
         <div class="header-content">
             <div class="header-left">
@@ -19,7 +19,7 @@
         </div>
     </div>
 
-    <!-- Branch Overview -->
+    <!-- Branch Overview (unchanged) -->
     <div class="card branch-overview">
         <div class="branch-banner">
             <span class="status-badge {{ $branch->active ? 'active' : 'inactive' }}">
@@ -85,19 +85,17 @@
                     <button class="btn btn-sm btn-outline" id="uploadImagesBtn"><i class="fas fa-upload"></i> Tải lên</button>
                 </div>
                 <div class="card-body">
-                    <form id="uploadImageForm" action="{{ route('admin.branches.upload-image', $branch->id) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        <input type="file" id="imageUpload" name="image" accept="image/*" hidden>
-                    </form>
                     @if($branch->images->count())
                         <div class="gallery-grid">
                             @foreach($branch->images as $index => $image)
-                                <div class="gallery-item">
-                                    <img src="{{ asset('storage/' . $image->image_path) }}" alt="{{ $branch->name }} - Hình {{ $index + 1 }}" class="gallery-img">
+                                <div class="gallery-item" data-image-id="{{ $image->id }}">
+                                    <img src="{{ Storage::disk('s3')->url($image->image_path) }}" alt="{{ $branch->name }} - Hình {{ $index + 1 }}" class="gallery-img">
                                     <div class="gallery-overlay">
-                                        <a href="{{ asset('storage/' . $image->path) }}" class="gallery-btn view-btn" data-fancybox="branch-gallery" data-caption="{{ $branch->name }} - {{ $image->caption ?? 'Hình ' . ($index + 1) }}"><i class="fas fa-search-plus"></i></a>
+                                        <a href="{{ Storage::disk('s3')->url($image->image_path) }}" class="gallery-btn view-btn" data-fancybox="branch-gallery" data-caption="{{ $branch->name }} - {{ $image->caption ?? 'Hình ' . ($index + 1) }}"><i class="fas fa-search-plus"></i></a>
                                         <button class="gallery-btn {{ $image->is_featured ? 'featured-btn' : 'set-featured-btn' }}" data-image-id="{{ $image->id }}"><i class="fa{{ $image->is_featured ? 's' : 'r' }} fa-star"></i></button>
-                                        <button class="gallery-btn delete-btn" data-image-id="{{ $image->id }}"><i class="fas fa-trash-alt"></i></button>
+                                        <button class="gallery-btn delete-btn" data-image-id="{{ $image->id }}" data-branch-id="{{ $branch->id }}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
                                     </div>
                                     @if($image->caption)
                                         <div class="gallery-caption">{{ $image->caption }}</div>
@@ -106,7 +104,7 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="empty-state">
+                        <div class="empty-state" id="emptyState">
                             <i class="fas fa-images empty-icon"></i>
                             <h4>Chưa có hình ảnh</h4>
                             <p>Chi nhánh này chưa có hình ảnh nào</p>
@@ -116,7 +114,7 @@
                 </div>
             </div>
 
-            <!-- Basic Information -->
+            <!-- Basic Information (unchanged) -->
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-info-circle card-icon"></i>
@@ -125,8 +123,8 @@
                 <div class="card-body p-0">
                     <div class="info-table">
                         <div class="info-row">
-                            <div class="info-label"><i class="fas fa-hashtag"></i> ID Chi nhánh</div>
-                            <div class="info-value"><span class="id-badge">#{{ $branch->id }}</span></div>
+                            <div class="info-label"><i class="fas fa-hashtag"></i> Mã Chi nhánh</div>
+                            <div class="info-value"><span class="id-badge">#{{ $branch->branch_code }}</span></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label"><i class="fas fa-building"></i> Tên chi nhánh</div>
@@ -163,7 +161,7 @@
                 </div>
             </div>
 
-            <!-- Operating Hours -->
+            <!-- Operating Hours (unchanged) -->
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-clock card-icon"></i>
@@ -190,9 +188,8 @@
             </div>
         </div>
 
-        <!-- Right Column -->
+        <!-- Right Column (unchanged) -->
         <div class="side-column">
-            <!-- Manager Information -->
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-user-tie card-icon"></i>
@@ -226,7 +223,6 @@
                 </div>
             </div>
 
-            <!-- Rating & Reviews -->
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-star card-icon"></i>
@@ -256,7 +252,6 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-bolt card-icon"></i>
@@ -275,60 +270,69 @@
     </div>
 </div>
 
-<!-- Upload Images Modal -->
-<div class="modal" id="uploadImagesModal">
+<!-- Upload Images Modal (unchanged) -->
+<div class="modal" id="uploadImagesModal" style="z-index: 1050;">
     <div class="modal-backdrop"></div>
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Tải lên hình ảnh chi nhánh</h3>
-                <button class="modal-close" id="closeUploadModal"><i class="fas fa-times"></i></button>
+                <div class="modal-title">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Tải lên hình ảnh chi nhánh</h3>
+                </div>
+                <button class="modal-close" id="closeUploadModal">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <form id="uploadImagesForm" action="{{ route('admin.branches.upload-image', $branch->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="form-group">
-                        <label for="branchImages">Chọn hình ảnh</label>
-                        <input type="file" id="branchImages" name="images[]" multiple accept="image/*" required>
-                        <div class="form-hint">Hỗ trợ JPG, PNG, GIF.</div>
+                        <label for="branchImages" class="form-label">
+                            <i class="fas fa-images"></i>
+                            Chọn hình ảnh
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="branchImages" name="images[]" multiple accept="image/*" required class="file-upload-input">
+                            <div class="file-upload-text">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Kéo thả hoặc click để chọn ảnh</span>
+                            </div>
+                        </div>
+                        <div class="form-hint">
+                            <i class="fas fa-info-circle"></i>
+                            Hỗ trợ định dạng: JPG, PNG, GIF (Tối đa 5MB/ảnh)
+                        </div>
                     </div>
+
                     <div class="form-group">
-                        <label class="form-check"><input type="checkbox" id="setAsFeatured" name="set_as_featured"> Đặt ảnh đầu làm đại diện</label>
+                        <label class="form-check">
+                            <input type="checkbox" id="setAsFeatured" name="set_as_featured" class="form-check-input">
+                            <span class="form-check-label">
+                                <i class="far fa-star"></i>
+                                Đặt ảnh đầu làm ảnh đại diện
+                            </span>
+                        </label>
                     </div>
+
                     <div class="image-preview-container hidden">
-                        <h4>Xem trước</h4>
+                        <div class="preview-header">
+                            <h4><i class="fas fa-eye"></i> Xem trước</h4>
+                            <button type="button" class="btn btn-link btn-sm clear-preview">
+                                <i class="fas fa-trash-alt"></i> Xóa tất cả
+                            </button>
+                        </div>
                         <div class="image-preview-grid" id="imagePreviewGrid"></div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline" id="cancelUploadBtn">Hủy</button>
-                <button type="submit" form="uploadImagesForm" class="btn btn-primary"><i class="fas fa-upload"></i> Tải lên</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Image Modal -->
-<div class="modal" id="deleteImageModal">
-    <div class="modal-backdrop"></div>
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Xác nhận xóa</h3>
-                <button class="modal-close" id="closeDeleteModal"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <p>Bạn có chắc chắn muốn xóa hình ảnh này?</p>
-                <p class="text-danger">Hành động này không thể hoàn tác.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-outline" id="cancelDeleteBtn">Hủy</button>
-                <form id="deleteImageForm" action="" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">Xóa</button>
-                </form>
+                <button class="btn btn-outline" id="cancelUploadBtn">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="submit" form="uploadImagesForm" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Tải lên
+                </button>
             </div>
         </div>
     </div>
@@ -382,110 +386,54 @@ h4 { font-size: 1rem; }
 .btn-danger { background: var(--danger); color: var(--white); }
 .btn-danger:hover { background: #e11d48; }
 
-.page-header {
-    margin-bottom: 1.5rem;
+/* Loading state for buttons */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
 }
 
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
 }
 
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
+.page-header { margin-bottom: 1.5rem; }
+.header-content { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.header-left { display: flex; align-items: center; gap: 0.5rem; }
 .header-icon, .card-icon, .hours-icon, .hours-card-icon, .empty-icon, .action-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
+    width: 2.5rem; height: 2.5rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 1rem;
 }
-
 .header-icon { background: rgba(67, 97, 238, 0.1); color: var(--primary); }
 .header-text p { color: var(--gray); margin-top: 0.25rem; }
-.header-actions {
-    display: flex;
-    gap: 0.5rem;
-    margin-left: auto; /* Pushes buttons to the right */
-}
+.header-actions { display: flex; gap: 0.5rem; margin-left: auto; }
 
-.card {
-    background: var(--white);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    margin-bottom: 1.5rem;
-    transition: var(--transition);
-}
-
+.card { background: var(--white); border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 1.5rem; transition: var(--transition); }
 .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
 .card-header { display: flex; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid var(--gray-light); gap: 0.5rem; }
 .card-body { padding: 1.25rem; }
 .card-body.p-0 { padding: 0; }
 
-.branch-banner {
-    height: 6rem;
-    background: linear-gradient(135deg, var(--primary), #4cc9f0);
-    position: relative;
-}
-
-.status-badge {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
+.branch-banner { height: 6rem; background: linear-gradient(135deg, var(--primary), #4cc9f0); position: relative; }
+.status-badge { position: absolute; top: 1rem; right: 1rem; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; }
 .status-badge.active { background: rgba(74, 222, 128, 0.2); color: var(--success); }
 .status-badge.inactive { background: rgba(244, 63, 94, 0.2); color: var(--danger); }
 
-.branch-overview-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: -2rem;
-    padding: 0 1.25rem 1.25rem;
-    position: relative;
-    z-index: 1;
-}
-
-.branch-overview-content-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
-    z-index: -2;
-}
-
+.branch-overview-content { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: -2rem; padding: 0 1.25rem 1.25rem; position: relative; z-index: 1; }
+.branch-overview-content-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.9); z-index: -2; }
 .branch-overview-left { display: flex; gap: 1rem; flex: 1; }
-.branch-avatar {
-    width: 5rem;
-    height: 5rem;
-    background: var(--primary);
-    color: var(--white);
-    border-radius: var(--border-radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    border: 3px solid var(--white);
-    box-shadow: var(--shadow);
-}
-
+.branch-avatar { width: 5rem; height: 5rem; background: var(--primary); color: var(--white); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; border: 3px solid var(--white); box-shadow: var(--shadow); }
 .branch-address { display: flex; gap: 0.5rem; color: var(--gray); margin: 0.5rem 0; }
 .branch-address i { color: var(--danger); }
 .branch-contact { display: flex; gap: 1rem; margin-bottom: 0.75rem; }
@@ -495,14 +443,7 @@ h4 { font-size: 1rem; }
 .stars { color: var(--warning); display: flex; gap: 0.125rem; }
 .rating-value { font-weight: 600; }
 
-.hours-container {
-    display: flex;
-    gap: 0.75rem;
-    background: var(--light);
-    border-radius: var(--border-radius);
-    padding: 0.75rem;
-}
-
+.hours-container { display: flex; gap: 0.75rem; background: var(--light); border-radius: var(--border-radius); padding: 0.75rem; }
 .hours-item { display: flex; gap: 0.5rem; flex: 1; padding: 0.5rem; }
 .hours-item.opening .hours-icon { background: rgba(74, 222, 128, 0.2); color: var(--success); }
 .hours-item.closing .hours-icon { background: rgba(244, 63, 94, 0.2); color: var(--danger); }
@@ -517,30 +458,9 @@ h4 { font-size: 1rem; }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
 .gallery-item { position: relative; border-radius: var(--border-radius); overflow: hidden; aspect-ratio: 4/3; }
 .gallery-img { width: 100%; height: 100%; object-fit: cover; }
-.gallery-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: var(--transition);
-}
-
+.gallery-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: var(--transition); }
 .gallery-item:hover .gallery-overlay { opacity: 1; }
-.gallery-btn {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 9999px;
-    background: var(--white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    cursor: pointer;
-}
-
+.gallery-btn { width: 2rem; height: 2rem; border-radius: 9999px; background: var(--white); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
 .gallery-btn:hover { transform: scale(1.1); }
 .gallery-btn.view-btn:hover { background: var(--primary); color: var(--white); }
 .gallery-btn.featured-btn { background: var(--warning); color: var(--white); }
@@ -575,47 +495,12 @@ h4 { font-size: 1rem; }
 
 .manager-profile { text-align: center; }
 .manager-cover { height: 4rem; background: rgba(59, 130, 246, 0.1); }
-.manager-avatar {
-    width: 4rem;
-    height: 4rem;
-    background: var(--info);
-    color: var(--white);
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    margin: -2rem auto 0.5rem;
-    border: 3px solid var(--white);
-}
-
-.manager-role {
-    display: inline-flex;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    background: rgba(59, 130, 246, 0.1);
-    color: var(--info);
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    margin-bottom: 1rem;
-}
-
+.manager-avatar { width: 4rem; height: 4rem; background: var(--info); color: var(--white); border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin: -2rem auto 0.5rem; border: 3px solid var(--white); }
+.manager-role { display: inline-flex; gap: 0.375rem; padding: 0.375rem 0.75rem; background: rgba(59, 130, 246, 0.1); color: var(--info); border-radius: 9999px; font-size: 0.75rem; margin-bottom: 1rem; }
 .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
 
 .rating-summary { text-align: center; }
-.rating-circle {
-    width: 5rem;
-    height: 5rem;
-    background: var(--white);
-    border-radius: 9999px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    border: 3px solid rgba(245, 158, 11, 0.1);
-}
-
+.rating-circle { width: 5rem; height: 5rem; background: var(--white); border-radius: 9999px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 1rem; border: 3px solid rgba(245, 158, 11, 0.1); }
 .rating-value { font-size: 1.25rem; font-weight: 700; color: var(--warning); }
 .rating-max { font-size: 0.75rem; color: var(--gray); }
 .rating-stars { color: var(--warning); font-size: 1.25rem; display: flex; justify-content: center; gap: 0.25rem; }
@@ -635,12 +520,12 @@ h4 { font-size: 1rem; }
 .empty-icon { font-size: 1.5rem; background: var(--gray-light); color: var(--gray); }
 .empty-state p { color: var(--gray); margin-bottom: 1rem; }
 
-.modal { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 1rem; }
+.modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1050; display: none; align-items: center; justify-content: center; padding: 1rem; }
 .modal.show { display: flex; }
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
-.modal-dialog { max-width: 28rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+.modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1040; }
+.modal-dialog { max-width: 28rem; max-height: calc(100vh - 2rem); overflow-y: auto; position: relative; z-index: 1051; }
 .modal-dialog.modal-sm { max-width: 20rem; }
-.modal-content { background: var(--white); border-radius: var(--border-radius); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.modal-content { background: var(--white); border-radius: var(--border-radius); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); position: relative; z-index: 1052; }
 .modal-header { display: flex; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--gray-light); }
 .modal-close { width: 1.5rem; height: 1.5rem; border-radius: 9999px; background: none; color: var(--gray); border: none; cursor: pointer; }
 .modal-close:hover { background: var(--gray-light); color: #1f2937; }
@@ -648,10 +533,13 @@ h4 { font-size: 1rem; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 1rem 1.25rem; border-top: 1px solid var(--gray-light); }
 
 .form-group { margin-bottom: 1rem; }
-.form-group label { font-weight: 500; margin-bottom: 0.5rem; display: block; }
+.form-label { font-weight: 500; margin-bottom: 0.5rem; display: block; }
 .form-hint { font-size: 0.75rem; color: var(--gray); margin-top: 0.25rem; }
 .form-check { display: flex; align-items: center; gap: 0.5rem; }
-input[type="file"] { padding: 0.5rem; border: 1px solid var(--gray-light); border-radius: var(--border-radius); background: var(--light); }
+.file-upload-wrapper { position: relative; border: 2px dashed var(--gray-light); border-radius: var(--border-radius); padding: 1rem; text-align: center; background: var(--light); cursor: pointer; }
+.file-upload-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.file-upload-text { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; color: var(--gray); }
+.file-upload-text:hover { color: var(--primary); }
 .image-preview-container { margin-top: 1rem; }
 .image-preview-container.hidden { display: none; }
 .image-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem; }
@@ -665,28 +553,43 @@ input[type="file"] { padding: 0.5rem; border: 1px solid var(--gray-light); borde
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Modal handling
+    // Modal handling for upload
     const toggleModal = (modal, show) => {
         modal.classList.toggle('show', show);
-        document.body.style.overflow = show ? 'hidden' : '';
+        modal.style.display = show ? 'flex' : 'none';
+        document.body.style.overflow = show ? 'hidden' : 'auto';
     };
 
     const uploadModal = document.getElementById('uploadImagesModal');
-    const deleteModal = document.getElementById('deleteImageModal');
+
+    // Open upload modal
     ['uploadImagesBtn', 'emptyStateUploadBtn'].forEach(id => {
-        document.getElementById(id)?.addEventListener('click', () => toggleModal(uploadModal, true));
-    });
-    ['closeUploadModal', 'cancelUploadBtn'].forEach(id => {
-        document.getElementById(id)?.addEventListener('click', () => toggleModal(uploadModal, false));
-    });
-    ['closeDeleteModal', 'cancelDeleteBtn'].forEach(id => {
-        document.getElementById(id)?.addEventListener('click', () => toggleModal(deleteModal, false));
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', () => toggleModal(uploadModal, true));
+        }
     });
 
+    // Close upload modal
+    ['closeUploadModal', 'cancelUploadBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                toggleModal(uploadModal, false);
+                document.getElementById('branchImages').value = '';
+                document.getElementById('imagePreviewGrid').innerHTML = '';
+                document.querySelector('.image-preview-container').classList.add('hidden');
+            });
+        }
+    });
+
+    // Close modals on backdrop click
     window.addEventListener('click', e => {
         if (e.target.classList.contains('modal-backdrop')) {
             toggleModal(uploadModal, false);
-            toggleModal(deleteModal, false);
+            document.getElementById('branchImages').value = '';
+            document.getElementById('imagePreviewGrid').innerHTML = '';
+            document.querySelector('.image-preview-container').classList.add('hidden');
         }
     });
 
@@ -694,55 +597,116 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageInput = document.getElementById('branchImages');
     const previewContainer = document.querySelector('.image-preview-container');
     const previewGrid = document.getElementById('imagePreviewGrid');
-    imageInput?.addEventListener('change', () => {
-        previewGrid.innerHTML = '';
-        if (imageInput.files.length) {
-            previewContainer.classList.remove('hidden');
-            Array.from(imageInput.files).forEach(file => {
-                if (!file.type.match('image.*')) return;
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const item = document.createElement('div');
-                    item.className = 'preview-item';
-                    item.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-img"><button class="preview-remove"><i class="fas fa-times"></i></button>`;
-                    item.querySelector('.preview-remove').addEventListener('click', () => {
-                        item.remove();
-                        if (!previewGrid.children.length) previewContainer.classList.add('hidden');
-                    });
-                    previewGrid.appendChild(item);
-                };
-                reader.readAsDataURL(file);
-            });
-        } else {
+    if (imageInput) {
+        imageInput.addEventListener('change', () => {
+            previewGrid.innerHTML = '';
+            const files = imageInput.files;
+            if (files.length) {
+                previewContainer.classList.remove('hidden');
+                Array.prototype.forEach.call(files, (file, idx) => {
+                    if (!file.type.match('image.*')) return;
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const item = document.createElement('div');
+                        item.className = 'preview-item';
+                        item.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-img"><button class="preview-remove"><i class="fas fa-times"></i></button>`;
+                        const removeBtn = item.querySelector('.preview-remove');
+                        removeBtn.addEventListener('click', () => {
+                            item.remove();
+                            // Remove file from input
+                            const dt = new DataTransfer();
+                            Array.prototype.forEach.call(files, (f, i) => {
+                                if (i !== idx) dt.items.add(f);
+                            });
+                            imageInput.files = dt.files;
+                            if (!previewGrid.children.length) {
+                                previewContainer.classList.add('hidden');
+                            }
+                        });
+                        previewGrid.appendChild(item);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        });
+    }
+
+    // Clear preview button
+    const clearPreviewBtn = document.querySelector('.clear-preview');
+    if (clearPreviewBtn) {
+        clearPreviewBtn.addEventListener('click', () => {
+            previewGrid.innerHTML = '';
             previewContainer.classList.add('hidden');
-        }
-    });
+            imageInput.value = '';
+        });
+    }
 
-    // Single image upload
-    document.getElementById('uploadImagesBtn').addEventListener('click', () => document.getElementById('imageUpload').click());
-    document.getElementById('imageUpload').addEventListener('change', () => {
-        fetch("{{ route('admin.branches.upload-image', $branch->id) }}", {
-            method: 'POST',
-            body: new FormData(document.getElementById('uploadImageForm')),
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-        })
-        .then(res => res.json())
-        .then(data => data.success ? location.reload() : alert('Upload thất bại: ' + data.message))
-        .catch(err => alert('Có lỗi xảy ra khi upload ảnh'));
-    });
-
-    // Delete image
+    // Delete image with AJAX
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            document.getElementById('deleteImageForm').action = `/admin/branch-images/${btn.dataset.imageId}`;
-            toggleModal(deleteModal, true);
+            const imageId = btn.dataset.imageId;
+            const branchId = btn.dataset.branchId;
+            dtmodalConfirmDelete({
+                itemName: 'hình ảnh',
+                onConfirm: () => {
+                    btn.classList.add('btn-loading');
+                    fetch(`/admin/branches/${branchId}/images/${imageId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    })
+                    .then(res => {
+                        if (res.headers.get('content-type')?.includes('application/json')) {
+                            return res.json();
+                        } else {
+                            throw new Error('Server did not return JSON.');
+                        }
+                    })
+                    .then(data => {
+                        btn.classList.remove('btn-loading');
+                        if (data.success) {
+                            const galleryItem = document.querySelector(`.gallery-item[data-image-id="${imageId}"]`);
+                            if (galleryItem) {
+                                galleryItem.remove();
+                            }
+                            const galleryGrid = document.querySelector('.gallery-grid');
+                            if (galleryGrid && !galleryGrid.children.length) {
+                                const cardBody = galleryGrid.closest('.card-body');
+                                cardBody.innerHTML = `
+                                    <div class="empty-state" id="emptyState">
+                                        <i class="fas fa-images empty-icon"></i>
+                                        <h4>Chưa có hình ảnh</h4>
+                                        <p>Chi nhánh này chưa có hình ảnh nào</p>
+                                        <button class="btn btn-primary" id="emptyStateUploadBtn"><i class="fas fa-upload"></i> Tải lên hình ảnh</button>
+                                    </div>`;
+                                // Reattach event listener for new upload button
+                                const newUploadBtn = document.getElementById('emptyStateUploadBtn');
+                                if (newUploadBtn) {
+                                    newUploadBtn.addEventListener('click', () => toggleModal(uploadModal, true));
+                                }
+                            }
+                            dtmodalShowToast('success', { message: 'Xóa hình ảnh thành công' });
+                        } else {
+                            dtmodalShowToast('error', { message: 'Có lỗi khi xóa hình ảnh: ' + (data.message || 'Unknown error') });
+                        }
+                    })
+                    .catch(err => {
+                        btn.classList.remove('btn-loading');
+                        dtmodalShowToast('error', { message: 'Có lỗi khi xóa hình ảnh: ' + err.message });
+                    });
+                }
+            });
         });
     });
 
     // Set featured image
     document.querySelectorAll('.set-featured-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            fetch(`/admin/branch-images/${btn.dataset.imageId}/set-featured`, {
+            fetch(`/admin/branch/branches-images/${btn.dataset.imageId}/set-featured`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -751,14 +715,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ branch_id: {{ $branch->id }} })
             })
             .then(res => res.json())
-            .then(data => data.success ? location.reload() : alert('Có lỗi khi đặt ảnh đại diện'))
-            .catch(err => alert('Có lỗi khi đặt ảnh đại diện'));
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    dtmodalShowToast('error', { message: 'Có lỗi khi đặt ảnh đại diện: ' + (data.message || 'Unknown error') });
+                }
+            })
+            .catch(err => dtmodalShowToast('error', { message: 'Có lỗi khi đặt ảnh đại diện: ' + err.message }));
         });
     });
 
-    // Quick actions
+    // Quick click actions
     document.querySelectorAll('.action-item').forEach(item => {
-        item.addEventListener('click', () => console.log(`Action: ${item.dataset.action}`));
+        item.addEventListener('click', () => console.log(`Action: clicked: ${item.dataset.action}`));
     });
 
     // Card animations
@@ -779,8 +749,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', animateCards);
     setTimeout(animateCards, 100);
 
-    // Fancybox
-    if (typeof Fancybox !== 'undefined') Fancybox.bind("[data-fancybox]");
+    // Fancybox bind
+    if (typeof Fancybox !== 'undefined') {
+        Fancybox.bind("[data-fancybox]");
+    }
 });
 </script>
 @endsection

@@ -12,6 +12,7 @@ use App\Models\VariantValue;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Branch;
+use App\Models\Favorite;
 
 class ProductController extends Controller
 {
@@ -21,7 +22,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {        
         // Lấy tất cả categories để hiển thị filter
-        $categories = Category::where('status', 'active')
+        $categories = Category::where('status', true)
             ->withCount(['products' => function($query) {
                 $query->where('status', 'selling');
             }])
@@ -71,8 +72,20 @@ class ProductController extends Controller
 
         $products = $query->paginate(12);
         
+        // Obtener favoritos del usuario
+        $favorites = [];
+        if (auth()->check()) {
+            // Si el usuario está autenticado, obtener de la base de datos
+            $favorites = Favorite::where('user_id', auth()->id())
+                ->pluck('product_id')
+                ->toArray();
+        } elseif ($request->session()->has('wishlist_items')) {
+            // Si no está autenticado pero tiene favoritos en sesión
+            $favorites = $request->session()->get('wishlist_items', []);
+        }
+        
         // Thêm thông tin rating trung bình cho mỗi sản phẩm
-        $products->getCollection()->transform(function ($product) {
+        $products->getCollection()->transform(function ($product) use ($favorites) {
             $product->average_rating = $product->reviews->avg('rating') ?? 0;
             $product->reviews_count = $product->reviews->count();
             $product->primary_image = $product->images->where('is_primary', true)->first() 
@@ -82,6 +95,17 @@ class ProductController extends Controller
             if ($product->primary_image) {
                 $product->primary_image->s3_url = Storage::disk('s3')->url($product->primary_image->img);
             }
+            
+            // Marcar como favorito si está en la lista
+            $product->is_favorite = in_array($product->id, $favorites);
+            
+            // Obtener la primera variante del producto que tenga stock disponible en cualquier sucursal
+            $product->first_variant = ProductVariant::where('product_id', $product->id)
+                                        ->whereHas('branchStocks', function($query) {
+                                            $query->where('stock_quantity', '>', 0);
+                                        })
+                                        ->orderBy('id', 'asc')
+                                        ->first();
             
             return $product;
         });
@@ -113,6 +137,11 @@ class ProductController extends Controller
         // Tính toán thông tin rating
         $product->average_rating = $product->reviews->avg('rating') ?? 0;
         $product->reviews_count = $product->reviews->count();
+        
+        // Add S3 URLs to all product images
+        foreach ($product->images as $image) {
+            $image->s3_url = Storage::disk('s3')->url($image->img);
+        }
 
         // Lấy các variant attributes và values
         $variantAttributes = VariantAttribute::with([
@@ -143,6 +172,15 @@ class ProductController extends Controller
         $relatedProducts->transform(function ($relatedProduct) {
             $relatedProduct->average_rating = $relatedProduct->reviews->avg('rating') ?? 0;
             $relatedProduct->reviews_count = $relatedProduct->reviews->count();
+            
+            // Add primary image and S3 URL
+            $relatedProduct->primary_image = $relatedProduct->images->where('is_primary', true)->first() 
+                                    ?? $relatedProduct->images->first();
+            
+            if ($relatedProduct->primary_image) {
+                $relatedProduct->primary_image->s3_url = Storage::disk('s3')->url($relatedProduct->primary_image->img);
+            }
+            
             return $relatedProduct;
         });
 

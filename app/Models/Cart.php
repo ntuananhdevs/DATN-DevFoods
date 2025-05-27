@@ -9,28 +9,21 @@ class Cart extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'session_id',
-        'status',
-    ];
+    protected $fillable = ['user_id', 'session_id', 'status'];
 
-    protected $casts = [
-        'attributes' => 'array',
-    ];
-
+    /**
+     * Get the user that owns the cart.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function product()
+    /**
+     * Get the items in the cart.
+     */
+    public function items()
     {
-        return $this->belongsTo(Product::class);
-    }
-
-    public function variant()
-    {
-        return $this->belongsTo(ProductVariant::class, 'variant_id');
+        return $this->hasMany(CartItem::class);
     }
 }

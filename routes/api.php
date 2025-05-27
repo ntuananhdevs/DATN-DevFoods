@@ -40,3 +40,24 @@ Route::prefix('test')->name('api.test.')->group(function () {
     Route::delete('/images/{filename}', [TestController::class, 'deleteImage'])->name('images.delete');
     Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });
+
+// Rutas para funcionalidad en tiempo real
+
+// Favoritos y carrito - accesibles sin autenticación pero con sesión
+Route::middleware('web')->group(function () {
+    Route::post('/favorites/toggle', 'App\Http\Controllers\Api\Customer\FavoriteController@toggle');
+    
+    // Carrito
+    Route::post('/cart/add', 'App\Http\Controllers\Api\Customer\CartController@add');
+    Route::post('/cart/update', 'App\Http\Controllers\Api\Customer\CartController@update');
+    Route::post('/cart/remove', 'App\Http\Controllers\Api\Customer\CartController@remove');
+    Route::post('/coupon/apply', 'App\Http\Controllers\Api\Customer\CartController@applyCoupon');
+    
+    // Products
+    Route::get('/products', 'App\Http\Controllers\Api\Customer\ProductController@getProducts');
+});
+
+// Rutas que requieren autenticación
+Route::middleware('auth:api')->group(function () {
+    // Otras rutas autenticadas aquí
+});

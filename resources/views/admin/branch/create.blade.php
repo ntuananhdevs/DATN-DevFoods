@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thêm Chi Nhánh Mới</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+@extends('layouts.admin.contentLayoutMaster')
+
+@section('content')
     <style>
         :root {
             --primary: #4361ee;
@@ -630,319 +624,321 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('branchForm');
-        const nameInput = document.getElementById('name');
-        const addressInput = document.getElementById('address');
-        const phoneInput = document.getElementById('phone');
-        const emailInput = document.getElementById('email');
-        const openingHourInput = document.getElementById('opening_hour');
-        const closingHourInput = document.getElementById('closing_hour');
-        const activeInput = document.getElementById('active');
-        const managerSelect = document.getElementById('manager_user_id');
-        const latitudeInput = document.getElementById('latitude');
-        const longitudeInput = document.getElementById('longitude');
-        const imagesInput = document.getElementById('images');
-        const primaryImageSelect = document.getElementById('primary_image');
-        const previewContainer = document.getElementById('previewContainer');
-        const imagePreview = document.getElementById('imagePreview');
-        const captionsContainer = document.getElementById('captionsContainer');
-        const captionInputs = document.getElementById('captionInputs');
-        const submitButton = document.getElementById('submitButton');
-        const uploadLabelText = document.querySelector('.upload-label-text');
-        
-        const previewName = document.getElementById('previewName');
-        const previewAddress = document.getElementById('previewAddress');
-        const previewPhone = document.getElementById('previewPhone');
-        const previewEmail = document.getElementById('previewEmail');
-        const previewEmailContainer = document.getElementById('previewEmailContainer');
-        const previewManager = document.getElementById('previewManager');
-        const previewManagerContainer = document.getElementById('previewManagerContainer');
-        const previewOpeningHour = document.getElementById('previewOpeningHour');
-        const previewClosingHour = document.getElementById('previewClosingHour');
-        const previewStatus = document.getElementById('previewStatus');
-        const statusHint = document.getElementById('statusHint');
-        
-        let uploadedImages = [];
-        let map;
-        let marker;
-        
-        function initMap() {
-            const defaultLat = 21.0285;
-            const defaultLng = 105.8542;
-            
-            let lat = defaultLat;
-            let lng = defaultLng;
-            
-            try {
-                if (latitudeInput.value && longitudeInput.value) {
-                    lat = parseFloat(latitudeInput.value) || defaultLat;
-                    lng = parseFloat(longitudeInput.value) || defaultLng;
-                }
-                
-                map = L.map('map', {
-                    center: [lat, lng],
-                    zoom: 13,
-                    zoomControl: true,
-                    scrollWheelZoom: false
+ document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('branchForm');
+    const nameInput = document.getElementById('name');
+    const addressInput = document.getElementById('address');
+    const phoneInput = document.getElementById('phone');
+    const emailInput = document.getElementById('email');
+    const openingHourInput = document.getElementById('opening_hour');
+    const closingHourInput = document.getElementById('closing_hour');
+    const activeInput = document.getElementById('active');
+    const managerSelect = document.getElementById('manager_user_id');
+    const latitudeInput = document.getElementById('latitude');
+    const longitudeInput = document.getElementById('longitude');
+    const imagesInput = document.getElementById('images');
+    const primaryImageSelect = document.getElementById('primary_image');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const captionsContainer = document.getElementById('captionsContainer');
+    const captionInputs = document.getElementById('captionInputs');
+    const submitButton = document.getElementById('submitButton');
+    const uploadLabelText = document.querySelector('.upload-label-text');
+
+    const previewName = document.getElementById('previewName');
+    const previewAddress = document.getElementById('previewAddress');
+    const previewPhone = document.getElementById('previewPhone');
+    const previewEmail = document.getElementById('previewEmail');
+    const previewEmailContainer = document.getElementById('previewEmailContainer');
+    const previewManager = document.getElementById('previewManager');
+    const previewManagerContainer = document.getElementById('previewManagerContainer');
+    const previewOpeningHour = document.getElementById('previewOpeningHour');
+    const previewClosingHour = document.getElementById('previewClosingHour');
+    const previewStatus = document.getElementById('previewStatus');
+    const statusHint = document.getElementById('statusHint');
+
+    let uploadedImages = []; // Mảng lưu trữ tất cả ảnh đã chọn
+    let map;
+    let marker;
+
+    function initMap() {
+        const defaultLat = 21.0285;
+        const defaultLng = 105.8542;
+
+        let lat = defaultLat;
+        let lng = defaultLng;
+
+        try {
+            if (latitudeInput.value && longitudeInput.value) {
+                lat = parseFloat(latitudeInput.value) || defaultLat;
+                lng = parseFloat(longitudeInput.value) || defaultLng;
+            }
+
+            map = L.map('map', {
+                center: [lat, lng],
+                zoom: 13,
+                zoomControl: true,
+                scrollWheelZoom: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19,
+                tileSize: 256,
+                zoomOffset: 0
+            }).addTo(map);
+
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 200);
+
+            if (latitudeInput.value && longitudeInput.value) {
+                setMarker(lat, lng);
+            }
+
+            map.on('click', function(e) {
+                setMarker(e.latlng.lat, e.latlng.lng);
+            });
+        } catch (error) {
+            console.error('Map initialization failed:', error);
+        }
+    }
+
+    function setMarker(lat, lng) {
+        try {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+
+            marker = L.marker([lat, lng]).addTo(map);
+            map.panTo([lat, lng]);
+
+            latitudeInput.value = lat.toFixed(6);
+            longitudeInput.value = lng.toFixed(6);
+        } catch (error) {
+            console.error('Failed to set marker:', error);
+        }
+    }
+
+    function initForm() {
+        updatePreview();
+
+        nameInput.addEventListener('input', updatePreview);
+        addressInput.addEventListener('input', updatePreview);
+        phoneInput.addEventListener('input', updatePreview);
+        emailInput.addEventListener('input', updatePreview);
+        managerSelect.addEventListener('change', updatePreview);
+        openingHourInput.addEventListener('input', updatePreview);
+        closingHourInput.addEventListener('input', updatePreview);
+        activeInput.addEventListener('change', updatePreview);
+        imagesInput.addEventListener('change', handleImageUpload);
+        primaryImageSelect.addEventListener('change', updatePrimaryImage);
+
+        initMap();
+
+        form.addEventListener('submit', function(e) {
+            if (openingHourInput.value && closingHourInput.value && openingHourInput.value >= closingHourInput.value) {
+                e.preventDefault();
+                alert('Giờ đóng cửa phải sau giờ mở cửa!');
+            }
+        });
+    }
+
+    function updatePreview() {
+        previewName.textContent = nameInput.value || 'Tên chi nhánh';
+        previewAddress.textContent = addressInput.value || 'Địa chỉ chi nhánh';
+        previewPhone.textContent = phoneInput.value || 'Số điện thoại';
+
+        if (emailInput.value) {
+            previewEmail.textContent = emailInput.value;
+            previewEmailContainer.classList.remove('hidden');
+        } else {
+            previewEmailContainer.classList.add('hidden');
+        }
+
+        if (managerSelect.value) {
+            const selectedOption = managerSelect.options[managerSelect.selectedIndex];
+            previewManager.textContent = selectedOption.text;
+            previewManagerContainer.classList.remove('hidden');
+        } else {
+            previewManager.textContent = 'Chưa chọn quản lý';
+            previewManagerContainer.classList.remove('hidden');
+        }
+
+        previewOpeningHour.textContent = openingHourInput.value || '08:00';
+        previewClosingHour.textContent = closingHourInput.value || '22:00';
+
+        if (activeInput.checked) {
+            previewStatus.textContent = 'Đang hoạt động';
+            previewStatus.className = 'preview-status-value active';
+            statusHint.textContent = 'Chi nhánh đang hoạt động';
+        } else {
+            previewStatus.textContent = 'Ngưng hoạt động';
+            previewStatus.className = 'preview-status-value inactive';
+            statusHint.textContent = 'Chi nhánh ngưng hoạt động';
+        }
+    }
+
+    function handleImageUpload(event) {
+        const files = event.target.files;
+        const maxImages = 10;
+
+        // Kiểm tra tổng số ảnh (hiện tại + mới chọn)
+        if (uploadedImages.length + files.length > maxImages) {
+            alert(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh.`);
+            return;
+        }
+
+        const invalidFiles = [];
+        const newImages = Array.from(files).filter((file, index) => {
+            const isValid = file.type.match('image/(jpeg|png|jpg|gif)') && file.size <= 2048 * 1024;
+            if (!isValid) invalidFiles.push(`Ảnh ${index + 1}: ${file.name}`);
+            return isValid;
+        });
+
+        if (invalidFiles.length > 0) {
+            alert(`Các hình ảnh không hợp lệ (phải là JPEG, PNG, JPG, GIF và nhỏ hơn 2MB):\n${invalidFiles.join('\n')}`);
+        }
+
+        if (newImages.length > 0) {
+            // Thêm ảnh mới vào mảng uploadedImages
+            uploadedImages = [...uploadedImages, ...newImages];
+            displayImagePreviews(uploadedImages);
+            showImageSections();
+            updateFileInput();
+            uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
+        }
+    }
+
+    function updateFileInput() {
+        // Cập nhật input file với danh sách ảnh hiện tại
+        const dataTransfer = new DataTransfer();
+        uploadedImages.forEach(file => dataTransfer.items.add(file));
+        imagesInput.files = dataTransfer.files;
+    }
+
+    function displayImagePreviews(files) {
+        previewContainer.innerHTML = '';
+        primaryImageSelect.innerHTML = '<option value="0">Ảnh đầu tiên</option>';
+        captionInputs.innerHTML = '';
+
+        files.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'image-preview-item';
+                previewItem.dataset.index = index;
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'image-preview-img';
+                img.alt = `Xem trước ảnh ${index + 1}`;
+
+                const overlay = document.createElement('div');
+                overlay.className = 'image-preview-overlay';
+
+                const actions = document.createElement('div');
+                actions.className = 'image-preview-actions';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'image-preview-btn remove-btn';
+                removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                removeBtn.setAttribute('aria-label', `Xóa ảnh ${index + 1}`);
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    removeImage(index);
                 });
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                    maxZoom: 19,
-                    tileSize: 256,
-                    zoomOffset: 0
-                }).addTo(map);
-                
-                setTimeout(() => {
-                    map.invalidateSize();
-                }, 200);
-                
-                if (latitudeInput.value && longitudeInput.value) {
-                    setMarker(lat, lng);
+
+                if (index === 0) {
+                    const primaryBadge = document.createElement('div');
+                    primaryBadge.className = 'image-preview-badge';
+                    primaryBadge.textContent = 'Ảnh chính';
+                    previewItem.appendChild(primaryBadge);
                 }
-                
-                map.on('click', function(e) {
-                    setMarker(e.latlng.lat, e.latlng.lng);
-                });
-            } catch (error) {
-                console.error('Map initialization failed:', error);
-            }
-        }
-        
-        function setMarker(lat, lng) {
-            try {
-                if (marker) {
-                    map.removeLayer(marker);
+
+                actions.appendChild(removeBtn);
+                overlay.appendChild(actions);
+                previewItem.appendChild(img);
+                previewItem.appendChild(overlay);
+
+                previewContainer.appendChild(previewItem);
+
+                if (index > 0) {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `Ảnh ${index + 1}`;
+                    primaryImageSelect.appendChild(option);
                 }
-                
-                marker = L.marker([lat, lng]).addTo(map);
-                map.panTo([lat, lng]);
-                
-                latitudeInput.value = lat.toFixed(6);
-                longitudeInput.value = lng.toFixed(6);
-            } catch (error) {
-                console.error('Failed to set marker:', error);
-            }
+
+                const captionGroup = document.createElement('div');
+                captionGroup.className = 'form-group';
+                captionGroup.dataset.index = index;
+
+                const captionLabel = document.createElement('label');
+                captionLabel.className = 'form-label';
+                captionLabel.textContent = `Mô tả ảnh ${index + 1}:`;
+
+                const captionInput = document.createElement('input');
+                captionInput.type = 'text';
+                captionInput.className = 'form-control';
+                captionInput.name = `captions[${index}]`;
+                captionInput.maxLength = 255;
+                captionInput.placeholder = 'Nhập mô tả cho ảnh...';
+                captionInput.setAttribute('aria-label', `Mô tả cho ảnh ${index + 1}`);
+
+                captionGroup.appendChild(captionLabel);
+                captionGroup.appendChild(captionInput);
+                captionInputs.appendChild(captionGroup);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function updatePrimaryImage() {
+        const selectedIndex = parseInt(primaryImageSelect.value);
+        const existingBadges = previewContainer.querySelectorAll('.image-preview-badge');
+        existingBadges.forEach(badge => badge.remove());
+
+        const selectedPreview = previewContainer.querySelector(`.image-preview-item[data-index="${selectedIndex}"]`);
+        if (selectedPreview) {
+            const primaryBadge = document.createElement('div');
+            primaryBadge.className = 'image-preview-badge';
+            primaryBadge.textContent = 'Ảnh chính';
+            selectedPreview.appendChild(primaryBadge);
         }
-        
-        function initForm() {
-            updatePreview();
-            
-            nameInput.addEventListener('input', updatePreview);
-            addressInput.addEventListener('input', updatePreview);
-            phoneInput.addEventListener('input', updatePreview);
-            emailInput.addEventListener('input', updatePreview);
-            managerSelect.addEventListener('change', updatePreview);
-            openingHourInput.addEventListener('input', updatePreview);
-            closingHourInput.addEventListener('input', updatePreview);
-            activeInput.addEventListener('change', updatePreview);
-            imagesInput.addEventListener('change', handleImageUpload);
-            primaryImageSelect.addEventListener('change', updatePrimaryImage);
-            
-            initMap();
-            
-            form.addEventListener('submit', function(e) {
-                if (openingHourInput.value && closingHourInput.value && openingHourInput.value >= closingHourInput.value) {
-                    e.preventDefault();
-                    alert('Giờ đóng cửa phải sau giờ mở cửa!');
-                }
-            });
-        }
-        
-        function updatePreview() {
-            previewName.textContent = nameInput.value || 'Tên chi nhánh';
-            previewAddress.textContent = addressInput.value || 'Địa chỉ chi nhánh';
-            previewPhone.textContent = phoneInput.value || 'Số điện thoại';
-            
-            if (emailInput.value) {
-                previewEmail.textContent = emailInput.value;
-                previewEmailContainer.classList.remove('hidden');
-            } else {
-                previewEmailContainer.classList.add('hidden');
-            }
-            
-            if (managerSelect.value) {
-                const selectedOption = managerSelect.options[managerSelect.selectedIndex];
-                previewManager.textContent = selectedOption.text;
-                previewManagerContainer.classList.remove('hidden');
-            } else {
-                previewManager.textContent = 'Chưa chọn quản lý';
-                previewManagerContainer.classList.remove('hidden');
-            }
-            
-            previewOpeningHour.textContent = openingHourInput.value || '08:00';
-            previewClosingHour.textContent = closingHourInput.value || '22:00';
-            
-            if (activeInput.checked) {
-                previewStatus.textContent = 'Đang hoạt động';
-                previewStatus.className = 'preview-status-value active';
-                statusHint.textContent = 'Chi nhánh đang hoạt động';
-            } else {
-                previewStatus.textContent = 'Ngưng hoạt động';
-                previewStatus.className = 'preview-status-value inactive';
-                statusHint.textContent = 'Chi nhánh ngưng hoạt động';
-            }
-        }
-        
-        function handleImageUpload(event) {
-            const files = event.target.files;
-            const maxImages = 10;
-            
-            if (files.length > maxImages) {
-                alert(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh.`);
-                imagesInput.value = '';
-                return;
-            }
-            
-            const invalidFiles = [];
-            uploadedImages = Array.from(files).filter((file, index) => {
-                const isValid = file.type.match('image/(jpeg|png|jpg|gif)') && file.size <= 2048 * 1024;
-                if (!isValid) invalidFiles.push(`Ảnh ${index + 1}: ${file.name}`);
-                return isValid;
-            });
-            
-            if (invalidFiles.length > 0) {
-                alert(`Các hình ảnh không hợp lệ (phải là JPEG, PNG, JPG, GIF và nhỏ hơn 2MB):\n${invalidFiles.join('\n')}`);
-            }
-            
-            if (uploadedImages.length > 0) {
-                displayImagePreviews(uploadedImages);
-                showImageSections();
-                uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
-            } else {
-                hideImageSections();
-                imagesInput.value = '';
-                uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
-            }
-        }
-        
-        function displayImagePreviews(files) {
-            previewContainer.innerHTML = '';
-            primaryImageSelect.innerHTML = '<option value="0">Ảnh đầu tiên</option>';
-            captionInputs.innerHTML = '';
-            
-            files.forEach((file, index) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const previewItem = document.createElement('div');
-                    previewItem.className = 'image-preview-item';
-                    previewItem.dataset.index = index;
-                    
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'image-preview-img';
-                    img.alt = `Xem trước ảnh ${index + 1}`;
-                    
-                    const overlay = document.createElement('div');
-                    overlay.className = 'image-preview-overlay';
-                    
-                    const actions = document.createElement('div');
-                    actions.className = 'image-preview-actions';
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'image-preview-btn remove-btn';
-                    removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-                    removeBtn.setAttribute('aria-label', `Xóa ảnh ${index + 1}`);
-                    removeBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        removeImage(index);
-                    });
-                    
-                    if (index === 0) {
-                        const primaryBadge = document.createElement('div');
-                        primaryBadge.className = 'image-preview-badge';
-                        primaryBadge.textContent = 'Ảnh chính';
-                        previewItem.appendChild(primaryBadge);
-                    }
-                    
-                    actions.appendChild(removeBtn);
-                    overlay.appendChild(actions);
-                    previewItem.appendChild(img);
-                    previewItem.appendChild(overlay);
-                    
-                    previewContainer.appendChild(previewItem);
-                    
-                    if (index > 0) {
-                        const option = document.createElement('option');
-                        option.value = index;
-                        option.textContent = `Ảnh ${index + 1}`;
-                        primaryImageSelect.appendChild(option);
-                    }
-                    
-                    const captionGroup = document.createElement('div');
-                    captionGroup.className = 'form-group';
-                    captionGroup.dataset.index = index;
-                    
-                    const captionLabel = document.createElement('label');
-                    captionLabel.className = 'form-label';
-                    captionLabel.textContent = `Mô tả ảnh ${index + 1}:`;
-                    
-                    const captionInput = document.createElement('input');
-                    captionInput.type = 'text';
-                    captionInput.className = 'form-control';
-                    captionInput.name = `captions[${index}]`;
-                    captionInput.maxLength = 255;
-                    captionInput.placeholder = 'Nhập mô tả cho ảnh...';
-                    captionInput.setAttribute('aria-label', `Mô tả cho ảnh ${index + 1}`);
-                    
-                    captionGroup.appendChild(captionLabel);
-                    captionGroup.appendChild(captionInput);
-                    captionInputs.appendChild(captionGroup);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-        
-        function updatePrimaryImage() {
-            const selectedIndex = parseInt(primaryImageSelect.value);
-            const existingBadges = previewContainer.querySelectorAll('.image-preview-badge');
-            existingBadges.forEach(badge => badge.remove());
-            
-            const selectedPreview = previewContainer.querySelector(`.image-preview-item[data-index="${selectedIndex}"]`);
-            if (selectedPreview) {
-                const primaryBadge = document.createElement('div');
-                primaryBadge.className = 'image-preview-badge';
-                primaryBadge.textContent = 'Ảnh chính';
-                selectedPreview.appendChild(primaryBadge);
-            }
-        }
-        
-        function removeImage(index) {
-            uploadedImages.splice(index, 1);
-            
-            const dataTransfer = new DataTransfer();
-            uploadedImages.forEach(file => dataTransfer.items.add(file));
-            imagesInput.files = dataTransfer.files;
-            
-            if (uploadedImages.length > 0) {
-                displayImagePreviews(uploadedImages);
-                uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
-            } else {
-                hideImageSections();
-                imagesInput.value = '';
-                uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
-            }
-            
-            if (parseInt(primaryImageSelect.value) > uploadedImages.length - 1) {
-                primaryImageSelect.value = 0;
-                updatePrimaryImage();
-            }
-        }
-        
-        function showImageSections() {
-            imagePreview.classList.remove('hidden');
-            captionsContainer.classList.remove('hidden');
-        }
-        
-        function hideImageSections() {
-            imagePreview.classList.add('hidden');
-            captionsContainer.classList.add('hidden');
+    }
+
+    function removeImage(index) {
+        uploadedImages.splice(index, 1);
+        updateFileInput();
+
+        if (uploadedImages.length > 0) {
+            displayImagePreviews(uploadedImages);
+            uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
+        } else {
+            hideImageSections();
+            imagesInput.value = '';
             uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
         }
-        
-        initForm();
-    });
+
+        if (parseInt(primaryImageSelect.value) > uploadedImages.length - 1) {
+            primaryImageSelect.value = 0;
+            updatePrimaryImage();
+        }
+    }
+
+    function showImageSections() {
+        imagePreview.classList.remove('hidden');
+        captionsContainer.classList.remove('hidden');
+    }
+
+    function hideImageSections() {
+        imagePreview.classList.add('hidden');
+        captionsContainer.classList.add('hidden');
+        uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
+    }
+
+    initForm();
+});
 </script>
-</body>
-</html>
+@endsection
