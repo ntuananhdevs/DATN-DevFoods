@@ -33,8 +33,9 @@ class BranchController extends Controller
 
             if ($request->ajax()) {
                 return response()->json([
+                    'success' => true,
                     'toast' => true,
-                    'branches' => $branches->items(),
+                    'branches' => $branches,
                     'pagination' => [
                         'total' => $branches->total(),
                         'per_page' => $branches->perPage(),
@@ -50,6 +51,7 @@ class BranchController extends Controller
 
             if ($request->ajax()) {
                 return response()->json([
+                    'success' => false,
                     'toast' => false,
                     'message' => 'Có lỗi xảy ra khi tải danh sách chi nhánh'
                 ], 500);
@@ -331,73 +333,126 @@ class BranchController extends Controller
     /**
      * Thay đổi trạng thái của một chi nhánh
      */
-    public function toggleStatus($id)
-    {
-        try {
-            DB::beginTransaction();
+public function toggleStatus($id)
+{
+    try {
+        $branch = Branch::findOrFail($id);
 
-            $branch = Branch::findOrFail($id);
-            $branch->active = !$branch->active;
-            $branch->save();
+        // Check if branch has active manager
+        if ($branch->manager_user_id) {
+            $hasActiveManager = User::where('id', $branch->manager_user_id)
+                ->where('active', true)
+                ->exists();
 
-            DB::commit();
+            if ($hasActiveManager && $branch->active) {
+                throw new \Exception('Không thể thay đổi trạng thái chi nhánh đang có quản lý HOẠT ĐỘNG');
+            }
+        }
 
+        $branch->active = !$branch->active;
+        $branch->save();
+
+        if (request()->ajax()) {
             return response()->json([
-                'toast' => true,
-                'message' => 'Đã thay đổi trạng thái chi nhánh thành công'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error in BranchController@toggleStatus: ' . $e->getMessage());
-
-            return response()->json([
-                'toast' => false,
-                'message' => 'Có lỗi xảy ra khi thay đổi trạng thái chi nhánh: ' . $e->getMessage(),
-                'error' => [
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString()
+                'success' => true,
+                'branch' => $branch,
+                'message' => 'Đã thay đổi trạng thái chi nhánh thành công',
+                'data' => [
+                    'id' => $branch->id,
+                    'active' => $branch->active,
+                    'status_text' => $branch->active ? 'Hoạt động' : 'Vô hiệu hóa',
+                    'status_class' => $branch->active ? 'badge-success' : 'badge-danger'
                 ]
+            ]);
+        }
+
+        session()->flash('toast', [
+            'type' => 'success', 
+            'title' => 'Thành công',
+            'message' => 'Đã thay đổi trạng thái chi nhánh thành công'
+        ]);
+
+        return redirect()->back();
+
+    } catch (\Exception $e) {
+        Log::error('Lỗi khi thay đổi trạng thái chi nhánh: ' . $e->getMessage());
+
+        if (request()->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
             ], 500);
         }
-    }
 
+        session()->flash('toast', [
+            'type' => 'error',
+            'title' => 'Lỗi',
+            'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+        ]);
+
+        return redirect()->back();
+    }
+}
     /**
      * Cập nhật trạng thái hàng loạt cho nhiều chi nhánh
      */
-    public function bulkStatusUpdate(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'branch_ids' => 'required|array',
-                'branch_ids.*' => 'required|integer|exists:branches,id',
-                'action' => 'required|in:activate,deactivate'
-            ]);
+public function bulkStatusUpdate(Request $request)
+{
+    try {
+        // Check if data comes from form or AJAX
+        $branchIds = $request->has('ids') ? $request->ids : explode(',', $request->branch_ids);
 
-            DB::beginTransaction();
+        // Determine status from action or status parameter
+        $status = $request->has('action') 
+            ? ($request->action === 'activate')
+            : (bool)$request->status;
 
-            $active = $validated['action'] === 'activate';
-            $count = Branch::whereIn('id', $validated['branch_ids'])
-                ->update(['active' => $active]);
+        DB::beginTransaction();
 
-            DB::commit();
+        $count = Branch::whereIn('id', $branchIds)->update(['active' => $status]);
 
+        DB::commit();
+
+        // Handle AJAX response
+        if ($request->ajax()) {
             return response()->json([
-                'toast' => true,
-                'message' => "Đã cập nhật trạng thái $count chi nhánh thành công",
+                'success' => true,
+                'message' => "Successfully updated status for $count branches",
                 'count' => $count
             ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error in BranchController@bulkStatusUpdate: ' . $e->getMessage());
+        }
 
+        // Handle regular form response
+        session()->flash('toast', [
+            'type' => 'success',
+            'title' => 'Success',
+            'message' => "Successfully updated status for $count branches"
+        ]);
+
+        return redirect()->back();
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error in BranchController@bulkStatusUpdate: ' . $e->getMessage());
+
+        // Handle AJAX error
+        if ($request->ajax()) {
             return response()->json([
-                'toast' => false,
-                'message' => 'Có lỗi xảy ra khi cập nhật trạng thái hàng loạt'
+                'success' => false,
+                'message' => 'Error occurred: ' . $e->getMessage()
             ], 500);
         }
+
+        // Handle regular form error
+        session()->flash('toast', [
+            'type' => 'error',
+            'title' => 'Error',
+            'message' => 'Error occurred: ' . $e->getMessage()
+        ]);
+
+        return redirect()->back();
     }
+}
 
     /**
      * Hiển thị form chọn người quản lý cho chi nhánh

@@ -159,7 +159,7 @@
                         </td>
                         <td class="px-4 py-4">{{ $user->id }}</td>
                         <td class="px-4 py-4">
-                            <img src="{{ $user->avatar ? asset('storage/'.$user->avatar) : asset('images/default-avatar.png') }}"
+                            <img src="{{ $user->avatar ? Storage::disk('s3')->url($user->avatar) : asset('images/default-avatar.png') }}"
                                  alt="{{ $user->full_name }}"
                                  class="rounded-full w-10 h-10 object-cover">
                         </td>
@@ -401,7 +401,7 @@ function updateTable(users) {
         `;
     } else {
         users.forEach(user => {
-            const avatarUrl = user.avatar ? `/storage/${user.avatar}` : '/images/default-avatar.png';
+            const avatarUrl = user.avatar ? `${response.s3_url}/${user.avatar}` : '/images/default-avatar.png';
             html += `
                 <tr data-user-id="${user.id}" class="border-b hover:bg-gray-50 transition-colors duration-200">
                     <td class="w-12 text-center py-4">

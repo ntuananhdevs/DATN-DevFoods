@@ -210,6 +210,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
         Route::post('/{id}/set-featured', [BranchController::class, 'setFeatured'])->name('set-featured');
         Route::delete('/{branch}/images/{image}', [BranchController::class, 'deleteImage'])->name('delete-image');
+        Route::post('/bulk-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-update');
     });
 
     // Products Management
