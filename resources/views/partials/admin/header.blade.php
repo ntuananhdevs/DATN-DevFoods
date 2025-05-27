@@ -26,7 +26,7 @@
                     <li>
                         <div class="flex items-center">
                             <a href="" class="text-sm font-medium text-muted-foreground hover:text-foreground">
-                                @yield('title', 'Dash')
+                                @yield('title', 'Dashboard')
                             </a>
                         </div>
                     </li>

@@ -12,7 +12,9 @@ use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use App\Models\VariantAttribute;
 use App\Models\VariantValue;
-use App\Models\Topping; // Thêm dòng này
+use App\Models\Topping;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -118,6 +120,7 @@ public function index(Request $request)
                 'toppings.*.name' => 'required_with:toppings|string|max:255',
                 'toppings.*.price' => 'required_with:toppings|numeric|min:0',
                 'toppings.*.available' => 'nullable|boolean',
+                'toppings.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
             DB::beginTransaction();
@@ -158,21 +161,60 @@ public function index(Request $request)
 
             // Handle primary image
             if ($request->hasFile('primary_image')) {
-                $path = $request->file('primary_image')->store('products', 'public');
-                $product->images()->create([
-                    'img' => $path,
-                    'is_primary' => true,
+                $image = $request->file('primary_image');
+                \Log::info('Uploading primary image', [
+                    'original_name' => $image->getClientOriginalName(),
+                    'size' => $image->getSize(),
+                    'mime' => $image->getMimeType()
                 ]);
+                
+                // Generate unique filename
+                $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                
+                // Upload to S3
+                $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                
+                if ($path) {
+                    // Get the URL of uploaded file
+                    $url = Storage::disk('s3')->url('products/' . $filename);
+                    \Log::info('S3 file url', ['url' => $url]);
+                    
+                    $product->images()->create([
+                        'img' => 'products/' . $filename,
+                        'img_url' => $url,
+                        'is_primary' => true,
+                    ]);
+                }
             }
 
             // Handle additional images
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $path = $image->store('products', 'public');
-                    $product->images()->create([
-                        'img' => $path,
-                        'is_primary' => false,
+                    \Log::info('Uploading additional image', [
+                        'original_name' => $image->getClientOriginalName(),
+                        'size' => $image->getSize(),
+                        'mime' => $image->getMimeType()
                     ]);
+                    
+                    // Generate unique filename
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    
+                    // Upload to S3
+                    $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                    \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                    
+                    if ($path) {
+                        // Get the URL of uploaded file
+                        $url = Storage::disk('s3')->url('products/' . $filename);
+                        \Log::info('S3 file url', ['url' => $url]);
+                        
+                        $product->images()->create([
+                            'img' => 'products/' . $filename,
+                            'img_url' => $url,
+                            'is_primary' => false,
+                        ]);
+                    }
                 }
             }
 
@@ -256,6 +298,38 @@ public function index(Request $request)
                         ]
                     );
                     \Log::info('Created/Found topping:', ['id' => $topping->id, 'name' => $topping->name]);
+
+                    // Handle topping image if uploaded
+                    if ($request->hasFile("toppings.{$index}.image") || isset($request->file('toppings')[$index]['image'])) {
+                        // Laravel's request->file() method handles array inputs differently
+                        $image = isset($request->file('toppings')[$index]['image']) 
+                                ? $request->file('toppings')[$index]['image'] 
+                                : $request->file("toppings.{$index}.image");
+                        
+                        \Log::info('Uploading topping image', [
+                            'original_name' => $image->getClientOriginalName(),
+                            'size' => $image->getSize(),
+                            'mime' => $image->getMimeType()
+                        ]);
+                        
+                        // Generate unique filename
+                        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                        
+                        // Upload to S3
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
+                        \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
+                        
+                        if ($path) {
+                            // Get the URL of uploaded file
+                            $url = Storage::disk('s3')->url('toppings/' . $filename);
+                            \Log::info('S3 topping image url', ['url' => $url]);
+                            
+                            // Update topping with image path
+                            $topping->update([
+                                'image' => 'toppings/' . $filename
+                            ]);
+                        }
+                    }
 
                     // Attach topping to product
                     $product->toppings()->attach($topping->id);
@@ -406,6 +480,11 @@ public function index(Request $request)
                 'attributes.*.name' => 'required|string|max:255',
                 'attributes.*.values.*.value' => 'required|string|max:255',
                 'attributes.*.values.*.price_adjustment' => 'required|numeric',
+                'toppings' => 'nullable|array',
+                'toppings.*.name' => 'required_with:toppings|string|max:255',
+                'toppings.*.price' => 'required_with:toppings|numeric|min:0',
+                'toppings.*.available' => 'nullable|boolean',
+                'toppings.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
             DB::beginTransaction();
@@ -470,6 +549,44 @@ public function index(Request $request)
                             'price_adjustment' => $valueData['price_adjustment'],
                         ]);
                     }
+                }
+            }
+            
+            // Handle toppings
+            if ($request->has('toppings')) {
+                // Detach all existing toppings
+                $product->toppings()->detach();
+                
+                foreach ($request->input('toppings') as $index => $toppingData) {
+                    // Create or update topping
+                    $topping = Topping::updateOrCreate(
+                        ['name' => $toppingData['name']],
+                        [
+                            'price' => $toppingData['price'],
+                            'active' => isset($toppingData['available']) ? (bool)$toppingData['available'] : true
+                        ]
+                    );
+                    
+                    // Handle topping image if uploaded
+                    if (isset($request->file('toppings')[$index]['image'])) {
+                        $image = $request->file('toppings')[$index]['image'];
+                        
+                        // Generate unique filename
+                        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                        
+                        // Upload to S3
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
+                        
+                        if ($path) {
+                            // Update topping with image path
+                            $topping->update([
+                                'image' => 'toppings/' . $filename
+                            ]);
+                        }
+                    }
+                    
+                    // Attach topping to product
+                    $product->toppings()->attach($topping->id);
                 }
             }
 

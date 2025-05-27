@@ -575,6 +575,7 @@
                     </label>
                 </div>
             `;
+            
             // Sự kiện click chọn ảnh topping
             setTimeout(() => {
                 const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
@@ -598,6 +599,7 @@
                     });
                 }
             }, 10);
+            
             return toppingGroup;
         }
 
@@ -622,6 +624,11 @@
                 availableInput.checked = topping.available;
             });
             toppingCount = oldToppings.length;
+        @else
+            // Add default topping if no old toppings exist
+            const defaultTopping = createToppingGroup(0);
+            toppingsContainer.appendChild(defaultTopping);
+            toppingCount = 1;
         @endif
 
         // Form submission

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Branch extends Model
 {
@@ -36,14 +37,14 @@ class Branch extends Model
      * @var array
      */
     protected $casts = [
+        'active' => 'boolean',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
-        'opening_hour' => 'datetime:H:i',
-        'closing_hour' => 'datetime:H:i',
-        'active' => 'boolean',
         'balance' => 'decimal:2',
         'rating' => 'decimal:2',
         'reliability_score' => 'integer',
+        'opening_hour' => 'datetime:H:i',
+        'closing_hour' => 'datetime:H:i',
     ];
 
     /**
@@ -73,5 +74,17 @@ class Branch extends Model
     public function stocks(): HasMany
     {
         return $this->hasMany(BranchStock::class);
+    }
+
+    public function products(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Product::class,
+            BranchStock::class,
+            'branch_id', // Foreign key on branch_stocks table
+            'id', // Foreign key on products table
+            'id', // Local key on branches table
+            'product_variant_id' // Local key on branch_stocks table
+        );
     }
 }

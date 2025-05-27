@@ -75,4 +75,10 @@ class User extends Authenticatable
     {
         $this->notify(new ResetPasswordNotification($token));
     }
+
+    // app/Models/User.php
+    public function wishlist()
+    {
+        return $this->hasMany(WishlistItem::class);
+    }
 }

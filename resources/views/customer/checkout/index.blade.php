@@ -2,402 +2,709 @@
 
 @section('title', 'FastFood - Thanh Toán')
 
+@section('head')
+<style>
+    /* Styling for autocomplete dropdown */
+    .autocomplete-items {
+        position: absolute;
+        border: 1px solid #d4d4d4;
+        border-bottom: none;
+        border-top: none;
+        z-index: 99;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 200px;
+        overflow-y: auto;
+        border-radius: 0 0 0.25rem 0.25rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .autocomplete-items div {
+        padding: 10px;
+        cursor: pointer;
+        background-color: #fff;
+        border-bottom: 1px solid #d4d4d4;
+    }
+    
+    .autocomplete-items div:hover {
+        background-color: #FEF3C7;
+    }
+    
+    .autocomplete-active {
+        background-color: #FDBA74 !important;
+        color: #fff;
+    }
+</style>
+@endsection
+
 @section('content')
 <style>
     .container {
       max-width: 1280px;
       margin: 0 auto;
     }
+    
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    .form-control:focus {
+        border-color: #F97316;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(249, 115, 22, 0.25);
+    }
+    
+    .form-label {
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .required::after {
+        content: "*";
+        color: #dc3545;
+        margin-left: 0.25rem;
+    }
 </style>
-<div class="bg-gradient-to-r from-orange-500 to-red-500 py-12 text-white">
-    <div class="container mx-auto px-4 text-center">
-        <h1 class="text-3xl md:text-4xl font-bold mb-4">Thanh Toán</h1>
-        <p class="text-lg max-w-2xl mx-auto">
-            Hoàn tất đơn hàng của bạn chỉ với vài bước đơn giản
-        </p>
-    </div>
-</div>
 
-<div class="container mx-auto px-4 py-12">
-    <div class="grid md:grid-cols-3 gap-8">
-        <!-- Thông tin thanh toán - 2 cột -->
-        <div class="md:col-span-2">
-            <h2 class="text-2xl font-bold mb-6">Thông Tin Thanh Toán</h2>
-            
-            <form id="checkout-form" class="space-y-6">
-                <!-- Thông tin cá nhân -->
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-bold mb-4">Thông Tin Cá Nhân</h3>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-2">Thanh Toán</h1>
+    <p class="text-gray-500 mb-8">Hoàn tất đơn hàng của bạn</p>
+
+    <form action="{{ route('checkout.process') }}" method="POST" id="checkout-form">
+        @csrf
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <!-- Thông tin khách hàng -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
                     
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
-                            <label for="fullname" class="block text-sm font-medium mb-1">Họ và tên <span class="text-red-500">*</span></label>
-                            <input type="text" id="fullname" name="fullname" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <label for="full_name" class="form-label required">Họ và tên</label>
+                            <input type="text" id="full_name" name="full_name" class="form-control" value="{{ old('full_name', auth()->user()->full_name ?? '') }}" required>
+                            @error('full_name')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
                         </div>
+                        
                         <div>
-                            <label for="phone" class="block text-sm font-medium mb-1">Số điện thoại <span class="text-red-500">*</span></label>
-                            <input type="tel" id="phone" name="phone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <label for="phone" class="form-label required">Số điện thoại</label>
+                            <input type="tel" id="phone" name="phone" class="form-control" value="{{ old('phone', auth()->user()->phone ?? '') }}" required>
+                            @error('phone')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label for="email" class="form-label required">Email</label>
+                            <input type="email" id="email" name="email" class="form-control" value="{{ old('email', auth()->user()->email ?? '') }}" required>
+                            @error('email')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        
+                        <div>
+                            <label for="city" class="form-label required">Tỉnh/Thành phố</label>
+                            <select id="city" name="city" class="form-control" required>
+                                <option value="Hà Nội" selected>Hà Nội</option>
+                            </select>
+                            @error('city')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        
+                        <div>
+                            <label for="district" class="form-label required">Quận/Huyện</label>
+                            <select id="district" name="district" class="form-control" required>
+                                <option value="">-- Chọn Quận/Huyện --</option>
+                            </select>
+                            @error('district')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="ward" class="form-label required">Xã/Phường</label>
+                            <select id="ward" name="ward" class="form-control" required>
+                                <option value="">-- Chọn Xã/Phường --</option>
+                            </select>
+                            @error('ward')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        
+                        <div class="md:col-span-2 relative">
+                            <label for="address" class="form-label required">Số nhà, đường</label>
+                            <input type="text" id="address" name="address" class="form-control" value="{{ old('address', auth()->user()->address ?? '') }}" autocomplete="off" required>
+                            <div id="address-autocomplete" class="autocomplete-items" style="display: none;"></div>
+                            <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã</div>
+                            @error('address')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
                         </div>
                     </div>
                     
                     <div class="mt-4">
-                        <label for="email" class="block text-sm font-medium mb-1">Email <span class="text-red-500">*</span></label>
-                        <input type="email" id="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <label for="notes" class="form-label">Ghi chú đơn hàng</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Ghi chú về đơn hàng, ví dụ: thời gian hay chỉ dẫn địa điểm giao hàng chi tiết hơn.">{{ old('notes') }}</textarea>
                     </div>
                 </div>
                 
-                <!-- Địa chỉ giao hàng -->
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-bold mb-4">Địa Chỉ Giao Hàng</h3>
+                <!-- Phương thức giao hàng -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Phương Thức Giao Hàng</h2>
                     
-                    <div class="space-y-4">
-                        <div>
-                            <label for="address" class="block text-sm font-medium mb-1">Địa chỉ <span class="text-red-500">*</span></label>
-                            <input type="text" id="address" name="address" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        </div>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="shipping_method" value="standard" class="h-5 w-5 text-orange-500" checked>
+                            <div class="ml-3">
+                                <span class="block font-medium">Giao hàng tiêu chuẩn</span>
+                                <span class="block text-sm text-gray-500">Nhận hàng sau 30-60 phút</span>
+                            </div>
+                            <span class="ml-auto font-medium">{{ $subtotal > 100000 ? 'Miễn phí' : '15.000đ' }}</span>
+                        </label>
                         
-                        <div class="grid md:grid-cols-3 gap-4">
-                            <div>
-                                <label for="city" class="block text-sm font-medium mb-1">Tỉnh/Thành phố <span class="text-red-500">*</span></label>
-                                <select id="city" name="city" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    <option value="">Chọn Tỉnh/Thành phố</option>
-                                    <option value="hcm">TP. Hồ Chí Minh</option>
-                                    <option value="hn">Hà Nội</option>
-                                    <option value="dn">Đà Nẵng</option>
-                                    <option value="ct">Cần Thơ</option>
-                                    <option value="other">Khác</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="district" class="block text-sm font-medium mb-1">Quận/Huyện <span class="text-red-500">*</span></label>
-                                <select id="district" name="district" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    <option value="">Chọn Quận/Huyện</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="ward" class="block text-sm font-medium mb-1">Phường/Xã <span class="text-red-500">*</span></label>
-                                <select id="ward" name="ward" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    <option value="">Chọn Phường/Xã</option>
-                                </select>
-                            </div>
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="shipping_method" value="express" class="h-5 w-5 text-orange-500">
+                            <div class="ml-3">
+                                <span class="block font-medium">Giao hàng nhanh</span>
+                                <span class="block text-sm text-gray-500">Nhận hàng trong 15-30 phút</span>
                         </div>
-                        
-                        <div>
-                            <label for="note" class="block text-sm font-medium mb-1">Ghi chú đơn hàng</label>
-                            <textarea id="note" name="note" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Ghi chú về đơn hàng, ví dụ: thời gian hay chỉ dẫn địa điểm giao hàng chi tiết hơn."></textarea>
-                        </div>
+                            <span class="ml-auto font-medium">30.000đ</span>
+                        </label>
                     </div>
                 </div>
                 
                 <!-- Phương thức thanh toán -->
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-bold mb-4">Phương Thức Thanh Toán</h3>
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4">Phương Thức Thanh Toán</h2>
                     
                     <div class="space-y-3">
-                        <div class="payment-option border rounded-lg p-4 cursor-pointer hover:border-orange-500 transition-colors" data-payment-method="cod">
-                            <div class="flex items-center">
-                                <input type="radio" id="payment_cod" name="payment_method" value="cod" checked class="mr-2">
-                                <label for="payment_cod" class="flex items-center cursor-pointer">
-                                    <i class="fas fa-money-bill-wave text-green-500 mr-2"></i>
-                                    <span class="font-medium">Thanh toán khi nhận hàng (COD)</span>
-                                </label>
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="payment_method" value="cod" class="h-5 w-5 text-orange-500" checked>
+                            <div class="ml-3">
+                                <span class="block font-medium">Thanh toán khi nhận hàng</span>
+                                <span class="block text-sm text-gray-500">Trả tiền mặt khi nhận hàng</span>
                             </div>
-                        </div>
+                            <span class="ml-auto">
+                                <i class="fas fa-money-bill-wave text-gray-400 text-xl"></i>
+                            </span>
+                        </label>
                         
-                        <div class="payment-option border rounded-lg p-4 cursor-pointer hover:border-orange-500 transition-colors" data-payment-method="card">
-                            <div class="flex items-center">
-                                <input type="radio" id="payment_card" name="payment_method" value="card" class="mr-2">
-                                <label for="payment_card" class="flex items-center cursor-pointer">
-                                    <i class="fas fa-credit-card text-blue-500 mr-2"></i>
-                                    <span class="font-medium">Thanh toán bằng thẻ tín dụng/ghi nợ</span>
-                                </label>
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="payment_method" value="bank_transfer" class="h-5 w-5 text-orange-500">
+                            <div class="ml-3">
+                                <span class="block font-medium">Chuyển khoản ngân hàng</span>
+                                <span class="block text-sm text-gray-500">Chuyển khoản đến tài khoản của chúng tôi</span>
                             </div>
-                            
-                            <div id="card-payment-form" class="mt-4 pl-6 hidden">
-                                <div class="space-y-3">
-                                    <div>
-                                        <label for="card_number" class="block text-sm font-medium mb-1">Số thẻ</label>
-                                        <input type="text" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    </div>
-                                    
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label for="card_expiry" class="block text-sm font-medium mb-1">Ngày hết hạn</label>
-                                            <input type="text" id="card_expiry" name="card_expiry" placeholder="MM/YY" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        </div>
-                                        <div>
-                                            <label for="card_cvv" class="block text-sm font-medium mb-1">CVV</label>
-                                            <input type="text" id="card_cvv" name="card_cvv" placeholder="123" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        </div>
-                                    </div>
-                                    
-                                    <div>
-                                        <label for="card_name" class="block text-sm font-medium mb-1">Tên chủ thẻ</label>
-                                        <input type="text" id="card_name" name="card_name" placeholder="NGUYEN VAN A" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            <span class="ml-auto">
+                                <i class="fas fa-university text-gray-400 text-xl"></i>
+                            </span>
+                        </label>
                         
-                        <div class="payment-option border rounded-lg p-4 cursor-pointer hover:border-orange-500 transition-colors" data-payment-method="momo">
-                            <div class="flex items-center">
-                                <input type="radio" id="payment_momo" name="payment_method" value="momo" class="mr-2">
-                                <label for="payment_momo" class="flex items-center cursor-pointer">
-                                    <i class="fas fa-wallet text-pink-500 mr-2"></i>
-                                    <span class="font-medium">Thanh toán qua Ví MoMo</span>
-                                </label>
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="payment_method" value="credit_card" class="h-5 w-5 text-orange-500">
+                            <div class="ml-3">
+                                <span class="block font-medium">Thẻ tín dụng / Ghi nợ</span>
+                                <span class="block text-sm text-gray-500">Thanh toán an toàn qua cổng thanh toán</span>
                             </div>
-                        </div>
+                            <span class="ml-auto flex gap-2">
+                                <i class="fab fa-cc-visa text-blue-600 text-xl"></i>
+                                <i class="fab fa-cc-mastercard text-red-500 text-xl"></i>
+                            </span>
+                        </label>
                         
-                        <div class="payment-option border rounded-lg p-4 cursor-pointer hover:border-orange-500 transition-colors" data-payment-method="bank">
-                            <div class="flex items-center">
-                                <input type="radio" id="payment_bank" name="payment_method" value="bank" class="mr-2">
-                                <label for="payment_bank" class="flex items-center cursor-pointer">
-                                    <i class="fas fa-university text-gray-700 mr-2"></i>
-                                    <span class="font-medium">Chuyển khoản ngân hàng</span>
-                                </label>
+                        <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="payment_method" value="e_wallet" class="h-5 w-5 text-orange-500">
+                            <div class="ml-3">
+                                <span class="block font-medium">Ví điện tử</span>
+                                <span class="block text-sm text-gray-500">Thanh toán bằng MoMo, ZaloPay, VNPay</span>
                             </div>
-                        </div>
+                            <span class="ml-auto flex gap-2">
+                                <i class="fas fa-wallet text-pink-500 text-xl"></i>
+                            </span>
+                        </label>
                     </div>
                 </div>
-            </form>
         </div>
         
-        <!-- Tóm tắt đơn hàng - 1 cột -->
+            <!-- Tóm tắt đơn hàng -->
         <div>
-            <div class="bg-white p-6 rounded-lg shadow-sm sticky top-4">
-                <h2 class="text-2xl font-bold mb-6">Đơn Hàng Của Bạn</h2>
-                
-                <div class="border-b pb-4 mb-4">
-                    <div class="flex justify-between font-medium mb-2">
-                        <span>Sản phẩm</span>
-                        <span>Tạm tính</span>
+                <div class="bg-white rounded-lg shadow-sm p-6 sticky top-4">
+                    <h2 class="text-xl font-bold mb-4">Đơn Hàng Của Bạn</h2>
+                    
+                    <div class="space-y-4 mb-6">
+                        @php
+                            $subtotal = 0;
+                            $shipping = 0;
+                            $discount = session('discount', 0);
+                        @endphp
+                        
+                        @foreach($cartItems as $item)
+                            @php
+                                $itemTotal = $item->variant->price * $item->quantity;
+                                $subtotal += $itemTotal;
+                            @endphp
+                            <div class="flex justify-between pb-4 border-b">
+                                <div>
+                                    <span class="font-medium">{{ $item->variant->product->name }}</span>
+                                    <div class="text-sm text-gray-500">
+                                        @if($item->variant->variant_description)
+                                            {{ $item->variant->variant_description }}
+                                        @else
+                                            {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
+                                        @endif
+                                    </div>
+                                    <div class="text-sm">x{{ $item->quantity }}</div>
+                                </div>
+                                <span>{{ number_format($itemTotal) }}đ</span>
+                            </div>
+                        @endforeach
                     </div>
                     
-                    <div class="space-y-3">
+                    <div class="space-y-3 mb-6">
                         <div class="flex justify-between">
-                            <div>
-                                <span class="block">Burger Gà Cay x 2</span>
-                                <span class="text-sm text-gray-500">Size: Lớn</span>
-                            </div>
-                            <span>120.000₫</span>
+                            <span class="text-gray-600">Tạm tính</span>
+                            <span>{{ number_format($subtotal) }}đ</span>
                         </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Phí giao hàng</span>
+                            <span>{{ $subtotal > 100000 ? 'Miễn phí' : number_format(15000) . 'đ' }}</span>
+                        </div>
+                        @php
+                            $shipping = $subtotal > 100000 ? 0 : 15000;
+                        @endphp
                         
-                        <div class="flex justify-between">
-                            <div>
-                                <span class="block">Khoai Tây Chiên x 1</span>
-                                <span class="text-sm text-gray-500">Size: Vừa</span>
+                        @if(session('discount'))
+                            <div class="flex justify-between text-green-600">
+                                <span>Giảm giá</span>
+                                <span>-{{ number_format(session('discount')) }}đ</span>
                             </div>
-                            <span>30.000₫</span>
-                        </div>
+                        @endif
                         
-                        <div class="flex justify-between">
-                            <div>
-                                <span class="block">Coca Cola x 2</span>
-                                <span class="text-sm text-gray-500">Size: Lớn</span>
-                            </div>
-                            <span>40.000₫</span>
+                        <hr class="border-t border-gray-200">
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>Tổng cộng</span>
+                            @php
+                                $total = $subtotal + $shipping - $discount;
+                            @endphp
+                            <span>{{ number_format($total) }}đ</span>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="space-y-2 border-b pb-4 mb-4">
-                    <div class="flex justify-between">
-                        <span>Tạm tính</span>
-                        <span>190.000₫</span>
                     </div>
                     
-                    <div class="flex justify-between">
-                        <span>Phí vận chuyển</span>
-                        <span>15.000₫</span>
-                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="terms" name="terms" class="h-4 w-4 text-orange-500" required>
+                            <label for="terms" class="ml-2 text-sm text-gray-600">
+                                Tôi đã đọc và đồng ý với <a href="/terms" class="text-orange-500 hover:underline">điều khoản và điều kiện</a> của website
+                            </label>
                 </div>
                 
-                <div class="flex justify-between font-bold text-lg mb-6">
-                    <span>Tổng cộng</span>
-                    <span class="text-orange-500">205.000₫</span>
-                </div>
-                
-                <div class="mb-6">
-                    <div class="relative">
-                        <input type="text" placeholder="Mã giảm giá" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <button class="absolute right-0 top-0 h-full px-4 bg-gray-100 text-gray-600 rounded-r-md hover:bg-gray-200 transition-colors">
-                            Áp dụng
+                        <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors">
+                            Đặt Hàng
                         </button>
+                        
+                        <div class="text-center">
+                            <a href="{{ route('cart.index') }}" class="text-gray-600 hover:text-orange-500">
+                                <i class="fas fa-arrow-left mr-2"></i> Quay lại giỏ hàng
+                            </a>
+                        </div>
                     </div>
-                </div>
-                
-                <button type="submit" form="checkout-form" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-md transition-colors flex items-center justify-center">
-                    <i class="fas fa-lock mr-2"></i>
-                    Đặt Hàng
-                </button>
-                
-                <div class="mt-4 text-center text-sm text-gray-500">
-                    <p>Bằng cách đặt hàng, bạn đồng ý với</p>
-                    <a href="/terms" class="text-orange-500 hover:underline">Điều khoản dịch vụ</a> và
-                    <a href="/privacy" class="text-orange-500 hover:underline">Chính sách bảo mật</a>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 </div>
 @endsection
 
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Xử lý chọn phương thức thanh toán
-    const paymentOptions = document.querySelectorAll('.payment-option');
-    const cardPaymentForm = document.getElementById('card-payment-form');
-    
-    paymentOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            // Cập nhật radio button
-            const radio = this.querySelector('input[type="radio"]');
-            radio.checked = true;
+        // Constants
+        const HANOI_PROVINCE_CODE = 1;
+        
+        // Elements
+        const districtSelect = document.getElementById('district');
+        const wardSelect = document.getElementById('ward');
+        const addressInput = document.getElementById('address');
+        const addressAutocomplete = document.getElementById('address-autocomplete');
+        const checkoutForm = document.getElementById('checkout-form');
+        
+        console.log('Script loaded, elements:', {
+            district: districtSelect,
+            ward: wardSelect,
+            address: addressInput,
+            autocomplete: addressAutocomplete
+        });
+        
+        // Common street naming patterns in Vietnam
+        const streetPrefixes = ['Đường', 'Phố', 'Ngõ', 'Ngách', 'Hẻm', 'Tổ', 'Xóm', 'Làng', 'Thôn', 'Đại lộ', 'Quốc lộ'];
+        
+        // Popular streets in Hanoi by district
+        const districtStreets = {
+            'Ba Đình': ['Kim Mã', 'Liễu Giai', 'Nguyễn Thái Học', 'Phan Đình Phùng', 'Quán Thánh', 'Trần Phú', 'Hoàng Diệu', 'Đội Cấn', 'Châu Long', 'Đặng Dung'],
+            'Hoàn Kiếm': ['Hàng Bông', 'Tràng Tiền', 'Hàng Đào', 'Bà Triệu', 'Lý Thái Tổ', 'Đinh Tiên Hoàng', 'Hàng Bạc', 'Lê Thái Tổ', 'Hàng Gai', 'Trần Hưng Đạo'],
+            'Hai Bà Trưng': ['Bạch Mai', 'Lò Đúc', 'Bà Triệu', 'Nguyễn Du', 'Trần Xuân Soạn', 'Trương Định', 'Minh Khai', 'Đại Cồ Việt', 'Kim Ngưu', 'Thanh Nhàn'],
+            'Đống Đa': ['Tây Sơn', 'Khâm Thiên', 'Xã Đàn', 'Nguyễn Lương Bằng', 'Phạm Ngọc Thạch', 'Thái Hà', 'Chùa Bộc', 'Tôn Đức Thắng', 'Láng Hạ', 'Nguyễn Chí Thanh'],
+            'Tây Hồ': ['Lạc Long Quân', 'Âu Cơ', 'Xuân Diệu', 'Quảng An', 'Thụy Khuê', 'Tứ Liên', 'Quảng Khánh', 'Từ Hoa', 'Nhật Chiêu', 'An Dương Vương'],
+            'Cầu Giấy': ['Xuân Thủy', 'Trần Thái Tông', 'Phạm Hùng', 'Dương Đình Nghệ', 'Nguyễn Khang', 'Nguyễn Phong Sắc', 'Trần Duy Hưng', 'Cầu Giấy', 'Phan Văn Trường', 'Trung Kính'],
+            'Thanh Xuân': ['Nguyễn Trãi', 'Nguyễn Tuân', 'Lê Văn Lương', 'Vũ Trọng Phụng', 'Khuất Duy Tiến', 'Nguyễn Huy Tưởng', 'Lê Trọng Tấn', 'Định Công', 'Triều Khúc', 'Nguyễn Xiển'],
+            'Hoàng Mai': ['Giải Phóng', 'Trương Định', 'Định Công', 'Lĩnh Nam', 'Tân Mai', 'Linh Đàm', 'Đền Lừ', 'Hoàng Liệt', 'Yên Sở', 'Vĩnh Hưng'],
+            'Long Biên': ['Nguyễn Văn Cừ', 'Ngọc Lâm', 'Ngọc Thụy', 'Gia Thụy', 'Việt Hưng', 'Bồ Đề', 'Long Biên', 'Cổ Linh', 'Thượng Thanh', 'Đức Giang'],
+            'Hà Đông': ['Quang Trung', 'Tô Hiệu', 'Nguyễn Trãi', 'Mộ Lao', 'La Khê', 'Hà Cầu', 'Văn Quán', 'Yên Nghĩa', 'Kiến Hưng', 'Phúc La']
+        };
+
+        // Current autocomplete selection
+        let currentFocus = -1;
+        
+        // Fetch districts of Hanoi on page load
+        fetchDistricts();
+        
+        // Add event listeners
+        districtSelect.addEventListener('change', function() {
+            console.log('District changed to:', districtSelect.value);
+            fetchWards();
+            // Reset address input
+            addressInput.value = '';
+        });
+        
+        wardSelect.addEventListener('change', function() {
+            console.log('Ward changed to:', wardSelect.value);
+            const isWardSelected = wardSelect.value !== '';
             
-            // Cập nhật giao diện
-            paymentOptions.forEach(opt => {
-                opt.classList.remove('border-orange-500', 'bg-orange-50');
-            });
-            this.classList.add('border-orange-500', 'bg-orange-50');
-            
-            // Hiển thị/ẩn form thẻ
-            const paymentMethod = this.getAttribute('data-payment-method');
-            if (paymentMethod === 'card') {
-                cardPaymentForm.classList.remove('hidden');
-            } else {
-                cardPaymentForm.classList.add('hidden');
+            if (isWardSelected) {
+                // Add small delay to allow the user to see the selection
+                setTimeout(() => {
+                    addressInput.focus();
+                    // Update placeholder to guide user
+                    addressInput.placeholder = `Nhập địa chỉ tại ${wardSelect.value}, ${districtSelect.value}`;
+                }, 300);
             }
         });
-    });
-    
-    // Xử lý chọn địa chỉ
-    const citySelect = document.getElementById('city');
-    const districtSelect = document.getElementById('district');
-    const wardSelect = document.getElementById('ward');
-    
-    // Dữ liệu mẫu
-    const locationData = {
-        'hcm': {
-            name: 'TP. Hồ Chí Minh',
-            districts: {
-                'q1': {
-                    name: 'Quận 1',
-                    wards: ['Phường Bến Nghé', 'Phường Bến Thành', 'Phường Đa Kao']
-                },
-                'q3': {
-                    name: 'Quận 3',
-                    wards: ['Phường 1', 'Phường 2', 'Phường 3']
-                },
-                'tb': {
-                    name: 'Quận Tân Bình',
-                    wards: ['Phường 1', 'Phường 2', 'Phường 3']
+
+        // Set up autocomplete for address input
+        addressInput.addEventListener('input', function() {
+            const val = this.value;
+            closeAllLists();
+            
+            if (!val || val.length < 2) return;
+            
+            // Make sure district and ward are selected
+            if (!districtSelect.value || !wardSelect.value) {
+                showToast("Vui lòng chọn Quận/Huyện và Phường/Xã trước");
+                return;
+            }
+            
+            // Generate suggestions
+            const suggestions = generateAddressSuggestions(val);
+            displayAddressSuggestions(suggestions);
+        });
+        
+        // Handle keyboard navigation in autocomplete
+        addressInput.addEventListener('keydown', function(e) {
+            let items = document.getElementsByClassName('autocomplete-item');
+            if (!items || items.length === 0) return;
+            
+            // Down arrow
+            if (e.keyCode === 40) {
+                currentFocus++;
+                addActive(items);
+            } 
+            // Up arrow
+            else if (e.keyCode === 38) {
+                currentFocus--;
+                addActive(items);
+            } 
+            // Enter key
+            else if (e.keyCode === 13 && currentFocus > -1) {
+                e.preventDefault();
+                if (items) items[currentFocus].click();
+            }
+        });
+        
+        // Close dropdown when clicking elsewhere
+        document.addEventListener('click', function(e) {
+            closeAllLists(e.target);
+        });
+        
+        // Generate address suggestions based on input and selected district
+        function generateAddressSuggestions(input) {
+            const district = districtSelect.value;
+            const ward = wardSelect.value;
+            let suggestions = [];
+            
+            // Get streets for the selected district
+            const streets = districtStreets[district] || [];
+            
+            // Add streets that match the input
+            streets.forEach(street => {
+                // Check if input matches street name
+                if (street.toLowerCase().includes(input.toLowerCase())) {
+                    suggestions.push(`${street}, ${ward}, ${district}`);
+                    
+                    // Add variation with number if input has no number
+                    if (!/\d/.test(input)) {
+                        const houseNumber = Math.floor(Math.random() * 100) + 1;
+                        suggestions.push(`${houseNumber} ${street}, ${ward}, ${district}`);
+                    }
+                }
+            });
+            
+            // Check if input starts with a street prefix
+            streetPrefixes.forEach(prefix => {
+                if (input.toLowerCase().startsWith(prefix.toLowerCase())) {
+                    // Add matching streets with this prefix
+                    streets.forEach(street => {
+                        suggestions.push(`${prefix} ${street}, ${ward}, ${district}`);
+                    });
+                }
+            });
+            
+            // Check if input has number
+            if (/\d+/.test(input)) {
+                const number = input.match(/\d+/)[0];
+                const textPart = input.replace(/\d+/g, '').trim();
+                
+                streets.forEach(street => {
+                    if (street.toLowerCase().includes(textPart.toLowerCase()) || textPart.length < 2) {
+                        suggestions.push(`${number} ${street}, ${ward}, ${district}`);
+                    }
+                });
+            }
+            
+            // If no suggestions based on exact match, add some based on common prefixes
+            if (suggestions.length === 0) {
+                streetPrefixes.forEach(prefix => {
+                    if (input.toLowerCase().includes(prefix.toLowerCase())) {
+                        const afterPrefix = input.toLowerCase().split(prefix.toLowerCase())[1].trim();
+                        
+                        streets.forEach(street => {
+                            if (street.toLowerCase().startsWith(afterPrefix) || afterPrefix.length < 2) {
+                                suggestions.push(`${prefix} ${street}, ${ward}, ${district}`);
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Add generic suggestions if still no matches
+            if (suggestions.length === 0) {
+                const matchingStreetPrefixes = streetPrefixes.filter(prefix => 
+                    input.toLowerCase().includes(prefix.toLowerCase()));
+                
+                if (matchingStreetPrefixes.length > 0) {
+                    const prefix = matchingStreetPrefixes[0];
+                    streets.slice(0, 5).forEach(street => {
+                        suggestions.push(`${prefix} ${street}, ${ward}, ${district}`);
+                    });
+                } else {
+                    // Completely generic suggestions
+                    streets.slice(0, 5).forEach(street => {
+                        suggestions.push(`${street}, ${ward}, ${district}`);
+                    });
                 }
             }
-        },
-        'hn': {
-            name: 'Hà Nội',
-            districts: {
-                'hbt': {
-                    name: 'Quận Hai Bà Trưng',
-                    wards: ['Phường Bách Khoa', 'Phường Bạch Mai', 'Phường Đồng Tâm']
-                },
-                'cg': {
-                    name: 'Quận Cầu Giấy',
-                    wards: ['Phường Dịch Vọng', 'Phường Mai Dịch', 'Phường Nghĩa Đô']
-                }
+            
+            // Limit number of suggestions
+            return [...new Set(suggestions)].slice(0, 7);
+        }
+        
+        // Display address suggestions
+        function displayAddressSuggestions(suggestions) {
+            // Reset current focus
+            currentFocus = -1;
+            
+            // Create heading
+            const heading = document.createElement('div');
+            heading.className = 'p-2 bg-gray-100 font-medium text-gray-800 border-b';
+            heading.textContent = 'Gợi ý địa chỉ:';
+            addressAutocomplete.appendChild(heading);
+            
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.innerHTML = suggestion;
+                
+                // Add click handler
+                item.addEventListener('click', function() {
+                    addressInput.value = suggestion;
+                    closeAllLists();
+                });
+                
+                addressAutocomplete.appendChild(item);
+            });
+            
+            // Show the autocomplete container
+            addressAutocomplete.style.display = 'block';
+        }
+        
+        // Add active class to current focused item
+        function addActive(items) {
+            if (!items) return;
+            
+            // Remove active from all items
+            removeActive(items);
+            
+            // Ensure currentFocus stays within bounds
+            if (currentFocus >= items.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = items.length - 1;
+            
+            // Add active class
+            items[currentFocus].classList.add('autocomplete-active');
+            
+            // Scroll to the active item if needed
+            items[currentFocus].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // Remove active class from items
+        function removeActive(items) {
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove('autocomplete-active');
             }
         }
-    };
-    
-    // Cập nhật quận/huyện khi chọn tỉnh/thành phố
-    citySelect.addEventListener('change', function() {
-        const cityValue = this.value;
         
-        // Xóa các option cũ
-        districtSelect.innerHTML = '<option value="">Chọn Quận/Huyện</option>';
-        wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
-        
-        if (cityValue && locationData[cityValue]) {
-            const districts = locationData[cityValue].districts;
+        // Close all autocomplete lists
+        function closeAllLists(elmnt) {
+            // Don't close if clicked on the input field
+            if (elmnt === addressInput) return;
             
-            for (const [key, district] of Object.entries(districts)) {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = district.name;
-                districtSelect.appendChild(option);
-            }
+            // Clear autocomplete content and hide
+            addressAutocomplete.innerHTML = '';
+            addressAutocomplete.style.display = 'none';
         }
-    });
-    
-    // Cập nhật phường/xã khi chọn quận/huyện
-    districtSelect.addEventListener('change', function() {
-        const cityValue = citySelect.value;
-        const districtValue = this.value;
         
-        // Xóa các option cũ
-        wardSelect.innerHTML = '<option value="">Chọn Phường/Xã</option>';
-        
-        if (cityValue && districtValue && locationData[cityValue] && locationData[cityValue].districts[districtValue]) {
-            const wards = locationData[cityValue].districts[districtValue].wards;
+        // Fetch districts from API
+        function fetchDistricts() {
+            // Show loading state
+            districtSelect.innerHTML = '<option value="">Đang tải...</option>';
             
-            wards.forEach(ward => {
+            // Fetch districts from API
+            fetch(`https://provinces.open-api.vn/api/p/${HANOI_PROVINCE_CODE}?depth=2`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Districts data:', data);
+                    // Clear loading state
+                    districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+                    
+                    // Add district options
+                    if (data && data.districts) {
+                        data.districts.forEach(district => {
+                            const option = document.createElement('option');
+                            option.value = district.name;
+                            option.textContent = district.name;
+                            option.dataset.code = district.code;
+                            districtSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching districts:', error);
+                    districtSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
+                });
+        }
+        
+        // Fetch wards based on selected district
+        function fetchWards() {
+            // Reset ward select
+            wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
+            
+            const selectedDistrict = districtSelect.options[districtSelect.selectedIndex];
+            if (!selectedDistrict || !selectedDistrict.dataset.code) {
+                return;
+            }
+            
+            const districtCode = selectedDistrict.dataset.code;
+            
+            // Show loading state
+            wardSelect.innerHTML = '<option value="">Đang tải...</option>';
+            
+            // Fetch wards from API
+            fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Wards data:', data);
+                    // Clear loading state
+                    wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
+                    
+                    // Add ward options
+                    if (data && data.wards) {
+                        data.wards.forEach(ward => {
                 const option = document.createElement('option');
-                option.value = ward.toLowerCase().replace(/\s+/g, '_');
-                option.textContent = ward;
+                            option.value = ward.name;
+                            option.textContent = ward.name;
                 wardSelect.appendChild(option);
             });
         }
+                })
+                .catch(error => {
+                    console.error('Error fetching wards:', error);
+                    wardSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
     });
+        }
     
-    // Xử lý form thanh toán
-    const checkoutForm = document.getElementById('checkout-form');
-    
+        // Form validation
     checkoutForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
-        // Kiểm tra form
+            // Validate form
+            const requiredFields = document.querySelectorAll('[required]');
         let isValid = true;
-        const requiredFields = checkoutForm.querySelectorAll('[required]');
         
         requiredFields.forEach(field => {
             if (!field.value.trim()) {
                 isValid = false;
                 field.classList.add('border-red-500');
-                
-                // Thêm thông báo lỗi
-                const errorMessage = field.parentElement.querySelector('.error-message');
-                if (!errorMessage) {
-                    const message = document.createElement('p');
-                    message.className = 'error-message text-red-500 text-sm mt-1';
-                    message.textContent = 'Vui lòng điền thông tin này';
-                    field.parentElement.appendChild(message);
-                }
             } else {
                 field.classList.remove('border-red-500');
-                
-                // Xóa thông báo lỗi nếu có
-                const errorMessage = field.parentElement.querySelector('.error-message');
-                if (errorMessage) {
-                    errorMessage.remove();
                 }
+            });
+            
+            if (!isValid) {
+                showToast('Vui lòng điền đầy đủ thông tin bắt buộc');
+                return;
             }
+            
+            // Submit form
+            checkoutForm.submit();
         });
         
-        if (isValid) {
-            // Hiển thị trạng thái đang xử lý
-            const submitButton = checkoutForm.querySelector('button[type="submit"]');
-            const originalText = submitButton.innerHTML;
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Đang xử lý...';
+        // Simple toast notification function
+        function showToast(message) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
+            toast.textContent = message;
             
-            // Giả lập gửi form
-            setTimeout(function() {
-                window.location.href = '/order-success';
-            }, 2000);
+            // Add to DOM
+            document.body.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.remove('opacity-0');
+                toast.classList.add('opacity-100');
+            }, 10);
+            
+            // Hide and remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+                
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, 3000);
         }
-    });
 });
 </script>
 @endsection
