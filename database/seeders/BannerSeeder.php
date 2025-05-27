@@ -57,7 +57,7 @@ class BannerSeeder extends Seeder
                 'position' => 'homepage',
                 'order' => $index,
                 'image_path' => $imageUrl,
-                'link' => '/shop/products/show/' . rand(1, 100),
+                'link' => '/shop/products/' . rand(1, 100),
                 'description' => 'Banner được tạo tự động từ ảnh mẫu',
                 'start_at' => now(),
                 'end_at' => now()->addDays(7),
