@@ -15,7 +15,7 @@
         <!-- Left column: Images -->
         <div class="space-y-4">
             <div class="relative h-[300px] sm:h-[400px] rounded-lg overflow-hidden border">
-                <img src="{{ $product->images->first() ? Storage::url($product->images->first()->path) : '/placeholder.svg?height=600&width=600' }}" 
+                <img src="{{ $product->images->first() ? $product->images->first()->s3_url : '/placeholder.svg?height=600&width=600' }}" 
                      alt="{{ $product->name }}" 
                      class="object-cover w-full h-full" 
                      id="main-product-image">
@@ -27,7 +27,7 @@
             <div class="flex gap-2 overflow-x-auto pb-2">
                 @foreach($product->images as $image)
                 <button class="relative w-20 h-20 rounded border-2 {{ $loop->first ? 'border-orange-500' : 'border-transparent' }} overflow-hidden flex-shrink-0 product-thumbnail">
-                    <img src="{{ Storage::url($image->path) }}" 
+                    <img src="{{ $image->s3_url }}" 
                          alt="{{ $product->name }} - Hình {{ $loop->iteration }}" 
                          class="object-cover w-full h-full">
                 </button>
@@ -63,16 +63,17 @@
                     @foreach($branches as $branch)
                         @php
                             // Tính tổng số lượng tồn kho của tất cả biến thể tại chi nhánh này
-                            $totalStock = $branch->stocks()
+                            $variantCount = $branch->stocks()
                                 ->whereHas('productVariant', function($query) use ($product) {
                                     $query->where('product_id', $product->id);
                                 })
-                                ->sum('stock_quantity');
+                                ->distinct('product_variant_id')
+                                ->count('product_variant_id');
                         @endphp
                         <option value="{{ $branch->id }}" 
                                 data-address="{{ $branch->address }}"
-                                data-stock="{{ $totalStock }}">
-                            {{ $branch->name }} (Còn {{ number_format($totalStock, 0, ',', '.') }} sản phẩm)
+                                data-stock="{{ $variantCount }}">
+                            {{ $branch->name }} ({{ $variantCount }})
                         </option>
                     @endforeach
                 </select>
@@ -155,11 +156,22 @@
                     Mua ngay
                 </button>
                 <div class="flex gap-3 justify-center sm:justify-start">
-                    <button class="border border-gray-300 hover:bg-gray-50 h-11 w-11 rounded-md flex items-center justify-center">
+                    @auth
+                    <button class="border border-gray-300 hover:bg-gray-50 h-12 w-12 rounded-md flex items-center justify-center favorite-btn" data-product-id="{{ $product->id }}">
+                        @if(isset($product->is_favorite) && $product->is_favorite)
+                            <i class="fas fa-heart text-red-500 h-5 w-5"></i>
+                        @else
+                            <i class="far fa-heart h-5 w-5"></i>
+                        @endif
+                        <span class="sr-only">Yêu thích</span>
+                    </button>
+                    @else
+                    <button class="border border-gray-300 hover:bg-gray-50 h-12 w-12 rounded-md flex items-center justify-center" id="login-prompt-btn">
                         <i class="far fa-heart h-5 w-5"></i>
                         <span class="sr-only">Yêu thích</span>
                     </button>
-                    <button class="border border-gray-300 hover:bg-gray-50 h-11 w-11 rounded-md flex items-center justify-center">
+                    @endauth
+                    <button class="border border-gray-300 hover:bg-gray-50 h-12 w-12 rounded-md flex items-center justify-center">
                         <i class="fas fa-share-alt h-5 w-5"></i>
                         <span class="sr-only">Chia sẻ</span>
                     </button>
@@ -434,7 +446,7 @@
             @foreach($relatedProducts as $relatedProduct)
             <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
                 <a href="{{ route('products.show', $relatedProduct->id) }}" class="block relative h-48 overflow-hidden">
-                    <img src="{{ $relatedProduct->images->first() ? Storage::url($relatedProduct->images->first()->path) : '/placeholder.svg?height=400&width=400' }}" 
+                    <img src="{{ $relatedProduct->primary_image ? $relatedProduct->primary_image->s3_url : '/placeholder.svg?height=400&width=400' }}" 
                          alt="{{ $relatedProduct->name }}" 
                          class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                     @if($relatedProduct->release_at && $relatedProduct->release_at->diffInDays(now()) <= 7)
@@ -480,6 +492,32 @@
         </div>
     </div>
     @endif
+</div>
+
+<!-- Login Popup Modal -->
+<div id="login-popup" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 transform transition-transform">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Đăng nhập</h3>
+            <button id="close-login-popup" class="text-gray-400 hover:text-gray-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-user-lock text-orange-500 text-2xl"></i>
+            </div>
+            <p class="text-gray-700">Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích</p>
+        </div>
+        <div class="space-y-4">
+            <a href="{{ route('customer.login') }}" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors">
+                Đăng nhập
+            </a>
+            <a href="{{ route('customer.register') }}" class="block w-full border border-gray-300 hover:bg-gray-50 text-center px-6 py-3 rounded-md font-medium transition-colors">
+                Đăng ký
+            </a>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -715,6 +753,83 @@
                     document.body.removeChild(toast);
                 }, 300);
             }, 3000);
+        }
+        
+        // Login popup handling
+        const loginPromptBtn = document.getElementById('login-prompt-btn');
+        const loginPopup = document.getElementById('login-popup');
+        const closeLoginPopup = document.getElementById('close-login-popup');
+        
+        // Show login popup when favorite button is clicked for non-authenticated users
+        if (loginPromptBtn) {
+            loginPromptBtn.addEventListener('click', function() {
+                loginPopup.classList.remove('hidden');
+                // Add a small animation
+                loginPopup.querySelector('div').classList.add('scale-100');
+                loginPopup.querySelector('div').classList.remove('scale-95');
+            });
+        }
+        
+        // Close popup when close button is clicked
+        if (closeLoginPopup) {
+            closeLoginPopup.addEventListener('click', function() {
+                loginPopup.classList.add('hidden');
+            });
+        }
+        
+        // Close popup when clicking outside the modal
+        if (loginPopup) {
+            loginPopup.addEventListener('click', function(e) {
+                if (e.target === loginPopup) {
+                    loginPopup.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Handle favorite button click for authenticated users
+        const favoriteBtn = document.querySelector('.favorite-btn');
+        if (favoriteBtn) {
+            favoriteBtn.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const heartIcon = this.querySelector('i');
+                const isFavorite = heartIcon.classList.contains('fas');
+                
+                // Toggle heart icon
+                if (isFavorite) {
+                    heartIcon.classList.remove('fas', 'text-red-500');
+                    heartIcon.classList.add('far');
+                } else {
+                    heartIcon.classList.remove('far');
+                    heartIcon.classList.add('fas', 'text-red-500');
+                }
+                
+                // Send request to server to update favorite status
+                fetch('{{ route("wishlist.store") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ id: productId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(isFavorite ? 'Đã xóa khỏi danh sách yêu thích' : 'Đã thêm vào danh sách yêu thích');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating favorite status:', error);
+                    // Revert icon change if request failed
+                    if (isFavorite) {
+                        heartIcon.classList.remove('far');
+                        heartIcon.classList.add('fas', 'text-red-500');
+                    } else {
+                        heartIcon.classList.remove('fas', 'text-red-500');
+                        heartIcon.classList.add('far');
+                    }
+                });
+            });
         }
     });
 </script>
