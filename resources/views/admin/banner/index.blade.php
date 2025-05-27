@@ -210,10 +210,18 @@
                                         </form>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transform transition-all duration-200 hover:scale-105 {{ $banner->order === 0 ? 'bg-blue-100 text-blue-800' : ($banner->order === 1 ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-800') }}">
-                                            {{ $banner->order }}
-                                        </span>
+                                        @if (!is_null($banner->order))
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transform transition-all duration-200 hover:scale-105
+                                                    {{ $banner->order === 0 ? 'bg-blue-100 text-blue-800' : ($banner->order === 1 ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-800') }}">
+                                                {{ $banner->order }}
+                                            </span>
+                                        @else
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 transform transition-all duration-200 hover:scale-105">
+                                                Không có thứ tự
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm capitalize">
                                         @if ($banner->position)
@@ -254,9 +262,13 @@
                                             <a href="{{ route('admin.banners.edit', $banner->id) }}"
                                                 class="flex items-center justify-center rounded-md hover:bg-accent p-2"
                                                 title="Chỉnh sửa">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                    </path>
+                                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                    </path>
                                                 </svg>
                                             </a>
                                             <form action="{{ route('admin.banners.destroy', $banner->id) }}"
@@ -273,7 +285,9 @@
                                                         itemName: '{{ $banner->title }}',
                                                         onConfirm: () => this.closest('form').submit()
                                                     })">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                         <path d="M3 6h18"></path>
                                                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                                                         <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>

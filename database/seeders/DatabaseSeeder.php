@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             DriverSeeder::class,
             UserRoleSeeder::class,
             FastFoodSeeder::class,
+            BannerSeeder::class,
         ]);
     }
 }

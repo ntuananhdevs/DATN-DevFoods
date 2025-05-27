@@ -147,7 +147,7 @@
 
                 <!-- Hidden input để submit -->
                 <input type="hidden" name="link"
-                    :value="selectedProduct ? `/shop/products/show/${selectedProduct.id}` : '{{ $banner->link }}'">
+                    :value="selectedProduct ? `/shop/products/${selectedProduct.id}` : '{{ $banner->link }}'">
             </div>
 
 
