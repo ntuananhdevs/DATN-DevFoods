@@ -115,7 +115,6 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down ml-auto transition-transform sidebar-dropdown-icon">
                             <path d="m6 9 6 6 6-6"></path>
                         </svg>
-<<<<<<< HEAD
                     </span>
                     <span class="sidebar-text">Customers</span>
                 </a>
@@ -145,22 +144,6 @@
                 </div>
             </div>
                 
-=======
-                    </button>
-                    <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
-                        <a href="{{ route('admin.users.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.users.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                            <span class="sidebar-text">Khách hàng</span>
-                        </a>
-                        <a href="{{ ('admin.users.managers') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.roles.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                            <span class="sidebar-text">Quản lý</span>
-                        </a>
-                        <a href="{{ ('admin.permissions.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.permissions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                            <span class="sidebar-text">Quyền hạn</span>
-                        </a>
-                    </div>
-                </div>
-
->>>>>>> 98ba110dddf238b0ff6a17c154d45eee5b64c2b4
                 <!-- Analytics Reports -->
                 <a href="{{ ('admin.analytics-reports') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics-reports.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Analytics">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
