@@ -14,14 +14,11 @@ return new class extends Migration
         Schema::create('wishlist_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('product_variant_id')->constrained('product_variants')->onDelete('cascade');
-            $table->integer('quantity')->default(1); 
-            $table->text('note')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
             $table->timestamps();
-
-            // Đảm bảo rằng mỗi người dùng chỉ có một bản ghi cho mỗi biến thể sản phẩm
-            $table->unique(['user_id', 'product_variant_id']);
+            
+            // Cada usuario solo puede tener un favorito por producto
+            $table->unique(['user_id', 'product_id']);
         });
     }
 
@@ -30,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('whishlist_items');
+        Schema::dropIfExists('wishlist_items');
     }
 };

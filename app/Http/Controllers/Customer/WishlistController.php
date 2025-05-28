@@ -18,11 +18,11 @@ class WishlistController extends Controller
 
     public function index()
     {
-        $wishlistItems = Auth::user()->wishlist()
-            ->with(['product', 'productVariant'])
-            ->where('is_active', true)
-            ->get();
-
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+        
+        $wishlistItems = Auth::user()->wishlist()->with('product')->get();
         return view('customer.wishlist.index', compact('wishlistItems'));
     }
 

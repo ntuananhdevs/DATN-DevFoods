@@ -13,7 +13,8 @@ class Topping extends Model
     protected $fillable = [
         'name',
         'price',
-        'active'
+        'active',
+        'image'
     ];
 
     public function products(): BelongsToMany
