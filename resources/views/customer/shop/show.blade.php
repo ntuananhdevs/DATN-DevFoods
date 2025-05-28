@@ -116,6 +116,42 @@
                 @endforeach
             </div>
 
+            <!-- Toppings Section -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-medium">Toppings</h3>
+                    <span class="text-sm text-gray-500">Chọn nhiều</span>
+                </div>
+                <div class="relative">
+                    <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100 hover:scrollbar-thumb-orange-300">
+                        @foreach($product->toppings as $topping)
+                        <label class="relative flex-shrink-0 w-24 cursor-pointer group">
+                            <input type="checkbox" 
+                                   name="toppings[]" 
+                                   value="{{ $topping->id }}"
+                                   class="sr-only topping-input"
+                                   data-price="{{ $topping->price }}">
+                            <div class="relative aspect-square rounded-lg overflow-hidden border group-hover:border-orange-500 transition-colors">
+                                <img src="{{ $topping->image_url }}" 
+                                     alt="{{ $topping->name }}" 
+                                     class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity"></div>
+                                <div class="absolute top-1 right-1 w-4 h-4 border-2 border-white rounded-full bg-white/50 backdrop-blur-sm">
+                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                                </div>
+                            </div>
+                            <div class="mt-1 text-center">
+                                <p class="text-xs font-medium truncate">{{ $topping->name }}</p>
+                                <p class="text-xs text-orange-500 font-medium">
+                                    +{{ number_format($topping->price, 0, ',', '.') }}đ
+                                </p>
+                            </div>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
             <!-- Quantity Selection -->
             <div class="flex items-center gap-4">
                 <span class="font-medium">Số lượng:</span>
@@ -554,12 +590,18 @@
                         attributeId: input.dataset.attributeId,
                         adjustment: adjustment
                     });
-                    
-                    console.log('Added adjustment:', {
-                        attributeId: input.dataset.attributeId,
-                        adjustment: adjustment
-                    });
                 }
+            });
+
+            // Add toppings price
+            const selectedToppings = document.querySelectorAll('.topping-input:checked');
+            selectedToppings.forEach(topping => {
+                const price = parseFloat(topping.dataset.price) || 0;
+                total += price;
+                adjustments.push({
+                    type: 'topping',
+                    price: price
+                });
             });
             
             console.log('Price adjustments:', adjustments);
@@ -831,6 +873,22 @@
                 });
             });
         }
+
+        // Handle topping selection
+        const toppingInputs = document.querySelectorAll('.topping-input');
+        toppingInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const label = this.closest('label');
+                if (this.checked) {
+                    label.classList.add('border-orange-500');
+                    label.querySelector('.bg-orange-500').classList.remove('scale-0');
+                } else {
+                    label.classList.remove('border-orange-500');
+                    label.querySelector('.bg-orange-500').classList.add('scale-0');
+                }
+                calculateTotalPrice();
+            });
+        });
     });
 </script>
 @endsection
