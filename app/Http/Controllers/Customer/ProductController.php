@@ -50,9 +50,22 @@ class ProductController extends Controller
             'images', 
             'reviews.user',
             'variants.variantValues.attribute',
+            'variants.branchStocks.branch',
             'toppings'
         ])->findOrFail($id);
-
+    
+        // Lấy danh sách chi nhánh có sản phẩm
+        $availableBranches = collect();
+        foreach ($product->variants as $variant) {
+            $branchesWithStock = $variant->branchStocks()
+                ->where('stock_quantity', '>', 0)
+                ->with('branch')
+                ->get()
+                ->pluck('branch');
+            $availableBranches = $availableBranches->concat($branchesWithStock);
+        }
+        $availableBranches = $availableBranches->unique('id');
+    
         // Lấy các sản phẩm liên quan cùng danh mục
         $relatedProducts = Product::with(['category', 'images', 'reviews'])
             ->where('category_id', $product->category_id)
@@ -62,7 +75,7 @@ class ProductController extends Controller
             ->limit(4)
             ->get();
         
-        return view("customer.shop.show", compact('product', 'relatedProducts'));
+        return view("customer.shop.show", compact('product', 'relatedProducts', 'availableBranches'));
     }
 
     /**

@@ -78,6 +78,23 @@
 
             <p class="text-gray-600">{{ $product->short_description ?? $product->description }}</p>
 
+            <!-- Hiển thị các chi nhánh có sản phẩm -->
+            <div class="bg-orange-50 p-3 rounded-lg">
+                <div class="flex items-center gap-2 mb-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-orange-500">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span class="font-medium">Có sẵn tại {{ $availableBranches->count() }} chi nhánh</span>
+                </div>
+                <select class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" id="branch-select">
+                    <option value="">Chọn chi nhánh</option>
+                    @foreach($availableBranches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             @if($product->variants->count() > 0)
             <div class="space-y-4" id="variant-selection">
                 @php
