@@ -89,7 +89,7 @@
                                 <td>{{ $application->updated_at->format('d/m/Y H:i') }}</td>
                                 <td>
                                     <div class="data-table-action-buttons">
-                                        <a href="{{ route('admin.drivers.applications.show', ['application' => $application->id]) }}"
+                                        <a href="{{ route('admin.drivers.applications.show', $application) }}"
                                             class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
                                             <i class="fas fa-eye"></i>
                                         </a>
