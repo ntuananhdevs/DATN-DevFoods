@@ -448,11 +448,30 @@ public function index(Request $request)
     public function edit(string $id)
     {
         try {
-            $product = Product::with(['category', 'variants.branchStocks', 'images'])->findOrFail($id);
+            $product = Product::with([
+                'category', 
+                'images', 
+                'attributes.values',
+                'toppings',
+                'variants.productVariantDetails.variantValue.attribute'
+            ])->findOrFail($id);
+            
+            // Debug attributes loading
+            \Log::info('Product Attributes: ', [
+                'attributes_count' => $product->attributes->count(),
+                'attributes' => $product->attributes->toArray(),
+                'variants_count' => $product->variants->count(),
+                'variants' => $product->variants->toArray()
+            ]);
+            
+            // Define the primary image
+            $primaryImage = $product->images->where('is_primary', true)->first();
+            
             $categories = Category::all();
             $branches = Branch::where('active', true)->get();
-            return view('admin.products.edit', compact('product', 'categories', 'branches'));
+            return view('admin.products.edit', compact('product', 'categories', 'branches', 'primaryImage'));
         } catch (\Exception $e) {
+            \Log::error('Error in edit method: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return redirect()->back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
     }
@@ -473,14 +492,20 @@ public function index(Request $request)
                 'description' => 'nullable|string',
                 'ingredients' => 'nullable|string',
                 'is_featured' => 'boolean',
-                'available' => 'boolean',
-                'status' => 'boolean',
+                'status' => 'required|in:coming_soon,selling,discontinued',
+                'release_at' => 'nullable|date|required_if:status,coming_soon',
+                'primary_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
                 'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
-                'branch_stocks.*' => 'nullable|integer|min:0',
-                'attributes.*.name' => 'required|string|max:255',
+                'existing_images' => 'nullable|array',
+                'deleted_images' => 'nullable|array',
+                'attributes' => 'nullable|array',
+                'attributes.*.name' => 'required_with:attributes|string|max:255',
+                'attributes.*.values' => 'required_with:attributes|array',
                 'attributes.*.values.*.value' => 'required|string|max:255',
-                'attributes.*.values.*.price_adjustment' => 'required|numeric',
+                'attributes.*.values.*.price_adjustment' => 'nullable|numeric',
+                'attributes.*.values.*.id' => 'nullable|exists:variant_values,id',
                 'toppings' => 'nullable|array',
+                'toppings.*.id' => 'nullable|exists:toppings,id',
                 'toppings.*.name' => 'required_with:toppings|string|max:255',
                 'toppings.*.price' => 'required_with:toppings|numeric|min:0',
                 'toppings.*.available' => 'nullable|boolean',
@@ -492,6 +517,48 @@ public function index(Request $request)
             // Find product
             $product = Product::findOrFail($id);
 
+            // Parse ingredients based on format
+            $ingredients = null;
+            if ($request->has('ingredients')) {
+                $ingredientsText = $request->ingredients;
+                $lines = array_filter(explode("\n", $ingredientsText), 'trim');
+                
+                // Check if the format includes categories (format 1)
+                $hasCategories = false;
+                $currentCategory = null;
+                $structuredIngredients = [];
+                
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if (empty($line)) continue;
+                    
+                    // Check if line is a category (ends with colon)
+                    if (preg_match('/^([^:]+):$/', $line, $matches)) {
+                        $hasCategories = true;
+                        $currentCategory = trim($matches[1]);
+                        $structuredIngredients[$currentCategory] = [];
+                    } 
+                    // Line is an ingredient
+                    elseif ($hasCategories && $currentCategory) {
+                        // Remove dash if present
+                        $ingredient = trim(ltrim($line, '-'));
+                        $structuredIngredients[$currentCategory][] = $ingredient;
+                    }
+                    // Simple list format
+                    else {
+                        $hasCategories = false;
+                        break;
+                    }
+                }
+                
+                // If categories were detected, use structured format, otherwise use simple array
+                if ($hasCategories) {
+                    $ingredients = $structuredIngredients;
+                } else {
+                    $ingredients = $lines;
+                }
+            }
+            
             // Update product
             $product->update([
                 'name' => $validated['name'],
@@ -500,21 +567,72 @@ public function index(Request $request)
                 'preparation_time' => $validated['preparation_time'],
                 'short_description' => $validated['short_description'] ?? '',
                 'description' => $validated['description'],
-                'ingredients' => $validated['ingredients'] ? json_decode($validated['ingredients']) : null,
+                'ingredients' => $ingredients,
                 'is_featured' => $request->boolean('is_featured'),
-                'available' => $request->boolean('available'),
-                'status' => $request->boolean('status'),
+                'status' => $validated['status'],
+                'release_at' => $validated['status'] == 'coming_soon' ? $request->release_at : null,
                 'updated_by' => auth()->id(),
             ]);
 
-            // Handle images
+            // Handle primary image
+            if ($request->hasFile('primary_image')) {
+                $image = $request->file('primary_image');
+                
+                // Generate unique filename
+                $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                
+                // Upload to S3
+                $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                
+                if ($path) {
+                    // Get the URL of uploaded file
+                    $url = Storage::disk('s3')->url('products/' . $filename);
+                    
+                    // Set all existing images as not primary
+                    $product->images()->update(['is_primary' => false]);
+                    
+                    // Create new primary image
+                    $product->images()->create([
+                        'img' => 'products/' . $filename,
+                        'img_url' => $url,
+                        'is_primary' => true,
+                    ]);
+                }
+            }
+
+            // Handle additional images
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $path = $image->store('products', 'public');
-                    $product->images()->create([
-                        'img' => $path,
-                        'is_primary' => false,
-                    ]);
+                    // Generate unique filename
+                    $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    
+                    // Upload to S3
+                    $path = Storage::disk('s3')->put('products/' . $filename, file_get_contents($image));
+                    
+                    if ($path) {
+                        // Get the URL of uploaded file
+                        $url = Storage::disk('s3')->url('products/' . $filename);
+                        
+                        $product->images()->create([
+                            'img' => 'products/' . $filename,
+                            'img_url' => $url,
+                            'is_primary' => false,
+                        ]);
+                    }
+                }
+            }
+            
+            // Handle deleted images
+            if ($request->has('deleted_images')) {
+                foreach ($request->deleted_images as $imageId) {
+                    $image = $product->images()->find($imageId);
+                    if ($image) {
+                        // Delete from S3 if needed
+                        if ($image->img) {
+                            Storage::disk('s3')->delete($image->img);
+                        }
+                        $image->delete();
+                    }
                 }
             }
 
@@ -535,21 +653,56 @@ public function index(Request $request)
 
             // Handle attributes and variant values
             if ($request->has('attributes')) {
-                // Delete existing attributes and values
+                // Delete existing product variants
                 $product->variants()->delete();
-
+                
+                $attributeGroups = [];
+                
                 foreach ($request->attributes as $attributeData) {
                     // Create or get attribute
                     $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
-
-                    // Create variant values
+                    
+                    $values = [];
                     foreach ($attributeData['values'] as $valueData) {
-                        $attribute->values()->create([
-                            'value' => $valueData['value'],
-                            'price_adjustment' => $valueData['price_adjustment'],
+                        // Create or update variant value
+                        $value = VariantValue::updateOrCreate(
+                            [
+                                'variant_attribute_id' => $attribute->id,
+                                'value' => $valueData['value']
+                            ],
+                            ['price_adjustment' => $valueData['price_adjustment'] ?? 0]
+                        );
+                        $values[] = $value;
+                    }
+                    
+                    $attributeGroups[] = [
+                        'attribute' => $attribute,
+                        'values' => $values
+                    ];
+                }
+                
+                // Generate all possible combinations
+                $combinations = $this->generateVariantCombinations($attributeGroups);
+                
+                // Create variants for each combination
+                foreach ($combinations as $combination) {
+                    // Create product variant
+                    $variant = $product->variants()->create([
+                        'active' => true
+                    ]);
+                    
+                    // Create variant details for each value in the combination
+                    foreach ($combination as $variantValue) {
+                        $variant->productVariantDetails()->create([
+                            'variant_value_id' => $variantValue->id
                         ]);
                     }
                 }
+            } else if ($product->variants()->count() === 0) {
+                // If no attributes and no existing variants, create a default variant
+                $product->variants()->create([
+                    'active' => true
+                ]);
             }
             
             // Handle toppings
@@ -560,8 +713,9 @@ public function index(Request $request)
                 foreach ($request->input('toppings') as $index => $toppingData) {
                     // Create or update topping
                     $topping = Topping::updateOrCreate(
-                        ['name' => $toppingData['name']],
+                        ['id' => $toppingData['id'] ?? null],
                         [
+                            'name' => $toppingData['name'],
                             'price' => $toppingData['price'],
                             'active' => isset($toppingData['available']) ? (bool)$toppingData['available'] : true
                         ]
@@ -578,6 +732,9 @@ public function index(Request $request)
                         $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
                         
                         if ($path) {
+                            // Get the URL of uploaded file
+                            $url = Storage::disk('s3')->url('toppings/' . $filename);
+                            
                             // Update topping with image path
                             $topping->update([
                                 'image' => 'toppings/' . $filename
@@ -727,5 +884,59 @@ public function index(Request $request)
         file_put_contents($file, $json);
         
         return Response::download($file, $filename);
+    }
+
+    /**
+     * Update stock quantities for product variants across branches
+     */
+    public function updateStocks(Request $request, Product $product)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $stocks = $request->input('stocks', []);
+            
+            // Update stock for each branch and variant
+            foreach ($stocks as $branchId => $variantStocks) {
+                foreach ($variantStocks as $variantId => $quantity) {
+                    // Get or create the branch stock entry
+                    $branchStock = DB::table('branch_stocks')
+                        ->where('branch_id', $branchId)
+                        ->where('product_variant_id', $variantId)
+                        ->first();
+                    
+                    if ($branchStock) {
+                        // Update existing record
+                        DB::table('branch_stocks')
+                            ->where('branch_id', $branchId)
+                            ->where('product_variant_id', $variantId)
+                            ->update(['stock_quantity' => $quantity]);
+                    } else {
+                        // Create new record
+                        DB::table('branch_stocks')->insert([
+                            'branch_id' => $branchId,
+                            'product_variant_id' => $variantId,
+                            'stock_quantity' => $quantity,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                    }
+                }
+            }
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật số lượng tồn kho thành công'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

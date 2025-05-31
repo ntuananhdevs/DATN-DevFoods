@@ -17,22 +17,43 @@ class CartController extends Controller
     public function add(Request $request)
     {
         try {
-            // Registrar los datos de entrada para depuración
-            \Log::info('Datos de entrada en add to cart:', $request->all());
+            \Log::info('Cart add request:', $request->all());
             
             $request->validate([
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1',
                 'variant_id' => 'required|exists:product_variants,id',
+                'branch_id' => 'required|exists:branches,id',
                 'toppings' => 'nullable|array',
                 'toppings.*' => 'exists:toppings,id'
             ]);
 
-            // Determinar identificación del carrito (usuario o sesión)
+            // Verify selected branch matches session branch
+            $sessionBranchId = session('selected_branch');
+            if ($sessionBranchId && $sessionBranchId != $request->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chi nhánh đã thay đổi. Vui lòng làm mới trang và thử lại.'
+                ], 400);
+            }
+            
+            // Check product availability in branch
+            $branchStock = \App\Models\BranchStock::where('branch_id', $request->branch_id)
+                ->where('product_variant_id', $request->variant_id)
+                ->first();
+                
+            if (!$branchStock || $branchStock->stock_quantity < $request->quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sản phẩm đã hết hàng tại chi nhánh này'
+                ], 400);
+            }
+            
             $userId = null;
             $sessionId = null;
             
             if (auth()->check()) {
+                //Lấy ID người dùng đã đăng nhập
                 $userId = auth()->id();
                 \Log::info('Usuario autenticado:', ['user_id' => $userId]);
             } else {
@@ -88,9 +109,14 @@ class CartController extends Controller
             
             // Comprobar si el producto ya está en el carrito
             $query = CartItem::where('cart_id', $cart->id)
-                ->where('product_variant_id', $request->variant_id);
+                ->where('product_variant_id', $request->variant_id)
+                ->where('branch_id', $request->branch_id);
                 
-            \Log::info('Buscando item en carrito:', ['cart_id' => $cart->id, 'variant_id' => $request->variant_id]);
+            \Log::info('Buscando item en carrito:', [
+                'cart_id' => $cart->id, 
+                'variant_id' => $request->variant_id,
+                'branch_id' => $request->branch_id
+            ]);
             $cartItem = $query->first();
                 
             if ($cartItem) {
@@ -106,7 +132,8 @@ class CartController extends Controller
                     'cart_id' => $cart->id,
                     'product_variant_id' => $request->variant_id,
                     'combo_id' => null,
-                    'quantity' => $request->quantity
+                    'quantity' => $request->quantity,
+                    'branch_id' => $request->branch_id
                 ];
                 \Log::info('Datos para nuevo item:', $cartItemData);
                 
@@ -138,8 +165,10 @@ class CartController extends Controller
             // Guardar en sesión para mostrar en el header
             session(['cart_count' => $cartCount]);
             
-            // Comentar temporalmente el broadcast a Pusher
+            // Broadcast del evento para actualizar en tiempo real
+            \Log::info('Broadcasting cart update event', ['user_id' => $userId, 'count' => $cartCount]);
             event(new CartUpdated($userId, $cartCount));
+            \Log::info('Event broadcast completed');
             
             return response()->json([
                 'success' => true,
@@ -191,7 +220,7 @@ class CartController extends Controller
             // Guardar en sesión para mostrar en el header
             session(['cart_count' => $cartCount]);
             
-            // Comentar temporalmente el broadcast a Pusher
+            // Broadcast del evento para actualizar en tiempo real
             event(new CartUpdated($userId, $cartCount));
             
             return response()->json([
@@ -237,7 +266,7 @@ class CartController extends Controller
             // Guardar en sesión para mostrar en el header
             session(['cart_count' => $cartCount]);
             
-            // Comentar temporalmente el broadcast a Pusher
+            // Broadcast del evento para actualizar en tiempo real
             event(new CartUpdated($userId, $cartCount));
             
             return response()->json([

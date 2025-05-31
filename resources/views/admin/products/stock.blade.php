@@ -304,6 +304,9 @@
                     const checkbox = item.querySelector('input[type="checkbox"]');
                     checkbox.checked = !checkbox.checked;
                     item.classList.toggle('selected', checkbox.checked);
+                } else {
+                    // Update UI when checkbox is directly clicked
+                    item.classList.toggle('selected', e.target.checked);
                 }
             });
         });
@@ -349,21 +352,21 @@
                 stocks: {}
             };
 
+            // Collect branch selections and stock data
             document.querySelectorAll('.branch-card').forEach(card => {
-                const branchId = card.querySelector('input[name="branch_selection[]"]').value;
+                const branchCheckbox = card.querySelector('input[name="branch_selection[]"]');
+                const branchId = branchCheckbox.value;
+                
+                // Initialize branch stocks
                 data.stocks[branchId] = {};
-
+                
+                // Collect stock values for each variant in this branch
                 card.querySelectorAll('.variant-stock').forEach(variantStock => {
-                    const variantId = variantStock.dataset.variantId;
-                const branchId = card.querySelector('input[type="checkbox"]').name.match(/\[(\d+)\]/)[1];
-                const isActive = card.querySelector('input[type="checkbox"]').checked;
-                data.active[branchId] = isActive;
-
-                // Collect stocks for each variant
-                data.stocks[branchId] = {};
-                card.querySelectorAll('.variant-stock input').forEach(input => {
-                    const variantId = input.name.match(/\[(\d+)\]$/)[1];
-                    data.stocks[branchId][variantId] = parseInt(input.value) || 0;
+                    const variantId = variantStock.getAttribute('data-variant-id');
+                    const stockInput = variantStock.querySelector('input[type="number"]');
+                    const stockValue = parseInt(stockInput.value) || 0;
+                    
+                    data.stocks[branchId][variantId] = stockValue;
                 });
             });
 
@@ -376,17 +379,24 @@
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
-                    alert('Cập nhật chi nhánh và số lượng thành công');
+                    alert('Cập nhật số lượng tồn kho thành công');
+                    // Optional: refresh the page to show updated values
+                    // window.location.reload();
                 } else {
-                    alert('Có lỗi xảy ra khi cập nhật');
+                    alert(data.message || 'Có lỗi xảy ra khi cập nhật');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi cập nhật');
+                alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
             });
         });
 
@@ -395,7 +405,7 @@
             // Ctrl/Cmd + S to save
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                saveBranchesBtn.click();
+                saveStocksBtn.click();
             }
         });
     });

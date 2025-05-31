@@ -70,10 +70,10 @@ Route::prefix('/')->group(function () {
 
         // Cart
         Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
-        // Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-        // Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-        // Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
-
+        Route::post('/cart/add', 'App\Http\Controllers\Api\Customer\CartController@add')->name('cart.add');
+        Route::post('/cart/update', 'App\Http\Controllers\Api\Customer\CartController@update')->name('cart.update');
+        Route::post('/cart/remove', 'App\Http\Controllers\Api\Customer\CartController@remove')->name('cart.remove');
+        Route::post('/coupon/apply', 'App\Http\Controllers\Api\Customer\CartController@applyCoupon')->name('coupon.apply');
         // Checkout
         Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
         Route::post('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
@@ -234,6 +234,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('/restore/{id}', [ProductController::class, 'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
+        
+        // Stock management
+        Route::get('{product}/stock', [BranchStockController::class, 'index'])->name('stock');
+        Route::post('{product}/update-stocks', [ProductController::class, 'updateStocks'])->name('update-stocks');
+        Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
+        Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
+        Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
+        
+        // Variant management
+        Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
+        Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
+        Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
     });
 
     // Driver Application Management
@@ -268,22 +280,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
         Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
-    });
-
-    // Product Stock Management Routes
-    Route::prefix('products')->name('products.')->group(function () {
-        Route::get('{product}/stock', [BranchStockController::class, 'index'])->name('stock');
-        Route::post('{product}/stocks', [BranchStockController::class, 'update'])->name('update-stocks');
-        Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
-        Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
-        Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
-    });
-
-    // Product Variant Routes
-    Route::prefix('products')->name('products.')->group(function () {
-        Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
-        Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
-        Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
     });
 
     Route::get('/chat', [AdminChatController::class, 'index'])->name('chat');

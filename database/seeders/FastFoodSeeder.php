@@ -22,6 +22,8 @@ use App\Models\VariantValue;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class FastFoodSeeder extends Seeder
 {
@@ -129,211 +131,364 @@ class FastFoodSeeder extends Seeder
 
     public function run(): void
     {
-        // Tạo danh mục
-        $categories = [
-            [
-                'name' => 'Burger',
-                'description' => 'Burger với nhiều lớp nhân thịt và rau củ tươi ngon',
-                'image' => 'categories/burger.jpg',
-                'status' => true,
-                'products' => [
-                    'Burger Bò Phô Mai', 'Burger Gà Giòn', 'Burger Cá', 'Burger Bò Nướng BBQ',
-                    'Burger Tôm', 'Burger Bò 2 Lớp', 'Burger Gà Nướng', 'Burger Bò Trứng',
-                    'Burger Phô Mai', 'Burger Bò Xông Khói', 'Burger Gà Phô Mai', 'Burger Cá Ngừ',
-                    'Burger Bò Teriyaki', 'Burger Gà Sốt Cay', 'Burger Bò Deluxe'
-                ]
-            ],
-            [
-                'name' => 'Pizza',
-                'description' => 'Pizza đa dạng hương vị',
-                'image' => 'categories/pizza.jpg',
-                'status' => true,
-                'products' => [
-                    'Pizza Hải Sản', 'Pizza Bò', 'Pizza Gà', 'Pizza Xúc Xích',
-                    'Pizza Phô Mai', 'Pizza Nấm', 'Pizza Thịt Nguội', 'Pizza Hawaii',
-                    'Pizza 5 Loại Thịt', 'Pizza Rau Củ', 'Pizza Bò BBQ', 'Pizza Gà Nướng',
-                    'Pizza Hải Sản Cao Cấp', 'Pizza Thập Cẩm', 'Pizza Margherita'
-                ]
-            ],
-            [
-                'name' => 'Gà Rán',
-                'description' => 'Gà rán giòn rụm, thơm ngon',
-                'image' => 'categories/chicken.jpg',
-                'status' => true,
-                'products' => [
-                    'Gà Rán Giòn', 'Gà Sốt Cay', 'Gà Sốt BBQ', 'Gà Không Xương',
-                    'Gà Rán Phô Mai', 'Gà Sốt Teriyaki', 'Gà Rán Mật Ong', 'Gà Sốt Tỏi',
-                    'Gà Rán Original', 'Gà Sốt Cay Ngọt', 'Gà Rán Giòn Cay', 'Gà Nướng BBQ',
-                    'Gà Sốt Phô Mai', 'Gà Rán Không Cay', 'Gà Rán Sốt Đặc Biệt'
-                ]
-            ],
-            [
-                'name' => 'Cơm',
-                'description' => 'Các món cơm đặc sắc',
-                'image' => 'categories/rice.jpg',
-                'status' => true,
-                'products' => [
-                    'Cơm Gà Rán', 'Cơm Bò Lúc Lắc', 'Cơm Sườn BBQ', 'Cơm Gà Teriyaki',
-                    'Cơm Bò Xào', 'Cơm Gà Xối Mỡ', 'Cơm Bò BBQ', 'Cơm Sườn Cay',
-                    'Cơm Gà Nướng', 'Cơm Bò Trứng', 'Cơm Gà Sốt Cay', 'Cơm Sườn Nướng',
-                    'Cơm Bò Nướng', 'Cơm Gà Chiên', 'Cơm Đùi Gà Chiên'
-                ]
-            ],
-            [
-                'name' => 'Mì',
-                'description' => 'Các loại mì ngon',
-                'image' => 'categories/noodles.jpg',
-                'status' => true,
-                'products' => [
-                    'Mì Ý Sốt Bò', 'Mì Ý Hải Sản', 'Mì Ý Gà', 'Mì Ý Carbonara',
-                    'Mì Xào Hải Sản', 'Mì Ý Sốt Kem', 'Mì Xào Bò', 'Mì Ý Sốt Cà Chua',
-                    'Mì Xào Gà', 'Mì Ý Sốt Nấm', 'Mì Hoàng Kim', 'Mì Ý Thịt Viên',
-                    'Mì Xào Thập Cẩm', 'Mì Ý Chay', 'Mì Đặc Biệt'
-                ]
-            ],
-            [
-                'name' => 'Đồ Uống',
-                'description' => 'Đồ uống giải khát',
-                'image' => 'categories/drinks.jpg',
-                'status' => true,
-                'products' => [
-                    'Coca Cola', 'Pepsi', '7 Up', 'Fanta',
-                    'Trà Đào', 'Trà Vải', 'Trà Chanh', 'Cà Phê Đen',
-                    'Cà Phê Sữa', 'Sinh Tố Dâu', 'Sinh Tố Bơ', 'Nước Cam',
-                    'Nước Ép Táo', 'Trà Sữa', 'Matcha Đá Xay'
-                ]
-            ]
-        ];
+        try {
+            // Make sure we have the necessary dependencies
+            if (!class_exists(\App\Models\Driver::class)) {
+                echo "Error: Driver model not found. Make sure it exists before running this seeder.\n";
+                return;
+            }
 
-        // Tạo categories và products
-        foreach ($categories as $categoryData) {
-            $products = $categoryData['products'];
-            unset($categoryData['products']);
-            
-            // Tạo category và lấy short_name từ model
-            $category = new Category($categoryData);
-            $shortName = $category->getShortNameAttribute();
-            $category->save();
-            echo "Created category: {$category->name} with short name: {$shortName}\n";
+            // Tạo danh mục
+            $categories = [
+                [
+                    'name' => 'Burger',
+                    'description' => 'Burger với nhiều lớp nhân thịt và rau củ tươi ngon',
+                    'image' => 'categories/burger.jpg',
+                    'status' => true,
+                    'products' => [
+                        'Burger Bò Phô Mai', 'Burger Gà Giòn', 'Burger Cá', 'Burger Bò Nướng BBQ',
+                        'Burger Tôm', 'Burger Bò 2 Lớp', 'Burger Gà Nướng', 'Burger Bò Trứng',
+                        'Burger Phô Mai', 'Burger Bò Xông Khói', 'Burger Gà Phô Mai', 'Burger Cá Ngừ',
+                        'Burger Bò Teriyaki', 'Burger Gà Sốt Cay', 'Burger Bò Deluxe'
+                    ]
+                ],
+                [
+                    'name' => 'Pizza',
+                    'description' => 'Pizza đa dạng hương vị',
+                    'image' => 'categories/pizza.jpg',
+                    'status' => true,
+                    'products' => [
+                        'Pizza Hải Sản', 'Pizza Bò', 'Pizza Gà', 'Pizza Xúc Xích',
+                        'Pizza Phô Mai', 'Pizza Nấm', 'Pizza Thịt Nguội', 'Pizza Hawaii',
+                        'Pizza 5 Loại Thịt', 'Pizza Rau Củ', 'Pizza Bò BBQ', 'Pizza Gà Nướng',
+                        'Pizza Hải Sản Cao Cấp', 'Pizza Thập Cẩm', 'Pizza Margherita'
+                    ]
+                ],
+                [
+                    'name' => 'Gà Rán',
+                    'description' => 'Gà rán giòn rụm, thơm ngon',
+                    'image' => 'categories/chicken.jpg',
+                    'status' => true,
+                    'products' => [
+                        'Gà Rán Giòn', 'Gà Sốt Cay', 'Gà Sốt BBQ', 'Gà Không Xương',
+                        'Gà Rán Phô Mai', 'Gà Sốt Teriyaki', 'Gà Rán Mật Ong', 'Gà Sốt Tỏi',
+                        'Gà Rán Original', 'Gà Sốt Cay Ngọt', 'Gà Rán Giòn Cay', 'Gà Nướng BBQ',
+                        'Gà Sốt Phô Mai', 'Gà Rán Không Cay', 'Gà Rán Sốt Đặc Biệt'
+                    ]
+                ],
+                [
+                    'name' => 'Cơm',
+                    'description' => 'Các món cơm đặc sắc',
+                    'image' => 'categories/rice.jpg',
+                    'status' => true,
+                    'products' => [
+                        'Cơm Gà Rán', 'Cơm Bò Lúc Lắc', 'Cơm Sườn BBQ', 'Cơm Gà Teriyaki',
+                        'Cơm Bò Xào', 'Cơm Gà Xối Mỡ', 'Cơm Bò BBQ', 'Cơm Sườn Cay',
+                        'Cơm Gà Nướng', 'Cơm Bò Trứng', 'Cơm Gà Sốt Cay', 'Cơm Sườn Nướng',
+                        'Cơm Bò Nướng', 'Cơm Gà Chiên', 'Cơm Đùi Gà Chiên'
+                    ]
+                ],
+                [
+                    'name' => 'Mì',
+                    'description' => 'Các loại mì ngon',
+                    'image' => 'categories/noodles.jpg',
+                    'status' => true,
+                    'products' => [
+                        'Mì Ý Sốt Bò', 'Mì Ý Hải Sản', 'Mì Ý Gà', 'Mì Ý Carbonara',
+                        'Mì Xào Hải Sản', 'Mì Ý Sốt Kem', 'Mì Xào Bò', 'Mì Ý Sốt Cà Chua',
+                        'Mì Xào Gà', 'Mì Ý Sốt Nấm', 'Mì Hoàng Kim', 'Mì Ý Thịt Viên',
+                        'Mì Xào Thập Cẩm', 'Mì Ý Chay', 'Mì Đặc Biệt'
+                    ]
+                ],
+                [
+                    'name' => 'Đồ Uống',
+                    'description' => 'Đồ uống giải khát',
+                    'image' => 'categories/drinks.jpg',
+                    'status' => true,
+                    'products' => [
+                        'Coca Cola', 'Pepsi', '7 Up', 'Fanta',
+                        'Trà Đào', 'Trà Vải', 'Trà Chanh', 'Cà Phê Đen',
+                        'Cà Phê Sữa', 'Sinh Tố Dâu', 'Sinh Tố Bơ', 'Nước Cam',
+                        'Nước Ép Táo', 'Trà Sữa', 'Matcha Đá Xay'
+                    ]
+                ]
+            ];
 
-            // Tạo products cho category
-            foreach ($products as $productName) {
-                $product = Product::create([
-                    'category_id' => $category->id,
-                    'name' => $productName,
-                    'sku' => $shortName . '-' . Str::random(5),
-                    'description' => "Đây là món {$productName} ngon tuyệt",
-                    'short_description' => "Món {$productName} đặc biệt",
-                    'base_price' => rand(30000, 200000),
-                    'preparation_time' => rand(10, 30),
-                    'ingredients' => json_encode($this->getIngredients($productName)),
-                    'status' => 'selling',
-                    'is_featured' => rand(0, 1) === 1
-                ]);
-                echo "Created product: {$product->name}\n";
+            // Create drivers if needed
+            if (\App\Models\Driver::count() === 0) {
+                echo "No drivers found. Creating drivers...\n";
+                \App\Models\Driver::factory(10)->create();
+                echo "Created 10 drivers.\n";
+            }
+
+            // Create users if needed
+            if (User::count() === 0) {
+                echo "No users found. Creating users...\n";
+                User::factory(20)->create();
+                echo "Created 20 users.\n";
+            }
+
+            // Create branches if needed
+            if (Branch::count() === 0) {
+                echo "No branches found. Creating branches...\n";
+                Branch::factory(5)->create();
+                echo "Created 5 branches.\n";
+            }
+
+            // Tạo categories và products
+            foreach ($categories as $categoryData) {
+                $products = $categoryData['products'];
+                unset($categoryData['products']);
                 
-                // Tạo hình ảnh cho sản phẩm
-                $this->createProductImages($product);
-            }
-        }
+                // Tạo category và lấy short_name từ model
+                $category = new Category($categoryData);
+                $shortName = $category->getShortNameAttribute();
+                $category->save();
+                echo "Created category: {$category->name} with short name: {$shortName}\n";
 
-        // Tạo variants
-        $variants = [
-            'Size' => ['Small', 'Medium', 'Large'],
-            'Spice Level' => ['Mild', 'Medium', 'Hot'],
-        ];
-
-        foreach ($variants as $variantName => $values) {
-            $variant = VariantAttribute::create(['name' => $variantName]);
-            foreach ($values as $value) {
-                VariantValue::create([
-                    'variant_attribute_id' => $variant->id,
-                    'value' => $value,
-                    'price_adjustment' => rand(5000, 20000)
-                ]);
-            }
-        }
-
-        // Tạo variants cho mỗi product
-        $products = Product::all();
-        $variantAttributes = VariantAttribute::with('values')->get();
-
-        foreach ($products as $product) {
-            // Tạo mảng chứa các giá trị của từng attribute
-            $attributeValues = [];
-            foreach ($variantAttributes as $attribute) {
-                $attributeValues[] = $attribute->values->pluck('id')->toArray();
+                // Tạo products cho category
+                foreach ($products as $productName) {
+                    $product = Product::create([
+                        'category_id' => $category->id,
+                        'name' => $productName,
+                        'sku' => $this->generateSku($category),
+                        'description' => "Đây là món {$productName} ngon tuyệt",
+                        'short_description' => "Món {$productName} đặc biệt",
+                        'base_price' => rand(30000, 200000),
+                        'preparation_time' => rand(10, 30),
+                        'ingredients' => json_encode($this->getIngredients($productName)),
+                        'status' => 'selling',
+                        'is_featured' => rand(0, 1) === 1
+                    ]);
+                    echo "Created product: {$product->name}\n";
+                    
+                    // Tạo hình ảnh cho sản phẩm
+                    $this->createProductImagesWithS3($product);
+                }
             }
 
-            // Tạo tất cả các tổ hợp có thể có của variant values
-            $combinations = $this->generateCombinations($attributeValues);
+            // Tạo variants
+            $variants = [
+                'Size' => ['Small', 'Medium', 'Large'],
+                'Spice Level' => ['Mild', 'Medium', 'Hot'],
+            ];
 
-            // Tạo variant cho mỗi tổ hợp
-            foreach ($combinations as $combination) {
-                $variant = ProductVariant::create([
-                    'product_id' => $product->id,
-                    'image' => $this->getRandomVariantImage(),
-                    'active' => true
-                ]);
-
-                // Thêm variant values cho variant này
-                foreach ($combination as $valueId) {
-                    ProductVariantDetail::create([
-                        'product_variant_id' => $variant->id,
-                        'variant_value_id' => $valueId
+            foreach ($variants as $variantName => $values) {
+                $variant = VariantAttribute::create(['name' => $variantName]);
+                foreach ($values as $value) {
+                    VariantValue::create([
+                        'variant_attribute_id' => $variant->id,
+                        'value' => $value,
+                        'price_adjustment' => rand(5000, 20000)
                     ]);
                 }
             }
-        }
 
-        // Tạo branch stocks riêng biệt
-        $this->createBranchStocks();
+            // Tạo variants cho mỗi product
+            $products = Product::all();
+            $variantAttributes = VariantAttribute::with('values')->get();
 
-        // Tạo toppings
-        $this->createToppings();
-        
-        // Tạo product-topping relationships
-        $this->createProductToppings();
-
-        // Tạo combos
-        $combos = Combo::factory(10)->create();
-
-        // Tạo combo items
-        foreach ($combos as $combo) {
-            $products = Product::inRandomOrder()->take(rand(2, 4))->get();
             foreach ($products as $product) {
-                // Lấy ngẫu nhiên một biến thể của sản phẩm
-                $variant = $product->variants()->inRandomOrder()->first();
-                if ($variant) {
-                    ComboItem::create([
-                        'combo_id' => $combo->id,
-                        'product_variant_id' => $variant->id,
-                        'quantity' => rand(1, 3)
+                // Tạo mảng chứa các giá trị của từng attribute
+                $attributeValues = [];
+                foreach ($variantAttributes as $attribute) {
+                    $attributeValues[] = $attribute->values->pluck('id')->toArray();
+                }
+
+                // Tạo tất cả các tổ hợp có thể có của variant values
+                $combinations = $this->generateCombinations($attributeValues);
+
+                // Tạo variant cho mỗi tổ hợp
+                foreach ($combinations as $combination) {
+                    $variant = ProductVariant::create([
+                        'product_id' => $product->id,
+                        'image' => $this->getRandomVariantImage(),
+                        'active' => true
                     ]);
+
+                    // Thêm variant values cho variant này
+                    foreach ($combination as $valueId) {
+                        ProductVariantDetail::create([
+                            'product_variant_id' => $variant->id,
+                            'variant_value_id' => $valueId
+                        ]);
+                    }
                 }
             }
-        }
 
-        // Tạo orders trước
-        $this->createOrders();
-        
-        // Sau đó mới tạo reviews
-        $this->createProductReviews();
+            // Tạo branch stocks riêng biệt
+            $this->createBranchStocks();
+
+            // Tạo toppings
+            $this->createToppings();
+            
+            // Tạo product-topping relationships
+            $this->createProductToppings();
+
+            // Tạo combos
+            $combos = Combo::factory(10)->create();
+
+            // Tạo combo items
+            foreach ($combos as $combo) {
+                $products = Product::inRandomOrder()->take(rand(2, 4))->get();
+                foreach ($products as $product) {
+                    // Lấy ngẫu nhiên một biến thể của sản phẩm
+                    $variant = $product->variants()->inRandomOrder()->first();
+                    if ($variant) {
+                        ComboItem::create([
+                            'combo_id' => $combo->id,
+                            'product_variant_id' => $variant->id,
+                            'quantity' => rand(1, 3)
+                        ]);
+                    }
+                }
+            }
+
+            // Tạo orders trước
+            $this->createOrders();
+            
+            // Sau đó mới tạo reviews
+            $this->createProductReviews();
+
+        } catch (\Exception $e) {
+            echo "Error in FastFoodSeeder: " . $e->getMessage() . "\n";
+            echo "File: " . $e->getFile() . " Line: " . $e->getLine() . "\n";
+        }
     }
     
     /**
-     * Tạo hình ảnh cho sản phẩm
+     * Tạo hình ảnh cho sản phẩm sử dụng S3 storage và ảnh từ internet
      */
-    private function createProductImages($product)
+    private function createProductImagesWithS3($product)
     {
         $imageCount = rand(1, 4); // Mỗi sản phẩm có 1-4 hình ảnh
         
+        // Map of food categories to appropriate image search terms
+        $imageSearchTerms = [
+            'Burger' => ['burger', 'cheese burger', 'beef burger', 'gourmet burger'],
+            'Pizza' => ['pizza', 'pepperoni pizza', 'cheese pizza', 'italian pizza'],
+            'Gà Rán' => ['fried chicken', 'crispy chicken', 'kfc style chicken'],
+            'Cơm' => ['vietnamese rice', 'rice plate', 'asian rice dish'],
+            'Mì' => ['noodles', 'pasta', 'spaghetti', 'ramen'],
+            'Đồ Uống' => ['soda', 'coffee', 'bubble tea', 'smoothie', 'fruit juice']
+        ];
+        
+        // Find appropriate search term based on product name
+        $searchTerm = 'fast food';
+        foreach ($imageSearchTerms as $category => $terms) {
+            if (strpos($product->name, $category) !== false) {
+                $searchTerm = $terms[array_rand($terms)];
+                break;
+            }
+        }
+        
+        // Specific product name matching for better images
+        if (strpos(strtolower($product->name), 'gà') !== false) {
+            $searchTerm = 'fried chicken';
+        } elseif (strpos(strtolower($product->name), 'bò') !== false) {
+            $searchTerm = 'beef burger';
+        } elseif (strpos(strtolower($product->name), 'cà phê') !== false) {
+            $searchTerm = 'vietnamese coffee';
+        } elseif (strpos(strtolower($product->name), 'trà') !== false) {
+            $searchTerm = 'bubble tea';
+        } elseif (strpos(strtolower($product->name), 'pizza') !== false) {
+            $specificTerms = ['cheese pizza', 'pepperoni pizza', 'italian pizza', 'seafood pizza'];
+            $searchTerm = $specificTerms[array_rand($specificTerms)];
+        }
+        
+        // Array of food image URLs from the internet
+        $foodImageUrls = [
+            // Burger Images
+            'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1000',
+            'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=1000',
+            'https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1633578/pexels-photo-1633578.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            
+            // Pizza Images
+            'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1000',
+            'https://images.pexels.com/photos/2147491/pexels-photo-2147491.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1146760/pexels-photo-1146760.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/825661/pexels-photo-825661.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            
+            // Chicken Images
+            'https://images.pexels.com/photos/6210747/pexels-photo-6210747.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/2338407/pexels-photo-2338407.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?q=80&w=1000',
+            
+            // Rice Dishes
+            'https://images.pexels.com/photos/723198/pexels-photo-723198.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1095550/pexels-photo-1095550.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1000',
+            
+            // Noodle Dishes
+            'https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/2347311/pexels-photo-2347311.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=1000',
+            
+            // Drinks
+            'https://images.pexels.com/photos/1187766/pexels-photo-1187766.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.pexels.com/photos/1581484/pexels-photo-1581484.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+            'https://images.unsplash.com/photo-1558122104-ebc101c101c8?q=80&w=1000'
+        ];
+        
+        // Filter images based on product category
+        $categoryImages = $foodImageUrls;
+        if (strpos(strtolower($product->name), 'burger') !== false) {
+            $categoryImages = array_slice($foodImageUrls, 0, 4);
+        } elseif (strpos(strtolower($product->name), 'pizza') !== false) {
+            $categoryImages = array_slice($foodImageUrls, 4, 4);
+        } elseif (strpos(strtolower($product->name), 'gà') !== false) {
+            $categoryImages = array_slice($foodImageUrls, 8, 3);
+        } elseif (strpos(strtolower($product->name), 'cơm') !== false) {
+            $categoryImages = array_slice($foodImageUrls, 11, 3);
+        } elseif (strpos(strtolower($product->name), 'mì') !== false) {
+            $categoryImages = array_slice($foodImageUrls, 14, 3);
+        } elseif (strpos(strtolower($product->name), 'trà') !== false || 
+                  strpos(strtolower($product->name), 'cà phê') !== false ||
+                  strpos(strtolower($product->name), 'coca') !== false ||
+                  strpos(strtolower($product->name), 'pepsi') !== false) {
+            $categoryImages = array_slice($foodImageUrls, 17, 3);
+        }
+        
+        // Create images for the product
         for ($i = 0; $i < $imageCount; $i++) {
-            ProductImg::create([
-                'product_id' => $product->id,
-                'img' => "products/{$product->sku}_image_{$i}.jpg",
-                'is_primary' => $i === 0 // Hình đầu tiên là primary
-            ]);
+            // Select a random image URL from the filtered category
+            $randomIndex = $i % count($categoryImages);
+            $imageUrl = $categoryImages[$randomIndex];
+            
+            try {
+                // Generate unique filename
+                $filename = Str::uuid() . '.jpg';
+                $path = "products/{$filename}";
+                
+                // Download image contents
+                $imageContents = file_get_contents($imageUrl);
+                
+                if ($imageContents) {
+                    // Upload to S3
+                    Storage::disk('s3')->put($path, $imageContents);
+                    
+                    // Create product image record - removing img_url field
+                    ProductImg::create([
+                        'product_id' => $product->id,
+                        'img' => $path,
+                        'is_primary' => $i === 0 // First image is primary
+                    ]);
+                    
+                    echo "Uploaded image for {$product->name} from {$imageUrl}\n";
+                }
+            } catch (\Exception $e) {
+                echo "Error uploading image for {$product->name}: {$e->getMessage()}\n";
+                
+                // Fallback to a default image path if download fails
+                $path = "products/default_{$i}.jpg";
+                
+                ProductImg::create([
+                    'product_id' => $product->id,
+                    'img' => $path,
+                    'is_primary' => $i === 0
+                ]);
+            }
         }
         
         echo "Created {$imageCount} images for product: {$product->name}\n";
@@ -345,36 +500,65 @@ class FastFoodSeeder extends Seeder
     private function createToppings()
     {
         $toppings = [
-            ['name' => 'Phô Mai Thêm', 'price' => 15000, 'active' => true],
-            ['name' => 'Thịt Bò Thêm', 'price' => 25000, 'active' => true],
-            ['name' => 'Thịt Gà Thêm', 'price' => 20000, 'active' => true],
-            ['name' => 'Bacon', 'price' => 18000, 'active' => true],
-            ['name' => 'Trứng Ốp La', 'price' => 12000, 'active' => true],
-            ['name' => 'Xà Lách Thêm', 'price' => 5000, 'active' => true],
-            ['name' => 'Cà Chua Thêm', 'price' => 5000, 'active' => true],
-            ['name' => 'Hành Tây Thêm', 'price' => 5000, 'active' => true],
-            ['name' => 'Dưa Chuột Thêm', 'price' => 5000, 'active' => true],
-            ['name' => 'Sốt BBQ', 'price' => 8000, 'active' => true],
-            ['name' => 'Sốt Cay', 'price' => 8000, 'active' => true],
-            ['name' => 'Sốt Mayonnaise', 'price' => 8000, 'active' => true],
-            ['name' => 'Sốt Tỏi', 'price' => 8000, 'active' => true],
-            ['name' => 'Nấm Thêm', 'price' => 10000, 'active' => true],
-            ['name' => 'Ớt Jalapeño', 'price' => 7000, 'active' => true],
-            ['name' => 'Tôm Thêm', 'price' => 30000, 'active' => true],
-            ['name' => 'Mực Thêm', 'price' => 25000, 'active' => true],
-            ['name' => 'Xúc Xích', 'price' => 15000, 'active' => true],
-            ['name' => 'Pepperoni', 'price' => 20000, 'active' => true],
-            ['name' => 'Dứa Thêm', 'price' => 8000, 'active' => true],
+            ['name' => 'Phô Mai Thêm', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/773253/pexels-photo-773253.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Thịt Bò Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/618775/pexels-photo-618775.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Thịt Gà Thêm', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Bacon', 'price' => 18000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/161573/background-bacon-barbecue-bbq-161573.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Trứng Ốp La', 'price' => 12000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/706137/pexels-photo-706137.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Xà Lách Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/1352199/pexels-photo-1352199.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Cà Chua Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Hành Tây Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/1666982/pexels-photo-1666982.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Dưa Chuột Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2329440/pexels-photo-2329440.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Sốt BBQ', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2233729/pexels-photo-2233729.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Sốt Cay', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/5718014/pexels-photo-5718014.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Sốt Mayonnaise', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/6941010/pexels-photo-6941010.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Sốt Tỏi', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/4198234/pexels-photo-4198234.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Nấm Thêm', 'price' => 10000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/342943/pexels-photo-342943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Ớt Jalapeño', 'price' => 7000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/917384/pexels-photo-917384.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Tôm Thêm', 'price' => 30000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/566345/pexels-photo-566345.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Mực Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2871757/pexels-photo-2871757.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Xúc Xích', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/6896381/pexels-photo-6896381.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Pepperoni', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/814499/pexels-photo-814499.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Dứa Thêm', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2469772/pexels-photo-2469772.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
         ];
         
         foreach ($toppings as $toppingData) {
-            $topping = Topping::create([
-                'name' => $toppingData['name'],
-                'price' => $toppingData['price'],
-                'active' => $toppingData['active'],
-                'image' => "toppings/" . Str::slug($toppingData['name']) . ".jpg"
-            ]);
-            echo "Created topping: {$topping->name}\n";
+            try {
+                // Generate unique filename
+                $filename = Str::uuid() . '.jpg';
+                $path = "toppings/{$filename}";
+                
+                // Download image contents
+                $imageContents = file_get_contents($toppingData['image_url']);
+                
+                if ($imageContents) {
+                    // Upload to S3
+                    Storage::disk('s3')->put($path, $imageContents);
+                    
+                    $topping = Topping::create([
+                        'name' => $toppingData['name'],
+                        'price' => $toppingData['price'],
+                        'active' => $toppingData['active'],
+                        'image' => $path
+                    ]);
+                    
+                    echo "Created topping: {$topping->name} with image from {$toppingData['image_url']}\n";
+                }
+            } catch (\Exception $e) {
+                echo "Error creating topping {$toppingData['name']}: {$e->getMessage()}\n";
+                
+                // Fallback to a generated slug if image download fails
+                $imagePath = "toppings/" . Str::slug($toppingData['name']) . ".jpg";
+                
+                $topping = Topping::create([
+                    'name' => $toppingData['name'],
+                    'price' => $toppingData['price'],
+                    'active' => $toppingData['active'],
+                    'image' => $imagePath
+                ]);
+                
+                echo "Created topping: {$topping->name} with fallback image\n";
+            }
         }
     }
     
@@ -386,9 +570,20 @@ class FastFoodSeeder extends Seeder
         $products = Product::all();
         $toppings = Topping::all();
         
+        if ($products->isEmpty()) {
+            echo "Cannot create product-topping relationships: No products found\n";
+            return;
+        }
+        
+        if ($toppings->isEmpty()) {
+            echo "Cannot create product-topping relationships: No toppings found\n";
+            return;
+        }
+        
         foreach ($products as $product) {
             // Mỗi sản phẩm có 3-8 toppings ngẫu nhiên
-            $productToppings = $toppings->random(rand(3, 8));
+            $toppingCount = min(rand(3, 8), $toppings->count());
+            $productToppings = $toppings->random($toppingCount);
             
             foreach ($productToppings as $topping) {
                 ProductTopping::create([
@@ -524,6 +719,27 @@ class FastFoodSeeder extends Seeder
         $productVariants = ProductVariant::all();
         $combos = Combo::all();
         
+        // Check if any required collection is empty
+        if ($users->isEmpty()) {
+            echo "Cannot create orders: No users found\n";
+            return;
+        }
+        
+        if ($branches->isEmpty()) {
+            echo "Cannot create orders: No branches found\n";
+            return;
+        }
+        
+        if ($drivers->isEmpty()) {
+            echo "Cannot create orders: No drivers found\n";
+            return;
+        }
+        
+        if ($productVariants->isEmpty() && $combos->isEmpty()) {
+            echo "Cannot create orders: No product variants or combos found\n";
+            return;
+        }
+        
         // Tạo 100 orders
         for ($i = 0; $i < 100; $i++) {
             $user = $users->random(); // Random user
@@ -559,8 +775,8 @@ class FastFoodSeeder extends Seeder
             // Add 1-5 items to order
             $itemCount = rand(1, 5);
             for ($j = 0; $j < $itemCount; $j++) {
-                // 80% chance for product variant, 20% chance for combo
-                if (rand(1, 100) <= 80) {
+                // Only add product variants if collection is not empty
+                if (!$productVariants->isEmpty() && (rand(1, 100) <= 80 || $combos->isEmpty())) {
                     $variant = $productVariants->random();
                     $quantity = rand(1, 3);
                     $unitPrice = $variant->product->base_price;
@@ -574,7 +790,9 @@ class FastFoodSeeder extends Seeder
                     ]);
                     
                     $subtotal += $unitPrice * $quantity;
-                } else {
+                } 
+                // Only add combos if collection is not empty
+                elseif (!$combos->isEmpty()) {
                     $combo = $combos->random();
                     $quantity = rand(1, 2);
                     $unitPrice = $combo->price;
@@ -653,6 +871,27 @@ class FastFoodSeeder extends Seeder
         $products = Product::all();
         $orders = Order::all(); // Lấy tất cả orders thay vì chỉ lấy completed
 
+        // Check if any required collection is empty
+        if ($users->isEmpty()) {
+            echo "Cannot create reviews: No users found\n";
+            return;
+        }
+        
+        if ($branches->isEmpty()) {
+            echo "Cannot create reviews: No branches found\n";
+            return;
+        }
+        
+        if ($products->isEmpty()) {
+            echo "Cannot create reviews: No products found\n";
+            return;
+        }
+        
+        if ($orders->isEmpty()) {
+            echo "Cannot create reviews: No orders found\n";
+            return;
+        }
+
         foreach ($products as $product) {
             // Mỗi sản phẩm có đúng 10 reviews
             for ($i = 0; $i < 10; $i++) {
@@ -688,6 +927,16 @@ class FastFoodSeeder extends Seeder
         $branches = Branch::all();
         $variants = ProductVariant::all();
         
+        if ($branches->isEmpty()) {
+            echo "Cannot create branch stocks: No branches found\n";
+            return;
+        }
+        
+        if ($variants->isEmpty()) {
+            echo "Cannot create branch stocks: No product variants found\n";
+            return;
+        }
+        
         echo "Creating branch stocks...\n";
         
         foreach ($branches as $branch) {
@@ -705,5 +954,24 @@ class FastFoodSeeder extends Seeder
                 echo "Created stock for variant {$variant->id} with quantity: {$stockQuantity}\n";
             }
         }
+    }
+
+    /**
+     * Generate SKU with incremental numbering like the controller
+     */
+    private function generateSku($category)
+    {
+        $lastProduct = Product::where('sku', 'like', $category->short_name . '-%')
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        $skuNumber = 1;
+        if ($lastProduct) {
+            $lastNumber = (int) substr($lastProduct->sku, strrpos($lastProduct->sku, '-') + 1);
+            $skuNumber = $lastNumber + 1;
+        }
+        
+        // Format SKU with 5 digits like the controller
+        return $category->short_name . '-' . str_pad($skuNumber, 5, '0', STR_PAD_LEFT);
     }
 }

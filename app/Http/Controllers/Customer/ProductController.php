@@ -21,6 +21,9 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {        
+        // Get selected branch ID from session
+        $selectedBranchId = session('selected_branch');
+        
         // Lấy tất cả categories để hiển thị filter
         $categories = Category::where('status', true)
             ->withCount(['products' => function($query) {
@@ -39,6 +42,16 @@ class ProductController extends Controller
             }
         ])
         ->where('status', 'selling');
+        
+        // Filter products by selected branch (only show products available in this branch)
+        if ($selectedBranchId) {
+            $query->whereHas('variants', function($q) use ($selectedBranchId) {
+                $q->whereHas('branchStocks', function($q2) use ($selectedBranchId) {
+                    $q2->where('branch_id', $selectedBranchId)
+                       ->where('stock_quantity', '>', 0);
+                });
+            });
+        }
 
         // Filter theo category nếu có
         if ($request->has('category') && $request->category != '') {
@@ -85,7 +98,7 @@ class ProductController extends Controller
         }
         
         // Thêm thông tin rating trung bình cho mỗi sản phẩm
-        $products->getCollection()->transform(function ($product) use ($favorites) {
+        $products->getCollection()->transform(function ($product) use ($favorites, $selectedBranchId) {
             $product->average_rating = $product->reviews->avg('rating') ?? 0;
             $product->reviews_count = $product->reviews->count();
             $product->primary_image = $product->images->where('is_primary', true)->first() 
@@ -99,13 +112,21 @@ class ProductController extends Controller
             // Marcar como favorito si está en la lista
             $product->is_favorite = in_array($product->id, $favorites);
             
-            // Obtener la primera variante del producto que tenga stock disponible en cualquier sucursal
-            $product->first_variant = ProductVariant::where('product_id', $product->id)
-                                        ->whereHas('branchStocks', function($query) {
-                                            $query->where('stock_quantity', '>', 0);
-                                        })
-                                        ->orderBy('id', 'asc')
-                                        ->first();
+            // Obtener la primera variante del producto que tenga stock disponible en la sucursal seleccionada
+            $productVariantQuery = ProductVariant::where('product_id', $product->id);
+            
+            if ($selectedBranchId) {
+                $productVariantQuery->whereHas('branchStocks', function($query) use ($selectedBranchId) {
+                    $query->where('branch_id', $selectedBranchId)
+                          ->where('stock_quantity', '>', 0);
+                });
+            } else {
+                $productVariantQuery->whereHas('branchStocks', function($query) {
+                    $query->where('stock_quantity', '>', 0);
+                });
+            }
+            
+            $product->first_variant = $productVariantQuery->orderBy('id', 'asc')->first();
             
             return $product;
         });
@@ -118,6 +139,9 @@ class ProductController extends Controller
      */
     public function show($id)
     {
+        // Get selected branch ID from session
+        $selectedBranchId = session('selected_branch');
+        
         $product = Product::with([
             'category',
             'images' => function($query) {
@@ -153,7 +177,7 @@ class ProductController extends Controller
         ])->get();
 
         // Lấy các sản phẩm liên quan cùng danh mục
-        $relatedProducts = Product::with([
+        $relatedProductsQuery = Product::with([
             'category',
             'images' => function($query) {
                 $query->orderBy('is_primary', 'desc');
@@ -164,9 +188,19 @@ class ProductController extends Controller
         ])
         ->where('category_id', $product->category_id)
         ->where('id', '!=', $product->id)
-        ->where('status', 'selling')
-        ->limit(4)
-        ->get();
+        ->where('status', 'selling');
+        
+        // Filter related products by selected branch
+        if ($selectedBranchId) {
+            $relatedProductsQuery->whereHas('variants', function($q) use ($selectedBranchId) {
+                $q->whereHas('branchStocks', function($q2) use ($selectedBranchId) {
+                    $q2->where('branch_id', $selectedBranchId)
+                       ->where('stock_quantity', '>', 0);
+                });
+            });
+        }
+        
+        $relatedProducts = $relatedProductsQuery->limit(4)->get();
 
         // Thêm thông tin rating cho related products
         $relatedProducts->transform(function ($relatedProduct) {
@@ -184,14 +218,21 @@ class ProductController extends Controller
             return $relatedProduct;
         });
 
-        // Lấy danh sách chi nhánh có sản phẩm
-        $branches = Branch::whereHas('stocks', function($query) use ($product) {
-            $query->whereHas('productVariant', function($q) use ($product) {
-                $q->where('product_id', $product->id);
-            });
-        })
-        ->where('active', true)
-        ->get();
+        // If branch is selected, only show that branch, otherwise show all active branches
+        if ($selectedBranchId) {
+            $branches = Branch::where('id', $selectedBranchId)
+                ->where('active', true)
+                ->get();
+        } else {
+            // Lấy danh sách chi nhánh có sản phẩm
+            $branches = Branch::whereHas('stocks', function($query) use ($product) {
+                $query->whereHas('productVariant', function($q) use ($product) {
+                    $q->where('product_id', $product->id);
+                });
+            })
+            ->where('active', true)
+            ->get();
+        }
 
         return view('customer.shop.show', compact(
             'product',
