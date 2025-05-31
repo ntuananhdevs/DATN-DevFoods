@@ -13,7 +13,7 @@ class TurnstileRule implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $response = Http::asForm()->post(config('turnstile.verify_url'), [
+        $response = Http::withoutVerifying()->asForm()->post(config('turnstile.verify_url'), [
             'secret' => config('turnstile.secret_key'),
             'response' => $value,
             'remoteip' => request()->ip(),
