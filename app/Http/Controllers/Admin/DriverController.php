@@ -22,78 +22,105 @@ use Illuminate\Support\Facades\Response;
 class DriverController extends Controller
 {
     // Hiển thị danh sách đơn đăng ký tài xế, phân loại theo trạng thái chờ xử lý và đã xử lý
-    // Hiển thị danh sách đơn đăng ký tài xế, phân loại theo trạng thái chờ xử lý và đã xử lý
-public function listApplications(Request $request){
-    try {
-        $pendingSearch = $request->pending_search;
-        $processedSearch = $request->processed_search;
+    public function listApplications(Request $request){
+        try {
+            $pendingSearch = $request->input('pending_search');
+            $processedSearch = $request->input('processed_search');
+            $pendingPage = $request->input('pending_page', 1);
+            $processedPage = $request->input('processed_page', 1);
 
-        // Lọc danh sách đơn đang chờ xử lý
-        $pendingApplications = DriverApplication::where('status', 'pending')
-            ->when($pendingSearch, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('license_plate', 'like', "%{$search}%")
-                        ->orWhere('phone_number', 'like', "%{$search}%");
-                });
-            })
-            ->latest()
-            ->paginate(5, ['*'], 'pending_page');
+            // Lọc danh sách đơn đang chờ xử lý
+            $pendingApplications = DriverApplication::where('status', 'pending')
+                ->when($pendingSearch, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('license_plate', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+                })
+                ->latest()
+                ->paginate(10, ['*'], 'pending_page', $pendingPage);
 
-        // Lọc danh sách đơn đã được xử lý (phê duyệt hoặc từ chối)
-        $processedApplications = DriverApplication::whereIn('status', ['approved', 'rejected'])
-            ->when($processedSearch, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('license_plate', 'like', "%{$search}%")
-                        ->orWhere('phone_number', 'like', "%{$search}%");
-                });
-            })
-            ->latest()
-            ->paginate(5, ['*'], 'processed_page');
+            // Lọc danh sách đơn đã được xử lý (phê duyệt hoặc từ chối)
+            $processedApplications = DriverApplication::whereIn('status', ['approved', 'rejected'])
+                ->when($processedSearch, function ($query, $search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('license_plate', 'like', "%{$search}%")
+                            ->orWhere('phone_number', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+                })
+                ->latest()
+                ->paginate(10, ['*'], 'processed_page', $processedPage);
 
-        // Xử lý phản hồi dựa trên loại yêu cầu
-        if ($request->ajax()) {
-            // Định dạng dữ liệu để trả về JSON phù hợp cho phân trang và hiển thị
-            return response()->json([
-                'pendingApplications' => [
-                    'current_page' => $pendingApplications->currentPage(),
-                    'data' => $pendingApplications->items(),
-                    'from' => $pendingApplications->firstItem(),
-                    'to' => $pendingApplications->lastItem(),
-                    'last_page' => $pendingApplications->lastPage(),
-                    'per_page' => $pendingApplications->perPage(),
-                    'total' => $pendingApplications->total(),
-                    'first_page_url' => $pendingApplications->url(1),
-                    'last_page_url' => $pendingApplications->url($pendingApplications->lastPage()),
-                    'next_page_url' => $pendingApplications->nextPageUrl(),
-                    'prev_page_url' => $pendingApplications->previousPageUrl(),
-                ],
-                'processedApplications' => [
-                    'current_page' => $processedApplications->currentPage(),
-                    'data' => $processedApplications->items(),
-                    'from' => $processedApplications->firstItem(),
-                    'to' => $processedApplications->lastItem(),
-                    'last_page' => $processedApplications->lastPage(),
-                    'per_page' => $processedApplications->perPage(),
-                    'total' => $processedApplications->total(),
-                    'first_page_url' => $processedApplications->url(1),
-                    'last_page_url' => $processedApplications->url($processedApplications->lastPage()),
-                    'next_page_url' => $processedApplications->nextPageUrl(),
-                    'prev_page_url' => $processedApplications->previousPageUrl(),
-                ]
+            // Xử lý phản hồi dựa trên loại yêu cầu
+            if ($request->ajax()) {
+                // Định dạng dữ liệu để trả về JSON phù hợp cho phân trang và hiển thị
+                return response()->json([
+                    'success' => true,
+                    'pendingApplications' => [
+                        'current_page' => $pendingApplications->currentPage(),
+                        'data' => $pendingApplications->items(),
+                        'from' => $pendingApplications->firstItem(),
+                        'to' => $pendingApplications->lastItem(),
+                        'last_page' => $pendingApplications->lastPage(),
+                        'per_page' => $pendingApplications->perPage(),
+                        'total' => $pendingApplications->total(),
+                        'has_more_pages' => $pendingApplications->hasMorePages(),
+                        'links' => [
+                            'first' => $pendingApplications->url(1),
+                            'last' => $pendingApplications->url($pendingApplications->lastPage()),
+                            'prev' => $pendingApplications->previousPageUrl(),
+                            'next' => $pendingApplications->nextPageUrl(),
+                        ]
+                    ],
+                    'processedApplications' => [
+                        'current_page' => $processedApplications->currentPage(),
+                        'data' => $processedApplications->items(),
+                        'from' => $processedApplications->firstItem(),
+                        'to' => $processedApplications->lastItem(),
+                        'last_page' => $processedApplications->lastPage(),
+                        'per_page' => $processedApplications->perPage(),
+                        'total' => $processedApplications->total(),
+                        'has_more_pages' => $processedApplications->hasMorePages(),
+                        'links' => [
+                            'first' => $processedApplications->url(1),
+                            'last' => $processedApplications->url($processedApplications->lastPage()),
+                            'prev' => $processedApplications->previousPageUrl(),
+                            'next' => $processedApplications->nextPageUrl(),
+                        ]
+                    ],
+                    'searchTerms' => [
+                        'pending_search' => $pendingSearch,
+                        'processed_search' => $processedSearch
+                    ]
+                ]);
+            }
+
+            return view('admin.driver.applications', compact(
+                'pendingApplications', 
+                'processedApplications', 
+                'pendingSearch', 
+                'processedSearch'
+            ));
+        } catch (\Exception $e) {
+            \Log::error('Error in listApplications: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'exception' => $e
             ]);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Không thể tải danh sách đơn ứng tuyển',
+                    'message' => $e->getMessage()
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'Không thể tải danh sách đơn: ' . $e->getMessage());
         }
-
-        return view('admin.driver.applications', compact('pendingApplications', 'processedApplications', 'pendingSearch', 'processedSearch'));
-    } catch (\Exception $e) {
-        if ($request->ajax()) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-        return redirect()->back()->with('error', 'Không thể tải danh sách đơn: ' . $e->getMessage());
     }
-}
-
 
     // Xem chi tiết một đơn đăng ký tài xế cụ thể
     public function viewApplicationDetails(DriverApplication $application)
@@ -243,9 +270,347 @@ public function listApplications(Request $request){
 
     public function show(Driver $driver)
     {
-        return view('admin.driver.show', compact('driver'));
+        // Load additional data for comprehensive driver profile
+        $driver->load(['application', 'violations', 'orders']);
+        
+        // Calculate statistics
+        $stats = [
+            'total_orders' => $driver->orders()->count(),
+            'completed_orders' => $driver->orders()->where('status', 'completed')->count(),
+            'cancelled_orders' => $driver->orders()->where('status', 'cancelled')->count(),
+            'total_earnings' => $driver->orders()->where('status', 'completed')->sum('driver_earning'),
+            'average_rating' => $driver->rating,
+            'total_violations' => $driver->violations()->count(),
+            'recent_orders' => $driver->orders()->latest()->take(10)->get(),
+            'recent_violations' => $driver->violations()->latest()->take(5)->get(),
+        ];
+        
+        return view('admin.driver.show', compact('driver', 'stats'));
     }
-    
+
+    /**
+     * Show form to create new driver
+     */
+    public function create()
+    {
+        return view('admin.driver.create');
+    }
+
+    /**
+     * Store new driver
+     */
+    public function store(Request $request)
+    {
+        try {
+            $request->validate([
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:drivers,email',
+                'phone_number' => 'required|string|max:20',
+                'license_number' => 'required|string|max:50',
+                'vehicle_type' => 'required|string|max:100',
+                'vehicle_color' => 'required|string|max:50',
+                'password' => 'required|string|min:6',
+            ]);
+
+            $driver = Driver::create([
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'license_number' => $request->license_number,
+                'vehicle_type' => $request->vehicle_type,
+                'vehicle_color' => $request->vehicle_color,
+                'vehicle_registration' => $request->vehicle_registration,
+                'password' => Hash::make($request->password),
+                'status' => 'active',
+                'is_available' => true,
+                'balance' => 0,
+                'rating' => 5.00,
+                'cancellation_count' => 0,
+                'reliability_score' => 100,
+                'penalty_count' => 0,
+                'auto_deposit_earnings' => false,
+                'current_latitude' => 0,
+                'current_longitude' => 0,
+            ]);
+
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Tạo tài khoản tài xế thành công.'
+            ]);
+
+            return redirect()->route('admin.drivers.index');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Không thể tạo tài xế: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show form to edit driver
+     */
+    public function edit(Driver $driver)
+    {
+        return view('admin.driver.edit', compact('driver'));
+    }
+
+    /**
+     * Reset driver password
+     */
+    public function resetPassword(Request $request, Driver $driver)
+    {
+        try {
+            $request->validate([
+                'reason' => 'required|string|max:500'
+            ]);
+
+            DB::beginTransaction();
+
+            // Generate new random password with 15 characters
+            $newPassword = $this->generateSecurePassword(15);
+            
+            // Update driver password
+            $driver->update([
+                'password' => Hash::make($newPassword),
+                'password_reset_at' => now(),
+                'must_change_password' => true
+            ]);
+
+            // Log the password reset activity
+            Log::info('Admin reset driver password', [
+                'admin_id' => auth()->id(),
+                'admin_name' => auth()->user()->name,
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->full_name,
+                'driver_email' => $driver->email,
+                'reason' => $request->reason,
+                'timestamp' => now(),
+                'ip_address' => $request->ip()
+            ]);
+
+            // Send email with new password to driver
+            try {
+                EmailFactory::sendPasswordReset($driver, $newPassword, $request->reason);
+                Log::info('Password reset email queued successfully', [
+                    'driver_id' => $driver->id,
+                    'driver_email' => $driver->email
+                ]);
+            } catch (\Exception $emailException) {
+                Log::error('Failed to queue password reset email', [
+                    'driver_id' => $driver->id,
+                    'error' => $emailException->getMessage()
+                ]);
+                // Don't fail the transaction for email queue issues
+                // The password has been reset successfully, just log the email issue
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mật khẩu đã được reset và gửi email cho tài xế thành công'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error resetting driver password: ' . $e->getMessage(), [
+                'driver_id' => $driver->id,
+                'admin_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể reset mật khẩu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate secure password with 15 characters
+     * Includes uppercase, lowercase, numbers, and special characters
+     */
+    private function generateSecurePassword($length = 15)
+    {
+        // Define character sets
+        $lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $numbers = '0123456789';
+        $specialChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        
+        // Ensure at least one character from each set
+        $password = '';
+        $password .= $lowercase[random_int(0, strlen($lowercase) - 1)];
+        $password .= $uppercase[random_int(0, strlen($uppercase) - 1)];
+        $password .= $numbers[random_int(0, strlen($numbers) - 1)];
+        $password .= $specialChars[random_int(0, strlen($specialChars) - 1)];
+        
+        // Fill the rest with random characters from all sets
+        $allChars = $lowercase . $uppercase . $numbers . $specialChars;
+        for ($i = 4; $i < $length; $i++) {
+            $password .= $allChars[random_int(0, strlen($allChars) - 1)];
+        }
+        
+        // Shuffle the password to randomize character positions
+        return str_shuffle($password);
+    }
+
+    /**
+     * Update driver information
+     */
+    public function update(Request $request, Driver $driver)
+    {
+        try {
+            $request->validate([
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:drivers,email,' . $driver->id,
+                'phone_number' => 'required|string|max:20',
+                'address' => 'nullable|string|max:500',
+                'license_number' => 'required|string|max:50',
+                'license_class' => 'nullable|string|max:10',
+                'license_expiry' => 'nullable|date|after:today',
+                'license_plate' => 'nullable|string|max:20',
+                'vehicle_type' => 'required|string|max:100',
+                'vehicle_color' => 'required|string|max:50',
+                'status' => 'required|in:active,inactive,locked',
+                'is_available' => 'boolean',
+                'auto_deposit_earnings' => 'boolean',
+                'balance' => 'nullable|numeric|min:0',
+                'rating' => 'nullable|numeric|min:1|max:5',
+                'reliability_score' => 'nullable|integer|min:0|max:100',
+                'cancellation_count' => 'nullable|integer|min:0',
+                'penalty_count' => 'nullable|integer|min:0',
+                'admin_notes' => 'nullable|string|max:1000',
+                'password' => 'nullable|string|min:6|confirmed',
+            ]);
+
+            DB::beginTransaction();
+
+            $updateData = [
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'phone_number' => $request->phone_number,
+                'address' => $request->address,
+                'license_number' => $request->license_number,
+                'license_class' => $request->license_class,
+                'license_expiry' => $request->license_expiry,
+                'license_plate' => $request->license_plate,
+                'vehicle_type' => $request->vehicle_type,
+                'vehicle_color' => $request->vehicle_color,
+                'vehicle_registration' => $request->vehicle_registration,
+                'status' => $request->status,
+                'is_available' => $request->has('is_available'),
+                'auto_deposit_earnings' => $request->has('auto_deposit_earnings'),
+                'balance' => $request->balance ?? $driver->balance,
+                'rating' => $request->rating ?? $driver->rating,
+                'reliability_score' => $request->reliability_score ?? $driver->reliability_score,
+                'cancellation_count' => $request->cancellation_count ?? $driver->cancellation_count,
+                'penalty_count' => $request->penalty_count ?? $driver->penalty_count,
+                'admin_notes' => $request->admin_notes,
+                'updated_by' => auth()->id(),
+                'updated_at' => now()
+            ];
+
+            // Only update password if provided
+            if ($request->filled('password')) {
+                $updateData['password'] = Hash::make($request->password);
+                $updateData['password_changed_at'] = now();
+                
+                // Log password change
+                Log::info('Admin changed driver password', [
+                    'admin_id' => auth()->id(),
+                    'admin_name' => auth()->user()->name,
+                    'driver_id' => $driver->id,
+                    'driver_name' => $driver->full_name,
+                    'timestamp' => now()
+                ]);
+            }
+
+            // Store old values for change tracking
+            $oldValues = [
+                'status' => $driver->status,
+                'email' => $driver->email,
+                'phone_number' => $driver->phone_number,
+                'license_number' => $driver->license_number
+            ];
+
+            $driver->update($updateData);
+
+            // Log important changes
+            $changes = [];
+            foreach ($oldValues as $field => $oldValue) {
+                if ($oldValue !== $updateData[$field]) {
+                    $changes[$field] = [
+                        'old' => $oldValue,
+                        'new' => $updateData[$field]
+                    ];
+                }
+            }
+
+            if (!empty($changes)) {
+                Log::info('Driver information updated', [
+                    'admin_id' => auth()->id(),
+                    'admin_name' => auth()->user()->name,
+                    'driver_id' => $driver->id,
+                    'driver_name' => $driver->full_name,
+                    'changes' => $changes,
+                    'timestamp' => now()
+                ]);
+            }
+
+            DB::commit();
+
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Cập nhật thông tin tài xế thành công.'
+            ]);
+
+            return redirect()->route('admin.drivers.show', $driver);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating driver: ' . $e->getMessage(), [
+                'driver_id' => $driver->id,
+                'admin_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return redirect()->back()->withInput()->with('error', 'Không thể cập nhật tài xế: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete driver
+     */
+    public function destroy(Driver $driver)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Check if driver has any active orders or deliveries
+            // You might want to add this check based on your Order model
+            // $hasActiveOrders = $driver->orders()->whereIn('status', ['pending', 'confirmed', 'in_delivery'])->exists();
+            // if ($hasActiveOrders) {
+            //     return redirect()->back()->with('error', 'Không thể xóa tài xế đang có đơn hàng active.');
+            // }
+
+            $driverName = $driver->full_name;
+            $driver->delete();
+
+            DB::commit();
+
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Đã xóa tài xế {$driverName} thành công."
+            ]);
+
+            return redirect()->route('admin.drivers.index');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Không thể xóa tài xế: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Export drivers data
      */
@@ -404,5 +769,269 @@ public function listApplications(Request $request){
         file_put_contents($file, $json);
         
         return Response::download($file, $filename);
+    }
+
+    /**
+     * Toggle driver account status (active/inactive)
+     */
+    public function toggleStatus(Request $request, Driver $driver)
+    {
+        try {
+            $request->validate([
+                'reason' => 'required|string|max:500'
+            ]);
+
+            DB::beginTransaction();
+
+            $newStatus = $driver->status === 'active' ? 'inactive' : 'active';
+            $oldStatus = $driver->status;
+            
+            $driver->update([
+                'status' => $newStatus,
+                'status_changed_at' => now(),
+                'status_changed_by' => auth()->id(),
+                'admin_notes' => $request->reason
+            ]);
+
+            // Log status change
+            Log::info('Driver status changed', [
+                'admin_id' => auth()->id(),
+                'admin_name' => auth()->user()->name,
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->full_name,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason' => $request->reason,
+                'timestamp' => now(),
+                'ip_address' => $request->ip()
+            ]);
+
+            // Send notification email if deactivated
+            if ($newStatus === 'inactive') {
+                // You might want to send notification email here
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $newStatus === 'active' ? 'Kích hoạt tài khoản thành công' : 'Vô hiệu hóa tài khoản thành công',
+                'new_status' => $newStatus
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error toggling driver status: ' . $e->getMessage(), [
+                'driver_id' => $driver->id,
+                'admin_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể thay đổi trạng thái: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Lock driver account temporarily
+     */
+    public function lockAccount(Request $request, Driver $driver)
+    {
+        try {
+            $request->validate([
+                'reason' => 'required|string|max:500',
+                'lock_until' => 'nullable|date|after:now'
+            ]);
+
+            DB::beginTransaction();
+
+            $driver->update([
+                'status' => 'locked',
+                'locked_at' => now(),
+                'locked_until' => $request->lock_until,
+                'locked_by' => auth()->id(),
+                'lock_reason' => $request->reason,
+                'admin_notes' => $request->reason
+            ]);
+
+            // Log account lock
+            Log::info('Driver account locked', [
+                'admin_id' => auth()->id(),
+                'admin_name' => auth()->user()->name,
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->full_name,
+                'reason' => $request->reason,
+                'lock_until' => $request->lock_until,
+                'timestamp' => now(),
+                'ip_address' => $request->ip()
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Khóa tài khoản tài xế thành công'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error locking driver account: ' . $e->getMessage(), [
+                'driver_id' => $driver->id,
+                'admin_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể khóa tài khoản: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Unlock driver account
+     */
+    public function unlockAccount(Request $request, Driver $driver)
+    {
+        try {
+            $request->validate([
+                'reason' => 'required|string|max:500'
+            ]);
+
+            DB::beginTransaction();
+
+            $driver->update([
+                'status' => 'active',
+                'locked_at' => null,
+                'locked_until' => null,
+                'locked_by' => null,
+                'lock_reason' => null,
+                'unlocked_at' => now(),
+                'unlocked_by' => auth()->id(),
+                'admin_notes' => $request->reason
+            ]);
+
+            // Log account unlock
+            Log::info('Driver account unlocked', [
+                'admin_id' => auth()->id(),
+                'admin_name' => auth()->user()->name,
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->full_name,
+                'reason' => $request->reason,
+                'timestamp' => now(),
+                'ip_address' => $request->ip()
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mở khóa tài khoản tài xế thành công'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error unlocking driver account: ' . $e->getMessage(), [
+                'driver_id' => $driver->id,
+                'admin_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể mở khóa tài khoản: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Add violation to driver
+     */
+    public function addViolation(Request $request, Driver $driver)
+    {
+        try {
+            $request->validate([
+                'violation_type' => 'required|string|max:100',
+                'description' => 'required|string|max:1000',
+                'severity' => 'required|in:low,medium,high,critical',
+                'penalty_amount' => 'nullable|numeric|min:0'
+            ]);
+
+            DB::beginTransaction();
+
+            // Create violation record
+            $violation = $driver->violations()->create([
+                'violation_type' => $request->violation_type,
+                'description' => $request->description,
+                'severity' => $request->severity,
+                'penalty_amount' => $request->penalty_amount,
+                'reported_by' => auth()->id(),
+                'reported_at' => now(),
+                'status' => 'active'
+            ]);
+
+            // Update driver penalty count
+            $driver->increment('penalty_count');
+
+            // Reduce reliability score based on severity
+            $scoreReduction = [
+                'low' => 5,
+                'medium' => 10, 
+                'high' => 20,
+                'critical' => 50
+            ];
+            
+            $driver->decrement('reliability_score', $scoreReduction[$request->severity]);
+            
+            // Ensure reliability score doesn't go below 0
+            if ($driver->reliability_score < 0) {
+                $driver->update(['reliability_score' => 0]);
+            }
+
+            // Auto-lock account for critical violations
+            if ($request->severity === 'critical') {
+                $driver->update([
+                    'status' => 'locked',
+                    'locked_at' => now(),
+                    'locked_by' => auth()->id(),
+                    'lock_reason' => 'Vi phạm nghiêm trọng: ' . $request->description
+                ]);
+            }
+
+            // Log violation
+            Log::info('Driver violation added', [
+                'admin_id' => auth()->id(),
+                'admin_name' => auth()->user()->name,
+                'driver_id' => $driver->id,
+                'driver_name' => $driver->full_name,
+                'violation_id' => $violation->id,
+                'violation_type' => $request->violation_type,
+                'severity' => $request->severity,
+                'timestamp' => now(),
+                'ip_address' => $request->ip()
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Thêm vi phạm thành công'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error adding driver violation: ' . $e->getMessage(), [
+                'driver_id' => $driver->id,
+                'admin_id' => auth()->id(),
+                'exception' => $e
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể thêm vi phạm: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

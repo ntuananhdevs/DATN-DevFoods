@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use App\Notifications\ResetPassword as ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -28,6 +29,10 @@ class User extends Authenticatable
         'avatar',
         'google_id',
         'balance',
+        'user_rank_id', 
+        'total_spending', 
+        'total_orders', 
+        'rank_updated_at',
         'active',
         'password',
     ];
@@ -80,5 +85,36 @@ class User extends Authenticatable
     public function wishlist()
     {
         return $this->hasMany(WishlistItem::class);
+    }
+
+    public function userRank()
+    {
+        return $this->belongsTo(UserRank::class, 'user_rank_id');
+    }
+
+    public function userRankHistory()
+    {
+        return $this->hasMany(UserRankHistory::class);
+    }
+
+    public function discountCodes()
+    {
+        return $this->belongsToMany(DiscountCode::class, 'user_discount_codes')
+                    ->withPivot('usage_count', 'status', 'assigned_at', 'first_used_at', 'last_used_at');
+    }
+
+    public function createdDiscountCodes()
+    {
+        return $this->hasMany(DiscountCode::class, 'created_by');
+    }
+
+    public function createdPromotionPrograms()
+    {
+        return $this->hasMany(PromotionProgram::class, 'created_by');
+    }
+
+    public function discountUsageHistory()
+    {
+        return $this->hasMany(DiscountUsageHistory::class);
     }
 }

@@ -125,7 +125,7 @@
                     <span class="sidebar-text">Banners</span>
                 </a>
                  <!-- Chat -->
-                <a href="{{ route('admin.chat') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.branches.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Branches">
+                <a href="{{ route('admin.chat') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.chat.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Branches">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle">
                             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
@@ -197,6 +197,20 @@
                         </svg>
                     </span>
                     <span class="sidebar-text">Chi nhánh</span>
+                </a>
+
+                <!-- User Rank -->
+                <a href="{{ route('admin.user_ranks.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.userrank.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Branches">
+                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-medal">
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <path d="M12 2v4"></path>
+                        <path d="M8 2h8"></path>
+                        <path d="M9 17l-2 5"></path>
+                        <path d="M15 17l2 5"></path>
+                    </svg>
+                    </span>
+                    <span class="sidebar-text">Rank</span>
                 </a>
 
                
