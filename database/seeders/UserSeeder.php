@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
             'password' => bcrypt('admin'),
         ]);
 
-        // Tạo user khách hàng mặc định
+        // Tạo user khách hàng mặc định 
         \App\Models\User::factory()->create([
             'user_name' => 'customer',
             'full_name' => 'Test Customer',

@@ -28,6 +28,7 @@ class Order extends Model
         'estimated_delivery_time',
         'actual_delivery_time',
         'delivery_fee',
+        'driver_earning',
         'discount_amount',
         'tax_amount',
         'order_date',
@@ -48,6 +49,7 @@ class Order extends Model
         'guest_latitude' => 'decimal:8',
         'guest_longitude' => 'decimal:8',
         'delivery_fee' => 'decimal:2',
+        'driver_earning' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'subtotal' => 'decimal:2',
@@ -116,5 +118,16 @@ class Order extends Model
     public function reviews()
     {
         return $this->hasMany(ProductReview::class);
+    }
+
+    /**
+     * Get the customer name (either from User or guest_name)
+     */
+    public function getCustomerNameAttribute()
+    {
+        if ($this->customer) {
+            return $this->customer->name;
+        }
+        return $this->guest_name ?? 'Khách vãng lai';
     }
 }
