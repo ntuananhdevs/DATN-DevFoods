@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 
 class BranchController extends Controller
@@ -12,7 +13,10 @@ class BranchController extends Controller
      */
     public function branchs()
     {
-        return view("customer.branchs.index");
+        $branches = Branch::with('images')->orderBy('id', 'asc')->paginate(10);
+
+        // Return the view with branches data
+        return view('customer.branchs.index', compact('branches'));
     }
 
     /**

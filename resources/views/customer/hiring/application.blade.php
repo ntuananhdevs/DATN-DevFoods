@@ -101,7 +101,7 @@
 <div class="hiring-application-container">
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-lg-10">
+            <div class="col-lg-10"> 
                 <div class="application-header text-center mb-5">
                     <h1 class="application-title">Đăng ký trở thành đối tác tài xế</h1>
                     <p class="application-subtitle">Vui lòng điền đầy đủ thông tin dưới đây để hoàn tất đơn đăng ký</p>
