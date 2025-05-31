@@ -965,78 +965,78 @@
         }
     }
 
-    // Initialize on DOM Ready
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize user count slider
-        window.userSlider = new UserRangeSlider({
-            min: {{ $minUsers }},
-            max: {{ $maxUsers }},
-            minValue: {{ request('user_min', $minUsers) }},
-            maxValue: {{ request('user_max', $maxUsers) }},
-            step: 10,
-            sliderId: 'userSlider',
-            trackId: 'userTrack',
-            minHandleId: 'minUserHandle',
-            maxHandleId: 'maxUserHandle'
-        });
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdowns = document.querySelectorAll('.dropdown > div:not(.hidden)');
-            dropdowns.forEach(dropdown => {
-                const isClickInside = dropdown.contains(event.target) ||
-                    dropdown.previousElementSibling.contains(event.target);
-
-                if (!isClickInside) {
-                    dropdown.classList.add('hidden');
-                }
-            });
-        });
-
-        // Checkbox Functionality
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const rankCheckboxes = document.querySelectorAll('.rank-checkbox');
-        const selectAllButton = document.getElementById('selectAllButton');
-
-        // Handle select all checkbox
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                const isChecked = this.checked;
-                rankCheckboxes.forEach(checkbox => {
-                    checkbox.checked = isChecked;
-                });
-            });
-        }
-
-        // Handle select all button click
-        if (selectAllButton) {
-            selectAllButton.addEventListener('click', function() {
-                const isAllChecked = Array.from(rankCheckboxes).every(cb => cb.checked);
-                rankCheckboxes.forEach(checkbox => {
-                    checkbox.checked = !isAllChecked;
-                });
-                if (selectAllCheckbox) selectAllCheckbox.checked = !isAllChecked;
-            });
-        }
-
-        // Handle individual checkboxes
-        rankCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const allChecked = Array.from(rankCheckboxes).every(cb => cb.checked);
-                if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
-            });
-        });
-
-        // Add search input event listener
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', function() {
-                performSearch(this.value.trim());
-            });
-
-            // Initial search to load current results
-            performSearch(searchInput.value.trim());
-        }
+// Initialize on DOM Ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize user count slider
+    window.userSlider = new UserRangeSlider({
+        min: {{ $minUsers }},
+        max: {{ $maxUsers }},
+        minValue: {{ request('user_min', $minUsers) }},
+        maxValue: {{ request('user_max', $maxUsers) }},
+        step: 10,
+        sliderId: 'userSlider',
+        trackId: 'userTrack',
+        minHandleId: 'minUserHandle',
+        maxHandleId: 'maxUserHandle'
     });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdowns = document.querySelectorAll('.dropdown > div:not(.hidden)');
+        dropdowns.forEach(dropdown => {
+            const isClickInside = dropdown.contains(event.target) ||
+                dropdown.previousElementSibling.contains(event.target);
+
+            if (!isClickInside) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    });
+
+    // Checkbox Functionality
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rankCheckboxes = document.querySelectorAll('.rank-checkbox');
+    const selectAllButton = document.getElementById('selectAllButton');
+
+    // Handle select all checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            rankCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+        });
+    }
+
+    // Handle select all button click
+    if (selectAllButton) {
+        selectAllButton.addEventListener('click', function() {
+            const isAllChecked = Array.from(rankCheckboxes).every(cb => cb.checked);
+            rankCheckboxes.forEach(checkbox => {
+                checkbox.checked = !isAllChecked;
+            });
+            if (selectAllCheckbox) selectAllCheckbox.checked = !isAllChecked;
+        });
+    }
+
+    // Handle individual checkboxes
+    rankCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(rankCheckboxes).every(cb => cb.checked);
+            if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
+        });
+    });
+
+    // Add search input event listener
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            performSearch(this.value.trim());
+        });
+
+        // Initial search to load current results
+        performSearch(searchInput.value.trim());
+    }
+});
 </script>
 @endsection
