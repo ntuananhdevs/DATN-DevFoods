@@ -283,6 +283,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::put('/update/{id}', [UserRankController::class, 'update'])->name('update');
         Route::delete('/delete/{id}', [UserRankController::class, 'destroy'])->name('destroy');
         Route::post('/search', [UserRankController::class, 'search'])->name('search');
+        Route::post('/update-status', [UserRankController::class, 'updateStatus'])->name('updateStatus');
     });
     
     // Discount Management
