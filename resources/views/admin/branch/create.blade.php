@@ -3,7 +3,7 @@
 @section('content')
     <style>
         :root {
-            --primary: #4361ee;
+
             --primary-light: #4895ef;
             --primary-dark: #3f37c9;
             --secondary: #4cc9f0;
@@ -18,38 +18,27 @@
             --gray-dark: #4b5563;
             --white: #ffffff;
             --black: #000000;
-            
+
             --border-radius: 12px;
             --border-radius-sm: 8px;
             --border-radius-lg: 16px;
             --border-radius-xl: 24px;
             --border-radius-full: 9999px;
-            
+
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            
+
             --transition: all 0.3s ease;
             --transition-fast: all 0.15s ease;
             --transition-slow: all 0.5s ease;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        body {
-            font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
-            color: var(--dark);
-            background-color: #f5f7fa;
-            line-height: 1.5;
-        }
 
         .branch-form-container {
-            max-width: 1280px;
+            max-width: 100%;
             margin: 0 auto;
             padding: 2rem 1rem;
         }
@@ -65,7 +54,7 @@
         h3 { font-size: 1.125rem; }
         h4 { font-size: 1rem; }
         p { margin: 0; line-height: 1.5; }
-        a { color: var(--primary); text-decoration: none; transition: var(--transition-fast); }
+
         a:hover { color: var(--primary-dark); }
 
         .btn {
@@ -128,8 +117,8 @@
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--gray-light); transition: var(--transition-fast); border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--transition-fast); border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary); }
-        input:focus + .slider { box-shadow: 0 0 1px var(--primary); }
+        input:checked + .slider { background-color: #4361ee; }
+        input:focus + .slider { box-shadow: 0 0 1px #4361ee; }
         input:checked + .slider:before { transform: translateX(20px); }
 
         .grid { display: grid; gap: 1.5rem; }
@@ -241,13 +230,13 @@
         .preview-status-value.active { background-color: rgba(74, 222, 128, 0.1); color: var(--success); }
         .preview-status-value.inactive { background-color: rgba(244, 63, 94, 0.1); color: var(--danger); }
 
-        #map { 
-            height: 300px !important; 
-            width: 100%; 
-            border-radius: var(--border-radius); 
-            margin-bottom: 1rem; 
-            min-height: 300px; 
-            background-color: #f0f0f0; 
+        #map {
+            height: 300px !important;
+            width: 100%;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            min-height: 300px;
+            background-color: #f0f0f0;
         }
         .map-coordinates { display: flex; gap: 1rem; }
         .map-hint { margin-top: 0.5rem; font-size: 0.75rem; color: var(--gray); }
@@ -282,7 +271,7 @@
         <div class="flex justify-between items-center flex-wrap gap-4">
             <div class="flex items-center gap-4">
                 <div class="header-icon">
-                    <i class="fas fa-building"></i>
+                    <i class="fas fa-building" style="color: #4361ee;"></i>
                 </div>
                 <div class="header-text">
                     <h1>Thêm chi nhánh mới</h1>
@@ -300,23 +289,23 @@
 
     <form id="branchForm" action="{{ route('admin.branches.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
-        
+
         <div class="form-grid">
             <div class="space-y-6">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-info-circle"></i>
+                            <i class="fas fa-info-circle" style="color: #4361ee;"></i>
                         </div>
                         <h3>Thông tin cơ bản</h3>
                     </div>
                     <div class="card-body">
                         <div class="form-group">
                             <label for="name" class="form-label form-label-icon">
-                                <i class="fas fa-building text-primary"></i>
+                                <i class="fas fa-building text-primary" style="color: #4361ee;"></i>
                                 Tên chi nhánh
                             </label>
-                            <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror" 
+                            <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror"
                                    placeholder="Nhập tên chi nhánh" value="{{ old('name') }}" maxlength="255" >
                             @error('name')
                                 <div class="form-error">{{ $message }}</div>
@@ -328,7 +317,7 @@
                                 <i class="fas fa-map-marker-alt text-danger"></i>
                                 Địa chỉ
                             </label>
-                            <textarea id="address" name="address" class="form-control @error('address') is-invalid @enderror" 
+                            <textarea id="address" name="address" class="form-control @error('address') is-invalid @enderror"
                                       placeholder="Nhập địa chỉ chi nhánh" maxlength="255" >{{ old('address') }}</textarea>
                             @error('address')
                                 <div class="form-error">{{ $message }}</div>
@@ -338,10 +327,10 @@
                         <div class="grid grid-2">
                             <div class="form-group">
                                 <label for="phone" class="form-label form-label-icon">
-                                    <i class="fas fa-phone text-primary"></i>
+                                    <i class="fas fa-phone text-primary" style="color: #4361ee;"></i>
                                     Số điện thoại
                                 </label>
-                                <input type="tel" id="phone" name="phone" class="form-control @error('phone') is-invalid @enderror" 
+                                <input type="tel" id="phone" name="phone" class="form-control @error('phone') is-invalid @enderror"
                                        placeholder="Nhập số điện thoại" value="{{ old('phone') }}" pattern="[0-9\s\-\+\(\)]{10,}" >
                                 @error('phone')
                                     <div class="form-error">{{ $message }}</div>
@@ -350,10 +339,10 @@
 
                             <div class="form-group">
                                 <label for="email" class="form-label form-label-icon">
-                                    <i class="fas fa-envelope text-primary"></i>
+                                    <i class="fas fa-envelope text-primary" style="color: #4361ee;"> </i>
                                     Email
                                 </label>
-                                <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror" 
+                                <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror"
                                        placeholder="Nhập email (không bắt buộc)" value="{{ old('email') }}">
                                 @error('email')
                                     <div class="form-error">{{ $message }}</div>
@@ -366,7 +355,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-clock"></i>
+                            <i class="fas fa-clock" style="color: #4361ee;"></i>
                         </div>
                         <h3>Giờ hoạt động</h3>
                     </div>
@@ -377,8 +366,8 @@
                                     <i class="fas fa-sun text-success"></i>
                                     Giờ mở cửa
                                 </label>
-                                <input type="time" id="opening_hour" name="opening_hour" 
-                                       class="form-control @error('opening_hour') is-invalid @enderror" 
+                                <input type="time" id="opening_hour" name="opening_hour"
+                                       class="form-control @error('opening_hour') is-invalid @enderror"
                                        value="{{ old('opening_hour', '08:00') }}" >
                                 @error('opening_hour')
                                     <div class="form-error">{{ $message }}</div>
@@ -390,8 +379,8 @@
                                     <i class="fas fa-moon text-danger"></i>
                                     Giờ đóng cửa
                                 </label>
-                                <input type="time" id="closing_hour" name="closing_hour" 
-                                       class="form-control @error('closing_hour') is-invalid @enderror" 
+                                <input type="time" id="closing_hour" name="closing_hour"
+                                       class="form-control @error('closing_hour') is-invalid @enderror"
                                        value="{{ old('closing_hour', '22:00') }}" >
                                 @error('closing_hour')
                                     <div class="form-error">{{ $message }}</div>
@@ -405,35 +394,35 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-map-marked-alt"></i>
+                            <i class="fas fa-map-marked-alt" style="color: #4361ee;"></i>
                         </div>
                         <h3>Vị trí chi nhánh</h3>
                     </div>
                     <div class="card-body">
                         <div id="map"></div>
                         <div class="map-hint">Nhấp vào bản đồ để chọn vị trí chi nhánh</div>
-                        
+
                         <div class="map-coordinates grid grid-2">
                             <div class="form-group">
                                 <label for="latitude" class="form-label">
-                                    <i class="fas fa-map-pin text-primary"></i>
+                                    <i class="fas fa-map-pin text-primary" style="color: #4361ee;"></i>
                                     Vĩ độ (Latitude)
                                 </label>
-                                <input type="text" id="latitude" name="latitude" 
-                                       class="form-control @error('latitude') is-invalid @enderror" 
+                                <input type="text" id="latitude" name="latitude"
+                                       class="form-control @error('latitude') is-invalid @enderror"
                                        value="{{ old('latitude') }}" readonly>
                                 @error('latitude')
                                     <div class="form-error">{{ $message }}</div>
                                 @enderror
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="longitude" class="form-label">
-                                    <i class="fas fa-map-pin text-primary"></i>
+                                    <i class="fas fa-map-pin text-primary" style="color: #4361ee;"></i>
                                     Kinh độ (Longitude)
                                 </label>
-                                <input type="text" id="longitude" name="longitude" 
-                                       class="form-control @error('longitude') is-invalid @enderror" 
+                                <input type="text" id="longitude" name="longitude"
+                                       class="form-control @error('longitude') is-invalid @enderror"
                                        value="{{ old('longitude') }}" readonly>
                                 @error('longitude')
                                     <div class="form-error">{{ $message }}</div>
@@ -446,18 +435,18 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-images"></i>
+                            <i class="fas fa-images" style="color: #4361ee;"></i>
                         </div>
                         <h3>Hình ảnh chi nhánh</h3>
                     </div>
                     <div class="card-body">
                         <div class="form-group">
                             <label for="images" class="form-label form-label-icon">
-                                <i class="fas fa-upload text-primary"></i>
+                                <i class="fas fa-upload text-primary" style="color: #4361ee;"></i>
                                 Tải lên hình ảnh
                             </label>
                             <div class="upload-label">
-                                <input type="file" id="images" name="images[]" class="upload-input @error('images') is-invalid @enderror" 
+                                <input type="file" id="images" name="images[]" class="upload-input @error('images') is-invalid @enderror"
                                        accept="image/jpeg,image/png,image/jpg,image/gif" multiple aria-label="Tải lên hình ảnh chi nhánh">
                                 <span class="upload-label-text">Chọn nhiều hình ảnh...</span>
                             </div>
@@ -493,7 +482,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-hashtag"></i>
+                            <i class="fas fa-hashtag" style="color: #4361ee;"></i>
                         </div>
                         <h3>Mã chi nhánh</h3>
                     </div>
@@ -513,7 +502,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-user-tie"></i>
+                            <i class="fas fa-user-tie" style="color: #4361ee;"></i>
                         </div>
                         <h3>Quản lý chi nhánh</h3>
                     </div>
@@ -522,7 +511,7 @@
                             <label for="manager_user_id" class="form-label">
                                 Chọn người quản lý
                             </label>
-                            <select id="manager_user_id" name="manager_user_id" 
+                            <select id="manager_user_id" name="manager_user_id"
                                     class="form-control @error('manager_user_id') is-invalid @enderror">
                                 <option value="">-- Chọn quản lý --</option>
                                 @foreach($availableManagers as $manager)
@@ -544,18 +533,18 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star" style="color: #4361ee;"></i>
                         </div>
                         <h3>Trạng thái</h3>
                     </div>
                     <div class="card-body">
                         <div class="form-check">
-                            <div class="form-check-content">
+                            <div class="form-check-content ">
                                 <div class="form-check-label">Trạng thái hoạt động</div>
                                 <div class="form-check-hint" id="statusHint">Chi nhánh đang hoạt động</div>
                             </div>
                             <label class="switch">
-                                <input type="checkbox" id="active" name="active" {{ old('active', 1) ? 'checked' : '' }} aria-label="Bật/tắt trạng thái hoạt động">
+                                <input type="checkbox" id="active" name="active" {{ old('active', 1) ? 'checked' : '' }} aria-label="Bật/tắt trạng thái hoạt động" onclick="this.style.color='#4361ee'">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -564,8 +553,8 @@
 
                 <div class="card">
                     <div class="card-body">
-                        <button type="submit" id="submitButton" class="btn btn-primary w-full">
-                            <i class="fas fa-save"></i>
+                        <button type="submit" id="submitButton" class="btn btn-primary w-full" style="background-color: #4361ee; color: #ffffff; border-color: #4361ee;">
+                            <i class="fas fa-save" style="color: #ffffff;"></i>
                             <span>Lưu chi nhánh</span>
                         </button>
                     </div>
@@ -578,22 +567,22 @@
                     <div class="card-body">
                         <div class="preview-card">
                             <div class="preview-header">
-                                <i class="fas fa-building text-primary"></i>
+                                <i class="fas fa-building text-primary" style="color: #4361ee;"></i>
                                 <h4 class="preview-title" id="previewName">Tên chi nhánh</h4>
                             </div>
                             <div class="preview-item">
-                                <i class="fas fa-map-marker-alt text-danger"></i>
+                                <i class="fas fa-map-marker-alt text-danger" ></i>
                                 <span id="previewAddress">Địa chỉ chi nhánh</span>
                             </div>
                             <div class="preview-item">
-                                <i class="fas fa-phone text-primary"></i>
+                                <i class="fas fa-phone text-primary" style="color: #4361ee;"></i>
                                 <span id="previewPhone">Số điện thoại</span>
                             </div>
                             <div class="preview-item" id="previewEmailContainer">
                                 <i class="fas fa-envelope text-primary"></i>
                                 <span id="previewEmail">Email</span>
                             </div>
-                            <div class="preview-item" id="previewManagerContainer">
+                            <div class="preview-item" id="previewManagerContainer" style="color: #4361ee;">
                                 <i class="fas fa-user-tie text-primary"></i>
                                 <span id="previewManager">Chưa chọn quản lý</span>
                             </div>
