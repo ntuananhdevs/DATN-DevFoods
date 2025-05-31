@@ -4,6 +4,7 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\Admin\RoleAdmin;
 use App\Http\Middleware\Driver\DriverAuth;
 use App\Http\Middleware\Customer\CustomerAuth; // Thêm dòng này
+use App\Http\Middleware\VerifyTurnstile;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleAdmin::class,
             'driver.auth' => DriverAuth::class,
             'CustomerAuth' => CustomerAuth::class, // Thêm dòng này
+            'turnstile' => VerifyTurnstile::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
