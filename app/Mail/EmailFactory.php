@@ -39,6 +39,14 @@ class EmailFactory
     }
     
 
+    /**
+     * Gửi email thông báo phê duyệt đơn ứng tuyển tài xế
+     * 
+     * @param object $application Thông tin đơn ứng tuyển
+     * @param string $password Mật khẩu mới
+     * @param string|null $email Địa chỉ email nhận
+     * @return void
+     */
     public static function sendDriverApproval($application, $password, $email = null)
     {
         $to = $email ?? $application->email;
@@ -60,6 +68,45 @@ class EmailFactory
             "Đơn đăng ký tài xế được chấp nhận"
         );
         
+        SendEmailJob::dispatch($to, $mailable);
+    }
+
+    /**
+     * Gửi email reset mật khẩu cho tài xế
+     * 
+     * @param object $driver Thông tin tài xế
+     * @param string $newPassword Mật khẩu mới
+     * @param string $reason Lý do reset mật khẩu
+     * @param string|null $email Địa chỉ email nhận
+     * @return void
+     */
+    public static function sendPasswordReset($driver, $newPassword, $reason, $email = null)
+    {
+        $to = $email ?? $driver->email;
+        
+        // Chuẩn bị dữ liệu cho template
+        $resetData = [
+            'driver' => [
+                'full_name' => $driver->full_name,
+                'email' => $driver->email,
+                'phone_number' => $driver->phone_number ?? '',
+                'id' => $driver->id
+            ],
+            'newPassword' => $newPassword,
+            'reason' => $reason,
+            'resetDate' => now()->format('d/m/Y H:i:s'),
+            'loginUrl' => route('driver.login'),
+            'supportEmail' => config('mail.support_email', 'support@devfoods.com'),
+            'companyName' => config('app.name', 'DevFoods')
+        ];
+        
+        $mailable = new NotificationMail(
+            'driver_password_reset',
+            $resetData,
+            "Mật khẩu tài khoản tài xế đã được reset"
+        );
+        
+        // Sử dụng queue để gửi email
         SendEmailJob::dispatch($to, $mailable);
     }
 

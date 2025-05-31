@@ -239,6 +239,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/create', [DriverController::class, 'create'])->name('create');
+        Route::post('/store', [DriverController::class, 'store'])->name('store');
+        Route::get('/show/{driver}', [DriverController::class, 'show'])->name('show');
+        Route::get('/edit/{driver}', [DriverController::class, 'edit'])->name('edit');
+        Route::put('/update/{driver}', [DriverController::class, 'update'])->name('update');
+        Route::delete('/destroy/{driver}', [DriverController::class, 'destroy'])->name('destroy');
+        Route::post('/reset-password/{driver}', [DriverController::class, 'resetPassword'])->name('reset-password');
+        
+        // New driver management routes
+        Route::post('/{driver}/toggle-status', [DriverController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{driver}/lock-account', [DriverController::class, 'lockAccount'])->name('lock-account');
+        Route::post('/{driver}/unlock-account', [DriverController::class, 'unlockAccount'])->name('unlock-account');
+        Route::post('/{driver}/add-violation', [DriverController::class, 'addViolation'])->name('add-violation');
+        
         Route::get('/export', [DriverController::class, 'export'])->name('export');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
         Route::get('/applications/export', [DriverController::class, 'exportApplications'])->name('applications.export');
@@ -351,7 +365,7 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-// Test routes for AWS S3 uploadd
+// Test routes for AWS S3 uploads
 Route::prefix('test')->name('test.')->group(function () {
     Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
