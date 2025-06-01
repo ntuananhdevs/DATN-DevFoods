@@ -462,6 +462,71 @@
             </div>
         </div>
 
+            <!-- Container bảng -->
+            <div class="data-table-container">
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="id" class="active-sort">
+                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="name">
+                                Họ và tên <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="phone">
+                                Số điện thoại <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="license">
+                                Biển số xe <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="date">
+                                Ngày nộp đơn <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th data-sort="date">
+                                Ngày cập nhật <i class="fas fa-sort data-table-sort-icon"></i>
+                            </th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingTableBody">
+                        @forelse($pendingApplications as $application)
+                            <tr>
+                                <td>
+                                    <div class="data-table-id">
+                                        {{ $application->id }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="data-table-product-name">{{ $application->full_name }}</div>
+                                </td>
+                                <td>{{ $application->phone_number }}</td>
+                                <td>{{ $application->license_plate }}</td>
+                                <td>{{ $application->created_at->format('d/m/Y H:i') }}</td>
+                                <td>{{ $application->updated_at->format('d/m/Y H:i') }}</td>
+                                <td>
+                                    <div class="data-table-action-buttons">
+                                        <a href="{{ route('admin.drivers.applications.show', $application) }}"
+                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <div class="data-table-empty" id="pendingTableEmpty">
+                                        <div class="data-table-empty-icon">
+                                            <i class="fas fa-inbox"></i>
+                                        </div>
+                                        <h3>Không có đơn đăng ký nào đang chờ xử lý</h3>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         <!-- Container bảng -->
         <div class="data-table-container">
             <table class="data-table" id="dataTable">

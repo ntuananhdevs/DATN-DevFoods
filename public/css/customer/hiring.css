@@ -1,0 +1,471 @@
+/* DevFoods Driver Hiring Landing Page - Simple Design */
+
+/* Basic styles */
+.hiring-landing-container {
+    font-family: 'Roboto', sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Hero Section */
+.hero-banner {
+    background-color: #f8f9fa;
+    padding: 80px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.hero-background {
+    display: none;
+}
+
+.hero-content {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.hero-text {
+    flex: 1;
+}
+
+.hero-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.hero-title span {
+    color: #007bff;
+}
+
+.hero-description {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.hero-buttons .btn {
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+}
+
+.hero-buttons .btn-primary {
+    background-color: #007bff;
+    border: 1px solid #007bff;
+    color: white;
+}
+
+.hero-buttons .btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.hero-buttons .btn-outline {
+    background-color: transparent;
+    border: 1px solid #007bff;
+    color: #007bff;
+}
+
+.hero-buttons .btn-outline:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.hero-image {
+    flex: 1;
+    text-align: center;
+}
+
+.hero-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hero-gradient {
+    display: none;
+}
+
+/* Section Titles */
+.section-title {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.section-title h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.section-title h2::after {
+    content: '';
+    display: block;
+    width: 50px;
+    height: 3px;
+    background-color: #007bff;
+    margin: 15px auto 0;
+}
+
+.section-title p {
+    font-size: 1rem;
+    color: #666;
+    margin: 0;
+}
+
+/* Benefits Section */
+.hiring-benefits {
+    padding: 80px 0;
+    background-color: #fff;
+}
+
+.benefit-card {
+    padding: 30px 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    text-align: center;
+    height: 100%;
+    transition: box-shadow 0.2s ease;
+}
+
+.benefit-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.benefit-icon {
+    font-size: 2.5rem;
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
+.benefit-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.benefit-description {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* Process Section */
+.hiring-process {
+    padding: 80px 0;
+    background-color: #f8f9fa;
+}
+
+.timeline {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.timeline::before {
+    display: none;
+}
+
+.timeline-item {
+    display: flex;
+    margin-bottom: 30px;
+    align-items: flex-start;
+}
+
+.timeline-number {
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.timeline-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    flex-grow: 1;
+}
+
+.timeline-content h3 {
+    color: #2c3e50;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.timeline-content p {
+    color: #666;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Requirements Section */
+.hiring-requirements {
+    padding: 80px 0;
+    background-color: #fff;
+}
+
+.requirements-list {
+    list-style: none;
+    padding: 0;
+}
+
+.requirements-list li {
+    font-size: 1rem;
+    margin-bottom: 15px;
+    color: #333;
+    padding: 12px 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border-left: 3px solid #28a745;
+}
+
+.requirements-list i {
+    color: #28a745;
+    margin-right: 10px;
+}
+
+.documents-required {
+    background-color: #f8f9fa;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.documents-required h3 {
+    color: #2c3e50;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    font-weight: 600;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 10px;
+}
+
+.documents-required ul {
+    list-style: none;
+    padding: 0;
+}
+
+.documents-required ul li {
+    font-size: 1rem;
+    margin-bottom: 12px;
+    color: #333;
+    padding: 8px 0;
+}
+
+.documents-required i {
+    color: #007bff;
+    margin-right: 10px;
+    width: 16px;
+}
+
+/* FAQ Section */
+.hiring-faq {
+    padding: 80px 0;
+    background-color: #f8f9fa;
+}
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.card {
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background-color: #fff;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0;
+}
+
+.btn-link {
+    color: #2c3e50;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 15px 20px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    font-size: 1rem;
+}
+
+.btn-link:hover,
+.btn-link:focus {
+    text-decoration: none;
+    color: #007bff;
+}
+
+.card-body {
+    color: #666;
+    padding: 20px;
+    font-size: 0.95rem;
+}
+
+/* CTA Section */
+.hiring-cta-section {
+    padding: 80px 0;
+    background-color: #007bff;
+    color: #fff;
+    text-align: center;
+}
+
+.cta-box {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.cta-box h2 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.cta-box p {
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+.cta-box .btn-primary {
+    background-color: #28a745;
+    border-color: #28a745;
+    padding: 12px 30px;
+    font-weight: 500;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease;
+}
+
+.cta-box .btn-primary:hover {
+    background-color: #218838;
+    border-color: #218838;
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: 5px;
+    border: 1px solid transparent;
+    font-weight: 500;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-banner {
+        padding: 60px 0;
+    }
+    
+    .hero-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-description {
+        font-size: 1.1rem;
+    }
+    
+    .hero-buttons {
+        justify-content: center;
+    }
+    
+    .section-title h2 {
+        font-size: 1.8rem;
+    }
+    
+    .hiring-benefits,
+    .hiring-process,
+    .hiring-requirements,
+    .hiring-faq,
+    .hiring-cta-section {
+        padding: 60px 0;
+    }
+    
+    .timeline-item {
+        flex-direction: column;
+        text-align: center;
+        margin-bottom: 40px;
+    }
+    
+    .timeline-number {
+        margin: 0 auto 15px auto;
+    }
+    
+    .cta-box h2 {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-title {
+        font-size: 1.8rem;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .hero-buttons .btn {
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    .section-title h2 {
+        font-size: 1.6rem;
+    }
+    
+    .benefit-title {
+        font-size: 1.1rem;
+    }
+    
+    .timeline-content {
+        padding: 15px;
+    }
+} 
