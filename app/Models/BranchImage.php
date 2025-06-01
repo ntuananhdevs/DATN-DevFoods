@@ -17,6 +17,7 @@ class BranchImage extends Model
         'image_path',
         'caption',
         'is_primary',
+        'original_name',
     ];
 
     /**

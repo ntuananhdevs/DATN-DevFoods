@@ -226,96 +226,119 @@ class BranchController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            // Find the branch by ID
             $branch = Branch::findOrFail($id);
 
-            // Validate only the fields that are sent
             $validated = $request->validate([
-                'name' => 'sometimes|required|string|max:255|unique:branches,name,' . $id . ',id',
-                'address' => 'sometimes|required|string|max:255|unique:branches,address,' . $id . ',id',
-                'phone' => 'sometimes|required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone,' . $id . ',id',
-                'email' => 'sometimes|nullable|email|unique:branches,email,' . $id . ',id',
-                'opening_hour' => 'sometimes|required|date_format:H:i',
-                'closing_hour' => 'sometimes|required|date_format:H:i|after:opening_hour',
-                'latitude' => 'sometimes|nullable|numeric|between:-90,90',
-                'longitude' => 'sometimes|nullable|numeric|between:-180,180',
-                'manager_user_id' => 'sometimes|nullable|exists:users,id',
+                'name' => 'required|string|max:255|unique:branches,name,' . $id,
+                'address' => 'required|string|max:255|unique:branches,address,' . $id,
+                'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone,' . $id,
+                'email' => 'nullable|email|unique:branches,email,' . $id,
+                'opening_hour' => 'required|date_format:H:i',
+                'closing_hour' => 'required|date_format:H:i|after:opening_hour',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
+                'manager_user_id' => 'nullable|exists:users,id',
                 'images' => 'nullable|array',
                 'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-                'delete_images' => 'nullable|array',
-                'delete_images.*' => 'exists:branch_images,id',
-                'primary_image' => 'nullable|integer|min:0',
+                'primary_image' => 'nullable|string',
                 'captions' => 'nullable|array',
                 'captions.*' => 'nullable|string|max:255',
+                's3_keys' => 'nullable|array',
+                's3_keys.*' => 'string',
+                'content_types' => 'nullable|array',
+                'content_types.*' => 'string',
+                'original_names' => 'nullable|array',
+                'original_names.*' => 'string',
+                'delete_images' => 'nullable|array',
+                'delete_images.*' => 'exists:branch_images,id'
             ]);
 
             DB::beginTransaction();
 
-            // Only fill fields with non-null and non-empty values
-            $fillable = collect($validated)->filter(function ($value) {
-                return !is_null($value) && $value !== '';
-            })->toArray();
-
-            $branch->fill($fillable);
-
-            // Handle active status
+            // Update branch details
+            $branch->name = $validated['name'];
+            $branch->address = $validated['address'];
+            $branch->phone = $validated['phone'];
+            $branch->email = $validated['email'] ?? null;
+            $branch->opening_hour = $validated['opening_hour'];
+            $branch->closing_hour = $validated['closing_hour'];
+            $branch->latitude = $validated['latitude'] ?? null;
+            $branch->longitude = $validated['longitude'] ?? null;
+            $branch->manager_user_id = $validated['manager_user_id'] ?? null;
             $branch->active = $request->has('active');
             $branch->save();
 
-            // Handle image deletion
+            // Handle image deletions
             if ($request->has('delete_images')) {
-                $imagesToDelete = $branch->images()->whereIn('id', $request->delete_images)->get();
-                foreach ($imagesToDelete as $image) {
-                    // Delete from S3 instead of public disk
-                    Storage::disk('s3')->delete($image->image_path);
-                    $image->delete();
+                foreach ($request->input('delete_images') as $imageId) {
+                    $image = BranchImage::find($imageId);
+                    if ($image) {
+
+                        if (Storage::disk('s3')->exists($image->image_path)) {
+                            Storage::disk('s3')->delete($image->image_path);
+                        }
+                        $image->delete();
+                    }
                 }
             }
 
             // Handle new image uploads
             if ($request->hasFile('images')) {
                 $directory = 'branches/' . $branch->branch_code;
-                $primaryImageIndex = $request->input('primary_image', 0);
+                $s3Keys = $request->input('s3_keys', []);
+                $contentTypes = $request->input('content_types', []);
+                $originalNames = $request->input('original_names', []);
+                $primaryImage = $request->input('primary_image');
 
                 foreach ($request->file('images') as $index => $image) {
-                    $filename = $directory . '/' . \Illuminate\Support\Str::uuid() . '.' . $image->getClientOriginalExtension();
-                    // Upload to S3
-                    $putResult = Storage::disk('s3')->put($filename, file_get_contents($image));
-                    if ($putResult) {
-                        BranchImage::create([
+                    $s3Key = $s3Keys[$index] ?? null;
+                    if (!$s3Key) continue;
+
+                    // Upload to S3 with content type
+                    $options = [
+                        'ContentType' => $contentTypes[$index] ?? $image->getMimeType(),
+                        'ACL' => 'public-read'
+                    ];
+
+                    if (Storage::disk('s3')->put($s3Key, file_get_contents($image), $options)) {
+                        $branchImage = new BranchImage([
                             'branch_id' => $branch->id,
-                            'image_path' => $filename, // S3 path
-                            'caption' => $request->input("captions.$index", ''),
-                            'is_primary' => ($index == $primaryImageIndex),
+                            'image_path' => $s3Key,
+                            'caption' => $request->input("captions.$s3Key", ''),
+                            'is_primary' => ($s3Key === $primaryImage),
+                            'original_name' => $originalNames[$index] ?? $image->getClientOriginalName()
                         ]);
+                        $branchImage->save();
                     }
                 }
             }
 
-            // Handle primary image selection from existing images
-            if ($request->has('primary_image') && !$request->hasFile('images')) {
+            // Update primary image for existing images
+            if ($request->has('primary_image')) {
                 $primaryImageId = $request->input('primary_image');
-                $branch->images()->update(['is_primary' => false]);
-                $branch->images()->where('id', $primaryImageId)->update(['is_primary' => true]);
+                if (is_numeric($primaryImageId)) {
+                    BranchImage::where('branch_id', $branch->id)
+                        ->update(['is_primary' => false]);
+                    BranchImage::where('id', $primaryImageId)
+                        ->update(['is_primary' => true]);
+                }
             }
 
             DB::commit();
 
-            return redirect()->route('admin.branches.show', $branch->id)
-                ->with([
-                    'toast' => [
-                        'type' => 'success',
-                        'title' => 'Thành công',
-                        'message' => 'Cập nhật chi nhánh thành công'
-                    ]
-                ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Chi nhánh đã được cập nhật thành công',
+                'redirect' => route('admin.branches.index')
+            ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Lỗi cập nhật chi nhánh: ' . $e->getMessage());
-
-            return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage())
-                ->withInput();
+            Log::error('Error updating branch: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage()
+            ], 500);
         }
     }
 
