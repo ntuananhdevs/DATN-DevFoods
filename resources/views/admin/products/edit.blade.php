@@ -300,8 +300,148 @@ if (is_array($ingredientsData)) {
 
             <div class="px-6 py-6">
                 <div id="attributes-container">
-                    <!-- Attribute groups will be added here -->
-              </div>
+                    <!-- Load existing attributes with PHP instead of JavaScript -->
+                    @php
+                        // Get existing attributes either directly or from variant details
+                        $existingAttributes = [];
+                        
+                        if(isset($product->attributes) && count($product->attributes) > 0) {
+                            // If we have attributes relationship loaded
+                            $existingAttributes = $product->attributes;
+                        } elseif(isset($product->variants) && count($product->variants) > 0) {
+                            // Extract attributes from variants if the attributes relationship doesn't work
+                            $attributesMap = [];
+                            foreach ($product->variants as $variant) {
+                                foreach ($variant->productVariantDetails as $detail) {
+                                    if (isset($detail->variantValue) && isset($detail->variantValue->attribute)) {
+                                        $attributeId = $detail->variantValue->attribute->id;
+                                        $attributeName = $detail->variantValue->attribute->name;
+                                        
+                                        if (!isset($attributesMap[$attributeId])) {
+                                            $attributesMap[$attributeId] = (object)[
+                                                'id' => $attributeId,
+                                                'name' => $attributeName,
+                                                'values' => []
+                                            ];
+                                        }
+                                        
+                                        // Check if value already exists
+                                        $valueExists = false;
+                                        foreach ($attributesMap[$attributeId]->values as $value) {
+                                            if ($value->id == $detail->variantValue->id) {
+                                                $valueExists = true;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (!$valueExists) {
+                                            $attributesMap[$attributeId]->values[] = (object)[
+                                                'id' => $detail->variantValue->id,
+                                                'value' => $detail->variantValue->value,
+                                                'price_adjustment' => $detail->variantValue->price_adjustment
+                                            ];
+                                        }
+                                    }
+                                }
+                            }
+                            $existingAttributes = array_values($attributesMap);
+                        }
+                    @endphp
+
+                    @foreach($existingAttributes as $attrIndex => $attribute)
+                        <div class="attribute-group">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex-1 mr-4">
+                                    <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                                    <input type="text" name="attributes[{{ $attrIndex }}][name]" required 
+                                        placeholder="Ví dụ: Size, Màu sắc" value="{{ $attribute->name }}" 
+                                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                    <!-- Add hidden field to preserve attribute ID -->
+                                    <input type="hidden" name="attributes[{{ $attrIndex }}][id]" value="{{ $attribute->id }}" />
+                                </div>
+                                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="variant-values-container">
+                                @foreach($attribute->values as $valueIndex => $value)
+                                    <div class="variant-value-row">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                                            <input type="text" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][value]" 
+                                                required placeholder="Ví dụ: S, M, L" value="{{ $value->value }}" 
+                                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                            <!-- Add hidden field to preserve value ID -->
+                                            <input type="hidden" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][id]" value="{{ $value->id }}" />
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                                            <input type="number" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" 
+                                                step="0.01" value="{{ $value->price_adjustment ?? 0 }}" 
+                                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                        </div>
+                                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                Thêm giá trị
+                            </button>
+                        </div>
+                    @endforeach
+
+                    @if(count($existingAttributes) == 0)
+                        <!-- Add a default empty attribute group if no attributes exist -->
+                        <div class="attribute-group">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex-1 mr-4">
+                                    <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                                    <input type="text" name="attributes[0][name]" required placeholder="Ví dụ: Size, Màu sắc" 
+                                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                </div>
+                                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="variant-values-container">
+                                <div class="variant-value-row">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                                        <input type="text" name="attributes[0][values][0][value]" required placeholder="Ví dụ: S, M, L" 
+                                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                                        <input type="number" name="attributes[0][values][0][price_adjustment]" step="0.01" value="0" 
+                                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                    </div>
+                                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                Thêm giá trị
+                            </button>
+                        </div>
+                    @endif
+                </div>
                 <button type="button" id="add-attribute-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -340,6 +480,24 @@ if (is_array($ingredientsData)) {
   </header>
 
   <div class="px-6 py-6">
+    @if(empty($branchStocks) || count($branchStocks) === 0)
+      <div class="bg-blue-50 p-4 mb-4 rounded-md">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-blue-800">Thông tin số lượng</h3>
+            <div class="mt-2 text-sm text-blue-700">
+              <p>Hiện tại chưa có dữ liệu số lượng tại chi nhánh. Cập nhật số lượng cho từng biến thể tại chi nhánh bên dưới.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    @endif
+
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -356,7 +514,7 @@ if (is_array($ingredientsData)) {
                         $variantName[] = $detail->variantValue->value;
                       }
                     }
-                    echo implode(' / ', $variantName);
+                    echo implode(' / ', $variantName) ?: "Biến thể #" . $variant->id;
                   @endphp
                 </th>
               @endforeach
@@ -375,18 +533,10 @@ if (is_array($ingredientsData)) {
                 @foreach($product->variants as $variant)
                   @php
                     $stockQuantity = 0;
-                    // Try different ways to access the stock quantity
-                    if (isset($branchStocks[$branch->id][$variant->id])) {
+                    
+                    // Look for existing branch stock using the new array structure
+                    if (isset($branchStocks[$branch->id]) && isset($branchStocks[$branch->id][$variant->id])) {
                       $stockQuantity = $branchStocks[$branch->id][$variant->id];
-                    } elseif (isset($branchStocks) && is_array($branchStocks)) {
-                      // Look through the array for matching branch and variant
-                      foreach ($branchStocks as $stock) {
-                        if (isset($stock->branch_id) && isset($stock->product_variant_id) && 
-                            $stock->branch_id == $branch->id && $stock->product_variant_id == $variant->id) {
-                          $stockQuantity = $stock->stock_quantity;
-                          break;
-                        }
-                      }
                     }
                   @endphp
                   <td class="px-6 py-4 whitespace-nowrap">
@@ -402,21 +552,16 @@ if (is_array($ingredientsData)) {
               @else
                 @php
                   $stockQuantity = 0;
-                  $defaultVariantId = isset($product->variants[0]->id) ? $product->variants[0]->id : 0;
+                  $defaultVariantId = 0;
                   
-                  // Try different ways to access the stock quantity
-                  if (isset($branchStocks[$branch->id][$defaultVariantId])) {
+                  // Create default variant ID if no variants exist
+                  if (isset($product->variants) && count($product->variants) > 0) {
+                    $defaultVariantId = $product->variants[0]->id;
+                  }
+                  
+                  // Look for existing branch stock using the new array structure
+                  if (isset($branchStocks[$branch->id]) && isset($branchStocks[$branch->id][$defaultVariantId])) {
                     $stockQuantity = $branchStocks[$branch->id][$defaultVariantId];
-                  } elseif (isset($branchStocks[$branch->id][0])) {
-                    $stockQuantity = $branchStocks[$branch->id][0];
-                  } elseif (isset($branchStocks) && is_array($branchStocks)) {
-                    // Look through the array for matching branch
-                    foreach ($branchStocks as $stock) {
-                      if (isset($stock->branch_id) && $stock->branch_id == $branch->id) {
-                        $stockQuantity = $stock->stock_quantity;
-                        break;
-                      }
-                    }
                   }
                 @endphp
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -441,6 +586,84 @@ if (is_array($ingredientsData)) {
   </div>
 </section>
 
+<!-- Topping Stock Section -->
+@if(isset($product->toppings) && count($product->toppings) > 0)
+<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-8">
+  <header class="px-6 py-4 border-b border-gray-100">
+    <h2 class="text-xl font-semibold text-gray-900">Số lượng Topping tại chi nhánh</h2>
+    <p class="text-gray-500 text-sm mt-1">Quản lý số lượng topping tại các chi nhánh</p>
+  </header>
+
+  <div class="px-6 py-6">
+    @if(empty($toppingStocks) || count($toppingStocks) === 0)
+      <div class="bg-blue-50 p-4 mb-4 rounded-md">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-blue-800">Thông tin số lượng</h3>
+            <div class="mt-2 text-sm text-blue-700">
+              <p>Hiện tại chưa có dữ liệu số lượng topping tại chi nhánh. Cập nhật số lượng cho từng topping tại chi nhánh bên dưới.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    @endif
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chi nhánh</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa chỉ</th>
+            @foreach($product->toppings as $topping)
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {{ $topping->name }}
+              </th>
+            @endforeach
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          @forelse($branches ?? [] as $branch)
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $branch->name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $branch->address }}</td>
+              
+              @foreach($product->toppings as $topping)
+                @php
+                  $stockQuantity = 0;
+                  
+                  // Look for existing topping stock
+                  if (isset($toppingStocks[$branch->id]) && isset($toppingStocks[$branch->id][$topping->id])) {
+                    $stockQuantity = $toppingStocks[$branch->id][$topping->id];
+                  }
+                @endphp
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <input 
+                    type="number" 
+                    name="topping_stock[{{ $branch->id }}][{{ $topping->id }}]" 
+                    min="0" 
+                    class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                    value="{{ $stockQuantity }}"
+                  >
+                </td>
+              @endforeach
+            </tr>
+          @empty
+            <tr>
+              <td colspan="{{ count($product->toppings) + 2 }}" class="px-6 py-4 text-center text-sm text-gray-500">Không có chi nhánh nào</td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+@endif
+
       <!-- Save Buttons -->
       <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
         <button type="button" id="save-draft-btn" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100">Lưu nháp</button>
@@ -462,34 +685,26 @@ if (is_array($ingredientsData)) {
     @endif
     console.log('Attributes:', @json($product->attributes));
     console.log('Variants:', @json($product->variants));
-    console.log('Toppings:', @json($product->toppings));
-    console.log('Branch Stocks:', @json($branchStocks ?? []));
-    console.log('Branches:', @json($branches ?? []));
-    
-    // Helper function to find branch stock record
-    function findBranchStock(branchId, variantId) {
-      @if(isset($branchStocks))
-        @if(is_array($branchStocks))
-          // If branchStocks is a multi-dimensional array
-          if (@json(isset($branchStocks[0]) && is_object($branchStocks[0]))) {
-            // If branchStocks is an array of objects
-            const stocks = @json($branchStocks);
-            return stocks.find(stock => 
-              stock.branch_id == branchId && 
-              stock.product_variant_id == variantId
-            )?.stock_quantity || 0;
-          } else {
-            // If branchStocks is a nested array
-            const stocks = @json($branchStocks);
-            return stocks[branchId]?.[variantId] || 0;
-          }
-        @else
-          return 0;
+    @if(isset($product->variants) && count($product->variants) > 0)
+      console.log('Variant details:');
+      @foreach($product->variants as $index => $variant)
+        console.log('  Variant #{{ $index + 1 }} (ID: {{ $variant->id }})');
+        @if(isset($variant->productVariantDetails) && count($variant->productVariantDetails) > 0)
+          @foreach($variant->productVariantDetails as $detail)
+            @if(isset($detail->variantValue) && isset($detail->variantValue->attribute))
+              console.log('    - {{ $detail->variantValue->attribute->name }}: {{ $detail->variantValue->value }}');
+            @endif
+          @endforeach
         @endif
-      @else
-        return 0;
-      @endif
-    }
+      @endforeach
+    @endif
+    console.log('Branch Stocks Info:');
+    console.log('  Type:', typeof @json($branchStocks));
+    console.log('  Is array:', Array.isArray(@json($branchStocks)));
+    console.log('  Length:', @json($branchStocks) ? @json($branchStocks).length : 0);
+    console.log('  Content:', @json($branchStocks ?? []));
+    console.log('  Branch count:', @json($branches ? count($branches) : 0));
+    console.log('Branches:', @json($branches ?? []));
   </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -605,58 +820,39 @@ if (is_array($ingredientsData)) {
         // Attributes and Variant Values handling
         const attributesContainer = document.getElementById('attributes-container');
         const addAttributeBtn = document.getElementById('add-attribute-btn');
-        let attributeCount = 0;
+        let attributeCount = document.querySelectorAll('.attribute-group').length; // Count existing attributes
 
-        function createAttributeGroup(index, name = '', values = []) {
+        function createAttributeGroup(index) {
             const attributeGroup = document.createElement('div');
             attributeGroup.className = 'attribute-group';
             attributeGroup.innerHTML = `
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-                        <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" value="${name}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
+                        </svg>
+                    </button>
                 </div>
                 <div class="variant-values-container">
-                    ${values.length > 0 ? values.map((val, valueIndex) => `
-                        <div class="variant-value-row">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                                <input type="text" name="attributes[${index}][values][${valueIndex}][value]" required placeholder="Ví dụ: S, M, L" value="${val.value || ''}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                                ${val.id ? `<input type="hidden" name="attributes[${index}][values][${valueIndex}][id]" value="${val.id}">` : ''}
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                                <input type="number" name="attributes[${index}][values][${valueIndex}][price_adjustment]" step="0.01" value="${val.price_adjustment || 0}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                            </div>
-                            <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-                    `).join('') : `
-                        <div class="variant-value-row">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                                <input type="text" name="attributes[${index}][values][0][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                                <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                            </div>
-                            <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-                    `}
+                    <div class="variant-value-row">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                            <input type="text" name="attributes[${index}][values][0][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -676,8 +872,15 @@ if (is_array($ingredientsData)) {
 
         window.addVariantValue = function(button) {
             const container = button.previousElementSibling;
-            const attributeIndex = container.closest('.attribute-group').querySelector('input[name^="attributes["]').name.match(/\[(\d+)\]/)[1];
-            const valueCount = container.children.length;
+            const attributeGroup = container.closest('.attribute-group');
+            const attributeInputs = attributeGroup.querySelectorAll('input[name^="attributes["]');
+            
+            // Find the attribute index from the first input name
+            const attributeIndexMatch = attributeInputs[0].name.match(/\[(\d+)\]/);
+            if (!attributeIndexMatch) return;
+            
+            const attributeIndex = attributeIndexMatch[1];
+            const valueCount = container.querySelectorAll('.variant-value-row').length;
             
             const valueRow = document.createElement('div');
             valueRow.className = 'variant-value-row';
@@ -689,85 +892,15 @@ if (is_array($ingredientsData)) {
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
                     <input type="number" name="attributes[${attributeIndex}][values][${valueCount}][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-            </div>
+                </div>
                 <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
+                    </svg>
+                </button>
             `;
             container.appendChild(valueRow);
         };
-
-        // Load existing attributes
-        @if(isset($product->attributes) && count($product->attributes) > 0)
-            @foreach($product->attributes as $index => $attribute)
-                attributesContainer.appendChild(createAttributeGroup(
-                    {{ $index }}, 
-                    {!! json_encode($attribute->name) !!}, 
-                    {!! json_encode($attribute->values->map(function($value) {
-                        return [
-                            'id' => $value->id,
-                            'value' => $value->value,
-                            'price_adjustment' => $value->price_adjustment
-                        ];
-                    })) !!}
-                ));
-                attributeCount = {{ $index + 1 }};
-            @endforeach
-        @elseif(isset($product->variants) && count($product->variants) > 0)
-            // Extract attributes from variants if the attributes relationship doesn't work
-            @php
-                $attributesMap = [];
-                foreach ($product->variants as $variant) {
-                    foreach ($variant->productVariantDetails as $detail) {
-                        if (isset($detail->variantValue) && isset($detail->variantValue->attribute)) {
-                            $attributeId = $detail->variantValue->attribute->id;
-                            $attributeName = $detail->variantValue->attribute->name;
-                            
-                            if (!isset($attributesMap[$attributeId])) {
-                                $attributesMap[$attributeId] = [
-                                    'id' => $attributeId,
-                                    'name' => $attributeName,
-                                    'values' => []
-                                ];
-                            }
-                            
-                            // Check if value already exists
-                            $valueExists = false;
-                            foreach ($attributesMap[$attributeId]['values'] as $value) {
-                                if ($value['id'] == $detail->variantValue->id) {
-                                    $valueExists = true;
-                                    break;
-                                }
-                            }
-                            
-                            if (!$valueExists) {
-                                $attributesMap[$attributeId]['values'][] = [
-                                    'id' => $detail->variantValue->id,
-                                    'value' => $detail->variantValue->value,
-                                    'price_adjustment' => $detail->variantValue->price_adjustment
-                                ];
-                            }
-                        }
-                    }
-                }
-                $extractedAttributes = array_values($attributesMap);
-            @endphp
-            
-            @foreach($extractedAttributes as $index => $attribute)
-                attributesContainer.appendChild(createAttributeGroup(
-                    {{ $index }}, 
-                    {!! json_encode($attribute['name']) !!}, 
-                    {!! json_encode($attribute['values']) !!}
-                ));
-                attributeCount = {{ $index + 1 }};
-            @endforeach
-        @else
-            // Add default attribute if no attributes exist
-            attributesContainer.appendChild(createAttributeGroup(0));
-            attributeCount = 1;
-        @endif
 
         // Toppings handling
         const toppingsContainer = document.getElementById('toppings-container');
@@ -907,6 +1040,49 @@ if (is_array($ingredientsData)) {
                 if (input.value === '' || isNaN(input.value)) {
                     input.value = 0;
                 }
+                
+                // Log branch stock data for debugging
+                console.log('Branch stock input:', input.name, input.value);
+            });
+            
+            // Add a flag to indicate branch stocks are being updated
+            const updateBranchStocksFlag = document.createElement('input');
+            updateBranchStocksFlag.type = 'hidden';
+            updateBranchStocksFlag.name = 'update_branch_stocks';
+            updateBranchStocksFlag.value = '1';
+            form.appendChild(updateBranchStocksFlag);
+            
+            // Add a flag to indicate topping stocks are being updated
+            const updateToppingStocksFlag = document.createElement('input');
+            updateToppingStocksFlag.type = 'hidden';
+            updateToppingStocksFlag.name = 'update_topping_stocks';
+            updateToppingStocksFlag.value = '1';
+            form.appendChild(updateToppingStocksFlag);
+            
+            // Collect all attribute data and ensure no attribute IDs are lost
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            
+            // Add a flag to indicate we're preserving attributes
+            const preserveAttributesFlag = document.createElement('input');
+            preserveAttributesFlag.type = 'hidden';
+            preserveAttributesFlag.name = 'preserve_attributes';
+            preserveAttributesFlag.value = '1';
+            form.appendChild(preserveAttributesFlag);
+            
+            // Log attribute data for debugging
+            console.log('Attribute count before submit:', attributeGroups.length);
+            attributeGroups.forEach((group, index) => {
+                const nameInput = group.querySelector('input[name$="[name]"]');
+                const idInput = group.querySelector('input[name$="[id]"]');
+                if (nameInput) {
+                    console.log(`Attribute ${index}:`, nameInput.value, idInput ? `ID: ${idInput.value}` : 'New attribute');
+                }
+                
+                const valueInputs = group.querySelectorAll('input[name*="[values]"][name$="[value]"]');
+                console.log(`  Values count: ${valueInputs.length}`);
+                valueInputs.forEach(input => {
+                    console.log(`  Value:`, input.value, input.name);
+                });
             });
             
             // Đảm bảo description luôn gửi lên (kể cả rỗng)
@@ -936,6 +1112,16 @@ if (is_array($ingredientsData)) {
         // Initial check
         toggleReleaseDate();
         
+        // Helper function to find branch stock quantity
+        function findBranchStock(branchId, variantId) {
+            // Using the branch stock data passed from controller
+            const branchStocks = @json($branchStocks ?? []);
+            if (branchStocks[branchId] && branchStocks[branchId][variantId]) {
+                return branchStocks[branchId][variantId];
+            }
+            return 0;
+        }
+        
         // Set branch stock values
         const branchStockInputs = document.querySelectorAll('input[name^="branch_stock"]');
         branchStockInputs.forEach(input => {
@@ -949,6 +1135,20 @@ if (is_array($ingredientsData)) {
                 }
             }
         });
+    });
+  </script>
+  <script>
+    // Debug form submission
+    document.getElementById('edit-product-form').addEventListener('submit', function() {
+      try {
+        const formData = new FormData(this);
+        console.log('Form attributes:', Array.from(formData.entries())
+          .filter(item => item[0].includes('attributes') || item[0].includes('existing_attributes')));
+        console.log('Form branch stocks:', Array.from(formData.entries())
+          .filter(item => item[0].includes('branch_stock')));
+      } catch(e) {
+        console.error('Debug error:', e);
+      }
     });
   </script>
 @endsection

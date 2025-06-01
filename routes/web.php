@@ -17,7 +17,6 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
-use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
@@ -44,6 +43,7 @@ use App\Http\Controllers\Admin\BranchStockController;
 // Product Variant Routes
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\UserRankController;
+
 
 Route::prefix('/')->group(function () {
     // Apply the cart count middleware to all customer-facing routes
@@ -295,6 +295,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::put('/update/{id}', [UserRankController::class, 'update'])->name('update');
         Route::delete('/delete/{id}', [UserRankController::class, 'destroy'])->name('destroy');
         Route::post('/search', [UserRankController::class, 'search'])->name('search');
+        Route::post('/update-status', [UserRankController::class, 'updateStatus'])->name('updateStatus');
     });
     
     // Discount Management
@@ -361,11 +362,3 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-// Test routes for AWS S3 uploads
-Route::prefix('test')->name('test.')->group(function () {
-    Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
-    Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
-    Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
-    Route::delete('/images', [TestController::class, 'deleteImage'])->name('images.delete');
-    Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
-});
