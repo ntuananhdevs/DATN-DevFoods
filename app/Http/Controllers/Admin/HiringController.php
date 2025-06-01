@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DriverApplication;
+use App\Models\DriverApplicationNotifiable;
+use App\Notifications\DriverApplicationConfirmation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class HiringController extends Controller
 {
@@ -79,7 +82,7 @@ class HiringController extends Controller
             $profileImagePath = $request->file('profile_image')->store("{$folderPath}/profile", 'driver_documents');
             $vehicleRegistrationPath = $request->file('vehicle_registration_image')->store("{$folderPath}/vehicle", 'driver_documents');
         } catch (\Exception $e) {
-            \Log::error('File upload failed: ' . $e->getMessage());
+            Log::error('File upload failed: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại.')
                 ->withInput();
@@ -117,6 +120,34 @@ class HiringController extends Controller
             'status' => 'pending',
         ]);
 
+        // Send confirmation email to the applicant
+        try {
+            $applicant = new DriverApplicationNotifiable($application->email, $application->full_name);
+            $applicant->notify(new DriverApplicationConfirmation($application));
+            
+            Log::info("Application confirmation email sent to applicant", [
+                'application_id' => $application->id,
+                'applicant_email' => $application->email,
+                'applicant_name' => $application->full_name
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send application confirmation email: ' . $e->getMessage(), [
+                'application_id' => $application->id,
+                'applicant_email' => $application->email,
+                'error' => $e->getMessage()
+            ]);
+            // Don't fail the application submission if confirmation email fails
+        }
+
+        // Set session flag for successful application submission
+        session()->flash('application_submitted', true);
+        session()->flash('application_data', [
+            'id' => $application->id,
+            'name' => $application->full_name,
+            'email' => $application->email,
+            'submitted_at' => $application->created_at->format('d/m/Y H:i')
+        ]);
+
         return redirect()->route('driver.application.success');
     }
 
@@ -125,7 +156,16 @@ class HiringController extends Controller
      */
     public function applicationSuccess()
     {
-        return view('customer.hiring.success');
+        // Check if user came from successful application submission
+        if (!session()->has('application_submitted')) {
+            return redirect()->route('driver.application.form')
+                ->with('error', 'Vui lòng điền và gửi đơn đăng ký trước khi truy cập trang này.');
+        }
+
+        // Get application data from session (optional, for display purposes)
+        $applicationData = session('application_data');
+
+        return view('customer.hiring.success', compact('applicationData'));
     }
 
     /**
@@ -136,7 +176,7 @@ class HiringController extends Controller
         try {
             return Storage::disk('driver_documents')->temporaryUrl($path, now()->addMinutes($expiration));
         } catch (\Exception $e) {
-            \Log::error('Failed to generate document URL: ' . $e->getMessage());
+            Log::error('Failed to generate document URL: ' . $e->getMessage());
             return null;
         }
     }
