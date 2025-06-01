@@ -626,14 +626,6 @@
                     <i class="fas fa-shield-alt mr-3 text-blue-600"></i>Xác minh bảo mật
                 </h3>
                 
-                {{-- Debug info --}}
-                @if(config('app.debug'))
-                    <p class="text-sm text-gray-500 mb-4">
-                        Debug: Site Key = {{ config('turnstile.site_key') ? 'Present' : 'Missing' }}
-                        ({{ strlen(config('turnstile.site_key')) }} chars)
-                    </p>
-                @endif
-                
                 <div class="flex justify-center">
                     {{-- Temporarily hardcoded for debugging --}}
                     <div class="turnstile-container">
