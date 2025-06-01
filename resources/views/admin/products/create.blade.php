@@ -133,24 +133,27 @@
           <div class="space-y-5 md:col-span-2">
             <div>
               <label for="name" class="block text-sm font-medium text-gray-700">Tên sản phẩm <span class="text-red-500">*</span></label>
-                        <input type="text" id="name" name="name" required placeholder="Nhập tên sản phẩm" value="{{ old('name') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm" value="{{ old('name') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <div class="error-message text-red-500 text-xs mt-1" id="name-error"></div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
             <div>
                             <label for="category_id" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
-                            <select id="category_id" name="category_id" required class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <select id="category_id" name="category_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                   <option value="">Chọn danh mục</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
                                 @endforeach
                 </select>
+                <div class="error-message text-red-500 text-xs mt-1" id="category_id-error"></div>
               </div>
               <div>
                             <label for="base_price" class="block text-sm font-medium text-gray-700">Giá cơ bản <span class="text-red-500">*</span></label>
                 <div class="relative mt-1">
-                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" required placeholder="0" value="{{ old('base_price') }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" placeholder="0" value="{{ old('base_price') }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                             </div>
+                <div class="error-message text-red-500 text-xs mt-1" id="base_price-error"></div>
                 </div>
             </div>
 
@@ -158,6 +161,7 @@
               <div>
                             <label for="preparation_time" class="block text-sm font-medium text-gray-700">Thời gian chuẩn bị (phút)</label>
                             <input type="number" id="preparation_time" name="preparation_time" min="0" placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <div class="error-message text-red-500 text-xs mt-1" id="preparation_time-error"></div>
               </div>
             </div>
 
@@ -174,6 +178,7 @@
                     <div>
                         <label for="ingredients" class="block text-sm font-medium text-gray-700">Nguyên liệu</label>
                         <textarea id="ingredients" name="ingredients" rows="3" placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('ingredients') }}</textarea>
+                        <div class="error-message text-red-500 text-xs mt-1" id="ingredients-error"></div>
             </div>
 
             <div>
@@ -275,6 +280,7 @@
                 <div id="attributes-container">
                     <!-- Attribute groups will be added here -->
               </div>
+                <div class="error-message text-red-500 text-xs mt-2 mb-2" id="attributes-error"></div>
                 <button type="button" id="add-attribute-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -317,6 +323,124 @@
 @section('scripts')
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Validation functions
+        const validateField = (fieldId, errorMessage) => {
+            const field = document.getElementById(fieldId);
+            const errorElement = document.getElementById(`${fieldId}-error`);
+            
+            if (!field || !errorElement) return true; // Skip if elements don't exist
+            
+            const isValid = field.value.trim() !== '';
+            
+            if (!isValid) {
+                errorElement.textContent = errorMessage;
+                field.classList.add('border-red-500');
+            } else {
+                errorElement.textContent = '';
+                field.classList.remove('border-red-500');
+            }
+            
+            return isValid;
+        };
+        
+        const validateRequired = () => {
+            let isValid = true;
+            
+            // Validate product name
+            if (!validateField('name', 'Tên sản phẩm không được bỏ trống')) {
+                isValid = false;
+            }
+            
+            // Validate category
+            if (!validateField('category_id', 'Vui lòng chọn danh mục')) {
+                isValid = false;
+            }
+            
+            // Validate price
+            if (!validateField('base_price', 'Giá cơ bản không được bỏ trống')) {
+                isValid = false;
+            }
+            
+            // Always validate preparation time - show error if not provided or invalid
+            const preparationTime = document.getElementById('preparation_time');
+            const preparationTimeError = document.getElementById('preparation_time-error');
+            if (!preparationTime || preparationTime.value.trim() === '') {
+                preparationTimeError.textContent = 'Thời gian chuẩn bị không được bỏ trống';
+                preparationTime.classList.add('border-red-500');
+                isValid = false;
+            } else if (isNaN(preparationTime.value) || parseInt(preparationTime.value) < 0) {
+                preparationTimeError.textContent = 'Thời gian chuẩn bị phải là số dương';
+                preparationTime.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                preparationTimeError.textContent = '';
+                preparationTime.classList.remove('border-red-500');
+            }
+            
+            // Always validate ingredients - show error if not provided or invalid
+            const ingredients = document.getElementById('ingredients');
+            const ingredientsError = document.getElementById('ingredients-error');
+            if (!ingredients || ingredients.value.trim() === '') {
+                ingredientsError.textContent = 'Nguyên liệu không được bỏ trống';
+                ingredients.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                const lines = ingredients.value.trim().split('\n');
+                if (lines.some(line => line.trim() === '')) {
+                    ingredientsError.textContent = 'Mỗi dòng nên chứa một nguyên liệu';
+                    ingredients.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    ingredientsError.textContent = '';
+                    ingredients.classList.remove('border-red-500');
+                }
+            }
+            
+            // Validate attributes - at least one attribute with name and value
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            const attributesError = document.getElementById('attributes-error');
+            
+            if (attributeGroups.length === 0) {
+                attributesError.textContent = 'Sản phẩm cần có ít nhất một thuộc tính';
+                isValid = false;
+            } else {
+                let hasValidAttribute = false;
+                
+                for (const group of attributeGroups) {
+                    const nameInput = group.querySelector('input[name$="[name]"]');
+                    const valueInputs = group.querySelectorAll('input[name$="[value]"]');
+                    
+                    if (nameInput && nameInput.value.trim() !== '' && 
+                        valueInputs.length > 0 && Array.from(valueInputs).some(input => input.value.trim() !== '')) {
+                        hasValidAttribute = true;
+                        break;
+                    }
+                }
+                
+                if (!hasValidAttribute) {
+                    attributesError.textContent = 'Mỗi thuộc tính cần có tên và ít nhất một giá trị';
+                    isValid = false;
+                } else {
+                    attributesError.textContent = '';
+                }
+            }
+            
+            // Validate primary image
+            const primaryImageUpload = document.getElementById('primary-image-upload');
+            const mainImagePreview = document.getElementById('main-image-preview');
+            
+            if ((!primaryImageUpload || !primaryImageUpload.files.length) && 
+                (mainImagePreview && mainImagePreview.classList.contains('hidden'))) {
+                dtmodalShowToast('warning', {
+                    title: 'Chú ý',
+                    message: 'Vui lòng tải lên ít nhất một hình ảnh cho sản phẩm'
+                });
+                isValid = false;
+            }
+            
+            return isValid;
+        };
+
         // Image upload handling
         const imagePlaceholder = document.getElementById('image-placeholder');
         const primaryImageUpload = document.getElementById('primary-image-upload');
@@ -407,19 +531,21 @@
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-                        <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="text" name="attributes[${index}][name]" placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <div class="error-message text-red-500 text-xs mt-1" id="attribute-${index}-name-error"></div>
                     </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
+                        </svg>
+                    </button>
                 </div>
                 <div class="variant-values-container">
                     <div class="variant-value-row">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                            <input type="text" name="attributes[${index}][values][0][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <input type="text" name="attributes[${index}][values][0][value]" placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <div class="error-message text-red-500 text-xs mt-1" id="attribute-${index}-value-0-error"></div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
@@ -428,9 +554,9 @@
                         <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            </div>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -458,17 +584,18 @@
             valueRow.innerHTML = `
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                    <input type="text" name="attributes[${attributeIndex}][values][${valueCount}][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    <input type="text" name="attributes[${attributeIndex}][values][${valueCount}][value]" placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    <div class="error-message text-red-500 text-xs mt-1" id="attribute-${attributeIndex}-value-${valueCount}-error"></div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
                     <input type="number" name="attributes[${attributeIndex}][values][${valueCount}][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-            </div>
+                </div>
                 <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
+                    </svg>
+                </button>
             `;
             container.appendChild(valueRow);
         };
@@ -536,11 +663,13 @@
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Tên topping</label>
-                        <input type="text" name="toppings[${index}][name]" required placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="text" name="toppings[${index}][name]" placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-name-error"></div>
                     </div>
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
-                        <input type="number" name="toppings[${index}][price]" required min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="number" name="toppings[${index}][price]" min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-price-error"></div>
                     </div>
                     <div class="w-48 mr-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
@@ -558,7 +687,7 @@
                               <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
                               <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
                             </div>
-                            <input type="file" id="topping-image-upload-${index}" name="toppings[${index}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
+                            <input type="file" id="topping-image-upload-${index}" name="toppings.${index}.image" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
                           </div>
                         </div>
                       </div>
@@ -625,17 +754,22 @@
             });
             toppingCount = oldToppings.length;
         @else
-            // Add default topping if no old toppings exist
-            const defaultTopping = createToppingGroup(0);
-            toppingsContainer.appendChild(defaultTopping);
-            toppingCount = 1;
+            // Remove the default topping - let user add toppings as needed
+            // const defaultTopping = createToppingGroup(0);
+            // toppingsContainer.appendChild(defaultTopping);
+            toppingCount = 0;
         @endif
 
         // Form submission
         const form = document.getElementById('add-product-form');
         form.addEventListener('submit', function(e) {
-            // Không ngăn chặn submit mặc định nữa
-            // e.preventDefault();
+            e.preventDefault(); // Prevent default submission to avoid page reload
+            
+            // Validate the form
+            if (!validateRequired()) {
+                return false;
+            }
+            
             // Convert ingredients textarea to JSON array
             const ingredientsText = document.getElementById('ingredients').value;
             const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
@@ -644,10 +778,67 @@
             ingredientsInput.name = 'ingredients_json';
             ingredientsInput.value = JSON.stringify(ingredientsArray);
             form.appendChild(ingredientsInput);
-            // Đảm bảo description luôn gửi lên (kể cả rỗng)
+            
+            // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
-            // Không gọi form.submit() ở đây nữa vì đã để mặc định
+            
+            // Send form data via AJAX to avoid page reload
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    dtmodalShowToast('success', {
+                        title: 'Thành công',
+                        message: 'Sản phẩm đã được tạo thành công!'
+                    });
+                    
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/admin/products';
+                    }, 1500);
+                } else {
+                    // Handle validation errors
+                    if (data.errors) {
+                        Object.keys(data.errors).forEach(key => {
+                            const errorElement = document.getElementById(`${key.replace(/\./g, '-')}-error`);
+                            if (errorElement) {
+                                errorElement.textContent = data.errors[key][0];
+                                const inputElement = document.querySelector(`[name="${key}"]`);
+                                if (inputElement) {
+                                    inputElement.classList.add('border-red-500');
+                                }
+                            } else if (key === 'primary_image') {
+                                dtmodalShowToast('error', {
+                                    title: 'Lỗi',
+                                    message: data.errors[key][0]
+                                });
+                            }
+                        });
+                    } else {
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Đã có lỗi xảy ra khi tạo sản phẩm.'
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Đã có lỗi xảy ra khi gửi biểu mẫu.'
+                });
+            });
         });
 
         // Handle status and release date visibility
@@ -658,10 +849,8 @@
             const selectedStatus = document.querySelector('input[name="status"]:checked').value;
             if (selectedStatus === 'coming_soon') {
                 releaseAtDiv.classList.remove('hidden');
-                releaseAtDiv.querySelector('#release_at').required = true;
             } else {
                 releaseAtDiv.classList.add('hidden');
-                releaseAtDiv.querySelector('#release_at').required = false;
             }
         }
 
@@ -671,103 +860,6 @@
 
         // Initial check
         toggleReleaseDate();
-
-        // Variant stock management
-        const bulkStockInput = document.getElementById('bulk-stock-input');
-        const applyAllStockBtn = document.getElementById('apply-all-stock');
-        const variantStocksTable = document.getElementById('variant-stocks-table');
-        let variants = [];
-
-        // Function to generate variant combinations
-        function generateCombinations(attributes) {
-            if (attributes.length === 0) return [];
-            
-            const result = [];
-            const firstAttr = attributes[0];
-            
-            if (attributes.length === 1) {
-                return firstAttr.values.map(value => [{
-                    name: firstAttr.name,
-                    value: value
-                }]);
-            }
-            
-            const restCombinations = generateCombinations(attributes.slice(1));
-            
-            firstAttr.values.forEach(value => {
-                restCombinations.forEach(combination => {
-                    result.push([{
-                        name: firstAttr.name,
-                        value: value
-                    }, ...combination]);
-                });
-            });
-            
-            return result;
-        }
-
-        // Function to update the stock table
-        function updateStockTable() {
-            const attributeGroups = document.querySelectorAll('.attribute-group');
-            const attributeValues = Array.from(attributeGroups).map(group => {
-                const name = group.querySelector('input[name$="[name]"]').value;
-                const values = Array.from(group.querySelectorAll('input[name$="[value]"]')).map(input => input.value);
-                return { name, values };
-            });
-
-            variants = generateCombinations(attributeValues);
-            
-            // Generate table rows
-            variantStocksTable.innerHTML = variants.map((variant, variantIndex) => {
-                const variantName = variant.map(v => `${v.name}: ${v.value}`).join(' - ');
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ${variantName}
-                        </td>
-                        @foreach($branches as $branch)
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <input type="number" 
-                                   name="variant_stocks[${variantIndex}][{{ $branch->id }}]" 
-                                   min="0" 
-                                   value="0" 
-                                   class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </td>
-                        @endforeach
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Update table when attributes change
-        document.querySelectorAll('.attribute-group input').forEach(input => {
-            input.addEventListener('change', updateStockTable);
-        });
-
-        // Handle apply all stock
-        applyAllStockBtn.addEventListener('click', () => {
-            const stockValue = parseInt(bulkStockInput.value);
-            if (isNaN(stockValue) || stockValue < 0) {
-                alert('Vui lòng nhập số lượng tồn kho hợp lệ');
-                return;
-            }
-
-            // Update all stock inputs
-            document.querySelectorAll('#variant-stocks-table input[type="number"]').forEach(input => {
-                input.value = stockValue;
-            });
-        });
-
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + Enter to apply stock to all
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                applyAllStockBtn.click();
-            }
-        });
-
-        // Initial table update
-        updateStockTable();
     });
   </script>
 @endsection

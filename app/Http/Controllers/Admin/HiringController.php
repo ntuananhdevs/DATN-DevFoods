@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DriverApplication;
 use App\Models\DriverApplicationNotifiable;
 use App\Notifications\DriverApplicationConfirmation;
+use App\Rules\TurnstileRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -64,6 +65,11 @@ class HiringController extends Controller
             'emergency_contact_phone' => 'required|string|max:20',
             'emergency_contact_relationship' => 'required|string|max:50',
             'terms_accepted' => 'required|accepted',
+            'cf-turnstile-response' => ['required', new TurnstileRule()],
+        ], [
+            'cf-turnstile-response.required' => 'Vui lòng hoàn thành xác minh bảo mật.',
+            'terms_accepted.required' => 'Bạn phải đồng ý với điều khoản và điều kiện.',
+            'terms_accepted.accepted' => 'Bạn phải đồng ý với điều khoản và điều kiện.',
         ]);
 
         if ($validator->fails()) {

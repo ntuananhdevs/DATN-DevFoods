@@ -51,44 +51,40 @@
 
             <p class="text-gray-600">{{ $product->short_description }}</p>
 
-            <!-- Available branches -->
-            <div class="bg-orange-50 p-4 rounded-lg">
-                <div class="flex items-center gap-2 mb-3">
-                    <i class="fas fa-map-marker-alt h-4 w-4 text-orange-500"></i>
-                    <span class="font-medium">Có sẵn tại {{ $branches->count() }} chi nhánh</span>
+            <!-- Get selected branch information for JS -->
+            @php
+                $selectedBranchId = session('selected_branch');
+                $isAvailable = false;
+                
+                if ($selectedBranchId) {
+                    $selectedBranch = $branches->where('id', $selectedBranchId)->first();
+                    if ($selectedBranch) {
+                        $variantCount = $selectedBranch->stocks()
+                            ->whereHas('productVariant', function($query) use ($product) {
+                                $query->where('product_id', $product->id);
+                            })
+                            ->where('stock_quantity', '>', 0)
+                            ->distinct('product_variant_id')
+                            ->count('product_variant_id');
+                        
+                        $isAvailable = $variantCount > 0;
+                    }
+                }
+            @endphp
+            
+            <!-- Hidden branch_id input for JS -->
+            <input type="hidden" id="branch-select" value="{{ $selectedBranchId }}">
+            
+            @if($selectedBranchId && !$isAvailable)
+                <div class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
+                    <p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>
                 </div>
-                <select class="w-full p-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
-                        id="branch-select">
-                    <option value="">Chọn chi nhánh</option>
-                    @foreach($branches as $branch)
-                        @php
-                            // Tính tổng số lượng tồn kho của tất cả biến thể tại chi nhánh này
-                            $variantCount = $branch->stocks()
-                                ->whereHas('productVariant', function($query) use ($product) {
-                                    $query->where('product_id', $product->id);
-                                })
-                                ->distinct('product_variant_id')
-                                ->count('product_variant_id');
-                        @endphp
-                        <option value="{{ $branch->id }}" 
-                                data-address="{{ $branch->address }}"
-                                data-stock="{{ $variantCount }}">
-                            {{ $branch->name }} ({{ $variantCount }})
-                        </option>
-                    @endforeach
-                </select>
-                <div class="mt-2 space-y-2 hidden" id="branch-info">
-                    <p class="text-sm text-gray-600" id="branch-address"></p>
-                    <div class="flex items-center gap-2 text-sm" id="stock-status">
-                        <i class="fas"></i>
-                        <span></span>
-                    </div>
-                </div>
-            </div>
+            @endif
 
             <!-- Product variants -->
             <div class="space-y-4" id="variants-container">
                 @foreach($variantAttributes as $attribute)
+                @if(count($attribute->values) > 0)
                 <div>
                     <h3 class="font-medium mb-2">{{ $attribute->name }}</h3>
                     <div class="flex flex-wrap gap-2">
@@ -100,8 +96,9 @@
                                    data-attribute-id="{{ $attribute->id }}"
                                    data-price-adjustment="{{ $value->price_adjustment }}"
                                    class="sr-only variant-input"
-                                   {{ $loop->first ? 'checked' : '' }}>
-                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50">
+                                   {{ $loop->first ? 'checked' : '' }}
+                                   {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
+                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
                                 {{ $value->value }}
                                 @if($value->price_adjustment != 0)
                                     <span class="text-sm ml-1 {{ $value->price_adjustment > 0 ? 'text-red-600' : 'text-green-600' }}">
@@ -113,24 +110,79 @@
                         @endforeach
                     </div>
                 </div>
+                @endif
                 @endforeach
             </div>
+
+            <!-- Toppings Section -->
+            @if(count($product->toppings) > 0)
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-medium">Toppings</h3>
+                    <span class="text-sm text-gray-500">Chọn nhiều</span>
+                </div>
+                <div class="relative">
+                    <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100 hover:scrollbar-thumb-orange-300">
+                        @foreach($product->toppings as $topping)
+                        <label class="relative flex-shrink-0 w-24 cursor-pointer group {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
+                            <input type="checkbox" 
+                                   name="toppings[]" 
+                                   value="{{ $topping->id }}"
+                                   class="sr-only topping-input"
+                                   data-price="{{ $topping->price }}"
+                                   {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
+                            <div class="relative aspect-square rounded-lg overflow-hidden border group-hover:border-orange-500 transition-colors">
+                                @if($topping->image)
+                                    <img src="{{ Storage::disk('s3')->url($topping->image) }}" 
+                                         alt="{{ $topping->name }}" 
+                                         class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                                        <i class="fas fa-utensils text-gray-400 text-xl"></i>
+                                    </div>
+                                @endif
+                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity"></div>
+                                <div class="absolute top-1 right-1 w-4 h-4 border-2 border-white rounded-full bg-white/50 backdrop-blur-sm">
+                                    <div class="w-full h-full rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                                </div>
+                                @if($selectedBranchId)
+                                    @php
+                                        $toppingStock = $topping->toppingStocks->first();
+                                        $stockQuantity = $toppingStock ? $toppingStock->stock_quantity : 0;
+                                    @endphp
+                                    @if($stockQuantity < 5)
+                                        <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1">
+                                            Còn {{ $stockQuantity }}
+                                        </div>
+                                    @endif
+                                @endif
+                            </div>
+                            <div class="mt-1 text-center">
+                                <p class="text-xs font-medium truncate">{{ $topping->name }}</p>
+                                <p class="text-xs text-orange-500 font-medium">
+                                    +{{ number_format($topping->price, 0, ',', '.') }}đ
+                                </p>
+                            </div>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Quantity Selection -->
             <div class="flex items-center gap-4">
                 <span class="font-medium">Số lượng:</span>
                 <div class="flex items-center">
-                    <button class="h-8 w-8 rounded-l-md border border-gray-300 flex items-center justify-center hover:bg-gray-100" 
+                    <button class="h-8 w-8 rounded-l-md border border-gray-300 flex items-center justify-center hover:bg-gray-100 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
                             id="decrease-quantity"
-                            :disabled="!selectedBranch || parseInt($el.querySelector(`option[value='${selectedBranch}']`)?.dataset?.stock) === 0"
-                            :class="{'opacity-50 cursor-not-allowed': !selectedBranch || parseInt($el.querySelector(`option[value='${selectedBranch}']`)?.dataset?.stock) === 0}">
+                            {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                         <i class="fas fa-minus h-3 w-3"></i>
                     </button>
                     <div class="h-8 px-3 flex items-center justify-center border-y border-gray-300" id="quantity">1</div>
-                    <button class="h-8 w-8 rounded-r-md border border-gray-300 flex items-center justify-center hover:bg-gray-100" 
+                    <button class="h-8 w-8 rounded-r-md border border-gray-300 flex items-center justify-center hover:bg-gray-100 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
                             id="increase-quantity"
-                            :disabled="!selectedBranch || parseInt($el.querySelector(`option[value='${selectedBranch}']`)?.dataset?.stock) === 0"
-                            :class="{'opacity-50 cursor-not-allowed': !selectedBranch || parseInt($el.querySelector(`option[value='${selectedBranch}']`)?.dataset?.stock) === 0}">
+                            {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                         <i class="fas fa-plus h-3 w-3"></i>
                     </button>
                 </div>
@@ -139,20 +191,13 @@
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3 pt-4">
                 <button id="add-to-cart" 
-                        class="w-full sm:flex-1 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                        :disabled="!selectedBranch || parseInt($el.querySelector(`option[value='${selectedBranch}']`)?.dataset?.stock) === 0"
-                        @click="$store.cart.addItem({
-                            id: {{ $product->id }},
-                            variants: $store.variants.selectedVariants,
-                            branch_id: selectedBranch,
-                            quantity: parseInt(document.getElementById('quantity').textContent),
-                            price: $store.variants.calculateTotalPrice()
-                        })">
-                    <i class="fas fa-shopping-cart h-5 w-5 mr-2"></i>
-                    <span x-text="!selectedBranch ? 'Vui lòng chọn chi nhánh' : (parseInt($el.querySelector(`option[value='${selectedBranch}']`)?.dataset?.stock) === 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng')"></span>
+                        class="w-full sm:flex-1 {{ isset($product->has_stock) && $product->has_stock ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-400' }} text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
+                    <i class="fas {{ isset($product->has_stock) && $product->has_stock ? 'fa-shopping-cart' : 'fa-ban' }} h-5 w-5 mr-2"></i>
+                    <span>{{ isset($product->has_stock) && !$product->has_stock ? 'Hết hàng' : 'Thêm vào giỏ hàng' }}</span>
                 </button>
                 <button class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        :disabled="!selectedBranch || parseInt($el.querySelector(`option[value='${selectedBranch}']`)?.dataset?.stock) === 0">
+                        {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
                     Mua ngay
                 </button>
                 <div class="flex gap-3 justify-center sm:justify-start">
@@ -522,315 +567,264 @@
 @endsection
 
 @section('scripts')
+<script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Product price handling
-        const basePrice = {{ $product->base_price }};
-        const currentPriceElement = document.getElementById('current-price');
-        const basePriceElement = document.getElementById('base-price');
-        const variantInputs = document.querySelectorAll('.variant-input');
-        const variantLabels = document.querySelectorAll('.variant-label');
-        
-        let selectedVariants = {};
-        
-        // Format price function
-        function formatPrice(price) {
-            return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
-        }
-        
-        // Calculate total price
-        function calculateTotalPrice() {
-            console.log('Calculating total price...');
-            let total = basePrice;
-            let adjustments = [];
-            
-            // Get all selected variants
-            variantInputs.forEach(input => {
-                if (input.checked) {
-                    const adjustment = parseFloat(input.dataset.priceAdjustment) || 0;
-                    total += adjustment;
-                    
-                    adjustments.push({
-                        attributeId: input.dataset.attributeId,
-                        adjustment: adjustment
-                    });
-                    
-                    console.log('Added adjustment:', {
-                        attributeId: input.dataset.attributeId,
-                        adjustment: adjustment
-                    });
-                }
-            });
-            
-            console.log('Price adjustments:', adjustments);
-            console.log('New total price:', total);
-            
-            // Update price display
-            currentPriceElement.textContent = formatPrice(total);
-            
-            // Show/hide base price
-            if (total > basePrice) {
-                basePriceElement.classList.remove('hidden');
-            } else {
-                basePriceElement.classList.add('hidden');
+    document.addEventListener("DOMContentLoaded", function() {
+        // Auto-show branch selector if no branch is selected
+        const selectedBranchId = {{ session('selected_branch') ? session('selected_branch') : 'null' }};
+        if (!selectedBranchId) {
+            const branchModal = document.getElementById('branch-selector-modal');
+            if (branchModal) {
+                branchModal.style.display = 'flex';
+                document.body.classList.add('overflow-hidden');
             }
-            
-            return total;
         }
         
-        // Handle variant selection
-        variantInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                console.log('Variant selected:', {
-                    attributeId: this.dataset.attributeId,
-                    adjustment: this.dataset.priceAdjustment
-                });
-                
-                // Update selected variants
-                selectedVariants[this.dataset.attributeId] = this.value;
-                
-                // Update variant styling
-                const labels = document.querySelectorAll(`[name="attribute_${this.dataset.attributeId}"] + .variant-label`);
-                labels.forEach(label => {
-                    label.classList.remove('bg-orange-100', 'border-orange-500', 'text-orange-600');
-                });
-                this.nextElementSibling.classList.add('bg-orange-100', 'border-orange-500', 'text-orange-600');
-                
-                // Recalculate price
-                calculateTotalPrice();
-            });
-        });
-        
-        // Initialize price calculation
-        console.log('Initializing price calculation...');
-        console.log('Base price:', basePrice);
-        calculateTotalPrice();
+        // Show toast function
+        window.showToast = function(message, type = 'info') {
+            if (typeof showNotification === 'function') {
+                const titles = {
+                    success: 'Thành công!',
+                    error: 'Lỗi!',
+                    warning: 'Cảnh báo!', 
+                    info: 'Thông báo!'
+                };
+                showNotification(type, titles[type], message);
+            } else {
+                alert(message);
+            }
+        };
         
         // Product image gallery
         const mainImage = document.getElementById('main-product-image');
         const thumbnails = document.querySelectorAll('.product-thumbnail');
         
-        thumbnails.forEach(thumbnail => {
-            thumbnail.addEventListener('click', function() {
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', function() {
                 // Update main image
-                const imgSrc = this.querySelector('img').src;
-                mainImage.src = imgSrc;
+                mainImage.src = this.querySelector('img').src;
                 
-                // Update active thumbnail
-                thumbnails.forEach(thumb => {
-                    thumb.classList.remove('border-orange-500');
-                    thumb.classList.add('border-transparent');
-                });
-                this.classList.remove('border-transparent');
+                // Update active state
+                thumbnails.forEach(t => t.classList.remove('border-orange-500'));
                 this.classList.add('border-orange-500');
             });
         });
         
-        // Quantity controls
-        const quantityElement = document.getElementById('quantity');
-        const decreaseButton = document.getElementById('decrease-quantity');
-        const increaseButton = document.getElementById('increase-quantity');
+        // Price calculation
+        const basePrice = {{ $product->base_price }};
+        const basePriceDisplay = document.getElementById('base-price');
+        const currentPriceDisplay = document.getElementById('current-price');
+        const variantInputs = document.querySelectorAll('.variant-input');
+        const toppingInputs = document.querySelectorAll('.topping-input');
+        const quantityDisplay = document.getElementById('quantity');
         let quantity = 1;
+        let totalPrice = basePrice;
         
-        decreaseButton.addEventListener('click', function() {
+        function updatePrice() {
+            // Calculate variant price adjustments
+            let variantAdjustment = 0;
+            document.querySelectorAll('.variant-input:checked').forEach(input => {
+                variantAdjustment += parseFloat(input.dataset.priceAdjustment || 0);
+            });
+            
+            // Calculate topping price
+            let toppingPrice = 0;
+            document.querySelectorAll('.topping-input:checked').forEach(input => {
+                toppingPrice += parseFloat(input.dataset.price || 0);
+            });
+            
+            // Single item price (variant price + toppings)
+            const singleItemPrice = basePrice + variantAdjustment;
+            const totalItemPrice = singleItemPrice + toppingPrice;
+            
+            // Apply quantity
+            totalPrice = totalItemPrice * quantity;
+            
+            // Update display
+            if (variantAdjustment !== 0 || toppingPrice !== 0) {
+                basePriceDisplay.textContent = `${basePrice.toLocaleString('vi-VN')}đ`;
+                basePriceDisplay.classList.remove('hidden');
+            } else {
+                basePriceDisplay.classList.add('hidden');
+            }
+            
+            currentPriceDisplay.textContent = `${totalPrice.toLocaleString('vi-VN')}đ`;
+            
+            // Highlight current price if different from base
+            if (totalPrice !== basePrice) {
+                currentPriceDisplay.classList.add('text-green-500');
+                currentPriceDisplay.classList.remove('text-orange-500');
+            } else {
+                currentPriceDisplay.classList.add('text-orange-500');
+                currentPriceDisplay.classList.remove('text-green-500');
+            }
+        }
+        
+        // Variant selection
+        variantInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                // Update visual state of labels
+                const attributeId = this.dataset.attributeId;
+                document.querySelectorAll(`[data-attribute-id="${attributeId}"] + .variant-label`).forEach(label => {
+                    label.classList.remove('bg-orange-100', 'border-orange-500', 'text-orange-600');
+                });
+                
+                this.nextElementSibling.classList.add('bg-orange-100', 'border-orange-500', 'text-orange-600');
+                updatePrice();
+            });
+        });
+        
+        // Topping selection
+        toppingInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const toppingContainer = this.closest('label');
+                if (this.checked) {
+                    toppingContainer.classList.add('topping-checked');
+                    toppingContainer.querySelector('.w-full').classList.add('scale-110');
+                    toppingContainer.querySelector('.bg-orange-500').classList.add('scale-100');
+                } else {
+                    toppingContainer.classList.remove('topping-checked');
+                    toppingContainer.querySelector('.w-full').classList.remove('scale-110');
+                    toppingContainer.querySelector('.bg-orange-500').classList.remove('scale-100');
+                }
+                updatePrice();
+            });
+        });
+        
+        // Quantity controls
+        const decreaseBtn = document.getElementById('decrease-quantity');
+        const increaseBtn = document.getElementById('increase-quantity');
+        
+        decreaseBtn.addEventListener('click', function() {
             if (quantity > 1) {
                 quantity--;
-                quantityElement.textContent = quantity;
+                quantityDisplay.textContent = quantity;
+                updatePrice();
             }
         });
         
-        increaseButton.addEventListener('click', function() {
+        increaseBtn.addEventListener('click', function() {
             quantity++;
-            quantityElement.textContent = quantity;
+            quantityDisplay.textContent = quantity;
+            updatePrice();
         });
         
-        // Tab functionality
+        // Add to cart functionality
+        const addToCartBtn = document.getElementById('add-to-cart');
+        
+        addToCartBtn.addEventListener('click', function() {
+            // Get selected branch
+            const branchId = document.getElementById('branch-select').value;
+            if (!branchId) {
+                showToast('Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng', 'warning');
+                return;
+            }
+            
+            // Get all selected variant values
+            const selectedVariantValueIds = [];
+            const variantGroups = document.querySelectorAll('#variants-container > div');
+            
+            variantGroups.forEach(group => {
+                const checkedInput = group.querySelector('input:checked');
+                if (checkedInput) {
+                    selectedVariantValueIds.push(parseInt(checkedInput.value));
+                }
+            });
+            
+            // Get selected toppings
+            const selectedToppings = Array.from(document.querySelectorAll('.topping-input:checked'))
+                .map(input => parseInt(input.value));
+            
+            // API call to get actual product variant ID
+            console.log('Selected variant values:', selectedVariantValueIds);
+            
+            // First, fetch the actual product variant ID based on the selected variant values
+            fetch('/api/customer/products/get-variant', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    product_id: {{ $product->id }},
+                    variant_values: selectedVariantValueIds
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const variantId = data.variant_id;
+                    
+                    // Now add to cart with the retrieved variant ID
+                    return fetch('/api/customer/cart/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            product_id: {{ $product->id }},
+                            variant_id: variantId,
+                            branch_id: branchId,
+                            quantity: quantity,
+                            toppings: selectedToppings
+                        })
+                    });
+                } else {
+                    throw new Error(data.message || 'Không tìm thấy biến thể sản phẩm');
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Sản phẩm đã được thêm vào giỏ hàng!', 'success');
+                    
+                    // Update cart counter if needed
+                    if (typeof window.updateCartCount === 'function' && data.count) {
+                        window.updateCartCount(data.count);
+                    }
+                } else {
+                    showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast(error.message || 'Có lỗi xảy ra', 'error');
+            });
+        });
+
+        // Initialize
+        updatePrice();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching functionality
         const tabButtons = document.querySelectorAll('[data-tab]');
         const tabContents = document.querySelectorAll('.tab-content');
         
         tabButtons.forEach(button => {
             button.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
+                const tabName = this.getAttribute('data-tab');
                 
-                // Update active tab button
+                // Reset all tab buttons
                 tabButtons.forEach(btn => {
                     btn.classList.remove('border-orange-500', 'text-orange-500');
                     btn.classList.add('border-transparent');
                 });
-                this.classList.remove('border-transparent');
-                this.classList.add('border-orange-500', 'text-orange-500');
                 
-                // Show active tab content
+                // Hide all tab contents
                 tabContents.forEach(content => {
                     content.classList.add('hidden');
                 });
-                document.getElementById('content-' + tabId).classList.remove('hidden');
+                
+                // Activate clicked tab
+                this.classList.add('border-orange-500', 'text-orange-500');
+                this.classList.remove('border-transparent');
+                
+                // Show corresponding content
+                document.getElementById('content-' + tabName).classList.remove('hidden');
             });
         });
-        
-        // Branch selection
-        const branchSelect = document.getElementById('branch-select');
-        const branchInfo = document.getElementById('branch-info');
-        const branchAddress = document.getElementById('branch-address');
-        const stockStatus = document.getElementById('stock-status');
-
-        function updateBranchInfo() {
-            const selectedOption = branchSelect.options[branchSelect.selectedIndex];
-            
-            if (branchSelect.value) {
-                const stock = parseInt(selectedOption.dataset.stock);
-                
-                // Hiển thị địa chỉ
-                branchAddress.textContent = selectedOption.dataset.address;
-                
-                // Cập nhật trạng thái tồn kho
-                const icon = stockStatus.querySelector('i');
-                const text = stockStatus.querySelector('span');
-                
-                if (stock > 0) {
-                    stockStatus.className = 'flex items-center gap-2 text-sm text-green-600';
-                    icon.className = 'fas fa-check-circle';
-                    text.textContent = 'Có sẵn để giao hàng';
-                } else {
-                    stockStatus.className = 'flex items-center gap-2 text-sm text-red-600';
-                    icon.className = 'fas fa-times-circle';
-                    text.textContent = 'Hết hàng';
-                }
-                
-                branchInfo.classList.remove('hidden');
-                console.log('Branch selected:', {
-                    name: selectedOption.text,
-                    address: selectedOption.dataset.address,
-                    stock: stock
-                });
-            } else {
-                branchInfo.classList.add('hidden');
-            }
-        }
-
-        branchSelect.addEventListener('change', updateBranchInfo);
-        
-        // Add to cart functionality
-        const addToCartButton = document.getElementById('add-to-cart');
-        
-        addToCartButton.addEventListener('click', function() {
-            // Get selected options
-            const variantValues = [];
-            document.querySelectorAll('[name^="attribute_"]').forEach(input => {
-                if (input.checked) {
-                    variantValues.push(input.value);
-                }
-            });
-            
-            // Show toast notification
-            showToast(`Đã thêm ${quantity} ${@json($product->name)} vào giỏ hàng`);
-            
-            // You would typically update cart count and send data to server here
-        });
-        
-        // Simple toast notification function
-        function showToast(message) {
-            // Create toast element
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
-            toast.textContent = message;
-            
-            // Add to DOM
-            document.body.appendChild(toast);
-            
-            // Show toast
-            setTimeout(() => {
-                toast.classList.remove('opacity-0');
-                toast.classList.add('opacity-100');
-            }, 10);
-            
-            // Hide and remove toast after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-                
-                setTimeout(() => {
-                    document.body.removeChild(toast);
-                }, 300);
-            }, 3000);
-        }
-        
-        // Login popup handling
-        const loginPromptBtn = document.getElementById('login-prompt-btn');
-        const loginPopup = document.getElementById('login-popup');
-        const closeLoginPopup = document.getElementById('close-login-popup');
-        
-        // Show login popup when favorite button is clicked for non-authenticated users
-        if (loginPromptBtn) {
-            loginPromptBtn.addEventListener('click', function() {
-                loginPopup.classList.remove('hidden');
-                // Add a small animation
-                loginPopup.querySelector('div').classList.add('scale-100');
-                loginPopup.querySelector('div').classList.remove('scale-95');
-            });
-        }
-        
-        // Close popup when close button is clicked
-        if (closeLoginPopup) {
-            closeLoginPopup.addEventListener('click', function() {
-                loginPopup.classList.add('hidden');
-            });
-        }
-        
-        // Close popup when clicking outside the modal
-        if (loginPopup) {
-            loginPopup.addEventListener('click', function(e) {
-                if (e.target === loginPopup) {
-                    loginPopup.classList.add('hidden');
-                }
-            });
-        }
-        
-        // Handle favorite button click for authenticated users
-        const favoriteBtn = document.querySelector('.favorite-btn');
-        if (favoriteBtn) {
-            favoriteBtn.addEventListener('click', function() {
-                const productId = this.getAttribute('data-product-id');
-                const heartIcon = this.querySelector('i');
-                const isFavorite = heartIcon.classList.contains('fas');
-                
-                // Toggle heart icon
-                if (isFavorite) {
-                    heartIcon.classList.remove('fas', 'text-red-500');
-                    heartIcon.classList.add('far');
-                } else {
-                    heartIcon.classList.remove('far');
-                    heartIcon.classList.add('fas', 'text-red-500');
-                }
-                
-                // Send request to server to update favorite status
-                fetch('{{ route("wishlist.store") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({ id: productId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast(isFavorite ? 'Đã xóa khỏi danh sách yêu thích' : 'Đã thêm vào danh sách yêu thích');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating favorite status:', error);
-                    // Revert icon change if request failed
-                    if (isFavorite) {
-                        heartIcon.classList.remove('far');
-                        heartIcon.classList.add('fas', 'text-red-500');
-                    } else {
-                        heartIcon.classList.remove('fas', 'text-red-500');
-                        heartIcon.classList.add('far');
-                    }
-                });
-            });
-        }
     });
 </script>
 @endsection

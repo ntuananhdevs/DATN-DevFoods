@@ -657,6 +657,25 @@
         <div class="modal-footer">
             <button type="button" onclick="hideTermsModal()" class="btn-primary">Đã hiểu</button>
         </div>
+        <div class="modal-body">
+            <h4 class="font-semibold text-lg mb-3">1. Đối tác tài xế</h4>
+            <p class="mb-4">Bằng việc đăng ký và sử dụng dịch vụ của chúng tôi, bạn đồng ý rằng bạn là đối tác độc lập và không phải là nhân viên của DevFoods.</p>
+            
+            <h4 class="font-semibold text-lg mb-3">2. Trách nhiệm</h4>
+            <p class="mb-4">Bạn chịu trách nhiệm đảm bảo xe của bạn đáp ứng các tiêu chuẩn an toàn và luật pháp địa phương. Bạn cũng chịu trách nhiệm về hành vi của mình trong quá trình giao hàng.</p>
+            
+            <h4 class="font-semibold text-lg mb-3">3. Thanh toán</h4>
+            <p class="mb-4">DevFoods sẽ thanh toán cho bạn theo các điều khoản thanh toán đã thỏa thuận. Bạn chịu trách nhiệm về thuế và các khoản phí khác liên quan đến thu nhập của bạn.</p>
+            
+            <h4 class="font-semibold text-lg mb-3">4. Bảo mật thông tin</h4>
+            <p class="mb-4">DevFoods cam kết bảo vệ thông tin cá nhân của bạn theo chính sách bảo mật của chúng tôi. Thông tin của bạn sẽ chỉ được sử dụng cho mục đích vận hành dịch vụ.</p>
+            
+            <h4 class="font-semibold text-lg mb-3">5. Chấm dứt hợp tác</h4>
+            <p class="mb-0">Cả hai bên đều có quyền chấm dứt mối quan hệ hợp tác này bất cứ lúc nào, với hoặc không có lý do.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" onclick="hideTermsModal()" class="btn-primary">Đã hiểu</button>
+        </div>
     </div>
 </div>
 
