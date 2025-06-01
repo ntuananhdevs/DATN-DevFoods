@@ -459,24 +459,74 @@ if (is_array($ingredientsData)) {
           </section>
 <!-- Toppings Section -->
 <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <header class="px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
-          <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
-        </header>
+  <header class="px-6 py-4 border-b border-gray-100">
+    <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+    <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
+  </header>
 
-        <div class="px-6 py-6">
-          <div id="toppings-container">
-            <!-- Topping groups will be added here -->
+  <div class="px-6 py-6">
+    <div id="toppings-container">
+      <!-- Existing topping groups will be loaded here -->
+      @if(isset($product->toppings) && count($product->toppings) > 0)
+        @foreach($product->toppings as $index => $topping)
+          <div class="border rounded-md p-4 mb-4">
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex-1 mr-4">
+                <label class="block text-sm font-medium text-gray-700">Tên topping</label>
+                <input type="text" name="toppings[{{ $index }}][name]" value="{{ $topping->name }}" placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                <input type="hidden" name="toppings[{{ $index }}][id]" value="{{ $topping->id }}">
+                <div class="error-message text-red-500 text-xs mt-1" id="topping-{{ $index }}-name-error"></div>
+              </div>
+              <div class="flex-1 mr-4">
+                <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
+                <input type="number" name="toppings[{{ $index }}][price]" value="{{ $topping->price }}" min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                <div class="error-message text-red-500 text-xs mt-1" id="topping-{{ $index }}-price-error"></div>
+              </div>
+              <div class="w-48 mr-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+                <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                  <div id="topping-image-placeholder-{{ $index }}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                    <div id="topping-image-preview-wrap-{{ $index }}" class="absolute inset-0 w-full h-full {{ $topping->image ? '' : 'hidden' }}">
+                      <img id="topping-image-preview-{{ $index }}" src="{{ $topping->image ? Storage::disk('s3')->url($topping->image) : '' }}" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
+                    </div>
+                    <div id="topping-upload-content-{{ $index }}" class="flex flex-col items-center justify-center {{ $topping->image ? 'hidden' : '' }}">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
+                      <button type="button" id="select-topping-image-btn-{{ $index }}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
+                    </div>
+                    <input type="file" id="topping-image-upload-{{ $index }}" name="toppings[{{ $index }}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-{{ $index }}" data-preview-wrap-id="topping-image-preview-wrap-{{ $index }}" data-upload-content-id="topping-upload-content-{{ $index }}" />
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div class="flex items-center gap-4">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="toppings[{{ $index }}][active]" value="1" {{ $topping->active ? 'checked' : '' }} class="form-checkbox text-blue-600" />
+                <span class="text-sm text-gray-700">Đang bán</span>
+              </label>
+            </div>
           </div>
-          <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Thêm topping
-          </button>
-        </div>
-      </section>
+        @endforeach
+      @endif
+    </div>
+    <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Thêm topping
+    </button>
+  </div>
+</section>
       
 <!-- Branch Inventory Section -->
 <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
@@ -589,6 +639,14 @@ if (is_array($ingredientsData)) {
         </tbody>
       </table>
     </div>
+    <div class="mt-4 text-right">
+      <button type="button" id="save-branch-stocks-btn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        Lưu số lượng tại chi nhánh
+      </button>
+    </div>
   </div>
 </section>
 
@@ -666,6 +724,14 @@ if (is_array($ingredientsData)) {
         </tbody>
       </table>
     </div>
+    <div class="mt-4 text-right">
+      <button type="button" id="save-topping-stocks-btn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        Lưu số lượng topping
+      </button>
+    </div>
   </div>
 </section>
 @endif
@@ -711,9 +777,127 @@ if (is_array($ingredientsData)) {
     console.log('  Content:', @json($branchStocks ?? []));
     console.log('  Branch count:', @json($branches ? count($branches) : 0));
     console.log('Branches:', @json($branches ?? []));
+    console.log('Toppings:', @json($product->toppings ?? []));
+    console.log('Topping Stocks:', @json($toppingStocks ?? []));
   </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Handle branch stock update button
+        const saveBranchStocksBtn = document.getElementById('save-branch-stocks-btn');
+        if (saveBranchStocksBtn) {
+            saveBranchStocksBtn.addEventListener('click', function() {
+                const branchStockInputs = document.querySelectorAll('input[name^="branch_stock"]');
+                const branchStockData = {};
+                
+                branchStockInputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const matches = name.match(/branch_stock\[(\d+)\]\[(\d+)\]/);
+                    if (matches) {
+                        const branchId = matches[1];
+                        const variantId = matches[2];
+                        if (!branchStockData[branchId]) {
+                            branchStockData[branchId] = {};
+                        }
+                        branchStockData[branchId][variantId] = input.value || 0;
+                    }
+                });
+                
+                // Send AJAX request to update branch stocks
+                fetch('{{ route("admin.products.update", $product->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        _method: 'PUT',
+                        update_branch_stocks: 1,
+                        branch_stock: branchStockData
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: 'Số lượng sản phẩm tại các chi nhánh đã được cập nhật!'
+                        });
+                    } else {
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Đã có lỗi xảy ra khi cập nhật số lượng.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Đã có lỗi xảy ra khi cập nhật số lượng.'
+                    });
+                });
+            });
+        }
+        
+        // Handle topping stock update button
+        const saveToppingStocksBtn = document.getElementById('save-topping-stocks-btn');
+        if (saveToppingStocksBtn) {
+            saveToppingStocksBtn.addEventListener('click', function() {
+                const toppingStockInputs = document.querySelectorAll('input[name^="topping_stock"]');
+                const toppingStockData = {};
+                
+                toppingStockInputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const matches = name.match(/topping_stock\[(\d+)\]\[(\d+)\]/);
+                    if (matches) {
+                        const branchId = matches[1];
+                        const toppingId = matches[2];
+                        if (!toppingStockData[branchId]) {
+                            toppingStockData[branchId] = {};
+                        }
+                        toppingStockData[branchId][toppingId] = input.value || 0;
+                    }
+                });
+                
+                // Send AJAX request to update topping stocks
+                fetch('{{ route("admin.products.update", $product->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        _method: 'PUT',
+                        update_topping_stocks: 1,
+                        topping_stock: toppingStockData
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: 'Số lượng topping tại các chi nhánh đã được cập nhật!'
+                        });
+                    } else {
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Đã có lỗi xảy ra khi cập nhật số lượng topping.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Đã có lỗi xảy ra khi cập nhật số lượng topping.'
+                    });
+                });
+            });
+        }
+
         // Validation functions
         const validateField = (fieldId, errorMessage) => {
             const field = document.getElementById(fieldId);
@@ -944,7 +1128,7 @@ if (is_array($ingredientsData)) {
         // Add topping functionality
         const toppingsContainer = document.getElementById('toppings-container');
         const addToppingBtn = document.getElementById('add-topping-btn');
-        let toppingCount = 0;
+        let toppingCount = @json(isset($product->toppings) ? count($product->toppings) : 0);
 
         // Handle topping image preview functionality
         function handleToppingImagePreview(input) {
@@ -1001,7 +1185,7 @@ if (is_array($ingredientsData)) {
                               <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
                               <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
                             </div>
-                            <input type="file" id="topping-image-upload-${index}" name="toppings.${index}.image" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
+                            <input type="file" id="topping-image-upload-${index}" name="toppings[${index}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
                           </div>
                         </div>
                       </div>
@@ -1013,35 +1197,11 @@ if (is_array($ingredientsData)) {
                 </div>
                 <div class="flex items-center gap-4">
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="toppings[${index}][available]" value="1" checked class="form-checkbox text-blue-600" />
+                        <input type="checkbox" name="toppings[${index}][active]" value="1" checked class="form-checkbox text-blue-600" />
                         <span class="text-sm text-gray-700">Đang bán</span>
                     </label>
                 </div>
             `;
-            
-            // Set up topping image events
-            setTimeout(() => {
-                const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
-                const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
-                const fileInput = document.getElementById(`topping-image-upload-${index}`);
-                
-                if (placeholder && fileInput) {
-                    placeholder.addEventListener('click', (e) => {
-                        if (e.target !== uploadBtn) {
-                            fileInput.click();
-                        }
-                    });
-                    
-                    uploadBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        fileInput.click();
-                    });
-
-                    fileInput.addEventListener('change', function() {
-                        handleToppingImagePreview(this);
-                    });
-                }
-            }, 10);
             
             return toppingGroup;
         }
@@ -1049,41 +1209,156 @@ if (is_array($ingredientsData)) {
         addToppingBtn.addEventListener('click', () => {
             const toppingGroup = createToppingGroup(toppingCount);
             toppingsContainer.appendChild(toppingGroup);
+            
+            // Set up topping image events after the element is added to DOM
+            const placeholder = document.getElementById(`topping-image-placeholder-${toppingCount}`);
+            const uploadBtn = document.getElementById(`select-topping-image-btn-${toppingCount}`);
+            const fileInput = document.getElementById(`topping-image-upload-${toppingCount}`);
+            
+            if (placeholder && fileInput) {
+                placeholder.addEventListener('click', (e) => {
+                    if (e.target !== uploadBtn) {
+                        fileInput.click();
+                    }
+                });
+                
+                uploadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fileInput.click();
+                });
+
+                fileInput.addEventListener('change', function() {
+                    handleToppingImagePreview(this);
+                });
+            }
+            
             toppingCount++;
         });
 
-        // Initialize existing toppings
-        @if(isset($product->toppings) && count($product->toppings) > 0)
-            @foreach($product->toppings as $index => $topping)
-                const toppingGroup = createToppingGroup({{ $index }});
-                toppingsContainer.appendChild(toppingGroup);
+        // Set up image preview handlers for existing toppings
+        document.querySelectorAll('.topping-image-input').forEach(input => {
+            input.addEventListener('change', function() {
+                handleToppingImagePreview(this);
+            });
+            
+            const index = input.id.replace('topping-image-upload-', '');
+            const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
+            const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
+            
+            if (placeholder && uploadBtn) {
+                placeholder.addEventListener('click', (e) => {
+                    if (e.target !== uploadBtn) {
+                        input.click();
+                    }
+                });
                 
-                // Set values after adding to DOM
-                setTimeout(() => {
-                    const nameInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][name]"]`);
-                    const priceInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][price]"]`);
-                    const availableInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][available]"]`);
-                    
-                    nameInput.value = "{{ $topping->name }}";
-                    priceInput.value = "{{ $topping->price }}";
-                    availableInput.checked = {{ $topping->available ? 'true' : 'false' }};
-                    
-                    // Set image preview if exists
-                    @if($topping->image)
-                        const previewImg = document.getElementById(`topping-image-preview-{{ $index }}`);
-                        const previewWrap = document.getElementById(`topping-image-preview-wrap-{{ $index }}`);
-                        const uploadContent = document.getElementById(`topping-upload-content-{{ $index }}`);
-                        
-                        if (previewImg && previewWrap && uploadContent) {
-                            previewImg.src = "{{ Storage::disk('s3')->url($topping->image) }}";
-                            previewWrap.classList.remove('hidden');
-                            uploadContent.classList.add('hidden');
-                        }
-                    @endif
-                }, 20);
-            @endforeach
-            toppingCount = {{ count($product->toppings) }};
-        @endif
+                uploadBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    input.click();
+                });
+            }
+        });
+
+        // Handle status and release date visibility
+        const statusInputs = document.querySelectorAll('input[name="status"]');
+        const releaseAtDiv = document.querySelector('label[for="release_at"]').parentElement;
+
+        function toggleReleaseDate() {
+            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+            if (selectedStatus === 'coming_soon') {
+                releaseAtDiv.classList.remove('hidden');
+            } else {
+                releaseAtDiv.classList.add('hidden');
+            }
+        }
+
+        statusInputs.forEach(input => {
+            input.addEventListener('change', toggleReleaseDate);
+        });
+
+        // Initial check
+        toggleReleaseDate();
+        
+        // Add attribute functionality
+        const attributesContainer = document.getElementById('attributes-container');
+        const addAttributeBtn = document.getElementById('add-attribute-btn');
+        
+        addAttributeBtn.addEventListener('click', function() {
+            const attributeCount = attributesContainer.querySelectorAll('.attribute-group').length;
+            
+            const attributeGroup = document.createElement('div');
+            attributeGroup.className = 'attribute-group';
+            attributeGroup.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex-1 mr-4">
+                        <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                        <input type="text" name="attributes[${attributeCount}][name]" required placeholder="Ví dụ: Size, Màu sắc" 
+                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                    </div>
+                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="variant-values-container">
+                    <div class="variant-value-row">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                            <input type="text" name="attributes[${attributeCount}][values][0][value]" required placeholder="Ví dụ: S, M, L" 
+                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                            <input type="number" name="attributes[${attributeCount}][values][0][price_adjustment]" step="0.01" value="0" 
+                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        </div>
+                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Thêm giá trị
+                </button>
+            `;
+            
+            attributesContainer.appendChild(attributeGroup);
+        });
+        
+        // Define the function to add variant values
+        window.addVariantValue = function(button) {
+            const container = button.previousElementSibling;
+            const valueCount = container.querySelectorAll('.variant-value-row').length;
+            const attributeIndex = Array.from(attributesContainer.children).indexOf(button.closest('.attribute-group'));
+            
+            const valueRow = document.createElement('div');
+            valueRow.className = 'variant-value-row';
+            valueRow.innerHTML = `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                    <input type="text" name="attributes[${attributeIndex}][values][${valueCount}][value]" required placeholder="Ví dụ: S, M, L" 
+                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                    <input type="number" name="attributes[${attributeIndex}][values][${valueCount}][price_adjustment]" step="0.01" value="0" 
+                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                </div>
+                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(valueRow);
+        };
 
         // Form submission
         const form = document.getElementById('edit-product-form');
@@ -1206,30 +1481,6 @@ if (is_array($ingredientsData)) {
 
         // Initial check
         toggleReleaseDate();
-        
-        // Helper function to find branch stock quantity
-        function findBranchStock(branchId, variantId) {
-            // Using the branch stock data passed from controller
-            const branchStocks = @json($branchStocks ?? []);
-            if (branchStocks[branchId] && branchStocks[branchId][variantId]) {
-                return branchStocks[branchId][variantId];
-            }
-            return 0;
-        }
-        
-        // Set branch stock values
-        const branchStockInputs = document.querySelectorAll('input[name^="branch_stock"]');
-        branchStockInputs.forEach(input => {
-            const matches = input.name.match(/branch_stock\[(\d+)\]\[(\d+)\]/);
-            if (matches && matches.length === 3) {
-                const branchId = matches[1];
-                const variantId = matches[2];
-                const stockQuantity = findBranchStock(branchId, variantId);
-                if (stockQuantity > 0) {
-                    input.value = stockQuantity;
-                }
-            }
-        });
     });
   </script>
   <script>
@@ -1241,6 +1492,10 @@ if (is_array($ingredientsData)) {
           .filter(item => item[0].includes('attributes') || item[0].includes('existing_attributes')));
         console.log('Form branch stocks:', Array.from(formData.entries())
           .filter(item => item[0].includes('branch_stock')));
+        console.log('Form topping stocks:', Array.from(formData.entries())
+          .filter(item => item[0].includes('topping_stock')));
+        console.log('Form toppings:', Array.from(formData.entries())
+          .filter(item => item[0].includes('toppings')));
       } catch(e) {
         console.error('Debug error:', e);
       }

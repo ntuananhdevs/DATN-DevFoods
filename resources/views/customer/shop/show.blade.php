@@ -97,8 +97,8 @@
                                    data-price-adjustment="{{ $value->price_adjustment }}"
                                    class="sr-only variant-input"
                                    {{ $loop->first ? 'checked' : '' }}
-                                   {{ $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
-                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50 {{ $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
+                                   {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
+                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
                                 {{ $value->value }}
                                 @if($value->price_adjustment != 0)
                                     <span class="text-sm ml-1 {{ $value->price_adjustment > 0 ? 'text-red-600' : 'text-green-600' }}">
@@ -124,13 +124,13 @@
                 <div class="relative">
                     <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100 hover:scrollbar-thumb-orange-300">
                         @foreach($product->toppings as $topping)
-                        <label class="relative flex-shrink-0 w-24 cursor-pointer group {{ $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
+                        <label class="relative flex-shrink-0 w-24 cursor-pointer group {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
                             <input type="checkbox" 
                                    name="toppings[]" 
                                    value="{{ $topping->id }}"
                                    class="sr-only topping-input"
                                    data-price="{{ $topping->price }}"
-                                   {{ $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
+                                   {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                             <div class="relative aspect-square rounded-lg overflow-hidden border group-hover:border-orange-500 transition-colors">
                                 @if($topping->image)
                                     <img src="{{ Storage::disk('s3')->url($topping->image) }}" 
@@ -174,15 +174,15 @@
             <div class="flex items-center gap-4">
                 <span class="font-medium">Số lượng:</span>
                 <div class="flex items-center">
-                    <button class="h-8 w-8 rounded-l-md border border-gray-300 flex items-center justify-center hover:bg-gray-100 {{ $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
+                    <button class="h-8 w-8 rounded-l-md border border-gray-300 flex items-center justify-center hover:bg-gray-100 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
                             id="decrease-quantity"
-                            {{ $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
+                            {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                         <i class="fas fa-minus h-3 w-3"></i>
                     </button>
                     <div class="h-8 px-3 flex items-center justify-center border-y border-gray-300" id="quantity">1</div>
-                    <button class="h-8 w-8 rounded-r-md border border-gray-300 flex items-center justify-center hover:bg-gray-100 {{ $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
+                    <button class="h-8 w-8 rounded-r-md border border-gray-300 flex items-center justify-center hover:bg-gray-100 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}" 
                             id="increase-quantity"
-                            {{ $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
+                            {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                         <i class="fas fa-plus h-3 w-3"></i>
                     </button>
                 </div>
@@ -570,6 +570,16 @@
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Auto-show branch selector if no branch is selected
+        const selectedBranchId = {{ session('selected_branch') ? session('selected_branch') : 'null' }};
+        if (!selectedBranchId) {
+            const branchModal = document.getElementById('branch-selector-modal');
+            if (branchModal) {
+                branchModal.style.display = 'flex';
+                document.body.classList.add('overflow-hidden');
+            }
+        }
+        
         // Show toast function
         window.showToast = function(message, type = 'info') {
             if (typeof showNotification === 'function') {

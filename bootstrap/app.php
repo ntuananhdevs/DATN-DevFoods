@@ -5,6 +5,7 @@ use App\Http\Middleware\Admin\RoleAdmin;
 use App\Http\Middleware\Driver\DriverAuth;
 use App\Http\Middleware\Customer\CustomerAuth;
 use App\Http\Middleware\CheckSelectedBranch;
+use App\Http\Middleware\VerifyTurnstile;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,10 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'driver.auth' => DriverAuth::class,
             'CustomerAuth' => CustomerAuth::class,
             'branch.check' => CheckSelectedBranch::class,
+            'turnstile' => VerifyTurnstile::class,
         ]);
 
         $middleware->web(append: [
             CheckSelectedBranch::class,
+            'turnstile' => VerifyTurnstile::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
