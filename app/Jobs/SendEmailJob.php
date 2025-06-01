@@ -30,7 +30,14 @@ class SendEmailJob implements ShouldQueue
      *
      * @var int
      */
-    public $timeout = 60;
+    public $timeout = 120;
+    
+    /**
+     * Thời gian delay giữa các lần retry (giây)
+     *
+     * @var int
+     */
+    public $backoff = 30;
 
     /**
      * Create a new job instance.
@@ -42,6 +49,9 @@ class SendEmailJob implements ShouldQueue
     {
         $this->email = $email;
         $this->mailable = $mailable;
+        
+        // Set queue priority for important emails
+        $this->onQueue('emails');
     }
 
     /**
@@ -50,39 +60,62 @@ class SendEmailJob implements ShouldQueue
     public function handle(): void
     {
         try {
-            Log::info('Bắt đầu gửi email', [
+            Log::info('Starting email send job', [
                 'to' => $this->email,
-                'mailable' => get_class($this->mailable)
+                'mailable' => get_class($this->mailable),
+                'attempt' => $this->attempts()
             ]);
             
             Mail::to($this->email)->send($this->mailable);
             
-            Log::info('Gửi email thành công', [
-                'to' => $this->email,
-                'mailable' => get_class($this->mailable)
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Lỗi khi gửi email: ' . $e->getMessage(), [
+            Log::info('Email sent successfully', [
                 'to' => $this->email,
                 'mailable' => get_class($this->mailable),
+                'attempt' => $this->attempts()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send email', [
+                'to' => $this->email,
+                'mailable' => get_class($this->mailable),
+                'attempt' => $this->attempts(),
+                'max_tries' => $this->tries,
+                'error' => $e->getMessage(),
                 'exception' => $e
             ]);
+            
+            // Re-throw exception to trigger retry mechanism
             throw $e;
         }
     }
     
     /**
-     * Xử lý khi job thất bại
+     * Xử lý khi job thất bại hoàn toàn
      *
      * @param \Throwable $exception
      * @return void
      */
     public function failed(\Throwable $exception)
     {
-        // Ghi log lỗi
-        Log::error('Email gửi thất bại: ' . $exception->getMessage(), [
+        Log::error('Email job failed after all retries', [
             'email' => $this->email,
-            'class' => get_class($this->mailable)
+            'mailable' => get_class($this->mailable),
+            'attempts' => $this->tries,
+            'error' => $exception->getMessage(),
+            'exception' => $exception
         ]);
+        
+        // Optionally, you can send a notification to admins about failed emails
+        // Or store failed email info in database for manual retry
+    }
+    
+    /**
+     * Calculate the number of seconds to wait before retrying the job.
+     *
+     * @return array|int
+     */
+    public function backoff()
+    {
+        // Exponential backoff: 30s, 60s, 120s
+        return [30, 60, 120];
     }
 } 

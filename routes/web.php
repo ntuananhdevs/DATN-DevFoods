@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
+use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
@@ -47,6 +48,8 @@ use App\Http\Controllers\Admin\BranchStockController;
 //     Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
 //     Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
 // });
+use App\Http\Controllers\Admin\ProductVariantController;
+use App\Http\Controllers\Admin\UserRankController;
 
 Route::prefix('/')->group(function () {
     // Apply the cart count middleware to all customer-facing routes
@@ -242,6 +245,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/create', [DriverController::class, 'create'])->name('create');
+        Route::post('/store', [DriverController::class, 'store'])->name('store');
+        Route::get('/show/{driver}', [DriverController::class, 'show'])->name('show');
+        Route::get('/edit/{driver}', [DriverController::class, 'edit'])->name('edit');
+        Route::put('/update/{driver}', [DriverController::class, 'update'])->name('update');
+        Route::delete('/destroy/{driver}', [DriverController::class, 'destroy'])->name('destroy');
+        Route::post('/reset-password/{driver}', [DriverController::class, 'resetPassword'])->name('reset-password');
+        
+        // New driver management routes
+        Route::post('/{driver}/toggle-status', [DriverController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{driver}/lock-account', [DriverController::class, 'lockAccount'])->name('lock-account');
+        Route::post('/{driver}/unlock-account', [DriverController::class, 'unlockAccount'])->name('unlock-account');
+        Route::post('/{driver}/add-violation', [DriverController::class, 'addViolation'])->name('add-violation');
+        
         Route::get('/export', [DriverController::class, 'export'])->name('export');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
         Route::get('/applications/export', [DriverController::class, 'exportApplications'])->name('applications.export');
@@ -262,8 +279,30 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
         Route::get('/search-product', [BannerController::class, 'searchProducts'])->name('search.product');
     });
-
-    // Banner Management
+    
+    // User Rank Management
+    Route::prefix('user_ranks')->name('user_ranks.')->group(function () {
+        Route::get('/', [UserRankController::class, 'index'])->name('index');
+        Route::get('/create', [UserRankController::class, 'create'])->name('create');
+        Route::post('/store', [UserRankController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [UserRankController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [UserRankController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [UserRankController::class, 'destroy'])->name('destroy');
+        Route::post('/search', [UserRankController::class, 'search'])->name('search');
+        Route::post('/update-status', [UserRankController::class, 'updateStatus'])->name('updateStatus');
+    });
+    
+    // Discount Management
+    Route::prefix('discount')->name('discount.')->group(function () {
+        Route::get('/', [BannerController::class, 'index'])->name('index');
+        Route::get('/create', [BannerController::class, 'create'])->name('create');
+        Route::post('/store', [BannerController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Branch Apply Management
     Route::prefix('discount')->name('discount.')->group(function () {
         Route::get('/', [BannerController::class, 'index'])->name('index');
         Route::get('/create', [BannerController::class, 'create'])->name('create');
@@ -294,15 +333,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
-// Customer Cart Routes
-// Route::prefix('cart')->name('customer.cart.')->group(function () {
-//     Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-//     Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-//     Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-//     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
-//     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-//     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
-// });
 Route::prefix('driver')->name('driver.')->group(function () {
     Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
@@ -344,4 +374,13 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::get('/drivers/applications/export/{type}', [App\Http\Controllers\Admin\DriverApplicationController::class, 'export'])->name('drivers.applications.export');
     Route::get('/drivers/applications/stats', [App\Http\Controllers\Admin\DriverApplicationController::class, 'getStats'])->name('drivers.applications.stats');
     Route::get('/drivers/applications/image/{path}', [App\Http\Controllers\Admin\DriverApplicationController::class, 'streamImage'])->name('drivers.applications.image');
+});
+
+// Test routes for AWS S3 uploads
+Route::prefix('test')->name('test.')->group(function () {
+    Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
+    Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
+    Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
+    Route::delete('/images', [TestController::class, 'deleteImage'])->name('images.delete');
+    Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });

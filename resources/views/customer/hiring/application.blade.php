@@ -178,6 +178,7 @@
     </div>
 @endif
 
+<<<<<<< HEAD
 <main class="hiring-application-container">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <!-- Header -->
@@ -185,6 +186,17 @@
             <h1 class="text-4xl font-bold text-gray-900 mb-4">Đăng ký trở thành đối tác tài xế</h1>
             <p class="text-xl text-gray-600">Vui lòng điền đầy đủ thông tin dưới đây để hoàn tất đơn đăng ký</p>
         </div>
+=======
+<main>
+<div class="hiring-application-container">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10"> 
+                <div class="application-header text-center mb-5">
+                    <h1 class="application-title">Đăng ký trở thành đối tác tài xế</h1>
+                    <p class="application-subtitle">Vui lòng điền đầy đủ thông tin dưới đây để hoàn tất đơn đăng ký</p>
+                </div>
+>>>>>>> de1a9ad9fb928795cab19225aba0996ba89fe854
 
         <form action="{{ route('driver.application.submit') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
             @csrf

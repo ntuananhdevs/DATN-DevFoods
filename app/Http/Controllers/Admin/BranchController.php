@@ -159,7 +159,7 @@ class BranchController extends Controller
 
             return redirect()->route('admin.branches.index')->with([
                 'toast' => [
-                    'type' => 'success', 
+                    'type' => 'success',
                     'title' => 'Thành công',
                     'message' => 'Đã thêm chi nhánh mới thành công'
                 ]
@@ -167,8 +167,6 @@ class BranchController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating branch: ' . $e->getMessage());
-            var_dump($e->getMessage());
-            die();
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra khi tạo chi nhánh: ' . $e->getMessage() .
                     "\nFile: " . $e->getFile() .
@@ -307,21 +305,20 @@ class BranchController extends Controller
                 ->with([
                     'toast' => [
                         'type' => 'success',
-                        'title' => 'Thành công', 
+                        'title' => 'Thành công',
                         'message' => 'Cập nhật chi nhánh thành công'
                     ]
                 ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Lỗi cập nhật chi nhánh: ' . $e->getMessage());
-            var_dump($e->getMessage());
-            die();
+
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage())
                 ->withInput();
         }
     }
- 
+
 public function toggleStatus($id)
 {
     try {
@@ -356,7 +353,7 @@ public function toggleStatus($id)
         }
 
         session()->flash('toast', [
-            'type' => 'success', 
+            'type' => 'success',
             'title' => 'Thành công',
             'message' => 'Đã thay đổi trạng thái chi nhánh thành công'
         ]);
@@ -392,7 +389,7 @@ public function bulkStatusUpdate(Request $request)
         $branchIds = $request->has('ids') ? $request->ids : explode(',', $request->branch_ids);
 
         // Determine status from action or status parameter
-        $status = $request->has('action') 
+        $status = $request->has('action')
             ? ($request->action === 'activate')
             : (bool)$request->status;
 
