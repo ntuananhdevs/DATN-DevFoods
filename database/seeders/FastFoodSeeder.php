@@ -363,98 +363,159 @@ class FastFoodSeeder extends Seeder
     {
         $imageCount = rand(1, 4); // Mỗi sản phẩm có 1-4 hình ảnh
         
-        // Map of food categories to appropriate image search terms
-        $imageSearchTerms = [
-            'Burger' => ['burger', 'cheese burger', 'beef burger', 'gourmet burger'],
-            'Pizza' => ['pizza', 'pepperoni pizza', 'cheese pizza', 'italian pizza'],
-            'Gà Rán' => ['fried chicken', 'crispy chicken', 'kfc style chicken'],
-            'Cơm' => ['vietnamese rice', 'rice plate', 'asian rice dish'],
-            'Mì' => ['noodles', 'pasta', 'spaghetti', 'ramen'],
-            'Đồ Uống' => ['soda', 'coffee', 'bubble tea', 'smoothie', 'fruit juice']
+        // Mapping chính xác hơn cho từng loại sản phẩm
+        $productImageUrls = [
+            // Burger
+            'Burger Bò Phô Mai' => [
+                'https://images.unsplash.com/photo-1565299507177-b0ac66763828?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?q=80&w=1000&auto=format&fit=crop'
+            ],
+            'Burger Gà Giòn' => [
+                'https://images.unsplash.com/photo-1610614991969-ceeb293e7ff5?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/6697469/pexels-photo-6697469.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Burger Cá' => [
+                'https://images.unsplash.com/photo-1611250282006-e611803275d0?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/14984315/pexels-photo-14984315.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Burger Bò Nướng BBQ' => [
+                'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/2983098/pexels-photo-2983098.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            
+            // Pizza
+            'Pizza Hải Sản' => [
+                'https://images.unsplash.com/photo-1627626775846-122b778965ae?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/13447608/pexels-photo-13447608.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Pizza Bò' => [
+                'https://images.unsplash.com/photo-1571066811602-716837d681de?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/13983455/pexels-photo-13983455.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Pizza Gà' => [
+                'https://images.unsplash.com/photo-1604917877934-07d8d248d396?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1146760/pexels-photo-1146760.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Pizza Xúc Xích' => [
+                'https://images.unsplash.com/photo-1506354666786-959d6d497f1a?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/845811/pexels-photo-845811.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            
+            // Gà Rán
+            'Gà Rán Giòn' => [
+                'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/6210764/pexels-photo-6210764.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Gà Sốt Cay' => [
+                'https://images.unsplash.com/photo-1609167830220-7164aa360943?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/6210739/pexels-photo-6210739.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Gà Sốt BBQ' => [
+                'https://images.unsplash.com/photo-1569058242567-93de6f36f8e1?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/2338407/pexels-photo-2338407.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            
+            // Cơm
+            'Cơm Gà Rán' => [
+                'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/6249321/pexels-photo-6249321.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Cơm Bò Lúc Lắc' => [
+                'https://images.unsplash.com/photo-1602881917445-0d1d45241711?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1624487/pexels-photo-1624487.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Cơm Sườn BBQ' => [
+                'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/2664216/pexels-photo-2664216.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            
+            // Mì
+            'Mì Ý Sốt Bò' => [
+                'https://images.unsplash.com/photo-1598866594230-a7c12756260f?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1487511/pexels-photo-1487511.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Mì Ý Hải Sản' => [
+                'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1438672/pexels-photo-1438672.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Mì Xào Hải Sản' => [
+                'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1731535/pexels-photo-1731535.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            
+            // Đồ uống
+            'Coca Cola' => [
+                'https://images.unsplash.com/photo-1554866585-cd94860890b7?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/2668308/pexels-photo-2668308.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Pepsi' => [
+                'https://images.unsplash.com/photo-1629203432180-71beb5986d61?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/50593/coca-cola-cold-drink-soft-drink-coke-50593.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Trà Đào' => [
+                'https://images.unsplash.com/photo-1556679343-c7306c1976bc?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1194030/pexels-photo-1194030.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Cà Phê Sữa' => [
+                'https://images.unsplash.com/photo-1529892485617-25f63cd7b1e9?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Sinh Tố Dâu' => [
+                'https://images.unsplash.com/photo-1553530666-ba11a90bb802?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/161600/smoothie-fruit-vitamins-healthy-161600.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ]
         ];
         
-        // Find appropriate search term based on product name
-        $searchTerm = 'fast food';
-        foreach ($imageSearchTerms as $category => $terms) {
-            if (strpos($product->name, $category) !== false) {
-                $searchTerm = $terms[array_rand($terms)];
+        // Hình ảnh mặc định cho mỗi danh mục
+        $categoryDefaultImages = [
+            'Burger' => [
+                'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1000&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Pizza' => [
+                'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/2147491/pexels-photo-2147491.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+                'https://images.pexels.com/photos/1146760/pexels-photo-1146760.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Gà Rán' => [
+                'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/6210747/pexels-photo-6210747.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+                'https://images.pexels.com/photos/2338407/pexels-photo-2338407.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Cơm' => [
+                'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/723198/pexels-photo-723198.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+                'https://images.pexels.com/photos/1095550/pexels-photo-1095550.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Mì' => [
+                'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+                'https://images.pexels.com/photos/2347311/pexels-photo-2347311.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ],
+            'Đồ Uống' => [
+                'https://images.unsplash.com/photo-1558122104-ebc101c101c8?q=80&w=1000&auto=format&fit=crop',
+                'https://images.pexels.com/photos/1187766/pexels-photo-1187766.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+                'https://images.pexels.com/photos/1581484/pexels-photo-1581484.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
+            ]
+        ];
+        
+        // Xác định danh mục của sản phẩm
+        $category = 'Đồ Uống'; // Mặc định
+        foreach ($categoryDefaultImages as $cat => $images) {
+            if (strpos($product->name, $cat) !== false) {
+                $category = $cat;
                 break;
             }
         }
         
-        // Specific product name matching for better images
-        if (strpos(strtolower($product->name), 'gà') !== false) {
-            $searchTerm = 'fried chicken';
-        } elseif (strpos(strtolower($product->name), 'bò') !== false) {
-            $searchTerm = 'beef burger';
-        } elseif (strpos(strtolower($product->name), 'cà phê') !== false) {
-            $searchTerm = 'vietnamese coffee';
-        } elseif (strpos(strtolower($product->name), 'trà') !== false) {
-            $searchTerm = 'bubble tea';
-        } elseif (strpos(strtolower($product->name), 'pizza') !== false) {
-            $specificTerms = ['cheese pizza', 'pepperoni pizza', 'italian pizza', 'seafood pizza'];
-            $searchTerm = $specificTerms[array_rand($specificTerms)];
-        }
-        
-        // Array of food image URLs from the internet
-        $foodImageUrls = [
-            // Burger Images
-            'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1000',
-            'https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=1000',
-            'https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.pexels.com/photos/1633578/pexels-photo-1633578.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            
-            // Pizza Images
-            'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1000',
-            'https://images.pexels.com/photos/2147491/pexels-photo-2147491.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.pexels.com/photos/1146760/pexels-photo-1146760.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.pexels.com/photos/825661/pexels-photo-825661.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            
-            // Chicken Images
-            'https://images.pexels.com/photos/6210747/pexels-photo-6210747.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.pexels.com/photos/2338407/pexels-photo-2338407.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?q=80&w=1000',
-            
-            // Rice Dishes
-            'https://images.pexels.com/photos/723198/pexels-photo-723198.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.pexels.com/photos/1095550/pexels-photo-1095550.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1000',
-            
-            // Noodle Dishes
-            'https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.pexels.com/photos/2347311/pexels-photo-2347311.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=1000',
-            
-            // Drinks
-            'https://images.pexels.com/photos/1187766/pexels-photo-1187766.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.pexels.com/photos/1581484/pexels-photo-1581484.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-            'https://images.unsplash.com/photo-1558122104-ebc101c101c8?q=80&w=1000'
-        ];
-        
-        // Filter images based on product category
-        $categoryImages = $foodImageUrls;
-        if (strpos(strtolower($product->name), 'burger') !== false) {
-            $categoryImages = array_slice($foodImageUrls, 0, 4);
-        } elseif (strpos(strtolower($product->name), 'pizza') !== false) {
-            $categoryImages = array_slice($foodImageUrls, 4, 4);
-        } elseif (strpos(strtolower($product->name), 'gà') !== false) {
-            $categoryImages = array_slice($foodImageUrls, 8, 3);
-        } elseif (strpos(strtolower($product->name), 'cơm') !== false) {
-            $categoryImages = array_slice($foodImageUrls, 11, 3);
-        } elseif (strpos(strtolower($product->name), 'mì') !== false) {
-            $categoryImages = array_slice($foodImageUrls, 14, 3);
-        } elseif (strpos(strtolower($product->name), 'trà') !== false || 
-                  strpos(strtolower($product->name), 'cà phê') !== false ||
-                  strpos(strtolower($product->name), 'coca') !== false ||
-                  strpos(strtolower($product->name), 'pepsi') !== false) {
-            $categoryImages = array_slice($foodImageUrls, 17, 3);
-        }
+        // Lấy URLs hình ảnh cho sản phẩm cụ thể hoặc sử dụng hình ảnh mặc định của danh mục
+        $imageUrls = $productImageUrls[$product->name] ?? $categoryDefaultImages[$category];
         
         // Create images for the product
         for ($i = 0; $i < $imageCount; $i++) {
-            // Select a random image URL from the filtered category
-            $randomIndex = $i % count($categoryImages);
-            $imageUrl = $categoryImages[$randomIndex];
+            // Chọn một hình ảnh từ mảng (lặp lại nếu cần)
+            $imageUrl = $imageUrls[$i % count($imageUrls)];
             
             try {
                 // Generate unique filename
@@ -468,7 +529,7 @@ class FastFoodSeeder extends Seeder
                     // Upload to S3
                     Storage::disk('s3')->put($path, $imageContents);
                     
-                    // Create product image record - removing img_url field
+                    // Create product image record
                     ProductImg::create([
                         'product_id' => $product->id,
                         'img' => $path,
@@ -500,27 +561,35 @@ class FastFoodSeeder extends Seeder
     private function createToppings()
     {
         $toppings = [
-            ['name' => 'Phô Mai Thêm', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/773253/pexels-photo-773253.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Thịt Bò Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/618775/pexels-photo-618775.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Thịt Gà Thêm', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/616354/pexels-photo-616354.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Bacon', 'price' => 18000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/161573/background-bacon-barbecue-bbq-161573.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Trứng Ốp La', 'price' => 12000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/706137/pexels-photo-706137.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Xà Lách Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/1352199/pexels-photo-1352199.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Cà Chua Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Hành Tây Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/1666982/pexels-photo-1666982.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Dưa Chuột Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2329440/pexels-photo-2329440.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Sốt BBQ', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2233729/pexels-photo-2233729.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Sốt Cay', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/5718014/pexels-photo-5718014.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Sốt Mayonnaise', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/6941010/pexels-photo-6941010.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Sốt Tỏi', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/4198234/pexels-photo-4198234.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Nấm Thêm', 'price' => 10000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/342943/pexels-photo-342943.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Ớt Jalapeño', 'price' => 7000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/917384/pexels-photo-917384.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Tôm Thêm', 'price' => 30000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/566345/pexels-photo-566345.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Mực Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2871757/pexels-photo-2871757.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Xúc Xích', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/6896381/pexels-photo-6896381.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Pepperoni', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/814499/pexels-photo-814499.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
-            ['name' => 'Dứa Thêm', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.pexels.com/photos/2469772/pexels-photo-2469772.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'],
+            ['name' => 'Phô Mai Thêm', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1588182728399-a9273235952e?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Thịt Bò Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1603048297172-887328d32e4c?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Thịt Gà Thêm', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1604503468611-191e5b7db3c3?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Bacon', 'price' => 18000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1607016291804-9ab1a12177d3?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Trứng Ốp La', 'price' => 12000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1607103058027-e52cc835f543?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Xà Lách Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1567375698949-27c696aad9f5?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Cà Chua Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Hành Tây Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1580201092675-a0a6a6cafbb1?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Dưa Chuột Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1589621316382-008455b857cd?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Sốt BBQ', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1608651761952-5fdb50ce714c?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Sốt Cay', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1563277552-c7661389502a?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Sốt Mayonnaise', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1554587314-58faae85893e?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Sốt Tỏi', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1594114585641-235ac2abb933?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Nấm Thêm', 'price' => 10000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1555126634-323283e090fa?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Ớt Jalapeño', 'price' => 7000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1563433571751-a4d8e8379aae?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Tôm Thêm', 'price' => 30000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1615666874133-8c93e3d95bcb?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Mực Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1545650029-1c48e347e866?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Xúc Xích', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1599900554076-d814055f36e7?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Pepperoni', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1627626775846-122b778965ae?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Dứa Thêm', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?q=80&w=1000&auto=format&fit=crop'],
         ];
+        
+        // Lấy tất cả chi nhánh
+        $branches = Branch::all();
+        
+        if ($branches->isEmpty()) {
+            echo "Cannot create topping stocks: No branches found\n";
+            return;
+        }
         
         foreach ($toppings as $toppingData) {
             try {
@@ -543,6 +612,21 @@ class FastFoodSeeder extends Seeder
                     ]);
                     
                     echo "Created topping: {$topping->name} with image from {$toppingData['image_url']}\n";
+                    
+                    // Tạo topping_stocks cho mỗi chi nhánh
+                    foreach ($branches as $branch) {
+                        $stockQuantity = rand(0, 100); // Số lượng ngẫu nhiên từ 0-100
+                        
+                        DB::table('topping_stocks')->insert([
+                            'branch_id' => $branch->id,
+                            'topping_id' => $topping->id,
+                            'stock_quantity' => $stockQuantity,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]);
+                        
+                        echo "Created topping stock for {$topping->name} at branch {$branch->name}: {$stockQuantity} items\n";
+                    }
                 }
             } catch (\Exception $e) {
                 echo "Error creating topping {$toppingData['name']}: {$e->getMessage()}\n";
@@ -558,6 +642,21 @@ class FastFoodSeeder extends Seeder
                 ]);
                 
                 echo "Created topping: {$topping->name} with fallback image\n";
+                
+                // Tạo topping_stocks cho mỗi chi nhánh ngay cả khi image fail
+                foreach ($branches as $branch) {
+                    $stockQuantity = rand(0, 100);
+                    
+                    DB::table('topping_stocks')->insert([
+                        'branch_id' => $branch->id,
+                        'topping_id' => $topping->id,
+                        'stock_quantity' => $stockQuantity,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                    
+                    echo "Created topping stock for {$topping->name} at branch {$branch->name}: {$stockQuantity} items\n";
+                }
             }
         }
     }

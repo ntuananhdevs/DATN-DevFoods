@@ -236,8 +236,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/export', [ProductController::class, 'export'])->name('export');
         
         // Stock management
-        Route::get('{product}/stock', [BranchStockController::class, 'index'])->name('stock');
+        Route::get('{product}/stock', [ProductController::class, 'stock'])->name('stock');
         Route::post('{product}/update-stocks', [ProductController::class, 'updateStocks'])->name('update-stocks');
+        Route::post('/update-topping-stocks', [ProductController::class, 'updateToppingStocksAjax'])->name('update-topping-stocks');
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
@@ -360,5 +361,23 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/apply', [App\Http\Controllers\Admin\HiringController::class, 'applicationForm'])->name('application.form');
     Route::post('/apply', [App\Http\Controllers\Admin\HiringController::class, 'submitApplication'])->name('application.submit');
     Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
+});
+
+// API Routes for products, cart and favorites
+Route::prefix('api')->group(function () {
+    // Product listing for AJAX filtering
+    Route::get('/products', [\App\Http\Controllers\Api\Customer\ProductController::class, 'getProducts']);
+    
+    // Favorites
+    Route::post('/favorites/toggle', [\App\Http\Controllers\Api\Customer\FavoriteController::class, 'toggle']);
+    
+    // Customer API routes
+    Route::prefix('customer')->group(function () {
+        Route::post('/products/get-variant', [\App\Http\Controllers\Api\Customer\ProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
+        
+        // Branch routes
+        Route::post('/branches/set-selected', [\App\Http\Controllers\Api\Customer\BranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
+        Route::get('/branches/nearest', [\App\Http\Controllers\Api\Customer\BranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
+    });
 });
 

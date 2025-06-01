@@ -25,7 +25,7 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-public function index(Request $request)
+    public function index(Request $request)
     {
         try {
             $query = Product::with('category');
@@ -80,7 +80,13 @@ public function index(Request $request)
 
             return view('admin.products.index', compact('products', 'categories', 'minPrice', 'maxPrice'));
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back();
         }
     }
 
@@ -222,10 +228,6 @@ public function index(Request $request)
                 }
             }
 
-            // // Debug: Log request data
-            // \Log::info('Attributes data:', $request->input('attributes', []));
-            // \Log::info('Toppings data:', $request->input('toppings', []));
-
             // Handle attributes and variant values
             $attributes = $request->input('attributes', []);
             if (!empty($attributes)) {
@@ -304,16 +306,10 @@ public function index(Request $request)
                     \Log::info('Created/Found topping:', ['id' => $topping->id, 'name' => $topping->name]);
 
                     // Handle topping image if uploaded
-                    if ($request->hasFile("toppings.{$index}.image") || isset($request->file('toppings')[$index]['image'])) {
-                        // Laravel's request->file() method handles array inputs differently
-                        $image = isset($request->file('toppings')[$index]['image']) 
-                                ? $request->file('toppings')[$index]['image'] 
-                                : $request->file("toppings.{$index}.image");
-                        
-                        \Log::info('Uploading topping image', [
+                    if ($request->hasFile("toppings.{$index}.image")) {
+                        $image = $request->file("toppings.{$index}.image");
+                        \Log::info('Uploading topping image from dot notation', [
                             'original_name' => $image->getClientOriginalName(),
-                            'size' => $image->getSize(),
-                            'mime' => $image->getMimeType()
                         ]);
                         
                         // Generate unique filename
@@ -321,14 +317,27 @@ public function index(Request $request)
                         
                         // Upload to S3
                         $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
-                        \Log::info('S3 put result', ['path' => $path, 'filename' => $filename]);
                         
                         if ($path) {
-                            // Get the URL of uploaded file
-                            $url = Storage::disk('s3')->url('toppings/' . $filename);
-                            \Log::info('S3 topping image url', ['url' => $url]);
-                            
-                            // Update topping with image path
+                            $topping->update([
+                                'image' => 'toppings/' . $filename
+                            ]);
+                        }
+                    } 
+                    // Also check the alternative array format
+                    else if (isset($request->file('toppings')[$index]['image'])) {
+                        $image = $request->file('toppings')[$index]['image'];
+                        \Log::info('Uploading topping image from array', [
+                            'original_name' => $image->getClientOriginalName(),
+                        ]);
+                        
+                        // Generate unique filename
+                        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                        
+                        // Upload to S3
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
+                        
+                        if ($path) {
                             $topping->update([
                                 'image' => 'toppings/' . $filename
                             ]);
@@ -344,39 +353,41 @@ public function index(Request $request)
             DB::commit();
             \Log::info('Transaction committed successfully');
 
-            session()->flash('modal', [
-                'type' => 'success',
-                'title' => 'Thành công',
-                'message' => 'Sản phẩm và các biến thể đã được tạo thành công'
-            ]);
+            // Check if this is an AJAX request
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sản phẩm đã được tạo thành công!',
+                    'redirect' => route('admin.products.index')
+                ]);
+            }
             
-            // Redirect to stock management page
-            return redirect()->route('admin.products.stock', $product->id);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            
-            session()->flash('modal', [
-                'type' => 'error',
-                'title' => 'Lỗi',
-                'message' => 'Vui lòng kiểm tra lại thông tin nhập vào'
-            ]);
-            
-            return redirect()->back()
-                ->withErrors($e->validator)
-                ->withInput();
+            return redirect()->route('admin.products.index')
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => 'Sản phẩm đã được tạo thành công!'
+                ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            session()->flash('modal', [
-                'type' => 'error',
-                'title' => 'Lỗi',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            \Log::error('Product creation error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all()
             ]);
             
-            return redirect()->back()
-                ->withInput()
-                ->with('old_attributes', $request->attributes)
-                ->with('old_toppings', $request->toppings);
+            // Check if this is an AJAX request
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra khi tạo sản phẩm: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Có lỗi xảy ra khi tạo sản phẩm: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -442,7 +453,13 @@ public function index(Request $request)
             $product = Product::with('category')->findOrFail($id);
             return view('admin.products.show', compact('product'));
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back();
         }
     }
 
@@ -513,18 +530,19 @@ public function index(Request $request)
      */
     public function update(Request $request, $id)
     {
-        // Validate the request
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'base_price' => 'required|numeric|min:0',
-            'status' => 'required|in:coming_soon,selling,discontinued',
-            'release_at' => 'nullable|date',
-            'preparation_time' => 'nullable|integer|min:0',
-        ]);
+        try {
+            // Validate the request
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'category_id' => 'required|exists:categories,id',
+                'base_price' => 'required|numeric|min:0',
+                'status' => 'required|in:coming_soon,selling,discontinued',
+                'release_at' => 'nullable|date',
+                'preparation_time' => 'nullable|integer|min:0',
+            ]);
 
-        DB::beginTransaction();
-        
+            DB::beginTransaction();
+            
             $product = Product::findOrFail($id);
             
             // Update basic product information
@@ -801,15 +819,26 @@ public function index(Request $request)
                     // Handle topping image
                     if ($request->hasFile('topping_images') && isset($request->file('topping_images')[$index])) {
                         $toppingImage = $request->file('topping_images')[$index];
-                        $path = $toppingImage->store('toppings', 's3');
+                        
+                        // Generate unique filename
+                        $filename = Str::uuid() . '.' . $toppingImage->getClientOriginalExtension();
+                        
+                        // Upload to S3
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($toppingImage));
                         
                         // Delete old image if exists
                         if ($topping->image) {
                             Storage::disk('s3')->delete($topping->image);
                         }
                         
-                        $topping->image = $path;
+                        $topping->image = 'toppings/' . $filename;
                         $topping->save();
+                        
+                        \Log::info('Updated topping image:', [
+                            'topping_id' => $topping->id,
+                            'topping_name' => $topping->name,
+                            'image_path' => 'toppings/' . $filename
+                        ]);
                     }
                 }
                 
@@ -871,9 +900,42 @@ public function index(Request $request)
             
             DB::commit();
             
+            // Check if this is an AJAX request
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sản phẩm đã được cập nhật thành công!',
+                    'redirect' => route('admin.products.index')
+                ]);
+            }
+            
             return redirect()->route('admin.products.index')
-                ->with('success', 'Sản phẩm đã được cập nhật thành công.');
-        
+                ->with('toast', [
+                    'type' => 'success',
+                    'title' => 'Thành công',
+                    'message' => 'Sản phẩm đã được cập nhật thành công!'
+                ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Product update error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all()
+            ]);
+            
+            // Check if this is an AJAX request
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra khi cập nhật sản phẩm: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi',
+                'message' => 'Có lỗi xảy ra khi cập nhật sản phẩm: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -947,7 +1009,12 @@ public function index(Request $request)
                     return $this->exportJson($products, 'products.json');
         }
     } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'Có lỗi xuất dữ liệu: ' . $e->getMessage());
+        session()->flash('toast', [
+            'type' => 'error',
+            'title' => 'Lỗi!',
+            'message' => 'Có lỗi xuất dữ liệu: ' . $e->getMessage()
+        ]);
+        return redirect()->back();
     }
 }
     
@@ -1018,12 +1085,26 @@ public function index(Request $request)
             
             DB::commit();
             
+            // Set session flash message for the toast notification
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Cập nhật số lượng tồn kho thành công'
+            ]);
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Cập nhật số lượng tồn kho thành công'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // Set session flash message for the toast notification
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
             
             return response()->json([
                 'success' => false,
@@ -1039,6 +1120,7 @@ public function index(Request $request)
     {
         $product = Product::with([
             'variants.productVariantDetails.variantValue.attribute',
+            'toppings'
         ])->findOrFail($id);
         
         // Get all active branches
@@ -1059,7 +1141,22 @@ public function index(Request $request)
             }
         }
         
-        return view('admin.products.stock', compact('product', 'branches', 'branchStocks'));
+        // Get topping stocks for all toppings of this product
+        $toppingStocks = [];
+        if ($product->toppings && $product->toppings->count() > 0) {
+            $toppingIds = $product->toppings->pluck('id')->toArray();
+            $toppingStocksData = ToppingStock::whereIn('topping_id', $toppingIds)->get();
+            
+            // Organize topping stocks by branch_id and topping_id for easier access in the view
+            foreach ($toppingStocksData as $stock) {
+                if (!isset($toppingStocks[$stock->branch_id])) {
+                    $toppingStocks[$stock->branch_id] = [];
+                }
+                $toppingStocks[$stock->branch_id][$stock->topping_id] = $stock->stock_quantity;
+            }
+        }
+        
+        return view('admin.products.stock', compact('product', 'branches', 'branchStocks', 'toppingStocks'));
     }
 
     /**
@@ -1103,11 +1200,107 @@ public function index(Request $request)
             
             DB::commit();
             
-            return redirect()->back()->with('success', 'Số lượng topping đã được cập nhật thành công.');
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Số lượng topping đã được cập nhật thành công.'
+            ]);
+            
+            return redirect()->back();
         } catch (\Exception $e) {
             DB::rollBack();
             
-            return redirect()->back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return redirect()->back();
+        }
+    }
+
+    /**
+     * Update topping stocks via AJAX
+     */
+    public function updateToppingStocksAjax(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $toppingStocks = $request->input('topping_stock', []);
+            \Log::info('Received topping stocks data', ['data' => $toppingStocks]);
+            
+            // Count successful updates
+            $updateCount = 0;
+            
+            // Update stock for each branch and topping
+            foreach ($toppingStocks as $branchId => $toppings) {
+                foreach ($toppings as $toppingId => $quantity) {
+                    // Validate the data
+                    if (!is_numeric($branchId) || !is_numeric($toppingId) || !is_numeric($quantity)) {
+                        \Log::warning('Invalid data in topping stocks update', [
+                            'branch_id' => $branchId,
+                            'topping_id' => $toppingId,
+                            'quantity' => $quantity
+                        ]);
+                        continue;
+                    }
+                    
+                    // Get or create the topping stock entry
+                    $stock = ToppingStock::updateOrCreate(
+                        [
+                            'branch_id' => $branchId,
+                            'topping_id' => $toppingId,
+                        ],
+                        [
+                            'stock_quantity' => $quantity,
+                        ]
+                    );
+                    
+                    \Log::info('Updated topping stock', [
+                        'branch_id' => $branchId,
+                        'topping_id' => $toppingId,
+                        'quantity' => $quantity,
+                        'record_id' => $stock->id
+                    ]);
+                    
+                    $updateCount++;
+                }
+            }
+            
+            DB::commit();
+            
+            // Set session flash message for the toast notification
+            session()->flash('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Cập nhật $updateCount số lượng topping thành công"
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Cập nhật $updateCount số lượng topping thành công",
+                'update_count' => $updateCount
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error updating topping stocks', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Set session flash message for the toast notification
+            session()->flash('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

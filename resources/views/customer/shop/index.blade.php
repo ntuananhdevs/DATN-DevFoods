@@ -209,6 +209,8 @@
 
 
 <div class="container mx-auto px-4 py-12">
+
+    
     <!-- Bộ lọc và tìm kiếm -->
     <div class="mb-8">
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
@@ -249,7 +251,8 @@
         @forelse($products as $product)
             <div class="product-card bg-white rounded-lg overflow-hidden" 
                 data-product-id="{{ $product->id }}"
-                data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}">
+                data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
+                data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
                 <div class="relative">
                     <a href="{{ route('products.show', $product->id) }}" class="block">
                         @if($product->primary_image)
@@ -320,10 +323,17 @@
                                 <span class="product-price">{{ number_format($product->base_price) }}đ</span>
                             @endif
                         </div>
-                        <button class="add-to-cart-btn">
-                            <i class="fas fa-shopping-cart"></i>
-                            Thêm
-                        </button>
+                        @if(isset($product->has_stock) && $product->has_stock)
+                            <button class="add-to-cart-btn">
+                                <i class="fas fa-shopping-cart"></i>
+                                Thêm
+                            </button>
+                        @else
+                            <button class="add-to-cart-btn bg-gray-400 cursor-not-allowed" disabled>
+                                <i class="fas fa-ban"></i>
+                                Hết hàng
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -331,7 +341,21 @@
             <div class="col-span-4 text-center py-8">
                 <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
                 <h3 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy sản phẩm</h3>
-                <p class="text-gray-500">Không có sản phẩm nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+                @if(session('selected_branch'))
+                    @php
+                        $branch = App\Models\Branch::find(session('selected_branch'));
+                    @endphp
+                    @if($branch)
+                        <p class="text-gray-500">Không tìm thấy sản phẩm nào tại chi nhánh {{ $branch->name }}.</p>
+                        <button id="change-branch-empty" class="mt-4 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
+                            <i class="fas fa-exchange-alt mr-2"></i>Đổi chi nhánh khác
+                        </button>
+                    @else
+                        <p class="text-gray-500">Không có sản phẩm nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+                    @endif
+                @else
+                    <p class="text-gray-500">Không có sản phẩm nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+                @endif
             </div>
         @endforelse
     </div>
@@ -437,6 +461,30 @@ document.addEventListener('DOMContentLoaded', function() {
             loginPopup.classList.remove('hidden');
         });
     });
+    
+    // Branch selector handling
+    const changeBranchInline = document.getElementById('change-branch-inline');
+    if (changeBranchInline) {
+        changeBranchInline.addEventListener('click', function() {
+            const branchModal = document.getElementById('branch-selector-modal');
+            if (branchModal) {
+                branchModal.style.display = 'flex';
+                document.body.classList.add('overflow-hidden');
+            }
+        });
+    }
+    
+    // Handle empty state branch change button
+    const changeBranchEmpty = document.getElementById('change-branch-empty');
+    if (changeBranchEmpty) {
+        changeBranchEmpty.addEventListener('click', function() {
+            const branchModal = document.getElementById('branch-selector-modal');
+            if (branchModal) {
+                branchModal.style.display = 'flex';
+                document.body.classList.add('overflow-hidden');
+            }
+        });
+    }
     
     // Subscribe to channels
     const productsChannel = pusher.subscribe('products-channel');
@@ -612,7 +660,8 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `
                 <div class="product-card bg-white rounded-lg overflow-hidden" 
                     data-product-id="${product.id}"
-                    data-variant-id="${product.first_variant ? product.first_variant.id : ''}">
+                    data-variant-id="${product.first_variant ? product.first_variant.id : ''}"
+                    data-has-stock="${product.has_stock ? 'true' : 'false'}">
                     <div class="relative">
                         <a href="/shop/products/${product.id}" class="block">
                             ${imageUrl ? 
@@ -662,10 +711,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                     `<span class="product-price">${new Intl.NumberFormat('vi-VN').format(product.base_price)}đ</span>`
                                 }
                             </div>
-                            <button class="add-to-cart-btn">
-                                <i class="fas fa-shopping-cart"></i>
-                                Thêm
-                            </button>
+                            ${product.has_stock ? 
+                                `<button class="add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    Thêm
+                                </button>` : 
+                                `<button class="add-to-cart-btn bg-gray-400 cursor-not-allowed" disabled>
+                                    <i class="fas fa-ban"></i>
+                                    Hết hàng
+                                </button>`
+                            }
                         </div>
                     </div>
                 </div>
@@ -857,15 +912,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Add to cart button handling
-        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+        document.querySelectorAll('.add-to-cart-btn:not([disabled])').forEach(button => {
             button.addEventListener('click', function() {
                 const productCard = this.closest('.product-card');
                 const productId = productCard.dataset.productId;
                 const variantId = productCard.dataset.variantId;
                 const productName = productCard.querySelector('h3').textContent;
+                const hasStock = productCard.dataset.hasStock === 'true';
                 
-                // Check if a variant is available
-                if (!variantId) {
+                // Check if a variant is available and has stock
+                if (!variantId || !hasStock) {
                     showToast('Sản phẩm này tạm hết hàng');
                     return;
                 }

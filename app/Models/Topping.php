@@ -28,9 +28,17 @@ class Topping extends Model
     /**
      * Get all stock entries for this topping across branches
      */
-    public function stocks(): HasMany
+    public function toppingStocks(): HasMany
     {
         return $this->hasMany(ToppingStock::class);
+    }
+    
+    /**
+     * Get all stock entries for this topping across branches (alias for compatibility)
+     */
+    public function stocks(): HasMany
+    {
+        return $this->toppingStocks();
     }
     
     /**
@@ -41,7 +49,7 @@ class Topping extends Model
      */
     public function getStockAtBranch($branchId): int
     {
-        return $this->stocks()
+        return $this->toppingStocks()
             ->where('branch_id', $branchId)
             ->value('stock_quantity') ?? 0;
     }

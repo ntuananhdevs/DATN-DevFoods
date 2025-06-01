@@ -84,6 +84,7 @@
             <!-- Product variants -->
             <div class="space-y-4" id="variants-container">
                 @foreach($variantAttributes as $attribute)
+                @if(count($attribute->values) > 0)
                 <div>
                     <h3 class="font-medium mb-2">{{ $attribute->name }}</h3>
                     <div class="flex flex-wrap gap-2">
@@ -109,10 +110,12 @@
                         @endforeach
                     </div>
                 </div>
+                @endif
                 @endforeach
             </div>
 
             <!-- Toppings Section -->
+            @if(count($product->toppings) > 0)
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
                     <h3 class="font-medium">Toppings</h3>
@@ -129,13 +132,30 @@
                                    data-price="{{ $topping->price }}"
                                    {{ $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                             <div class="relative aspect-square rounded-lg overflow-hidden border group-hover:border-orange-500 transition-colors">
-                                <img src="{{ $topping->image_url }}" 
-                                     alt="{{ $topping->name }}" 
-                                     class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                @if($topping->image)
+                                    <img src="{{ Storage::disk('s3')->url($topping->image) }}" 
+                                         alt="{{ $topping->name }}" 
+                                         class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                                        <i class="fas fa-utensils text-gray-400 text-xl"></i>
+                                    </div>
+                                @endif
                                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity"></div>
                                 <div class="absolute top-1 right-1 w-4 h-4 border-2 border-white rounded-full bg-white/50 backdrop-blur-sm">
                                     <div class="w-full h-full rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200"></div>
                                 </div>
+                                @if($selectedBranchId)
+                                    @php
+                                        $toppingStock = $topping->toppingStocks->first();
+                                        $stockQuantity = $toppingStock ? $toppingStock->stock_quantity : 0;
+                                    @endphp
+                                    @if($stockQuantity < 5)
+                                        <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1">
+                                            Còn {{ $stockQuantity }}
+                                        </div>
+                                    @endif
+                                @endif
                             </div>
                             <div class="mt-1 text-center">
                                 <p class="text-xs font-medium truncate">{{ $topping->name }}</p>
@@ -148,6 +168,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             <!-- Quantity Selection -->
             <div class="flex items-center gap-4">
@@ -170,13 +191,13 @@
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3 pt-4">
                 <button id="add-to-cart" 
-                        class="w-full sm:flex-1 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                        {{ $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
-                    <i class="fas fa-shopping-cart h-5 w-5 mr-2"></i>
-                    <span>{{ $selectedBranch && !$isAvailable ? 'Hết hàng' : 'Thêm vào giỏ hàng' }}</span>
+                        class="w-full sm:flex-1 {{ isset($product->has_stock) && $product->has_stock ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-400' }} text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
+                    <i class="fas {{ isset($product->has_stock) && $product->has_stock ? 'fa-shopping-cart' : 'fa-ban' }} h-5 w-5 mr-2"></i>
+                    <span>{{ isset($product->has_stock) && !$product->has_stock ? 'Hết hàng' : 'Thêm vào giỏ hàng' }}</span>
                 </button>
                 <button class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        {{ $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
+                        {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
                     Mua ngay
                 </button>
                 <div class="flex gap-3 justify-center sm:justify-start">
@@ -764,6 +785,36 @@
 
         // Initialize
         updatePrice();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching functionality
+        const tabButtons = document.querySelectorAll('[data-tab]');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                
+                // Reset all tab buttons
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('border-orange-500', 'text-orange-500');
+                    btn.classList.add('border-transparent');
+                });
+                
+                // Hide all tab contents
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                // Activate clicked tab
+                this.classList.add('border-orange-500', 'text-orange-500');
+                this.classList.remove('border-transparent');
+                
+                // Show corresponding content
+                document.getElementById('content-' + tabName).classList.remove('hidden');
+            });
+        });
     });
 </script>
 @endsection

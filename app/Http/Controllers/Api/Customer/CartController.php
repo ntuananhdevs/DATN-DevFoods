@@ -19,6 +19,15 @@ class CartController extends Controller
         try {
             \Log::info('Cart add request:', $request->all());
             
+            // First check if branch_id is provided
+            if (!$request->has('branch_id') || empty($request->branch_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng'
+                ], 400);
+            }
+            
+            // Then validate other fields
             $request->validate([
                 'product_id' => 'required|exists:products,id',
                 'quantity' => 'required|integer|min:1',
@@ -47,6 +56,23 @@ class CartController extends Controller
                     'success' => false,
                     'message' => 'Sản phẩm đã hết hàng tại chi nhánh này'
                 ], 400);
+            }
+            
+            // Check topping availability
+            if ($request->has('toppings') && count($request->toppings) > 0) {
+                foreach ($request->toppings as $toppingId) {
+                    $toppingStock = \App\Models\ToppingStock::where('branch_id', $request->branch_id)
+                        ->where('topping_id', $toppingId)
+                        ->first();
+                        
+                    if (!$toppingStock || $toppingStock->stock_quantity <= 0) {
+                        $topping = \App\Models\Topping::find($toppingId);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Topping ' . ($topping ? $topping->name : '') . ' đã hết hàng tại chi nhánh này'
+                        ], 400);
+                    }
+                }
             }
             
             $userId = null;

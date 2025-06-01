@@ -39,17 +39,19 @@ class ProductController extends Controller
             }, 
             'reviews' => function($query) {
                 $query->where('approved', true);
+            },
+            'variants.branchStocks' => function($query) use ($selectedBranchId) {
+                if ($selectedBranchId) {
+                    $query->where('branch_id', $selectedBranchId);
+                }
             }
         ])
         ->where('status', 'selling');
         
-        // Filter products by selected branch (only show products available in this branch)
+        // Filter by branch but show all products (including out of stock)
         if ($selectedBranchId) {
-            $query->whereHas('variants', function($q) use ($selectedBranchId) {
-                $q->whereHas('branchStocks', function($q2) use ($selectedBranchId) {
-                    $q2->where('branch_id', $selectedBranchId)
-                       ->where('stock_quantity', '>', 0);
-                });
+            $query->whereHas('variants.branchStocks', function($query) use ($selectedBranchId) {
+                $query->where('branch_id', $selectedBranchId);
             });
         }
 
@@ -112,21 +114,36 @@ class ProductController extends Controller
             // Marcar como favorito si está en la lista
             $product->is_favorite = in_array($product->id, $favorites);
             
-            // Obtener la primera variante del producto que tenga stock disponible en la sucursal seleccionada
-            $productVariantQuery = ProductVariant::where('product_id', $product->id);
-            
+            // Check if the product has stock
             if ($selectedBranchId) {
-                $productVariantQuery->whereHas('branchStocks', function($query) use ($selectedBranchId) {
-                    $query->where('branch_id', $selectedBranchId)
-                          ->where('stock_quantity', '>', 0);
+                // Find any variant with stock > 0
+                $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
+                    return $variant->branchStocks->contains(function($stock) use ($selectedBranchId) {
+                        return $stock->branch_id == $selectedBranchId && $stock->stock_quantity > 0;
+                    });
                 });
+                
+                // Get first variant (regardless of stock)
+                $product->first_variant = ProductVariant::where('product_id', $product->id)
+                                        ->whereHas('branchStocks', function($query) use ($selectedBranchId) {
+                                            $query->where('branch_id', $selectedBranchId);
+                                        })
+                                        ->orderBy('id', 'asc')
+                                        ->first();
             } else {
-                $productVariantQuery->whereHas('branchStocks', function($query) {
-                    $query->where('stock_quantity', '>', 0);
+                // If no branch selected, check for any stock
+                $product->has_stock = $product->variants->contains(function($variant) {
+                    return $variant->branchStocks->contains(function($stock) {
+                        return $stock->stock_quantity > 0;
+                    });
                 });
+                
+                // Get first variant (regardless of stock)
+                $product->first_variant = ProductVariant::where('product_id', $product->id)
+                                        ->whereHas('branchStocks')
+                                        ->orderBy('id', 'asc')
+                                        ->first();
             }
-            
-            $product->first_variant = $productVariantQuery->orderBy('id', 'asc')->first();
             
             return $product;
         });
@@ -153,8 +170,26 @@ class ProductController extends Controller
                       ->orderBy('created_at', 'desc');
             },
             'variants.variantValues.attribute',
-            'toppings' => function($query) {
+            'variants.branchStocks' => function($query) use ($selectedBranchId) {
+                if ($selectedBranchId) {
+                    $query->where('branch_id', $selectedBranchId);
+                }
+            },
+            'toppings' => function($query) use ($selectedBranchId) {
                 $query->where('active', true);
+                
+                if ($selectedBranchId) {
+                    // Only include toppings that have stock at this branch
+                    $query->whereHas('toppingStocks', function($q) use ($selectedBranchId) {
+                        $q->where('branch_id', $selectedBranchId)
+                          ->where('stock_quantity', '>', 0);
+                    });
+                }
+            },
+            'toppings.toppingStocks' => function($query) use ($selectedBranchId) {
+                if ($selectedBranchId) {
+                    $query->where('branch_id', $selectedBranchId);
+                }
             }
         ])->findOrFail($id);
 
@@ -166,6 +201,23 @@ class ProductController extends Controller
         foreach ($product->images as $image) {
             $image->s3_url = Storage::disk('s3')->url($image->img);
         }
+        
+        // Check if the product has stock
+        if ($selectedBranchId) {
+            // Find any variant with stock > 0
+            $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
+                return $variant->branchStocks->contains(function($stock) use ($selectedBranchId) {
+                    return $stock->branch_id == $selectedBranchId && $stock->stock_quantity > 0;
+                });
+            });
+        } else {
+            // If no branch selected, check for any stock
+            $product->has_stock = $product->variants->contains(function($variant) {
+                return $variant->branchStocks->contains(function($stock) {
+                    return $stock->stock_quantity > 0;
+                });
+            });
+        }
 
         // Lấy các variant attributes và values
         $variantAttributes = VariantAttribute::with([
@@ -174,7 +226,11 @@ class ProductController extends Controller
                     $q->where('product_id', $product->id);
                 });
             }
-        ])->get();
+        ])
+        ->whereHas('values.productVariants', function($query) use ($product) {
+            $query->where('product_id', $product->id);
+        })
+        ->get();
 
         // Lấy các sản phẩm liên quan cùng danh mục
         $relatedProductsQuery = Product::with([

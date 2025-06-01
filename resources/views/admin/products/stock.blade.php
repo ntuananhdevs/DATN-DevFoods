@@ -2,6 +2,8 @@
 
 @section('title', 'Quản lý tồn kho')
 
+@include('components.modal')
+
 @section('content')
 <style>
     /* Style cho branch card */
@@ -219,18 +221,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-error">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <!-- Tabs Navigation -->
     <div class="tabs">
         <div class="tab active" data-tab="variants">Tồn kho biến thể sản phẩm</div>
@@ -433,8 +423,18 @@
                         <div class="topping-stocks space-y-3">
                             @foreach($product->toppings as $topping)
                             <div class="variant-stock" data-topping-id="{{ $topping->id }}">
-                                <div class="text-sm font-medium text-gray-700 mb-1">
-                                    {{ $topping->name }} ({{ number_format($topping->price) }} đ)
+                                <div class="flex items-center gap-3 mb-2">
+                                    @if($topping->image)
+                                        <img src="{{ Storage::disk('s3')->url($topping->image) }}" alt="{{ $topping->name }}" 
+                                            class="w-10 h-10 object-cover rounded-md">
+                                    @else
+                                        <div class="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center">
+                                            <i class="fas fa-utensils text-gray-400"></i>
+                                        </div>
+                                    @endif
+                                    <div class="text-sm font-medium text-gray-700">
+                                        {{ $topping->name }} ({{ number_format($topping->price) }} đ)
+                                    </div>
                                 </div>
                                 <input type="number" 
                                       name="topping_stock[{{ $branch->id }}][{{ $topping->id }}]" 
@@ -470,6 +470,47 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Function to check for zero quantities and warn the user
+        function checkZeroQuantities() {
+            const stockInputs = document.querySelectorAll('input[type="number"]');
+            const zeroQuantityItems = [];
+            
+            stockInputs.forEach(input => {
+                if (parseInt(input.value) === 0) {
+                    // Get product/variant/topping name
+                    const stockItem = input.closest('.variant-stock');
+                    let itemName = '';
+                    
+                    if (stockItem) {
+                        // Check if it's a variant or topping
+                        if (stockItem.querySelector('.text-sm.font-medium.text-gray-700')) {
+                            itemName = stockItem.querySelector('.text-sm.font-medium.text-gray-700').textContent.trim();
+                        } else if (stockItem.parentElement.previousElementSibling) {
+                            // Try to get branch name
+                            const branchCard = stockItem.closest('.branch-card');
+                            const branchName = branchCard ? branchCard.querySelector('h4').textContent.trim() : '';
+                            itemName = `${stockItem.querySelector('.text-sm').textContent.trim()} ở ${branchName}`;
+                        }
+                        
+                        zeroQuantityItems.push(itemName);
+                    }
+                }
+            });
+            
+            if (zeroQuantityItems.length > 0) {
+                // Show warning
+                dtmodalShowToast('warning', {
+                    title: 'Cảnh báo!',
+                    message: `Có ${zeroQuantityItems.length} sản phẩm có số lượng 0. Vui lòng kiểm tra lại.`
+                });
+                
+                // Return array of items with zero quantity
+                return zeroQuantityItems;
+            }
+            
+            return false;
+        }
+
         // Tabs functionality
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -520,7 +561,10 @@
         applyBulkStockBtn.addEventListener('click', () => {
             const stockValue = parseInt(bulkStockInput.value);
             if (isNaN(stockValue) || stockValue < 0) {
-                alert('Vui lòng nhập số lượng hợp lệ');
+                dtmodalShowToast('warning', {
+                    title: 'Cảnh báo!',
+                    message: 'Vui lòng nhập số lượng hợp lệ'
+                });
                 return;
             }
 
@@ -528,7 +572,10 @@
                 .map(input => input.value);
 
             if (selectedVariants.length === 0) {
-                alert('Vui lòng chọn ít nhất một biến thể');
+                dtmodalShowToast('warning', {
+                    title: 'Cảnh báo!',
+                    message: 'Vui lòng chọn ít nhất một biến thể'
+                });
                 return;
             }
 
@@ -536,7 +583,10 @@
                 .map(input => input.value);
 
             if (selectedBranches.length === 0) {
-                alert('Vui lòng chọn ít nhất một chi nhánh');
+                dtmodalShowToast('warning', {
+                    title: 'Cảnh báo!',
+                    message: 'Vui lòng chọn ít nhất một chi nhánh'
+                });
                 return;
             }
 
@@ -549,10 +599,23 @@
                     }
                 });
             });
+            
+            dtmodalShowToast('success', {
+                title: 'Thành công!',
+                message: 'Đã áp dụng số lượng cho các biến thể đã chọn'
+            });
         });
 
         // Xử lý lưu thay đổi biến thể
         saveVariantStocksBtn.addEventListener('click', () => {
+            // Check for zero quantities first
+            const zeroItems = checkZeroQuantities();
+            if (zeroItems && zeroItems.length > 0) {
+                if (!confirm(`Cảnh báo: Có ${zeroItems.length} sản phẩm có số lượng 0. Bạn có muốn tiếp tục lưu không?`)) {
+                    return;
+                }
+            }
+
             const data = {
                 stocks: {}
             };
@@ -592,14 +655,23 @@
             })
             .then(data => {
                 if (data.success) {
-                    alert('Cập nhật số lượng biến thể thành công');
+                    dtmodalShowToast('success', {
+                        title: 'Thành công!',
+                        message: 'Cập nhật số lượng biến thể thành công'
+                    });
                 } else {
-                    alert(data.message || 'Có lỗi xảy ra khi cập nhật');
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi!',
+                        message: data.message || 'Có lỗi xảy ra khi cập nhật'
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
+                dtmodalShowToast('error', {
+                    title: 'Lỗi!',
+                    message: 'Có lỗi xảy ra khi cập nhật: ' + error.message
+                });
             });
         });
 
@@ -642,7 +714,10 @@
             applyBulkToppingStockBtn.addEventListener('click', () => {
                 const stockValue = parseInt(bulkToppingStockInput.value);
                 if (isNaN(stockValue) || stockValue < 0) {
-                    alert('Vui lòng nhập số lượng hợp lệ');
+                    dtmodalShowToast('warning', {
+                        title: 'Cảnh báo!',
+                        message: 'Vui lòng nhập số lượng hợp lệ'
+                    });
                     return;
                 }
 
@@ -650,7 +725,10 @@
                     .map(input => input.value);
 
                 if (selectedToppings.length === 0) {
-                    alert('Vui lòng chọn ít nhất một topping');
+                    dtmodalShowToast('warning', {
+                        title: 'Cảnh báo!',
+                        message: 'Vui lòng chọn ít nhất một topping'
+                    });
                     return;
                 }
 
@@ -658,7 +736,10 @@
                     .map(input => input.value);
 
                 if (selectedBranches.length === 0) {
-                    alert('Vui lòng chọn ít nhất một chi nhánh');
+                    dtmodalShowToast('warning', {
+                        title: 'Cảnh báo!',
+                        message: 'Vui lòng chọn ít nhất một chi nhánh'
+                    });
                     return;
                 }
 
@@ -671,12 +752,25 @@
                         }
                     });
                 });
+                
+                dtmodalShowToast('success', {
+                    title: 'Thành công!',
+                    message: 'Đã áp dụng số lượng cho các topping đã chọn'
+                });
             });
         }
 
         // Xử lý lưu thay đổi topping
         if (saveToppingStocksBtn) {
             saveToppingStocksBtn.addEventListener('click', () => {
+                // Check for zero quantities first
+                const zeroItems = checkZeroQuantities();
+                if (zeroItems && zeroItems.length > 0) {
+                    if (!confirm(`Cảnh báo: Có ${zeroItems.length} topping có số lượng 0. Bạn có muốn tiếp tục lưu không?`)) {
+                        return;
+                    }
+                }
+
                 const data = {
                     topping_stock: {}
                 };
@@ -697,9 +791,22 @@
                         const stockInput = toppingStock.querySelector('input[type="number"]');
                         const stockValue = parseInt(stockInput.value) || 0;
                         
-                        data.topping_stock[branchId][toppingId] = stockValue;
+                        // Ensure toppingId exists and is a valid number
+                        if (toppingId && !isNaN(parseInt(toppingId))) {
+                            data.topping_stock[branchId][toppingId] = stockValue;
+                        } else {
+                            console.error('Invalid topping ID:', toppingId, 'for branch:', branchId);
+                        }
                     });
+                    
+                    // If no toppings were found for this branch, log an error
+                    if (Object.keys(data.topping_stock[branchId]).length === 0) {
+                        console.warn('No toppings found for branch ID:', branchId);
+                    }
                 });
+                
+                // Debug log the data being sent
+                console.log('Topping stock data being sent:', data);
 
                 // Send to server
                 fetch('{{ route("admin.products.update-topping-stocks") }}', {
@@ -711,21 +818,37 @@
                     body: JSON.stringify(data)
                 })
                 .then(response => {
+                    console.log('Topping stock response status:', response.status);
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Topping stock response data:', data);
                     if (data.success) {
-                        alert('Cập nhật số lượng topping thành công');
+                        dtmodalShowToast('success', {
+                            title: 'Thành công!',
+                            message: 'Cập nhật số lượng topping thành công'
+                        });
+                        
+                        // Reload the page to refresh the stock data
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
                     } else {
-                        alert(data.message || 'Có lỗi xảy ra khi cập nhật');
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi!',
+                            message: data.message || 'Có lỗi xảy ra khi cập nhật'
+                        });
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('Có lỗi xảy ra khi cập nhật: ' + error.message);
+                    console.error('Error updating topping stocks:', error);
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi!',
+                        message: 'Có lỗi xảy ra khi cập nhật: ' + error.message
+                    });
                 });
             });
         }

@@ -123,24 +123,27 @@
           <div class="space-y-5 md:col-span-2">
             <div>
               <label for="name" class="block text-sm font-medium text-gray-700">Tên sản phẩm <span class="text-red-500">*</span></label>
-                        <input type="text" id="name" name="name" required placeholder="Nhập tên sản phẩm" value="{{ old('name', $product->name) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm" value="{{ old('name', $product->name) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <div class="error-message text-red-500 text-xs mt-1" id="name-error"></div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
             <div>
                             <label for="category_id" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
-                            <select id="category_id" name="category_id" required class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <select id="category_id" name="category_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                   <option value="">Chọn danh mục</option>
                                 @foreach($categories as $category)
                                     <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
                                 @endforeach
                 </select>
+                <div class="error-message text-red-500 text-xs mt-1" id="category_id-error"></div>
               </div>
               <div>
                             <label for="base_price" class="block text-sm font-medium text-gray-700">Giá cơ bản <span class="text-red-500">*</span></label>
                 <div class="relative mt-1">
-                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" required placeholder="0" value="{{ old('base_price', $product->base_price) }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" placeholder="0" value="{{ old('base_price', $product->base_price) }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                             </div>
+                <div class="error-message text-red-500 text-xs mt-1" id="base_price-error"></div>
                 </div>
             </div>
 
@@ -148,6 +151,7 @@
               <div>
                             <label for="preparation_time" class="block text-sm font-medium text-gray-700">Thời gian chuẩn bị (phút)</label>
                             <input type="number" id="preparation_time" name="preparation_time" min="0" placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time', $product->preparation_time) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <div class="error-message text-red-500 text-xs mt-1" id="preparation_time-error"></div>
               </div>
             </div>
 
@@ -201,6 +205,7 @@ if (is_array($ingredientsData)) {
     echo '';
 }
 @endphp</textarea>
+                        <div class="error-message text-red-500 text-xs mt-1" id="ingredients-error"></div>
             </div>
 
             <div>
@@ -442,6 +447,7 @@ if (is_array($ingredientsData)) {
                         </div>
                     @endif
                 </div>
+                <div class="error-message text-red-500 text-xs mt-2 mb-2" id="attributes-error"></div>
                 <button type="button" id="add-attribute-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -708,6 +714,124 @@ if (is_array($ingredientsData)) {
   </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Validation functions
+        const validateField = (fieldId, errorMessage) => {
+            const field = document.getElementById(fieldId);
+            const errorElement = document.getElementById(`${fieldId}-error`);
+            
+            if (!field || !errorElement) return true; // Skip if elements don't exist
+            
+            const isValid = field.value.trim() !== '';
+            
+            if (!isValid) {
+                errorElement.textContent = errorMessage;
+                field.classList.add('border-red-500');
+            } else {
+                errorElement.textContent = '';
+                field.classList.remove('border-red-500');
+            }
+            
+            return isValid;
+        };
+        
+        const validateRequired = () => {
+            let isValid = true;
+            
+            // Validate product name
+            if (!validateField('name', 'Tên sản phẩm không được bỏ trống')) {
+                isValid = false;
+            }
+            
+            // Validate category
+            if (!validateField('category_id', 'Vui lòng chọn danh mục')) {
+                isValid = false;
+            }
+            
+            // Validate price
+            if (!validateField('base_price', 'Giá cơ bản không được bỏ trống')) {
+                isValid = false;
+            }
+            
+            // Always validate preparation time - show error if not provided or invalid
+            const preparationTime = document.getElementById('preparation_time');
+            const preparationTimeError = document.getElementById('preparation_time-error');
+            if (!preparationTime || preparationTime.value.trim() === '') {
+                preparationTimeError.textContent = 'Thời gian chuẩn bị không được bỏ trống';
+                preparationTime.classList.add('border-red-500');
+                isValid = false;
+            } else if (isNaN(preparationTime.value) || parseInt(preparationTime.value) < 0) {
+                preparationTimeError.textContent = 'Thời gian chuẩn bị phải là số dương';
+                preparationTime.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                preparationTimeError.textContent = '';
+                preparationTime.classList.remove('border-red-500');
+            }
+            
+            // Always validate ingredients - show error if not provided or invalid
+            const ingredients = document.getElementById('ingredients');
+            const ingredientsError = document.getElementById('ingredients-error');
+            if (!ingredients || ingredients.value.trim() === '') {
+                ingredientsError.textContent = 'Nguyên liệu không được bỏ trống';
+                ingredients.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                const lines = ingredients.value.trim().split('\n');
+                if (lines.some(line => line.trim() === '')) {
+                    ingredientsError.textContent = 'Mỗi dòng nên chứa một nguyên liệu';
+                    ingredients.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    ingredientsError.textContent = '';
+                    ingredients.classList.remove('border-red-500');
+                }
+            }
+            
+            // Validate attributes - at least one attribute with name and value
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            const attributesError = document.getElementById('attributes-error');
+            
+            if (attributeGroups.length === 0) {
+                attributesError.textContent = 'Sản phẩm cần có ít nhất một thuộc tính';
+                isValid = false;
+            } else {
+                let hasValidAttribute = false;
+                
+                for (const group of attributeGroups) {
+                    const nameInput = group.querySelector('input[name$="[name]"]');
+                    const valueInputs = group.querySelectorAll('input[name$="[value]"]');
+                    
+                    if (nameInput && nameInput.value.trim() !== '' && 
+                        valueInputs.length > 0 && Array.from(valueInputs).some(input => input.value.trim() !== '')) {
+                        hasValidAttribute = true;
+                        break;
+                    }
+                }
+                
+                if (!hasValidAttribute) {
+                    attributesError.textContent = 'Mỗi thuộc tính cần có tên và ít nhất một giá trị';
+                    isValid = false;
+                } else {
+                    attributesError.textContent = '';
+                }
+            }
+            
+            // Validate primary image
+            const primaryImageUpload = document.getElementById('primary-image-upload');
+            const mainImagePreview = document.getElementById('main-image-preview');
+            
+            if ((!primaryImageUpload || !primaryImageUpload.files.length) && 
+                (mainImagePreview && mainImagePreview.classList.contains('hidden'))) {
+                dtmodalShowToast('warning', {
+                    title: 'Chú ý',
+                    message: 'Vui lòng tải lên ít nhất một hình ảnh cho sản phẩm'
+                });
+                isValid = false;
+            }
+            
+            return isValid;
+        };
+
         // Image upload handling
         const imagePlaceholder = document.getElementById('image-placeholder');
         const primaryImageUpload = document.getElementById('primary-image-upload');
@@ -817,213 +941,160 @@ if (is_array($ingredientsData)) {
             updateImageGallery();
         };
 
-        // Attributes and Variant Values handling
-        const attributesContainer = document.getElementById('attributes-container');
-        const addAttributeBtn = document.getElementById('add-attribute-btn');
-        let attributeCount = document.querySelectorAll('.attribute-group').length; // Count existing attributes
-
-        function createAttributeGroup(index) {
-            const attributeGroup = document.createElement('div');
-            attributeGroup.className = 'attribute-group';
-            attributeGroup.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex-1 mr-4">
-                        <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-                        <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                    </div>
-                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="variant-values-container">
-                    <div class="variant-value-row">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                            <input type="text" name="attributes[${index}][values][0][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </div>
-                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                    </svg>
-                    Thêm giá trị
-                </button>
-            `;
-            return attributeGroup;
-        }
-
-        addAttributeBtn.addEventListener('click', () => {
-            const attributeGroup = createAttributeGroup(attributeCount);
-            attributesContainer.appendChild(attributeGroup);
-            attributeCount++;
-        });
-
-        window.addVariantValue = function(button) {
-            const container = button.previousElementSibling;
-            const attributeGroup = container.closest('.attribute-group');
-            const attributeInputs = attributeGroup.querySelectorAll('input[name^="attributes["]');
-            
-            // Find the attribute index from the first input name
-            const attributeIndexMatch = attributeInputs[0].name.match(/\[(\d+)\]/);
-            if (!attributeIndexMatch) return;
-            
-            const attributeIndex = attributeIndexMatch[1];
-            const valueCount = container.querySelectorAll('.variant-value-row').length;
-            
-            const valueRow = document.createElement('div');
-            valueRow.className = 'variant-value-row';
-            valueRow.innerHTML = `
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                    <input type="text" name="attributes[${attributeIndex}][values][${valueCount}][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                    <input type="number" name="attributes[${attributeIndex}][values][${valueCount}][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </div>
-                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            `;
-            container.appendChild(valueRow);
-        };
-
-        // Toppings handling
+        // Add topping functionality
         const toppingsContainer = document.getElementById('toppings-container');
         const addToppingBtn = document.getElementById('add-topping-btn');
         let toppingCount = 0;
 
-        function createToppingGroup(index, name = '', price = 0, available = true, id = null, image = '') {
+        // Handle topping image preview functionality
+        function handleToppingImagePreview(input) {
+            const previewId = input.getAttribute('data-preview-id');
+            const previewWrapId = input.getAttribute('data-preview-wrap-id');
+            const uploadContentId = input.getAttribute('data-upload-content-id');
+            const previewImg = document.getElementById(previewId);
+            const previewWrap = document.getElementById(previewWrapId);
+            const uploadContent = document.getElementById(uploadContentId);
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewWrap.classList.remove('hidden');
+                    uploadContent.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                previewImg.src = '';
+                previewWrap.classList.add('hidden');
+                uploadContent.classList.remove('hidden');
+            }
+        }
+
+        function createToppingGroup(index) {
             const toppingGroup = document.createElement('div');
             toppingGroup.className = 'border rounded-md p-4 mb-4';
             toppingGroup.innerHTML = `
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Tên topping</label>
-                        <input type="text" name="toppings[${index}][name]" required placeholder="Ví dụ: Sốt mayonnaise" value="${name}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        ${id ? `<input type="hidden" name="toppings[${index}][id]" value="${id}">` : ''}
+                        <input type="text" name="toppings[${index}][name]" placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-name-error"></div>
                     </div>
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
-                        <input type="number" name="toppings[${index}][price]" required min="0" step="1000" placeholder="0" value="${price}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="number" name="toppings[${index}][price]" min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-price-error"></div>
                     </div>
+                    <div class="w-48 mr-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+                        <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                          <div id="topping-image-placeholder-${index}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                            <div id="topping-image-preview-wrap-${index}" class="absolute inset-0 w-full h-full hidden">
+                              <img id="topping-image-preview-${index}" src="" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
+                            </div>
+                            <div id="topping-upload-content-${index}" class="flex flex-col items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                              </svg>
+                              <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
+                              <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
+                            </div>
+                            <input type="file" id="topping-image-upload-${index}" name="toppings.${index}.image" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
+                          </div>
+                        </div>
+                      </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                         </svg>
                     </button>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh Topping</label>
-                    <div class="flex items-center">
-                        <div class="topping-img-preview w-24 h-24 border border-gray-200 rounded-md overflow-hidden bg-gray-50 mr-4 flex items-center justify-center">
-                            ${image ? `<img src="${image}" alt="${name}" class="object-cover w-full h-full" />` : `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-300" width="24" height="24" fill="none" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                <polyline points="21 15 16 10 5 21"></polyline>
-                            </svg>`}
-                        </div>
-                        <div>
-                            <input type="file" id="topping-image-${index}" name="topping_images[${index}]" accept="image/*" class="hidden topping-image-input" data-index="${index}" />
-                            <button type="button" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm select-topping-image-btn" data-index="${index}">
-                                Chọn ảnh
-                            </button>
-                            <p class="text-xs text-gray-500 mt-1">Định dạng: JPG, PNG, GIF</p>
-                        </div>
-                    </div>
-                </div>
                 <div class="flex items-center gap-4">
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="toppings[${index}][available]" value="1" ${available ? 'checked' : ''} class="form-checkbox text-blue-600" />
+                        <input type="checkbox" name="toppings[${index}][available]" value="1" checked class="form-checkbox text-blue-600" />
                         <span class="text-sm text-gray-700">Đang bán</span>
                     </label>
                 </div>
             `;
+            
+            // Set up topping image events
+            setTimeout(() => {
+                const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
+                const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
+                const fileInput = document.getElementById(`topping-image-upload-${index}`);
+                
+                if (placeholder && fileInput) {
+                    placeholder.addEventListener('click', (e) => {
+                        if (e.target !== uploadBtn) {
+                            fileInput.click();
+                        }
+                    });
+                    
+                    uploadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+
+                    fileInput.addEventListener('change', function() {
+                        handleToppingImagePreview(this);
+                    });
+                }
+            }, 10);
+            
             return toppingGroup;
         }
 
         addToppingBtn.addEventListener('click', () => {
-            toppingsContainer.appendChild(createToppingGroup(toppingCount));
-            attachToppingImageHandlers(toppingCount);
+            const toppingGroup = createToppingGroup(toppingCount);
+            toppingsContainer.appendChild(toppingGroup);
             toppingCount++;
         });
 
-        // Helper function to get topping image URL
-        function getToppingImageUrl(toppingId) {
-            @if(isset($product->toppings) && count($product->toppings) > 0)
-                const toppings = @json($product->toppings);
-                const topping = toppings.find(t => t.id == toppingId);
-                if (topping && topping.image) {
-                    // Get the full S3 URL for the image
-                    @foreach($product->toppings as $topping)
-                        if ({{ $topping->id }} == toppingId && "{{ $topping->image }}") {
-                            return "{{ Storage::disk('s3')->url($topping->image ?? 'default-placeholder.jpg') }}";
-                        }
-                    @endforeach
-                }
-            @endif
-            return '';
-        }
-
-        // Attach event handlers for topping image uploads
-        function attachToppingImageHandlers(index) {
-            const selectBtn = document.querySelector(`.select-topping-image-btn[data-index="${index}"]`);
-            const input = document.getElementById(`topping-image-${index}`);
-            
-            if (selectBtn && input) {
-                selectBtn.addEventListener('click', () => {
-                    input.click();
-                });
-                
-                input.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file && file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const preview = input.closest('.mb-4').querySelector('.topping-img-preview');
-                            if (preview) {
-                                preview.innerHTML = `<img src="${e.target.result}" alt="Topping preview" class="object-cover w-full h-full" />`;
-                            }
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-        }
-
-        // Load existing toppings
+        // Initialize existing toppings
         @if(isset($product->toppings) && count($product->toppings) > 0)
             @foreach($product->toppings as $index => $topping)
-                toppingsContainer.appendChild(createToppingGroup(
-                    {{ $index }},
-                    {!! json_encode($topping->name) !!},
-                    {{ $topping->price }},
-                    {{ $topping->available ? 'true' : 'false' }},
-                    {{ $topping->id }}
-                ));
-                attachToppingImageHandlers({{ $index }});
-                toppingCount = {{ $index + 1 }};
+                const toppingGroup = createToppingGroup({{ $index }});
+                toppingsContainer.appendChild(toppingGroup);
+                
+                // Set values after adding to DOM
+                setTimeout(() => {
+                    const nameInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][name]"]`);
+                    const priceInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][price]"]`);
+                    const availableInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][available]"]`);
+                    
+                    nameInput.value = "{{ $topping->name }}";
+                    priceInput.value = "{{ $topping->price }}";
+                    availableInput.checked = {{ $topping->available ? 'true' : 'false' }};
+                    
+                    // Set image preview if exists
+                    @if($topping->image)
+                        const previewImg = document.getElementById(`topping-image-preview-{{ $index }}`);
+                        const previewWrap = document.getElementById(`topping-image-preview-wrap-{{ $index }}`);
+                        const uploadContent = document.getElementById(`topping-upload-content-{{ $index }}`);
+                        
+                        if (previewImg && previewWrap && uploadContent) {
+                            previewImg.src = "{{ Storage::disk('s3')->url($topping->image) }}";
+                            previewWrap.classList.remove('hidden');
+                            uploadContent.classList.add('hidden');
+                        }
+                    @endif
+                }, 20);
             @endforeach
+            toppingCount = {{ count($product->toppings) }};
         @endif
 
         // Form submission
         const form = document.getElementById('edit-product-form');
         form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default submission to avoid page reload
+            
+            // Validate the form
+            if (!validateRequired()) {
+                return false;
+            }
+            
             // Convert ingredients textarea to JSON array
             const ingredientsText = document.getElementById('ingredients').value;
             const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
@@ -1033,17 +1104,9 @@ if (is_array($ingredientsData)) {
             ingredientsInput.value = JSON.stringify(ingredientsArray);
             form.appendChild(ingredientsInput);
             
-            // Validate branch quantities and ensure they're sent as scalar values
-            const branchStockInputs = document.querySelectorAll('input[name^="branch_stock"]');
-            branchStockInputs.forEach(input => {
-                // Ensure quantities are valid numbers
-                if (input.value === '' || isNaN(input.value)) {
-                    input.value = 0;
-                }
-                
-                // Log branch stock data for debugging
-                console.log('Branch stock input:', input.name, input.value);
-            });
+            // Ensure description is always sent (even if empty)
+            const description = document.getElementById('description');
+            if (!description.value) description.value = '';
             
             // Add a flag to indicate branch stocks are being updated
             const updateBranchStocksFlag = document.createElement('input');
@@ -1059,9 +1122,6 @@ if (is_array($ingredientsData)) {
             updateToppingStocksFlag.value = '1';
             form.appendChild(updateToppingStocksFlag);
             
-            // Collect all attribute data and ensure no attribute IDs are lost
-            const attributeGroups = document.querySelectorAll('.attribute-group');
-            
             // Add a flag to indicate we're preserving attributes
             const preserveAttributesFlag = document.createElement('input');
             preserveAttributesFlag.type = 'hidden';
@@ -1069,25 +1129,62 @@ if (is_array($ingredientsData)) {
             preserveAttributesFlag.value = '1';
             form.appendChild(preserveAttributesFlag);
             
-            // Log attribute data for debugging
-            console.log('Attribute count before submit:', attributeGroups.length);
-            attributeGroups.forEach((group, index) => {
-                const nameInput = group.querySelector('input[name$="[name]"]');
-                const idInput = group.querySelector('input[name$="[id]"]');
-                if (nameInput) {
-                    console.log(`Attribute ${index}:`, nameInput.value, idInput ? `ID: ${idInput.value}` : 'New attribute');
+            // Send form data via AJAX to avoid page reload
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
-                
-                const valueInputs = group.querySelectorAll('input[name*="[values]"][name$="[value]"]');
-                console.log(`  Values count: ${valueInputs.length}`);
-                valueInputs.forEach(input => {
-                    console.log(`  Value:`, input.value, input.name);
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    dtmodalShowToast('success', {
+                        title: 'Thành công',
+                        message: 'Sản phẩm đã được cập nhật thành công!'
+                    });
+                    
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/admin/products';
+                    }, 1500);
+                } else {
+                    // Handle validation errors
+                    if (data.errors) {
+                        Object.keys(data.errors).forEach(key => {
+                            const errorElement = document.getElementById(`${key.replace(/\./g, '-')}-error`);
+                            if (errorElement) {
+                                errorElement.textContent = data.errors[key][0];
+                                const inputElement = document.querySelector(`[name="${key}"]`);
+                                if (inputElement) {
+                                    inputElement.classList.add('border-red-500');
+                                }
+                            } else if (key === 'primary_image') {
+                                dtmodalShowToast('error', {
+                                    title: 'Lỗi',
+                                    message: data.errors[key][0]
+                                });
+                            }
+                        });
+                    } else {
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Đã có lỗi xảy ra khi cập nhật sản phẩm.'
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Đã có lỗi xảy ra khi gửi biểu mẫu.'
                 });
             });
-            
-            // Đảm bảo description luôn gửi lên (kể cả rỗng)
-            const description = document.getElementById('description');
-            if (!description.value) description.value = '';
         });
 
         // Handle status and release date visibility
@@ -1098,10 +1195,8 @@ if (is_array($ingredientsData)) {
             const selectedStatus = document.querySelector('input[name="status"]:checked').value;
             if (selectedStatus === 'coming_soon') {
                 releaseAtDiv.classList.remove('hidden');
-                releaseAtDiv.querySelector('#release_at').required = true;
             } else {
                 releaseAtDiv.classList.add('hidden');
-                releaseAtDiv.querySelector('#release_at').required = false;
             }
         }
 

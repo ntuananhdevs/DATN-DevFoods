@@ -619,17 +619,6 @@
                         <input type="email" placeholder="Email của bạn" class="w-full px-3 py-2 bg-gray-800 border-gray-700 text-white rounded-md focus:ring-orange-500">
                         <button class="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition-colors">Đăng Ký</button>
                     </div>
-                    <div class="mt-6">
-                        <h4 class="font-medium text-white mb-2">Tải Ứng Dụng</h4>
-                        <div class="flex gap-2">
-                            <a href="#">
-                                <img src="/placeholder.svg?height=40&width=120" alt="App Store" class="rounded h-10">
-                            </a>
-                            <a href="#">
-                                <img src="/placeholder.svg?height=40&width=120" alt="Google Play" class="rounded h-10">
-                            </a>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

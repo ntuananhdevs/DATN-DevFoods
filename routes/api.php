@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\Api\Customer\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,9 @@ use App\Http\Controllers\TestController;
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return $request->user();
 // });
+
+// Product listing API (for AJAX) - Add web middleware for session support
+Route::middleware('web')->get('/products', [ProductController::class, 'getProducts']);
 
 Route::group([
   'prefix' => 'auth'
@@ -56,4 +60,10 @@ Route::prefix('customer')->name('api.')->group(function () {
         Route::post('/branches/set-selected', [\App\Http\Controllers\Api\Customer\BranchController::class, 'setSelectedBranch'])->name('branches.set-selected');
         Route::get('/branches/nearest', [\App\Http\Controllers\Api\Customer\BranchController::class, 'findNearestBranch'])->name('branches.nearest');
     });
+});
+
+// Cart and favorites routes
+Route::middleware('web')->group(function () {
+    Route::post('/cart/add', [\App\Http\Controllers\Api\Customer\CartController::class, 'add']);
+    Route::post('/favorites/toggle', [\App\Http\Controllers\Api\Customer\FavoriteController::class, 'toggle']);
 });
