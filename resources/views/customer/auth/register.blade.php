@@ -10,6 +10,12 @@
             <p class="text-orange-500 font-medium">Đăng ký tài khoản</p>
         </div>
 
+        @if (session('status'))
+            <div class="mt-4 text-center text-sm text-green-600">
+                {{ session('status') }}
+            </div>
+        @endif
+
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="p-6">
                 <!-- Register Form -->
@@ -51,7 +57,7 @@
                             <div class="text-red-500 text-sm mt-1" id="emailError">{{ $message }}</div>
                         @else
                             <div class="text-red-500 text-sm mt-1 hidden" id="emailError"></div>
-                        @enderror
+                        @endif
                     </div>
 
                     <div>
@@ -95,7 +101,7 @@
                             <div class="text-red-500 text-sm mt-1" id="passwordError">{{ $message }}</div>
                         @else
                             <div class="text-red-500 text-sm mt-1 hidden" id="passwordError"></div>
-                        @enderror
+                        @endif
                     </div>
 
                     <div>
@@ -119,7 +125,7 @@
                             <div class="text-red-500 text-sm mt-1" id="confirmPasswordError">{{ $message }}</div>
                         @else
                             <div class="text-red-500 text-sm mt-1 hidden" id="confirmPasswordError"></div>
-                        @enderror
+                        @endif
                     </div>
 
                     <div class="flex items-center">
@@ -204,6 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordInput = document.getElementById('password');
     const togglePasswordConfirmButton = document.getElementById('toggle-password-confirm');
     const passwordConfirmInput = document.getElementById('password_confirmation');
+    const emailError = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+    const confirmPasswordError = document.getElementById('confirmPasswordError');
 
     // Toggle password visibility
     if (togglePasswordButton && passwordInput) {
@@ -241,30 +250,82 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Form submission handling
+    // Form submission handling with AJAX
     registerForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
+
         // Clear previous errors
-        document.getElementById('emailError').classList.add('hidden');
-        document.getElementById('passwordError').classList.add('hidden');
-        document.getElementById('confirmPasswordError').classList.add('hidden');
-        
+        emailError.classList.add('hidden');
+        passwordError.classList.add('hidden');
+        confirmPasswordError.classList.add('hidden');
+
         // Validate passwords match
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('password_confirmation').value;
+        const password = passwordInput.value;
+        const confirmPassword = passwordConfirmInput.value;
         
         if (password !== confirmPassword) {
-            e.preventDefault(); // Chỉ ngăn chặn khi mật khẩu không khớp
-            document.getElementById('confirmPasswordError').textContent = 'Mật khẩu không khớp';
-            document.getElementById('confirmPasswordError').classList.remove('hidden');
+            confirmPasswordError.textContent = 'Mật khẩu không khớp';
+            confirmPasswordError.classList.remove('hidden');
             return;
         }
-        
+
         // Show loading state
         registerBtn.disabled = true;
         registerBtnText.classList.add('hidden');
         registerBtnLoading.classList.remove('hidden');
-        
-        // Form sẽ tự submit nếu không có e.preventDefault()
+
+        // Collect form data
+        const formData = new FormData(registerForm);
+
+        // Send AJAX request
+        fetch(registerForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Reset button state
+            registerBtn.disabled = false;
+            registerBtnText.classList.remove('hidden');
+            registerBtnLoading.classList.add('hidden');
+
+            if (data.success) {
+                // Redirect to OTP verification page
+                window.location.href = '{{ route("customer.verify.otp.show") }}';
+            } else {
+                // Handle validation errors
+                if (data.errors) {
+                    if (data.errors.email) {
+                        emailError.textContent = data.errors.email[0];
+                        emailError.classList.remove('hidden');
+                    }
+                    if (data.errors.password) {
+                        passwordError.textContent = data.errors.password[0];
+                        passwordError.classList.remove('hidden');
+                    }
+                    if (data.errors.full_name) {
+                        document.querySelector('#full_name ~ .text-red-500').textContent = data.errors.full_name[0];
+                    }
+                    if (data.errors.phone) {
+                        document.querySelector('#phone ~ .text-red-500').textContent = data.errors.phone[0];
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            // Reset button state on error
+            registerBtn.disabled = false;
+            registerBtnText.classList.remove('hidden');
+            registerBtnLoading.classList.add('hidden');
+            
+            console.error('Error:', error);
+            emailError.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+            emailError.classList.remove('hidden');
+        });
     });
 });
 </script>

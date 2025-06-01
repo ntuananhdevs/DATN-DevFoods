@@ -12,9 +12,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log; // Thêm dòng này
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Jobs\SendOTPJob;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -141,46 +142,63 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        $request->validate([
-            'full_name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'required|string|max:15|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ], [
-            'full_name.required' => 'Vui lòng nhập họ và tên.',
-            'email.required' => 'Vui lòng nhập địa chỉ email.',
-            'email.email' => 'Địa chỉ email không hợp lệ.',
-            'email.unique' => 'Địa chỉ email đã được sử dụng.',
-            'phone.required' => 'Vui lòng nhập số điện thoại.',
-            'phone.unique' => 'Số điện thoại đã được sử dụng.',
-            'password.required' => 'Vui lòng nhập mật khẩu.',
-            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
-            'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
-        ]);
+        try {
+            $request->validate([
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'phone' => 'required|string|max:15|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+            ], [
+                'full_name.required' => 'Vui lòng nhập họ và tên.',
+                'email.required' => 'Vui lòng nhập địa chỉ email.',
+                'email.email' => 'Địa chỉ email không hợp lệ.',
+                'email.unique' => 'Địa chỉ email đã được sử dụng.',
+                'phone.required' => 'Vui lòng nhập số điện thoại.',
+                'phone.unique' => 'Số điện thoại đã được sử dụng.',
+                'password.required' => 'Vui lòng nhập mật khẩu.',
+                'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+                'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
+            ]);
 
-        // Tạo người dùng mới nhưng chưa active
-        $user = User::create([
-            'user_name' => explode('@', $request->email)[0],
-            'full_name' => $request->full_name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
-            'active' => true, // Vẫn set active là true vì chúng ta chỉ xác thực email
-        ]);
+            // Tạo người dùng mới nhưng chưa active
+            $user = User::create([
+                'user_name' => explode('@', $request->email)[0],
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => Hash::make($request->password),
+                'active' => true,
+            ]);
 
-        // Gán vai trò khách hàng
-        $customerRole = Role::where('name', 'customer')->first();
-        if ($customerRole) {
-            $user->roles()->attach($customerRole->id);
+            // Gán vai trò khách hàng
+            $customerRole = Role::where('name', 'customer')->first();
+            if ($customerRole) {
+                $user->roles()->attach($customerRole->id);
+            }
+
+            // Tạo và gửi OTP qua queue
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            SendOTPJob::dispatch($user->email, $otp)->onQueue('default');
+
+            // Lưu thông tin user vào session để sử dụng sau khi xác thực OTP
+            $request->session()->put('pending_user_id', $user->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Lỗi đăng ký: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'errors' => ['email' => ['Đã xảy ra lỗi. Vui lòng thử lại.']]
+            ], 500);
         }
-
-        // Tạo và gửi OTP
-        $this->sendOTP($user->email);
-
-        // Lưu thông tin user vào session để sử dụng sau khi xác thực OTP
-        $request->session()->put('pending_user_id', $user->id);
-
-        return redirect()->route('customer.verify.otp.show');
     }
 
     /**
@@ -188,99 +206,13 @@ class AuthController extends Controller
      */
     private function sendOTP($email)
     {
-        try {
-            // Tạo mã OTP ngẫu nhiên 6 chữ số
-            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-            
-            // Lưu OTP vào cache với key là email, thời gian sống là 10 phút
-            Cache::put('otp_' . $email, $otp, now()->addMinutes(10));
-            
-            // Tạo nội dung email HTML
-            $emailContent = '<!DOCTYPE html>
-                            <html lang="vi">
-                            <head>
-                                <meta charset="UTF-8">
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                <title>Xác thực tài khoản - FastFood</title>
-                                <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-                                <style>
-                                    /* Additional styles to ensure email client compatibility */
-                                    .otp-code {
-                                        letter-spacing: 0.5rem;
-                                    }
-                                    @media only screen and (max-width: 600px) {
-                                        .container {
-                                            padding: 16px !important;
-                                        }
-                                        .otp-code {
-                                            font-size: 1.5rem !important;
-                                        }
-                                    }
-                                </style>
-                            </head>
-                            <body class="bg-gray-100 font-sans" style="margin: 0; padding: 0;">
-                                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto;">
-                                    <tr>
-                                        <td bgcolor="#ffffff">
-                                            <!-- Header -->
-                                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td bgcolor="#f97316" style="padding: 24px; text-align: center;">
-                                                        <h1 style="font-size: 24px; font-weight: bold; color: #ffffff; margin: 0;">FastFood</h1>
-                                                        <p style="font-size: 14px; color: #fed7aa; margin: 4px 0 0;">Xác thực tài khoản của bạn</p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                            <!-- Body -->
-                                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td style="padding: 24px;">
-                                                        <h2 style="font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 16px; text-align: center;">Mã OTP của bạn</h2>
-                                                        <p style="font-size: 16px; color: #4b5563; margin-bottom: 16px;">Vui lòng sử dụng mã OTP dưới đây để xác thực tài khoản của bạn. Mã này có hiệu lực trong <strong>10 phút</strong>.</p>
-                                                        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center;">
-                                                            <span class="otp-code" style="font-size: 28px; font-family: monospace; font-weight: bold; color: #f97316;">' . $otp . '</span>
-                                                        </div>
-                                                        <p style="font-size: 16px; color: #4b5563; margin-top: 16px;">Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi qua <a href="mailto:support@fastfood.com" style="color: #f97316; text-decoration: underline;">support@fastfood.com</a>.</p>
-                                                        <div style="text-align: center; margin-top: 24px;">
-                                                            <a href="' . url('/verify-otp') . '" style="display: inline-block; background-color: #f97316; color: #ffffff; font-weight: 500; padding: 10px 20px; border-radius: 6px; text-decoration: none;">Xác thực ngay</a>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                            <!-- Footer -->
-                                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td bgcolor="#f9fafb" style="padding: 16px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
-                                                        <p style="margin: 0;">© ' . date('Y') . ' FastFood. Tất cả quyền được bảo lưu.</p>
-                                                        <p style="margin-top: 4px;">
-                                                            <a href="' . url('/terms') . '" style="color: #f97316; text-decoration: underline;">Điều khoản dịch vụ</a> | 
-                                                            <a href="' . url('/privacy') . '" style="color: #f97316; text-decoration: underline;">Chính sách bảo mật</a>
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </body>
-                            </html>';
-            
-            // Gửi email HTML
-            Mail::html($emailContent, function ($message) use ($email) {
-                $message->to($email)
-                    ->subject('Xác thực tài khoản - FastFood');
-            });
-            
-            return $otp;
-        } catch (\Exception $e) {
-            // Ghi log lỗi
-            Log::error('Lỗi gửi OTP: ' . $e->getMessage());
-            
-            // Trong môi trường phát triển, tạo một OTP mặc định
-            $defaultOtp = '123456';
-            Cache::put('otp_' . $email, $defaultOtp, now()->addMinutes(10));
-            return $defaultOtp;
-        }
+        // Tạo mã OTP ngẫu nhiên 6 chữ số
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+        // Gửi OTP qua queue
+        SendOTPJob::dispatch($email, $otp)->onQueue('default');
+        
+        return $otp;
     }
 
     /**
@@ -355,10 +287,10 @@ class AuthController extends Controller
             return response()->json(['error' => 'Không tìm thấy thông tin người dùng.'], 400);
         }
 
-        // Gửi lại OTP
+        // Gửi lại OTP qua queue
         $this->sendOTP($user->email);
         
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'message' => 'Mã OTP mới đã được gửi.']);
     }
 
     /**

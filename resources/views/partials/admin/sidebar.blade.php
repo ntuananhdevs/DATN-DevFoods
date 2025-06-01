@@ -212,8 +212,6 @@
                     </span>
                     <span class="sidebar-text">Rank</span>
                 </a>
-
-               
             </div>
         </div>
     </div>
