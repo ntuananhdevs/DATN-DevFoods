@@ -38,7 +38,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('combos');
         Schema::dropIfExists('combo_items');
+        Schema::dropIfExists('combos');
     }
 };

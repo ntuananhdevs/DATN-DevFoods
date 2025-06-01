@@ -48,6 +48,11 @@ class CartController extends Controller
             foreach ($cartItems as $item) {
                 $subtotal += $item->variant->price * $item->quantity;
                 
+                // Add topping prices to subtotal
+                foreach ($item->toppings as $topping) {
+                    $subtotal += $topping->price * $item->quantity;
+                }
+                
                 // Set primary image for display
                 $item->variant->product->primary_image = $item->variant->product->images
                     ->where('is_primary', true)
