@@ -128,6 +128,22 @@
                         @endif
                     </div>
 
+                    <!-- Cloudflare Turnstile CAPTCHA -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Xác minh captcha
+                        </label>
+                        <div class="cf-turnstile" 
+                             data-sitekey="{{ config('turnstile.site_key') }}"
+                             data-theme="{{ config('turnstile.theme') }}"
+                             data-size="{{ config('turnstile.size') }}"
+                             data-callback="onTurnstileCallback">
+                        </div>
+                        @error('cf-turnstile-response')
+                            <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="flex items-center">
                         <input
                             id="terms"
@@ -150,8 +166,9 @@
 
                     <button
                         type="submit"
-                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         id="registerBtn"
+                        disabled
                     >
                         <span id="registerBtnText">Đăng ký</span>
                         <span id="registerBtnLoading" class="hidden">
@@ -197,6 +214,9 @@
         </p>
     </div>
 </div>
+
+<!-- Cloudflare Turnstile Script -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 @endsection
 
 @section('scripts')
@@ -213,6 +233,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const emailError = document.getElementById('emailError');
     const passwordError = document.getElementById('passwordError');
     const confirmPasswordError = document.getElementById('confirmPasswordError');
+
+    let turnstileToken = null;
+
+    // Cloudflare Turnstile callback
+    window.onTurnstileCallback = function(token) {
+        turnstileToken = token;
+        registerBtn.disabled = false;
+        registerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    };
 
     // Toggle password visibility
     if (togglePasswordButton && passwordInput) {
@@ -255,10 +284,24 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault(); // Prevent default form submission
 
         // Clear previous errors
+<<<<<<< HEAD
         emailError.classList.add('hidden');
         passwordError.classList.add('hidden');
         confirmPasswordError.classList.add('hidden');
 
+=======
+        document.getElementById('emailError').classList.add('hidden');
+        document.getElementById('passwordError').classList.add('hidden');
+        document.getElementById('confirmPasswordError').classList.add('hidden');
+        
+        // Check if Turnstile token exists
+        if (!turnstileToken) {
+            e.preventDefault();
+            alert('Vui lòng hoàn thành xác minh bảo mật');
+            return;
+        }
+        
+>>>>>>> 5932361068f812f611e5da9330e48e05411f6665
         // Validate passwords match
         const password = passwordInput.value;
         const confirmPassword = passwordConfirmInput.value;
@@ -327,6 +370,21 @@ document.addEventListener('DOMContentLoaded', function() {
             emailError.classList.remove('hidden');
         });
     });
+
+    // Handle Turnstile error or expiration
+    window.onTurnstileError = function() {
+        turnstileToken = null;
+        registerBtn.disabled = true;
+        registerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        alert('Xác minh bảo mật thất bại. Vui lòng thử lại.');
+    };
+
+    window.onTurnstileExpired = function() {
+        turnstileToken = null;
+        registerBtn.disabled = true;
+        registerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        alert('Xác minh bảo mật đã hết hạn. Vui lòng thực hiện lại.');
+    };
 });
 </script>
 @endsection

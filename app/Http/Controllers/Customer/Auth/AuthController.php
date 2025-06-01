@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
+use App\Rules\TurnstileRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
@@ -142,24 +143,26 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        try {
-            $request->validate([
-                'full_name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
-                'phone' => 'required|string|max:15|unique:users',
-                'password' => 'required|string|min:8|confirmed',
-            ], [
-                'full_name.required' => 'Vui lòng nhập họ và tên.',
-                'email.required' => 'Vui lòng nhập địa chỉ email.',
-                'email.email' => 'Địa chỉ email không hợp lệ.',
-                'email.unique' => 'Địa chỉ email đã được sử dụng.',
-                'phone.required' => 'Vui lòng nhập số điện thoại.',
-                'phone.unique' => 'Số điện thoại đã được sử dụng.',
-                'password.required' => 'Vui lòng nhập mật khẩu.',
-                'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
-                'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
-            ]);
+        $request->validate([
+            'full_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'required|string|max:15|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+            'cf-turnstile-response' => 'required', new TurnstileRule(),
+        ], [
+            'full_name.required' => 'Vui lòng nhập họ và tên.',
+            'email.required' => 'Vui lòng nhập địa chỉ email.',
+            'email.email' => 'Địa chỉ email không hợp lệ.',
+            'email.unique' => 'Địa chỉ email đã được sử dụng.',
+            'phone.required' => 'Vui lòng nhập số điện thoại.',
+            'phone.unique' => 'Số điện thoại đã được sử dụng.',
+            'password.required' => 'Vui lòng nhập mật khẩu.',
+            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+            'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
+            'cf-turnstile-response.required' => 'Vui lòng hoàn thành xác minh bảo mật.',
+        ]);
 
+        try{
             // Tạo người dùng mới nhưng chưa active
             $user = User::create([
                 'user_name' => explode('@', $request->email)[0],

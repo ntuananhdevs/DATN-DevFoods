@@ -50,6 +50,22 @@
                                             {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
                                         @endif
                                     </p>
+                                    
+                                    {{-- Display toppings --}}
+                                    @if($item->toppings && $item->toppings->count() > 0)
+                                        <div class="mt-1 space-y-1">
+                                            <p class="text-xs font-medium text-orange-600">Toppings:</p>
+                                            <ul class="text-xs text-gray-600 pl-2">
+                                                @foreach($item->toppings as $topping)
+                                                    <li class="flex justify-between">
+                                                        <span>• {{ $topping->name }}</span>
+                                                        <span class="font-medium">+{{ number_format($topping->price) }}đ</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+
                                     <button class="text-red-500 text-sm flex items-center mt-1 hover:underline remove-item" 
                                             data-id="{{ $item->id }}">
                                         <i class="fas fa-trash-alt h-3 w-3 mr-1"></i>
@@ -60,7 +76,20 @@
 
                             <div class="md:col-span-2 text-center">
                                 <span class="md:hidden font-medium mr-2">Giá:</span>
-                                <span class="item-price">{{ number_format($item->variant->price) }}đ</span>
+                                <span class="item-price">
+                                    @php
+                                        $itemPrice = $item->variant->price;
+                                        foreach ($item->toppings as $topping) {
+                                            $itemPrice += $topping->price;
+                                        }
+                                    @endphp
+                                    {{ number_format($itemPrice) }}đ
+                                </span>
+                                <div class="text-xs text-gray-500">
+                                    @if($item->variant->price < $itemPrice)
+                                        <span>(Bao gồm topping)</span>
+                                    @endif
+                                </div>
                             </div>
 
                             <div class="md:col-span-2 flex items-center justify-center">
@@ -77,7 +106,16 @@
 
                             <div class="md:col-span-2 text-right font-medium">
                                 <span class="md:hidden font-medium mr-2">Tổng:</span>
-                                <span class="item-total">{{ number_format($item->variant->price * $item->quantity) }}đ</span>
+                                <span class="item-total">
+                                    @php
+                                        $itemPrice = $item->variant->price;
+                                        foreach ($item->toppings as $topping) {
+                                            $itemPrice += $topping->price;
+                                        }
+                                        $itemTotal = $itemPrice * $item->quantity;
+                                    @endphp
+                                    {{ number_format($itemTotal) }}đ
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -238,89 +276,76 @@
         </div>
 
         <div class="flex-1 overflow-y-auto p-4">
-            <!-- Mini Cart Item 1 -->
-            <div class="flex gap-3 pb-3 border-b">
+            @foreach($cartItems as $item)
+            <div class="flex gap-3 {{ !$loop->last ? 'pb-3 border-b mb-3' : '' }}">
                 <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                    <img src="/placeholder.svg?height=400&width=400" alt="Burger Bò Cổ Điển" class="object-cover w-full h-full">
+                    @if($item->variant->product->primary_image)
+                        <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" 
+                             alt="{{ $item->variant->product->name }}" 
+                             class="object-cover w-full h-full">
+                    @else
+                        <div class="h-full w-full bg-gray-200 flex items-center justify-center">
+                            <i class="fas fa-image text-gray-400"></i>
+                        </div>
+                    @endif
                 </div>
                 <div class="flex-1">
                     <div class="flex justify-between">
-                        <h3 class="font-medium text-sm">Burger Bò Cổ Điển</h3>
-                        <button class="text-gray-400 hover:text-red-500">
+                        <h3 class="font-medium text-sm">{{ $item->variant->product->name }}</h3>
+                        <button class="text-gray-400 hover:text-red-500 remove-item" data-id="{{ $item->id }}">
                             <i class="fas fa-times h-4 w-4"></i>
                         </button>
                     </div>
-                    <p class="text-xs text-gray-500">Size vừa, Không hành</p>
+                    <p class="text-xs text-gray-500">
+                        @if($item->variant->variant_description)
+                            {{ $item->variant->variant_description }}
+                        @else
+                            {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
+                        @endif
+                    </p>
+                    
+                    {{-- Display toppings --}}
+                    @if($item->toppings && $item->toppings->count() > 0)
+                        <div class="mt-1">
+                            <p class="text-xs text-orange-500">
+                                Toppings: {{ implode(', ', $item->toppings->pluck('name')->toArray()) }}
+                            </p>
+                        </div>
+                    @endif
+                    
                     <div class="flex justify-between items-center mt-2">
                         <div class="flex items-center border rounded">
-                            <button class="px-1 py-0.5 hover:bg-gray-100">
+                            <button class="px-1 py-0.5 hover:bg-gray-100 decrease-quantity" data-id="{{ $item->id }}">
                                 <i class="fas fa-minus h-3 w-3"></i>
                             </button>
-                            <span class="px-2 py-0.5 text-sm">2</span>
-                            <button class="px-1 py-0.5 hover:bg-gray-100">
+                            <span class="px-2 py-0.5 text-sm item-quantity">{{ $item->quantity }}</span>
+                            <button class="px-1 py-0.5 hover:bg-gray-100 increase-quantity" data-id="{{ $item->id }}">
                                 <i class="fas fa-plus h-3 w-3"></i>
                             </button>
                         </div>
-                        <p class="font-medium">118.000đ</p>
+                        <p class="font-medium">
+                            @php
+                                $itemPrice = $item->variant->price;
+                                foreach ($item->toppings as $topping) {
+                                    $itemPrice += $topping->price;
+                                }
+                                $itemTotal = $itemPrice * $item->quantity;
+                            @endphp
+                            {{ number_format($itemTotal) }}đ
+                        </p>
                     </div>
                 </div>
             </div>
-
-            <!-- Mini Cart Item 2 -->
-            <div class="flex gap-3 py-3 border-b">
-                <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                    <img src="/placeholder.svg?height=400&width=400" alt="Pizza Hải Sản Đặc Biệt" class="object-cover w-full h-full">
+            @endforeach
+            
+            @if(count($cartItems) == 0)
+            <div class="text-center py-8">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shopping-cart text-3xl text-gray-400"></i>
                 </div>
-                <div class="flex-1">
-                    <div class="flex justify-between">
-                        <h3 class="font-medium text-sm">Pizza Hải Sản Đặc Biệt</h3>
-                        <button class="text-gray-400 hover:text-red-500">
-                            <i class="fas fa-times h-4 w-4"></i>
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500">Size lớn, Đế dày</p>
-                    <div class="flex justify-between items-center mt-2">
-                        <div class="flex items-center border rounded">
-                            <button class="px-1 py-0.5 hover:bg-gray-100">
-                                <i class="fas fa-minus h-3 w-3"></i>
-                            </button>
-                            <span class="px-2 py-0.5 text-sm">1</span>
-                            <button class="px-1 py-0.5 hover:bg-gray-100">
-                                <i class="fas fa-plus h-3 w-3"></i>
-                            </button>
-                        </div>
-                        <p class="font-medium">159.000đ</p>
-                    </div>
-                </div>
+                <p class="text-gray-500 font-medium">Giỏ hàng của bạn đang trống</p>
             </div>
-
-            <!-- Mini Cart Item 3 -->
-            <div class="flex gap-3 pt-3">
-                <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                    <img src="/placeholder.svg?height=400&width=400" alt="Coca Cola" class="object-cover w-full h-full">
-                </div>
-                <div class="flex-1">
-                    <div class="flex justify-between">
-                        <h3 class="font-medium text-sm">Coca Cola</h3>
-                        <button class="text-gray-400 hover:text-red-500">
-                            <i class="fas fa-times h-4 w-4"></i>
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500">Size lớn, Có đá</p>
-                    <div class="flex justify-between items-center mt-2">
-                        <div class="flex items-center border rounded">
-                            <button class="px-1 py-0.5 hover:bg-gray-100">
-                                <i class="fas fa-minus h-3 w-3"></i>
-                            </button>
-                            <span class="px-2 py-0.5 text-sm">3</span>
-                            <button class="px-1 py-0.5 hover:bg-gray-100">
-                                <i class="fas fa-plus h-3 w-3"></i>
-                            </button>
-                        </div>
-                        <p class="font-medium">45.000đ</p>
-                    </div>
-                </div>
-            </div>
+            @endif
         </div>
 
         <div class="p-4 border-t">
@@ -384,12 +409,8 @@
             const cartItems = document.querySelectorAll('.cart-item');
             
             cartItems.forEach(item => {
-                const priceText = item.querySelector('.item-price').textContent;
-                const price = parseInt(priceText.replace(/\D/g, ''));
-                const quantity = parseInt(item.querySelector('.item-quantity').textContent);
-                const total = price * quantity;
-                
-                item.querySelector('.item-total').textContent = total.toLocaleString() + 'đ';
+                const totalText = item.querySelector('.item-total').textContent;
+                const total = parseInt(totalText.replace(/\D/g, ''));
                 subtotal += total;
             });
             

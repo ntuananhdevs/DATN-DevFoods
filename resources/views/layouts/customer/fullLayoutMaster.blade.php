@@ -444,7 +444,7 @@
                         <span class="sr-only">Giỏ hàng</span>
                     </a>
 
-                   
+                    
                 </div>
             </div>
         </div>
@@ -619,17 +619,6 @@
                         <input type="email" placeholder="Email của bạn" class="w-full px-3 py-2 bg-gray-800 border-gray-700 text-white rounded-md focus:ring-orange-500">
                         <button class="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition-colors">Đăng Ký</button>
                     </div>
-                    <div class="mt-6">
-                        <h4 class="font-medium text-white mb-2">Tải Ứng Dụng</h4>
-                        <div class="flex gap-2">
-                            <a href="#">
-                                <img src="/placeholder.svg?height=40&width=120" alt="App Store" class="rounded h-10">
-                            </a>
-                            <a href="#">
-                                <img src="/placeholder.svg?height=40&width=120" alt="Google Play" class="rounded h-10">
-                            </a>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -679,9 +668,26 @@
     </footer>
 
     <!-- JavaScript -->
+    <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
+
     <script>
+        
         // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Show branch selection modal automatically if no branch is selected
+            const branchModal = document.getElementById('branch-selector-modal');
+            
+            if (branchModal) {
+                // Check if there's no selected branch in session
+                const hasSelectedBranch = {{ session()->has('selected_branch') ? 'true' : 'false' }};
+                
+                if (!hasSelectedBranch) {
+                    // Show the modal automatically
+                    branchModal.style.display = 'flex';
+                    document.body.classList.add('overflow-hidden'); // Prevent body scrolling
+                }
+            }
+        
             // Notification functionality
             const notifications = document.querySelectorAll('.notification-alert');
             
@@ -804,10 +810,21 @@
                     searchInputContainer.classList.add('hidden');
                 }
             });
+
+            // Branch selector button
+            const branchSelectorButton = document.getElementById('branch-selector-button');
+            const branchModal = document.getElementById('branch-selector-modal');
+            
+            if (branchSelectorButton && branchModal) {
+                branchSelectorButton.addEventListener('click', function() {
+                    branchModal.style.display = 'flex';
+                    document.body.classList.add('overflow-hidden'); // Prevent body scrolling
+                });
+            }
         });
 
         // Function to show notifications programmatically
-        function showNotification(type, title, message, duration = 5000) {
+        function showToast(message, type = 'info', duration = 5000) {
             const container = document.getElementById('notificationContainer');
             const notificationId = 'notification_' + Date.now();
             
@@ -833,7 +850,7 @@
                             </div>
                             <div class="ml-3 flex-1">
                                 <div class="flex items-center justify-between">
-                                    <h3 class="text-sm font-bold text-gray-900">${title}</h3>
+                                    <h3 class="text-sm font-bold text-gray-900">${type.charAt(0).toUpperCase() + type.slice(1)}</h3>
                                     <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2" 
                                             data-target="${notificationId}">
                                         <i class="fas fa-times text-sm"></i>
@@ -890,6 +907,9 @@
                 }
             }
         }
+        
+        // Make showToast globally available
+        window.showToast = showToast;
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -937,11 +957,13 @@
             if (typeof Pusher !== 'undefined') {
                 const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
                     cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
-                    encrypted: true
+                    encrypted: true,
+                    enabledTransports: ['ws', 'wss'],
+                    debug: true
                 });
                 
                 // Subscribe to cart channel
-                const cartChannel = pusher.subscribe('user-cart-channel');
+                const cartChannel = pusher.subscribe('user-cart-channel.{{ auth()->id() }}');
                 
                 // Listen for cart updates
                 cartChannel.bind('cart-updated', function(data) {
@@ -952,5 +974,8 @@
     </script>
     
     @yield('scripts')
+    
+    <!-- Branch Selector Modal -->
+    @include('partials.customer.branch-selector-modal')
 </body>
 </html>

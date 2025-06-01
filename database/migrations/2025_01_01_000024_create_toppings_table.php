@@ -16,7 +16,10 @@ return new class extends Migration
             $table->string('name');
             $table->decimal('price', 12, 2);
             $table->boolean('active')->default(true);
+            
             $table->string('image')->nullable();
+            $table->string('description')->nullable();
+
             $table->timestamps();
         });
 
@@ -27,6 +30,17 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['product_id', 'topping_id']);
+        });
+
+        Schema::create('topping_stocks', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
+            $table->foreignId('topping_id')->constrained('toppings')->onDelete('cascade');
+            $table->integer('stock_quantity')->default(0);
+            $table->timestamps();
+            
+            // Each topping can have only one stock entry per branch
+            $table->unique(['branch_id', 'topping_id']);
         });
 
         Schema::create('order_item_toppings', function (Blueprint $table) {
@@ -51,7 +65,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('cart_item_toppings');
         Schema::dropIfExists('order_item_toppings');
+        Schema::dropIfExists('topping_stocks');
         Schema::dropIfExists('product_toppings');
         Schema::dropIfExists('toppings');
     }

@@ -16,6 +16,8 @@
         "laravel/tinker": "^2.10.1",
         "league/flysystem-aws-s3-v3": "^3.29",
         "maatwebsite/excel": "^3.1",
+        "pusher/pusher-php-server": "^7.2",
+        "ryangjchandler/laravel-cloudflare-turnstile": "^2.0",
         "spatie/laravel-permission": "*"
     },
     "require-dev": {

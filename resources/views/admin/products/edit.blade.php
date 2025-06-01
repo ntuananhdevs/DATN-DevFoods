@@ -1,6 +1,6 @@
 @extends('layouts/admin/contentLayoutMaster')
 
-@section('title', 'Thêm sản phẩm mới')
+@section('title', 'Chỉnh sửa sản phẩm')
 
 @section('content')
 <style>
@@ -103,11 +103,12 @@
 </style>
 
 <main class="container">
-    <h1 class="text-3xl font-extrabold mb-1">Thêm Sản Phẩm Mới</h1>
-    <p class="text-gray-500 mb-8">Nhập thông tin chi tiết để tạo sản phẩm mới</p>
+    <h1 class="text-3xl font-extrabold mb-1">Chỉnh Sửa Sản Phẩm</h1>
+    <p class="text-gray-500 mb-8">Chỉnh sửa thông tin chi tiết sản phẩm</p>
 
-    <form id="add-product-form" class="space-y-8" action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data">
+    <form id="edit-product-form" class="space-y-8" action="{{ route('admin.products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
+        @method('PUT')
 
       <!-- Basic Information -->
       <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
@@ -122,47 +123,89 @@
           <div class="space-y-5 md:col-span-2">
             <div>
               <label for="name" class="block text-sm font-medium text-gray-700">Tên sản phẩm <span class="text-red-500">*</span></label>
-                        <input type="text" id="name" name="name" required placeholder="Nhập tên sản phẩm" value="{{ old('name') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm" value="{{ old('name', $product->name) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+              <div class="error-message text-red-500 text-xs mt-1" id="name-error"></div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
             <div>
                             <label for="category_id" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
-                            <select id="category_id" name="category_id" required class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <select id="category_id" name="category_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                   <option value="">Chọn danh mục</option>
                                 @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
                                 @endforeach
                 </select>
+                <div class="error-message text-red-500 text-xs mt-1" id="category_id-error"></div>
               </div>
               <div>
                             <label for="base_price" class="block text-sm font-medium text-gray-700">Giá cơ bản <span class="text-red-500">*</span></label>
                 <div class="relative mt-1">
-                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" required placeholder="0" value="{{ old('base_price') }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" placeholder="0" value="{{ old('base_price', $product->base_price) }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                             </div>
+                <div class="error-message text-red-500 text-xs mt-1" id="base_price-error"></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
                             <label for="preparation_time" class="block text-sm font-medium text-gray-700">Thời gian chuẩn bị (phút)</label>
-                            <input type="number" id="preparation_time" name="preparation_time" min="0" placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <input type="number" id="preparation_time" name="preparation_time" min="0" placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time', $product->preparation_time) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <div class="error-message text-red-500 text-xs mt-1" id="preparation_time-error"></div>
               </div>
             </div>
 
             <div>
                         <label for="short_description" class="block text-sm font-medium text-gray-700">Mô tả ngắn</label>
-                        <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('short_description') }}</textarea>
+                        <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('short_description', $product->short_description) }}</textarea>
             </div>
 
             <div>
               <label for="description" class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
-                        <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('description') }}</textarea>
+                        <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('description', $product->description) }}</textarea>
                     </div>
 
                     <div>
                         <label for="ingredients" class="block text-sm font-medium text-gray-700">Nguyên liệu</label>
-                        <textarea id="ingredients" name="ingredients" rows="3" placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('ingredients') }}</textarea>
+                        <textarea id="ingredients" name="ingredients" rows="5" placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">@php
+$ingredientsData = $product->ingredients;
+if (is_array($ingredientsData)) {
+    // Check if it's a structured format (with categories)
+    $isStructured = false;
+    foreach ($ingredientsData as $key => $value) {
+        if (is_array($value)) {
+            $isStructured = true;
+            break;
+        }
+    }
+    
+    if ($isStructured) {
+        // Format 1: Structured with categories
+        foreach ($ingredientsData as $category => $items) {
+            echo $category . ":\n";
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    echo "- " . $item . "\n";
+                }
+            }
+        }
+    } else {
+        // Format 2: Simple array
+        foreach ($ingredientsData as $ingredient) {
+            if (is_string($ingredient)) {
+                echo $ingredient . "\n";
+            }
+        }
+    }
+} elseif (is_string($ingredientsData)) {
+    // Just output as is if it's a string
+    echo $ingredientsData;
+} else {
+    // Handle other cases (null, object, etc.)
+    echo '';
+}
+@endphp</textarea>
+                        <div class="error-message text-red-500 text-xs mt-1" id="ingredients-error"></div>
             </div>
 
             <div>
@@ -170,7 +213,7 @@
               <div class="space-y-4 mt-2">
                 <div class="flex gap-4">
                   <label class="inline-flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }} class="form-checkbox text-blue-600" />
+                    <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }} class="form-checkbox text-blue-600" />
                     <span>Sản phẩm nổi bật</span>
                   </label>
                   
@@ -180,15 +223,15 @@
                   <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái sản phẩm</label>
                   <div class="flex gap-4">
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" value="coming_soon" {{ old('status', 'selling') == 'coming_soon' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <input type="radio" name="status" value="coming_soon" {{ old('status', $product->status) == 'coming_soon' ? 'checked' : '' }} class="form-radio text-blue-600" />
                       <span>Sắp ra mắt</span>
                     </label>
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" value="selling" {{ old('status', 'selling') == 'selling' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <input type="radio" name="status" value="selling" {{ old('status', $product->status) == 'selling' ? 'checked' : '' }} class="form-radio text-blue-600" />
                       <span>Đang bán</span>
                     </label>
                     <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" value="discontinued" {{ old('status', 'selling') == 'discontinued' ? 'checked' : '' }} class="form-radio text-blue-600" />
+                      <input type="radio" name="status" value="discontinued" {{ old('status', $product->status) == 'discontinued' ? 'checked' : '' }} class="form-radio text-blue-600" />
                       <span>Ngừng bán</span>
                     </label>
                   </div>
@@ -196,7 +239,7 @@
 
                 <div>
                   <label for="release_at" class="block text-sm font-medium text-gray-700">Ngày ra mắt</label>
-                  <input type="datetime-local" id="release_at" name="release_at" value="{{ old('release_at') }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                  <input type="datetime-local" id="release_at" name="release_at" value="{{ old('release_at', $product->release_at) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                 </div>
               </div>
             </div>
@@ -211,10 +254,10 @@
                   <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
                   <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
                     <div id="image-placeholder" class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
-                      <div id="main-image-preview" class="absolute inset-0 w-full h-full hidden">
-                        <img src="" alt="Main image preview" class="w-full h-full object-cover" />
+                      <div id="main-image-preview" class="absolute inset-0 w-full h-full {{ $primaryImage ? '' : 'hidden' }}">
+                        <img src="{{ $primaryImage ? Storage::disk('s3')->url($primaryImage->img) : '' }}" alt="Main image preview" class="w-full h-full object-cover" />
                       </div>
-                      <div id="upload-content" class="flex flex-col items-center justify-center">
+                      <div id="upload-content" class="flex flex-col items-center justify-center {{ $primaryImage ? 'hidden' : '' }}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-3" width="48" height="48" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                           <polyline points="17 8 12 3 7 8" />
@@ -262,8 +305,149 @@
 
             <div class="px-6 py-6">
                 <div id="attributes-container">
-                    <!-- Attribute groups will be added here -->
-              </div>
+                    <!-- Load existing attributes with PHP instead of JavaScript -->
+                    @php
+                        // Get existing attributes either directly or from variant details
+                        $existingAttributes = [];
+                        
+                        if(isset($product->attributes) && count($product->attributes) > 0) {
+                            // If we have attributes relationship loaded
+                            $existingAttributes = $product->attributes;
+                        } elseif(isset($product->variants) && count($product->variants) > 0) {
+                            // Extract attributes from variants if the attributes relationship doesn't work
+                            $attributesMap = [];
+                            foreach ($product->variants as $variant) {
+                                foreach ($variant->productVariantDetails as $detail) {
+                                    if (isset($detail->variantValue) && isset($detail->variantValue->attribute)) {
+                                        $attributeId = $detail->variantValue->attribute->id;
+                                        $attributeName = $detail->variantValue->attribute->name;
+                                        
+                                        if (!isset($attributesMap[$attributeId])) {
+                                            $attributesMap[$attributeId] = (object)[
+                                                'id' => $attributeId,
+                                                'name' => $attributeName,
+                                                'values' => []
+                                            ];
+                                        }
+                                        
+                                        // Check if value already exists
+                                        $valueExists = false;
+                                        foreach ($attributesMap[$attributeId]->values as $value) {
+                                            if ($value->id == $detail->variantValue->id) {
+                                                $valueExists = true;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (!$valueExists) {
+                                            $attributesMap[$attributeId]->values[] = (object)[
+                                                'id' => $detail->variantValue->id,
+                                                'value' => $detail->variantValue->value,
+                                                'price_adjustment' => $detail->variantValue->price_adjustment
+                                            ];
+                                        }
+                                    }
+                                }
+                            }
+                            $existingAttributes = array_values($attributesMap);
+                        }
+                    @endphp
+
+                    @foreach($existingAttributes as $attrIndex => $attribute)
+                        <div class="attribute-group">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex-1 mr-4">
+                                    <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                                    <input type="text" name="attributes[{{ $attrIndex }}][name]" required 
+                                        placeholder="Ví dụ: Size, Màu sắc" value="{{ $attribute->name }}" 
+                                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                    <!-- Add hidden field to preserve attribute ID -->
+                                    <input type="hidden" name="attributes[{{ $attrIndex }}][id]" value="{{ $attribute->id }}" />
+                                </div>
+                                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="variant-values-container">
+                                @foreach($attribute->values as $valueIndex => $value)
+                                    <div class="variant-value-row">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                                            <input type="text" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][value]" 
+                                                required placeholder="Ví dụ: S, M, L" value="{{ $value->value }}" 
+                                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                            <!-- Add hidden field to preserve value ID -->
+                                            <input type="hidden" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][id]" value="{{ $value->id }}" />
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                                            <input type="number" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" 
+                                                step="0.01" value="{{ $value->price_adjustment ?? 0 }}" 
+                                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                        </div>
+                                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                Thêm giá trị
+                            </button>
+                        </div>
+                    @endforeach
+
+                    @if(count($existingAttributes) == 0)
+                        <!-- Add a default empty attribute group if no attributes exist -->
+                        <div class="attribute-group">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex-1 mr-4">
+                                    <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                                    <input type="text" name="attributes[0][name]" required placeholder="Ví dụ: Size, Màu sắc" 
+                                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                </div>
+                                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="variant-values-container">
+                                <div class="variant-value-row">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Giá trị</label>
+                                        <input type="text" name="attributes[0][values][0][value]" required placeholder="Ví dụ: S, M, L" 
+                                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
+                                        <input type="number" name="attributes[0][values][0][price_adjustment]" step="0.01" value="0" 
+                                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                    </div>
+                                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                Thêm giá trị
+                            </button>
+                        </div>
+                    @endif
+                </div>
+                <div class="error-message text-red-500 text-xs mt-2 mb-2" id="attributes-error"></div>
                 <button type="button" id="add-attribute-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
                 <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -293,10 +477,203 @@
           </button>
         </div>
       </section>
+      
+<!-- Branch Inventory Section -->
+<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+  <header class="px-6 py-4 border-b border-gray-100">
+    <h2 class="text-xl font-semibold text-gray-900">Số lượng tại chi nhánh</h2>
+    <p class="text-gray-500 text-sm mt-1">Quản lý số lượng sản phẩm tại các chi nhánh</p>
+  </header>
+
+  <div class="px-6 py-6">
+    @if(empty($branchStocks) || count($branchStocks) === 0)
+      <div class="bg-blue-50 p-4 mb-4 rounded-md">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-blue-800">Thông tin số lượng</h3>
+            <div class="mt-2 text-sm text-blue-700">
+              <p>Hiện tại chưa có dữ liệu số lượng tại chi nhánh. Cập nhật số lượng cho từng biến thể tại chi nhánh bên dưới.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    @endif
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chi nhánh</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa chỉ</th>
+            @if(isset($product->variants) && count($product->variants) > 0)
+              @foreach($product->variants as $variant)
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  @php
+                    $variantName = [];
+                    foreach($variant->productVariantDetails as $detail) {
+                      if(isset($detail->variantValue)) {
+                        $variantName[] = $detail->variantValue->value;
+                      }
+                    }
+                    echo implode(' / ', $variantName) ?: "Biến thể #" . $variant->id;
+                  @endphp
+                </th>
+              @endforeach
+            @else
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
+            @endif
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          @forelse($branches ?? [] as $branch)
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $branch->name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $branch->address }}</td>
+              
+              @if(isset($product->variants) && count($product->variants) > 0)
+                @foreach($product->variants as $variant)
+                  @php
+                    $stockQuantity = 0;
+                    
+                    // Look for existing branch stock using the new array structure
+                    if (isset($branchStocks[$branch->id]) && isset($branchStocks[$branch->id][$variant->id])) {
+                      $stockQuantity = $branchStocks[$branch->id][$variant->id];
+                    }
+                  @endphp
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <input 
+                      type="number" 
+                      name="branch_stock[{{ $branch->id }}][{{ $variant->id }}]" 
+                      min="0" 
+                      class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                      value="{{ $stockQuantity }}"
+                    >
+                  </td>
+                @endforeach
+              @else
+                @php
+                  $stockQuantity = 0;
+                  $defaultVariantId = 0;
+                  
+                  // Create default variant ID if no variants exist
+                  if (isset($product->variants) && count($product->variants) > 0) {
+                    $defaultVariantId = $product->variants[0]->id;
+                  }
+                  
+                  // Look for existing branch stock using the new array structure
+                  if (isset($branchStocks[$branch->id]) && isset($branchStocks[$branch->id][$defaultVariantId])) {
+                    $stockQuantity = $branchStocks[$branch->id][$defaultVariantId];
+                  }
+                @endphp
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <input 
+                    type="number" 
+                    name="branch_stock[{{ $branch->id }}][{{ $defaultVariantId }}]" 
+                    min="0" 
+                    class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                    value="{{ $stockQuantity }}"
+                  >
+                </td>
+              @endif
+            </tr>
+          @empty
+            <tr>
+              <td colspan="{{ isset($product->variants) && count($product->variants) > 0 ? count($product->variants) + 2 : 3 }}" class="px-6 py-4 text-center text-sm text-gray-500">Không có chi nhánh nào</td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Topping Stock Section -->
+@if(isset($product->toppings) && count($product->toppings) > 0)
+<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-8">
+  <header class="px-6 py-4 border-b border-gray-100">
+    <h2 class="text-xl font-semibold text-gray-900">Số lượng Topping tại chi nhánh</h2>
+    <p class="text-gray-500 text-sm mt-1">Quản lý số lượng topping tại các chi nhánh</p>
+  </header>
+
+  <div class="px-6 py-6">
+    @if(empty($toppingStocks) || count($toppingStocks) === 0)
+      <div class="bg-blue-50 p-4 mb-4 rounded-md">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-blue-800">Thông tin số lượng</h3>
+            <div class="mt-2 text-sm text-blue-700">
+              <p>Hiện tại chưa có dữ liệu số lượng topping tại chi nhánh. Cập nhật số lượng cho từng topping tại chi nhánh bên dưới.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    @endif
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chi nhánh</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa chỉ</th>
+            @foreach($product->toppings as $topping)
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {{ $topping->name }}
+              </th>
+            @endforeach
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          @forelse($branches ?? [] as $branch)
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $branch->name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $branch->address }}</td>
+              
+              @foreach($product->toppings as $topping)
+                @php
+                  $stockQuantity = 0;
+                  
+                  // Look for existing topping stock
+                  if (isset($toppingStocks[$branch->id]) && isset($toppingStocks[$branch->id][$topping->id])) {
+                    $stockQuantity = $toppingStocks[$branch->id][$topping->id];
+                  }
+                @endphp
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <input 
+                    type="number" 
+                    name="topping_stock[{{ $branch->id }}][{{ $topping->id }}]" 
+                    min="0" 
+                    class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
+                    value="{{ $stockQuantity }}"
+                  >
+                </td>
+              @endforeach
+            </tr>
+          @empty
+            <tr>
+              <td colspan="{{ count($product->toppings) + 2 }}" class="px-6 py-4 text-center text-sm text-gray-500">Không có chi nhánh nào</td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+@endif
+
       <!-- Save Buttons -->
       <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
         <button type="button" id="save-draft-btn" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100">Lưu nháp</button>
-        <button type="submit" id="save-product-btn" class="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Tạo sản phẩm</button>
+        <button type="submit" id="save-product-btn" class="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Cập nhật sản phẩm</button>
       </div>
     </form>
   </main>
@@ -304,8 +681,157 @@
 @endsection
 
 @section('scripts')
+  <!-- Debug output -->
+  <script>
+    console.log('Product data:', @json($product));
+    console.log('Product images:', @json($product->images));
+    console.log('Primary image:', @json($primaryImage));
+    @if($primaryImage)
+      console.log('Primary image URL:', "{{ Storage::disk('s3')->url($primaryImage->img) }}");
+    @endif
+    console.log('Attributes:', @json($product->attributes));
+    console.log('Variants:', @json($product->variants));
+    @if(isset($product->variants) && count($product->variants) > 0)
+      console.log('Variant details:');
+      @foreach($product->variants as $index => $variant)
+        console.log('  Variant #{{ $index + 1 }} (ID: {{ $variant->id }})');
+        @if(isset($variant->productVariantDetails) && count($variant->productVariantDetails) > 0)
+          @foreach($variant->productVariantDetails as $detail)
+            @if(isset($detail->variantValue) && isset($detail->variantValue->attribute))
+              console.log('    - {{ $detail->variantValue->attribute->name }}: {{ $detail->variantValue->value }}');
+            @endif
+          @endforeach
+        @endif
+      @endforeach
+    @endif
+    console.log('Branch Stocks Info:');
+    console.log('  Type:', typeof @json($branchStocks));
+    console.log('  Is array:', Array.isArray(@json($branchStocks)));
+    console.log('  Length:', @json($branchStocks) ? @json($branchStocks).length : 0);
+    console.log('  Content:', @json($branchStocks ?? []));
+    console.log('  Branch count:', @json($branches ? count($branches) : 0));
+    console.log('Branches:', @json($branches ?? []));
+  </script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Validation functions
+        const validateField = (fieldId, errorMessage) => {
+            const field = document.getElementById(fieldId);
+            const errorElement = document.getElementById(`${fieldId}-error`);
+            
+            if (!field || !errorElement) return true; // Skip if elements don't exist
+            
+            const isValid = field.value.trim() !== '';
+            
+            if (!isValid) {
+                errorElement.textContent = errorMessage;
+                field.classList.add('border-red-500');
+            } else {
+                errorElement.textContent = '';
+                field.classList.remove('border-red-500');
+            }
+            
+            return isValid;
+        };
+        
+        const validateRequired = () => {
+            let isValid = true;
+            
+            // Validate product name
+            if (!validateField('name', 'Tên sản phẩm không được bỏ trống')) {
+                isValid = false;
+            }
+            
+            // Validate category
+            if (!validateField('category_id', 'Vui lòng chọn danh mục')) {
+                isValid = false;
+            }
+            
+            // Validate price
+            if (!validateField('base_price', 'Giá cơ bản không được bỏ trống')) {
+                isValid = false;
+            }
+            
+            // Always validate preparation time - show error if not provided or invalid
+            const preparationTime = document.getElementById('preparation_time');
+            const preparationTimeError = document.getElementById('preparation_time-error');
+            if (!preparationTime || preparationTime.value.trim() === '') {
+                preparationTimeError.textContent = 'Thời gian chuẩn bị không được bỏ trống';
+                preparationTime.classList.add('border-red-500');
+                isValid = false;
+            } else if (isNaN(preparationTime.value) || parseInt(preparationTime.value) < 0) {
+                preparationTimeError.textContent = 'Thời gian chuẩn bị phải là số dương';
+                preparationTime.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                preparationTimeError.textContent = '';
+                preparationTime.classList.remove('border-red-500');
+            }
+            
+            // Always validate ingredients - show error if not provided or invalid
+            const ingredients = document.getElementById('ingredients');
+            const ingredientsError = document.getElementById('ingredients-error');
+            if (!ingredients || ingredients.value.trim() === '') {
+                ingredientsError.textContent = 'Nguyên liệu không được bỏ trống';
+                ingredients.classList.add('border-red-500');
+                isValid = false;
+            } else {
+                const lines = ingredients.value.trim().split('\n');
+                if (lines.some(line => line.trim() === '')) {
+                    ingredientsError.textContent = 'Mỗi dòng nên chứa một nguyên liệu';
+                    ingredients.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    ingredientsError.textContent = '';
+                    ingredients.classList.remove('border-red-500');
+                }
+            }
+            
+            // Validate attributes - at least one attribute with name and value
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            const attributesError = document.getElementById('attributes-error');
+            
+            if (attributeGroups.length === 0) {
+                attributesError.textContent = 'Sản phẩm cần có ít nhất một thuộc tính';
+                isValid = false;
+            } else {
+                let hasValidAttribute = false;
+                
+                for (const group of attributeGroups) {
+                    const nameInput = group.querySelector('input[name$="[name]"]');
+                    const valueInputs = group.querySelectorAll('input[name$="[value]"]');
+                    
+                    if (nameInput && nameInput.value.trim() !== '' && 
+                        valueInputs.length > 0 && Array.from(valueInputs).some(input => input.value.trim() !== '')) {
+                        hasValidAttribute = true;
+                        break;
+                    }
+                }
+                
+                if (!hasValidAttribute) {
+                    attributesError.textContent = 'Mỗi thuộc tính cần có tên và ít nhất một giá trị';
+                    isValid = false;
+                } else {
+                    attributesError.textContent = '';
+                }
+            }
+            
+            // Validate primary image
+            const primaryImageUpload = document.getElementById('primary-image-upload');
+            const mainImagePreview = document.getElementById('main-image-preview');
+            
+            if ((!primaryImageUpload || !primaryImageUpload.files.length) && 
+                (mainImagePreview && mainImagePreview.classList.contains('hidden'))) {
+                dtmodalShowToast('warning', {
+                    title: 'Chú ý',
+                    message: 'Vui lòng tải lên ít nhất một hình ảnh cho sản phẩm'
+                });
+                isValid = false;
+            }
+            
+            return isValid;
+        };
+
         // Image upload handling
         const imagePlaceholder = document.getElementById('image-placeholder');
         const primaryImageUpload = document.getElementById('primary-image-upload');
@@ -316,6 +842,23 @@
         const mainImagePreview = document.getElementById('main-image-preview');
         const uploadContent = document.getElementById('upload-content');
         let uploadedImages = [];
+
+        // Initialize with existing images if available
+        @if($primaryImage)
+            mainImagePreview.classList.remove('hidden');
+            uploadContent.classList.add('hidden');
+        @endif
+
+        @if($product->images && count($product->images) > 0)
+            @foreach($product->images as $image)
+                uploadedImages.push({
+                    id: {{ $image->id }},
+                    preview: "{{ Storage::disk('s3')->url($image->img) }}",
+                    isExisting: true
+                });
+            @endforeach
+            updateImageGallery();
+        @endif
 
         // Handle primary image
         imagePlaceholder.addEventListener('click', (e) => {
@@ -357,7 +900,8 @@
                     reader.onload = (e) => {
                         uploadedImages.push({
                             file: file,
-                            preview: e.target.result
+                            preview: e.target.result,
+                            isExisting: false
                         });
                         updateImageGallery();
                     };
@@ -367,132 +911,64 @@
         }
 
         function updateImageGallery() {
-            imageGallery.innerHTML = uploadedImages.map((image, index) => `
-                <div class="image-item">
-                    <img src="${image.preview}" alt="Preview" class="w-full h-32 object-cover rounded-md" />
-                    <button type="button" class="image-remove-btn" onclick="removeImage(${index})">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-            `).join('');
+            imageGallery.innerHTML = uploadedImages.map((image, index) => {
+                const isExisting = image.isExisting;
+                return `
+                    <div class="image-item">
+                        <img src="${image.preview}" alt="Preview" class="w-full h-32 object-cover rounded-md" />
+                        <button type="button" class="image-remove-btn" onclick="removeImage(${index})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        ${isExisting ? `<input type="hidden" name="existing_images[]" value="${image.id}">` : ''}
+                    </div>
+                `;
+            }).join('');
         }
 
         window.removeImage = function(index) {
+            const image = uploadedImages[index];
+            if (image.isExisting) {
+                // Add a hidden input to track deleted images
+                const deletedInput = document.createElement('input');
+                deletedInput.type = 'hidden';
+                deletedInput.name = 'deleted_images[]';
+                deletedInput.value = image.id;
+                document.getElementById('edit-product-form').appendChild(deletedInput);
+            }
             uploadedImages.splice(index, 1);
             updateImageGallery();
         };
 
-        // Attributes and Variant Values handling
-        const attributesContainer = document.getElementById('attributes-container');
-        const addAttributeBtn = document.getElementById('add-attribute-btn');
-        let attributeCount = 0;
-
-        function createAttributeGroup(index) {
-            const attributeGroup = document.createElement('div');
-            attributeGroup.className = 'attribute-group';
-            attributeGroup.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex-1 mr-4">
-                        <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-                        <input type="text" name="attributes[${index}][name]" required placeholder="Ví dụ: Size, Màu sắc" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                    </div>
-                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-                </div>
-                <div class="variant-values-container">
-                    <div class="variant-value-row">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                            <input type="text" name="attributes[${index}][values][0][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                            <input type="number" name="attributes[${index}][values][0][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </div>
-                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            </div>
-                </div>
-                <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                    </svg>
-                    Thêm giá trị
-                </button>
-            `;
-            return attributeGroup;
-        }
-
-        addAttributeBtn.addEventListener('click', () => {
-            const attributeGroup = createAttributeGroup(attributeCount);
-            attributesContainer.appendChild(attributeGroup);
-            attributeCount++;
-        });
-
-        window.addVariantValue = function(button) {
-            const container = button.previousElementSibling;
-            const attributeIndex = container.closest('.attribute-group').querySelector('input[name^="attributes["]').name.match(/\[(\d+)\]/)[1];
-            const valueCount = container.children.length;
-            
-            const valueRow = document.createElement('div');
-            valueRow.className = 'variant-value-row';
-            valueRow.innerHTML = `
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                    <input type="text" name="attributes[${attributeIndex}][values][${valueCount}][value]" required placeholder="Ví dụ: S, M, L" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                    <input type="number" name="attributes[${attributeIndex}][values][${valueCount}][price_adjustment]" step="0.01" value="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-            </div>
-                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            `;
-            container.appendChild(valueRow);
-        };
-
-        // Restore old attributes and values if they exist
-        @if(old('attributes'))
-            const oldAttributes = @json(old('attributes'));
-            oldAttributes.forEach((attribute, index) => {
-                const attributeGroup = createAttributeGroup(index);
-                attributesContainer.appendChild(attributeGroup);
-                const nameInput = attributeGroup.querySelector(`input[name="attributes[${index}][name]"]`);
-                nameInput.value = attribute.name;
-
-                attribute.values.forEach((value, valueIndex) => {
-                    if (valueIndex > 0) {
-                        addVariantValue(attributeGroup.querySelector('button'));
-                    }
-                    const valueInput = attributeGroup.querySelector(`input[name="attributes[${index}][values][${valueIndex}][value]"]`);
-                    const priceInput = attributeGroup.querySelector(`input[name="attributes[${index}][values][${valueIndex}][price_adjustment]"]`);
-                    valueInput.value = value.value;
-                    priceInput.value = value.price_adjustment;
-                });
-            });
-            attributeCount = oldAttributes.length;
-        @else
-            // Add default attribute if no old attributes exist
-            const defaultAttribute = createAttributeGroup(0);
-            attributesContainer.appendChild(defaultAttribute);
-            attributeCount = 1;
-        @endif
-
-        // Toppings handling
+        // Add topping functionality
         const toppingsContainer = document.getElementById('toppings-container');
         const addToppingBtn = document.getElementById('add-topping-btn');
         let toppingCount = 0;
+
+        // Handle topping image preview functionality
+        function handleToppingImagePreview(input) {
+            const previewId = input.getAttribute('data-preview-id');
+            const previewWrapId = input.getAttribute('data-preview-wrap-id');
+            const uploadContentId = input.getAttribute('data-upload-content-id');
+            const previewImg = document.getElementById(previewId);
+            const previewWrap = document.getElementById(previewWrapId);
+            const uploadContent = document.getElementById(uploadContentId);
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewWrap.classList.remove('hidden');
+                    uploadContent.classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                previewImg.src = '';
+                previewWrap.classList.add('hidden');
+                uploadContent.classList.remove('hidden');
+            }
+        }
 
         function createToppingGroup(index) {
             const toppingGroup = document.createElement('div');
@@ -501,12 +977,34 @@
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Tên topping</label>
-                        <input type="text" name="toppings[${index}][name]" required placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="text" name="toppings[${index}][name]" placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-name-error"></div>
                     </div>
                     <div class="flex-1 mr-4">
                         <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
-                        <input type="number" name="toppings[${index}][price]" required min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <input type="number" name="toppings[${index}][price]" min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-price-error"></div>
                     </div>
+                    <div class="w-48 mr-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+                        <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                          <div id="topping-image-placeholder-${index}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                            <div id="topping-image-preview-wrap-${index}" class="absolute inset-0 w-full h-full hidden">
+                              <img id="topping-image-preview-${index}" src="" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
+                            </div>
+                            <div id="topping-upload-content-${index}" class="flex flex-col items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                              </svg>
+                              <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
+                              <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
+                            </div>
+                            <input type="file" id="topping-image-upload-${index}" name="toppings.${index}.image" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
+                          </div>
+                        </div>
+                      </div>
                     <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -520,6 +1018,31 @@
                     </label>
                 </div>
             `;
+            
+            // Set up topping image events
+            setTimeout(() => {
+                const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
+                const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
+                const fileInput = document.getElementById(`topping-image-upload-${index}`);
+                
+                if (placeholder && fileInput) {
+                    placeholder.addEventListener('click', (e) => {
+                        if (e.target !== uploadBtn) {
+                            fileInput.click();
+                        }
+                    });
+                    
+                    uploadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        fileInput.click();
+                    });
+
+                    fileInput.addEventListener('change', function() {
+                        handleToppingImagePreview(this);
+                    });
+                }
+            }, 10);
+            
             return toppingGroup;
         }
 
@@ -529,28 +1052,49 @@
             toppingCount++;
         });
 
-        // Restore old toppings if they exist
-        @if(old('toppings'))
-            const oldToppings = @json(old('toppings'));
-            oldToppings.forEach((topping, index) => {
-                const toppingGroup = createToppingGroup(index);
+        // Initialize existing toppings
+        @if(isset($product->toppings) && count($product->toppings) > 0)
+            @foreach($product->toppings as $index => $topping)
+                const toppingGroup = createToppingGroup({{ $index }});
                 toppingsContainer.appendChild(toppingGroup);
-                const nameInput = toppingGroup.querySelector(`input[name="toppings[${index}][name]"]`);
-                const priceInput = toppingGroup.querySelector(`input[name="toppings[${index}][price]"]`);
-                const availableInput = toppingGroup.querySelector(`input[name="toppings[${index}][available]"]`);
                 
-                nameInput.value = topping.name;
-                priceInput.value = topping.price;
-                availableInput.checked = topping.available;
-            });
-            toppingCount = oldToppings.length;
+                // Set values after adding to DOM
+                setTimeout(() => {
+                    const nameInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][name]"]`);
+                    const priceInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][price]"]`);
+                    const availableInput = toppingGroup.querySelector(`input[name="toppings[{{ $index }}][available]"]`);
+                    
+                    nameInput.value = "{{ $topping->name }}";
+                    priceInput.value = "{{ $topping->price }}";
+                    availableInput.checked = {{ $topping->available ? 'true' : 'false' }};
+                    
+                    // Set image preview if exists
+                    @if($topping->image)
+                        const previewImg = document.getElementById(`topping-image-preview-{{ $index }}`);
+                        const previewWrap = document.getElementById(`topping-image-preview-wrap-{{ $index }}`);
+                        const uploadContent = document.getElementById(`topping-upload-content-{{ $index }}`);
+                        
+                        if (previewImg && previewWrap && uploadContent) {
+                            previewImg.src = "{{ Storage::disk('s3')->url($topping->image) }}";
+                            previewWrap.classList.remove('hidden');
+                            uploadContent.classList.add('hidden');
+                        }
+                    @endif
+                }, 20);
+            @endforeach
+            toppingCount = {{ count($product->toppings) }};
         @endif
 
         // Form submission
-        const form = document.getElementById('add-product-form');
+        const form = document.getElementById('edit-product-form');
         form.addEventListener('submit', function(e) {
-            // Không ngăn chặn submit mặc định nữa
-            // e.preventDefault();
+            e.preventDefault(); // Prevent default submission to avoid page reload
+            
+            // Validate the form
+            if (!validateRequired()) {
+                return false;
+            }
+            
             // Convert ingredients textarea to JSON array
             const ingredientsText = document.getElementById('ingredients').value;
             const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
@@ -559,10 +1103,88 @@
             ingredientsInput.name = 'ingredients_json';
             ingredientsInput.value = JSON.stringify(ingredientsArray);
             form.appendChild(ingredientsInput);
-            // Đảm bảo description luôn gửi lên (kể cả rỗng)
+            
+            // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
-            // Không gọi form.submit() ở đây nữa vì đã để mặc định
+            
+            // Add a flag to indicate branch stocks are being updated
+            const updateBranchStocksFlag = document.createElement('input');
+            updateBranchStocksFlag.type = 'hidden';
+            updateBranchStocksFlag.name = 'update_branch_stocks';
+            updateBranchStocksFlag.value = '1';
+            form.appendChild(updateBranchStocksFlag);
+            
+            // Add a flag to indicate topping stocks are being updated
+            const updateToppingStocksFlag = document.createElement('input');
+            updateToppingStocksFlag.type = 'hidden';
+            updateToppingStocksFlag.name = 'update_topping_stocks';
+            updateToppingStocksFlag.value = '1';
+            form.appendChild(updateToppingStocksFlag);
+            
+            // Add a flag to indicate we're preserving attributes
+            const preserveAttributesFlag = document.createElement('input');
+            preserveAttributesFlag.type = 'hidden';
+            preserveAttributesFlag.name = 'preserve_attributes';
+            preserveAttributesFlag.value = '1';
+            form.appendChild(preserveAttributesFlag);
+            
+            // Send form data via AJAX to avoid page reload
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    dtmodalShowToast('success', {
+                        title: 'Thành công',
+                        message: 'Sản phẩm đã được cập nhật thành công!'
+                    });
+                    
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/admin/products';
+                    }, 1500);
+                } else {
+                    // Handle validation errors
+                    if (data.errors) {
+                        Object.keys(data.errors).forEach(key => {
+                            const errorElement = document.getElementById(`${key.replace(/\./g, '-')}-error`);
+                            if (errorElement) {
+                                errorElement.textContent = data.errors[key][0];
+                                const inputElement = document.querySelector(`[name="${key}"]`);
+                                if (inputElement) {
+                                    inputElement.classList.add('border-red-500');
+                                }
+                            } else if (key === 'primary_image') {
+                                dtmodalShowToast('error', {
+                                    title: 'Lỗi',
+                                    message: data.errors[key][0]
+                                });
+                            }
+                        });
+                    } else {
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Đã có lỗi xảy ra khi cập nhật sản phẩm.'
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Đã có lỗi xảy ra khi gửi biểu mẫu.'
+                });
+            });
         });
 
         // Handle status and release date visibility
@@ -573,10 +1195,8 @@
             const selectedStatus = document.querySelector('input[name="status"]:checked').value;
             if (selectedStatus === 'coming_soon') {
                 releaseAtDiv.classList.remove('hidden');
-                releaseAtDiv.querySelector('#release_at').required = true;
             } else {
                 releaseAtDiv.classList.add('hidden');
-                releaseAtDiv.querySelector('#release_at').required = false;
             }
         }
 
@@ -586,103 +1206,44 @@
 
         // Initial check
         toggleReleaseDate();
-
-        // Variant stock management
-        const bulkStockInput = document.getElementById('bulk-stock-input');
-        const applyAllStockBtn = document.getElementById('apply-all-stock');
-        const variantStocksTable = document.getElementById('variant-stocks-table');
-        let variants = [];
-
-        // Function to generate variant combinations
-        function generateCombinations(attributes) {
-            if (attributes.length === 0) return [];
-            
-            const result = [];
-            const firstAttr = attributes[0];
-            
-            if (attributes.length === 1) {
-                return firstAttr.values.map(value => [{
-                    name: firstAttr.name,
-                    value: value
-                }]);
+        
+        // Helper function to find branch stock quantity
+        function findBranchStock(branchId, variantId) {
+            // Using the branch stock data passed from controller
+            const branchStocks = @json($branchStocks ?? []);
+            if (branchStocks[branchId] && branchStocks[branchId][variantId]) {
+                return branchStocks[branchId][variantId];
             }
-            
-            const restCombinations = generateCombinations(attributes.slice(1));
-            
-            firstAttr.values.forEach(value => {
-                restCombinations.forEach(combination => {
-                    result.push([{
-                        name: firstAttr.name,
-                        value: value
-                    }, ...combination]);
-                });
-            });
-            
-            return result;
+            return 0;
         }
-
-        // Function to update the stock table
-        function updateStockTable() {
-            const attributeGroups = document.querySelectorAll('.attribute-group');
-            const attributeValues = Array.from(attributeGroups).map(group => {
-                const name = group.querySelector('input[name$="[name]"]').value;
-                const values = Array.from(group.querySelectorAll('input[name$="[value]"]')).map(input => input.value);
-                return { name, values };
-            });
-
-            variants = generateCombinations(attributeValues);
-            
-            // Generate table rows
-            variantStocksTable.innerHTML = variants.map((variant, variantIndex) => {
-                const variantName = variant.map(v => `${v.name}: ${v.value}`).join(' - ');
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ${variantName}
-                        </td>
-                        @foreach($branches as $branch)
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <input type="number" 
-                                   name="variant_stocks[${variantIndex}][{{ $branch->id }}]" 
-                                   min="0" 
-                                   value="0" 
-                                   class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </td>
-                        @endforeach
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Update table when attributes change
-        document.querySelectorAll('.attribute-group input').forEach(input => {
-            input.addEventListener('change', updateStockTable);
-        });
-
-        // Handle apply all stock
-        applyAllStockBtn.addEventListener('click', () => {
-            const stockValue = parseInt(bulkStockInput.value);
-            if (isNaN(stockValue) || stockValue < 0) {
-                alert('Vui lòng nhập số lượng tồn kho hợp lệ');
-                return;
-            }
-
-            // Update all stock inputs
-            document.querySelectorAll('#variant-stocks-table input[type="number"]').forEach(input => {
-                input.value = stockValue;
-            });
-        });
-
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + Enter to apply stock to all
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                applyAllStockBtn.click();
+        
+        // Set branch stock values
+        const branchStockInputs = document.querySelectorAll('input[name^="branch_stock"]');
+        branchStockInputs.forEach(input => {
+            const matches = input.name.match(/branch_stock\[(\d+)\]\[(\d+)\]/);
+            if (matches && matches.length === 3) {
+                const branchId = matches[1];
+                const variantId = matches[2];
+                const stockQuantity = findBranchStock(branchId, variantId);
+                if (stockQuantity > 0) {
+                    input.value = stockQuantity;
+                }
             }
         });
-
-        // Initial table update
-        updateStockTable();
+    });
+  </script>
+  <script>
+    // Debug form submission
+    document.getElementById('edit-product-form').addEventListener('submit', function() {
+      try {
+        const formData = new FormData(this);
+        console.log('Form attributes:', Array.from(formData.entries())
+          .filter(item => item[0].includes('attributes') || item[0].includes('existing_attributes')));
+        console.log('Form branch stocks:', Array.from(formData.entries())
+          .filter(item => item[0].includes('branch_stock')));
+      } catch(e) {
+        console.error('Debug error:', e);
+      }
     });
   </script>
 @endsection
