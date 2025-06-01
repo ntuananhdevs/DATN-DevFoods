@@ -18,7 +18,7 @@ use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
-use App\Http\Controllers\TestController;
+// use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
@@ -329,7 +329,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Product Stock Management Routes
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('{product}/stock', [BranchStockController::class, 'index'])->name('stock');
-        Route::post('{product}/stocks', [BranchStockController::class, 'update'])->name('update-stocks');
+        Route::post('{product}/stocks', [BranchStockController::class, 'update'])->name('update-branch-stocks');
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
@@ -391,12 +391,16 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
 });
 
 // Test routes for AWS S3 uploads
+/*
 Route::prefix('test')->name('test.')->group(function () {
     Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
     Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
     Route::delete('/images', [TestController::class, 'deleteImage'])->name('images.delete');
     Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
+});
+*/
+
 // API Routes for products, cart and favorites
 Route::prefix('api')->group(function () {
     // Product listing for AJAX filtering

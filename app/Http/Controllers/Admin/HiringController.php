@@ -35,6 +35,14 @@ class HiringController extends Controller
      */
     public function submitApplication(Request $request)
     {
+        // Log the request for debugging
+        Log::info('Driver application submission started', [
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'has_files' => $request->hasFile(['profile_image', 'id_card_front_image']),
+            'turnstile_token' => $request->has('cf-turnstile-response') ? 'present' : 'missing'
+        ]);
+
         // Validate form data
         $validator = Validator::make($request->all(), [
             'full_name' => 'required|string|max:100',

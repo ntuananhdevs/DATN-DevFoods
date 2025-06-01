@@ -620,8 +620,43 @@
                 @enderror
             </div>
             
+            <!-- Turnstile Captcha -->
+            <div class="form-section p-6">
+                <h3 class="section-title text-xl mb-6">
+                    <i class="fas fa-shield-alt mr-3 text-blue-600"></i>Xác minh bảo mật
+                </h3>
+                
+                {{-- Debug info --}}
+                @if(config('app.debug'))
+                    <p class="text-sm text-gray-500 mb-4">
+                        Debug: Site Key = {{ config('turnstile.site_key') ? 'Present' : 'Missing' }}
+                        ({{ strlen(config('turnstile.site_key')) }} chars)
+                    </p>
+                @endif
+                
+                <div class="flex justify-center">
+                    {{-- Temporarily hardcoded for debugging --}}
+                    <div class="turnstile-container">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Xác minh bảo mật <span class="text-red-500">*</span>
+                        </label>
+                        <div class="cf-turnstile" 
+                             data-sitekey="{{ config('turnstile.site_key') }}"
+                             data-theme="light"
+                             data-size="normal"
+                             data-callback="onTurnstileCallback"
+                             data-error-callback="onTurnstileError"
+                             data-expired-callback="onTurnstileExpired">
+                        </div>
+                        @error('cf-turnstile-response')
+                            <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+            
             <div class="text-center">
-                <button type="submit" class="btn-primary text-lg">Gửi đơn đăng ký</button>
+                <button type="submit" class="btn-primary text-lg opacity-50 cursor-not-allowed" data-turnstile-required disabled>Gửi đơn đăng ký</button>
             </div>
         </form>
     </div>
@@ -637,25 +672,6 @@
                     &times;
                 </button>
             </div>
-        </div>
-        <div class="modal-body">
-            <h4 class="font-semibold text-lg mb-3">1. Đối tác tài xế</h4>
-            <p class="mb-4">Bằng việc đăng ký và sử dụng dịch vụ của chúng tôi, bạn đồng ý rằng bạn là đối tác độc lập và không phải là nhân viên của DevFoods.</p>
-            
-            <h4 class="font-semibold text-lg mb-3">2. Trách nhiệm</h4>
-            <p class="mb-4">Bạn chịu trách nhiệm đảm bảo xe của bạn đáp ứng các tiêu chuẩn an toàn và luật pháp địa phương. Bạn cũng chịu trách nhiệm về hành vi của mình trong quá trình giao hàng.</p>
-            
-            <h4 class="font-semibold text-lg mb-3">3. Thanh toán</h4>
-            <p class="mb-4">DevFoods sẽ thanh toán cho bạn theo các điều khoản thanh toán đã thỏa thuận. Bạn chịu trách nhiệm về thuế và các khoản phí khác liên quan đến thu nhập của bạn.</p>
-            
-            <h4 class="font-semibold text-lg mb-3">4. Bảo mật thông tin</h4>
-            <p class="mb-4">DevFoods cam kết bảo vệ thông tin cá nhân của bạn theo chính sách bảo mật của chúng tôi. Thông tin của bạn sẽ chỉ được sử dụng cho mục đích vận hành dịch vụ.</p>
-            
-            <h4 class="font-semibold text-lg mb-3">5. Chấm dứt hợp tác</h4>
-            <p class="mb-0">Cả hai bên đều có quyền chấm dứt mối quan hệ hợp tác này bất cứ lúc nào, với hoặc không có lý do.</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" onclick="hideTermsModal()" class="btn-primary">Đã hiểu</button>
         </div>
         <div class="modal-body">
             <h4 class="font-semibold text-lg mb-3">1. Đối tác tài xế</h4>
@@ -743,5 +759,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Sample Data Script for Development -->
 <script src="{{ asset('js/driver-application-sample.js') }}"></script>
+
+<!-- Turnstile Script and Callbacks -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+    let turnstileToken = null;
+
+    // Turnstile callbacks
+    window.onTurnstileCallback = function(token) {
+        turnstileToken = token;
+        console.log('Turnstile completed successfully');
+        // Enable submit button
+        const submitBtn = document.querySelector('button[type="submit"][data-turnstile-required]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    };
+
+    window.onTurnstileError = function() {
+        turnstileToken = null;
+        console.error('Turnstile error occurred');
+        // Disable submit button
+        const submitBtn = document.querySelector('button[type="submit"][data-turnstile-required]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        alert('Xác minh bảo mật thất bại. Vui lòng thử lại.');
+    };
+
+    window.onTurnstileExpired = function() {
+        turnstileToken = null;
+        console.log('Turnstile expired');
+        // Disable submit button
+        const submitBtn = document.querySelector('button[type="submit"][data-turnstile-required]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        alert('Xác minh bảo mật đã hết hạn. Vui lòng thực hiện lại.');
+    };
+
+    // Form validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const submitBtn = this.querySelector('button[type="submit"][data-turnstile-required]');
+                if (submitBtn && !turnstileToken) {
+                    e.preventDefault();
+                    alert('Vui lòng hoàn thành xác minh bảo mật');
+                    return false;
+                }
+            });
+        }
+    });
+</script>
 
 @endsection 
