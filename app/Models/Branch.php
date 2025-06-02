@@ -110,4 +110,14 @@ class Branch extends Model
             'product_variant_id' // Local key on branch_stocks table
         );
     }
+
+    public function promotionPrograms()
+    {
+        return $this->belongsToMany(PromotionProgram::class, 'promotion_branches', 'branch_id', 'promotion_program_id');
+    }
+
+    public function discountCodes()
+    {
+        return $this->belongsToMany(DiscountCode::class, 'discount_code_branches', 'branch_id', 'discount_code_id');
+    }
 }

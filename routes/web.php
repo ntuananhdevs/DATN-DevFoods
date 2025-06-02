@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\PromotionProgramController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
 // use App\Http\Controllers\TestController;
@@ -307,23 +308,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
     
     // Discount Management
-    Route::prefix('discount')->name('discount.')->group(function () {
-        Route::get('/', [BannerController::class, 'index'])->name('index');
-        Route::get('/create', [BannerController::class, 'create'])->name('create');
-        Route::post('/store', [BannerController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
-        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
-    });
-    
-    // Branch Apply Management
-    Route::prefix('discount')->name('discount.')->group(function () {
-        Route::get('/', [BannerController::class, 'index'])->name('index');
-        Route::get('/create', [BannerController::class, 'create'])->name('create');
-        Route::post('/store', [BannerController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
-        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
+    Route::prefix('promotions')->name('promotions.')->group(function () {
+        Route::get('/', [PromotionProgramController::class, 'index'])->name('index');
+        Route::get('/create', [PromotionProgramController::class, 'create'])->name('create');
+        Route::post('/', [PromotionProgramController::class, 'store'])->name('store');
+        Route::get('/{program}/edit', [PromotionProgramController::class, 'edit'])->name('edit');
+        Route::put('/{program}', [PromotionProgramController::class, 'update'])->name('update');
+        Route::delete('/{program}', [PromotionProgramController::class, 'destroy'])->name('destroy');
+        Route::get('/{program}', [PromotionProgramController::class, 'show'])->name('show');
+        Route::post('/{program}/discount-codes', [PromotionProgramController::class, 'linkDiscountCode'])->name('link-discount');
+        Route::delete('/{program}/discount-codes/{discountCode}', [PromotionProgramController::class, 'unlinkDiscountCode'])->name('unlink-discount');
+        Route::post('/{program}/branches', [PromotionProgramController::class, 'linkBranch'])->name('link-branch');
+        Route::delete('/{program}/branches/{branch}', [PromotionProgramController::class, 'unlinkBranch'])->name('unlink-branch');
     });
 
     // Product Stock Management Routes

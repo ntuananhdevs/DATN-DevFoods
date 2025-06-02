@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DiscountUsageHistory extends Model
 {
+    use HasFactory;
     protected $table = 'discount_usage_history';
 
     protected $fillable = [
