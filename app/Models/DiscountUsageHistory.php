@@ -15,6 +15,8 @@ class DiscountUsageHistory extends Model
         'original_amount', 'discount_amount', 'used_at'
     ];
 
+    public $timestamps = false;
+
     protected $casts = [
         'original_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
