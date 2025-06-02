@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+
 class ChatMessage extends Model
 {
     use HasFactory;
@@ -37,5 +38,10 @@ class ChatMessage extends Model
     public function receiver()
     {
         return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    public function conversation()
+    {
+        return $this->belongsTo(Conversation::class);
     }
 }

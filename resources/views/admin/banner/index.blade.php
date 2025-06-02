@@ -1,348 +1,500 @@
 @extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
-@push('scripts')
-    <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
-    <script>
-        // Initialize Pusher
-        const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
-            cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
-            encrypted: true
-        });
+    @push('scripts')
+        <script src="https://js.pusher.com/7.0/pusher.min.js"></script>
+        <script>
+            // Subscribe to channel
+            const channel = pusher.subscribe('banner-channel');
 
-        // Subscribe to channel
-        const channel = pusher.subscribe('banner-channel');
+            // Handle new banner event
+            channel.bind('banner-created', function(data) {
+                location.reload();
+            });
 
-        // Handle new banner event
-        channel.bind('banner-created', function(data) {
-            location.reload();
-        });
+            // Handle updated banner event
+            channel.bind('banner-updated', function(data) {
+                location.reload();
+            });
 
-        // Handle updated banner event
-        channel.bind('banner-updated', function(data) {
-            location.reload();
-        });
+            // Handle deleted banner event
+            channel.bind('banner-deleted', function(data) {
+                location.reload();
+            });
+        </script>
+    @endpush
 
-        // Handle deleted banner event
-        channel.bind('banner-deleted', function(data) {
-            location.reload();
-        });
-    </script>
-@endpush
-    <div class="data-table-wrapper">
-        <!-- Main Header -->
-        <div class="data-table-main-header">
-            <div class="data-table-brand">
-                <div class="data-table-logo">
-                    <i class="fas fa-image"></i>
+    <div class="min-h-screen bg-gradient-to-br ">
+        <div class="fade-in flex flex-col gap-4 pb-4  animate-slideInUp delay-200 duration-700 ease-in-out">
+            <!-- Main Header -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                        <i class="fas fa-image text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold tracking-tight">Quản lý banner</h2>
+                        <p class="text-muted-foreground">Quản lý danh sách banner của bạn</p>
+                    </div>
                 </div>
-                <h1 class="data-table-title">Quản lý banner</h1>
-            </div>
-            <div class="data-table-header-actions">
-                <div class="btn-group mr-2">
-                    {{-- <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                                    <i class="fas fa-download"></i> Xuất
-                                </button> --}}
-                    {{-- <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'excel']) }}">
-                                        <i class="fas fa-file-excel"></i> Excel
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'pdf']) }}">
-                                        <i class="fas fa-file-pdf"></i> PDF
-                                    </a>
-                                    <a class="dropdown-item" href="{{ route('admin.banners.export', ['type' => 'csv']) }}">
-                                        <i class="fas fa-file-csv"></i> CSV
-                                    </a>
-                                </div> --}}
-                </div>
-
-                <a href="{{ route('admin.banners.create') }}" class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-plus"></i> Thêm mới
+                <a href="{{ route('admin.banners.create') }}" class="btn btn-primary flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="mr-2">
+                        <path d="M12 5v14"></path>
+                        <path d="M5 12h14"></path>
+                    </svg>
+                    Thêm mới
                 </a>
             </div>
-        </div>
 
-        <!-- Data Table Card -->
-        <div class="data-table-card">
-            <!-- Table Header -->
-            <div class="data-table-header">
-                <h2 class="data-table-card-title">Danh sách banner</h2>
-            </div>
-
-            <!-- Controls -->
-            <div class="data-table-controls">
-                <div class="data-table-search">
-                    <i class="fas fa-search data-table-search-icon"></i>
-                    <input type="text" placeholder="Tìm kiếm theo tiêu đề, mô tả ..." id="dataTableSearch"
-                        value="{{ request('search') }}" onkeyup="handleSearch(event)">
+            <!-- Data Table Card with enhanced animations -->
+            <div
+                class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all duration-500 hover:shadow-2xl animate-slideInUp delay-200 duration-700 ease-in-out">
+                <!-- Table Header -->
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800">Danh sách banner</h2>
                 </div>
-                <div class="data-table-actions">
-                    <div class="d-flex align-items-center">
-                        <div class="data-table-actions">
-                            <div class="d-flex align-items-center">
-                                <button class="data-table-btn data-table-btn-outline mr-2" onclick="toggleSelectAll()">
-                                    <i class="fas fa-check-square"></i> Chọn tất cả
+
+                <!-- Controls with hover animations -->
+                <div class="p-6 border-b border-gray-200 bg-gray-50">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                        <!-- Search Box -->
+                        <div class="relative flex-1 max-w-md">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" placeholder="Tìm kiếm theo tiêu đề, mô tả ..." id="dataTableSearch"
+                                value="{{ request('search') }}" onkeyup="handleSearch(event)"
+                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center space-x-3">
+                            <button onclick="toggleSelectAll()"
+                                class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transform transition-all duration-200 hover:scale-105 flex items-center space-x-2">
+                                <i class="fas fa-check-square"></i>
+                                <span>Chọn tất cả</span>
+                            </button>
+
+                            <div class="relative inline-block text-left">
+                                <button type="button"
+                                    class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transform transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+                                    data-toggle="dropdown">
+                                    <i class="fas fa-tasks"></i>
+                                    <span>Thao tác</span>
+                                    <i class="fas fa-chevron-down ml-1"></i>
                                 </button>
-                                <div class="btn-group mr-2">
-                                    <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle"
-                                        data-toggle="dropdown">
-                                        <i class="fas fa-tasks"></i> Thao tác
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a href="#" class="dropdown-item" onclick="updateSelectedBannerStatus(1)">
-                                            <i class="fas fa-check-circle text-success"></i> Kích hoạt đã chọn
-                                        </a>
-                                        <a href="#" class="dropdown-item" onclick="updateSelectedBannerStatus(0)">
-                                            <i class="fas fa-times-circle text-danger"></i> Vô hiệu hóa đã chọn
-                                        </a>
-                                    </div>
+                                <div
+                                    class="dropdown-menu absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                                    <a href="#" onclick="updateSelectedBannerStatus(1)"
+                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-800 transition-colors duration-200">
+                                        <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                        Kích hoạt đã chọn
+                                    </a>
+                                    <a href="#" onclick="updateSelectedBannerStatus(0)"
+                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-800 transition-colors duration-200">
+                                        <i class="fas fa-times-circle text-red-500 mr-2"></i>
+                                        Vô hiệu hóa đã chọn
+                                    </a>
                                 </div>
-
-
-                                <button class="data-table-btn data-table-btn-outline">
-                                    <i class="fas fa-columns"></i> Cột
-                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Table Container -->
-            <div class="data-table-container">
-                <table class="data-table" id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>
-                                <div>
-                                    <input type="checkbox" id="selectAll">
-                                </div>
-                            </th>
-                            <th data-sort="id" class="active-sort">
-                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
-                            </th>
-                            <th>Hình ảnh</th>
-                            <th data-sort="title">
-                                Tiêu đề <i class="fas fa-sort data-table-sort-icon"></i>
-                            </th>
-                            <th>Trạng thái</th>
-                            <th>Ngày bắt đầu</th>
-                            <th>Ngày kết thúc</th>
-                            <th>Vị trí</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody">
-                        @forelse($banners as $banner)
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200" id="dataTable">
+                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
                             <tr>
-                                <td>
-                                    <input type="checkbox" class="row-checkbox" value="{{ $banner->id }}">
-                                </td>
-                                <td>
-                                    <div class="data-table-id">
-                                        {{ $banner->id }}
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <input type="checkbox" id="selectAll"
+                                        class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                </th>
+                                <th data-sort="id"
+                                    class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200 hover:text-gray-700 transition-all duration-300 ease-in-out active-sort">
+                                    <div class="flex items-center space-x-1">
+                                        <span>ID</span>
+                                        <i class="fas fa-arrow-up text-blue-500"></i>
                                     </div>
-                                </td>
-                                <td>
-                                    <div class="data-table-banner-image">
-                                        <img src="{{ $banner->image_path ? asset('storage/' . $banner->image_path) : asset('images/default-banner.png') }}"
-                                            alt="{{ $banner->title }}"
-                                            style="width: 100px; height: auto; object-fit: cover;">
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Hình ảnh
+                                </th>
+                                <th data-sort="title"
+                                    class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200 hover:text-gray-700 transition-all duration-300 ease-in-out">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Tiêu đề</span>
+                                        <i class="fas fa-sort text-gray-400"></i>
                                     </div>
-                                </td>
-                                <td>
-                                    <div class="data-table-banner-title">{{ $banner->title }}</div>
-                                </td>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Trạng thái
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Thứ tự
+                                </th>
+                                <th data-sort="position"
+                                    class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-200 hover:text-gray-700 transition-all duration-300 ease-in-out">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Vị trí</span>
+                                        <i class="fas fa-sort text-gray-400"></i>
+                                    </div>
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Ngày bắt đầu
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Ngày kết thúc
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Thao tác
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="bg-white divide-y divide-gray-200">
+                            @forelse($banners as $banner)
+                                <tr
+                                    class="hover:bg-gray-100 transition-all duration-300 ease-in-out transform hover:shadow-md hover:scale-[1.02]">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <input type="checkbox"
+                                            class="row-checkbox rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                            value="{{ $banner->id }}">
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div
+                                            class="text-sm font-medium text-gray-900 bg-blue-50 px-3 py-1 rounded-full inline-block">
+                                            {{ $banner->id }}
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex-shrink-0 h-20 w-20">
+                                            @php
+                                                $defaultImage = asset('images/default-banner.png');
+                                                $imageSrc = $defaultImage;
 
-                                <td>
-                                    <form action="{{ route('admin.banners.toggle-status', $banner->id) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="button"
-                                            class="data-table-status {{ $banner->is_active ? 'data-table-status-success' : 'data-table-status-failed' }}"
-                                            style="border: none; cursor: pointer; width: 100px;"
-                                            onclick="dtmodalHandleStatusToggle({
-                                        button: this,
-                                        bannerTitle: '{{ $banner->title }}',
-                                        currentStatus: {{ $banner->is_active ? 'true' : 'false' }},
-                                        confirmTitle: 'Xác nhận thay đổi trạng thái',
-                                        confirmSubtitle: 'Bạn có chắc chắn muốn thay đổi trạng thái của banner này?',
-                                        confirmMessage: 'Hành động này sẽ thay đổi trạng thái hoạt động của banner.',
-                                        successMessage: 'Đã thay đổi trạng thái banner thành công',
-                                        errorMessage: 'Có lỗi xảy ra khi thay đổi trạng thái banner'
-                                    })">
-                                            @if ($banner->is_active)
-                                                <i class="fas fa-check"></i> Hoạt động
-                                            @else
-                                                <i class="fas fa-times"></i> Vô hiệu hóa
-                                            @endif
-                                        </button>
-                                    </form>
-                                </td>
-                                <td>{{ $banner->start_at->format('d/m/Y') }}</td>
-                                <td>{{ $banner->end_at->format('d/m/Y') }}</td>
-                                <td>
-                                    <span class="badge {{ $banner->order === 0 ? 'badge-primary' : ($banner->order === 1 ? 'badge-info' : 'badge-secondary') }}">
-                                        @if($banner->order === 0)
-                                            Đầu tiên
-                                        @elseif($banner->order === 1)
-                                            Giữa
-                                        @else
-                                            Cuối cùng
-                                        @endif
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="data-table-action-buttons">
-                                        <a href="{{ route('admin.banners.show', $banner->id) }}"
-                                            class="data-table-action-btn data-table-tooltip" data-tooltip="Xem chi tiết">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{{ route('admin.banners.edit', $banner->id) }}"
-                                            class="data-table-action-btn edit" title="Chỉnh sửa">
-                                            <i class="fas fa-pen"></i>
-                                        </a>
-                                        <form action="{{ route('admin.banners.destroy', $banner->id) }}" method="POST"
-                                            class="d-inline">
+                                                if ($banner->image_path) {
+                                                    if (filter_var($banner->image_path, FILTER_VALIDATE_URL)) {
+                                                        // Nếu image_path là URL hợp lệ (ví dụ lưu trên S3)
+                                                        $imageSrc = $banner->image_path;
+                                                    } else {
+                                                        // Nếu image_path không phải URL thì giả định file trong storage
+                                                        $imageSrc = Storage::disk('s3')->url($banner->image_path);
+                                                    }
+                                                }
+                                            @endphp
+                                            <img src="{{ $imageSrc }}" alt="{{ $banner->title }}"
+                                                class="h-20 w-20 rounded-lg object-cover shadow-md hover:shadow-xl transform transition-all duration-300 hover:scale-110 hover:rotate-3">
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $banner->title }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <form action="{{ route('admin.banners.toggle-status', $banner->id) }}"
+                                            method="POST" class="inline-block">
                                             @csrf
-                                            @method('DELETE')
-                                            <button type="button" class="data-table-action-btn delete data-table-tooltip"
-                                                data-tooltip="Xóa"
-                                                onclick="dtmodalConfirmDelete({
-                                                itemName: '{{ $banner->name }}',
-                                                onConfirm: () => this.closest('form').submit()
-                                            })">
-                                                <i class="fas fa-trash"></i>
+                                            @method('PATCH')
+                                            <button type="button"
+                                                class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transform transition-all duration-200 hover:scale-105 {{ $banner->is_active ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200' }}">
+                                                @if ($banner->is_active)
+                                                    <i class="fas fa-check mr-1"></i>
+                                                    Hoạt động
+                                                @else
+                                                    <i class="fas fa-times mr-1"></i>
+                                                    Vô hiệu hóa
+                                                @endif
                                             </button>
                                         </form>
-                                    </div>
-                                    <form id="bulkStatusForm" action="{{ route('admin.banners.bulk-status-update') }}" method="POST" style="display: none;">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="ids" id="ids">
-                                        <input type="hidden" name="status" id="status">
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="12" class="text-center">
-                                    <div class="data-table-empty">
-                                        <div class="data-table-empty-icon">
-                                            <i class="fas fa-image"></i>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transform transition-all duration-200 hover:scale-105 {{ $banner->order === 0 ? 'bg-blue-100 text-blue-800' : ($banner->order === 1 ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-800') }}">
+                                            {{ $banner->order }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm capitalize">
+                                        @if ($banner->position)
+                                            @php
+                                                $positionText = str_replace('_', ' ', $banner->position);
+                                                $bgColor = 'bg-gray-100';
+                                                $textColor = 'text-gray-800';
+                                                if ($banner->position === 'homepage') {
+                                                    $bgColor = 'bg-indigo-100';
+                                                    $textColor = 'text-indigo-800';
+                                                } elseif ($banner->position === 'footers') {
+                                                    $bgColor = 'bg-pink-100';
+                                                    $textColor = 'text-pink-800';
+                                                } elseif ($banner->position === 'promotions') {
+                                                    $bgColor = 'bg-yellow-100';
+                                                    $textColor = 'text-yellow-800';
+                                                }
+                                            @endphp
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transform transition-all duration-200 hover:scale-105 {{ $bgColor }} {{ $textColor }}">
+                                                {{ $positionText }}
+                                            </span>
+                                        @else
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 transform transition-all duration-200 hover:scale-105">
+                                                N/A
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $banner->start_at->format('d/m/Y') }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ $banner->end_at->format('d/m/Y') }}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="flex justify-center space-x-1">
+                                            <a href="{{ route('admin.banners.edit', $banner->id) }}"
+                                                class="flex items-center justify-center rounded-md hover:bg-gray-400 p-2 hover:shadow-lg transition-all duration-300"
+                                                title="Chỉnh sửa">
+                                                <i class="fas fa-pen text-sm"></i>
+                                            </a>
+                                            <form action="{{ route('admin.banners.destroy', $banner->id) }}"
+                                                method="POST" class="delete-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button"
+                                                    class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-gray-400 hover:shadow-lg transition-all duration-300"
+                                                    title="Xóa"
+                                                    onclick="dtmodalConfirmDelete({ 
+                                                        itemName: '{{ $banner->name }}',
+                                                        onConfirm: () => this.closest('form').submit()
+                                                    })">
+                                                    <i class="fas fa-trash text-sm"></i>
+                                                </button>
+                                            </form>
                                         </div>
-                                        <h3>Không có banner nào</h3>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination -->
-            <div class="data-table-footer">
-                <div class="data-table-pagination-info">
-                    Hiển thị <span id="startRecord">{{ ($banners->currentPage() - 1) * $banners->perPage() + 1 }}</span>
-                    đến <span
-                        id="endRecord">{{ min($banners->currentPage() * $banners->perPage(), $banners->total()) }}</span>
-                    của <span id="totalRecords">{{ $banners->total() }}</span> mục
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center justify-center space-y-4 animate-pulse">
+                                            <div class="bg-gray-100 p-6 rounded-full">
+                                                <i class="fas fa-image text-4xl text-gray-400"></i>
+                                            </div>
+                                            <h3 class="text-lg font-medium text-gray-500">Không có banner nào</h3>
+                                            <p class="text-sm text-gray-400">Hãy thêm banner đầu tiên của bạn</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
-                @if ($banners->lastPage() > 1)
-                    <div class="data-table-pagination-controls">
-                        @if (!$banners->onFirstPage())
-                            <a href="{{ $banners->previousPageUrl() }}&search={{ request('search') }}"
-                                class="data-table-pagination-btn" id="prevBtn">
-                                <i class="fas fa-chevron-left"></i> Trước
-                            </a>
-                        @endif
 
-                        @php
-                            $start = max(1, $banners->currentPage() - 2);
-                            $end = min($banners->lastPage(), $banners->currentPage() + 2);
+                <!-- Pagination with enhanced styling -->
+                <div class="bg-white px-6 py-4 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-700">
+                            Hiển thị
+                            <span
+                                class="font-medium text-gray-900">{{ ($banners->currentPage() - 1) * $banners->perPage() + 1 }}</span>
+                            đến
+                            <span
+                                class="font-medium text-gray-900">{{ min($banners->currentPage() * $banners->perPage(), $banners->total()) }}</span>
+                            của
+                            <span class="font-medium text-gray-900">{{ $banners->total() }}</span>
+                            mục
+                        </div>
+                        @if ($banners->lastPage() > 1)
+                            <div class="flex items-center space-x-2">
+                                @if (!$banners->onFirstPage())
+                                    <a href="{{ $banners->previousPageUrl() }}&search={{ request('search') }}"
+                                        class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transform transition-all duration-200 hover:scale-105">
+                                        <i class="fas fa-chevron-left mr-1"></i>
+                                        Trước
+                                    </a>
+                                @endif
 
-                            if ($start > 1) {
-                                echo '<a href="' .
-                                    $banners->url(1) .
-                                    '&search=' .
-                                    request('search') .
-                                    '"
-                    class="data-table-pagination-btn">1</a>';
-                                if ($start > 2) {
-                                    echo '<span class="data-table-pagination-dots">...</span>';
-                                }
-                            }
-                        @endphp
+                                @php
+                                    $start = max(1, $banners->currentPage() - 2);
+                                    $end = min($banners->lastPage(), $banners->currentPage() + 2);
 
-                        @for ($i = $start; $i <= $end; $i++)
-                            <a href="{{ $banners->url($i) }}&search={{ request('search') }}"
-                                class="data-table-pagination-btn {{ $banners->currentPage() == $i ? 'active' : '' }}">
-                                {{ $i }}
-                            </a>
-                        @endfor
+                                    if ($start > 1) {
+                                        echo '<a href="' .
+                                            $banners->url(1) .
+                                            '&search=' .
+                                            request('search') .
+                                            '" class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transform transition-all duration-200 hover:scale-105">1</a>';
+                                        if ($start > 2) {
+                                            echo '<span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">...</span>';
+                                        }
+                                    }
+                                @endphp
 
-                        @php
-                            if ($end < $banners->lastPage()) {
-                                if ($end < $banners->lastPage() - 1) {
-                                    echo '<span class="data-table-pagination-dots">...</span>';
-                                }
-                                echo '<a href="' .
-                                    $banners->url($banners->lastPage()) .
-                                    '&search=' .
-                                    request('search') .
-                                    '"
-                                class="data-table-pagination-btn">' .
-                                    $banners->lastPage() .
-                                    '</a>';
-                            }
-                        @endphp
+                                @for ($i = $start; $i <= $end; $i++)
+                                    <a href="{{ $banners->url($i) }}&search={{ request('search') }}"
+                                        class="relative inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transform transition-all duration-200 hover:scale-105 {{ $banners->currentPage() == $i ? 'bg-blue-500 text-white border-blue-500' : 'text-gray-500 bg-white border-gray-300 hover:bg-gray-50 hover:text-gray-700' }}">
+                                        {{ $i }}
+                                    </a>
+                                @endfor
 
-                        @if ($banners->hasMorePages())
-                            <a href="{{ $banners->nextPageUrl() }}&search={{ request('search') }}"
-                                class="data-table-pagination-btn" id="nextBtn">
-                                Tiếp <i class="fas fa-chevron-right"></i>
-                            </a>
+                                @php
+                                    if ($end < $banners->lastPage()) {
+                                        if ($end < $banners->lastPage() - 1) {
+                                            echo '<span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700">...</span>';
+                                        }
+                                        echo '<a href="' .
+                                            $banners->url($banners->lastPage()) .
+                                            '&search=' .
+                                            request('search') .
+                                            '" class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transform transition-all duration-200 hover:scale-105">' .
+                                            $banners->lastPage() .
+                                            '</a>';
+                                    }
+                                @endphp
+
+                                @if ($banners->hasMorePages())
+                                    <a href="{{ $banners->nextPageUrl() }}&search={{ request('search') }}"
+                                        class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 transform transition-all duration-200 hover:scale-105">
+                                        Tiếp
+                                        <i class="fas fa-chevron-right ml-1"></i>
+                                    </a>
+                                @endif
+                            </div>
                         @endif
                     </div>
-                @endif
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        // Pusher already initialized above
+        <!-- Hidden form for bulk operations -->
+        <form id="bulkStatusForm" action="{{ route('admin.banners.bulk-status-update') }}" method="POST"
+            class="hidden">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="ids" id="ids">
+            <input type="hidden" name="status" id="status">
+        </form>
 
-        function handleSearch(event) {
-            const searchValue = event.target.value.trim();
-            const currentUrl = new URL(window.location.href);
+        <!-- Custom CSS for animations -->
+        <style>
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
 
-            if (searchValue) {
-                currentUrl.searchParams.set('search', searchValue);
-            } else {
-                currentUrl.searchParams.delete('search');
+                to {
+                    opacity: 1;
+                }
             }
 
-            if (event.key === 'Enter') {
-                window.location.href = currentUrl.toString();
-            }
-        }
+            @keyframes slideInDown {
+                from {
+                    transform: translateY(-30px);
+                    opacity: 0;
+                }
 
-        function toggleSelectAll() {
-            const selectAllCheckbox = document.getElementById('selectAll');
-            const rowCheckboxes = document.getElementsByClassName('row-checkbox');
-
-            selectAllCheckbox.checked = !selectAllCheckbox.checked;
-            for (let checkbox of rowCheckboxes) {
-                checkbox.checked = selectAllCheckbox.checked;
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
             }
-        }
 
-        document.getElementById('selectAll').addEventListener('change', function() {
-            const rowCheckboxes = document.getElementsByClassName('row-checkbox');
-            for (let checkbox of rowCheckboxes) {
-                checkbox.checked = this.checked;
+            @keyframes slideInUp {
+                from {
+                    transform: translateY(30px);
+                    opacity: 0;
+                }
+
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
             }
-        });
-    </script>
-@endsection
+
+            .animate-fadeIn {
+                animation: fadeIn 0.6s ease-out;
+            }
+
+            .animate-slideInDown {
+                animation: slideInDown 0.6s ease-out;
+            }
+
+            .animate-slideInUp {
+                animation: slideInUp 0.6s ease-out 0.2s both;
+            }
+
+            .dropdown-menu {
+                display: none;
+            }
+
+            .dropdown-menu.show {
+                display: block;
+            }
+        </style>
+
+        <script>
+            // Pusher already initialized above
+
+            function handleSearch(event) {
+                const searchValue = event.target.value.trim();
+                const currentUrl = new URL(window.location.href);
+
+                if (searchValue) {
+                    currentUrl.searchParams.set('search', searchValue);
+                } else {
+                    currentUrl.searchParams.delete('search');
+                }
+
+                if (event.key === 'Enter') {
+                    window.location.href = currentUrl.toString();
+                }
+            }
+
+            function toggleSelectAll() {
+                const selectAllCheckbox = document.getElementById('selectAll');
+                const rowCheckboxes = document.getElementsByClassName('row-checkbox');
+
+                selectAllCheckbox.checked = !selectAllCheckbox.checked;
+                for (let checkbox of rowCheckboxes) {
+                    checkbox.checked = selectAllCheckbox.checked;
+                }
+            }
+
+            document.getElementById('selectAll').addEventListener('change', function() {
+                const rowCheckboxes = document.getElementsByClassName('row-checkbox');
+                for (let checkbox of rowCheckboxes) {
+                    checkbox.checked = this.checked;
+                }
+            });
+
+            // Dropdown functionality
+            document.addEventListener('click', function(event) {
+                const dropdownButton = event.target.closest('[data-toggle="dropdown"]');
+                const dropdownMenu = document.querySelector('.dropdown-menu');
+
+                if (dropdownButton) {
+                    event.preventDefault();
+                    dropdownMenu.classList.toggle('show');
+                } else {
+                    dropdownMenu.classList.remove('show');
+                }
+            });
+
+            function updateSelectedBannerStatus(status) {
+                const selectedIds = [];
+                const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+
+                checkboxes.forEach(checkbox => {
+                    selectedIds.push(checkbox.value);
+                });
+
+                if (selectedIds.length === 0) {
+                    alert('Vui lòng chọn ít nhất một banner');
+                    return;
+                }
+
+                document.getElementById('ids').value = selectedIds.join(',');
+                document.getElementById('status').value = status;
+                document.getElementById('bulkStatusForm').submit();
+            }
+        </script>
+    @endsection

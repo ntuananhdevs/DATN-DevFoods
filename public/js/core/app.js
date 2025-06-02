@@ -84,29 +84,17 @@
 /******/ 	return __webpack_require__(__webpack_require__.s = 1);
 /******/ })
 /************************************************************************/
-/******/ ({
-
-/***/ "./resources/js/core/app.js":
-/*!**********************************!*\
-  !*** ./resources/js/core/app.js ***!
-  \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-
-
-/***/ }),
-
-/***/ 1:
+/******/ ([
+/* 0 */,
+/* 1 */
 /*!****************************************!*\
   !*** multi ./resources/js/core/app.js ***!
   \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(/*! D:\KY_3\WEB2014\www\DATN-DevFoods-main\resources\js\core\app.js */"./resources/js/core/app.js");
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'D:\\KY_3\\WEB2014\\www\\DATN-DevFoods-main\\resources\\js\\core\\app.js'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
 
 
 /***/ })
-
-/******/ });
+/******/ ]);

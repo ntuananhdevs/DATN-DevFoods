@@ -1,73 +1,189 @@
 @extends('layouts.customer.fullLayoutMaster')
 
+@section('title', 'FastFood - Đăng Nhập')
+
 @section('content')
-<link rel="stylesheet" href="{{ asset('css/customer/login.css') }}">
-<script src="{{ asset('js/Customer/login.js') }}"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<div class="min-h-screen flex flex-col items-center justify-center px-4">
+    <div class="w-full max-w-lg">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900">FastFood</h1>
+            <p class="text-orange-500 font-medium">Đăng nhập tài khoản</p>
+        </div>
 
-@if (session('error'))
-    <div class="alert alert-danger">
-        {{ session('error') }}
-    </div>
-@endif
-
-@if (session('success'))
-    <div class="alert alert-success">
-        {{ session('success') }}
-    </div>
-@endif
-
-<div>
-    <form action="{{ route('customer.login.submit') }}" method="post">
-        @csrf
-        <div class="auth-page-wrapper">
-            <div class="login-container" style="max-width: 800px; height: auto;">
-                <div class="login-form-box" style="padding: 2rem;">
-                    <h2 id="form-title" style="font-size: 1.5rem;">Đăng Nhập</h2>
-
-                    <div class="login-input-box">
-                        <input type="email" name="email" id="email" value="{{ old('email') }}" 
-                               placeholder=" " required />
-                        <label class="placeholder-label">Địa chỉ Email</label>
-                        <div class="dots-animation"></div>
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-6">
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-4" action="{{ route('customer.login.post') }}" method="POST">
+                    @csrf
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                        </label>
+                        <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            autocomplete="email"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                            placeholder="example@email.com"
+                            value="{{ old('email') }}"
+                        />
                         @error('email')
-                            <div class="text-danger" style="color:red;">{{ $message }}</div>
+                            <div class="text-red-500 text-sm mt-1" id="emailError">{{ $message }}</div>
+                        @else
+                            <div class="text-red-500 text-sm mt-1 hidden" id="emailError"></div>
                         @enderror
                     </div>
 
-                    <div class="login-input-box">
-                        <input type="password" name="password" id="password" 
-                               placeholder=" " required />
-                        <label class="placeholder-label">Mật Khẩu</label>
-                        <div class="dots-animation"></div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="password" class="block text-sm font-medium text-gray-700">
+                                Mật khẩu
+                            </label>
+                            <a href="{{ route('customer.password.request') }}" class="text-sm text-orange-500 hover:text-orange-600">
+                                Quên mật khẩu?
+                            </a>
+                        </div>
+                        <div class="relative">
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autocomplete="current-password"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                                placeholder="••••••••"
+                            />
+                            <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </div>
                         @error('password')
-                            <div class="text-danger" style="color:red;">{{ $message }}</div>
+                            <div class="text-red-500 text-sm mt-1" id="passwordError">{{ $message }}</div>
+                        @else
+                            <div class="text-red-500 text-sm mt-1 hidden" id="passwordError"></div>
                         @enderror
                     </div>
 
-                    <button type="submit" class="login-btn">Đăng Nhập</button>
-                    <p class="login-toggle-text">
-                        Bạn chưa có tài khoản?
-                        <a href="/register" id="toggle-btn">Đăng Kí Ngay</a>
-                    </p>
+                    <div class="flex items-center">
+                        <input
+                            id="remember"
+                            name="remember"
+                            type="checkbox"
+                            class="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded"
+                        />
+                        <label for="remember" class="ml-2 block text-sm text-gray-700">
+                            Ghi nhớ đăng nhập
+                        </label>
+                    </div>
 
-                    <div class="social-login-icons">
-                        <a href="" class="social-icon google">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/></svg>
-                        </a>
-                        <a href="" class="social-icon facebook">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><path fill="currentColor" d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.24 0 225.39 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"/></svg>
-                        </a>
-                        <a href="" class="social-icon instagram">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.5 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7 2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z"/></svg>
-                        </a>
+                    <button
+                        type="submit"
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        id="loginBtn"
+                    >
+                        <span id="loginBtnText">Đăng nhập</span>
+                        <span id="loginBtnLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Đang xử lý...
+                        </span>
+                    </button>
+                </form>
+
+                <div class="relative mt-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-xs uppercase">
+                        <span class="bg-white px-2 text-gray-500">Hoặc tiếp tục với</span>
                     </div>
                 </div>
-                <div class="login-image-box" style="padding: 1rem;">
-                    <img src="{{ asset('images/login-side-image.jpg') }}" alt="Login Image" style="max-height: 400px;">
+
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button
+                        type="button"
+                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                    >
+                        <i class="fab fa-google text-red-500 mr-2"></i>
+                        Google
+                    </button>
+                    <button
+                        type="button"
+                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                    >
+                        <i class="fab fa-facebook text-blue-600 mr-2"></i>
+                        Facebook
+                    </button>
+                </div>
+
+                <div class="text-center text-sm mt-6">
+                    Chưa có tài khoản?
+                    <a href="{{ route('customer.register') }}" class="text-orange-500 hover:text-orange-600 font-medium">
+                        Đăng ký ngay
+                    </a>
                 </div>
             </div>
         </div>
-    </form>
+
+        <p class="mt-6 text-center text-sm text-gray-500">
+            Bằng cách tiếp tục, bạn đồng ý với
+            <a href="/terms" class="text-orange-500 hover:text-orange-600 underline underline-offset-2">
+                Điều khoản dịch vụ
+            </a>
+            và
+            <a href="/privacy" class="text-orange-500 hover:text-orange-600 underline underline-offset-2">
+                Chính sách bảo mật
+            </a>
+            của chúng tôi.
+        </p>
+    </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginBtnText = document.getElementById('loginBtnText');
+    const loginBtnLoading = document.getElementById('loginBtnLoading');
+    const togglePasswordButton = document.getElementById('toggle-password');
+    const passwordInput = document.getElementById('password');
+
+    // Toggle password visibility
+    if (togglePasswordButton && passwordInput) {
+        togglePasswordButton.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle icon
+            const icon = this.querySelector('i');
+            if (type === 'text') {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    }
+
+    // Form submission handling
+    loginForm.addEventListener('submit', function(e) {
+        // Không gọi e.preventDefault() để cho phép form tự submit
+        
+        // Clear previous errors
+        document.getElementById('emailError').classList.add('hidden');
+        document.getElementById('passwordError').classList.add('hidden');
+        
+        // Show loading state
+        loginBtn.disabled = true;
+        loginBtnText.classList.add('hidden');
+        loginBtnLoading.classList.remove('hidden');
+        
+        // Không cần gọi this.submit() vì form sẽ tự submit
+    });
+});
+</script>
 @endsection

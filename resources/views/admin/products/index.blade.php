@@ -1,211 +1,371 @@
 @extends('layouts/admin/contentLayoutMaster')
-@section('content')
 
-    <div class="data-table-wrapper">
-        <!-- Header chính -->
-        <div class="data-table-main-header">
-            <div class="data-table-brand">
-                <div class="data-table-logo">
-                    <i class="fas fa-layer-group"></i>
-                </div>
-                <h1 class=" data-table-title">Quản lý sản phẩm</h1>
+@section('title', 'Danh sách sản phẩm')
+@section('description', 'Quản lý danh sách sản phẩm của bạn')
+
+@section('content')
+<style>
+    /* Custom input styles */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+        transition: all 0.2s ease;
+    }
+
+    input[type="text"]:hover,
+    input[type="number"]:hover,
+    input[type="date"]:hover,
+    select:hover {
+        border-color: #3b82f6;
+        /* Blue-500 from Tailwind */
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    select:focus {
+        border-color: #2563eb;
+        /* Blue-600 */
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        outline: none;
+    }
+
+    /* Enhanced tag styling */
+    .status-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .status-tag.success {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .status-tag.failed {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .status-tag:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Price slider styling */
+    .price-range-container {
+        margin: 10px 0;
+        padding: 10px 0;
+    }
+    
+    .price-slider {
+        position: relative;
+        height: 4px;
+        background: #e5e7eb;
+        margin: 20px 10px 30px;
+        border-radius: 2px;
+    }
+    
+    .price-slider-track {
+        position: absolute;
+        height: 100%;
+        background: #3b82f6;
+        border-radius: 2px;
+    }
+    
+    .price-slider-handle {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: #2563eb;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 2;
+    }
+    
+    .price-inputs {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .price-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+    }
+    
+    .price-display {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.875rem;
+        margin-top: 5px;
+    }
+</style>
+
+<div class="fade-in flex flex-col gap-4 pb-4">
+    <!-- Main Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag">
+                    <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                    <path d="M3 6h18"></path>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
             </div>
-            <div class="data-table-header-actions">
-                <div class="dropdown d-inline">
-                    <button class="data-table-btn data-table-btn-outline dropdown-toggle" type="button" id="exportDropdown"
-                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-download"></i> Xuất
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="exportDropdown">
-                        <a class="dropdown-item" href="{{ route('admin.products.export', ['type' => 'excel']) }}">
-                            <i class="fas fa-file-excel"></i> Xuất Excel
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight">Quản lý sản phẩm</h2>
+                <p class="text-muted-foreground">Quản lý danh sách sản phẩm của bạn</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="dropdown relative">
+                <button class="btn btn-outline flex items-center" id="exportDropdown" onclick="toggleDropdown('exportMenu')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Xuất
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
+                        <path d="m6 9 6 6 6-6"></path>
+                    </svg>
+                </button>
+                <div id="exportMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
+                    <div class="p-2">
+                        <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M8 13h2"></path>
+                                <path d="M8 17h2"></path>
+                                <path d="M14 13h2"></path>
+                                <path d="M14 17h2"></path>
+                            </svg>
+                            Xuất Excel
                         </a>
-                        <a class="dropdown-item" href="{{ route('admin.products.export', ['type' => 'pdf']) }}">
-                            <i class="fas fa-file-pdf"></i> Xuất PDF
+                        <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Xuất PDF
                         </a>
-                        <a class="dropdown-item" href="{{ route('admin.products.export', ['type' => 'csv']) }}">
-                            <i class="fas fa-file-csv"></i> Xuất CSV
+                        <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M8 13h8"></path>
+                                <path d="M8 17h8"></path>
+                            </svg>
+                            Xuất CSV
                         </a>
                     </div>
                 </div>
             </div>
-            <a href="{{ route('admin.products.create') }}" class="data-table-btn data-table-btn-primary">
-                <i class="fas fa-plus"></i> Thêm mới
+            <a href="{{ asset('admin/products/create') }}" class="btn btn-primary flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="M5 12h14"></path>
+                    <path d="M12 5v14"></path>
+                </svg>
+                Thêm mới
             </a>
         </div>
     </div>
 
-    <!-- Card chứa bảng -->
-    <div class="data-table-card">
-        <!-- Tiêu đề bảng -->
-        <div class="data-table-header">
-            <h2 class="data-table-card-title">Danh sách sản phẩm</h2>
+    <!-- Card containing table -->
+    <div class="card border rounded-lg overflow-hidden">
+        <!-- Table header -->
+        <div class="p-6 border-b">
+            <h3 class="text-lg font-medium">Danh sách sản phẩm</h3>
         </div>
 
-        <!-- Thanh công cụ -->
-        <div class="data-table-controls">
-            <div class="data-table-search">
-                <i class="fas fa-search data-table-search-icon"></i>
-                <input type="text" placeholder="Tìm kiếm theo tên, mã sản phẩm..." id="dataTableSearch">
+        <!-- Toolbar -->
+        <div class="p-4 border-b flex flex-col sm:flex-row justify-between gap-4">
+            <div class="relative w-full sm:w-auto sm:min-w-[300px]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
+                <input type="text" placeholder="Tìm kiếm theo tên, mã sản phẩm..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" id="searchInput">
             </div>
-            <div class="data-table-actions">
-                <button class="data-table-btn data-table-btn-outline">
-                    <i class="fas fa-sliders"></i> Cột
+            <div class="flex items-center gap-2">
+                <button class="btn btn-outline flex items-center" id="selectAllButton">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                        <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+                        <path d="m9 12 2 2 4-4"></path>
+                    </svg>
+                    <span>Chọn tất cả</span>
                 </button>
-                <button class="data-table-btn data-table-btn-outline" data-toggle="modal" data-target="#filterModal">
-                    <i class="fas fa-filter"></i> Lọc
-                </button>
-            </div>
-        </div>
-
-        <!-- Card chứa bảng -->
-        <div class="data-table-card">
-            <!-- Tiêu đề bảng -->
-            <div class="data-table-header">
-                <h2 class="data-table-card-title">Danh sách sản phẩm</h2>
-            </div>
-
-            <!-- Thanh công cụ -->
-            <div class="data-table-controls">
-            <div class="data-table-search">
-                <i class="fas fa-search data-table-search-icon"></i>
-                <input type="text"
-                    placeholder="Tìm kiếm theo tên, mail người dùng ..."
-                    id="dataTableSearch"
-                    value="{{ request('search') }}"
-                    onkeyup="handleSearch(event)">
-            </div>
-            <div class="data-table-actions">
-                <div class="d-flex align-items-center">
-                    <div class="data-table-actions">
-                        <div class="d-flex align-items-center">
-                            <button class="data-table-btn data-table-btn-outline mr-2" onclick="toggleSelectAll()">
-                                <i class="fas fa-check-square"></i> Chọn tất cả
-                            </button>
-                            <div class="btn-group mr-2">
-                                <button type="button" class="data-table-btn data-table-btn-outline dropdown-toggle" data-toggle="dropdown">
-                                    <i class="fas fa-tasks"></i> Thao tác
-                                </button>
-                                <div class="dropdown-menu">
-                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(1)">
-                                        <i class="fas fa-check-circle text-success"></i> Kích hoạt đã chọn
-                                    </a>
-                                    <a href="#" class="dropdown-item" onclick="updateSelectedStatus(0)">
-                                        <i class="fas fa-times-circle text-danger"></i> Vô hiệu hóa đã chọn
-                                    </a>
-                                </div>
-                            </div>
-                            <button class="data-table-btn data-table-btn-outline" data-toggle="modal" data-target="#filterModal">
-                                <i class="fas fa-filter"></i> Lọc
-                            </button>
+                <div class="dropdown relative">
+                    <button class="btn btn-outline flex items-center" id="actionsDropdown" onclick="toggleDropdown('actionsMenu')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <circle cx="12" cy="19" r="2"></circle>
+                        </svg>
+                        Thao tác
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
+                            <path d="m6 9 6 6 6-6"></path>
+                        </svg>
+                    </button>
+                    <div id="actionsMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
+                        <div class="p-2">
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(1)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-500">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <path d="m9 11 3 3L22 4"></path>
+                                </svg>
+                                Kích hoạt đã chọn
+                            </a>
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(0)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="m15 9-6 6"></path>
+                                    <path d="m9 9 6 6"></path>
+                                </svg>
+                                Vô hiệu hóa đã chọn
+                            </a>
                         </div>
                     </div>
                 </div>
+                <button class="btn btn-outline flex items-center" onclick="toggleModal('filterModal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                    </svg>
+                    Lọc
+                </button>
             </div>
         </div>
 
-            <!-- Container bảng -->
-            <div class="data-table-container">
-                <table class="data-table" id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>
-                                <div>
-                                    <input type="checkbox" id="selectAll">
-                                </div>
-                            </th>
-                            <th data-sort="id" class="active-sort">
-                                ID <i class="fas fa-arrow-up data-table-sort-icon"></i>
-                            </th>
-                            <th data-sort="image">
-                                Hình ảnh 
-                            </th>
-                            <th data-sort="name" class="col-product-name">
-                                Tên sản phẩm 
-                            </th>
-                            <th data-sort="category">
-                                Danh mục 
-                            </th>
-                            <th data-sort="price">
-                                Giá <i class="fas fa-sort data-table-sort-icon"></i>
-                            </th>
-                            <th data-sort="stock" class="col-status">
-                                Tồn kho <i class="fas fa-sort data-table-sort-icon"></i>
-                            </th>
-                            <th data-sort="stock" class="col-actions">
-                                Trạng thái 
-                            </th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody">
-                        @forelse($products as $product)
-                            <tr>
-                                <td>
-                                    <input type="checkbox" class="row-checkbox" value="{{ $product->id }}">
-                                </td>
-                                <td>
-                                    <div class="data-table-id">
-                                        {{ $product->id }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="data-table-product-image">
-                                        <img src="{{ asset($product->image) }}" alt="{{ $product->name }}">
-                                    </div>
-                                </td>
-                                <td class="col-product-name">
-                                    <div class="data-table-product-name">{{ $product->name }}</div>
-                                </td>
-                                <td>
-                                    {{ $product->category->name ?? 'N/A' }}
-                                </td>
-                                <td>
-                                    <div class="data-table-amount">{{ number_format($product->base_price, 0, ',', '.') }} đ
-                                    </div>
-                                </td>
-                                <td class="col-status">
-                                    @if ($product->stock)
-                                        <span class="data-table-status data-table-status-success">
-                                            <i class="fas fa-check"></i> Còn hàng
-                                        </span>
-                                    @else
-                                        <span class="data-table-status data-table-status-failed">
-                                            <i class="fas fa-times"></i> Hết hàng
-                                        </span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($product->stock)
-                                        <span class="data-table-status data-table-status-success">
-                                            <i class="fas fa-check"></i> Đang bán 
-                                        </span>
-                                    @else
-                                        <span class="data-table-status data-table-status-failed">
-                                            <i class="fas fa-times"></i> Khóa
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="col-actions">
-                                    <div class="data-table-action-buttons">
-                                        <a href="{{ route('admin.products.show', $product->id) }}"
-                                            class="data-table-action-btn" title="Xem chi tiết">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{{ route('admin.products.edit', $product->id) }}"
-                                            class="data-table-action-btn edit" title="Chỉnh sửa">
-                                            <i class="fas fa-pen"></i>
-                                        </a>
-                                        <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST"
-                                            class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="button" class="data-table-action-btn delete" title="Xóa"
-                                                onclick="dtmodalConfirmDelete({
-                                                    itemName: '{{ $product->name }}',
-                                                    onConfirm: () => this.closest('form').submit()
-                                                })">
-                                        <i class="fas fa-trash"></i>
+        <!-- Table container -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b bg-muted/50">
+                        <th class="py-3 px-4 text-left font-medium">
+                            <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300">
+                        </th>
+                        <th class="py-3 px-4 text-left font-medium">Mã sản phẩm</th>
+                        <th class="py-3 px-4 text-left font-medium">Hình ảnh</th>
+                        <th class="py-3 px-4 text-left font-medium">Tên sản phẩm</th>
+                        <th class="py-3 px-4 text-left font-medium">Danh mục</th>
+                        <th class="py-3 px-4 text-right font-medium">Giá</th>
+                        <th class="py-3 px-4 text-center font-medium">Tồn kho</th>
+                        <th class="py-3 px-4 text-left font-medium">Trạng thái</th>
+                        <th class="py-3 px-4 text-center font-medium">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody">
+                    @forelse($products as $product)
+                    <tr class="border-b">
+                        <td class="py-3 px-4">
+                            <input type="checkbox" name="selected_products[]" value="{{ $product->id }}" class="product-checkbox rounded border-gray-300">
+                        </td>
+                        <td class="py-3 px-4 font-medium">{{ $product->sku }}</td>
+                        <td class="py-3 px-4">
+                            <div class="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden" style="width:100px; height:60px; border-radius:4px; background:#f3f4f6;">
+                                @php
+                                    $primaryImg = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+                                @endphp
+                                @if($primaryImg)
+                                    <img src="{{ asset('storage/'.$primaryImg->img) }}" alt="{{ $product->name }}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;" />
+                                @else
+                                    <span class="text-xs text-gray-400">No image</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="font-medium">{{ $product->name }}</div>
+                        </td>
+                        <td class="py-3 px-4">{{ $product->category->name ?? 'N/A' }}</td>
+                        <td class="py-3 px-4 text-right">
+                            {{ number_format($product->base_price, 0, ',', '.') }} đ
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            @php
+                                $totalStock = 0;
+                                foreach ($product->variants as $variant) {
+                                    $totalStock += $variant->branchStocks->sum('stock_quantity');
+                                }
+                                if ($totalStock == 0) {
+                                    $stockClass = 'background:#ef4444;color:#fff;';
+                                    $stockText = 'Hết hàng';
+                                } elseif ($totalStock > 0 && $totalStock < 10) {
+                                    $stockClass = 'background:#facc15;color:#222;';
+                                    $stockText = 'Sắp hết ('.$totalStock.')';
+                                } else {
+                                    $stockClass = 'background:#22c55e;color:#fff;';
+                                    $stockText = $totalStock;
+                                }
+                            @endphp
+                            <span style="display:inline-block; border-radius:7px; {{ $stockClass }} padding:4px 16px; font-size:13px; font-weight:600; white-space:nowrap;">
+                                {{ $stockText }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            @php
+                                switch ($product->status) {
+                                    case 'selling':
+                                        $statusText = 'Đang bán';
+                                        $badgeStyle = 'background:#16a34a;color:#fff;';
+                                        break;
+                                    case 'coming_soon':
+                                        $statusText = 'Sắp ra mắt';
+                                        $badgeStyle = 'background:#fb923c;color:#fff;';
+                                        break;
+                                    case 'discontinued':
+                                    default:
+                                        $statusText = 'Ngừng bán';
+                                        $badgeStyle = 'background:#ef4444;color:#fff;';
+                                        break;
+                                }
+                            @endphp
+                            <span style="display:inline-block; border-radius:7px; {{ $badgeStyle }} padding:4px 16px; font-size:13px; font-weight:600; white-space:nowrap;">
+                                {{ $statusText }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex justify-center space-x-1">
+                                <a href="{{ route('admin.products.edit', $product->id) }}"
+                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
+                                    title="Chỉnh sửa">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </a>
+                                <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="delete-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
+                                        onclick="dtmodalConfirmDelete({
+                                                title: 'Xác nhận xóa sản phẩm',
+                                                subtitle: 'Bạn có chắc chắn muốn xóa sản phẩm này?',
+                                                message: 'Hành động này không thể hoàn tác.',
+                                                itemName: '{{ $product->name }}',
+                                                onConfirm: () => this.closest('form').submit()
+                                            })"
+                                        title="Xóa">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18"></path>
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                        </svg>
                                     </button>
                                 </form>
                             </div>
@@ -213,12 +373,15 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center">
-                            <div class="data-table-empty" id="dataTableEmpty">
-                                <div class="data-table-empty-icon">
-                                    <i class="fas fa-box-open"></i>
-                                </div>
-                                <h3>Không có sản phẩm nào</h3>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="flex flex-col items-center justify-center text-muted-foreground">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                                    <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                                    <path d="M3 6h18"></path>
+                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                </svg>
+                                <h3 class="text-lg font-medium">Không có sản phẩm nào</h3>
+                                <p class="text-sm">Hãy thêm sản phẩm mới để bắt đầu</p>
                             </div>
                         </td>
                     </tr>
@@ -227,89 +390,457 @@
             </table>
         </div>
 
-        <!-- Phân trang và thông tin -->
-        <div class="data-table-footer">
-            <div class="data-table-pagination-info">
-                Hiển thị <span id="startRecord">{{ ($products->currentPage() - 1) * $products->perPage() + 1 }}</span>
-                đến <span
-                    id="endRecord">{{ min($products->currentPage() * $products->perPage(), $products->total()) }}</span>
-                của <span id="totalRecords">{{ $products->total() }}</span> mục
+        <!-- Pagination -->
+        <div class="flex items-center justify-between px-4 py-4 border-t">
+            <div class="text-sm text-muted-foreground">
+                Hiển thị <span id="paginationStart">{{ $products->firstItem() }}</span> đến <span id="paginationEnd">{{ $products->lastItem() }}</span> của <span id="paginationTotal">{{ $products->total() }}</span> mục
             </div>
-            <div class="data-table-pagination-controls">
-                @if (!$products->onFirstPage())
-                <a href="{{ $products->previousPageUrl() }}" class="data-table-pagination-btn" id="prevBtn">
-                    <i class="fas fa-chevron-left"></i> Trước
-                </a>
-                @endif
+            <div class="flex items-center space-x-2" id="paginationControls">
+                @unless($products->onFirstPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $products->currentPage() - 1 }})">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
+                        <path d="m15 18-6-6 6-6"></path>
+                    </svg>
+                </button>
+                @endunless
 
-                @for ($i = 1; $i <= $products->lastPage(); $i++)
-                    <a href="{{ $products->url($i) }}"
-                        class="data-table-pagination-btn {{ $products->currentPage() == $i ? 'active' : '' }}">
-                        {{ $i }}
-                    </a>
-                    @endfor
+                @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
+                <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">
+                    {{ $page }}
+                </button>
+                @endforeach
 
-                    @if ($products->hasMorePages())
-                    <a href="{{ $products->nextPageUrl() }}" class="data-table-pagination-btn" id="nextBtn">
-                        Tiếp <i class="fas fa-chevron-right"></i>
-                    </a>
-                    @endif
+                @unless($products->currentPage() === $products->lastPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $products->currentPage() + 1 }})">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
+                        <path d="m9 18 6-6-6-6"></path>
+                    </svg>
+                </button>
+                @endunless
             </div>
         </div>
     </div>
 </div>
-<!-- Modal Lọc -->
-<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="filterModalLabel">Lọc sản phẩm</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action="{{ route('admin.products.index') }}" method="GET">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="filter_category">Danh mục</label>
-                        <select class="form-control" id="filter_category" name="category_id">
-                            <option value="">Tất cả danh mục</option>
-                            @foreach ($categories as $category)
-                            <option value="{{ $category->id }}"
-                                {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filter_price_min">Giá tối thiểu</label>
-                        <input type="number" class="form-control" id="filter_price_min" name="price_min"
-                            value="{{ request('price_min') }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="filter_price_max">Giá tối đa</label>
-                        <input type="number" class="form-control" id="filter_price_max" name="price_max"
-                            value="{{ request('price_max') }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="filter_stock">Tình trạng</label>
-                        <select class="form-control" id="filter_stock" name="stock_status">
-                            <option value="">Tất cả</option>
-                            <option value="in_stock" {{ request('stock_status') == 'in_stock' ? 'selected' : '' }}>Còn
-                                hàng</option>
-                            <option value="out_of_stock"
-                                {{ request('stock_status') == 'out_of_stock' ? 'selected' : '' }}>Hết hàng</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn btn-primary">Áp dụng</button>
-                </div>
-            </form>
+
+<!-- Filter Modal -->
+<div id="filterModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-background rounded-lg shadow-lg w-full max-w-lg mx-4">
+        <div class="flex items-center justify-between p-4 border-b">
+            <h3 class="text-lg font-medium">Lọc sản phẩm</h3>
+            <button type="button" class="text-muted-foreground hover:text-foreground" onclick="toggleModal('filterModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
         </div>
+        <form id="filterForm">
+            <div class="p-4 space-y-6">
+                <!-- Category Filter -->
+                <div class="space-y-2">
+                    <label for="filter_category" class="text-sm font-medium">Danh mục</label>
+                    <select id="filter_category" name="category_id" class="w-full border rounded-md px-3 py-2 bg-background text-sm">
+                        <option value="">Tất cả danh mục</option>
+                        @foreach($categories as $category)
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Price Range -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Khoảng giá</label>
+                    <div class="price-range-container">
+                        <div class="price-slider" id="priceSlider">
+                            <div class="price-slider-track" id="priceTrack"></div>
+                            <div class="price-slider-handle" id="minHandle" data-handle="min"></div>
+                            <div class="price-slider-handle" id="maxHandle" data-handle="max"></div>
+                        </div>
+                        <div class="price-display">
+                            <span id="minPriceDisplay">{{ number_format($minPrice, 0, ',', '.') }} đ</span>
+                            <span id="maxPriceDisplay">{{ number_format($maxPrice, 0, ',', '.') }} đ</span>
+                        </div>
+                    </div>
+                    <div class="price-inputs">
+                        <input type="text" id="minPriceInput" class="price-input" placeholder="Giá tối thiểu">
+                        <input type="text" id="maxPriceInput" class="price-input" placeholder="Giá tối đa">
+                    </div>
+                    <input type="hidden" name="price_min" id="price_min" value="{{ $minPrice }}">
+                    <input type="hidden" name="price_max" id="price_max" value="{{ $maxPrice }}">
+                </div>
+
+                <!-- Status -->
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Trạng thái</label>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="status[]" value="available" class="rounded border-gray-300 mr-2">
+                            Đang bán
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="status[]" value="unavailable" class="rounded border-gray-300 mr-2">
+                            Không bán
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end p-4 border-t space-x-2">
+                <button type="button" class="btn btn-outline" onclick="resetFilters()">Xóa bộ lọc</button>
+                <button type="button" class="btn btn-outline" onclick="toggleModal('filterModal')">Đóng</button>
+                <button type="submit" class="btn btn-primary">Áp dụng</button>
+            </div>
+        </form>
     </div>
-    <script src="{{ asset('js/scripts/admin/products.js') }}"></script>
+</div>
+@endsection
+
+@section('scripts')
+<script>
+    // ----- Modal Toggle -----
+    function toggleModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.classList.toggle('hidden');
+        }
+    }
+    
+    // ----- Reset Filters -----
+    function resetFilters() {
+        const form = document.getElementById('filterForm');
+        form.reset();
+        
+        // Reset price slider
+        const minPrice = {{ $minPrice }};
+        const maxPrice = {{ $maxPrice }};
+        
+        if (window.priceSlider) {
+            window.priceSlider.minValue = minPrice;
+            window.priceSlider.maxValue = maxPrice;
+            window.priceSlider.updateVisual();
+        }
+        
+        // Reset hidden inputs
+        document.getElementById('price_min').value = minPrice;
+        document.getElementById('price_max').value = maxPrice;
+        
+        // Close the filter modal
+        toggleModal('filterModal');
+        
+        // Reload the page with default filters
+        window.location.href = '{{ route("admin.products.index") }}';
+    }
+    
+    // ----- Price Range Slider -----
+    class PriceRangeSlider {
+        constructor(config) {
+            this.min = config.min || 0;
+            this.max = config.max || 1000000;
+            this.step = config.step || 10000;
+            this.minValue = config.minValue || this.min;
+            this.maxValue = config.maxValue || this.max;
+            this.slider = document.getElementById(config.sliderId);
+            this.track = document.getElementById(config.trackId);
+            this.minHandle = document.getElementById(config.minHandleId);
+            this.maxHandle = document.getElementById(config.maxHandleId);
+            this.isDragging = false;
+            this.activeHandle = null;
+            
+            this.init();
+        }
+        
+        init() {
+            this.updateVisual();
+            this.attachEvents();
+        }
+        
+        formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
+        }
+        
+        updateVisual() {
+            const range = this.max - this.min;
+            const minPct = ((this.minValue - this.min) / range) * 100;
+            const maxPct = ((this.maxValue - this.min) / range) * 100;
+            
+            this.minHandle.style.left = `${minPct}%`;
+            this.maxHandle.style.left = `${maxPct}%`;
+            this.track.style.left = `${minPct}%`;
+            this.track.style.width = `${maxPct - minPct}%`;
+            
+            document.getElementById('minPriceDisplay').textContent = this.formatPrice(this.minValue);
+            document.getElementById('maxPriceDisplay').textContent = this.formatPrice(this.maxValue);
+            document.getElementById('price_min').value = this.minValue;
+            document.getElementById('price_max').value = this.maxValue;
+            
+            // Update the inputs
+            const minInput = document.getElementById('minPriceInput');
+            const maxInput = document.getElementById('maxPriceInput');
+            
+            if (minInput) {
+                minInput.value = this.formatPrice(this.minValue);
+            }
+            
+            if (maxInput) {
+                maxInput.value = this.formatPrice(this.maxValue);
+            }
+        }
+        
+        attachEvents() {
+            // Mouse events
+            this.minHandle.addEventListener('mousedown', e => {
+                e.preventDefault();
+                this.startDrag('min');
+            });
+            
+            this.maxHandle.addEventListener('mousedown', e => {
+                e.preventDefault();
+                this.startDrag('max');
+            });
+            
+            document.addEventListener('mousemove', e => this.handleMouseMove(e));
+            document.addEventListener('mouseup', () => this.handleMouseUp());
+            
+            // Touch events
+            this.minHandle.addEventListener('touchstart', e => {
+                e.preventDefault();
+                this.startDrag('min');
+            });
+            
+            this.maxHandle.addEventListener('touchstart', e => {
+                e.preventDefault();
+                this.startDrag('max');
+            });
+            
+            document.addEventListener('touchmove', e => this.handleMouseMove(e.touches[0]));
+            document.addEventListener('touchend', () => this.handleMouseUp());
+            
+            // Click on track
+            this.slider.addEventListener('click', e => {
+                if (this.isDragging) return;
+                
+                const val = this.getValueFromPosition(e.clientX);
+                const dMin = Math.abs(val - this.minValue);
+                const dMax = Math.abs(val - this.maxValue);
+                
+                if (dMin < dMax) {
+                    this.minValue = Math.min(val, this.maxValue - this.step);
+                } else {
+                    this.maxValue = Math.max(val, this.minValue + this.step);
+                }
+                
+                this.updateVisual();
+            });
+            
+            // Manual inputs
+            const minInput = document.getElementById('minPriceInput');
+            const maxInput = document.getElementById('maxPriceInput');
+            
+            if (minInput) {
+                minInput.addEventListener('blur', e => {
+                    const v = this.parsePrice(e.target.value);
+                    if (!isNaN(v)) {
+                        this.minValue = Math.max(this.min, Math.min(v, this.maxValue - this.step));
+                        this.updateVisual();
+                    }
+                });
+            }
+            
+            if (maxInput) {
+                maxInput.addEventListener('blur', e => {
+                    const v = this.parsePrice(e.target.value);
+                    if (!isNaN(v)) {
+                        this.maxValue = Math.min(this.max, Math.max(v, this.minValue + this.step));
+                        this.updateVisual();
+                    }
+                });
+            }
+        }
+        
+        startDrag(handle) {
+            this.isDragging = true;
+            this.activeHandle = handle;
+            document.body.style.cursor = 'grabbing';
+        }
+        
+        handleMouseMove(e) {
+            if (!this.isDragging) return;
+            
+            const val = this.getValueFromPosition(e.clientX);
+            
+            if (this.activeHandle === 'min') {
+                this.minValue = Math.min(Math.max(val, this.min), this.maxValue - this.step);
+            } else {
+                this.maxValue = Math.max(Math.min(val, this.max), this.minValue + this.step);
+            }
+            
+            this.updateVisual();
+        }
+        
+        handleMouseUp() {
+            if (this.isDragging) {
+                this.isDragging = false;
+                this.activeHandle = null;
+                document.body.style.cursor = 'default';
+            }
+        }
+        
+        getValueFromPosition(x) {
+            const rect = this.slider.getBoundingClientRect();
+            let pct = (x - rect.left) / rect.width;
+            pct = Math.min(Math.max(pct, 0), 1);
+            
+            const val = this.min + pct * (this.max - this.min);
+            return Math.round(val / this.step) * this.step;
+        }
+        
+        parsePrice(str) {
+            return parseInt(str.replace(/[^\d]/g, ''), 10);
+        }
+        
+        getValues() {
+            return { min: this.minValue, max: this.maxValue };
+        }
+        
+        reset() {
+            this.minValue = this.min;
+            this.maxValue = this.max;
+            this.updateVisual();
+        }
+    }
+    
+    // ----- Initialize on DOM Ready -----
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize price slider
+        window.priceSlider = new PriceRangeSlider({
+            min: {{ $minPrice }},
+            max: {{ $maxPrice }},
+            minValue: {{ request('price_min', $minPrice) }},
+            maxValue: {{ request('price_max', $maxPrice) }},
+            step: 1,
+            sliderId: 'priceSlider',
+            trackId: 'priceTrack',
+            minHandleId: 'minHandle',
+            maxHandleId: 'maxHandle'
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdowns = document.querySelectorAll('.dropdown > div:not(.hidden)');
+            dropdowns.forEach(dropdown => {
+                const isClickInside = dropdown.contains(event.target) || 
+                                     dropdown.previousElementSibling.contains(event.target);
+                
+                if (!isClickInside) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+    });
+    
+    // Function to handle pagination
+    function changePage(page) {
+        const url = new URL(window.location);
+        url.searchParams.set('page', page);
+        window.location.href = url.toString();
+    }
+
+    // ----- Checkbox Functionality -----
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const productCheckboxes = document.querySelectorAll('.product-checkbox');
+        const selectAllButton = document.getElementById('selectAllButton');
+        const actionsDropdown = document.getElementById('actionsMenu');
+
+        // Handle select all checkbox
+        selectAllCheckbox.addEventListener('change', function() {
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateSelectAllButton();
+        });
+
+        // Handle individual checkboxes
+        productCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateSelectAllCheckbox();
+                updateSelectAllButton();
+            });
+        });
+
+        // Update select all checkbox state
+        function updateSelectAllCheckbox() {
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            selectAllCheckbox.checked = checkedBoxes.length === productCheckboxes.length;
+        }
+
+        // Update select all button state
+        function updateSelectAllButton() {
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            selectAllButton.disabled = checkedBoxes.length === 0;
+        }
+
+        // Handle select all button click
+        selectAllButton.addEventListener('click', function() {
+            const allChecked = selectAllCheckbox.checked;
+            selectAllCheckbox.checked = !allChecked;
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+            });
+            updateSelectAllButton();
+        });
+
+        // Handle action buttons
+        document.querySelectorAll('#actionsMenu a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const action = this.getAttribute('onclick');
+                if (action) {
+                    const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+                    if (checkedBoxes.length === 0) {
+                        alert('Vui lòng chọn ít nhất một sản phẩm');
+                        return;
+                    }
+                    eval(action);
+                }
+            });
+        });
+    });
+
+    // ----- Update Selected Status -----
+    function updateSelectedStatus(status) {
+        const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+        const productIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+        if (productIds.length === 0) {
+            alert('Vui lòng chọn ít nhất một sản phẩm');
+            return;
+        }
+
+        if (confirm('Bạn có chắc chắn muốn thay đổi trạng thái của các sản phẩm đã chọn?')) {
+            fetch('{{ ("admin.products.update-status") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    product_ids: productIds,
+                    status: status
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Có lỗi xảy ra khi cập nhật trạng thái');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi cập nhật trạng thái');
+            });
+        }
+    }
+</script>
 @endsection

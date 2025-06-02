@@ -158,22 +158,15 @@
                                                 <label for="admin_notes">Ghi chú admin</label>
                                                 <textarea name="admin_notes" id="admin_notes" class="form-control" rows="3">Đơn được phê duyệt bởi quản trị viên</textarea>
                                             </div>
-                                            <!-- Hidden fields to pass application data -->
-                                            <input type="hidden" name="id_card_number" value="{{ $application->id_card_number }}">
-                                            <input type="hidden" name="id_card_front_image" value="{{ $application->id_card_front_image }}">
-                                            <input type="hidden" name="id_card_back_image" value="{{ $application->id_card_back_image }}">
-                                            <input type="hidden" name="driver_license_number" value="{{ $application->driver_license_number }}">
-                                            <input type="hidden" name="driver_license_front_image" value="{{ $application->driver_license_front_image }}">
-                                            <input type="hidden" name="driver_license_back_image" value="{{ $application->driver_license_back_image }}">
+                                            <!-- Hidden fields for driver data -->
+                                            <input type="hidden" name="license_number" value="{{ $application->driver_license_number }}">
                                             <input type="hidden" name="vehicle_type" value="{{ $application->vehicle_type }}">
-                                            <input type="hidden" name="vehicle_registration_image" value="{{ $application->vehicle_registration_image }}">
+                                            <input type="hidden" name="vehicle_model" value="{{ $application->vehicle_model }}">                                             
                                             <input type="hidden" name="vehicle_color" value="{{ $application->vehicle_color }}">
-                                            <input type="hidden" name="full_name" value="{{ $application->full_name }}">
-                                            <input type="hidden" name="phone_number" value="{{ $application->phone_number }}">
+                                            <input type="hidden" name="vehicle_registration" value="{{ $application->vehicle_registration_image }}">
                                             <input type="hidden" name="email" value="{{ $application->email }}">
-                                            <input type="hidden" name="address" value="{{ $application->address }}">
-                                            <input type="hidden" name="district" value="{{ $application->district }}">
-                                            <input type="hidden" name="city" value="{{ $application->city }}">
+                                            <input type="hidden" name="phone_number" value="{{ $application->phone_number }}">
+                                            <input type="hidden" name="full_name" value="{{ $application->full_name }}">
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>

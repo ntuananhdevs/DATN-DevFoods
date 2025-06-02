@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\ChatController; // Correct namespace for the API ChatController
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\TestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,3 +33,21 @@ Route::group([
     Route::get('user', 'AuthController@user');
   });
 });
+
+// Test S3 API Routes
+Route::prefix('test')->name('api.test.')->group(function () {
+  Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
+  Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
+  Route::delete('/images/{filename}', [TestController::class, 'deleteImage'])->name('images.delete');
+  Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
+});
+
+Route::prefix('conversations')->group(function () {
+  Route::post('/', [ChatController::class, 'createConversation'])->name('conversations.create'); // Tạo cuộc chat mới
+  Route::post('/{id}/messages', [ChatController::class, 'sendMessage'])->name('conversations.messages.send'); // Gửi tin nhắn
+  Route::get('/', [ChatController::class, 'getConversations'])->name('conversations.list'); // Lấy danh sách chat
+  Route::patch('/{id}', [ChatController::class, 'distributeConversation'])->name('conversations.distribute'); // Phân phối chat
+});
+
+// Gửi tin nhắn trực tiếp (không theo conversation)
+Route::post('/send-direct', [ChatController::class, 'sendDirectMessage'])->name('chat.direct');

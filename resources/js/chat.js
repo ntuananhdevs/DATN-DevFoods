@@ -11,7 +11,8 @@ channel.bind("new-message", function (data) {
     chatBox.innerHTML += `<p><strong>${data.sender_id}:</strong> ${data.message}</p>`;
 });
 
-export function sendMessage(
+// Define sendMessage in the global scope
+window.sendMessage = function (
     route,
     message,
     receiverId,
@@ -32,5 +33,14 @@ export function sendMessage(
             sender_type: senderType,
             receiver_type: receiverType,
         }),
-    });
-}
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Failed to send message");
+            }
+        })
+        .catch((error) => {
+            console.error(error);
+            alert("Failed to send message. Please try again.");
+        });
+};

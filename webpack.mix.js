@@ -93,18 +93,6 @@ mixAssetsDir("vendors/css/editors/quill/fonts/", (src, dest) =>
 );
 mix.copyDirectory("resources/images", "public/images");
 mix.copyDirectory("resources/fonts", "public/fonts");
-
-mix.js("resources/js/core/app-menu.js", "public/js/core")
-    .js("resources/js/core/app.js", "public/js/core")
-    .js("resources/js/chat.js", "public/js")
-    .sass("resources/sass/bootstrap.scss", "public/css")
-    .sass("resources/sass/bootstrap-extended.scss", "public/css")
-    .sass("resources/sass/colors.scss", "public/css")
-    .sass("resources/sass/components.scss", "public/css")
-    .sass("resources/sass/custom-rtl.scss", "public/css")
-    .sass("resources/sass/custom-laravel.scss", "public/css")
-    .version();
-
 mix.js("resources/js/chat.js", "public/js");
 
 mix.then(() => {

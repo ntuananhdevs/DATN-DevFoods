@@ -16,6 +16,7 @@ class NotificationMail extends Mailable implements ShouldQueue
     public $title;
     protected $templateMap = [
         'driver_rejection' => 'emails.layouts.drivers.apply-reject',
+        'driver_approval' => 'emails.layouts.drivers.apply-approve',
         'order_confirmation' => 'emails.orders.confirmation',
         'password_reset' => 'emails.auth.password-reset',
         'welcome' => 'emails.auth.welcome',
@@ -33,7 +34,7 @@ class NotificationMail extends Mailable implements ShouldQueue
     {
         $this->type = $type;
         $this->data = $data;
-        
+
         // Tự động tạo tiêu đề dựa trên loại thông báo nếu không được cung cấp
         if (is_null($subject)) {
             $this->setSubjectByType();
@@ -52,6 +53,9 @@ class NotificationMail extends Mailable implements ShouldQueue
             case 'driver_rejection':
                 $this->subject = 'Thông báo kết quả ứng tuyển tài xế - ' . config('app.name');
                 break;
+            case 'driver_approval':
+                $this->subject = 'Đơn đăng ký tài xế được chấp nhận - ' . config('app.name');
+                break;
             case 'order_confirmation':
                 $orderId = $this->data['order']->id ?? 'N/A';
                 $this->subject = 'Xác nhận đơn hàng #' . $orderId . ' - ' . config('app.name');
@@ -69,7 +73,7 @@ class NotificationMail extends Mailable implements ShouldQueue
                 $this->subject = 'Thông báo từ ' . config('app.name');
                 break;
         }
-        
+
         $this->title = $this->subject;
     }
 
@@ -81,10 +85,11 @@ class NotificationMail extends Mailable implements ShouldQueue
         $template = $this->templateMap[$this->type] ?? 'emails.generic';
         
         return $this->subject($this->subject)
-                    ->view($template)
-                    ->with([
-                        'data' => $this->data,
-                        'title' => $this->title,
-                    ]);
+            ->view($template)
+            ->with([
+                'data' => $this->data,
+                'title' => $this->title,
+                'content' => $this->data['content'] ?? null,
+            ]);
     }
-} 
+}

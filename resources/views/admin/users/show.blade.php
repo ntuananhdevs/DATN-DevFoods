@@ -281,151 +281,123 @@
 @endsection
 
 @section('content')
-
-<div class="content-body">
-    <div class="row match-height">
+<div class="content-body p-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- User Profile Card -->
-        <div class="col-lg-4 col-md-6 col-12">
-            <div class="user-profile-card mb-2">
-                <div class="user-profile-header"></div>
-                <div class="user-profile-avatar-wrapper">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-primary-500 to-indigo-400 h-32"></div>
+            <div class="flex justify-center -mt-16 mb-4">
+                <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg">
                     @if($user->avatar)
-                    <img src="{{ Storage::url($user->avatar) }}" alt="User Avatar" class="user-profile-avatar">
+                    <img src="{{ Storage::url($user->avatar) }}" alt="Avatar" class="w-full h-full object-cover rounded-full">
                     @else
-                    <img src="{{ asset('images/default-avatar.png') }}" alt="Default Avatar" class="user-profile-avatar">
+                    <div class="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                        <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
                     @endif
                 </div>
-                <div class="user-profile-info">
-                    <h3 class="user-profile-name">{{ $user->full_name }}</h3>
-                    <p class="user-profile-username">{{ '@' . $user->user_name }}</p>
-
-                    <div class="user-profile-roles">
-                        <span class="badge badge-role">{{ $user->role->name ?? 'N/A' }}</span>
+            </div>
+            
+            <div class="px-6 py-4 text-center">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-1">{{ $user->full_name }}</h3>
+           
+                
+              
+                
+                <div class="flex justify-between items-center mb-6">
+                    <div class="text-center">
+                        <p class="text-xl font-semibold text-primary-600">${{ number_format($user->balance, 2) }}</p>
+                        <span class="text-gray-600 text-sm">Balance</span>
                     </div>
-
-                    <div class="user-profile-stats">
-                        <div class="user-profile-stat">
-                            <div class="user-profile-stat-value">${{ number_format($user->balance, 2) }}</div>
-                            <div class="user-profile-stat-label">Balance</div>
-                        </div>
-                        <div class="user-profile-stat">
-                            <div class="user-profile-stat-value">
-                                <button type="button"
-                                    class="btn btn-sm {{ $user->active ? 'btn-success' : 'btn-danger' }} 
-                                        btn-hover-state btn-focus-effect"
-                                    style="min-width: 110px; transition: all 0.3s ease;"
-                                    onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }})">
-                                    <div class="d-flex align-items-center justify-content-center">
-                                        <i class="fas {{ $user->active ? 'fa-check' : 'fa-times' }} mr-2"></i>
-                                        {{ $user->active ? 'Hoạt động' : 'Vô hiệu hóa' }}
-                                    </div>
-                                </button>
-                            </div>
-                            <div class="user-profile-stat-label">Trạng thái</div>
-                        </div>
-
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-custom btn-secondary-custom">
-                            <i data-feather="list" class="font-small-4"></i>
-                            <span>Quay lại</span>
-                        </a>
+                    <div class="text-center">
+                        <button onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }})" 
+                            class="px-4 py-2 rounded-lg text-sm font-medium {{ $user->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} 
+                                   hover:{{ $user->active ? 'bg-green-200' : 'bg-red-200' }} transition-colors">
+                            {{ $user->active ? 'Hoạt động' : 'Vô hiệu hóa' }}
+                        </button>
+                        <span class="block text-gray-600 text-sm mt-1">Trạng thái</span>
                     </div>
                 </div>
+                
+                <a href="{{ route('admin.users.index') }}" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Quay lại
+                </a>
             </div>
         </div>
 
         <!-- User Details Section -->
-        <div class="col-lg-8 col-md-6 col-12">
-            <div class="user-details-section mb-2">
-                <div class="user-details-header">
-                    <h4 class="user-details-title">
-                        <i data-feather="user" class="font-medium-2 mr-1"></i>
-                        Personal Information
-                    </h4>
-                </div>
-                <div class="user-details-body">
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-user-line"></i>
-                            <span>Username</span>
-                        </div>
-                        <div class="user-info-value">{{ $user->user_name }}</div>
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    Thông tin cá nhân
+                </h4>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Username:</span>
+                        <span class="font-medium text-gray-800">{{ $user->user_name }}</span>
                     </div>
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-profile-line"></i>
-                            <span>Full Name</span>
-                        </div>
-                        <div class="user-info-value">{{ $user->full_name }}</div>
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Họ và tên:</span>
+                        <span class="font-medium text-gray-800">{{ $user->full_name }}</span>
                     </div>
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-mail-line"></i>
-                            <span>Email</span>
-                        </div>
-                        <div class="user-info-value">{{ $user->email }}</div>
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Email:</span>
+                        <span class="font-medium text-gray-800">{{ $user->email }}</span>
                     </div>
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-phone-line"></i>
-                            <span>Phone</span>
-                        </div>
-                        <div class="user-info-value">{{ $user->phone ?: 'Not provided' }}</div>
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Điện thoại:</span>
+                        <span class="font-medium text-gray-800">{{ $user->phone ?: 'N/A' }}</span>
                     </div>
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-time-line"></i>
-                            <span>Created At</span>
-                        </div>
-                        <div class="user-info-value">
-                            {{ $user->created_at ? $user->created_at->format('F d, Y - h:i A') : 'N/A' }}
-                        </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Ngày tạo:</span>
+                        <span class="font-medium text-gray-800">
+                            {{ $user->created_at ? $user->created_at->format('d/m/Y H:i') : 'N/A' }}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <div class="user-details-section">
-                <div class="user-details-header">
-                    <h4 class="user-details-title">
-                        <i data-feather="shield" class="font-medium-2 mr-1"></i>
-                        Account Settings
-                    </h4>
-                </div>
-                <div class="user-details-body">
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-user-settings-line"></i>
-                            <span>Role</span>
-                        </div>
-                        <div class="user-info-value">
-                            <span class="badge badge-role">{{ $user->role->name ?? 'N/A' }}</span>
-                        </div>
-                    </div>
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-wallet-3-line"></i>
-                            <span>Balance</span>
-                        </div>
-                        <div class="user-info-value">
-                            <span class="font-weight-bold">${{ number_format($user->balance, 2) }}</span>
-                        </div>
-                    </div>
-                    <div class="user-info-row">
-                        <div class="user-info-label">
-                            <i class="ri-shield-check-line"></i>
-                            <span>Status</span>
-                        </div>
-                        <div class="user-info-value">
-                            <span class="badge badge-custom {{ $user->active ? 'badge-active' : 'badge-inactive' }}">
-                                {{ $user->active ? 'Active' : 'Inactive' }}
+            <div>
+                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    Cài đặt tài khoản
+                </h4>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Vai trò:</span>
+                        <div class="space-x-2">
+                            @foreach($user->roles as $role)
+                            <span class="bg-primary-100 text-primary-800 px-2 py-1 rounded-full text-sm">
+                                {{ $role->name }}
                             </span>
+                            @endforeach
                         </div>
+                    </div>
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Trạng thái:</span>
+                        <span class="px-2 py-1 rounded-full text-sm font-medium {{ $user->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                            {{ $user->active ? 'Hoạt động' : 'Vô hiệu' }}
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-</div>
+
 @endsection
 @section('page-script')
 <script>
