@@ -14,8 +14,15 @@ class PromotionDiscountCodeSeeder extends Seeder
         $promotionPrograms = PromotionProgram::all();
         $discountCodes = DiscountCode::all();
 
+        // Check if discount codes exist
+        if ($discountCodes->isEmpty()) {
+            echo "No discount codes available. Skipping PromotionDiscountCode seeding.\n";
+            return;
+        }
+
         foreach ($promotionPrograms as $program) {
-            $randomDiscountCodes = $discountCodes->random(fake()->numberBetween(1, 5));
+            $randomCount = fake()->numberBetween(1, min(5, $discountCodes->count()));
+            $randomDiscountCodes = $discountCodes->random($randomCount);
             foreach ($randomDiscountCodes as $discountCode) {
                 PromotionDiscountCode::factory()->create([
                     'promotion_program_id' => $program->id,
