@@ -14,10 +14,12 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\UsersExport;
 use App\Models\Branch;
 use App\Models\UserRole;
+use App\Notifications\NewUserWelcomeNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Workbench\App\Models\User as ModelsUser;
+use App\Models\UserImage;
 
 class UserController extends Controller
 {
@@ -50,7 +52,7 @@ class UserController extends Controller
                 'total' => $users->total(),
                 'last_page' => $users->lastPage(),
             ],
-            's3_url' => config('filesystems.disks.s3.url'), 
+            's3_url' => config('filesystems.disks.s3.url'),
         ])
                 : view('admin.users.customer.index', compact('users'));
 
@@ -190,13 +192,21 @@ class UserController extends Controller
             // Gán role manager cho user
             $user->roles()->attach($managerRole->id);
 
+            // Gửi email thông báo cho người quản lý mới
+            try {
+                $user->notify(new NewUserWelcomeNotification());
+            } catch (\Exception $e) {
+                Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
+
+            }
+
             DB::commit();
 
             return redirect()->route('admin.users.managers.index')->with([
                 'toast' => [
                     'type' => 'success',
                     'title' => 'Thành công',
-                    'message' => 'Tạo người quản lý thành công'
+                    'message' => 'Tạo người quản lý thành công và đã gửi mail '
                 ]
             ]);
 
@@ -290,21 +300,26 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'role_ids' => 'required|array|exists:roles,id',
-            'user_name' => 'required|string|max:255|unique:users',
-            'full_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'phone' => 'nullable|string|max:20|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ], [
-            'role_ids.required' => 'Vui lòng chọn ít nhất một vai trò',
-            'password.confirmed' => 'Xác nhận mật khẩu không khớp'
-        ]);
-
         try {
+            // Validate dữ liệu trước khi bắt đầu transaction
+            $validated = $request->validate([
+                'user_name' => 'required|string|max:255|unique:users',
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'phone' => 'nullable|string|max:20|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ], [
+                'password.confirmed' => 'Xác nhận mật khẩu không khớp'
+            ]);
+
             DB::beginTransaction();
+
+            // Kiểm tra role trước khi tạo user
+            $managerRole = Role::where('name', 'customer')->first();
+            if (!$managerRole) {
+                throw new \Exception('Không tìm thấy vai trò người dùng');
+            }
 
             // Xử lý upload avatar
             $avatarPath = null;
@@ -329,7 +344,16 @@ class UserController extends Controller
                 'avatar' => $avatarPath
             ]);
 
-            $user->roles()->sync($validated['role_ids']);
+            // Gán role manager cho user
+            $user->roles()->attach($managerRole->id);
+
+            // Gửi email thông báo cho người quản lý mới
+            try {
+                $user->notify(new NewUserWelcomeNotification());
+            } catch (\Exception $e) {
+                Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
+
+            }
 
             DB::commit();
 
@@ -337,19 +361,27 @@ class UserController extends Controller
                 'toast' => [
                     'type' => 'success',
                     'title' => 'Thành công',
-                    'message' => 'Tạo người dùng thành công'
+                    'message' => 'Tạo người dùng thành công và đã gửi mail '
                 ]
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Xử lý riêng lỗi validation
+            return redirect()->back()->withErrors($e->validator)->withInput();
+
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Lỗi tạo người dùng: ' . $e->getMessage());
+            // Đảm bảo rollback transaction nếu có lỗi
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            Log::error('Lỗi tạo người quản lý: ' . $e->getMessage());
 
             return redirect()->back()->withInput()->with([
                 'toast' => [
                     'type' => 'error',
                     'title' => 'Lỗi',
-                    'message' => 'Không thể tạo người dùng: ' . $e->getMessage()
+                    'message' => 'Không thể tạo người quản lý: ' . $e->getMessage()
                 ]
             ]);
         }

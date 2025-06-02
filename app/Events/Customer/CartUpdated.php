@@ -7,10 +7,11 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class CartUpdated implements ShouldBroadcast
+class CartUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -34,7 +35,7 @@ class CartUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('user-cart-channel'),
+            new Channel('user-cart-channel.' . $this->userId),
         ];
     }
 

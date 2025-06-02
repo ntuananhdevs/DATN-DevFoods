@@ -76,6 +76,29 @@ class Branch extends Model
         return $this->hasMany(BranchStock::class);
     }
 
+    /**
+     * Get all topping stocks for this branch
+     */
+    public function toppingStocks(): HasMany
+    {
+        return $this->hasMany(ToppingStock::class);
+    }
+
+    /**
+     * Get all toppings available at this branch through topping stocks
+     */
+    public function toppings(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Topping::class,
+            ToppingStock::class,
+            'branch_id', // Foreign key on topping_stocks table
+            'id', // Foreign key on toppings table
+            'id', // Local key on branches table
+            'topping_id' // Local key on topping_stocks table
+        );
+    }
+
     public function products(): HasManyThrough
     {
         return $this->hasManyThrough(

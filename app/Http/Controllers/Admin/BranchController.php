@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class BranchController extends Controller
 {
@@ -226,122 +227,140 @@ class BranchController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            // Tìm chi nhánh theo ID
             $branch = Branch::findOrFail($id);
 
-            $validated = $request->validate([
+            // Validate dữ liệu đầu vào
+            $request->validate([
                 'name' => 'required|string|max:255|unique:branches,name,' . $id,
                 'address' => 'required|string|max:255|unique:branches,address,' . $id,
                 'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone,' . $id,
-                'email' => 'nullable|email|unique:branches,email,' . $id,
+                'email' => 'nullable|email|max:255|unique:branches,email,' . $id,
+                'manager_user_id' => 'nullable|exists:users,id',
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
                 'opening_hour' => 'required|date_format:H:i',
                 'closing_hour' => 'required|date_format:H:i|after:opening_hour',
-                'latitude' => 'nullable|numeric|between:-90,90',
-                'longitude' => 'nullable|numeric|between:-180,180',
-                'manager_user_id' => 'nullable|exists:users,id',
                 'images' => 'nullable|array',
                 'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-                'primary_image' => 'nullable|string',
-                'captions' => 'nullable|array',
                 'captions.*' => 'nullable|string|max:255',
-                's3_keys' => 'nullable|array',
-                's3_keys.*' => 'string',
-                'content_types' => 'nullable|array',
-                'content_types.*' => 'string',
-                'original_names' => 'nullable|array',
-                'original_names.*' => 'string',
+                'primary_image' => 'nullable|integer',
+                'primary_image_type' => 'nullable|in:existing,new',
                 'delete_images' => 'nullable|array',
-                'delete_images.*' => 'exists:branch_images,id'
+                'delete_images.*' => 'integer|exists:branch_images,id'
             ]);
 
             DB::beginTransaction();
 
-            // Update branch details
-            $branch->name = $validated['name'];
-            $branch->address = $validated['address'];
-            $branch->phone = $validated['phone'];
-            $branch->email = $validated['email'] ?? null;
-            $branch->opening_hour = $validated['opening_hour'];
-            $branch->closing_hour = $validated['closing_hour'];
-            $branch->latitude = $validated['latitude'] ?? null;
-            $branch->longitude = $validated['longitude'] ?? null;
-            $branch->manager_user_id = $validated['manager_user_id'] ?? null;
+            // Cập nhật thông tin cơ bản của chi nhánh
+            $branch->name = $request->name;
+            $branch->address = $request->address;
+            $branch->phone = $request->phone;
+            $branch->email = $request->email;
+            $branch->manager_user_id = $request->manager_user_id;
+            $branch->latitude = $request->latitude;
+            $branch->longitude = $request->longitude;
+            $branch->opening_hour = $request->opening_hour;
+            $branch->closing_hour = $request->closing_hour;
             $branch->active = $request->has('active');
             $branch->save();
 
-            // Handle image deletions
+            // Xử lý xóa hình ảnh
             if ($request->has('delete_images')) {
-                foreach ($request->input('delete_images') as $imageId) {
+                foreach ($request->delete_images as $imageId) {
                     $image = BranchImage::find($imageId);
-                    if ($image) {
-
-                        if (Storage::disk('s3')->exists($image->image_path)) {
-                            Storage::disk('s3')->delete($image->image_path);
-                        }
+                    if ($image && $image->branch_id == $branch->id) {
+                        Storage::disk('s3')->delete($image->image_path);
                         $image->delete();
                     }
                 }
             }
 
-            // Handle new image uploads
-            if ($request->hasFile('images')) {
-                $directory = 'branches/' . $branch->branch_code;
-                $s3Keys = $request->input('s3_keys', []);
-                $contentTypes = $request->input('content_types', []);
-                $originalNames = $request->input('original_names', []);
-                $primaryImage = $request->input('primary_image');
-
-                foreach ($request->file('images') as $index => $image) {
-                    $s3Key = $s3Keys[$index] ?? null;
-                    if (!$s3Key) continue;
-
-                    // Upload to S3 with content type
-                    $options = [
-                        'ContentType' => $contentTypes[$index] ?? $image->getMimeType(),
-                        'ACL' => 'public-read'
-                    ];
-
-                    if (Storage::disk('s3')->put($s3Key, file_get_contents($image), $options)) {
-                        $branchImage = new BranchImage([
-                            'branch_id' => $branch->id,
-                            'image_path' => $s3Key,
-                            'caption' => $request->input("captions.$s3Key", ''),
-                            'is_primary' => ($s3Key === $primaryImage),
-                            'original_name' => $originalNames[$index] ?? $image->getClientOriginalName()
-                        ]);
-                        $branchImage->save();
+            // Cập nhật caption cho hình ảnh hiện có
+            if ($request->has('captions')) {
+                foreach ($request->captions as $imageId => $caption) {
+                    if (is_numeric($imageId)) {
+                        $image = BranchImage::where('id', $imageId)
+                                           ->where('branch_id', $branch->id)
+                                           ->first();
+                        if ($image) {
+                            $image->caption = $caption;
+                            $image->save();
+                        }
                     }
                 }
             }
 
-            // Update primary image for existing images
-            if ($request->has('primary_image')) {
-                $primaryImageId = $request->input('primary_image');
-                if (is_numeric($primaryImageId)) {
-                    BranchImage::where('branch_id', $branch->id)
-                        ->update(['is_primary' => false]);
-                    BranchImage::where('id', $primaryImageId)
+            // Xử lý upload hình ảnh mới
+            $newImages = [];
+            if ($request->hasFile('images')) {
+                $directory = 'branches/' . $branch->branch_code;
+
+                foreach ($request->file('images') as $index => $imageFile) {
+                    $filename = $directory . '/' . Str::uuid() . '.' . $imageFile->getClientOriginalExtension();
+
+                    // Upload to S3
+                    $putResult = Storage::disk('s3')->put($filename, file_get_contents($imageFile));
+
+                    if ($putResult) {
+                        $newImage = new BranchImage();
+                        $newImage->branch_id = $branch->id;
+                        $newImage->image_path = $filename;
+                        $newImage->caption = $request->input('captions.' . $index, null);
+                        $newImage->is_primary = true;
+                        $newImage->save();
+
+                        $newImages[] = $newImage;
+                    }
+                }
+            }
+
+            // Xử lý hình ảnh chính
+            if ($request->has('primary_image') && $request->has('primary_image_type')) {
+                // Đặt lại tất cả hình ảnh không phải ảnh chính
+                BranchImage::where('branch_id', $branch->id)
+                    ->update(['is_primary' => false]);
+
+                if ($request->primary_image_type === 'existing') {
+                    // Đặt hình ảnh hiện có làm ảnh chính
+                    BranchImage::where('id', $request->primary_image)
+                        ->where('branch_id', $branch->id)
                         ->update(['is_primary' => true]);
+                } elseif ($request->primary_image_type === 'new' && isset($newImages[$request->primary_image])) {
+                    // Đặt hình ảnh mới làm ảnh chính
+                    $newImages[$request->primary_image]->is_primary = true;
+                    $newImages[$request->primary_image]->save();
                 }
             }
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Chi nhánh đã được cập nhật thành công',
-                'redirect' => route('admin.branches.index')
-            ]);
+            return redirect()
+                ->route('admin.branches.show', $branch->id)
+                ->with([
+                    'toast' => [
+                        'type' => 'success',
+                        'title' => 'Thành công',
+                        'message' => 'Chi nhánh đã được cập nhật thành công!'
+                    ]
+                ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating branch: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage()
-            ], 500);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with([
+                    'toast' => [
+                        'type' => 'error',
+                        'title' => 'Lỗi',
+                        'message' => 'Có lỗi xảy ra khi cập nhật chi nhánh: ' . $e->getMessage()
+                    ]
+                ]);
         }
     }
-
 public function toggleStatus($id)
 {
     try {
@@ -591,7 +610,7 @@ public function bulkStatusUpdate(Request $request)
                 'toast' => [
                     'type' => 'success',
                     'title' => 'Thành công',
-                    'message' => 'Hình ảnh đã được tải lên thành công'
+                    'message' => 'Hình ảnh đã được tải lên thành công hehe '
                 ]
             ]);
     }
@@ -613,6 +632,8 @@ public function bulkStatusUpdate(Request $request)
             ]);
         } catch (\Exception $e) {
             Log::error('Set featured failed', ['error' => $e->getMessage()]);
+            var_dump($e->getMessage());
+            die();
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi khi cài đặt ảnh đại diện: ' . $e->getMessage()

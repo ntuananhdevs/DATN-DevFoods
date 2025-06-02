@@ -187,7 +187,7 @@
     }
 </style>
 
-<div class="fade-in flex flex-col gap-4 pb-4">
+<div class="fade-in flex flex-col gap-4 pb-take4">
     <!-- Main Header -->
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -585,160 +585,315 @@
 
 @section('scripts')
 <script>
-    // Debounce function to limit AJAX requests
-    function debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
+@if (session('toast'))
+    <script>
+        dtmodalShowToast('{{ session('toast.type') }}', {
+            title: '{{ session('toast.title') }}',
+            message: '{{ session('toast.message') }}'
+        });
+    </script>
+@endif
+
+// Define constants and global variables
+const ROUTES = {
+    search: '{{ route("admin.user_ranks.search") }}',
+    edit: '{{ route("admin.user_ranks.edit", ":id") }}',
+    destroy: '{{ route("admin.user_ranks.destroy", ":id") }}',
+    updateStatus: '{{ route("admin.user_ranks.updateStatus") }}'
+};
+
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content;
+
+// Utility functions
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
             clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
+            func(...args);
         };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function formatNumber(number) {
+    return new Intl.NumberFormat('vi-VN').format(number);
+}
+
+function toggleDropdown(id) {
+    const dropdown = document.getElementById(id);
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+}
+
+function toggleModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.toggle('hidden');
+    }
+}
+
+function resetFilters() {
+    window.location.href = '{{ route("admin.user_ranks.index") }}';
+}
+
+// Hàm hiển thị thông báo
+function dtmodalShowToast(type, { title, message }) {
+    // Tạo phần tử toast
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg text-sm max-w-sm transition-opacity duration-300 opacity-0 ${
+        type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+    }`;
+
+    // Đặt nội dung
+    toast.innerHTML = `
+        <div class="font-medium">${title}</div>
+        <div>${message}</div>
+    `;
+
+    // Thêm vào body
+    document.body.appendChild(toast);
+
+    // Hiệu ứng fade-in
+    setTimeout(() => {
+        toast.style.opacity = '1';
+    }, 100);
+
+    // Tự động xóa sau 3 giây
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+}
+
+function updateSelectedStatus(status) {
+    const selectedRanks = Array.from(document.querySelectorAll('.rank-checkbox:checked')).map(cb => cb.value);
+
+    if (selectedRanks.length === 0) {
+        dtmodalShowToast('error', {
+            title: 'Lỗi',
+            message: 'Vui lòng chọn ít nhất một hạng để thực hiện thao tác.'
+        });
+        return;
     }
 
-    // Format number for Vietnamese locale
-    function formatNumber(number) {
-        return new Intl.NumberFormat('vi-VN').format(number);
+    if (!CSRF_TOKEN) {
+        console.error('CSRF token not found');
+        dtmodalShowToast('error', {
+            title: 'Lỗi',
+            message: 'Không tìm thấy CSRF token. Vui lòng tải lại trang.'
+        });
+        return;
     }
 
-    // Perform AJAX search
-    const performSearch = debounce(function(searchTerm) {
-        const searchInput = document.getElementById('searchInput');
-        const searchLoading = document.getElementById('searchLoading');
-        const tierTableBody = document.getElementById('tierTableBody');
-        
-        // Show loading indicator
-        if (searchLoading) searchLoading.classList.remove('hidden');
-        
-        // Get CSRF token from meta tag
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-        
-        fetch('{{ route("admin.user_ranks.search") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                search: searchTerm,
-                user_min: '{{ request("user_min", 0) }}',
-                user_max: '{{ request("user_max", 1500) }}',
-                status: '{{ request("status", "all") }}'
-            })
+    fetch(ROUTES.updateStatus, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': CSRF_TOKEN,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            rank_ids: selectedRanks,
+            is_active: status
         })
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
-        .then(data => {
-            if (searchLoading) searchLoading.classList.add('hidden');
-            
-            // Clear existing table content
-            tierTableBody.innerHTML = '';
-            
-            if (data.ranks.length === 0) {
-                tierTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="text-center py-4">
-                            <div class="flex flex-col items-center justify-center text-muted-foreground">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
-                                    <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm2 16h16"></path>
-                                </svg>
-                                <h3 class="text-lg font-medium">Không tìm thấy hạng thành viên</h3>
-                                <p class="text-sm">Không có hạng nào khớp với từ khóa tìm kiếm</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Cập nhật UI
+            data.updated_ranks.forEach(rank => {
+                const row = document.querySelector(`tr input.rank-checkbox[value="${rank.id}"]`)?.closest('tr');
+                if (row) {
+                    const statusBadge = row.querySelector('.status-badge');
+                    if (statusBadge) {
+                        statusBadge.className = `status-badge ${rank.is_active ? 'active' : 'inactive'}`;
+                        statusBadge.textContent = rank.is_active ? 'Đang hoạt động' : 'Không hoạt động';
+                    }
+                    const checkbox = row.querySelector('.rank-checkbox');
+                    if (checkbox) checkbox.checked = false;
+                }
+            });
+
+            // Cập nhật số lượng hạng hoạt động
+            const activeTiersCard = document.querySelector('.stat-card:nth-child(2) .text-2xl');
+            if (activeTiersCard && data.active_tiers_count !== undefined) {
+                activeTiersCard.textContent = formatNumber(data.active_tiers_count);
             }
-            
-            // Populate table with search results
-            data.ranks.forEach(rank => {
-                const benefits = Array.isArray(rank.benefits) ? rank.benefits : [];
-                const benefitsHtml = benefits.length > 0 ? benefits.slice(0, 2).map(benefit => `
-                    <div class="benefit-item">
-                        <svg class="benefit-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="8" width="18" height="4" rx="1"></rect>
-                            <path d="M12 8v13"></path>
-                            <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
-                            <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path>
-                        </svg>
-                        <span>${benefit}</span>
-                    </div>
-                `).join('') + (benefits.length > 2 ? `<div class="text-xs text-muted-foreground">+${benefits.length - 2} quyền lợi khác</div>` : '') : `
-                    <div class="text-xs text-muted-foreground">Không có quyền lợi</div>
-                `;
-                
-                const rowHtml = `
-                    <tr class="border-b">
-                        <td class="py-3 px-4">
-                            <input type="checkbox" name="selected_ranks[]" value="${rank.id}" class="rank-checkbox rounded border-gray-300">
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="flex items-center gap-3">
-                                <div class="tier-icon" style="background-color: ${rank.color}">
-                                    ${rank.icon || rank.name.charAt(0)}
-                                </div>
-                                <div>
-                                    <div class="font-medium">${rank.name}</div>
-                                    <div class="text-sm text-muted-foreground">${rank.slug}</div>
+
+            // Đặt lại checkbox chọn tất cả
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            if (selectAllCheckbox) selectAllCheckbox.checked = false;
+
+            dtmodalShowToast('success', {
+                title: 'Thành công',
+                message: data.message
+            });
+
+            toggleDropdown('actionsMenu');
+        } else {
+            dtmodalShowToast('error', {
+                title: 'Lỗi',
+                message: data.message || 'Cập nhật trạng thái thất bại.'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Update status error:', error);
+        let errorMessage = 'Đã xảy ra lỗi khi cập nhật trạng thái.';
+        if (error.responseJSON && error.responseJSON.message) {
+            errorMessage = error.responseJSON.message;
+        } else if (error.status === 404) {
+            errorMessage = 'Không tìm thấy hạng thành viên';
+        } else if (error.status === 403) {
+            errorMessage = 'Bạn không có quyền thực hiện thao tác này';
+        } else if (error.status === 422) {
+            errorMessage = 'Dữ liệu không hợp lệ';
+        }
+        dtmodalShowToast('error', {
+            title: 'Lỗi',
+            message: errorMessage
+        });
+    });
+}
+
+// Perform AJAX search
+const performSearch = debounce(function(searchTerm) {
+    const tierTableBody = document.getElementById('tierTableBody');
+    if (!tierTableBody) {
+        console.error('Tier table body not found');
+        return;
+    }
+
+    if (!CSRF_TOKEN) {
+        console.error('CSRF token not found');
+        return;
+    }
+
+    fetch(ROUTES.search, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': CSRF_TOKEN,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            search: searchTerm,
+            user_min: parseInt('{{ request("user_min", 0) }}') || 0,
+            user_max: parseInt('{{ request("user_max", 1500) }}') || 1500,
+            status: '{{ request("status", "all") }}'
+        })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        tierTableBody.innerHTML = '';
+
+        if (!data.ranks || data.ranks.length === 0) {
+            tierTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <div class="flex flex-col items-center justify-center text-muted-foreground">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                                <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm2 16h16"></path>
+                            </svg>
+                            <h3 class="text-lg font-medium">Không tìm thấy hạng thành viên</h3>
+                            <p class="text-sm">Không có hạng nào khớp với từ khóa tìm kiếm</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        data.ranks.forEach(rank => {
+            const benefits = Array.isArray(rank.benefits) ? rank.benefits : [];
+            const benefitsHtml = benefits.length > 0 ? benefits.slice(0, 2).map(benefit => `
+                <div class="benefit-item">
+                    <svg class="benefit-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+                        <path d="M12 8v13"></path>
+                        <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
+                        <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path>
+                    </svg>
+                    <span>${benefit}</span>
+                </div>
+            `).join('') + (benefits.length > 2 ? `<div class="text-xs text-muted-foreground">+${benefits.length - 2} quyền lợi khác</div>` : '') : `
+                <div class="text-xs text-muted-foreground">Không có quyền lợi</div>
+            `;
+
+            const rowHtml = `
+                <tr class="border-b">
+                    <td class="py-3 px-4">
+                        <input type="checkbox" name="selected_ranks[]" value="${rank.id}" class="rank-checkbox rounded border-gray-300">
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="tier-icon" style="background-color: ${rank.color}">
+                                ${rank.icon || rank.name.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="font-medium">${rank.name}</div>
+                                <div class="text-sm text-muted-foreground">${rank.slug}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="text-sm space-y-1">
+                            <div>Chi tiêu: ${formatNumber(rank.min_spending)} đ</div>
+                            <div>Đơn hàng: ${rank.min_orders}</div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="font-medium">${formatNumber(rank.users_count)}</div>
+                            <div class="w-full max-w-[80px]">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${data.total_users > 0 ? (rank.users_count / data.total_users) * 100 : 0}%"></div>
                                 </div>
                             </div>
-                        </td>
-                        <td class="py-3 px-4">
+                            <div class="text-xs text-muted-foreground">
+                                ${data.total_users > 0 ? ((rank.users_count / data.total_users) * 100).toFixed(1) : 0}%
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="benefits-list">
                             <div class="text-sm space-y-1">
-                                <div>Chi tiêu: ${formatNumber(rank.min_spending)} đ</div>
-                                <div>Đơn hàng: ${rank.min_orders}</div>
+                                ${benefitsHtml}
                             </div>
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="flex flex-col items-center gap-1">
-                                <div class="font-medium">${formatNumber(rank.users_count)}</div>
-                                <div class="w-full max-w-[80px]">
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: ${data.total_users > 0 ? (rank.users_count / data.total_users) * 100 : 0}%"></div>
-                                    </div>
-                                </div>
-                                <div class="text-xs text-muted-foreground">
-                                    ${data.total_users > 0 ? ((rank.users_count / data.total_users) * 100).toFixed(1) : 0}%
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="benefits-list">
-                                <div class="text-sm space-y-1">
-                                    ${benefitsHtml}
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="discount-badge">
-                                ${parseFloat(rank.discount_percentage).toFixed(1)}%
-                            </div>
-                        </td>
-                        <td class="py-3 px-4">
-                            <span class="status-badge ${rank.is_active ? 'active' : 'inactive'}">
-                                ${rank.is_active ? 'Đang hoạt động' : 'Không hoạt động'}
-                            </span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="flex justify-center space-x-1">
-                                <a href="{{ route('admin.user_ranks.edit', ':id') }}"
-                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
-                                    title="Chỉnh sửa">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                </a>
-                                <form action="{{ route('admin.user_ranks.destroy', ':id') }}" method="POST" class="delete-form">
-                                    <input type="hidden" name="_token" value="${csrfToken}">
-                                    <input type="hidden" name="_method" value="DELETE">
-                                    <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="discount-badge">
+                            ${parseFloat(rank.discount_percentage).toFixed(1)}%
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="status-badge ${rank.is_active ? 'active' : 'inactive'}">
+                            ${rank.is_active ? 'Đang hoạt động' : 'Không hoạt động'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex justify-center space-x-1">
+                            <a href="${ROUTES.edit.replace(':id', rank.id)}"
+                               class="flex items-center justify-center rounded-md hover:bg-accent p-2"
+                               title="Chỉnh sửa">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </a>
+                            <form action="${ROUTES.destroy.replace(':id', rank.id)}" method="POST" class="delete-form">
+                                <input type="hidden" name="_token" value="${CSRF_TOKEN}">
+                                <input type="hidden" name="_method" value="DELETE">
+                                <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
                                         onclick="dtmodalConfirmDelete({
                                             title: 'Xác nhận xóa hạng thành viên',
                                             subtitle: 'Bạn có chắc chắn muốn xóa hạng thành viên này?',
@@ -747,227 +902,183 @@
                                             onConfirm: () => this.closest('form').submit()
                                         })"
                                         title="Xóa">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                        </svg>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                tierTableBody.insertAdjacentHTML('beforeend', rowHtml);
-            });
-        })
-        .catch(error => {
-            if (searchLoading) searchLoading.classList.add('hidden');
-            console.error('Search error:', error);
-            tierTableBody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center py-4">
-                        <div class="flex flex-col items-center justify-center text-muted-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
-                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
-                                <path d="m15 9-6 6"></path>
-                                <path d="m9 9 6 6"></path>
-                            </svg>
-                            <h3 class="text-lg font-medium">Đã xảy ra lỗi</h3>
-                            <p class="text-sm">Không thể tải dữ liệu. Vui lòng thử lại.</p>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 6h18"></path>
+                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                        <path d="M8 6V4c0-1 1-2 2h4c1 0 2 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </form>
                         </div>
                     </td>
                 </tr>
             `;
+            tierTableBody.insertAdjacentHTML('beforeend', rowHtml);
         });
-    }, 300);
+    })
+    .catch(error => {
+        console.error('Search error:', error);
+        tierTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                <div class="flex flex-col items-center justify-center text-muted-foreground">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                        <path d="m15 9-6 6"></path>
+                        <path d="m9 9 6 6"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium">Đã xảy ra lỗi</h3>
+                    <p class="text-sm">Không thể tải dữ liệu. Vui lòng thử lại.</p>
+                </div>
+            </td>
+            </tr>
+        `;
+    });
+}, 300);
 
-    // Dropdown Toggle
-    function toggleDropdown(id) {
-        const dropdown = document.getElementById(id);
-        if (dropdown) {
-            dropdown.classList.toggle('hidden');
+// User range slider class
+class UserRangeSlider {
+    constructor(config) {
+        this.min = config.min || 0;
+        this.max = config.max || 1500;
+        this.step = config.step || 10;
+        this.minValue = config.minValue || this.min;
+        this.maxValue = config.maxValue || this.max;
+        this.slider = document.getElementById(config.sliderId);
+        this.track = document.getElementById(config.trackId);
+        this.minHandle = document.getElementById(config.minHandleId);
+        this.maxHandle = document.getElementById(config.maxHandleId);
+        this.minDisplay = document.getElementById('minUserDisplay');
+        this.maxDisplay = document.getElementById('maxUserDisplay');
+        this.minInput = document.getElementById('minUserInput');
+        this.maxInput = document.getElementById('maxUserInput');
+        this.isDragging = false;
+        this.activeHandle = null;
+
+        if (!this.slider || !this.track || !this.minHandle || !this.maxHandle) {
+            console.error('Slider elements not found');
+            return;
         }
+
+        this.init();
     }
 
-    // Modal Toggle
-    function toggleModal(id) {
-        const modal = document.getElementById(id);
-        if (modal) {
-            modal.classList.toggle('hidden');
-        }
+    init() {
+        this.updateVisual();
+        this.attachEvents();
     }
 
-    // Reset Filters
-    function resetFilters() {
-        window.location.href = '{{ route("admin.user_ranks.index") }}';
+    formatNumber(number) {
+        return new Intl.NumberFormat('vi-VN').format(number);
     }
 
-    // User Count Range Slider
-    class UserRangeSlider {
-        constructor(config) {
-            this.min = config.min || 0;
-            this.max = config.max || 1500;
-            this.step = config.step || 10;
-            this.minValue = config.minValue || this.min;
-            this.maxValue = config.maxValue || this.max;
-            this.slider = document.getElementById(config.sliderId);
-            this.track = document.getElementById(config.trackId);
-            this.minHandle = document.getElementById(config.minHandleId);
-            this.maxHandle = document.getElementById(config.maxHandleId);
-            this.isDragging = false;
-            this.activeHandle = null;
+    updateVisual() {
+        const range = this.max - this.min;
+        const minPercent = ((this.minValue - this.min) / range) * 100;
+        const maxPercent = ((this.maxValue - this.min) / range) * 100;
 
-            this.init();
-        }
+        this.minHandle.style.left = `${minPercent}%`;
+        this.maxHandle.style.left = `${maxPercent}%`;
+        this.track.style.left = `${minPercent}%`;
+        this.track.style.width = `${maxPercent - minPercent}%`;
 
-        init() {
-            this.updateVisual();
-            this.attachEvents();
-        }
+        if (this.minDisplay) this.minDisplay.textContent = this.formatNumber(this.minValue);
+        if (this.maxDisplay) this.maxDisplay.textContent = this.formatNumber(this.maxValue);
+        if (this.minInput) this.minInput.value = this.minValue;
+        if (this.maxInput) this.maxInput.value = this.maxValue;
+    }
 
-        formatNumber(number) {
-            return new Intl.NumberFormat('vi-VN').format(number);
-        }
-
-        updateVisual() {
-            const range = this.max - this.min;
-            const minPct = ((this.minValue - this.min) / range) * 100;
-            const maxPct = ((this.maxValue - this.min) / range) * 100;
-
-            this.minHandle.style.left = `${minPct}%`;
-            this.maxHandle.style.left = `${maxPct}%`;
-            this.track.style.left = `${minPct}%`;
-            this.track.style.width = `${maxPct - minPct}%`;
-
-            document.getElementById('minUserDisplay').textContent = this.formatNumber(this.minValue);
-            document.getElementById('maxUserDisplay').textContent = this.formatNumber(this.maxValue);
-            document.getElementById('minUserInput').value = this.minValue;
-            document.getElementById('maxUserInput').value = this.maxValue;
-        }
-
-        attachEvents() {
-            // Mouse events
-            this.minHandle.addEventListener('mousedown', e => {
-                e.preventDefault();
-                this.startDrag('min');
-            });
-
-            this.maxHandle.addEventListener('mousedown', e => {
-                e.preventDefault();
-                this.startDrag('max');
-            });
-
-            document.addEventListener('mousemove', e => this.handleMouseMove(e));
-            document.addEventListener('mouseup', () => this.handleMouseUp());
-
-            // Touch events
-            this.minHandle.addEventListener('touchstart', e => {
-                e.preventDefault();
-                this.startDrag('min');
-            });
-
-            this.maxHandle.addEventListener('touchstart', e => {
-                e.preventDefault();
-                this.startDrag('max');
-            });
-
-            document.addEventListener('touchmove', e => this.handleMouseMove(e.touches[0]));
-            document.addEventListener('touchend', () => this.handleMouseUp());
-
-            // Click on track
-            this.slider.addEventListener('click', e => {
-                if (this.isDragging) return;
-
-                const val = this.getValueFromPosition(e.clientX);
-                const dMin = Math.abs(val - this.minValue);
-                const dMax = Math.abs(val - this.maxValue);
-
-                if (dMin < dMax) {
-                    this.minValue = Math.min(val, this.maxValue - this.step);
-                } else {
-                    this.maxValue = Math.max(val, this.minValue + this.step);
-                }
-
-                this.updateVisual();
-            });
-
-            // Manual inputs
-            const minInput = document.getElementById('minUserInput');
-            const maxInput = document.getElementById('maxUserInput');
-
-            if (minInput) {
-                minInput.addEventListener('blur', e => {
-                    const v = parseInt(e.target.value);
-                    if (!isNaN(v)) {
-                        this.minValue = Math.max(this.min, Math.min(v, this.maxValue - this.step));
-                        this.updateVisual();
-                    }
-                });
-            }
-
-            if (maxInput) {
-                maxInput.addEventListener('blur', e => {
-                    const v = parseInt(e.target.value);
-                    if (!isNaN(v)) {
-                        this.maxValue = Math.min(this.max, Math.max(v, this.minValue + this.step));
-                        this.updateVisual();
-                    }
-                });
-            }
-        }
-
-        startDrag(handle) {
+    attachEvents() {
+        const startDrag = (handle) => {
             this.isDragging = true;
             this.activeHandle = handle;
             document.body.style.cursor = 'grabbing';
-        }
+        };
 
-        handleMouseMove(e) {
+        const stopDrag = () => {
+            this.isDragging = false;
+            this.activeHandle = null;
+            document.body.style.cursor = '';
+        };
+
+        const handleMove = (clientX) => {
             if (!this.isDragging) return;
-
-            const val = this.getValueFromPosition(e.clientX);
-
+            const value = this.getValueFromPosition(clientX);
             if (this.activeHandle === 'min') {
-                this.minValue = Math.min(Math.max(val, this.min), this.maxValue - this.step);
-            } else {
-                this.maxValue = Math.max(Math.min(val, this.minValue + this.step), this.max);
+                this.minValue = Math.min(Math.max(value, this.min), this.maxValue - this.step);
+            } else if (this.activeHandle === 'max') {
+                this.maxValue = Math.max(Math.min(value, this.max), this.minValue + this.step);
             }
-
             this.updateVisual();
-        }
+        };
 
-        handleMouseUp() {
-            if (this.isDragging) {
-                this.isDragging = false;
-                this.activeHandle = null;
-                document.body.style.cursor = 'default';
+        // Mouse events
+        this.minHandle.addEventListener('mousedown', () => startDrag('min'));
+        this.maxHandle.addEventListener('mousedown', () => startDrag('max'));
+        document.addEventListener('mousemove', (e) => handleMove(e.clientX));
+        document.addEventListener('mouseup', stopDrag);
+
+        // Touch events
+        this.minHandle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDrag('min');
+        }, { passive: false });
+        this.maxHandle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDrag('max');
+        }, { passive: false });
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            handleMove(e.touches[0].clientX);
+        }, { passive: false });
+        document.addEventListener('touchend', stopDrag);
+
+        // Slider click
+        this.slider.addEventListener('click', (e) => {
+            if (this.isDragging) return;
+            const value = this.getValueFromPosition(e.clientX);
+            const minDiff = Math.abs(value - this.minValue);
+            const maxDiff = Math.abs(value - this.maxValue);
+            if (minDiff < maxDiff) {
+                this.minValue = Math.min(value, this.maxValue - this.step);
+            } else {
+                this.maxValue = Math.max(value, this.minValue + this.step);
             }
+            this.updateVisual();
+        });
+
+        // Input events
+        if (this.minInput) {
+            this.minInput.addEventListener('change', (e) => {
+                const value = parseInt(e.target.value);
+                if (!isNaN(value)) {
+                    this.minValue = Math.max(this.min, Math.min(value, this.maxValue - this.step));
+                    this.updateVisual();
+                }
+            });
         }
-
-        getValueFromPosition(x) {
-            const rect = this.slider.getBoundingClientRect();
-            let pct = (x - rect.left) / rect.width;
-            pct = Math.min(Math.max(pct, 0), 1);
-
-            const val = this.min + pct * (this.max - this.min);
-            return Math.round(val / this.step) * this.step;
+        if (this.maxInput) {
+            this.maxInput.addEventListener('change', (e) => {
+                const value = parseInt(e.target.value);
+                if (!isNaN(value)) {
+                    this.maxValue = Math.min(this.max, Math.max(value, this.minValue + this.step));
+                    this.updateVisual();
+                }
+            });
         }
     }
 
-    // Update Selected Status
-    function updateSelectedStatus(status) {
-        const selectedRanks = Array.from(document.querySelectorAll('.rank-checkbox:checked')).map(cb => cb.value);
-
-        if (selectedRanks.length === 0) {
-            alert('Vui lòng chọn ít nhất một hạng thành viên');
-            return;
-        }
+    getValueFromPosition(clientX) {
+        const rect = this.slider.getBoundingClientRect();
+        let percent = (clientX - rect.left) / rect.width;
+        percent = Math.max(0, Math.min(1, percent));
+        return Math.round((this.min + percent * (this.max - this.min)) / this.step) * this.step;
     }
+}
 
-// Initialize on DOM Ready
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize user count slider
+// Initialize on DOM content loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize user range slider
     window.userSlider = new UserRangeSlider({
         min: {{ $minUsers }},
         max: {{ $maxUsers }},
@@ -981,60 +1092,65 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        const dropdowns = document.querySelectorAll('.dropdown > div:not(.hidden)');
+    document.addEventListener('click', (event) => {
+        const dropdowns = document.querySelectorAll('.dropdown .absolute:not(.hidden)');
         dropdowns.forEach(dropdown => {
-            const isClickInside = dropdown.contains(event.target) ||
-                dropdown.previousElementSibling.contains(event.target);
-
-            if (!isClickInside) {
+            const button = dropdown.previousElementSibling;
+            if (!dropdown.contains(event.target) && !button.contains(event.target)) {
                 dropdown.classList.add('hidden');
             }
         });
     });
 
-    // Checkbox Functionality
+    // Handle checkboxes
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const rankCheckboxes = document.querySelectorAll('.rank-checkbox');
     const selectAllButton = document.getElementById('selectAllButton');
+    let rankCheckboxes = document.querySelectorAll('.rank-checkbox');
 
-    // Handle select all checkbox
+    function updateCheckboxes() {
+        rankCheckboxes = document.querySelectorAll('.rank-checkbox');
+        rankCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = Array.from(rankCheckboxes).every(c => c.checked);
+                }
+            });
+        });
+    }
+
+    updateCheckboxes();
+
     if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            rankCheckboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
+        selectAllCheckbox.addEventListener('change', () => {
+            rankCheckboxes.forEach(cb => {
+                cb.checked = selectAllCheckbox.checked;
             });
         });
     }
 
-    // Handle select all button click
     if (selectAllButton) {
-        selectAllButton.addEventListener('click', function() {
-            const isAllChecked = Array.from(rankCheckboxes).every(cb => cb.checked);
-            rankCheckboxes.forEach(checkbox => {
-                checkbox.checked = !isAllChecked;
+        selectAllButton.addEventListener('click', () => {
+            const allChecked = Array.from(rankCheckboxes).every(cb => cb.checked);
+            rankCheckboxes.forEach(cb => {
+                cb.checked = !allChecked;
             });
-            if (selectAllCheckbox) selectAllCheckbox.checked = !isAllChecked;
+            if (selectAllCheckbox) selectAllCheckbox.checked = !allChecked;
         });
     }
 
-    // Handle individual checkboxes
-    rankCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const allChecked = Array.from(rankCheckboxes).every(cb => cb.checked);
-            if (selectAllCheckbox) selectAllCheckbox.checked = allChecked;
+    // Observe table changes for checkbox updates
+    const tierTableBody = document.getElementById('tierTableBody');
+    if (tierTableBody) {
+        new MutationObserver(updateCheckboxes).observe(tierTableBody, {
+            childList: true,
+            subtree: true
         });
-    });
+    }
 
-    // Add search input event listener
+    // Handle search input
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            performSearch(this.value.trim());
-        });
-
-        // Initial search to load current results
+        searchInput.addEventListener('input', () => performSearch(searchInput.value.trim()));
         performSearch(searchInput.value.trim());
     }
 });

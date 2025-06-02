@@ -16,14 +16,14 @@
             <!-- Left Column -->
             <div class="bg-white rounded-xl shadow-md p-6">
                 <h2 class="text-lg font-semibold mb-6 text-gray-700">Thông tin người dùng</h2>
-                <form action="{{ route('admin.users.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
+                <form action="{{ route('admin.users.managers.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
                     @csrf
 
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
-                            <input type="text" name="user_name" value="{{ old('user_name') }}" 
-                                   class="w-full px-3 py-2 border rounded-lg @error('user_name') border-red-500 @enderror" 
+                            <input type="text" name="user_name" value="{{ old('user_name') }}"
+                                   class="w-full px-3 py-2 border rounded-lg @error('user_name') border-red-500 @enderror"
                                    placeholder="Nhập tên đăng nhập">
                             @error('user_name')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -32,8 +32,8 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-                            <input type="text" name="full_name" value="{{ old('full_name') }}" 
-                                   class="w-full px-3 py-2 border rounded-lg @error('full_name') border-red-500 @enderror" 
+                            <input type="text" name="full_name" value="{{ old('full_name') }}"
+                                   class="w-full px-3 py-2 border rounded-lg @error('full_name') border-red-500 @enderror"
                                    placeholder="Nhập họ và tên">
                             @error('full_name')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -42,8 +42,8 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" name="email" value="{{ old('email') }}" 
-                                   class="w-full px-3 py-2 border rounded-lg @error('email') border-red-500 @enderror" 
+                            <input type="email" name="email" value="{{ old('email') }}"
+                                   class="w-full px-3 py-2 border rounded-lg @error('email') border-red-500 @enderror"
                                    placeholder="Nhập email">
                             @error('email')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -52,8 +52,8 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                            <input type="tel" name="phone" value="{{ old('phone') }}" 
-                                   class="w-full px-3 py-2 border rounded-lg @error('phone') border-red-500 @enderror" 
+                            <input type="tel" name="phone" value="{{ old('phone') }}"
+                                   class="w-full px-3 py-2 border rounded-lg @error('phone') border-red-500 @enderror"
                                    placeholder="Nhập số điện thoại">
                             @error('phone')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -62,8 +62,8 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
-                            <input type="password" name="password" 
-                                   class="w-full px-3 py-2 border rounded-lg @error('password') border-red-500 @enderror" 
+                            <input type="password" name="password"
+                                   class="w-full px-3 py-2 border rounded-lg @error('password') border-red-500 @enderror"
                                    placeholder="Nhập mật khẩu">
                             @error('password')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -72,8 +72,8 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Xác nhận mật khẩu</label>
-                            <input type="password" name="password_confirmation" 
-                                   class="w-full px-3 py-2 border rounded-lg" 
+                            <input type="password" name="password_confirmation"
+                                   class="w-full px-3 py-2 border rounded-lg"
                                    placeholder="Nhập lại mật khẩu">
                         </div>
 
@@ -93,13 +93,13 @@
                     </div>
 
                     <div class="flex justify-end gap-3 mt-8">
-                        <button type="button" onclick="window.history.back()" 
+                        <button type="button" onclick="window.history.back()"
                                 class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
                             Hủy bỏ
                         </button>
-                        <button type="submit" 
+                        <button type="submit"
                                 class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                            Tạo người dùng
+                            Tạo quản lý
                         </button>
                     </div>
                 </form>
@@ -108,7 +108,7 @@
             <!-- Right Column -->
             <div class="bg-white rounded-xl shadow-md p-6">
                 <div class="cursor-pointer group" onclick="document.getElementById('avatar').click()">
-                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-6 
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-xl p-6
                               hover:border-blue-500 hover:bg-blue-50 transition-colors">
                         <div id="avatar-preview" class="text-center">
                             <div class="mx-auto bg-blue-100 w-16 h-16 rounded-xl flex items-center justify-center mb-4">
@@ -152,4 +152,3 @@ function previewAndTransferAvatar(input) {
 </script>
 @endsection
 
-  

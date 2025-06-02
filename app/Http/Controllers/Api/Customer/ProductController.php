@@ -17,6 +17,9 @@ class ProductController extends Controller
     public function getProducts(Request $request)
     {
         try {
+            // Get selected branch from session
+            $selectedBranchId = session('selected_branch');
+            
             // Query cơ bản cho products
             $query = Product::with([
                 'category', 
@@ -25,9 +28,21 @@ class ProductController extends Controller
                 }, 
                 'reviews' => function($query) {
                     $query->where('approved', true);
+                },
+                'variants.branchStocks' => function($query) use ($selectedBranchId) {
+                    if ($selectedBranchId) {
+                        $query->where('branch_id', $selectedBranchId);
+                    }
                 }
             ])
             ->where('status', 'selling');
+            
+            // Filter by branch but show all products (including out of stock)
+            if ($selectedBranchId) {
+                $query->whereHas('variants.branchStocks', function($query) use ($selectedBranchId) {
+                    $query->where('branch_id', $selectedBranchId);
+                });
+            }
 
             // Filter theo category nếu có
             if ($request->has('category') && $request->category != '') {
@@ -74,7 +89,7 @@ class ProductController extends Controller
             }
             
             // Thêm thông tin rating trung bình cho mỗi sản phẩm
-            $products->getCollection()->transform(function ($product) use ($favorites) {
+            $products->getCollection()->transform(function ($product) use ($favorites, $selectedBranchId) {
                 $product->average_rating = $product->reviews->avg('rating') ?? 0;
                 $product->reviews_count = $product->reviews->count();
                 $product->primary_image = $product->images->where('is_primary', true)->first() 
@@ -88,13 +103,36 @@ class ProductController extends Controller
                 // Marcar como favorito si está en la lista
                 $product->is_favorite = in_array($product->id, $favorites);
                 
-                // Obtener la primera variante del producto que tenga stock disponible en cualquier sucursal
-                $product->first_variant = ProductVariant::where('product_id', $product->id)
-                                            ->whereHas('branchStocks', function($query) {
-                                                $query->where('stock_quantity', '>', 0);
+                // Check if the product has stock
+                if ($selectedBranchId) {
+                    // Find any variant with stock > 0
+                    $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
+                        return $variant->branchStocks->contains(function($stock) use ($selectedBranchId) {
+                            return $stock->branch_id == $selectedBranchId && $stock->stock_quantity > 0;
+                        });
+                    });
+                    
+                    // Get first variant (regardless of stock)
+                    $product->first_variant = ProductVariant::where('product_id', $product->id)
+                                            ->whereHas('branchStocks', function($query) use ($selectedBranchId) {
+                                                $query->where('branch_id', $selectedBranchId);
                                             })
                                             ->orderBy('id', 'asc')
                                             ->first();
+                } else {
+                    // If no branch selected, check for any stock
+                    $product->has_stock = $product->variants->contains(function($variant) {
+                        return $variant->branchStocks->contains(function($stock) {
+                            return $stock->stock_quantity > 0;
+                        });
+                    });
+                    
+                    // Get first variant (regardless of stock)
+                    $product->first_variant = ProductVariant::where('product_id', $product->id)
+                                            ->whereHas('branchStocks')
+                                            ->orderBy('id', 'asc')
+                                            ->first();
+                }
                 
                 return $product;
             });

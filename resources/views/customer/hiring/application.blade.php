@@ -474,10 +474,30 @@
                                     @enderror
                                 </div>
                             </div>
+
+                            <!-- Cloudflare Turnstile CAPTCHA -->
+                            <div class="form-group mt-4">
+                                <label class="form-label font-weight-bold">Xác minh bảo mật <span class="text-danger">*</span></label>
+                                <div class="cf-turnstile mt-2" 
+                                     data-sitekey="{{ config('turnstile.site_key') }}"
+                                     data-theme="{{ config('turnstile.theme') }}"
+                                     data-size="{{ config('turnstile.size') }}"
+                                     data-callback="onTurnstileCallback">
+                                </div>
+                                @error('cf-turnstile-response')
+                                    <div class="text-danger mt-2"><small>{{ $message }}</small></div>
+                                @enderror
+                            </div>
                         </div>
                         
                         <div class="form-action text-center">
-                            <button type="submit" class="btn btn-primary btn-lg">Gửi đơn đăng ký</button>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                                <span id="submitBtnText">Gửi đơn đăng ký</span>
+                                <span id="submitBtnLoading" class="d-none">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                                    Đang xử lý...
+                                </span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -520,7 +540,34 @@
 </div>
 </main>
 
+<!-- Cloudflare Turnstile Script -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
 <script>
+    let turnstileToken = null;
+
+    // Cloudflare Turnstile callback
+    window.onTurnstileCallback = function(token) {
+        turnstileToken = token;
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('submitBtn').classList.remove('opacity-50');
+    };
+
+    // Handle Turnstile error or expiration
+    window.onTurnstileError = function() {
+        turnstileToken = null;
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').classList.add('opacity-50');
+        alert('Xác minh bảo mật thất bại. Vui lòng thử lại.');
+    };
+
+    window.onTurnstileExpired = function() {
+        turnstileToken = null;
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').classList.add('opacity-50');
+        alert('Xác minh bảo mật đã hết hạn. Vui lòng thực hiện lại.');
+    };
+
     // Hiển thị tên file khi chọn file upload
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.custom-file-input').forEach(input => {
@@ -529,6 +576,24 @@
                 const label = this.nextElementSibling;
                 label.textContent = fileName;
             });
+        });
+
+        // Form submission handling
+        document.querySelector('.application-form').addEventListener('submit', function(e) {
+            if (!turnstileToken) {
+                e.preventDefault();
+                alert('Vui lòng hoàn thành xác minh bảo mật');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitBtnLoading = document.getElementById('submitBtnLoading');
+            
+            submitBtn.disabled = true;
+            submitBtnText.classList.add('d-none');
+            submitBtnLoading.classList.remove('d-none');
         });
     });
 </script>

@@ -52,7 +52,7 @@
                     </div>
                 </div>
             </div>
-            <a href="{{ route('admin.users.create') }}" class="btn btn-primary flex items-center">
+            <a href="{{ route('admin.users.managers.create') }}" class="btn btn-primary flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                     <path d="M5 12h14"></path>
                     <path d="M12 5v14"></path>
@@ -65,7 +65,7 @@
     <div class="bg-white rounded-lg shadow-md">
         <!-- Table Header -->
         <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-800">Danh sách người dùng </h2>
+            <h2 class="text-xl font-semibold text-gray-800">Danh sách quản lý </h2>
         </div>
 
         <!-- Controls -->
@@ -406,9 +406,9 @@ function updateTable(users) {
                 <tr data-user-id="${user.id}" class="border-b hover:bg-gray-50 transition-colors duration-200">
                     <td class="w-12 text-center py-4">
                         <div class="flex items-center justify-center">
-                            <input type="checkbox" 
-                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                                   id="user-${user.id}" 
+                            <input type="checkbox"
+                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                   id="user-${user.id}"
                                    value="${user.id}">
                         </div>
                     </td>
