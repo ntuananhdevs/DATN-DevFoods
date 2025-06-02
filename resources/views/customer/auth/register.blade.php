@@ -284,12 +284,6 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault(); // Prevent default form submission
 
         // Clear previous errors
-<<<<<<< HEAD
-        emailError.classList.add('hidden');
-        passwordError.classList.add('hidden');
-        confirmPasswordError.classList.add('hidden');
-
-=======
         document.getElementById('emailError').classList.add('hidden');
         document.getElementById('passwordError').classList.add('hidden');
         document.getElementById('confirmPasswordError').classList.add('hidden');
@@ -301,7 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
->>>>>>> 5932361068f812f611e5da9330e48e05411f6665
         // Validate passwords match
         const password = passwordInput.value;
         const confirmPassword = passwordConfirmInput.value;
