@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Workbench\App\Models\User as ModelsUser;
 use App\Models\UserImage;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -365,7 +366,7 @@ class UserController extends Controller
                 ]
             ]);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Xử lý riêng lỗi validation
             return redirect()->back()->withErrors($e->validator)->withInput();
 

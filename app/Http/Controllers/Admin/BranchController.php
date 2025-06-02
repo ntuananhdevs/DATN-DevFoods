@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\EmailFactory;
 use App\Models\Branch;
 use App\Models\BranchImage;
 use App\Models\User;
 use App\Models\Role;
+use App\Notifications\BranchManagerAssigned;
+use App\Notifications\BranchManagerRemoved;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -530,8 +533,25 @@ public function bulkStatusUpdate(Request $request)
             DB::beginTransaction();
 
             $branch = Branch::findOrFail($id);
+
+            // Check if there was a previous manager
+            if ($branch->manager_user_id && $branch->manager_user_id != $validated['manager_user_id']) {
+                // Get the previous manager to send notification
+                $previousManager = User::findOrFail($branch->manager_user_id);
+
+                // Send removal notification to the previous manager
+                $previousManager->notify(new BranchManagerRemoved($branch, $previousManager));
+            }
+
+            // Update branch with new manager
             $branch->manager_user_id = $validated['manager_user_id'];
             $branch->save();
+
+            // Get the new manager to send notification
+            $newManager = User::findOrFail($validated['manager_user_id']);
+
+            // Send email notification to the new manager
+            $newManager->notify(new BranchManagerAssigned($branch, $newManager));
 
             DB::commit();
 
@@ -556,7 +576,19 @@ public function bulkStatusUpdate(Request $request)
         try {
             DB::beginTransaction();
 
-            $branch->update(['manager_user_id' => null]);
+            // Store manager information before removing it
+            if ($branch->manager_user_id) {
+                $manager = User::findOrFail($branch->manager_user_id);
+
+                // Update branch to remove manager
+                $branch->update(['manager_user_id' => null]);
+
+                // Send email notification to the manager about removal
+                $manager->notify(new BranchManagerRemoved($branch, $manager));
+            } else {
+                // No manager to remove
+                $branch->update(['manager_user_id' => null]);
+            }
 
             DB::commit();
 
@@ -569,7 +601,9 @@ public function bulkStatusUpdate(Request $request)
                     ]
                 ]);
         } catch (\Exception $e) {
+
             DB::rollBack();
+
             Log::error('Error removing manager: ' . $e->getMessage());
             return redirect()->back()
                 ->with('error', 'Gỡ bỏ quản lý thất bại: ' . $e->getMessage());

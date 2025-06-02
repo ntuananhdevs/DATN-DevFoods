@@ -166,4 +166,73 @@ class EmailFactory
         SendEmailJob::dispatch($to, $mailable);
     }
 
+    /**
+     * Gửi email thông báo gỡ bỏ quản lý
+     *
+     * @param object $manager Thông tin người quản lý
+     * @param object $branch Thông tin chi nhánh
+     * @return void
+     */
+    public static function sendManagerRemoved($manager, $branch)
+    {
+        // Đảm bảo dữ liệu phù hợp với template
+        $data = [
+            'manager' => [
+                'full_name' => $manager->full_name,
+                'email' => $manager->email,
+                'phone' => $manager->phone ?? '',
+                'id' => $manager->id
+            ],
+            'branch' => [
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'phone' => $branch->phone,
+                'email' => $branch->email ?? ''
+            ]
+        ];
+
+        $mailable = new NotificationMail(
+            'branch_manager_removed',
+            $data,
+            "Thông báo gỡ bỏ quản lý chi nhánh - " . config('app.name')
+        );
+
+        // Sử dụng queue để gửi email
+        SendEmailJob::dispatch($manager->email, $mailable);
+    }
+
+    /**
+     * Gửi email thông báo phân công quản lý chi nhánh
+     *
+     * @param object $manager Thông tin người quản lý
+     * @param object $branch Thông tin chi nhánh
+     * @return void
+     */
+    public static function sendManagerAssigned($manager, $branch)
+    {
+        // Đảm bảo dữ liệu phù hợp với template
+        $data = [
+            'manager' => [
+                'full_name' => $manager->full_name,
+                'email' => $manager->email,
+                'phone' => $manager->phone ?? '',
+                'id' => $manager->id
+            ],
+            'branch' => [
+                'name' => $branch->name,
+                'address' => $branch->address,
+                'phone' => $branch->phone,
+                'email' => $branch->email ?? ''
+            ]
+        ];
+
+        $mailable = new NotificationMail(
+            'branch_manager_assigned',
+            $data,
+            "Phân công quản lý chi nhánh - " . config('app.name')
+        );
+
+        // Sử dụng queue để gửi email
+        SendEmailJob::dispatch($manager->email, $mailable);
+    }
 }

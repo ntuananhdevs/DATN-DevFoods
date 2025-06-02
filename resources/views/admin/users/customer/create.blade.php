@@ -1,8 +1,8 @@
 @extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-7xl mx-auto">
+<div class="min-h-screen bg-gray-50 p-3">
+    <div class="w-full">
         <!-- Main Header -->
         <div class="flex items-center gap-4 mb-8">
             <div class="p-3 bg-blue-100 rounded-lg">
