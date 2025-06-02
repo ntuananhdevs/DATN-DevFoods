@@ -300,23 +300,23 @@ class ProductController extends Controller
                         ['name' => $toppingData['name']],
                         [
                             'price' => $toppingData['price'],
-                            'active' => isset($toppingData['available']) ? (bool)$toppingData['available'] : true
+                            'active' => isset($toppingData['active']) ? (bool)$toppingData['active'] : true
                         ]
                     );
                     \Log::info('Created/Found topping:', ['id' => $topping->id, 'name' => $topping->name]);
 
                     // Handle topping image if uploaded
-                    if ($request->hasFile("toppings.{$index}.image")) {
-                        $image = $request->file("toppings.{$index}.image");
+                    if ($request->hasFile("toppings.$index.image")) {
+                        $toppingImage = $request->file("toppings.$index.image");
                         \Log::info('Uploading topping image from dot notation', [
-                            'original_name' => $image->getClientOriginalName(),
+                            'original_name' => $toppingImage->getClientOriginalName(),
                         ]);
                         
                         // Generate unique filename
-                        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                        $filename = Str::uuid() . '.' . $toppingImage->getClientOriginalExtension();
                         
                         // Upload to S3
-                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($toppingImage));
                         
                         if ($path) {
                             $topping->update([
@@ -326,16 +326,16 @@ class ProductController extends Controller
                     } 
                     // Also check the alternative array format
                     else if (isset($request->file('toppings')[$index]['image'])) {
-                        $image = $request->file('toppings')[$index]['image'];
+                        $toppingImage = $request->file('toppings')[$index]['image'];
                         \Log::info('Uploading topping image from array', [
-                            'original_name' => $image->getClientOriginalName(),
+                            'original_name' => $toppingImage->getClientOriginalName(),
                         ]);
                         
                         // Generate unique filename
-                        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+                        $filename = Str::uuid() . '.' . $toppingImage->getClientOriginalExtension();
                         
                         // Upload to S3
-                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
+                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($toppingImage));
                         
                         if ($path) {
                             $topping->update([
@@ -531,327 +531,339 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            // Validate the request
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'category_id' => 'required|exists:categories,id',
-                'base_price' => 'required|numeric|min:0',
-                'status' => 'required|in:coming_soon,selling,discontinued',
-                'release_at' => 'nullable|date',
-                'preparation_time' => 'nullable|integer|min:0',
-            ]);
+            // Check if this is a stock update only
+            $isStockUpdateOnly = $request->header('Content-Type') === 'application/json' && 
+                ($request->has('update_branch_stocks') || $request->has('update_topping_stocks'));
+            
+            // If it's only a stock update, we can skip most validation
+            if (!$isStockUpdateOnly) {
+                // Validate the request
+                $validated = $request->validate([
+                    'name' => 'required|string|max:255',
+                    'category_id' => 'required|exists:categories,id',
+                    'base_price' => 'required|numeric|min:0',
+                    'status' => 'required|in:coming_soon,selling,discontinued',
+                    'release_at' => 'nullable|date',
+                    'preparation_time' => 'nullable|integer|min:0',
+                ]);
+            }
 
             DB::beginTransaction();
             
             $product = Product::findOrFail($id);
             
-            // Update basic product information
-            $product->name = $request->name;
-            $product->category_id = $request->category_id;
-            $product->base_price = $request->base_price;
-            $product->status = $request->status;
-            $product->release_at = $request->release_at;
-            $product->preparation_time = $request->preparation_time;
-            $product->short_description = $request->short_description;
-            $product->description = $request->description;
-            $product->ingredients = json_decode($request->ingredients_json ?? '[]');
-            $product->is_featured = $request->has('is_featured') ? 1 : 0;
-            
-            $product->save();
-            
-            // Handle primary image upload
-            if ($request->hasFile('primary_image')) {
-                $primaryImage = $request->file('primary_image');
-                $path = $primaryImage->store('products', 's3');
+            // If not just updating stocks, update basic product information
+            if (!$isStockUpdateOnly) {
+                $product->name = $request->name;
+                $product->category_id = $request->category_id;
+                $product->base_price = $request->base_price;
+                $product->status = $request->status;
+                $product->release_at = $request->release_at;
+                $product->preparation_time = $request->preparation_time;
+                $product->short_description = $request->short_description;
+                $product->description = $request->description;
+                $product->ingredients = json_decode($request->ingredients_json ?? '[]');
+                $product->is_featured = $request->has('is_featured') ? 1 : 0;
                 
-                // Check if primary image already exists
-                $existingPrimaryImage = $product->images()->first();
-                if ($existingPrimaryImage) {
-                    // Delete old image from storage
-                    Storage::disk('s3')->delete($existingPrimaryImage->img);
-                    $existingPrimaryImage->img = $path;
-                    $existingPrimaryImage->save();
-                } else {
-                    // Create new primary image
-                    $product->images()->create([
-                        'img' => $path,
-                        'display_order' => 0
-                    ]);
-                }
-            }
-            
-            // Handle additional images
-            if ($request->hasFile('images')) {
-                $displayOrder = $product->images()->count();
-                foreach ($request->file('images') as $image) {
-                    $path = $image->store('products', 's3');
-                    $product->images()->create([
-                        'img' => $path,
-                        'display_order' => $displayOrder++
-                    ]);
-                }
-            }
-            
-            // Handle deleted images
-            if ($request->has('deleted_images')) {
-                $deletedImages = $request->input('deleted_images');
-                $productImages = ProductImg::whereIn('id', $deletedImages)->get();
+                $product->save();
                 
-                foreach ($productImages as $image) {
-                    Storage::disk('s3')->delete($image->img);
-                    $image->delete();
-                }
-            }
-            
-            // Handle attributes and variant values
-            if ($request->has('attributes')) {
-                // Log for debugging
-                \Log::info('Processing attributes...', ['count' => count($request->input('attributes'))]);
-                
-                $attributeGroups = [];
-                $existingVariantValueIds = [];
-                
-                foreach ($request->input('attributes') as $attrIndex => $attribute) {
-                    // Skip if no name provided
-                    if (empty($attribute['name'])) continue;
+                // Handle primary image upload
+                if ($request->hasFile('primary_image')) {
+                    $primaryImage = $request->file('primary_image');
+                    $path = $primaryImage->store('products', 's3');
                     
-                    // Create or update attribute
-                    $attributeModel = null;
+                    // Check if primary image already exists
+                    $existingPrimaryImage = $product->images()->first();
+                    if ($existingPrimaryImage) {
+                        // Delete old image from storage
+                        Storage::disk('s3')->delete($existingPrimaryImage->img);
+                        $existingPrimaryImage->img = $path;
+                        $existingPrimaryImage->save();
+                    } else {
+                        // Create new primary image
+                        $product->images()->create([
+                            'img' => $path,
+                            'display_order' => 0
+                        ]);
+                    }
+                }
+                
+                // Handle additional images
+                if ($request->hasFile('images')) {
+                    $displayOrder = $product->images()->count();
+                    foreach ($request->file('images') as $image) {
+                        $path = $image->store('products', 's3');
+                        $product->images()->create([
+                            'img' => $path,
+                            'display_order' => $displayOrder++
+                        ]);
+                    }
+                }
+                
+                // Handle deleted images
+                if ($request->has('deleted_images')) {
+                    $deletedImages = $request->input('deleted_images');
+                    $productImages = ProductImg::whereIn('id', $deletedImages)->get();
                     
-                    if (isset($attribute['id'])) {
-                        // Update existing attribute
-                        $attributeModel = VariantAttribute::find($attribute['id']);
-                        if ($attributeModel) {
-                            $attributeModel->name = $attribute['name'];
-                            $attributeModel->save();
+                    foreach ($productImages as $image) {
+                        Storage::disk('s3')->delete($image->img);
+                        $image->delete();
+                    }
+                }
+                
+                // Handle attributes and variant values
+                if ($request->has('attributes')) {
+                    // Log for debugging
+                    \Log::info('Processing attributes...', ['count' => count($request->input('attributes'))]);
+                    
+                    $attributeGroups = [];
+                    $existingVariantValueIds = [];
+                    
+                    foreach ($request->input('attributes') as $attrIndex => $attribute) {
+                        // Skip if no name provided
+                        if (empty($attribute['name'])) continue;
+                        
+                        // Create or update attribute
+                        $attributeModel = null;
+                        
+                        if (isset($attribute['id'])) {
+                            // Update existing attribute
+                            $attributeModel = VariantAttribute::find($attribute['id']);
+                            if ($attributeModel) {
+                                $attributeModel->name = $attribute['name'];
+                                $attributeModel->save();
+                            }
                         }
-                    }
-                    
-                    if (!$attributeModel) {
-                        // Create new attribute
-                        $attributeModel = VariantAttribute::firstOrCreate(['name' => $attribute['name']]);
-                    }
-                    
-                    \Log::info('Attribute processed:', [
-                        'id' => $attributeModel->id, 
-                        'name' => $attributeModel->name
-                    ]);
-                    
-                    $values = [];
-                    // Handle attribute values
-                    if (!empty($attribute['values'])) {
-                        foreach ($attribute['values'] as $valueData) {
-                            // Skip if no value provided
-                            if (empty($valueData['value'])) continue;
-                            
-                            $valueModel = null;
-                            
-                            if (isset($valueData['id'])) {
-                                // Update existing value
-                                $valueModel = VariantValue::find($valueData['id']);
-                                if ($valueModel) {
-                                    $valueModel->value = $valueData['value'];
-                                    $valueModel->price_adjustment = $valueData['price_adjustment'] ?? 0;
-                                    $valueModel->save();
+                        
+                        if (!$attributeModel) {
+                            // Create new attribute
+                            $attributeModel = VariantAttribute::firstOrCreate(['name' => $attribute['name']]);
+                        }
+                        
+                        \Log::info('Attribute processed:', [
+                            'id' => $attributeModel->id, 
+                            'name' => $attributeModel->name
+                        ]);
+                        
+                        $values = [];
+                        // Handle attribute values
+                        if (!empty($attribute['values'])) {
+                            foreach ($attribute['values'] as $valueData) {
+                                // Skip if no value provided
+                                if (empty($valueData['value'])) continue;
+                                
+                                $valueModel = null;
+                                
+                                if (isset($valueData['id'])) {
+                                    // Update existing value
+                                    $valueModel = VariantValue::find($valueData['id']);
+                                    if ($valueModel) {
+                                        $valueModel->value = $valueData['value'];
+                                        $valueModel->price_adjustment = $valueData['price_adjustment'] ?? 0;
+                                        $valueModel->save();
+                                        $existingVariantValueIds[] = $valueModel->id;
+                                    }
+                                }
+                                
+                                if (!$valueModel) {
+                                    // Create new value
+                                    $valueModel = VariantValue::updateOrCreate(
+                                        [
+                                            'variant_attribute_id' => $attributeModel->id,
+                                            'value' => $valueData['value']
+                                        ],
+                                        [
+                                            'price_adjustment' => $valueData['price_adjustment'] ?? 0
+                                        ]
+                                    );
                                     $existingVariantValueIds[] = $valueModel->id;
                                 }
-                            }
-                            
-                            if (!$valueModel) {
-                                // Create new value
-                                $valueModel = VariantValue::updateOrCreate(
-                                    [
-                                        'variant_attribute_id' => $attributeModel->id,
-                                        'value' => $valueData['value']
-                                    ],
-                                    [
-                                        'price_adjustment' => $valueData['price_adjustment'] ?? 0
-                                    ]
-                                );
-                                $existingVariantValueIds[] = $valueModel->id;
-                            }
-                            
-                            \Log::info('Value processed:', [
-                                'id' => $valueModel->id, 
-                                'value' => $valueModel->value,
-                                'price_adjustment' => $valueModel->price_adjustment
-                            ]);
-                            
-                            $values[] = $valueModel;
-                        }
-                    }
-                    
-                    $attributeGroups[] = [
-                        'attribute' => $attributeModel,
-                        'values' => $values
-                    ];
-                }
-                
-                // If attributes have changed, regenerate variants
-                if (count($attributeGroups) > 0) {
-                    \Log::info('Regenerating variants based on attributes');
-                    
-                    // Save existing variants in case we need to map stock data
-                    $existingVariants = $product->variants()->with('productVariantDetails.variantValue')->get();
-                    $existingVariantMap = [];
-                    
-                    foreach ($existingVariants as $variant) {
-                        // Create a signature for each variant based on its attribute values
-                        $valueIds = $variant->productVariantDetails()
-                            ->join('variant_values', 'product_variant_details.variant_value_id', '=', 'variant_values.id')
-                            ->orderBy('variant_values.variant_attribute_id')
-                            ->pluck('variant_value_id')
-                            ->toArray();
-                        
-                        if (!empty($valueIds)) {
-                            $signature = implode('-', $valueIds);
-                            $existingVariantMap[$signature] = $variant->id;
-                        }
-                    }
-                    
-                    // Delete old variants and their details
-                    // But save branch stock data first to reapply after creating new variants
-                    $stockData = DB::table('branch_stocks')
-                        ->whereIn('product_variant_id', $existingVariants->pluck('id')->toArray())
-                        ->get(['branch_id', 'product_variant_id', 'stock_quantity'])
-                        ->keyBy(function($item) {
-                            return $item->branch_id . '-' . $item->product_variant_id;
-                        });
-                    
-                    // Now delete old data
-                    foreach ($existingVariants as $variant) {
-                        $variant->productVariantDetails()->delete();
-                    }
-                    $product->variants()->delete();
-                    
-                    // Generate all possible combinations
-                    $combinations = $this->generateVariantCombinations($attributeGroups);
-                    \Log::info('Generated combinations count:', ['count' => count($combinations)]);
-                
-                    // Create variants for each combination
-                    foreach ($combinations as $combination) {
-                        // Create product variant
-                        $variant = $product->variants()->create([
-                            'active' => true
-                        ]);
-                        \Log::info('Created variant:', ['id' => $variant->id]);
-                
-                        // Create variant details for each value in the combination
-                        $valueIds = [];
-                        foreach ($combination as $variantValue) {
-                            $variantDetail = $variant->productVariantDetails()->create([
-                                'variant_value_id' => $variantValue->id
-                            ]);
-                            $valueIds[] = $variantValue->id;
-                            \Log::info('Created variant detail:', [
-                                'id' => $variantDetail->id, 
-                                'variant_value_id' => $variantValue->id
-                            ]);
-                        }
-                        
-                        // If this combination maps to an old variant, restore its stock data
-                        if (!empty($valueIds)) {
-                            $signature = implode('-', $valueIds);
-                            if (isset($existingVariantMap[$signature])) {
-                                $oldVariantId = $existingVariantMap[$signature];
-                                \Log::info('Found matching old variant:', [
-                                    'old_id' => $oldVariantId,
-                                    'new_id' => $variant->id
+                                
+                                \Log::info('Value processed:', [
+                                    'id' => $valueModel->id, 
+                                    'value' => $valueModel->value,
+                                    'price_adjustment' => $valueModel->price_adjustment
                                 ]);
                                 
-                                // Restore stock data for this variant
-                                foreach ($stockData as $key => $stock) {
-                                    if ($stock->product_variant_id == $oldVariantId) {
-                                        DB::table('branch_stocks')->updateOrInsert(
-                                            [
+                                $values[] = $valueModel;
+                            }
+                        }
+                        
+                        $attributeGroups[] = [
+                            'attribute' => $attributeModel,
+                            'values' => $values
+                        ];
+                    }
+                    
+                    // If attributes have changed, regenerate variants
+                    if (count($attributeGroups) > 0) {
+                        \Log::info('Regenerating variants based on attributes');
+                        
+                        // Save existing variants in case we need to map stock data
+                        $existingVariants = $product->variants()->with('productVariantDetails.variantValue')->get();
+                        $existingVariantMap = [];
+                        
+                        foreach ($existingVariants as $variant) {
+                            // Create a signature for each variant based on its attribute values
+                            $valueIds = $variant->productVariantDetails()
+                                ->join('variant_values', 'product_variant_details.variant_value_id', '=', 'variant_values.id')
+                                ->orderBy('variant_values.variant_attribute_id')
+                                ->pluck('variant_value_id')
+                                ->toArray();
+                            
+                            if (!empty($valueIds)) {
+                                $signature = implode('-', $valueIds);
+                                $existingVariantMap[$signature] = $variant->id;
+                            }
+                        }
+                        
+                        // Delete old variants and their details
+                        // But save branch stock data first to reapply after creating new variants
+                        $stockData = DB::table('branch_stocks')
+                            ->whereIn('product_variant_id', $existingVariants->pluck('id')->toArray())
+                            ->get(['branch_id', 'product_variant_id', 'stock_quantity'])
+                            ->keyBy(function($item) {
+                                return $item->branch_id . '-' . $item->product_variant_id;
+                            });
+                        
+                        // Now delete old data
+                        foreach ($existingVariants as $variant) {
+                            $variant->productVariantDetails()->delete();
+                        }
+                        $product->variants()->delete();
+                        
+                        // Generate all possible combinations
+                        $combinations = $this->generateVariantCombinations($attributeGroups);
+                        \Log::info('Generated combinations count:', ['count' => count($combinations)]);
+                    
+                        // Create variants for each combination
+                        foreach ($combinations as $combination) {
+                            // Create product variant
+                            $variant = $product->variants()->create([
+                                'active' => true
+                            ]);
+                            \Log::info('Created variant:', ['id' => $variant->id]);
+                    
+                            // Create variant details for each value in the combination
+                            $valueIds = [];
+                            foreach ($combination as $variantValue) {
+                                $variantDetail = $variant->productVariantDetails()->create([
+                                    'variant_value_id' => $variantValue->id
+                                ]);
+                                $valueIds[] = $variantValue->id;
+                                \Log::info('Created variant detail:', [
+                                    'id' => $variantDetail->id, 
+                                    'variant_value_id' => $variantValue->id
+                                ]);
+                            }
+                            
+                            // If this combination maps to an old variant, restore its stock data
+                            if (!empty($valueIds)) {
+                                $signature = implode('-', $valueIds);
+                                if (isset($existingVariantMap[$signature])) {
+                                    $oldVariantId = $existingVariantMap[$signature];
+                                    \Log::info('Found matching old variant:', [
+                                        'old_id' => $oldVariantId,
+                                        'new_id' => $variant->id
+                                    ]);
+                                    
+                                    // Restore stock data for this variant
+                                    foreach ($stockData as $key => $stock) {
+                                        if ($stock->product_variant_id == $oldVariantId) {
+                                            DB::table('branch_stocks')->updateOrInsert(
+                                                [
+                                                    'branch_id' => $stock->branch_id,
+                                                    'product_variant_id' => $variant->id
+                                                ],
+                                                [
+                                                    'stock_quantity' => $stock->stock_quantity,
+                                                    'updated_at' => now()
+                                                ]
+                                            );
+                                            \Log::info('Restored stock data:', [
                                                 'branch_id' => $stock->branch_id,
-                                                'product_variant_id' => $variant->id
-                                            ],
-                                            [
-                                                'stock_quantity' => $stock->stock_quantity,
-                                                'updated_at' => now()
-                                            ]
-                                        );
-                                        \Log::info('Restored stock data:', [
-                                            'branch_id' => $stock->branch_id,
-                                            'quantity' => $stock->stock_quantity
-                                        ]);
+                                                'quantity' => $stock->stock_quantity
+                                            ]);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
-            
-            // Handle toppings
-            if ($request->has('toppings')) {
-                // Get existing topping IDs
-                $existingToppingIds = $product->toppings()->pluck('toppings.id')->toArray();
-                $newToppingIds = [];
                 
-                foreach ($request->input('toppings') as $index => $toppingData) {
-                    if (empty($toppingData['name'])) continue;
+                // Handle toppings
+                if ($request->has('toppings')) {
+                    // Get existing topping IDs
+                    $existingToppingIds = $product->toppings()->pluck('toppings.id')->toArray();
+                    $newToppingIds = [];
                     
-                    if (isset($toppingData['id'])) {
-                        // Update existing topping
-                        $topping = Topping::find($toppingData['id']);
-                        if ($topping) {
+                    foreach ($request->input('toppings') as $index => $toppingData) {
+                        if (empty($toppingData['name'])) continue;
+                        
+                        if (isset($toppingData['id'])) {
+                            // Update existing topping
+                            $topping = Topping::find($toppingData['id']);
+                            if ($topping) {
+                                $topping->name = $toppingData['name'];
+                                $topping->price = $toppingData['price'];
+                                $topping->active = isset($toppingData['active']) ? 1 : 0;
+                                $topping->save();
+                                $newToppingIds[] = $topping->id;
+                            }
+                        } else {
+                            // Create new topping
+                            $topping = new Topping();
                             $topping->name = $toppingData['name'];
                             $topping->price = $toppingData['price'];
-                            $topping->active = isset($toppingData['available']) ? 1 : 0;
+                            $topping->active = isset($toppingData['active']) ? 1 : 0;
                             $topping->save();
+                            
+                            // Attach to product
+                            $product->toppings()->attach($topping->id);
                             $newToppingIds[] = $topping->id;
                         }
-                    } else {
-                        // Create new topping
-                        $topping = new Topping();
-                        $topping->name = $toppingData['name'];
-                        $topping->price = $toppingData['price'];
-                        $topping->active = isset($toppingData['available']) ? 1 : 0;
-                        $topping->save();
                         
-                        // Attach to product
-                        $product->toppings()->attach($topping->id);
-                        $newToppingIds[] = $topping->id;
+                        // Handle topping image
+                        if ($request->hasFile("toppings.$index.image")) {
+                            $toppingImage = $request->file("toppings.$index.image");
+                            
+                            // Generate unique filename
+                            $filename = Str::uuid() . '.' . $toppingImage->getClientOriginalExtension();
+                            
+                            // Upload to S3
+                            $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($toppingImage));
+                            
+                            // Delete old image if exists
+                            if ($topping->image) {
+                                Storage::disk('s3')->delete($topping->image);
+                            }
+                            
+                            $topping->image = 'toppings/' . $filename;
+                            $topping->save();
+                            
+                            \Log::info('Updated topping image:', [
+                                'topping_id' => $topping->id,
+                                'topping_name' => $topping->name,
+                                'image_path' => 'toppings/' . $filename
+                            ]);
+                        }
                     }
                     
-                    // Handle topping image
-                    if ($request->hasFile('topping_images') && isset($request->file('topping_images')[$index])) {
-                        $toppingImage = $request->file('topping_images')[$index];
-                        
-                        // Generate unique filename
-                        $filename = Str::uuid() . '.' . $toppingImage->getClientOriginalExtension();
-                        
-                        // Upload to S3
-                        $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($toppingImage));
-                        
-                        // Delete old image if exists
-                        if ($topping->image) {
-                            Storage::disk('s3')->delete($topping->image);
-                        }
-                        
-                        $topping->image = 'toppings/' . $filename;
-                        $topping->save();
-                        
-                        \Log::info('Updated topping image:', [
-                            'topping_id' => $topping->id,
-                            'topping_name' => $topping->name,
-                            'image_path' => 'toppings/' . $filename
-                        ]);
+                    // Detach toppings that were removed
+                    $toppingsToDetach = array_diff($existingToppingIds, $newToppingIds);
+                    if (!empty($toppingsToDetach)) {
+                        $product->toppings()->detach($toppingsToDetach);
                     }
-                }
-                
-                // Detach toppings that were removed
-                $toppingsToDetach = array_diff($existingToppingIds, $newToppingIds);
-                if (!empty($toppingsToDetach)) {
-                    $product->toppings()->detach($toppingsToDetach);
                 }
             }
             
             // Handle branch stocks if the flag is set
             if ($request->has('update_branch_stocks')) {
-                foreach ($request->input('branch_stock', []) as $branchId => $variants) {
+                $branchStocks = $request->input('branch_stock', []);
+                \Log::info('Updating branch stocks', ['data' => $branchStocks]);
+                
+                foreach ($branchStocks as $branchId => $variants) {
                     foreach ($variants as $variantId => $quantity) {
                         // Make sure variant exists and belongs to this product
                         $variant = ProductVariant::where('id', $variantId)
@@ -860,16 +872,24 @@ class ProductController extends Controller
                             
                         // If variant is valid or we're using the default variant (0)
                         if ($variant || $variantId == 0) {
+                            $varId = $variant ? $variant->id : $variantId;
+                            
                             // Find or create the branch stock record
                             BranchStock::updateOrCreate(
                                 [
                                     'branch_id' => $branchId,
-                                    'product_variant_id' => $variantId,
+                                    'product_variant_id' => $varId,
                                 ],
                                 [
                                     'stock_quantity' => $quantity,
                                 ]
                             );
+                            
+                            \Log::info('Updated branch stock:', [
+                                'branch_id' => $branchId,
+                                'variant_id' => $varId,
+                                'quantity' => $quantity
+                            ]);
                         }
                     }
                 }
@@ -877,7 +897,10 @@ class ProductController extends Controller
             
             // Handle topping stocks if the flag is set
             if ($request->has('update_topping_stocks')) {
-                foreach ($request->input('topping_stock', []) as $branchId => $toppings) {
+                $toppingStocks = $request->input('topping_stock', []);
+                \Log::info('Updating topping stocks', ['data' => $toppingStocks]);
+                
+                foreach ($toppingStocks as $branchId => $toppings) {
                     foreach ($toppings as $toppingId => $quantity) {
                         // Make sure topping exists
                         $topping = Topping::find($toppingId);
@@ -893,6 +916,12 @@ class ProductController extends Controller
                                     'stock_quantity' => $quantity,
                                 ]
                             );
+                            
+                            \Log::info('Updated topping stock:', [
+                                'branch_id' => $branchId,
+                                'topping_id' => $toppingId,
+                                'quantity' => $quantity
+                            ]);
                         }
                     }
                 }
@@ -901,15 +930,15 @@ class ProductController extends Controller
             DB::commit();
             
             // Check if this is an AJAX request
-            if ($request->ajax()) {
+            if ($request->ajax() || $request->expectsJson() || $isStockUpdateOnly) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Sản phẩm đã được cập nhật thành công!',
-                    'redirect' => route('admin.products.index')
+                    'message' => $isStockUpdateOnly ? 'Số lượng tồn kho đã được cập nhật thành công!' : 'Sản phẩm đã được cập nhật thành công!',
+                    'redirect' => route('admin.products.edit', $product->id)
                 ]);
             }
             
-            return redirect()->route('admin.products.index')
+            return redirect()->route('admin.products.edit', $product->id)
                 ->with('toast', [
                     'type' => 'success',
                     'title' => 'Thành công',
@@ -923,7 +952,7 @@ class ProductController extends Controller
             ]);
             
             // Check if this is an AJAX request
-            if ($request->ajax()) {
+            if ($request->ajax() || $request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Có lỗi xảy ra khi cập nhật sản phẩm: ' . $e->getMessage()

@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
+            UserRankSeeder::class,
             UserSeeder::class,
             // CategorySeeder::class,
             BranchSeeder::class,
@@ -21,6 +22,14 @@ class DatabaseSeeder extends Seeder
             UserRoleSeeder::class,
             FastFoodSeeder::class,
             BannerSeeder::class,
+            PromotionProgramSeeder::class,
+            PromotionDiscountCodeSeeder::class,
+            UserDiscountCodeSeeder::class,
+            DiscountCodeBranchSeeder::class,
+            PromotionBranchSeeder::class,
+            DiscountCodeProductSeeder::class,
+            DiscountUsageHistorySeeder::class,
+            UserRankHistorySeeder::class,
         ]);
     }
 }
