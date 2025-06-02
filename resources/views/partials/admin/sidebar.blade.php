@@ -150,26 +150,6 @@
                     <span class="sidebar-text">Đơn hàng</span>
                 </a>
 
-
-                <!-- driver -->
-                <div class="sidebar-dropdown">
-                    <button class="sidebar-dropdown-trigger flex w-full items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                        <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck">
-                                <path d="M14 18V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path>
-                                <path d="M15 18H9"></path>
-                                <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path>
-                                <circle cx="17" cy="18" r="2"></circle>
-                                <circle cx="7" cy="18" r="2"></circle>
-                            </svg>
-                        </span>
-                        <span class="sidebar-text">Tài xế</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-auto lucide lucide-chevron-down">
-                            <path d="m6 9 6 6 6-6"></path>
-                        </svg>
-                    </span>
-                    <span class="sidebar-text">Customers</span>
-                </a>
             <!-- driver -->
             <div class="sidebar-dropdown">
                 <button class="sidebar-dropdown-trigger flex w-full items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.driver.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
