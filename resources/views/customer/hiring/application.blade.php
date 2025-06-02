@@ -301,11 +301,12 @@
                     
                     <div>
                         <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
-                            Thành phố <span class="required">*</span>
+                            Tỉnh/Thành phố <span class="required">*</span>
                         </label>
-                        <input type="text" id="city" name="city" 
-                               class="form-input @error('city') error @enderror" 
-                               value="{{ old('city') }}" required>
+                        <select id="city" name="city" 
+                               class="form-select @error('city') error @enderror" required>
+                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        </select>
                         @error('city')
                             <div class="error-message">{{ $message }}</div>
                         @enderror
@@ -315,9 +316,10 @@
                         <label for="district" class="block text-sm font-medium text-gray-700 mb-2">
                             Quận/Huyện <span class="required">*</span>
                         </label>
-                        <input type="text" id="district" name="district" 
-                               class="form-input @error('district') error @enderror" 
-                               value="{{ old('district') }}" required>
+                        <select id="district" name="district" 
+                               class="form-select @error('district') error @enderror" required>
+                            <option value="">-- Chọn Quận/Huyện --</option>
+                        </select>
                         @error('district')
                             <div class="error-message">{{ $message }}</div>
                         @enderror
@@ -620,31 +622,19 @@
                 @enderror
             </div>
             
-            <!-- Turnstile Captcha -->
-            <div class="form-section p-6">
-                <h3 class="section-title text-xl mb-6">
-                    <i class="fas fa-shield-alt mr-3 text-blue-600"></i>Xác minh bảo mật
-                </h3>
-                
-                <div class="flex justify-center">
-                    {{-- Temporarily hardcoded for debugging --}}
-                    <div class="turnstile-container">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Xác minh bảo mật <span class="text-red-500">*</span>
-                        </label>
-                        <div class="cf-turnstile" 
-                             data-sitekey="{{ config('turnstile.site_key') }}"
-                             data-theme="light"
-                             data-size="normal"
-                             data-callback="onTurnstileCallback"
-                             data-error-callback="onTurnstileError"
-                             data-expired-callback="onTurnstileExpired">
-                        </div>
-                        @error('cf-turnstile-response')
-                            <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
+            <!-- Cloudflare Turnstile CAPTCHA -->
+            <div class="form-group mt-4">
+                <div class="cf-turnstile mt-2" 
+                     data-sitekey="{{ config('turnstile.site_key') }}"
+                     data-theme="light"
+                     data-size="normal"
+                     data-callback="onTurnstileCallback"
+                     data-error-callback="onTurnstileError"
+                     data-expired-callback="onTurnstileExpired">
                 </div>
+                @error('cf-turnstile-response')
+                    <div class="text-danger mt-2"><small>{{ $message }}</small></div>
+                @enderror
             </div>
             
             <div class="text-center">
@@ -704,7 +694,90 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Load provinces on page load
+    loadProvinces();
+    
+    // Handle province selection change
+    const citySelect = document.getElementById('city');
+    const districtSelect = document.getElementById('district');
+    
+    if (citySelect && districtSelect) {
+        citySelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const provinceCode = selectedOption.dataset.code;
+            
+            // Reset district dropdown
+            districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+            
+            if (provinceCode) {
+                loadDistricts(provinceCode);
+            }
+        });
+    }
 });
+
+// Load all provinces from API
+function loadProvinces() {
+    const citySelect = document.getElementById('city');
+    if (!citySelect) return;
+    
+    // Show loading state
+    citySelect.innerHTML = '<option value="">Đang tải...</option>';
+    
+    fetch('https://provinces.open-api.vn/api/p/')
+        .then(response => response.json())
+        .then(data => {
+            // Clear loading state
+            citySelect.innerHTML = '<option value="">-- Chọn Tỉnh/Thành phố --</option>';
+            
+            // Add province options
+            if (data && Array.isArray(data)) {
+                data.forEach(province => {
+                    const option = document.createElement('option');
+                    option.value = province.name;
+                    option.textContent = province.name;
+                    option.dataset.code = province.code;
+                    citySelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading provinces:', error);
+            citySelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
+        });
+}
+
+// Load districts for selected province
+function loadDistricts(provinceCode) {
+    const districtSelect = document.getElementById('district');
+    if (!districtSelect) return;
+    
+    // Show loading state
+    districtSelect.innerHTML = '<option value="">Đang tải...</option>';
+    
+    fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
+        .then(response => response.json())
+        .then(data => {
+            // Clear loading state
+            districtSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+            
+            // Add district options
+            if (data && data.districts) {
+                data.districts.forEach(district => {
+                    const option = document.createElement('option');
+                    option.value = district.name;
+                    option.textContent = district.name;
+                    option.dataset.code = district.code;
+                    districtSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading districts:', error);
+            districtSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
+        });
+}
 
 // Modal functions
 function showTermsModal() {
