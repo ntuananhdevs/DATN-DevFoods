@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\TestController;
+// use App\Http\Controllers\TestController;
 use App\Http\Controllers\Api\Customer\ProductController;
 
 /*
@@ -26,24 +26,26 @@ Route::middleware('web')->get('/products', [ProductController::class, 'getProduc
 Route::group([
   'prefix' => 'auth'
 ], function () {
-  Route::post('login', 'AuthController@login');
-  Route::post('register', 'AuthController@register');
+  // Route::post('login', 'AuthController@login');
+  // Route::post('register', 'AuthController@register');
 
-  Route::group([
-    'middleware' => 'auth:api'
-  ], function() {
-      Route::get('logout', 'AuthController@logout');
-      Route::get('user', 'AuthController@user');
-  });
+  // Route::group([
+  //   'middleware' => 'auth:api'
+  // ], function() {
+  //     Route::get('logout', 'AuthController@logout');
+  //     Route::get('user', 'AuthController@user');
+  // });
 });
 
-// Test S3 API Routes
+// Test S3 API Routes - Commented out due to missing TestController
+/*
 Route::prefix('test')->name('api.test.')->group(function () {
     Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
     Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
     Route::delete('/images/{filename}', [TestController::class, 'deleteImage'])->name('images.delete');
     Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });
+*/
 
 
 // Rutas que requieren autenticación

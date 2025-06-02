@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DriverApplication;
+use App\Models\DriverApplicationNotifiable;
+use App\Notifications\DriverApplicationConfirmation;
 use App\Rules\TurnstileRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class HiringController extends Controller
 {
@@ -32,6 +35,14 @@ class HiringController extends Controller
      */
     public function submitApplication(Request $request)
     {
+        // Log the request for debugging
+        Log::info('Driver application submission started', [
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'has_files' => $request->hasFile(['profile_image', 'id_card_front_image']),
+            'turnstile_token' => $request->has('cf-turnstile-response') ? 'present' : 'missing'
+        ]);
+
         // Validate form data
         $validator = Validator::make($request->all(), [
             'full_name' => 'required|string|max:100',
@@ -75,12 +86,21 @@ class HiringController extends Controller
                 ->withInput();
         }
 
-        // Handle file uploads
-        $idCardFrontPath = $request->file('id_card_front_image')->store('driver-applications/id-cards', 'public');
-        $idCardBackPath = $request->file('id_card_back_image')->store('driver-applications/id-cards', 'public');
-        $driverLicensePath = $request->file('driver_license_image')->store('driver-applications/licenses', 'public');
-        $profileImagePath = $request->file('profile_image')->store('driver-applications/profile', 'public');
-        $vehicleRegistrationPath = $request->file('vehicle_registration_image')->store('driver-applications/vehicles', 'public');
+        // Handle file uploads to S3
+        try {
+            $folderPath = $this->generateFolderName($request->full_name);
+            
+            $idCardFrontPath = $request->file('id_card_front_image')->store("{$folderPath}/identification", 'driver_documents');
+            $idCardBackPath = $request->file('id_card_back_image')->store("{$folderPath}/identification", 'driver_documents');
+            $driverLicensePath = $request->file('driver_license_image')->store("{$folderPath}/license", 'driver_documents');
+            $profileImagePath = $request->file('profile_image')->store("{$folderPath}/profile", 'driver_documents');
+            $vehicleRegistrationPath = $request->file('vehicle_registration_image')->store("{$folderPath}/vehicle", 'driver_documents');
+        } catch (\Exception $e) {
+            Log::error('File upload failed: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi tải lên tài liệu. Vui lòng thử lại.')
+                ->withInput();
+        }
 
         // Create driver application record
         $application = DriverApplication::create([
@@ -114,6 +134,34 @@ class HiringController extends Controller
             'status' => 'pending',
         ]);
 
+        // Send confirmation email to the applicant
+        try {
+            $applicant = new DriverApplicationNotifiable($application->email, $application->full_name);
+            $applicant->notify(new DriverApplicationConfirmation($application));
+            
+            Log::info("Application confirmation email sent to applicant", [
+                'application_id' => $application->id,
+                'applicant_email' => $application->email,
+                'applicant_name' => $application->full_name
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send application confirmation email: ' . $e->getMessage(), [
+                'application_id' => $application->id,
+                'applicant_email' => $application->email,
+                'error' => $e->getMessage()
+            ]);
+            // Don't fail the application submission if confirmation email fails
+        }
+
+        // Set session flag for successful application submission
+        session()->flash('application_submitted', true);
+        session()->flash('application_data', [
+            'id' => $application->id,
+            'name' => $application->full_name,
+            'email' => $application->email,
+            'submitted_at' => $application->created_at->format('d/m/Y H:i')
+        ]);
+
         return redirect()->route('driver.application.success');
     }
 
@@ -122,6 +170,41 @@ class HiringController extends Controller
      */
     public function applicationSuccess()
     {
-        return view('customer.hiring.success');
+        // Check if user came from successful application submission
+        if (!session()->has('application_submitted')) {
+            return redirect()->route('driver.application.form')
+                ->with('error', 'Vui lòng điền và gửi đơn đăng ký trước khi truy cập trang này.');
+        }
+
+        // Get application data from session (optional, for display purposes)
+        $applicationData = session('application_data');
+
+        return view('customer.hiring.success', compact('applicationData'));
+    }
+
+    /**
+     * Generate secure URL for S3 file
+     */
+    public function getDocumentUrl($path, $expiration = 60)
+    {
+        try {
+            return Storage::disk('driver_documents')->temporaryUrl($path, now()->addMinutes($expiration));
+        } catch (\Exception $e) {
+            Log::error('Failed to generate document URL: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Generate sanitized folder name from driver name
+     */
+    private function generateFolderName($driverName)
+    {
+        // Remove special characters and convert to lowercase
+        $sanitized = preg_replace('/[^a-zA-Z0-9\s]/', '', $driverName);
+        $sanitized = str_replace(' ', '_', strtolower(trim($sanitized)));
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        
+        return "driver-info/application/{$sanitized}_{$timestamp}";
     }
 }

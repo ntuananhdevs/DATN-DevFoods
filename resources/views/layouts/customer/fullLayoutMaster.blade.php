@@ -975,6 +975,8 @@
     
     @yield('scripts')
     
+    @stack('scripts')
+    
     <!-- Branch Selector Modal -->
     @include('partials.customer.branch-selector-modal')
 </body>
