@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class UserRank extends Model
 {
+    use HasFactory;
+
     protected $table = 'user_ranks';
     protected $fillable = [
         'name', 'slug', 'color', 'icon', 'min_spending', 'min_orders', 'discount_percentage', 'benefits', 'display_order', 'is_active'

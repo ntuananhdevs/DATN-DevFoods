@@ -5,9 +5,8 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Models\Role;
+use App\Models\UserRank;
 use App\Models\User;
-
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -19,6 +18,7 @@ class UserFactory extends Factory
      */
     protected static ?string $password;
     protected $model = User::class;
+
     /**
      * Define the model's default state.
      *
@@ -36,6 +36,10 @@ class UserFactory extends Factory
             'balance' => fake()->randomFloat(2, 0, 1000),
             'active' => true,
             'email_verified_at' => now(),
+            'user_rank_id' => UserRank::inRandomOrder()->first()->id ?? UserRank::factory()->create()->id, // Sử dụng rank hiện có hoặc tạo mới
+            'total_spending' => fake()->randomFloat(2, 0, 10000),
+            'total_orders' => fake()->numberBetween(0, 50),
+            'rank_updated_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
