@@ -14,6 +14,8 @@ class UserRankHistory extends Model
         'user_id', 'old_rank_id', 'new_rank_id', 'total_spending', 'total_orders', 'reason', 'changed_at'
     ];
 
+    public $timestamps = false;
+
     protected $casts = [
         'total_spending' => 'decimal:2',
         'total_orders' => 'integer',

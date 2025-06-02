@@ -21,8 +21,6 @@ class UserDiscountCodeFactory extends Factory
             'assigned_at' => now(),
             'first_used_at' => fake()->optional(0.5)->dateTimeThisYear(),
             'last_used_at' => fake()->optional(0.5)->dateTimeThisYear(),
-            'created_at' => now(),
-            'updated_at' => now(),
         ];
     }
 }
