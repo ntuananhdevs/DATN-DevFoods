@@ -2,36 +2,6 @@
 
 @section('content')
 <style>
-    :root {
-        --branch-primary: #4361ee;
-        --branch-primary-light: #4895ef;
-        --branch-primary-dark: #3f37c9;
-        --branch-secondary: #4cc9f0;
-        --branch-success: #4ade80;
-        --branch-danger: #f43f5e;
-        --branch-warning: #f59e0b;
-        --branch-info: #3b82f6;
-        --branch-light: #f9fafb;
-        --branch-dark: #1f2937;
-        --branch-gray: #6b7280;
-        --branch-gray-light: #e5e7eb;
-        --branch-gray-dark: #4b5563;
-        --branch-white: #ffffff;
-        --branch-black: #000000;
-        --branch-border-radius: 12px;
-        --branch-border-radius-sm: 8px;
-        --branch-border-radius-lg: 16px;
-        --branch-border-radius-xl: 24px;
-        --branch-border-radius-full: 9999px;
-        --branch-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        --branch-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        --branch-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        --branch-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        --branch-transition: all 0.3s ease;
-        --branch-transition-fast: all 0.15s ease;
-        --branch-transition-slow: all 0.5s ease;
-    }
-
     .branch-form-container {
         max-width: 100%;
         margin: 0 auto;
@@ -49,18 +19,18 @@
     h3 { font-size: 1.125rem; }
     h4 { font-size: 1rem; }
     p { margin: 0; line-height: 1.5; }
-   
-    a:hover { color: var(--branch-primary-dark); }
+
+    a:hover { color: #3f37c9; }
 
     .branch-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         padding: 0.5rem 1rem;
-        border-radius: var(--branch-border-radius);
+        border-radius: 12px;
         font-weight: 500;
         cursor: pointer;
-        transition: var(--branch-transition-fast);
+        transition: all 0.15s ease;
         border: none;
         font-size: 0.875rem;
         gap: 0.5rem;
@@ -68,25 +38,25 @@
 
     .branch-btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
     .branch-btn-block { width: 100%; }
-    .branch-btn-primary { background-color: var(--branch-primary); color: var(--branch-white); }
-    .branch-btn-primary:hover { background-color: var(--branch-primary-dark); color: var(--branch-white); }
-    .branch-btn-outline { background-color: transparent; color: var(--branch-gray-dark); border: 1px solid var(--branch-gray-light); }
-    .branch-btn-outline:hover { background-color: var(--branch-gray-light); color: var(--branch-dark); }
-    .branch-btn-danger { background-color: var(--branch-danger); color: var(--branch-white); }
-    .branch-btn-danger:hover { background-color: #e11d48; color: var(--branch-white); }
+    .branch-btn-primary { background-color: #4361ee; color: #ffffff; }
+    .branch-btn-primary:hover { background-color: #3f37c9; color: #ffffff; }
+    .branch-btn-outline { background-color: transparent; color: #4b5563; border: 1px solid #e5e7eb; }
+    .branch-btn-outline:hover { background-color: #e5e7eb; color: #1f2937; }
+    .branch-btn-danger { background-color: #f43f5e; color: #ffffff; }
+    .branch-btn-danger:hover { background-color: #e11d48; color: #ffffff; }
     .branch-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
     .branch-page-header { margin-bottom: 1.5rem; }
     .branch-header-content { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
     .branch-header-left { display: flex; align-items: center; gap: 1rem; }
-    .branch-header-icon { width: 3rem; height: 3rem; background-color: rgba(67, 97, 238, 0.1); color: var(--branch-primary); border-radius: var(--branch-border-radius-full); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-    .branch-header-text p { color: var(--branch-gray); margin-top: 0.25rem; }
+    .branch-header-icon { width: 3rem; height: 3rem; background-color: rgba(67, 97, 238, 0.1); color: #4361ee; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+    .branch-header-text p { color: #6b7280; margin-top: 0.25rem; }
     .branch-header-actions { display: flex; gap: 0.75rem; }
 
-    .branch-card { background-color: var(--branch-white); border-radius: var(--branch-border-radius-lg); box-shadow: var(--branch-shadow); overflow: hidden; transition: var(--branch-transition); margin-bottom: 1.5rem; }
-    .branch-card:hover { box-shadow: var(--branch-shadow-md); transform: translateY(-2px); }
-    .branch-card-header { display: flex; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--branch-gray-light); gap: 0.75rem; }
-    .branch-card-icon { width: 2.5rem; height: 2.5rem; background-color: rgba(67, 97, 238, 0.1); color: var(--branch-primary); border-radius: var(--branch-border-radius-full); display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+    .branch-card { background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden; transition: all 0.3s ease; margin-bottom: 1.5rem; }
+    .branch-card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); transform: translateY(-2px); }
+    .branch-card-header { display: flex; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; gap: 0.75rem; }
+    .branch-card-icon { width: 2.5rem; height: 2.5rem; background-color: rgba(67, 97, 238, 0.1); color: #4361ee; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
     .branch-card-header h3 { flex-grow: 1; }
     .branch-card-actions { display: flex; gap: 0.5rem; }
     .branch-card-body { padding: 1.5rem; }
@@ -97,31 +67,31 @@
     .branch-form-group:last-child { margin-bottom: 0; }
     .branch-form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
     .branch-form-label-icon { display: flex; align-items: center; gap: 0.5rem; }
-    .branch-form-control { display: block; width: 100%; padding: 0.625rem 0.75rem; font-size: 0.875rem; line-height: 1.5; color: var(--branch-dark); background-color: var(--branch-white); background-clip: padding-box; border: 1px solid var(--branch-gray-light); border-radius: var(--branch-border-radius); transition: var(--branch-transition-fast); }
-    .branch-form-control:focus { border-color: var(--branch-primary-light); outline: 0; box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.25); }
+    .branch-form-control { display: block; width: 100%; padding: 0.625rem 0.75rem; font-size: 0.875rem; line-height: 1.5; color: #1f2937; background-color: #ffffff; background-clip: padding-box; border: 1px solid #e5e7eb; border-radius: 12px; transition: all 0.15s ease; }
+    .branch-form-control:focus { border-color: #4895ef; outline: 0; box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.25); }
     select.branch-form-control { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
     textarea.branch-form-control { min-height: 100px; resize: vertical; }
-    .branch-form-hint { margin-top: 0.375rem; font-size: 0.75rem; color: var(--branch-gray); }
-    .branch-form-error { margin-top: 0.375rem; font-size: 0.75rem; color: var(--branch-danger); }
-    .branch-form-check { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 1px solid var(--branch-gray-light); border-radius: var(--branch-border-radius); }
+    .branch-form-hint { margin-top: 0.375rem; font-size: 0.75rem; color: #6b7280; }
+    .branch-form-error { margin-top: 0.375rem; font-size: 0.75rem; color: #f43f5e; }
+    .branch-form-check { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 12px; }
     .branch-form-check-content { flex-grow: 1; }
     .branch-form-check-label { font-weight: 500; }
-    .branch-form-check-hint { font-size: 0.875rem; color: var(--branch-gray); }
+    .branch-form-check-hint { font-size: 0.875rem; color: #6b7280; }
 
     .branch-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
     .branch-switch input { opacity: 0; width: 0; height: 0; }
-    .branch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--branch-gray-light); transition: var(--branch-transition-fast); border-radius: 34px; }
-    .branch-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--branch-transition-fast); border-radius: 50%; }
-    input:checked + .branch-slider { background-color: var(--branch-primary); }
-    input:focus + .branch-slider { box-shadow: 0 0 1px var(--branch-primary); }
+    .branch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e5e7eb; transition: all 0.15s ease; border-radius: 34px; }
+    .branch-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #ffffff; transition: all 0.15s ease; border-radius: 50%; }
+    input:checked + .branch-slider { background-color: #4361ee; }
+    input:focus + .branch-slider { box-shadow: 0 0 1px #4361ee; }
     input:checked + .branch-slider:before { transform: translateX(20px); }
 
     .branch-grid { display: grid; gap: 1.5rem; }
     .branch-grid-2 { grid-template-columns: 1fr; }
     @media (min-width: 768px) { .branch-grid-2 { grid-template-columns: 1fr 1fr; } }
 
-    .branch-upload-label { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background-color: var(--branch-gray-light); border-radius: var(--branch-border-radius); font-size: 0.875rem; transition: var(--branch-transition-fast); }
-    .branch-upload-label:hover { background-color: var(--branch-gray); color: var(--branch-white); }
+    .branch-upload-label { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background-color: #e5e7eb; border-radius: 12px; font-size: 0.875rem; transition: all 0.15s ease; }
+    .branch-upload-label:hover { background-color: #6b7280; color: #ffffff; }
     .branch-upload-input { display: none; }
     .branch-image-preview-grid {
         display: flex;
@@ -133,12 +103,12 @@
     }
     .branch-image-preview-item {
         position: relative;
-        border-radius: var(--branch-border-radius);
+        border-radius: 12px;
         overflow: hidden;
         flex: 0 0 auto;
         width: 150px;
         aspect-ratio: 4/3;
-        box-shadow: var(--branch-shadow-sm);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
     .branch-image-preview-img {
         width: 100%;
@@ -153,7 +123,7 @@
         align-items: center;
         justify-content: center;
         opacity: 0;
-        transition: var(--branch-transition);
+        transition: all 0.3s ease;
     }
     .branch-image-preview-item:hover .branch-image-preview-overlay {
         opacity: 1;
@@ -169,72 +139,65 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: var(--branch-white);
-        color: var(--branch-dark);
+        background-color: #ffffff;
+        color: #1f2937;
         border: none;
         cursor: pointer;
-        transition: var(--branch-transition-fast);
+        transition: all 0.15s ease;
     }
     .branch-image-preview-btn:hover {
         transform: scale(1.1);
     }
     .branch-image-preview-btn.branch-remove-btn:hover {
-        background-color: var(--branch-danger);
-        color: var(--branch-white);
-    }
-    .branch-image-preview-btn.branch-primary-btn {
-        background-color: var(--branch-warning);
-        color: var(--branch-white);
-    }
-    .branch-image-preview-btn.branch-set-primary-btn:hover {
-        background-color: var(--branch-warning);
-        color: var(--branch-white);
+        background-color: #f43f5e;
+        color: #ffffff;
     }
     .branch-image-preview-badge {
         position: absolute;
         top: 0.5rem;
         left: 0.5rem;
         padding: 0.25rem 0.5rem;
-        background-color: var(--branch-warning);
-        color: var(--branch-white);
-        border-radius: var(--branch-border-radius-full);
+        background-color: #f59e0b;
+        color: #ffffff;
+        border-radius: 9999px;
         font-size: 0.625rem;
         font-weight: 600;
     }
 
     .branch-empty-state { text-align: center; padding: 3rem 1rem; }
-    .branch-empty-icon { width: 4rem; height: 4rem; background-color: var(--branch-gray-light); color: var(--branch-gray); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; }
+    .branch-empty-icon { width: 4rem; height: 4rem; background-color: #e5e7eb; color: #6b7280; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; }
     .branch-empty-title { margin-bottom: 0.5rem; font-weight: 500; }
-    .branch-empty-text { color: var(--branch-gray); margin-bottom: 1.5rem; }
+    .branch-empty-text { color: #6b7280; margin-bottom: 1.5rem; }
 
-    .branch-preview-card { padding: 1rem; background-color: rgba(67, 97, 238, 0.05); border-radius: var(--branch-border-radius); border: 1px solid rgba(67, 97, 238, 0.1); margin-bottom: 1rem; }
+    .branch-preview-card { padding: 1rem; background-color: rgba(67, 97, 238, 0.05); border-radius: 12px; border: 1px solid rgba(67, 97, 238, 0.1); margin-bottom: 1rem; }
     .branch-preview-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
     .branch-preview-title { font-weight: 500; }
-    .branch-preview-item { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--branch-gray-dark); }
+    .branch-preview-item { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; color: #4b5563; }
     .branch-preview-item i { margin-top: 0.25rem; }
     .branch-preview-hours { display: flex; gap: 1rem; margin-top: 1rem; }
-    .branch-preview-hour { flex: 1; padding: 0.75rem; border-radius: var(--branch-border-radius); text-align: center; }
+    .branch-preview-hour { flex: 1; padding: 0.75rem; border-radius: 12px; text-align: center; }
     .branch-preview-hour.branch-opening { background-color: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); }
     .branch-preview-hour.branch-closing { background-color: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); }
-    .branch-preview-hour-label { font-size: 0.75rem; color: var(--branch-gray); margin-bottom: 0.25rem; }
-    .branch-preview-hour-value.branch-opening { color: var(--branch-success); font-weight: 500; }
-    .branch-preview-hour-value.branch-closing { color: var(--branch-danger); font-weight: 500; }
-    .branch-preview-status { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-radius: var(--branch-border-radius); border: 1px solid var(--branch-gray-light); margin-top: 1rem; }
+    .branch-preview-hour-label { font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem; }
+    .branch-preview-hour-value.branch-opening { color: #4ade80; font-weight: 500; }
+    .branch-preview-hour-value.branch-closing { color: #f43f5e; font-weight: 500; }
+    .branch-preview-status { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-radius: 12px; border: 1px solid #e5e7eb; margin-top: 1rem; }
     .branch-preview-status-label { font-weight: 500; }
     .branch-preview-status-value { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-    .branch-preview-status-value.branch-active { background-color: rgba(74, 222, 128, 0.1); color: var(--branch-success); }
-    .branch-preview-status-value.branch-inactive { background-color: rgba(244, 63, 94, 0.1); color: var(--branch-danger); }
+    .branch-preview-status-value.branch-active { background-color: rgba(74, 222, 128, 0.1); color: #4ade80; }
+    .branch-preview-status-value.branch-inactive { background-color: rgba(244, 63, 94, 0.1); color: #f43f5e; }
 
     #branch-map {
         height: 300px !important;
         width: 100%;
-        border-radius: var(--branch-border-radius);
+        border-radius: 12px;
         margin-bottom: 1rem;
         min-height: 300px;
         background-color: #f0f0f0;
     }
     .branch-map-coordinates { display: flex; gap: 1rem; }
-    .branch-map-hint { margin-top: 0.5rem; font-size: 0.75rem; color: var(--branch-gray); }
+    .branch-map-hint { margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280; }
+    .branch-map-hint-error { color: #f43f5e; }
 
     .branch-mb-6 { margin-bottom: 1.5rem; }
     .branch-space-y-6 > * + * { margin-top: 1.5rem; }
@@ -249,20 +212,20 @@
     .branch-text-center { text-align: center; }
     .branch-text-sm { font-size: 0.875rem; }
     .branch-text-xs { font-size: 0.75rem; }
-    .branch-text-gray { color: var(--branch-gray); }
-    .branch-text-primary { color: var(--branch-primary); }
-    .branch-text-success { color: var(--branch-success); }
-    .branch-text-danger { color: var(--branch-danger); }
+    .branch-text-gray { color: #6b7280; }
+    .branch-text-primary { color: #4361ee; }
+    .branch-text-success { color: #4ade80; }
+    .branch-text-danger { color: #f43f5e; }
     .branch-font-medium { font-weight: 500; }
     .branch-font-semibold { font-weight: 600; }
     .branch-w-full { width: 100%; }
-    .branch-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: var(--branch-border-radius-full); font-size: 0.75rem; font-weight: 500; }
-    .branch-badge-info { background-color: rgba(59, 130, 246, 0.1); color: var(--branch-info); }
+    .branch-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+    .branch-badge-info { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 </style>
 
-<!-- Include Leaflet CSS and JS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Include Mapbox CSS and JS -->
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
 
 <div class="branch-form-container">
     <div class="branch-mb-6">
@@ -416,7 +379,7 @@
                     </div>
                     <div class="branch-card-body">
                         <div id="branch-map"></div>
-                        <div class="branch-map-hint">Nhấp vào bản đồ để chọn vị trí chi nhánh</div>
+                        <div class="branch-map-hint" id="mapHint">Nhấp vào bản đồ để chọn vị trí chi nhánh</div>
 
                         <div class="branch-map-coordinates branch-grid branch-grid-2">
                             <div class="branch-form-group">
@@ -480,7 +443,7 @@
                             <div id="existingImagesContainer" class="branch-flex branch-flex-wrap branch-gap-3">
                                 @foreach($branch->images as $index => $image)
                                     <div class="branch-image-preview-item" data-existing-image-id="{{ $image->id }}">
-                                        <img src="{{ Storage::url($image->image_path) }}" class="branch-image-preview-img" alt="Ảnh chi nhánh {{ $index + 1 }}">
+                                        <img src="{{ Storage::disk('s3')->url($image->image_path) }}" class="branch-image-preview-img" alt="Ảnh chi nhánh {{ $index + 1 }}">
                                         <div class="branch-image-preview-overlay">
                                             <div class="branch-image-preview-actions">
                                                 <button type="button" class="branch-image-preview-btn branch-remove-btn" data-existing-image-id="{{ $image->id }}" aria-label="Xóa ảnh {{ $index + 1 }}">
@@ -499,16 +462,6 @@
                         <div id="imagePreview" class="branch-image-preview-grid branch-hidden">
                             <h4>Xem trước hình ảnh mới:</h4>
                             <div id="previewContainer" class="branch-flex branch-flex-wrap branch-gap-3"></div>
-                            <div class="branch-form-group">
-                                <label for="primary_image" class="branch-form-label">Chọn ảnh chính</label>
-                                <select id="primary_image" name="primary_image" class="branch-form-control">
-                                    @if($branch->images->isNotEmpty())
-                                        @foreach($branch->images as $index => $image)
-                                            <option value="{{ $image->id }}" {{ $image->is_primary ? 'selected' : '' }}>Ảnh hiện có {{ $index + 1 }}</option>
-                                        @endforeach
-                                    @endif
-                                </select>
-                            </div>
                         </div>
 
                         <div id="captionsContainer" class="branch-hidden">
@@ -529,6 +482,17 @@
                                     </div>
                                 @endforeach
                             </div>
+                        </div>
+
+                        <div class="branch-form-group">
+                            <label for="primary_image" class="branch-form-label">Chọn ảnh chính</label>
+                            <select id="primary_image" name="primary_image" class="branch-form-control">
+                                <option value="">Không chọn ảnh chính</option>
+                                @foreach($branch->images as $index => $image)
+                                    <option value="existing_{{ $image->id }}" {{ $image->is_primary ? 'selected' : '' }}>Ảnh hiện có {{ $index + 1 }}</option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" id="primary_image_type" name="primary_image_type" value="">
                         </div>
                     </div>
                 </div>
@@ -670,367 +634,320 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('branchForm');
-    const nameInput = document.getElementById('name');
-    const addressInput = document.getElementById('address');
-    const phoneInput = document.getElementById('phone');
-    const emailInput = document.getElementById('email');
-    const openingHourInput = document.getElementById('opening_hour');
-    const closingHourInput = document.getElementById('closing_hour');
-    const activeInput = document.getElementById('active');
-    const managerSelect = document.getElementById('manager_user_id');
-    const latitudeInput = document.getElementById('latitude');
-    const longitudeInput = document.getElementById('longitude');
-    const imagesInput = document.getElementById('images');
-    const primaryImageSelect = document.getElementById('primary_image');
-    const previewContainer = document.getElementById('previewContainer');
-    const existingImagesContainer = document.getElementById('existingImagesContainer');
-    const imagePreview = document.getElementById('imagePreview');
-    const captionsContainer = document.getElementById('captionsContainer');
-    const captionInputs = document.getElementById('captionInputs');
-    const existingCaptionsContainer = document.getElementById('existingCaptionsContainer');
-    const existingCaptionInputs = document.getElementById('existingCaptionInputs');
-    const submitButton = document.getElementById('submitButton');
-    const uploadLabelText = document.querySelector('.branch-upload-label-text');
+    const mapboxApiKey = "{{ env('MAPBOX_API_KEY') }}";
+    if (!mapboxApiKey) {
+        document.getElementById('mapHint').classList.add('branch-map-hint-error');
+        document.getElementById('mapHint').textContent = 'API key không được cấu hình.';
+        return;
+    }
 
-    const previewName = document.getElementById('previewName');
-    const previewAddress = document.getElementById('previewAddress');
-    const previewPhone = document.getElementById('previewPhone');
-    const previewEmail = document.getElementById('previewEmail');
-    const previewEmailContainer = document.getElementById('previewEmailContainer');
-    const previewManager = document.getElementById('previewManager');
-    const previewManagerContainer = document.getElementById('previewManagerContainer');
-    const previewOpeningHour = document.getElementById('previewOpeningHour');
-    const previewClosingHour = document.getElementById('previewClosingHour');
-    const previewStatus = document.getElementById('previewStatus');
-    const statusHint = document.getElementById('statusHint');
+    mapboxgl.accessToken = mapboxApiKey;
+
+    const elements = {
+        form: document.getElementById('branchForm'),
+        name: document.getElementById('name'),
+        address: document.getElementById('address'),
+        phone: document.getElementById('phone'),
+        email: document.getElementById('email'),
+        openingHour: document.getElementById('opening_hour'),
+        closingHour: document.getElementById('closing_hour'),
+        active: document.getElementById('active'),
+        manager: document.getElementById('manager_user_id'),
+        latitude: document.getElementById('latitude'),
+        longitude: document.getElementById('longitude'),
+        images: document.getElementById('images'),
+        primaryImage: document.getElementById('primary_image'),
+        primaryImageType: document.getElementById('primary_image_type'),
+        previewContainer: document.getElementById('previewContainer'),
+        existingImagesContainer: document.getElementById('existingImagesContainer'),
+        imagePreview: document.getElementById('imagePreview'),
+        captionsContainer: document.getElementById('captionsContainer'),
+        captionInputs: document.getElementById('captionInputs'),
+        existingCaptionsContainer: document.getElementById('existingCaptionsContainer'),
+        existingCaptionInputs: document.getElementById('existingCaptionInputs'),
+        submitButton: document.getElementById('submitButton'),
+        uploadLabelText: document.querySelector('.branch-upload-label-text'),
+        mapHint: document.getElementById('mapHint'),
+        preview: {
+            name: document.getElementById('previewName'),
+            address: document.getElementById('previewAddress'),
+            phone: document.getElementById('previewPhone'),
+            email: document.getElementById('previewEmail'),
+            emailContainer: document.getElementById('previewEmailContainer'),
+            manager: document.getElementById('previewManager'),
+            openingHour: document.getElementById('previewOpeningHour'),
+            closingHour: document.getElementById('previewClosingHour'),
+            status: document.getElementById('previewStatus'),
+            statusHint: document.getElementById('statusHint')
+        }
+    };
 
     let uploadedImages = [];
     let deletedImageIds = [];
-    let map;
-    let marker;
+    let map, marker, geocodeTimeout;
 
-    function initMap() {
-        const defaultLat = parseFloat('{{ old('latitude', $branch->latitude) }}') || 21.0285;
-        const defaultLng = parseFloat('{{ old('longitude', $branch->longitude) }}') || 105.8542;
-        let lat = defaultLat;
-        let lng = defaultLng;
-
+    function initMap(lat = parseFloat('{{ old('latitude', $branch->latitude) }}') || 21.0285, lng = parseFloat('{{ old('longitude', $branch->longitude) }}') || 105.8542) {
         try {
-            if (latitudeInput.value && longitudeInput.value) {
-                const parsedLat = parseFloat(latitudeInput.value);
-                const parsedLng = parseFloat(longitudeInput.value);
-                if (!isNaN(parsedLat) && !isNaN(parsedLng) && parsedLat >= -90 && parsedLat <= 90 && parsedLng >= -180 && parsedLng <= 180) {
-                    lat = parsedLat;
-                    lng = parsedLng;
-                }
-            }
-
-            map = L.map('branch-map', {
-                center: [lat, lng],
-                zoom: 13,
-                zoomControl: true,
-                scrollWheelZoom: false
+            map = new mapboxgl.Map({
+                container: 'branch-map',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [lng, lat],
+                zoom: 13
             });
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
-            }).addTo(map);
-
-            setTimeout(() => map.invalidateSize(), 300);
-
-            if (latitudeInput.value && longitudeInput.value) {
-                setMarker(lat, lng);
-            }
-
-            map.on('click', function(e) {
-                setMarker(e.latlng.lat, e.latlng.lng);
-            });
-
-            window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 100));
+            map.addControl(new mapboxgl.NavigationControl());
+            map.addControl(new mapboxgl.FullscreenControl());
+            map.on('load', () => map.resize());
+            setMarker(lat, lng);
+            map.on('click', e => setMarker(e.lngLat.lat, e.lngLat.lng));
         } catch (error) {
             console.error('Map initialization failed:', error);
-            latitudeInput.value = defaultLat.toFixed(6);
-            longitudeInput.value = defaultLng.toFixed(6);
+            elements.mapHint.classList.add('branch-map-hint-error');
+            elements.mapHint.textContent = 'Không thể khởi tạo bản đồ.';
         }
     }
 
     function setMarker(lat, lng) {
-        try {
-            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                console.warn('Invalid coordinates:', lat, lng);
-                return;
-            }
-
-            if (marker) map.removeLayer(marker);
-            marker = L.marker([lat, lng]).addTo(map);
-            map.panTo([lat, lng], { animate: true });
-            latitudeInput.value = lat.toFixed(6);
-            longitudeInput.value = lng.toFixed(6);
-        } catch (error) {
-            console.error('Failed to set marker:', error);
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            elements.mapHint.classList.add('branch-map-hint-error');
+            elements.mapHint.textContent = 'Tọa độ không hợp lệ.';
+            return;
         }
+        if (marker) marker.remove();
+        marker = new mapboxgl.Marker({ draggable: true, color: '#4361ee' })
+            .setLngLat([lng, lat])
+            .addTo(map);
+        map.setCenter([lng, lat]);
+        elements.latitude.value = lat.toFixed(6);
+        elements.longitude.value = lng.toFixed(6);
+        elements.mapHint.classList.remove('branch-map-hint-error');
+        elements.mapHint.textContent = 'Nhấp vào bản đồ để chọn vị trí chi nhánh';
+        marker.on('dragend', () => {
+            const { lng, lat } = marker.getLngLat();
+            elements.latitude.value = lat.toFixed(6);
+            elements.longitude.value = lng.toFixed(6);
+        });
+    }
+
+    function geocodeAddress(address) {
+        if (!address) {
+            elements.mapHint.classList.add('branch-map-hint-error');
+            elements.mapHint.textContent = 'Vui lòng nhập địa chỉ.';
+            return;
+        }
+        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}&limit=1&country=VN`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.features?.length) {
+                    const [lng, lat] = data.features[0].center;
+                    setMarker(lat, lng);
+                } else {
+                    elements.mapHint.classList.add('branch-map-hint-error');
+                    elements.mapHint.textContent = 'Không tìm thấy địa chỉ.';
+                }
+            })
+            .catch(() => {
+                elements.mapHint.classList.add('branch-map-hint-error');
+                elements.mapHint.textContent = 'Lỗi khi tìm vị trí.';
+            });
     }
 
     function updatePreview() {
-        previewName.textContent = nameInput.value || 'Tên chi nhánh';
-        previewAddress.textContent = addressInput.value || 'Địa chỉ chi nhánh';
-        previewPhone.textContent = phoneInput.value || 'Số điện thoại';
-        previewEmail.textContent = emailInput.value || 'Email';
-        previewEmailContainer.classList.toggle('branch-hidden', !emailInput.value);
-        previewManager.textContent = managerSelect.value ? managerSelect.options[managerSelect.selectedIndex].text : 'Chưa chọn quản lý';
-        previewOpeningHour.textContent = openingHourInput.value || '08:00';
-        previewClosingHour.textContent = closingHourInput.value || '22:00';
-        previewStatus.textContent = activeInput.checked ? 'Đang hoạt động' : 'Ngưng hoạt động';
-        previewStatus.className = `branch-preview-status-value ${activeInput.checked ? 'branch-active' : 'branch-inactive'}`;
-        statusHint.textContent = activeInput.checked ? 'Chi nhánh đang hoạt động' : 'Chi nhánh ngưng hoạt động';
+        elements.preview.name.textContent = elements.name.value || 'Tên chi nhánh';
+        elements.preview.address.textContent = elements.address.value || 'Địa chỉ chi nhánh';
+        elements.preview.phone.textContent = elements.phone.value || 'Số điện thoại';
+        elements.preview.email.textContent = elements.email.value || 'Email';
+        elements.preview.emailContainer.classList.toggle('branch-hidden', !elements.email.value);
+        elements.preview.manager.textContent = elements.manager.value ? elements.manager.options[elements.manager.selectedIndex].text : 'Chưa chọn quản lý';
+        elements.preview.openingHour.textContent = elements.openingHour.value || '08:00';
+        elements.preview.closingHour.textContent = elements.closingHour.value || '22:00';
+        elements.preview.status.textContent = elements.active.checked ? 'Đang hoạt động' : 'Ngưng hoạt động';
+        elements.preview.status.className = `branch-preview-status-value ${elements.active.checked ? 'branch-active' : 'branch-inactive'}`;
+        elements.preview.statusHint.textContent = elements.active.checked ? 'Chi nhánh đang hoạt động' : 'Chi nhánh ngưng hoạt động';
     }
 
     function handleImageUpload(event) {
-        const files = event.target.files;
-        const maxImages = 10;
-        const existingImagesCount = existingImagesContainer.querySelectorAll('.branch-image-preview-item').length;
-
-        if (existingImagesCount + uploadedImages.length + files.length > maxImages) {
-            alert(`Bạn chỉ có thể tải lên tối đa ${maxImages} hình ảnh (bao gồm cả ảnh hiện có).`);
-            imagesInput.value = '';
+        const files = Array.from(event.target.files).filter(file => file.type.match('image/(jpeg|png|jpg|gif)') && file.size <= 2048 * 1024);
+        const totalImages = elements.existingImagesContainer.querySelectorAll('.branch-image-preview-item').length + uploadedImages.length + files.length;
+        if (totalImages > 10) {
+            alert('Tối đa 10 hình ảnh.');
+            elements.images.value = '';
             return;
         }
-
-        const invalidFiles = [];
-        const newImages = Array.from(files).filter((file, index) => {
-            const isValid = file.type.match('image/(jpeg|png|jpg|gif)') && file.size <= 2048 * 1024;
-            if (!isValid) invalidFiles.push(`Ảnh ${index + 1}: ${file.name}`);
-            return isValid;
-        });
-
-        if (invalidFiles.length > 0) {
-            alert(`Các hình ảnh không hợp lệ (phải là JPEG, PNG, JPG, GIF và nhỏ hơn 2MB):\n${invalidFiles.join('\n')}`);
-            imagesInput.value = '';
-            return;
-        }
-
-        if (newImages.length > 0) {
-            uploadedImages = [...uploadedImages, ...newImages];
+        uploadedImages = [...uploadedImages, ...files];
+        if (files.length) {
+            displayImagePreviews();
+            elements.imagePreview.classList.remove('branch-hidden');
+            elements.captionsContainer.classList.remove('branch-hidden');
+            elements.uploadLabelText.textContent = `${uploadedImages.length} ảnh đã chọn`;
             updateFileInput();
-            displayImagePreviews(uploadedImages);
-            showImageSections();
-            uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
             updatePrimaryImageSelect();
-            if (!primaryImageSelect.value && uploadedImages.length > 0) {
-                primaryImageSelect.value = '0';
-                updatePrimaryImage();
+            if (!elements.primaryImage.value && uploadedImages.length) {
+                elements.primaryImage.value = `new_0`;
+                elements.primaryImageType.value = 'new';
             }
-        } else {
-            imagesInput.value = '';
+            updatePrimaryImage();
         }
+        elements.images.value = '';
     }
 
     function updateFileInput() {
-        const dataTransfer = new DataTransfer();
-        uploadedImages.forEach(file => dataTransfer.items.add(file));
-        imagesInput.files = dataTransfer.files;
+        const dt = new DataTransfer();
+        uploadedImages.forEach(file => dt.items.add(file));
+        elements.images.files = dt.files;
     }
 
-    function displayImagePreviews(files) {
-        previewContainer.innerHTML = '';
-        captionInputs.innerHTML = '';
-
-        files.forEach((file, index) => {
+    function displayImagePreviews() {
+        elements.previewContainer.innerHTML = '';
+        elements.captionInputs.innerHTML = '';
+        uploadedImages.forEach((file, index) => {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const previewItem = document.createElement('div');
-                previewItem.className = 'branch-image-preview-item';
-                previewItem.dataset.newImageIndex = index;
-
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.className = 'branch-image-preview-img';
-                img.alt = `Xem trước ảnh mới ${index + 1}`;
-
-                const overlay = document.createElement('div');
-                overlay.className = 'branch-image-preview-overlay';
-
-                const actions = document.createElement('div');
-                actions.className = 'branch-image-preview-actions';
-
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'branch-image-preview-btn branch-remove-btn';
-                removeBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
-                removeBtn.setAttribute('aria-label', `Xóa ảnh mới ${index + 1}`);
-                removeBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    removeNewImage(index);
-                });
-
-                actions.appendChild(removeBtn);
-                overlay.appendChild(actions);
-                previewItem.appendChild(img);
-                previewItem.appendChild(overlay);
-                previewContainer.appendChild(previewItem);
+            reader.onload = e => {
+                const item = document.createElement('div');
+                item.className = 'branch-image-preview-item';
+                item.dataset.newImageIndex = index;
+                item.innerHTML = `
+                    <img src="${e.target.result}" class="branch-image-preview-img" alt="Xem trước ảnh mới ${index + 1}">
+                    <div class="branch-image-preview-overlay">
+                        <div class="branch-image-preview-actions">
+                            <button type="button" class="branch-image-preview-btn branch-remove-btn" aria-label="Xóa ảnh mới ${index + 1}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                item.querySelector('.branch-remove-btn').addEventListener('click', () => removeNewImage(index));
+                elements.previewContainer.appendChild(item);
 
                 const captionGroup = document.createElement('div');
                 captionGroup.className = 'branch-form-group';
-                captionGroup.dataset.newImageIndex = index;
-
-                const captionLabel = document.createElement('label');
-                captionLabel.className = 'branch-form-label';
-                captionLabel.textContent = `Mô tả ảnh mới ${index + 1}:`;
-
-                const captionInput = document.createElement('input');
-                captionInput.type = 'text';
-                captionInput.className = 'branch-form-control';
-                captionInput.name = `captions[${index}]`;
-                captionInput.maxLength = 255;
-                captionInput.placeholder = 'Nhập mô tả cho ảnh...';
-                captionInput.setAttribute('aria-label', `Mô tả cho ảnh mới ${index + 1}`);
-
-                captionGroup.appendChild(captionLabel);
-                captionGroup.appendChild(captionInput);
-                captionInputs.appendChild(captionGroup);
-
-                updatePrimaryImageSelect();
+                captionGroup.innerHTML = `
+                    <label class="branch-form-label">Mô tả ảnh mới ${index + 1}:</label>
+                    <input type="text" class="branch-form-control" name="captions[${index}]" maxlength="255" placeholder="Nhập mô tả cho ảnh..." aria-label="Mô tả cho ảnh mới ${index + 1}">
+                `;
+                elements.captionInputs.appendChild(captionGroup);
             };
             reader.readAsDataURL(file);
         });
     }
 
+    function updatePrimaryImageSelect() {
+        const selectedValue = elements.primaryImage.value;
+        elements.primaryImage.innerHTML = '<option value="">Không chọn ảnh chính</option>';
+        const existingImages = elements.existingImagesContainer.querySelectorAll('.branch-image-preview-item');
+        existingImages.forEach((item, index) => {
+            const option = document.createElement('option');
+            option.value = `existing_${item.dataset.existingImageId}`;
+            option.textContent = `Ảnh hiện có ${index + 1}`;
+            if (`existing_${item.dataset.existingImageId}` === selectedValue) option.selected = true;
+            elements.primaryImage.appendChild(option);
+        });
+        uploadedImages.forEach((_, index) => {
+            const option = document.createElement('option');
+            option.value = `new_${index}`;
+            option.textContent = `Ảnh mới ${index + 1}`;
+            if (`new_${index}` === selectedValue) option.selected = true;
+            elements.primaryImage.appendChild(option);
+        });
+    }
+
     function updatePrimaryImage() {
         document.querySelectorAll('.branch-image-preview-badge').forEach(badge => badge.remove());
-        const selectedValue = primaryImageSelect.value;
-        let selectedPreview = null;
+        const value = elements.primaryImage.value;
+        let selected = null;
 
-        if (selectedValue && selectedValue.match(/^\d+$/)) {
-            selectedPreview = existingImagesContainer.querySelector(`.branch-image-preview-item[data-existing-image-id="${selectedValue}"]`) ||
-                             previewContainer.querySelector(`.branch-image-preview-item[data-new-image-index="${selectedValue}"]`);
+        if (value.startsWith('existing_')) {
+            const imageId = value.replace('existing_', '');
+            selected = elements.existingImagesContainer.querySelector(`[data-existing-image-id="${imageId}"]`);
+            elements.primaryImageType.value = 'existing';
+        } else if (value.startsWith('new_')) {
+            const index = value.replace('new_', '');
+            selected = elements.previewContainer.querySelector(`[data-new-image-index="${index}"]`);
+            elements.primaryImageType.value = 'new';
+        } else {
+            elements.primaryImageType.value = '';
         }
 
-        if (selectedPreview) {
-            const primaryBadge = document.createElement('div');
-            primaryBadge.className = 'branch-image-preview-badge';
-            primaryBadge.textContent = 'Ảnh chính';
-            selectedPreview.appendChild(primaryBadge);
+        if (selected) {
+            selected.innerHTML += '<div class="branch-image-preview-badge">Ảnh chính</div>';
         }
     }
 
     function removeExistingImage(imageId) {
         deletedImageIds.push(imageId);
-        const imageElement = existingImagesContainer.querySelector(`.branch-image-preview-item[data-existing-image-id="${imageId}"]`);
-        if (imageElement) {
-            imageElement.remove();
-            const captionElement = existingCaptionInputs.querySelector(`.branch-form-group[data-existing-image-id="${imageId}"]`);
-            if (captionElement) captionElement.remove();
-        }
-        if (existingImagesContainer.children.length === 0) {
-            document.getElementById('existingImages').classList.add('branch-hidden');
-            existingCaptionsContainer.classList.add('branch-hidden');
+        const item = elements.existingImagesContainer.querySelector(`[data-existing-image-id="${imageId}"]`);
+        const caption = elements.existingCaptionInputs.querySelector(`[data-existing-image-id="${imageId}"]`);
+        if (item) item.remove();
+        if (caption) caption.remove();
+        if (!elements.existingImagesContainer.children.length) {
+            elements.existingImages.classList.add('branch-hidden');
+            elements.existingCaptionsContainer.classList.add('branch-hidden');
         }
         updatePrimaryImageSelect();
-        if (primaryImageSelect.value === imageId) {
-            primaryImageSelect.value = uploadedImages.length > 0 ? '0' : (existingImagesContainer.children.length > 0 ? existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId : '');
+        if (elements.primaryImage.value === `existing_${imageId}`) {
+            elements.primaryImage.value = uploadedImages.length ? `new_0` : (elements.existingImagesContainer.children.length ? `existing_${elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId}` : '');
+            updatePrimaryImage();
         }
-        updatePrimaryImage();
     }
 
     function removeNewImage(index) {
         uploadedImages.splice(index, 1);
         updateFileInput();
-
-        if (uploadedImages.length > 0) {
-            displayImagePreviews(uploadedImages);
-            uploadLabelText.textContent = uploadedImages.length + ' ảnh đã chọn';
+        if (uploadedImages.length) {
+            displayImagePreviews();
+            elements.uploadLabelText.textContent = `${uploadedImages.length} ảnh đã chọn`;
         } else {
-            hideImageSections();
-            imagesInput.value = '';
-            uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
+            elements.imagePreview.classList.add('branch-hidden');
+            elements.captionsContainer.classList.add('branch-hidden');
+            elements.uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
         }
-
         updatePrimaryImageSelect();
-        if (primaryImageSelect.value === index.toString()) {
-            primaryImageSelect.value = uploadedImages.length > 0 ? '0' : (existingImagesContainer.children.length > 0 ? existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId : '');
+        if (elements.primaryImage.value === `new_${index}`) {
+            elements.primaryImage.value = uploadedImages.length ? `new_0` : (elements.existingImagesContainer.children.length ? `existing_${elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId}` : '');
+            updatePrimaryImage();
         }
-        updatePrimaryImage();
-    }
-
-    function updatePrimaryImageSelect() {
-        const selectedValue = primaryImageSelect.value;
-        primaryImageSelect.innerHTML = '';
-
-        const existingImages = existingImagesContainer.querySelectorAll('.branch-image-preview-item');
-        existingImages.forEach((item, index) => {
-            const option = document.createElement('option');
-            option.value = item.dataset.existingImageId;
-            option.textContent = `Ảnh hiện có ${index + 1}`;
-            if (item.dataset.existingImageId === selectedValue) option.selected = true;
-            primaryImageSelect.appendChild(option);
-        });
-
-        uploadedImages.forEach((file, index) => {
-            const option = document.createElement('option');
-            option.value = index.toString();
-            option.textContent = `Ảnh mới ${index + 1}`;
-            if (index.toString() === selectedValue) option.selected = true;
-            primaryImageSelect.appendChild(option);
-        });
-
-        if (primaryImageSelect.options.length === 0) {
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = 'Không có ảnh';
-            primaryImageSelect.appendChild(option);
-        }
-
-        updatePrimaryImage();
-    }
-
-    function showImageSections() {
-        imagePreview.classList.remove('branch-hidden');
-        captionsContainer.classList.remove('branch-hidden');
-    }
-
-    function hideImageSections() {
-        imagePreview.classList.add('branch-hidden');
-        captionsContainer.classList.add('branch-hidden');
-        uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
     }
 
     function initForm() {
         updatePreview();
-        nameInput.addEventListener('input', updatePreview);
-        addressInput.addEventListener('input', updatePreview);
-        phoneInput.addEventListener('input', updatePreview);
-        emailInput.addEventListener('input', updatePreview);
-        managerSelect.addEventListener('change', updatePreview);
-        openingHourInput.addEventListener('input', updatePreview);
-        closingHourInput.addEventListener('input', updatePreview);
-        activeInput.addEventListener('change', updatePreview);
-        imagesInput.addEventListener('change', handleImageUpload);
-        primaryImageSelect.addEventListener('change', updatePrimaryImage);
-
-        document.querySelectorAll('.branch-remove-btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const imageId = this.dataset.existingImageId;
-                removeExistingImage(imageId);
-            });
+        elements.address.addEventListener('input', () => {
+            updatePreview();
+            clearTimeout(geocodeTimeout);
+            geocodeTimeout = setTimeout(() => elements.address.value && geocodeAddress(elements.address.value), 500);
+        });
+        ['name', 'phone', 'email', 'openingHour', 'closingHour', 'active', 'manager'].forEach(key => {
+            elements[key].addEventListener('input', updatePreview);
+            if (key === 'manager') elements[key].addEventListener('change', updatePreview);
+        });
+        elements.images.addEventListener('change', handleImageUpload);
+        elements.primaryImage.addEventListener('change', updatePrimaryImage);
+        elements.existingImagesContainer.querySelectorAll('.branch-remove-btn').forEach(btn => {
+            btn.addEventListener('click', () => removeExistingImage(btn.dataset.existingImageId));
         });
 
-        initMap();
-
-        form.addEventListener('submit', function(e) {
-            if (openingHourInput.value && closingHourInput.value && openingHourInput.value >= closingHourInput.value) {
+        elements.form.addEventListener('submit', e => {
+            if (elements.openingHour.value && elements.closingHour.value && elements.openingHour.value >= elements.closingHour.value) {
                 e.preventDefault();
                 alert('Giờ đóng cửa phải sau giờ mở cửa!');
                 return;
             }
-
-            const lat = parseFloat(latitudeInput.value);
-            const lng = parseFloat(longitudeInput.value);
+            const lat = parseFloat(elements.latitude.value);
+            const lng = parseFloat(elements.longitude.value);
             if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
                 e.preventDefault();
                 alert('Vui lòng chọn một vị trí hợp lệ trên bản đồ!');
                 return;
+            }
+
+            if (elements.primaryImage.value) {
+                if (elements.primaryImage.value.startsWith('existing_')) {
+                    elements.primaryImage.value = elements.primaryImage.value.replace('existing_', '');
+                    elements.primaryImageType.value = 'existing';
+                } else if (elements.primaryImage.value.startsWith('new_')) {
+                    elements.primaryImage.value = elements.primaryImage.value.replace('new_', '');
+                    elements.primaryImageType.value = 'new';
+                }
+            } else {
+                elements.primaryImageType.value = '';
             }
 
             deletedImageIds.forEach(id => {
@@ -1038,10 +955,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.type = 'hidden';
                 input.name = 'delete_images[]';
                 input.value = id;
-                form.appendChild(input);
+                elements.form.appendChild(input);
             });
         });
 
+        initMap();
+        if (elements.address.value) geocodeAddress(elements.address.value);
         updatePrimaryImage();
     }
 

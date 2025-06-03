@@ -54,14 +54,14 @@
             <div class="branch-overview-right">
                 <div class="hours-container">
                     <div class="hours-item opening">
-                        <i class="fas fa-sun hours-icon"></i>
+                        <i class="fas fa-sun hours-icon" style="color: #47d46b;"></i>
                         <div class="hours-info">
                             <span class="hours-label">Giờ mở cửa</span><br>
                             <span class="hours-value">{{ date('H:i', strtotime($branch->opening_hour)) }}</span>
                         </div>
                     </div>
                     <div class="hours-item closing">
-                        <i class="fas fa-moon hours-icon"></i>
+                        <i class="fas fa-moon hours-icon" style="color: #db5757;"></i>
                         <div class="hours-info">
                             <span class="hours-label">Giờ đóng cửa</span>
                             <span class="hours-value">{{ date('H:i', strtotime($branch->closing_hour)) }}</span>
@@ -79,7 +79,7 @@
             <!-- Branch Images -->
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-images card-icon"></i>
+                    <i class="fas fa-images card-icon" style="color: #2563eb;"></i>
                     <h3>Hình ảnh chi nhánh</h3>
                     <button class="btn btn-sm btn-outline" id="uploadImagesBtn"><i class="fas fa-upload"></i> Tải lên</button>
                 </div>
@@ -116,7 +116,7 @@
             <!-- Basic Information -->
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-info-circle card-icon"></i>
+                    <i class="fas fa-info-circle card-icon" style="color: #2563eb;"></i>
                     <h3>Thông tin cơ bản</h3>
                 </div>
                 <div class="card-body p-0">
@@ -163,20 +163,20 @@
             <!-- Operating Hours -->
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-clock card-icon"></i>
+                    <i class="fas fa-clock card-icon" style="color: #2563eb;"></i>
                     <h3>Giờ hoạt động</h3>
                 </div>
                 <div class="card-body">
                     <div class="hours-grid">
                         <div class="hours-card opening-hours">
-                            <i class="fas fa-sun hours-card-icon"></i>
+                            <i class="fas fa-sun hours-card-icon" style="color: #84d973;"></i>
                             <div class="hours-card-content">
                                 <span class="hours-card-label">Giờ mở cửa</span>
                                 <span class="hours-card-value">{{ date('H:i', strtotime($branch->opening_hour)) }}</span>
                             </div>
                         </div>
                         <div class="hours-card closing-hours">
-                            <i class="fas fa-moon hours-card-icon"></i>
+                            <i class="fas fa-moon hours-card-icon" style="color: #d86565;"></i>
                             <div class="hours-card-content">
                                 <span class="hours-card-label">Giờ đóng cửa</span>
                                 <span class="hours-card-value">{{ date('H:i', strtotime($branch->closing_hour)) }}</span>
@@ -191,7 +191,7 @@
         <div class="side-column">
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-user-tie card-icon"></i>
+                    <i class="fas fa-user-tie card-icon" style="color: #2563eb;"></i>
                     <h3>Quản lý chi nhánh</h3>
                 </div>
                 <div class="card-body">
@@ -201,7 +201,7 @@
                             <i class="fas fa-user manager-avatar"></i>
                             <div class="manager-info">
                                 <h4>{{ $branch->manager->full_name }}</h4>
-                                <div class="manager-role"><i class="fas fa-briefcase"></i> Quản lý chi nhánh</div>
+                                <div class="manager-role"><i class="fas fa-briefcase" style="color: #2563eb;"></i> Quản lý chi nhánh</div>
                                 <div class="manager-actions">
                                     <div class="action-row">
                                         <a href="mailto:{{ $branch->manager->email }}" class="btn btn-outline btn-sm"><i class="fas fa-envelope"></i> Gửi email</a>
@@ -224,7 +224,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-star card-icon"></i>
+                    <i class="fas fa-star card-icon" style="color: #2563eb;"></i>
                     <h3>Đánh giá khách hàng</h3>
                 </div>
                 <div class="card-body">
@@ -253,7 +253,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-bolt card-icon"></i>
+                    <i class="fas fa-bolt card-icon" style="color: #2563eb;"></i>
                     <h3>Thao tác nhanh</h3>
                 </div>
                 <div class="card-body">
@@ -582,10 +582,6 @@ h4 { font-size: 1rem; font-weight: 500; }
 }
 .hours-item.closing {
     background: rgba(239, 68, 68, 0.1);
-}
-.hours-icon {
-    background: #ffffff;
-    color: #2563eb;
 }
 .hours-label {
     font-size: 0.875rem;
