@@ -21,8 +21,6 @@ class UserRankHistoryFactory extends Factory
             'total_orders' => fake()->numberBetween(1, 50),
             'reason' => fake()->sentence(),
             'changed_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
         ];
     }
 }

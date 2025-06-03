@@ -15,17 +15,24 @@ class DiscountUsageHistoryFactory extends Factory
 
     public function definition(): array
     {
+        // Fetch a random existing order and branch from the database
+        $order = Order::inRandomOrder()->first();
+        $branch = Branch::inRandomOrder()->first();
+
+        // If no order or branch exists, return an empty array to skip record creation
+        if (!$order || !$branch) {
+            return [];
+        }
+
         return [
             'discount_code_id' => DiscountCode::factory(),
-            'order_id' => Order::factory(),
+            'order_id' => $order->id,
             'user_id' => User::factory(),
-            'branch_id' => Branch::factory(),
+            'branch_id' => $branch->id,
             'guest_phone' => fake()->optional(0.2)->phoneNumber(),
             'original_amount' => fake()->randomFloat(2, 50, 500),
             'discount_amount' => fake()->randomFloat(2, 5, 100),
             'used_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
         ];
     }
 }

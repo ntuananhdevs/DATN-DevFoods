@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class BranchImage extends Model
+class UserImage extends Model
 {
     /**
      * The attributes that are mass assignable.
@@ -13,7 +13,7 @@ class BranchImage extends Model
      * @var array
      */
     protected $fillable = [
-        'branch_id',
+        'user_id',
         'image_path',
         'caption',
         'is_primary',
@@ -30,10 +30,10 @@ class BranchImage extends Model
     ];
 
     /**
-     * Get the branch that owns the image.
+     * Get the user that owns the image.
      */
-    public function branch(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(User::class);
     }
 }

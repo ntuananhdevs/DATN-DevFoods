@@ -13,9 +13,11 @@ class BranchController extends Controller
      */
     public function branchs()
     {
-        $branches = Branch::with('images')->orderBy('id', 'asc')->paginate(10);
+        $branches = Branch::with('images')
+            ->where('active', 1)
+            ->orderBy('id', 'asc')
+            ->paginate(10);
 
-        // Return the view with branches data
         return view('customer.branchs.index', compact('branches'));
     }
 
