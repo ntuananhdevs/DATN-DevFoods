@@ -1,9 +1,25 @@
 @extends('layouts/admin/contentLayoutMaster')
-
+@section('title', 'Thêm Banner')
 @section('content')
     <div class="container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-800 shadow-xl rounded-lg">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-700">
             Thêm Banner Mới</h1>
+            
+        @if (session('duplicate_order'))
+        <div class="mb-6 p-4 border-l-4 border-yellow-500 bg-yellow-100 dark:bg-yellow-900 dark:border-yellow-600 text-yellow-700 dark:text-yellow-200">
+            <h3 class="font-bold">Cảnh báo: Trùng thứ tự hiển thị</h3>
+            <p class="mb-2">Thứ tự hiển thị {{ session('duplicate_order')['order'] }} đã được sử dụng bởi banner "{{ session('duplicate_order')['banner_title'] }}".</p>
+            <p class="mb-4">Bạn có thể:</p>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('admin.banners.edit', session('duplicate_order')['banner_id']) }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors">
+                    Điều chỉnh thứ tự của banner hiện có
+                </a>
+                <button type="button" onclick="document.getElementById('order').focus()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md transition-colors">
+                    Chọn thứ tự khác
+                </button>
+            </div>
+        </div>
+        @endif
 
         <form class="space-y-6" action="{{ route('admin.banners.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -103,7 +119,7 @@
                 </ul>
                 
                 <!-- Input ẩn để lưu link sản phẩm -->
-                <input type="hidden" name="link" :value="selectedProduct ? `/shop/products/show/${selectedProduct.id}` : ''">
+                <input type="hidden" name="link" :value="selectedProduct ? `/shop/products/${selectedProduct.id}` : ''">
             </div>
 
             <div>
@@ -146,7 +162,7 @@
                     @enderror
                 </div>
 
-                <div>
+                <div id="order-field" style="display: {{ old('position') == 'homepage' ? 'block' : 'none' }}">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="order">Thứ tự
                         hiển thị</label>
                     <input type="number"
@@ -193,7 +209,36 @@
 <script src="//unpkg.com/alpinejs" defer></script>
 <script>
     document.addEventListener('DOMContentLoaded', function(e) {
-        e.preventDefault();
+        // Position change handler - Show/hide order field based on position
+        const positionSelect = document.getElementById('position');
+        const orderField = document.getElementById('order-field');
+        const orderInput = document.getElementById('order');
+        
+        if (positionSelect && orderField && orderInput) {
+            // Initial setup based on current value
+            updateOrderFieldVisibility();
+            
+            // Add change event listener
+            positionSelect.addEventListener('change', updateOrderFieldVisibility);
+            
+            function updateOrderFieldVisibility() {
+                const isHomepage = positionSelect.value === 'homepage';
+                orderField.style.display = isHomepage ? 'block' : 'none';
+                
+                // If not homepage, set order to null by disabling the input
+                // This way it won't be included in form submission
+                if (!isHomepage) {
+                    orderInput.disabled = true;
+                    orderInput.value = '';
+                } else {
+                    orderInput.disabled = false;
+                    if (!orderInput.value) {
+                        orderInput.value = '0';
+                    }
+                }
+            }
+        }
+        
         // Tab switching
         const tabs = document.querySelectorAll('.banner-form-tab');
         const tabContents = document.querySelectorAll('.banner-form-tab-content');

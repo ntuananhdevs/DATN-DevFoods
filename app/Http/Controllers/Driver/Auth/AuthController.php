@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Exception;
 use App\Mail\EmailFactory;
+use Tzsk\Otp\Facades\Otp;
+use App\Jobs\SendOTPJob;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
@@ -226,22 +228,18 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Email không tồn tại trong hệ thống']);
         }
 
-        $otp = rand(100000, 999999);
-        Cache::put('password_reset_otp_' . $driver->id, $otp, now()->addMinutes(30));
-        $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
-    Mã OTP của bạn là: ' . $otp . '
-</div>';
+        $otp = Otp::generate($driver->email);
+        $driver->otp = $otp;
+        $driver->expires_at = now()->addMinutes(30);
+        $driver->save();
 
-        EmailFactory::sendNotification(
-            'generic', // <- type
-            ['content' => $content], // <- data
-            'Mã OTP đặt lại mật khẩu', // <- subject
-            $driver->email
-        );
+        SendOTPJob::dispatch($driver->email, $otp);
 
         return redirect()->route('driver.verify_otp', ['driver_id' => $driver->id])
-            ->with('success', 'Mã OTP đã được gửi đến email của bạn')->with('toast', ['type' => 'success', 'title' => 'Thành công', 'message' => 'Mã OTP đã được gửi!']);
+            ->with('success', 'Mã OTP đã được gửi đến email của bạn')
+            ->with('toast', ['type' => 'success', 'title' => 'Thành công', 'message' => 'Mã OTP đã được gửi!']);
     }
+
 
     public function showVerifyOTPForm($driver_id)
     {
@@ -255,19 +253,26 @@ class AuthController extends Controller
             'driver_id' => 'required|integer',
         ]);
 
-        $driverId = $request->input('driver_id');
-        $enteredOtp = $request->input('otp');
-        $cachedOtp = Cache::get('password_reset_otp_' . $driverId);
+        $driver = Driver::find($request->driver_id);
 
-        if (!$cachedOtp) {
-            return back()->withErrors(['otp' => 'Mã OTP đã hết hạn hoặc không tồn tại.']);
+        if (!$driver || !$driver->otp || !$driver->expires_at) {
+            return back()->withErrors(['otp' => 'Không thể xác thực OTP.']);
         }
 
-        if ($enteredOtp != $cachedOtp) {
-            return back()->withErrors(['otp' => 'OTP không chính xác. Vui lòng nhập lại.']);
+        if (now()->gt($driver->expires_at)) {
+            return back()->withErrors(['otp' => 'Mã OTP đã hết hạn.']);
         }
 
-        return redirect()->route('driver.reset_password', ['driver_id' => $driverId])
+        if ($request->otp != $driver->otp) {
+            return back()->withErrors(['otp' => 'Mã OTP không chính xác.']);
+        }
+
+        // Xóa OTP sau khi xác thực thành công
+        $driver->otp = null;
+        $driver->expires_at = null;
+        $driver->save();
+
+        return redirect()->route('driver.reset_password', ['driver_id' => $driver->id])
             ->with('success', 'Mã OTP hợp lệ. Vui lòng đặt lại mật khẩu.');
     }
 
@@ -383,20 +388,27 @@ class AuthController extends Controller
                 'message' => 'Tài xế không tồn tại.'
             ], 404);
         }
-        $otp = random_int(100000, 999999);
-        $cacheKey = 'password_reset_otp_' . $driverId;
-        Cache::put($cacheKey, $otp, now()->addMinutes(2));
 
-        Cache::put('password_reset_otp_' . $driver->id, $otp, now()->addMinutes(30));
-        $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
-        Mã OTP của bạn là: ' . $otp . '
-        </div>';
-        EmailFactory::sendNotification(
-            'generic',
-            ['content' => $content],
-            'Mã OTP đặt lại mật khẩu',
-            $driver->email
-        );
+        // === BẮT ĐẦU: Thêm Rate Limit ===
+        $key = 'resend_otp:' . $driver->email . '|' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            $seconds = RateLimiter::availableIn($key);
+            return response()->json([
+                'success' => false,
+                'message' => "Bạn đã gửi OTP quá nhiều lần. Vui lòng thử lại sau {$seconds} giây."
+            ], 429);
+        }
+
+        RateLimiter::hit($key, 60);
+        // === KẾT THÚC: Rate Limit ===
+
+        $otp = Otp::generate($driver->email);
+        $driver->otp = $otp;
+        $driver->expires_at = now()->addMinutes(30);
+        $driver->save();
+        SendOTPJob::dispatch($driver->email, $otp);
+
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi lại mã OTP thành công.'

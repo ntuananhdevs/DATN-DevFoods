@@ -283,7 +283,7 @@
                                     $primaryImg = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                                 @endphp
                                 @if($primaryImg)
-                                    <img src="{{ asset('storage/'.$primaryImg->img) }}" alt="{{ $product->name }}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;" />
+                                    <img src="{{ Storage::disk('s3')->url($primaryImg->img) }}" alt="{{ $product->name }}" style="width:100%; height:100%; object-fit:cover; border-radius:5px;" />
                                 @else
                                     <span class="text-xs text-gray-400">No image</span>
                                 @endif
@@ -496,6 +496,14 @@
 
 @section('scripts')
 <script>
+    // ----- Dropdown Toggle -----
+    function toggleDropdown(id) {
+        const dropdown = document.getElementById(id);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+        }
+    }
+
     // ----- Modal Toggle -----
     function toggleModal(id) {
         const modal = document.getElementById(id);
@@ -735,6 +743,36 @@
                 }
             });
         });
+
+        // ----- Checkbox Functionality -----
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const productCheckboxes = document.querySelectorAll('.product-checkbox');
+        const selectAllButton = document.getElementById('selectAllButton');
+
+        // Handle select all checkbox
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+        });
+
+        // Handle select all button click
+        selectAllButton.addEventListener('click', function() {
+            const isAllChecked = Array.from(productCheckboxes).every(cb => cb.checked);
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = !isAllChecked;
+            });
+            selectAllCheckbox.checked = !isAllChecked;
+        });
+
+        // Handle individual checkboxes
+        productCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const allChecked = Array.from(productCheckboxes).every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            });
+        });
     });
     
     // Function to handle pagination
@@ -744,103 +782,7 @@
         window.location.href = url.toString();
     }
 
-    // ----- Checkbox Functionality -----
-    document.addEventListener('DOMContentLoaded', function() {
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const productCheckboxes = document.querySelectorAll('.product-checkbox');
-        const selectAllButton = document.getElementById('selectAllButton');
-        const actionsDropdown = document.getElementById('actionsMenu');
-
-        // Handle select all checkbox
-        selectAllCheckbox.addEventListener('change', function() {
-            productCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            updateSelectAllButton();
-        });
-
-        // Handle individual checkboxes
-        productCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                updateSelectAllCheckbox();
-                updateSelectAllButton();
-            });
-        });
-
-        // Update select all checkbox state
-        function updateSelectAllCheckbox() {
-            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
-            selectAllCheckbox.checked = checkedBoxes.length === productCheckboxes.length;
-        }
-
-        // Update select all button state
-        function updateSelectAllButton() {
-            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
-            selectAllButton.disabled = checkedBoxes.length === 0;
-        }
-
-        // Handle select all button click
-        selectAllButton.addEventListener('click', function() {
-            const allChecked = selectAllCheckbox.checked;
-            selectAllCheckbox.checked = !allChecked;
-            productCheckboxes.forEach(checkbox => {
-                checkbox.checked = !allChecked;
-            });
-            updateSelectAllButton();
-        });
-
-        // Handle action buttons
-        document.querySelectorAll('#actionsMenu a').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const action = this.getAttribute('onclick');
-                if (action) {
-                    const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
-                    if (checkedBoxes.length === 0) {
-                        alert('Vui lòng chọn ít nhất một sản phẩm');
-                        return;
-                    }
-                    eval(action);
-                }
-            });
-        });
-    });
-
     // ----- Update Selected Status -----
-    function updateSelectedStatus(status) {
-        const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
-        const productIds = Array.from(checkedBoxes).map(cb => cb.value);
-
-        if (productIds.length === 0) {
-            alert('Vui lòng chọn ít nhất một sản phẩm');
-            return;
-        }
-
-        if (confirm('Bạn có chắc chắn muốn thay đổi trạng thái của các sản phẩm đã chọn?')) {
-            fetch('{{ ("admin.products.update-status") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    product_ids: productIds,
-                    status: status
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert('Có lỗi xảy ra khi cập nhật trạng thái');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra khi cập nhật trạng thái');
-            });
-        }
-    }
+   
 </script>
 @endsection

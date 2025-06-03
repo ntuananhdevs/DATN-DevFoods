@@ -16,9 +16,10 @@ use App\Http\Controllers\Admin\BranchController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\PromotionProgramController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
-use App\Http\Controllers\TestController;
+// use App\Http\Controllers\TestController;
 //Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
@@ -32,7 +33,9 @@ use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
 use App\Http\Controllers\Customer\ChatController as CustomerChatController;
+use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
 use Illuminate\Database\Capsule\Manager;
+use App\Http\Middleware\Customer\CartCountMiddleware;
 
 //Driver 
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
@@ -41,60 +44,73 @@ use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 use App\Http\Controllers\Admin\BranchStockController;
 
 // Product Variant Routes
+// Route::prefix('products')->name('products.')->group(function () {
+//     Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
+//     Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
+//     Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
+// });
 use App\Http\Controllers\Admin\ProductVariantController;
+use App\Http\Controllers\Admin\UserRankController;
+
 
 Route::prefix('/')->group(function () {
-    // Home
-    Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
+    // Apply the cart count middleware to all customer-facing routes
+    Route::middleware([CartCountMiddleware::class])->group(function () {
+        // Home
+        Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
-    // Products
-    Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
-    Route::get('/shop/products/show', [CustomerProductController::class, 'show'])->name('products.show');
+        // Products
+        Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
+        Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
 
-    // // Store Locations
-    // Route::get('/store', [StoreController::class, 'index'])->name('store.index');
+        Route::get('/wishlist', [CustomerWishlistController::class,'index'])->name('wishlist.index');
+        Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
+        Route::delete('/wishlist/{id}', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
+        // // Store Locations
+        // Route::get('/store', [StoreController::class, 'index'])->name('store.index');
 
-    // // Blog
-    // Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
-    // Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
-    // Route::get('/blog/category/{category}', [BlogController::class, 'category'])->name('blog.category');
-    // Route::get('/blog/tag/{tag}', [BlogController::class, 'tag'])->name('blog.tag');
-    // Route::get('/blog/search', [BlogController::class, 'search'])->name('blog.search');
+        // // Blog
+        // Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+        // Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
+        // Route::get('/blog/category/{category}', [BlogController::class, 'category'])->name('blog.category');
+        // Route::get('/blog/tag/{tag}', [BlogController::class, 'tag'])->name('blog.tag');
+        // Route::get('/blog/search', [BlogController::class, 'search'])->name('blog.search');
 
-    // Cart
-    Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
-    // Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-    // Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-    // Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+        // Cart
+        Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
+        Route::post('/cart/add', 'App\Http\Controllers\Api\Customer\CartController@add')->name('cart.add');
+        Route::post('/cart/update', 'App\Http\Controllers\Api\Customer\CartController@update')->name('cart.update');
+        Route::post('/cart/remove', 'App\Http\Controllers\Api\Customer\CartController@remove')->name('cart.remove');
+        Route::post('/coupon/apply', 'App\Http\Controllers\Api\Customer\CartController@applyCoupon')->name('coupon.apply');
+        // Checkout
+        Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
+        Route::post('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
+        Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
 
-    // Checkout
-    Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
-    Route::get('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
-    Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
+        // // User Profile
+        // Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+        // Route::get('/profile/orders', [ProfileController::class, 'orders'])->name('profile.orders');
+        // Route::get('/profile/orders/{id}', [ProfileController::class, 'orderDetail'])->name('profile.order.detail');
 
-    // // User Profile
-    // Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-    // Route::get('/profile/orders', [ProfileController::class, 'orders'])->name('profile.orders');
-    // Route::get('/profile/orders/{id}', [ProfileController::class, 'orderDetail'])->name('profile.order.detail');
+        // About
+        Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
 
-    // About
-    Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
+        // Contact
+        Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
+        // Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
 
-    // Contact
-    Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
-    // Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
+        // Promotions
+        Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
 
-    // Promotions
-    Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
+        // Promotions
+        Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branchs.index');
 
-    // Promotions
-    Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branchs.index');
+        // // Newsletter Subscription
+        // Route::post('/subscribe', [HomeController::class, 'subscribe'])->name('subscribe');
 
-    // // Newsletter Subscription
-    // Route::post('/subscribe', [HomeController::class, 'subscribe'])->name('subscribe');
-
-    // Support
-    Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
+        // Support
+        Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
+    });
 
     // Chat routes
     Route::prefix('api/chat')->group(function () {
@@ -190,6 +206,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/', [UserController::class, 'manager'])->name('index');
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
+
         });
     });
     // Branch Management
@@ -207,6 +224,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{id}/update-manager', [BranchController::class, 'updateManager'])->name('update-manager');
         Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
         Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
+        Route::post('/{id}/set-featured', [BranchController::class, 'setFeatured'])->name('set-featured');
+        Route::delete('/{branch}/images/{image}', [BranchController::class, 'deleteImage'])->name('delete-image');
+        Route::post('/bulk-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-update');
     });
 
     // Products Management
@@ -222,11 +242,38 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('/restore/{id}', [ProductController::class, 'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
+        
+        // Stock management
+        Route::get('{product}/stock', [ProductController::class, 'stock'])->name('stock');
+        Route::post('{product}/update-stocks', [ProductController::class, 'updateStocks'])->name('update-stocks');
+        Route::post('/update-topping-stocks', [ProductController::class, 'updateToppingStocksAjax'])->name('update-topping-stocks');
+        Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
+        Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
+        Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
+        
+        // Variant management
+        Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
+        Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
+        Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
     });
 
     // Driver Application Management
     Route::prefix('drivers')->name('drivers.')->group(function () {
         Route::get('/', [DriverController::class, 'index'])->name('index');
+        Route::get('/create', [DriverController::class, 'create'])->name('create');
+        Route::post('/store', [DriverController::class, 'store'])->name('store');
+        Route::get('/show/{driver}', [DriverController::class, 'show'])->name('show');
+        Route::get('/edit/{driver}', [DriverController::class, 'edit'])->name('edit');
+        Route::put('/update/{driver}', [DriverController::class, 'update'])->name('update');
+        Route::delete('/destroy/{driver}', [DriverController::class, 'destroy'])->name('destroy');
+        Route::post('/reset-password/{driver}', [DriverController::class, 'resetPassword'])->name('reset-password');
+        
+        // New driver management routes
+        Route::post('/{driver}/toggle-status', [DriverController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{driver}/lock-account', [DriverController::class, 'lockAccount'])->name('lock-account');
+        Route::post('/{driver}/unlock-account', [DriverController::class, 'unlockAccount'])->name('unlock-account');
+        Route::post('/{driver}/add-violation', [DriverController::class, 'addViolation'])->name('add-violation');
+        
         Route::get('/export', [DriverController::class, 'export'])->name('export');
         Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
         Route::get('/applications/export', [DriverController::class, 'exportApplications'])->name('applications.export');
@@ -247,31 +294,41 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
         Route::get('/search-product', [BannerController::class, 'searchProducts'])->name('search.product');
     });
-
-    // Banner Management
-    Route::prefix('discount')->name('discount.')->group(function () {
-        Route::get('/', [BannerController::class, 'index'])->name('index');
-        Route::get('/create', [BannerController::class, 'create'])->name('create');
-        Route::post('/store', [BannerController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
-        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
+    
+    // User Rank Management
+    Route::prefix('user_ranks')->name('user_ranks.')->group(function () {
+        Route::get('/', [UserRankController::class, 'index'])->name('index');
+        Route::get('/create', [UserRankController::class, 'create'])->name('create');
+        Route::post('/store', [UserRankController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [UserRankController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [UserRankController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [UserRankController::class, 'destroy'])->name('destroy');
+        Route::post('/search', [UserRankController::class, 'search'])->name('search');
+        Route::post('/update-status', [UserRankController::class, 'updateStatus'])->name('updateStatus');
+    });
+    
+    // Discount Management
+    Route::prefix('promotions')->name('promotions.')->group(function () {
+        Route::get('/', [PromotionProgramController::class, 'index'])->name('index');
+        Route::get('/create', [PromotionProgramController::class, 'create'])->name('create');
+        Route::post('/', [PromotionProgramController::class, 'store'])->name('store');
+        Route::get('/{program}/edit', [PromotionProgramController::class, 'edit'])->name('edit');
+        Route::put('/{program}', [PromotionProgramController::class, 'update'])->name('update');
+        Route::delete('/{program}', [PromotionProgramController::class, 'destroy'])->name('destroy');
+        Route::get('/{program}', [PromotionProgramController::class, 'show'])->name('show');
+        Route::post('/{program}/discount-codes', [PromotionProgramController::class, 'linkDiscountCode'])->name('link-discount');
+        Route::delete('/{program}/discount-codes/{discountCode}', [PromotionProgramController::class, 'unlinkDiscountCode'])->name('unlink-discount');
+        Route::post('/{program}/branches', [PromotionProgramController::class, 'linkBranch'])->name('link-branch');
+        Route::delete('/{program}/branches/{branch}', [PromotionProgramController::class, 'unlinkBranch'])->name('unlink-branch');
     });
 
     // Product Stock Management Routes
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('{product}/stock', [BranchStockController::class, 'index'])->name('stock');
-        Route::post('{product}/stocks', [BranchStockController::class, 'update'])->name('update-stocks');
+        Route::post('{product}/stocks', [BranchStockController::class, 'update'])->name('update-branch-stocks');
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
-    });
-
-    // Product Variant Routes
-    Route::prefix('products')->name('products.')->group(function () {
-        Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
-        Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
-        Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
     });
 
     Route::get('/chat', [AdminChatController::class, 'index'])->name('chat');
@@ -286,15 +343,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
-// Customer Cart Routes
-// Route::prefix('cart')->name('customer.cart.')->group(function () {
-//     Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-//     Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-//     Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-//     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
-//     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-//     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
-// });
 Route::prefix('driver')->name('driver.')->group(function () {
     Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
@@ -327,7 +375,19 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-// Test routes for AWS S3 uploadd
+// Admin routes for driver applications
+Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'role:admin']], function () {
+    Route::get('/drivers/applications', [App\Http\Controllers\Admin\DriverApplicationController::class, 'index'])->name('drivers.applications.index');
+    Route::get('/drivers/applications/{application}', [App\Http\Controllers\Admin\DriverApplicationController::class, 'show'])->name('drivers.applications.show');
+    Route::patch('/drivers/applications/{application}/status', [App\Http\Controllers\Admin\DriverApplicationController::class, 'updateStatus'])->name('drivers.applications.update-status');
+    Route::delete('/drivers/applications/{application}', [App\Http\Controllers\Admin\DriverApplicationController::class, 'destroy'])->name('drivers.applications.destroy');
+    Route::get('/drivers/applications/export/{type}', [App\Http\Controllers\Admin\DriverApplicationController::class, 'export'])->name('drivers.applications.export');
+    Route::get('/drivers/applications/stats', [App\Http\Controllers\Admin\DriverApplicationController::class, 'getStats'])->name('drivers.applications.stats');
+    Route::get('/drivers/applications/image/{path}', [App\Http\Controllers\Admin\DriverApplicationController::class, 'streamImage'])->name('drivers.applications.image');
+});
+
+// Test routes for AWS S3 uploads
+/*
 Route::prefix('test')->name('test.')->group(function () {
     Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
@@ -335,3 +395,23 @@ Route::prefix('test')->name('test.')->group(function () {
     Route::delete('/images', [TestController::class, 'deleteImage'])->name('images.delete');
     Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });
+*/
+
+// API Routes for products, cart and favorites
+Route::prefix('api')->group(function () {
+    // Product listing for AJAX filtering
+    Route::get('/products', [\App\Http\Controllers\Api\Customer\ProductController::class, 'getProducts']);
+    
+    // Favorites
+    Route::post('/favorites/toggle', [\App\Http\Controllers\Api\Customer\FavoriteController::class, 'toggle']);
+    
+    // Customer API routes
+    Route::prefix('customer')->group(function () {
+        Route::post('/products/get-variant', [\App\Http\Controllers\Api\Customer\ProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
+        
+        // Branch routes
+        Route::post('/branches/set-selected', [\App\Http\Controllers\Api\Customer\BranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
+        Route::get('/branches/nearest', [\App\Http\Controllers\Api\Customer\BranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
+    });
+});
+

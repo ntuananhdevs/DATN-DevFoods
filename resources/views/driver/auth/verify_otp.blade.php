@@ -98,19 +98,22 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             @if (session('toast'))
-                showToast('{{ session('toast.title') }}', '{{ session('toast.message') }}',
-                    '{{ session('toast.type') }}');
+                showToast('{{ session('toast.title') }}', '{{ session('toast.message') }}', '{{ session('toast.type') }}');
             @endif
+    
             const otpInputs = document.querySelectorAll('.otp-input');
             const otpHiddenInput = document.getElementById('otpInput');
             const otpForm = document.getElementById('otpVerificationForm');
             const verifyBtn = document.getElementById('verifyOtpButton');
             const resendBtn = document.getElementById('resendOtpButton');
-
+    
+            const RESEND_INTERVAL = 60; // giây
+            const STORAGE_KEY = 'lastOtpSentTime';
+    
             otpInputs[0].focus();
-
+    
             otpInputs.forEach((input, index) => {
                 input.addEventListener('input', (e) => {
                     if (!/^\d$/.test(e.target.value)) {
@@ -120,15 +123,16 @@
                     if (index < otpInputs.length - 1) {
                         otpInputs[index + 1].focus();
                     }
+                    otpInputs.forEach(inp => inp.classList.remove('is-invalid'));
                 });
-
+    
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Backspace' && !e.target.value && index > 0) {
                         otpInputs[index - 1].focus();
                     }
                 });
             });
-
+    
             otpInputs[0].addEventListener('paste', (e) => {
                 e.preventDefault();
                 const pasted = e.clipboardData.getData('text').replace(/\D/g, '');
@@ -136,48 +140,47 @@
                     if (i < otpInputs.length) otpInputs[i].value = char;
                 });
             });
-
-            otpForm.addEventListener('submit', function(e) {
+    
+            otpForm.addEventListener('submit', function (e) {
                 let otp = '';
                 otpInputs.forEach(input => otp += input.value);
-
+    
                 if (otp.length !== 6) {
                     e.preventDefault();
                     showToast('Mã OTP không hợp lệ', 'Vui lòng nhập đầy đủ 6 chữ số', 'error');
                     return;
                 }
-
+    
                 otpHiddenInput.value = otp;
                 verifyBtn.querySelector('.btn-text').classList.add('hidden');
                 verifyBtn.querySelector('.btn-loading').classList.remove('hidden');
                 verifyBtn.disabled = true;
             });
-
-            resendBtn.addEventListener('click', function() {
+    
+            // ======= Countdown xử lý reload ========
+            const lastSentTime = localStorage.getItem(STORAGE_KEY);
+            if (lastSentTime) {
+                const elapsed = Math.floor((Date.now() - parseInt(lastSentTime)) / 1000);
+                if (elapsed < RESEND_INTERVAL) {
+                    startCountdown(RESEND_INTERVAL - elapsed);
+                }
+            }
+    
+            resendBtn.addEventListener('click', function () {
                 resendBtn.disabled = true;
-
-                let countdown = 60;
-                resendBtn.textContent = `Gửi lại (${countdown}s)`;
-
-                const timer = setInterval(() => {
-                    countdown--;
-                    resendBtn.textContent = `Gửi lại (${countdown}s)`;
-                    if (countdown <= 0) {
-                        clearInterval(timer);
-                        resendBtn.disabled = false;
-                        resendBtn.textContent = 'Gửi lại';
-                    }
-                }, 1000);
-                fetch('{{ route('driver.resend_otp') }}', { // Hoặc thay bằng route đúng của bạn
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            driver_id: {{ $driver_id }}
-                        })
+                localStorage.setItem(STORAGE_KEY, Date.now().toString());
+                startCountdown(RESEND_INTERVAL);
+    
+                fetch('{{ route('driver.resend_otp') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        driver_id: {{ $driver_id }}
                     })
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -190,28 +193,39 @@
                         showToast('Lỗi', 'Không thể kết nối tới máy chủ.', 'error');
                     });
             });
-
+    
+            function startCountdown(seconds) {
+                resendBtn.disabled = true;
+                let countdown = seconds;
+                resendBtn.textContent = `Gửi lại (${countdown}s)`;
+    
+                const timer = setInterval(() => {
+                    countdown--;
+                    resendBtn.textContent = `Gửi lại (${countdown}s)`;
+                    if (countdown <= 0) {
+                        clearInterval(timer);
+                        resendBtn.disabled = false;
+                        resendBtn.textContent = 'Gửi lại';
+                        localStorage.removeItem(STORAGE_KEY);
+                    }
+                }, 1000);
+            }
+    
             function showToast(title, desc, type) {
                 const toast = document.getElementById('toast');
                 toast.querySelector('#toastTitle').textContent = title;
                 toast.querySelector('#toastDescription').textContent = desc;
-
+    
                 toast.querySelector('.toast-icon.success').classList.toggle('hidden', type !== 'success');
                 toast.querySelector('.toast-icon.error').classList.toggle('hidden', type !== 'error');
                 toast.classList.remove('hidden');
                 toast.classList.toggle('error', type === 'error');
                 toast.classList.toggle('success', type === 'success');
-
+    
                 setTimeout(() => toast.classList.add('hidden'), 3000);
             }
         });
-        const otpInputs = document.querySelectorAll('.otp-input');
-        otpInputs.forEach((input) => {
-            input.addEventListener('input', () => {
-                otpInputs.forEach(inp => inp.classList.remove('is-invalid'));
-            });
-        });
-    </script>
+    </script>    
 </body>
 
 </html>

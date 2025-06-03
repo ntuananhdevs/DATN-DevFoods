@@ -2,15 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Branch extends Model
 {
-    use HasFactory;
-
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
         'branch_code',
         'name',
@@ -24,14 +27,19 @@ class Branch extends Model
         'closing_hour',
         'active',
         'balance',
-        'rating',
+        'rating', 
         'reliability_score',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
     protected $casts = [
+        'active' => 'boolean',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
-        'active' => 'boolean',
         'balance' => 'decimal:2',
         'rating' => 'decimal:2',
         'reliability_score' => 'integer',
@@ -40,15 +48,7 @@ class Branch extends Model
     ];
 
     /**
-     * Quan hệ với User (Manager)
-     */
-    public function manager(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'manager_user_id');
-    }
-
-    /**
-     * Quan hệ với BranchImage
+     * Get the images for the branch.
      */
     public function images(): HasMany
     {
@@ -56,57 +56,68 @@ class Branch extends Model
     }
 
     /**
-     * Lấy ảnh chính của chi nhánh
+     * Get the primary image for the branch.
      */
-    public function primaryImage()
+    public function primaryImage(): HasMany
     {
-        return $this->hasOne(BranchImage::class)->where('is_primary', true);
+        return $this->hasMany(BranchImage::class)->where('is_primary', true);
     }
 
     /**
-     * Scope để lọc chi nhánh đang hoạt động
+     * Get the manager of the branch.
      */
-    public function scopeActive($query)
+    public function manager(): BelongsTo
     {
-        return $query->where('active', true);
-    }
-
-    /**
-     * Scope để tìm kiếm theo tên hoặc mã chi nhánh
-     */
-    public function scopeSearch($query, $search)
-    {
-        return $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('branch_code', 'like', "%{$search}%");
-    }
-
-    /**
-     * Accessor để format số điện thoại
-     */
-    public function getFormattedPhoneAttribute()
-    {
-        return $this->phone;
-    }
-
-    /**
-     * Accessor để kiểm tra chi nhánh có đang mở không
-     */
-    public function getIsOpenAttribute()
-    {
-        $now = now()->format('H:i');
-        return $now >= $this->opening_hour && $now <= $this->closing_hour && $this->active;
-    }
-
-    /**
-     * Mutator để format branch_code
-     */
-    public function setBranchCodeAttribute($value)
-    {
-        $this->attributes['branch_code'] = strtoupper($value);
+        return $this->belongsTo(User::class, 'manager_user_id');
     }
 
     public function stocks(): HasMany
     {
         return $this->hasMany(BranchStock::class);
+    }
+
+    /**
+     * Get all topping stocks for this branch
+     */
+    public function toppingStocks(): HasMany
+    {
+        return $this->hasMany(ToppingStock::class);
+    }
+
+    /**
+     * Get all toppings available at this branch through topping stocks
+     */
+    public function toppings(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Topping::class,
+            ToppingStock::class,
+            'branch_id', // Foreign key on topping_stocks table
+            'id', // Foreign key on toppings table
+            'id', // Local key on branches table
+            'topping_id' // Local key on topping_stocks table
+        );
+    }
+
+    public function products(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Product::class,
+            BranchStock::class,
+            'branch_id', // Foreign key on branch_stocks table
+            'id', // Foreign key on products table
+            'id', // Local key on branches table
+            'product_variant_id' // Local key on branch_stocks table
+        );
+    }
+
+    public function promotionPrograms()
+    {
+        return $this->belongsToMany(PromotionProgram::class, 'promotion_branches', 'branch_id', 'promotion_program_id');
+    }
+
+    public function discountCodes()
+    {
+        return $this->belongsToMany(DiscountCode::class, 'discount_code_branches', 'branch_id', 'discount_code_id');
     }
 }

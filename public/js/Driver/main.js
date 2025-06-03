@@ -1,149 +1,98 @@
 document.addEventListener("DOMContentLoaded", function () {
-    // Xử lý hiện/ẩn mật khẩu
-    const togglePasswordButtons = document.querySelectorAll(".toggle-password");
-    togglePasswordButtons.forEach((button) => {
-        button.addEventListener("click", function () {
-            const input = this.parentElement.querySelector("input");
-            const eyeIcon = this.querySelector(".eye-icon");
-            const eyeOffIcon = this.querySelector(".eye-off-icon");
-
-            if (input.type === "password") {
-                input.type = "text";
-                eyeIcon.classList.add("hidden");
-                eyeOffIcon.classList.remove("hidden");
-            } else {
-                input.type = "password";
-                eyeIcon.classList.remove("hidden");
-                eyeOffIcon.classList.add("hidden");
-            }
-        });
-    });
-
-    // Xử lý form đăng nhập
     const loginForm = document.getElementById("loginForm");
     const loginBtn = document.getElementById("loginButton");
-    const passwordDialog = document.getElementById("passwordChangeDialog");
-    const driverPhoneInput = document.getElementById("driverPhoneInput");
 
-    loginForm.addEventListener("submit", function (e) {
-        e.preventDefault();
+    if (loginForm && loginBtn) {
+        loginForm.addEventListener("submit", function (e) {
+            e.preventDefault();
 
-        // Hiển thị loading button
-        const loading = loginBtn.querySelector(".btn-loading");
-        const text = loginBtn.querySelector(".btn-text");
-        loading.classList.remove("hidden");
-        text.classList.add("hidden");
+            const loading = loginBtn.querySelector(".btn-loading");
+            const text = loginBtn.querySelector(".btn-text");
 
-        // Xóa các thông báo lỗi cũ
-        const errorElements = loginForm.querySelectorAll(".error-message");
-        errorElements.forEach((el) => el.remove());
+            if (!loading || !text) {
+                console.error("Không tìm thấy .btn-loading hoặc .btn-text trong loginButton");
+                return;
+            }
 
-        const formData = new FormData(loginForm);
+            loading.classList.remove("hidden");
+            text.classList.add("hidden");
 
-        fetch(loginForm.action, {
-            method: "POST",
-            headers: {
-                "X-CSRF-TOKEN": document.querySelector(
-                    'meta[name="csrf-token"]'
-                ).content,
-                Accept: "application/json",
-                "X-Requested-With": "XMLHttpRequest",
-            },
-            body: formData,
-        })
-            .then(async (res) => {
-                const contentType = res.headers.get("content-type") || "";
+            const formData = new FormData(loginForm);
+            console.log("Form action:", loginForm.action);
 
-                if (res.status === 429) {
-                    let data = null;
-                    if (contentType.includes("application/json")) {
-                        data = await res.json();
+            fetch(loginForm.action, {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: formData,
+            })
+                .then(async (res) => {
+                    const contentType = res.headers.get("content-type") || "";
+                    if (res.status === 429) {
+                        const data = contentType.includes("application/json") ? await res.json() : {};
+                        showToast(
+                            "Đã bị khóa tạm thời",
+                            data?.message || "Bạn đăng nhập quá nhiều lần, vui lòng thử lại sau.",
+                            "error"
+                        );
+                        return null;
                     }
-                    showToast(
-                        "Đã bị khóa tạm thời",
-                        data?.message ||
-                            "Bạn đăng nhập quá nhiều lần, vui lòng thử lại sau.",
-                        "error"
-                    );
-                    loading.classList.add("hidden");
-                    text.classList.remove("hidden");
-                    return null; // dừng xử lý tiếp
-                }
-
-                if (!contentType.includes("application/json")) {
-                    const text = await res.text();
-                    showToast(
-                        "Lỗi",
-                        `Server trả về không phải JSON: ${text.substring(
-                            0,
-                            50
-                        )}...`,
-                        "error"
-                    );
-                    loading.classList.add("hidden");
-                    text.classList.remove("hidden");
-                    return null;
-                }
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    if (res.status === 422 && data.errors) {
-                        // show lỗi validate
-                        Object.entries(data.errors).forEach(
-                            ([field, messages]) => {
-                                const input = loginForm.querySelector(
-                                    `[name="${field}"]`
-                                );
+                    if (!contentType.includes("application/json")) {
+                        const text = await res.text();
+                        console.error("Non-JSON response:", text);
+                        showToast("Lỗi", `Server trả về không phải JSON: ${text.substring(0, 50)}...`, "error");
+                        return null;
+                    }
+                    const data = await res.json();
+                    if (!res.ok) {
+                        loginForm.querySelectorAll(".error-message").forEach(el => el.remove());
+                        if (res.status === 422 && data.errors) {
+                            Object.entries(data.errors).forEach(([field, messages]) => {
+                                const input = loginForm.querySelector(`[name="${field}"]`);
                                 if (input) {
-                                    const errorDiv =
-                                        document.createElement("div");
-                                    errorDiv.className =
-                                        "error-message text-red-500 text-sm mt-1";
+                                    const errorDiv = document.createElement("div");
+                                    errorDiv.className = "error-message text-red-500 text-sm mt-1";
                                     errorDiv.textContent = messages.join(" ");
                                     input.parentNode.appendChild(errorDiv);
                                 }
-                            }
-                        );
+                            });
+                        }
+                        showToast("Lỗi xác thực", data.message || "Vui lòng kiểm tra lại dữ liệu.", "error");
+                        return null;
                     }
-                    showToast(
-                        "Lỗi xác thực",
-                        data.message || "Vui lòng kiểm tra lại dữ liệu.",
-                        "error"
-                    );
+                    return data;
+                })
+                .then((data) => {
+                    if (!data) return;
                     loading.classList.add("hidden");
                     text.classList.remove("hidden");
-                    return null;
-                }
-
-                return data;
-            })
-            .then((data) => {
-                if (!data) return; // đã lỗi, dừng
-
-                loading.classList.add("hidden");
-                text.classList.remove("hidden");
-
-                if (data.first_login) {
-                    showToast(
-                        "Thông báo",
-                        data.message ||
-                            "Đăng nhập thành công, vui lòng đổi mật khẩu lần đầu.",
-                        "success"
-                    );
-                    passwordDialog.classList.remove("hidden");
-                    driverPhoneInput.value = loginForm.phone_number.value;
-                } else if (data.success) {
-                    window.location.href = "/driver";
-                } else {
-                    showToast(
-                        "Lỗi",
-                        data.message || "Đăng nhập thất bại",
-                        "error"
-                    );
-                }
-            });
-    });
+                    if (data.first_login) {
+                        showToast("Thông báo", "Đăng nhập thành công, vui lòng đổi mật khẩu lần đầu.", "success");
+                        const passwordDialog = document.getElementById("passwordChangeDialog");
+                        const driverPhoneInput = document.getElementById("driverPhoneInput");
+                        if (passwordDialog && driverPhoneInput) {
+                            passwordDialog.classList.remove("hidden");
+                            driverPhoneInput.value = loginForm.phone_number.value;
+                        }
+                    } else if (data.success) {
+                        window.location.href = data.redirect || "/driver";
+                    } else {
+                        showToast("Lỗi", data.message || "Đăng nhập thất bại", "error");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Fetch error:", error);
+                    showToast("Lỗi", "Không thể kết nối máy chủ: " + error.message, "error");
+                    loading.classList.add("hidden");
+                    text.classList.remove("hidden");
+                });
+        });
+    } else {
+        console.error("Không tìm thấy loginForm hoặc loginButton trong DOM");
+    }
 
     // Xử lý form đổi mật khẩu
     document
@@ -226,19 +175,24 @@ document.addEventListener("DOMContentLoaded", function () {
     function showToast(title, description, type = "success") {
         const toast = document.getElementById("toast");
         if (!toast) return;
-
+    
+        // Xoá toast khỏi DOM để reset animation
+        toast.classList.add("hidden");
+        toast.offsetHeight; // Force reflow để reset lại animation
+    
+        // Clear timeout cũ nếu có
         if (window.toastTimeout) {
             clearTimeout(window.toastTimeout);
         }
-
+    
         const toastTitle = document.getElementById("toastTitle");
         const toastDescription = document.getElementById("toastDescription");
         const successIcon = toast.querySelector(".toast-icon.success");
         const errorIcon = toast.querySelector(".toast-icon.error");
-
+    
         toastTitle.textContent = title;
         toastDescription.textContent = description;
-
+    
         if (type === "error") {
             successIcon.classList.add("hidden");
             errorIcon.classList.remove("hidden");
@@ -250,14 +204,13 @@ document.addEventListener("DOMContentLoaded", function () {
             toast.classList.add("success");
             toast.classList.remove("error");
         }
-
+    
+        // Hiển thị lại
         toast.classList.remove("hidden");
-
-        window.toastTimeout = setTimeout(
-            () => {
-                toast.classList.add("hidden");
-            },
-            type === "error" ? 8000 : 4000
-        );
-    }
+    
+        // Tự động ẩn sau vài giây
+        window.toastTimeout = setTimeout(() => {
+            toast.classList.add("hidden");
+        }, type === "error" ? 8000 : 4000);
+    }    
 });

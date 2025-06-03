@@ -289,7 +289,7 @@
             <div class="flex justify-center -mt-16 mb-4">
                 <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg">
                     @if($user->avatar)
-                    <img src="{{ Storage::url($user->avatar) }}" alt="Avatar" class="w-full h-full object-cover rounded-full">
+                    <img src="{{ Storage::disk('s3')->url($user->avatar) }}" alt="Avatar" class="w-full h-full object-cover rounded-full">
                     @else
                     <div class="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
                         <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

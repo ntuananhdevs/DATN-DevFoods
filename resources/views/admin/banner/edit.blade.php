@@ -1,9 +1,25 @@
 @extends('layouts/admin/contentLayoutMaster')
-
+@section('title', 'Chỉnh sửa banner')
 @section('content')
     <div class="container mx-auto p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-800 shadow-xl rounded-lg">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-700">
             Sửa Banner</h1>
+            
+        @if (session('duplicate_order'))
+        <div class="mb-6 p-4 border-l-4 border-yellow-500 bg-yellow-100 dark:bg-yellow-900 dark:border-yellow-600 text-yellow-700 dark:text-yellow-200">
+            <h3 class="font-bold">Cảnh báo: Trùng thứ tự hiển thị</h3>
+            <p class="mb-2">Thứ tự hiển thị {{ session('duplicate_order')['order'] }} đã được sử dụng bởi banner "{{ session('duplicate_order')['banner_title'] }}".</p>
+            <p class="mb-4">Bạn có thể:</p>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('admin.banners.edit', session('duplicate_order')['banner_id']) }}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors">
+                    Điều chỉnh thứ tự của banner hiện có
+                </a>
+                <button type="button" onclick="document.getElementById('order').focus()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md transition-colors">
+                    Chọn thứ tự khác
+                </button>
+            </div>
+        </div>
+        @endif
 
         <form class="space-y-6" action="{{ route('admin.banners.update', $banner->id) }}" method="POST"
             enctype="multipart/form-data">
@@ -131,7 +147,7 @@
 
                 <!-- Hidden input để submit -->
                 <input type="hidden" name="link"
-                    :value="selectedProduct ? `/shop/products/show/${selectedProduct.id}` : '{{ $banner->link }}'">
+                    :value="selectedProduct ? `/shop/products/${selectedProduct.id}` : '{{ $banner->link }}'">
             </div>
 
 
@@ -181,12 +197,12 @@
                     @enderror
                 </div>
 
-                <div>
+                <div id="order-field" style="{{ old('position', $banner->position) != 'homepage' ? 'display: none;' : '' }}">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="order">Thứ tự
                         hiển thị</label>
                     <input type="number"
                         class="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 @error('order') border-red-500 @enderror"
-                        id="order" name="order" value="{{ old('order', $banner->order) }}">
+                        id="order" name="order" value="{{ old('order', $banner->order) }}" {{ old('position', $banner->position) != 'homepage' ? 'disabled' : '' }}>
                     @error('order')
                         <span class="text-sm text-red-600 dark:text-red-400 mt-1">{{ $message }}</span>
                     @enderror
@@ -221,7 +237,7 @@
 
             <button
                 class="w-full sm:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 dark:focus:ring-offset-gray-800 transition-colors duration-200"
-                type="submit">Lưu Banner</button>
+                type="submit">Sửa Banner</button>
         </form>
     </div>
 @endsection
@@ -335,6 +351,29 @@
         } else {
             console.error('Banner form not found for attaching submit listener.');
         }
+        
+        // Xử lý hiển thị/ẩn trường thứ tự hiển thị dựa trên vị trí được chọn
+        const positionSelect = document.getElementById('position');
+        const orderField = document.getElementById('order-field');
+        const orderInput = document.getElementById('order');
+        
+        function handlePositionChange() {
+            if (positionSelect.value === 'homepage') {
+                orderField.style.display = '';
+                orderInput.disabled = false;
+                if (!orderInput.value) {
+                    orderInput.value = '0';
+                }
+            } else {
+                orderField.style.display = 'none';
+                orderInput.disabled = true;
+                orderInput.value = '';
+            }
+        }
+        
+        positionSelect.addEventListener('change', handlePositionChange);
+        // Gọi hàm khi trang được tải để đảm bảo trạng thái ban đầu đúng
+        handlePositionChange();
 
         if (imagePathInput && imagePreview && previewPlaceholder) {
             imagePathInput.addEventListener('change', function(e) {

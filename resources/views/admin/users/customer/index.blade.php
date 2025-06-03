@@ -12,8 +12,8 @@
                 </svg>
             </div>
             <div>
-                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản quản lý </h2>
-                <p class="text-muted-foreground">Quản lý tài khoản quản lý của hệ thống</p>
+                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản người dùng  </h2>
+                <p class="text-muted-foreground">Quản lý tài khoản người dùng của hệ thống</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
@@ -65,7 +65,7 @@
     <div class="bg-white rounded-lg shadow-md">
         <!-- Table Header -->
         <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-800">Danh sách quản lý </h2>
+            <h2 class="text-xl font-semibold text-gray-800">Danh sách người dùng </h2>
         </div>
 
         <!-- Controls -->
@@ -159,7 +159,7 @@
                         </td>
                         <td class="px-4 py-4">{{ $user->id }}</td>
                         <td class="px-4 py-4">
-                            <img src="{{ $user->avatar ? asset('storage/'.$user->avatar) : asset('images/default-avatar.png') }}"
+                            <img src="{{ $user->avatar ? Storage::disk('s3')->url($user->avatar) : asset('images/default-avatar.png') }}"
                                  alt="{{ $user->full_name }}"
                                  class="rounded-full w-10 h-10 object-cover">
                         </td>
@@ -406,9 +406,9 @@ function updateTable(users) {
                 <tr data-user-id="${user.id}" class="border-b hover:bg-gray-50 transition-colors duration-200">
                     <td class="w-12 text-center py-4">
                         <div class="flex items-center justify-center">
-                            <input type="checkbox" 
-                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                                   id="user-${user.id}" 
+                            <input type="checkbox"
+                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                   id="user-${user.id}"
                                    value="${user.id}">
                         </div>
                     </td>
