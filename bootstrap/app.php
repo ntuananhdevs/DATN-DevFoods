@@ -28,7 +28,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             CheckSelectedBranch::class,
-            // 'turnstile' => VerifyTurnstile::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
