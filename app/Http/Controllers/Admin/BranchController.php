@@ -232,7 +232,7 @@ class BranchController extends Controller
         try {
             // Tìm chi nhánh theo ID
             $branch = Branch::findOrFail($id);
-
+    
             // Validate dữ liệu đầu vào
             $request->validate([
                 'name' => 'required|string|max:255|unique:branches,name,' . $id,
@@ -247,14 +247,14 @@ class BranchController extends Controller
                 'images' => 'nullable|array',
                 'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
                 'captions.*' => 'nullable|string|max:255',
-                'primary_image' => 'nullable|integer',
+                'primary_image' => 'nullable',
                 'primary_image_type' => 'nullable|in:existing,new',
                 'delete_images' => 'nullable|array',
                 'delete_images.*' => 'integer|exists:branch_images,id'
             ]);
-
+    
             DB::beginTransaction();
-
+    
             // Cập nhật thông tin cơ bản của chi nhánh
             $branch->name = $request->name;
             $branch->address = $request->address;
@@ -267,7 +267,7 @@ class BranchController extends Controller
             $branch->closing_hour = $request->closing_hour;
             $branch->active = $request->has('active');
             $branch->save();
-
+    
             // Xử lý xóa hình ảnh
             if ($request->has('delete_images')) {
                 foreach ($request->delete_images as $imageId) {
@@ -278,12 +278,13 @@ class BranchController extends Controller
                     }
                 }
             }
-
+    
             // Cập nhật caption cho hình ảnh hiện có
             if ($request->has('captions')) {
-                foreach ($request->captions as $imageId => $caption) {
-                    if (is_numeric($imageId)) {
-                        $image = BranchImage::where('id', $imageId)
+                foreach ($request->captions as $key => $caption) {
+                    // Nếu key là số nguyên, đó là ID của hình ảnh hiện có
+                    if (is_numeric($key) && !str_contains($key, 'new_')) {
+                        $image = BranchImage::where('id', $key)
                                            ->where('branch_id', $branch->id)
                                            ->first();
                         if ($image) {
@@ -293,37 +294,38 @@ class BranchController extends Controller
                     }
                 }
             }
-
+    
             // Xử lý upload hình ảnh mới
             $newImages = [];
             if ($request->hasFile('images')) {
                 $directory = 'branches/' . $branch->branch_code;
-
+    
                 foreach ($request->file('images') as $index => $imageFile) {
                     $filename = $directory . '/' . Str::uuid() . '.' . $imageFile->getClientOriginalExtension();
-
+    
                     // Upload to S3
                     $putResult = Storage::disk('s3')->put($filename, file_get_contents($imageFile));
-
+    
                     if ($putResult) {
                         $newImage = new BranchImage();
                         $newImage->branch_id = $branch->id;
                         $newImage->image_path = $filename;
-                        $newImage->caption = $request->input('captions.' . $index, null);
-                        $newImage->is_primary = true;
+                        // Lấy caption cho hình ảnh mới từ request
+                        $newImage->caption = $request->input('new_captions.' . $index, null);
+                        $newImage->is_primary = false; // Mặc định không phải ảnh chính
                         $newImage->save();
-
+    
                         $newImages[] = $newImage;
                     }
                 }
             }
-
+    
             // Xử lý hình ảnh chính
             if ($request->has('primary_image') && $request->has('primary_image_type')) {
                 // Đặt lại tất cả hình ảnh không phải ảnh chính
                 BranchImage::where('branch_id', $branch->id)
                     ->update(['is_primary' => false]);
-
+    
                 if ($request->primary_image_type === 'existing') {
                     // Đặt hình ảnh hiện có làm ảnh chính
                     BranchImage::where('id', $request->primary_image)
@@ -334,10 +336,17 @@ class BranchController extends Controller
                     $newImages[$request->primary_image]->is_primary = true;
                     $newImages[$request->primary_image]->save();
                 }
+            } else {
+                // Nếu không có hình ảnh chính được chọn, đặt hình ảnh đầu tiên làm ảnh chính (nếu có)
+                $firstImage = BranchImage::where('branch_id', $branch->id)->first();
+                if ($firstImage) {
+                    $firstImage->is_primary = true;
+                    $firstImage->save();
+                }
             }
-
+    
             DB::commit();
-
+    
             return redirect()
                 ->route('admin.branches.show', $branch->id)
                 ->with([
@@ -347,11 +356,11 @@ class BranchController extends Controller
                         'message' => 'Chi nhánh đã được cập nhật thành công!'
                     ]
                 ]);
-
+    
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating branch: ' . $e->getMessage());
-
+    
             return redirect()
                 ->back()
                 ->withInput()
