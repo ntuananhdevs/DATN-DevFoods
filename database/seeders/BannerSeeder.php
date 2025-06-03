@@ -3,11 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use App\Models\Banner;
 use Illuminate\Database\Seeder;
-use File;
 
 class BannerSeeder extends Seeder
 {
@@ -16,41 +13,25 @@ class BannerSeeder extends Seeder
      */
     public function run(): void
     {
-        $folderPath = storage_path('app/public/banners');
-
-        if (!File::exists($folderPath)) {
-            $this->command->error("❌ Thư mục ảnh không tồn tại: {$folderPath}");
-            return;
-        }
-
-        $imageFiles = File::files($folderPath);
+        // === LẤY DANH SÁCH ẢNH TỪ S3 THƯ MỤC 'banners/' ===
+        $imageFiles = Storage::disk('s3')->files('banners');
 
         if (empty($imageFiles)) {
-            $this->command->error("❌ Không có ảnh nào trong thư mục: {$folderPath}");
+            $this->command->error("❌ Không tìm thấy ảnh nào trong thư mục 'banners/' trên S3.");
             return;
         }
 
-        // === PHẦN HOMEPAGE GIỮ NGUYÊN NHƯ CŨ ===
-        foreach ($imageFiles as $index => $file) {
-            $extension = strtolower($file->getExtension());
-
+        $index = 0;
+        foreach ($imageFiles as $path) {
+            // Bỏ qua nếu không phải định dạng ảnh
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
             if (!in_array($extension, ['jpg', 'jpeg', 'png', 'webp'])) {
-                $this->command->warn("⚠️ Bỏ qua file không phải ảnh: " . $file->getFilename());
+                $this->command->warn("⚠️ Bỏ qua file không phải ảnh: " . $path);
                 continue;
             }
 
-            $originalName = $file->getFilename();
-            $s3Filename = 'banners/' . $originalName;
-
-            if (Storage::disk('s3')->exists($s3Filename)) {
-                $this->command->line("ℹ️  Ảnh đã tồn tại trên S3: $originalName");
-            } else {
-                $imageContent = File::get($file);
-                Storage::disk('s3')->put($s3Filename, $imageContent);
-                $this->command->info("✅ Đã upload ảnh lên S3: $originalName");
-            }
-
-            $imageUrl = Storage::disk('s3')->url($s3Filename);
+            $imageUrl = Storage::disk('s3')->url($path);
+            $filename = basename($path);
 
             Banner::create([
                 'title' => 'Banner mẫu ' . ($index + 1),
@@ -58,16 +39,17 @@ class BannerSeeder extends Seeder
                 'order' => $index,
                 'image_path' => $imageUrl,
                 'link' => '/shop/products/' . rand(1, 100),
-                'description' => 'Banner được tạo tự động từ ảnh mẫu',
+                'description' => 'Banner tự động tạo từ ảnh S3: ' . $filename,
                 'start_at' => now(),
                 'end_at' => now()->addDays(7),
                 'is_active' => true
             ]);
 
-            $this->command->info("📝 Đã tạo banner từ ảnh: " . $originalName);
+            $this->command->info("✅ Đã tạo banner từ S3: {$filename}");
+            $index++;
         }
 
-        // === PHẦN VỊ TRÍ KHÁC DÙNG MẢNG CỐ ĐỊNH ===
+        // === PHẦN VỊ TRÍ KHÁC VẪN GIỮ NGUYÊN ===
         $extraBanners = [
             [
                 'title' => 'Banner chân trang',
@@ -136,6 +118,6 @@ class BannerSeeder extends Seeder
             $this->command->info("📝 Đã tạo banner tĩnh cho vị trí: {$item['position']}");
         }
 
-        $this->command->info("🎉 Seeder hoàn tất tạo banner cho homepage và các vị trí đặc biệt.");
+        $this->command->info("🎉 Seeder hoàn tất: tạo banner từ S3 và các vị trí tĩnh.");
     }
 }

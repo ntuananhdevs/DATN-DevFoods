@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Exception;
 use App\Mail\EmailFactory;
+use Tzsk\Otp\Facades\Otp;
+use App\Jobs\SendOTPJob;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
@@ -226,24 +228,18 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Email không tồn tại trong hệ thống']);
         }
 
-        $otp = rand(100000, 999999);
+        $otp = Otp::generate($driver->email);
         $driver->otp = $otp;
         $driver->expires_at = now()->addMinutes(30);
         $driver->save();
-        $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
-    Mã OTP của bạn là: ' . $otp . '
-</div>';
 
-        EmailFactory::sendNotification(
-            'generic', // <- type
-            ['content' => $content], // <- data
-            'Mã OTP đặt lại mật khẩu', // <- subject
-            $driver->email
-        );
+        SendOTPJob::dispatch($driver->email, $otp);
 
         return redirect()->route('driver.verify_otp', ['driver_id' => $driver->id])
-            ->with('success', 'Mã OTP đã được gửi đến email của bạn')->with('toast', ['type' => 'success', 'title' => 'Thành công', 'message' => 'Mã OTP đã được gửi!']);
+            ->with('success', 'Mã OTP đã được gửi đến email của bạn')
+            ->with('toast', ['type' => 'success', 'title' => 'Thành công', 'message' => 'Mã OTP đã được gửi!']);
     }
+
 
     public function showVerifyOTPForm($driver_id)
     {
@@ -382,47 +378,37 @@ class AuthController extends Controller
         $request->validate([
             'driver_id' => 'required|integer|exists:drivers,id',
         ]);
-    
+
         $driverId = $request->input('driver_id');
         $driver = Driver::find($driverId);
-    
+
         if (!$driver) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tài xế không tồn tại.'
             ], 404);
         }
-    
+
         // === BẮT ĐẦU: Thêm Rate Limit ===
         $key = 'resend_otp:' . $driver->email . '|' . $request->ip();
-    
-        if (RateLimiter::tooManyAttempts($key, 3)) { // giới hạn 3 lần
+
+        if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
             return response()->json([
                 'success' => false,
-                'message' => "Bạn đã gửi lại OTP quá nhiều lần. Vui lòng thử lại sau {$seconds} giây."
+                'message' => "Bạn đã gửi OTP quá nhiều lần. Vui lòng thử lại sau {$seconds} giây."
             ], 429);
         }
-    
+
         RateLimiter::hit($key, 60);
         // === KẾT THÚC: Rate Limit ===
-    
-        $otp = random_int(100000, 999999);
+
+        $otp = Otp::generate($driver->email);
         $driver->otp = $otp;
         $driver->expires_at = now()->addMinutes(30);
         $driver->save();
-    
-        $content = '<div style="padding: 20px; background-color: #f2f2f2; text-align: center; margin: 20px 0; font-size: 24px; font-weight: bold;">
-            Mã OTP của bạn là: ' . $otp . '
-        </div>';
-    
-        EmailFactory::sendNotification(
-            'generic',
-            ['content' => $content],
-            'Mã OTP đặt lại mật khẩu',
-            $driver->email
-        );
-    
+        SendOTPJob::dispatch($driver->email, $otp);
+
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi lại mã OTP thành công.'
