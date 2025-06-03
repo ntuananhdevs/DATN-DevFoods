@@ -180,7 +180,10 @@
                         </td>
                         <td class="py-3 px-4">
                             <a href="{{ route('admin.branches.show', $branch->id) }}" class="btn btn-ghost btn-sm">
-                                <i class="fas fa-eye"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
                             </a>
                         </td>
                     </tr>
@@ -415,7 +418,7 @@
             }
         } catch (error) {
             console.error('Error:', error);
-          
+
         } finally {
             isLoading = false;
             document.querySelector('.loading-spinner').classList.remove('active');
@@ -454,14 +457,17 @@
                             data-branch-id="${branch.id}"
                             data-branch-name="${branch.name}"
                             data-branch-active="${branch.active}">
-                            ${branch.active ? 
-                                '<i class="fas fa-check mr-1"></i> Hoạt động' : 
+                            ${branch.active ?
+                                '<i class="fas fa-check mr-1"></i> Hoạt động' :
                                 '<i class="fas fa-times mr-1"></i> Vô hiệu hóa'}
                         </button>
                     </td>
                     <td class="py-3 px-4">
-                        <a href="/admin/branches/${branch.id}" class="btn btn-ghost btn-sm">
-                            <i class="fas fa-eye"></i>
+                        <a href="/admin/branches/show/${branch.id}" class="btn btn-ghost btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
                         </a>
                     </td>
                 </tr>
@@ -684,7 +690,7 @@
     function updateBulkActionsVisibility() {
         const checkedCount = document.querySelectorAll('.branch-checkbox:checked').length;
         const actionsMenu = document.getElementById('actionsMenu');
-        
+
         if (checkedCount > 0) {
             actionsMenu.classList.remove('hidden');
         } else {

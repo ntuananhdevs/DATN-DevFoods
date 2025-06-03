@@ -22,11 +22,13 @@ class NotificationMail extends Mailable implements ShouldQueue
         'password_reset' => 'emails.auth.password-reset',
         'welcome' => 'emails.auth.welcome',
         'verification' => 'emails.auth.verify',
+        'branch_manager_assigned' => 'emails.branch.manager-assigned',
+        'branch_manager_removed' => 'emails.branch.manager-removed',
     ];
 
     /**
      * Create a new message instance.
-     * 
+     *
      * @param string $type Loại thông báo
      * @param array $data Dữ liệu truyền vào template
      * @param string|null $subject Tiêu đề email (nếu null, sẽ được tạo dựa trên type)
@@ -73,6 +75,12 @@ class NotificationMail extends Mailable implements ShouldQueue
             case 'verification':
                 $this->subject = 'Xác minh tài khoản - ' . config('app.name');
                 break;
+            case 'branch_manager_assigned':
+                $this->subject = 'Phân công quản lý chi nhánh - ' . config('app.name');
+                break;
+            case 'branch_manager_removed':
+                $this->subject = 'Thông báo gỡ bỏ quản lý chi nhánh - ' . config('app.name');
+                break;
             default:
                 $this->subject = 'Thông báo từ ' . config('app.name');
                 break;
@@ -87,7 +95,7 @@ class NotificationMail extends Mailable implements ShouldQueue
     public function build()
     {
         $template = $this->templateMap[$this->type] ?? 'emails.generic';
-        
+
         return $this->subject($this->subject)
             ->view($template)
             ->with([

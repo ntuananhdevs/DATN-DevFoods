@@ -87,19 +87,19 @@
                          data-images='@json($branch->images)'>
                         <h3 class="font-bold text-lg mb-1">{{ $branch->name }}</h3>
                         <p class="text-gray-600 mb-2">
-                            <i class="fas fa-map-marker-alt" style="color: #4361ee;"></i>
+                            <i class="fas fa-map-marker-alt text-orange-500 mr-2"></i>
                             {{ $branch->address }}
                         </p>
                         <p class="text-gray-600 mb-2">
-                            <i class="fas fa-phone" style="color: #4361ee;"></i>
+                            <i class="fas fa-phone-alt text-orange-500 mr-2"></i>
                             {{ $branch->phone }}
                         </p>
                         <p class="text-gray-600 mb-2">
-                            <i class="fas fa-envelope" style="color: #4361ee;"></i>
+                            <i class="fas fa-envelope text-orange-500 mr-3"></i>
                             {{ $branch->email }}
                         </p>
                         <p class="text-gray-600 mb-3">
-                            <i class="fas fa-clock" style="color: #4361ee;"></i>
+                            <i class="fas fa-clock text-orange-500 mr-2"></i>
                             {{ date('H:i', strtotime($branch->opening_hour)) }} - {{ date('H:i', strtotime($branch->closing_hour)) }}
                         </p>
                     </div>
@@ -137,19 +137,19 @@
                     <h3 class="text-lg font-bold mb-3">Thông Tin Liên Hệ</h3>
                     <ul class="space-y-2">
                         <li class="flex items-start">
-                            <i class="fas fa-map-marker-alt" style="color: #4361ee;"></i>
+                            <i class="fas fa-map-marker-alt text-orange-500 mt-1 mr-3"></i>
                             <span id="detail-address">{{ $branch->address }}</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-phone" style="color: #4361ee;"></i>
+                            <i class="fas fa-phone-alt text-orange-500 mr-3"></i>
                             <span id="detail-phone">{{ $branch->phone }}</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-envelope" style="color: #4361ee;"></i>
+                            <i class="fas fa-envelope text-orange-500 mr-3"></i>
                             <span id="detail-email">{{ $branch->email }}</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-clock" style="color: #4361ee;"></i>
+                            <i class="fas fa-clock text-orange-500 mr-3"></i>
                             <span id="detail-hours">{{ $branch->opening_hour }} - {{ $branch->closing_hour }}</span>
                         </li>
                     </ul>
@@ -169,27 +169,27 @@
                     <h3 class="text-lg font-bold mb-3">Tiện Ích</h3>
                     <ul class="grid grid-cols-2 gap-2">
                         <li class="flex items-center">
-                            <i class="fas fa-wifi" style="color: #4361ee;"></i>
+                            <i class="fas fa-wifi text-orange-500 mr-2"></i>
                             <span>Wi-Fi miễn phí</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-parking" style="color: #4361ee;"></i>
+                            <i class="fas fa-parking text-orange-500 mr-2"></i>
                             <span>Bãi đậu xe</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-baby" style="color: #4361ee;"></i>
+                            <i class="fas fa-baby text-orange-500 mr-2"></i>
                             <span>Ghế trẻ em</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-credit-card" style="color: #4361ee;"></i>
+                            <i class="fas fa-credit-card text-orange-500 mr-2"></i>
                             <span>Thanh toán thẻ</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-wheelchair" style="color: #4361ee;"></i>
+                            <i class="fas fa-wheelchair text-orange-500 mr-2"></i>
                             <span>Lối đi cho người khuyết tật</span>
                         </li>
                         <li class="flex items-center">
-                            <i class="fas fa-air-conditioner" style="color: #4361ee;"></i>
+                            <i class="fas fa-air-conditioner text-orange-500 mr-2"></i>
                             <span>Máy lạnh</span>
                         </li>
                     </ul>
@@ -208,11 +208,11 @@
                     <h3 class="text-lg font-bold mb-3">Đánh Giá</h3>
                     <div class="flex items-center mb-2">
                         <div class="flex text-orange-400 mr-2">
-                            <i class="fas fa-star" style="color: #4361ee;"></i>
-                            <i class="fas fa-star" style="color: #4361ee;"></i>
-                            <i class="fas fa-star" style="color: #4361ee;"></i>
-                            <i class="fas fa-star" style="color: #4361ee;"></i>
-                            <i class="fas fa-star-half-alt" style="color: #4361ee;"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
                         </div>
                         <span class="font-bold">4.5/5</span>
                         <span class="text-gray-500 ml-2">(120 đánh giá)</span>
@@ -223,11 +223,11 @@
                             <div class="flex justify-between items-center mb-1">
                                 <div class="font-medium">Nguyễn Văn A</div>
                                 <div class="flex text-orange-400 text-sm">
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
                                 </div>
                             </div>
                             <p class="text-gray-600 text-sm">
@@ -239,11 +239,11 @@
                             <div class="flex justify-between items-center mb-1">
                                 <div class="font-medium">Trần Thị B</div>
                                 <div class="flex text-orange-400 text-sm">
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="fas fa-star" style="color: #4361ee;"></i>
-                                    <i class="far fa-star" style="color: #4361ee;"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="far fa-star"></i>
                                 </div>
                             </div>
                             <p class="text-gray-600 text-sm">
