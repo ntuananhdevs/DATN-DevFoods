@@ -374,7 +374,7 @@
                         <a href="{{ asset('/contact') }}" class="text-sm font-medium {{ request()->is('contact*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                             Liên Hệ
                         </a>
-                        <a href="{{ asset('/recruitment') }}" class="text-sm font-medium {{ request()->is('recruitment*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        <a href="{{ asset('/hiring-driver') }}" class="text-sm font-medium {{ request()->is('hiring-driver*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                             Tuyển dụng
                         </a>
                     </nav>

@@ -608,12 +608,7 @@ if (is_array($ingredientsData)) {
               @else
                 @php
                   $stockQuantity = 0;
-                  $defaultVariantId = 0;
-                  
-                  // Create default variant ID if no variants exist
-                  if (isset($product->variants) && count($product->variants) > 0) {
-                    $defaultVariantId = $product->variants[0]->id;
-                  }
+                  $defaultVariantId = 0; // Always use 0 for products without variants
                   
                   // Look for existing branch stock using the new array structure
                   if (isset($branchStocks[$branch->id]) && isset($branchStocks[$branch->id][$defaultVariantId])) {
@@ -1262,21 +1257,33 @@ if (is_array($ingredientsData)) {
                         form.appendChild(toppingStocksFlag);
                     }
                     
-                    // Collect all branch stock data and ensure it's included in the form
-                    const branchStockInputs = document.querySelectorAll('input[name^="branch_stock"]');
-                    branchStockInputs.forEach(input => {
-                        // Make sure the input is included in the form submission
-                        if (!input.form) {
-                            form.appendChild(input.cloneNode(true));
+                    // Check if branch stock and topping stock inputs are already in the form
+                    const formBranchInputs = form.querySelectorAll('input[name^="branch_stock"]');
+                    const formToppingInputs = form.querySelectorAll('input[name^="topping_stock"]');
+                    
+                    console.log(`Branch inputs in form: ${formBranchInputs.length}`);
+                    console.log(`Topping inputs in form: ${formToppingInputs.length}`);
+                    
+                    // Only clone inputs that are NOT already in the form
+                    const allBranchInputs = document.querySelectorAll('input[name^="branch_stock"]');
+                    allBranchInputs.forEach(input => {
+                        if (!form.contains(input)) {
+                            const clonedInput = input.cloneNode(true);
+                            clonedInput.name = input.name;
+                            clonedInput.value = input.value;
+                            form.appendChild(clonedInput);
+                            console.log(`Cloned branch input: ${input.name}`);
                         }
                     });
                     
-                    // Collect all topping stock data and ensure it's included in the form
-                    const toppingStockInputs = document.querySelectorAll('input[name^="topping_stock"]');
-                    toppingStockInputs.forEach(input => {
-                        // Make sure the input is included in the form submission
-                        if (!input.form) {
-                            form.appendChild(input.cloneNode(true));
+                    const allToppingInputs = document.querySelectorAll('input[name^="topping_stock"]');
+                    allToppingInputs.forEach(input => {
+                        if (!form.contains(input)) {
+                            const clonedInput = input.cloneNode(true);
+                            clonedInput.name = input.name;
+                            clonedInput.value = input.value;
+                            form.appendChild(clonedInput);
+                            console.log(`Cloned topping input: ${input.name}`);
                         }
                     });
                     

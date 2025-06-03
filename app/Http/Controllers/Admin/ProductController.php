@@ -357,6 +357,15 @@ class ProductController extends Controller
             DB::commit();
             \Log::info('Transaction committed successfully');
 
+            // Check if this is an AJAX request
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sản phẩm và các biến thể đã được tạo thành công',
+                    'redirect' => route('admin.products.stock', $product->id)
+                ]);
+            }
+
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công!',
@@ -367,6 +376,15 @@ class ProductController extends Controller
             return redirect()->route('admin.products.stock', $product->id);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
+            
+            // Check if this is an AJAX request
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng kiểm tra lại thông tin nhập vào',
+                    'errors' => $e->validator->errors()
+                ], 422);
+            }
             
             session()->flash('toast', [
                 'type' => 'error',
@@ -379,6 +397,14 @@ class ProductController extends Controller
                 ->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            // Check if this is an AJAX request
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+                ], 500);
+            }
             
             session()->flash('toast', [
                 'type' => 'error',
@@ -874,16 +900,32 @@ class ProductController extends Controller
                                 'quantity' => $quantity
                             ]);
                             
-                            // Make sure variant exists and belongs to this product
-                            $variant = null;
+                            // Validate branch exists
+                            $branch = \App\Models\Branch::find($branchId);
+                            if (!$branch) {
+                                \Log::warning('Invalid branch ID', [
+                                    'branch_id' => $branchId
+                                ]);
+                                continue;
+                            }
+                            
+                            // For variant ID > 0, make sure variant exists and belongs to this product
+                            $isValidVariant = true;
                             if ($variantId > 0) {
                                 $variant = ProductVariant::where('id', $variantId)
                                     ->where('product_id', $product->id)
                                     ->first();
+                                if (!$variant) {
+                                    \Log::warning('Invalid variant ID', [
+                                        'variant_id' => $variantId,
+                                        'product_id' => $product->id
+                                    ]);
+                                    $isValidVariant = false;
+                                }
                             }
+                            // For variant ID = 0, it's the default variant (no specific variant)
                             
-                            // If variant is valid or we're using the default variant (0)
-                            if ($variant || $variantId == 0) {
+                            if ($isValidVariant) {
                                 // Find or create the branch stock record
                                 $updated = BranchStock::updateOrCreate(
                                     [
@@ -900,15 +942,10 @@ class ProductController extends Controller
                                     'branch_id' => $branchId,
                                     'variant_id' => $variantId,
                                     'quantity' => $quantity,
-                                    'record' => $updated
+                                    'was_recently_created' => $updated->wasRecentlyCreated
                                 ]);
                                 
                                 $branchStocksUpdated = true;
-                            } else {
-                                \Log::warning('Invalid variant ID', [
-                                    'variant_id' => $variantId,
-                                    'product_id' => $product->id
-                                ]);
                             }
                         }
                     }
@@ -939,6 +976,15 @@ class ProductController extends Controller
                                 'quantity' => $quantity
                             ]);
                             
+                            // Validate branch exists
+                            $branch = \App\Models\Branch::find($branchId);
+                            if (!$branch) {
+                                \Log::warning('Invalid branch ID for topping stock', [
+                                    'branch_id' => $branchId
+                                ]);
+                                continue;
+                            }
+                            
                             // Make sure topping exists
                             $topping = Topping::find($toppingId);
                             
@@ -959,7 +1005,7 @@ class ProductController extends Controller
                                     'branch_id' => $branchId,
                                     'topping_id' => $toppingId,
                                     'quantity' => $quantity,
-                                    'record' => $updated
+                                    'was_recently_created' => $updated->wasRecentlyCreated
                                 ]);
                                 
                                 $toppingStocksUpdated = true;
