@@ -19,6 +19,7 @@ use App\Models\ProductImg;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\ToppingStock;
+use App\Events\Customer\StockUpdated;
 
 class ProductController extends Controller
 {
@@ -912,18 +913,15 @@ class ProductController extends Controller
                             // For variant ID > 0, make sure variant exists and belongs to this product
                             $isValidVariant = true;
                             if ($variantId > 0) {
-                                $variant = ProductVariant::where('id', $variantId)
-                                    ->where('product_id', $product->id)
-                                    ->first();
-                                if (!$variant) {
+                                $variant = \App\Models\ProductVariant::find($variantId);
+                                if (!$variant || $variant->product_id != $id) {
                                     \Log::warning('Invalid variant ID', [
                                         'variant_id' => $variantId,
-                                        'product_id' => $product->id
+                                        'product_id' => $id
                                     ]);
                                     $isValidVariant = false;
                                 }
                             }
-                            // For variant ID = 0, it's the default variant (no specific variant)
                             
                             if ($isValidVariant) {
                                 // Find or create the branch stock record
@@ -937,6 +935,13 @@ class ProductController extends Controller
                                         'updated_at' => now()
                                     ]
                                 );
+                                
+                                // Broadcast stock update event
+                                event(new StockUpdated(
+                                    $updated->branch_id,
+                                    $updated->product_variant_id,
+                                    $updated->stock_quantity
+                                ));
                                 
                                 \Log::info("Branch stock updated", [
                                     'branch_id' => $branchId,

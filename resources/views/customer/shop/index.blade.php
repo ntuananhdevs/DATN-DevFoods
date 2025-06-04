@@ -200,6 +200,18 @@
     .favorite-btn:hover i {
         color: #FF3B30;
     }
+
+    /* Thêm style cho nút disabled */
+    .add-to-cart-btn.disabled {
+        background-color: #9CA3AF !important; /* Màu xám */
+        cursor: not-allowed !important;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+    
+    .add-to-cart-btn.disabled:hover {
+        background-color: #9CA3AF !important;
+    }
 </style>
 
     @php
@@ -324,12 +336,12 @@
                             @endif
                         </div>
                         @if(isset($product->has_stock) && $product->has_stock)
-                            <button class="add-to-cart-btn">
+                            <a href="{{ route('products.show', ['id' => $product->id, 'branch_id' => session('selected_branch')]) }}" class="add-to-cart-btn">
                                 <i class="fas fa-shopping-cart"></i>
-                                Thêm
-                            </button>
+                                Mua hàng
+                            </a>
                         @else
-                            <button class="add-to-cart-btn bg-gray-400 cursor-not-allowed" disabled>
+                            <button class="add-to-cart-btn disabled" disabled>
                                 <i class="fas fa-ban"></i>
                                 Hết hàng
                             </button>
@@ -429,99 +441,112 @@
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Pusher
+    // Khai báo biến channel
+    let productsChannel, favoritesChannel, cartChannel, branchStockChannel;
     const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
         cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
         encrypted: true
     });
     
-    // Login popup handling
-    const loginPopup = document.getElementById('login-popup');
-    const closeLoginPopup = document.getElementById('close-login-popup');
-    
-    // Close popup when close button is clicked
-    if (closeLoginPopup) {
-        closeLoginPopup.addEventListener('click', function() {
-            loginPopup.classList.add('hidden');
-        });
-    }
-    
-    // Close popup when clicking outside the modal
-    if (loginPopup) {
-        loginPopup.addEventListener('click', function(e) {
-            if (e.target === loginPopup) {
-                loginPopup.classList.add('hidden');
-            }
-        });
-    }
-    
-    // Show login popup when login-prompt-btn is clicked
-    document.querySelectorAll('.login-prompt-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            loginPopup.classList.remove('hidden');
-        });
-    });
-    
-    // Branch selector handling
-    const changeBranchInline = document.getElementById('change-branch-inline');
-    if (changeBranchInline) {
-        changeBranchInline.addEventListener('click', function() {
-            const branchModal = document.getElementById('branch-selector-modal');
-            if (branchModal) {
-                branchModal.style.display = 'flex';
-                document.body.classList.add('overflow-hidden');
-            }
-        });
-    }
-    
-    // Handle empty state branch change button
-    const changeBranchEmpty = document.getElementById('change-branch-empty');
-    if (changeBranchEmpty) {
-        changeBranchEmpty.addEventListener('click', function() {
-            const branchModal = document.getElementById('branch-selector-modal');
-            if (branchModal) {
-                branchModal.style.display = 'flex';
-                document.body.classList.add('overflow-hidden');
-            }
-        });
-    }
-    
     // Subscribe to channels
-    const productsChannel = pusher.subscribe('products-channel');
-    const favoritesChannel = pusher.subscribe('user-wishlist-channel');
-    const cartChannel = pusher.subscribe('user-cart-channel');
+    try {
+        branchStockChannel = pusher.subscribe('branch-stock-channel');
+        productsChannel = pusher.subscribe('products-channel');
+        favoritesChannel = pusher.subscribe('user-wishlist-channel');
+        cartChannel = pusher.subscribe('user-cart-channel');
+        
+        // Get current branch ID
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentBranchId = urlParams.get('branch_id') || '{{ session('selected_branch') }}';
+        
+        // Listen for stock update events
+        branchStockChannel.bind('stock-updated', function(data) {
+            // Only update if the stock change is for the current branch
+            if (data.branchId == currentBranchId) {
+                updateProductStock(data.productVariantId, data.stockQuantity);
+            }
+        });
+
+        // Listen for product update events
+        productsChannel.bind('product-updated', function(data) {
+            updateProductCard(data.product);
+        });
+        
+        productsChannel.bind('product-created', function() {
+            window.location.reload();
+        });
+        
+        // Listen for favorite updates
+        favoritesChannel.bind('favorite-updated', function(data) {
+            if (data.product_id) {
+                const favoriteButtons = document.querySelectorAll(`.favorite-btn[data-product-id="${data.product_id}"]`);
+                favoriteButtons.forEach(button => {
+                    const icon = button.querySelector('i');
+                    if (data.is_favorite) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas', 'text-red-500');
+                    } else {
+                        icon.classList.remove('fas', 'text-red-500');
+                        icon.classList.add('far');
+                    }
+                });
+            }
+        });
+        
+        // Listen for cart events
+        cartChannel.bind('cart-updated', function(data) {
+            updateCartCount(data.count);
+        });
+
+    } catch (error) {
+        console.error('Error during channel subscription:', error);
+    }
     
-    // Listen for product update events
-    productsChannel.bind('product-updated', function(data) {
-        updateProductCard(data.product);
-    });
-    
-    productsChannel.bind('product-created', function() {
-        // Reload the page to show the new product
-        window.location.reload();
-    });
-    
-    // Listen for favorite updates
-    favoritesChannel.bind('favorite-updated', function(data) {
-        if (data.product_id) {
-            const favoriteButtons = document.querySelectorAll(`.favorite-btn[data-product-id="${data.product_id}"]`);
-            favoriteButtons.forEach(button => {
-                const icon = button.querySelector('i');
-                if (data.is_favorite) {
-                    icon.classList.remove('far');
-                    icon.classList.add('fas', 'text-red-500');
-                } else {
-                    icon.classList.remove('fas', 'text-red-500');
-                    icon.classList.add('far');
+    // Function to update product stock
+    function updateProductStock(variantId, stockQuantity) {
+        // Find all product cards with this variant ID
+        const productCards = document.querySelectorAll(`.product-card[data-variant-id="${variantId}"]`);
+        
+        // Get current branch ID
+        const currentBranchId = '{{ session('selected_branch') }}';
+        
+        productCards.forEach(card => {
+            // Update the has-stock attribute
+            card.dataset.hasStock = stockQuantity > 0 ? 'true' : 'false';
+            
+            // Update the button
+            const buttonContainer = card.querySelector('.flex.justify-between.items-center');
+            if (buttonContainer) {
+                const button = buttonContainer.querySelector('button, a');
+                if (button) {
+                    if (stockQuantity > 0) {
+                        // Product is in stock
+                        const productId = card.dataset.productId;
+                        buttonContainer.innerHTML = `
+                            <div class="flex flex-col">
+                                ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
+                            </div>
+                            <a href="/shop/products/${productId}?branch_id=${currentBranchId}" class="add-to-cart-btn">
+                                <i class="fas fa-shopping-cart"></i>
+                                Mua hàng
+                            </a>
+                        `;
+                    } else {
+                        // Product is out of stock
+                        buttonContainer.innerHTML = `
+                            <div class="flex flex-col">
+                                ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
+                            </div>
+                            <button class="add-to-cart-btn disabled" disabled>
+                                <i class="fas fa-ban"></i>
+                                Hết hàng
+                            </button>
+                        `;
+                    }
                 }
-            });
-        }
-    });
-    
-    // Listen for cart events
-    cartChannel.bind('cart-updated', function(data) {
-        updateCartCount(data.count);
-    });
+            }
+        });
+    }
     
     // Function to update product card
     function updateProductCard(product) {
@@ -596,6 +621,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentUrl = new URL(window.location.href);
             const category = currentUrl.searchParams.get('category') || '';
             const search = currentUrl.searchParams.get('search') || '';
+            const branchId = currentUrl.searchParams.get('branch_id') || '';
             
             // Fetch products via AJAX
             axios.get('/api/products', {
@@ -603,13 +629,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     sort: this.value,
                     category: category,
                     search: search,
+                    branch_id: branchId,
                     page: 1 // Reset to first page when sorting changes
                 }
             })
             .then(response => {
                 if (response.data.success) {
                     // Update URL without reloading the page
-            currentUrl.searchParams.set('sort', this.value);
+                    currentUrl.searchParams.set('sort', this.value);
                     window.history.pushState({}, '', currentUrl.toString());
                     
                     // Render products
@@ -712,11 +739,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             </div>
                             ${product.has_stock ? 
-                                `<button class="add-to-cart-btn">
+                                `<a href="/shop/products/${product.id}?branch_id={{ session('selected_branch') }}" class="add-to-cart-btn">
                                     <i class="fas fa-shopping-cart"></i>
-                                    Thêm
-                                </button>` : 
-                                `<button class="add-to-cart-btn bg-gray-400 cursor-not-allowed" disabled>
+                                    Mua hàng
+                                </a>` : 
+                                `<button class="add-to-cart-btn disabled" disabled>
                                     <i class="fas fa-ban"></i>
                                     Hết hàng
                                 </button>`
@@ -818,6 +845,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const category = currentUrl.searchParams.get('category') || '';
                 const search = currentUrl.searchParams.get('search') || '';
                 const sort = currentUrl.searchParams.get('sort') || 'popular';
+                const branchId = currentUrl.searchParams.get('branch_id') || '';
                 const page = this.dataset.page;
                 
                 // Show loading state
@@ -829,6 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         sort: sort,
                         category: category,
                         search: search,
+                        branch_id: branchId,
                         page: page
                     }
                 })
@@ -910,66 +939,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 loginPopup.classList.remove('hidden');
             });
         });
-        
-        // Add to cart button handling
-        document.querySelectorAll('.add-to-cart-btn:not([disabled])').forEach(button => {
-            button.addEventListener('click', function() {
-                const productCard = this.closest('.product-card');
-                const productId = productCard.dataset.productId;
-                const variantId = productCard.dataset.variantId;
-                const productName = productCard.querySelector('h3').textContent;
-                const hasStock = productCard.dataset.hasStock === 'true';
-                
-                // Check if a variant is available and has stock
-                if (!variantId || !hasStock) {
-                    showToast('Sản phẩm này tạm hết hàng');
-                    return;
-                }
-                
-                // Add immediate visual effect
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                // AJAX call to add to cart
-                axios.post('/api/cart/add', {
-                    product_id: productId,
-                    variant_id: variantId,
-                    quantity: 1
-                })
-                .then(response => {
-                    if (response.data.success) {
-                        // Update cart counter using global function
-                        if (window.updateCartCount) {
-                            window.updateCartCount(response.data.cart_count);
-                        }
-                        
-                        this.innerHTML = '<i class="fas fa-check"></i>';
-                        showToast(`Đã thêm ${productName} vào giỏ hàng`);
-                        
-                        setTimeout(() => {
-                            this.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm';
-                        }, 1500);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error adding to cart:', error);
-                    
-                    // Show error details if available
-                    if (error.response && error.response.data) {
-                        console.error('Error details:', error.response.data);
-                        if (error.response.data.message) {
-                            showToast(error.response.data.message);
-                        }
-                    }
-                    
-                    this.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
-                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
-            
-            setTimeout(() => {
-                this.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm';
-            }, 1500);
-                });
-            });
-        });
     }
     
     // Attach initial event listeners
@@ -996,6 +965,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const search = currentUrl.searchParams.get('search') || '';
             const sort = currentUrl.searchParams.get('sort') || 'popular';
             const category = this.dataset.category;
+            const branchId = currentUrl.searchParams.get('branch_id') || '';
             
             // Fetch products via AJAX
             axios.get('/api/products', {
@@ -1003,6 +973,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     sort: sort,
                     category: category,
                     search: search,
+                    branch_id: branchId,
                     page: 1 // Reset to first page when category changes
                 }
             })
@@ -1089,6 +1060,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentUrl = new URL(window.location.href);
             const category = currentUrl.searchParams.get('category') || '';
             const sort = currentUrl.searchParams.get('sort') || 'popular';
+            const branchId = currentUrl.searchParams.get('branch_id') || '';
             
             // Fetch products via AJAX
             axios.get('/api/products', {
@@ -1096,6 +1068,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     sort: sort,
                     category: category,
                     search: searchValue,
+                    branch_id: branchId,
                     page: 1 // Reset to first page when search changes
                 }
             })
