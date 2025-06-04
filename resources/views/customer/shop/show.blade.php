@@ -74,36 +74,79 @@
             
             <!-- Hidden branch_id input for JS -->
             <input type="hidden" id="branch-select" value="{{ $selectedBranchId }}">
-            
+{{--             
             @if($selectedBranchId && !$isAvailable)
                 <div class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
                     <p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>
                 </div>
-            @endif
+            @endif --}}
 
             <!-- Product variants -->
             <div class="space-y-4" id="variants-container">
+                @if($selectedBranchId && !$isAvailable)
+                    <div id="out-of-stock-message" class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
+                        <p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>
+                    </div>
+                @endif
+                @php
+                    // Debug log for selected branch and product
+                    \Log::debug('Product and Branch Info:', [
+                        'product_id' => $product->id,
+                        'selected_branch_id' => $selectedBranchId,
+                        'selected_branch' => $selectedBranch ? $selectedBranch->toArray() : null
+                    ]);
+                @endphp
                 @foreach($variantAttributes as $attribute)
                 @if(count($attribute->values) > 0)
                 <div>
                     <h3 class="font-medium mb-2">{{ $attribute->name }}</h3>
                     <div class="flex flex-wrap gap-2">
                         @foreach($attribute->values as $value)
+                        @php
+                            $variantStock = $selectedBranch ? $selectedBranch->stocks()
+                                ->whereHas('productVariant', function($query) use ($product, $value) {
+                                    $query->where('product_id', $product->id)
+                                          ->whereHas('variantValues', function($q) use ($value) {
+                                              $q->where('variant_value_id', $value->id);
+                                          });
+                                })
+                                ->first() : null;
+                            
+                            // Debug log for each variant
+                            \Log::debug('Variant Stock Info:', [
+                                'attribute' => $attribute->name,
+                                'value' => $value->value,
+                                'variant_stock' => $variantStock ? [
+                                    'id' => $variantStock->id,
+                                    'product_variant_id' => $variantStock->product_variant_id,
+                                    'stock_quantity' => $variantStock->stock_quantity
+                                ] : null
+                            ]);
+                            
+                            $stockQuantity = $variantStock ? $variantStock->stock_quantity : 0;
+                            $productVariantId = $variantStock ? $variantStock->product_variant_id : null;
+                        @endphp
                         <label class="relative flex items-center">
                             <input type="radio" 
                                    name="attribute_{{ $attribute->id }}" 
                                    value="{{ $value->id }}" 
                                    data-attribute-id="{{ $attribute->id }}"
                                    data-price-adjustment="{{ $value->price_adjustment }}"
+                                   data-variant-id="{{ $productVariantId }}"
+                                   data-stock-quantity="{{ $stockQuantity }}"
+                                   data-branch-id="{{ $selectedBranchId }}"
                                    class="sr-only variant-input"
                                    {{ $loop->first ? 'checked' : '' }}
-                                   {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
-                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
+                                   {{ $stockQuantity <= 0 ? 'disabled' : '' }}>
+                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50 {{ $stockQuantity <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
                                 {{ $value->value }}
                                 @if($value->price_adjustment != 0)
                                     <span class="text-sm ml-1 {{ $value->price_adjustment > 0 ? 'text-red-600' : 'text-green-600' }}">
                                         {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, ',', '.') }}đ
                                     </span>
+                                @endif
+                                @if($stockQuantity <= 5 && $stockQuantity > 0)
+                                    <span class="text-xs ml-1 text-orange-500 stock-display">(Còn {{ $stockQuantity }})</span>
                                 @endif
                             </span>
                         </label>
@@ -196,7 +239,8 @@
                     <i class="fas {{ isset($product->has_stock) && $product->has_stock ? 'fa-shopping-cart' : 'fa-ban' }} h-5 w-5 mr-2"></i>
                     <span>{{ isset($product->has_stock) && !$product->has_stock ? 'Hết hàng' : 'Thêm vào giỏ hàng' }}</span>
                 </button>
-                <button class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                <button id="buy-now" 
+                        class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
                     Mua ngay
                 </button>
@@ -570,6 +614,12 @@
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Debug log for initial state
+        console.log('Initial branch state:', {
+            selectedBranchId: {{ $selectedBranchId ? $selectedBranchId : 'null' }},
+            productId: {{ $product->id }}
+        });
+
         // Auto-show branch selector if no branch is selected
         const selectedBranchId = {{ session('selected_branch') ? session('selected_branch') : 'null' }};
         if (!selectedBranchId) {
@@ -825,6 +875,183 @@
                 document.getElementById('content-' + tabName).classList.remove('hidden');
             });
         });
+    });
+
+    // Function to update product availability UI
+    function updateProductAvailability(isAvailable) {
+        const outOfStockMessage = document.getElementById('out-of-stock-message');
+        const addToCartBtn = document.getElementById('add-to-cart');
+        const buyNowBtn = document.getElementById('buy-now');
+        const quantityControls = document.querySelectorAll('#decrease-quantity, #increase-quantity');
+        const toppingInputs = document.querySelectorAll('.topping-input');
+        
+        if (!isAvailable) {
+            // Show out of stock message if not exists
+            if (!outOfStockMessage) {
+                const messageDiv = document.createElement('div');
+                messageDiv.id = 'out-of-stock-message';
+                messageDiv.className = 'p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200';
+                messageDiv.innerHTML = '<p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>';
+                document.getElementById('variants-container').insertBefore(messageDiv, document.getElementById('variants-container').firstChild);
+            }
+            
+            // Disable buttons and controls
+            if (addToCartBtn) {
+                addToCartBtn.disabled = true;
+                addToCartBtn.classList.add('bg-gray-400');
+                addToCartBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                const span = addToCartBtn.querySelector('span');
+                if (span) span.textContent = 'Hết hàng';
+            }
+            
+            if (buyNowBtn) {
+                buyNowBtn.disabled = true;
+                buyNowBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
+            quantityControls.forEach(control => {
+                control.disabled = true;
+                control.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+            
+            toppingInputs.forEach(input => {
+                input.disabled = true;
+                const label = input.closest('label');
+                if (label) {
+                    label.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        } else {
+            // Remove out of stock message if exists
+            if (outOfStockMessage) outOfStockMessage.remove();
+            
+            // Enable buttons and controls
+            if (addToCartBtn) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.classList.remove('bg-gray-400');
+                addToCartBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                const span = addToCartBtn.querySelector('span');
+                if (span) span.textContent = 'Thêm vào giỏ hàng';
+            }
+            
+            if (buyNowBtn) {
+                buyNowBtn.disabled = false;
+                buyNowBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            quantityControls.forEach(control => {
+                control.disabled = false;
+                control.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+            
+            toppingInputs.forEach(input => {
+                input.disabled = false;
+                const label = input.closest('label');
+                if (label) {
+                    label.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        }
+    }
+
+    // Initialize Pusher
+    const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
+        cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}'
+    });
+
+    // Subscribe to the stock update channel
+    const channel = pusher.subscribe('branch-stock-channel');
+    
+    // Track last update to prevent duplicate alerts
+    let lastUpdate = {
+        variantId: null,
+        quantity: null,
+        timestamp: 0
+    };
+    
+    // Listen for stock updates
+    channel.bind('stock-updated', function(data) {
+        console.log('Stock update received:', data);
+        
+        // Check for duplicate updates within 1 second
+        const now = Date.now();
+        if (lastUpdate.variantId === data.productVariantId && 
+            lastUpdate.quantity === data.stockQuantity && 
+            now - lastUpdate.timestamp < 1000) {
+            console.log('Duplicate update detected, ignoring');
+            return;
+        }
+        
+        // Update last update info
+        lastUpdate = {
+            variantId: data.productVariantId,
+            quantity: data.stockQuantity,
+            timestamp: now
+        };
+        
+        // Only process if branch ID matches
+        const currentBranchId = document.querySelector('.variant-input')?.dataset.branchId;
+        if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
+            console.log('Branch ID mismatch, ignoring update');
+            return;
+        }
+        
+        // Find all variant inputs that match the updated stock
+        const variantInputs = document.querySelectorAll(`.variant-input[data-variant-id="${data.productVariantId}"]`);
+        
+        if (variantInputs.length === 0) {
+            console.log('No matching variants found for productVariantId:', data.productVariantId);
+            return;
+        }
+        
+        let hasAvailableStock = false;
+        
+        variantInputs.forEach(input => {
+            // Update the stock quantity data attribute
+            input.dataset.stockQuantity = data.stockQuantity;
+            
+            // Get the label element
+            const label = input.nextElementSibling;
+            
+            // Update stock display
+            let stockDisplay = label.querySelector('.stock-display');
+            if (data.stockQuantity <= 5 && data.stockQuantity > 0) {
+                if (stockDisplay) {
+                    stockDisplay.textContent = `(Còn ${data.stockQuantity})`;
+                } else {
+                    stockDisplay = document.createElement('span');
+                    stockDisplay.className = 'text-xs ml-1 text-orange-500 stock-display';
+                    stockDisplay.textContent = `(Còn ${data.stockQuantity})`;
+                    label.appendChild(stockDisplay);
+                }
+                hasAvailableStock = true;
+            } else if (stockDisplay) {
+                stockDisplay.remove();
+            }
+            
+            // Update disabled state
+            if (data.stockQuantity <= 0) {
+                input.disabled = true;
+                label.classList.add('opacity-50', 'cursor-not-allowed');
+                label.classList.remove('hover:bg-gray-50');
+            } else {
+                input.disabled = false;
+                label.classList.remove('opacity-50', 'cursor-not-allowed');
+                label.classList.add('hover:bg-gray-50');
+                hasAvailableStock = true;
+            }
+            
+            // If this is the currently selected variant and stock is 0
+            if (input.checked && data.stockQuantity <= 0) {
+                // Show out of stock message only once
+                if (!document.getElementById('out-of-stock-message')) {
+                    showToast('Sản phẩm đã hết hàng', 'warning');
+                }
+            }
+        });
+        
+        // Update overall product availability
+        updateProductAvailability(hasAvailableStock);
     });
 </script>
 @endsection
