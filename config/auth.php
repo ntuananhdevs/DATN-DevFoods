@@ -43,6 +43,11 @@ return [
             'provider' => 'users',
         ],
 
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'users', // Dùng chung bảng users
+        ],
+
         'api' => [
           'driver' => 'passport',
           'provider' => 'users',
