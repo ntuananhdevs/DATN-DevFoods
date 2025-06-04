@@ -57,45 +57,37 @@
                 $isAvailable = false;
                 
                 if ($selectedBranchId) {
-                    $selectedBranch = $branches->where('id', $selectedBranchId)->first();
-                    if ($selectedBranch) {
-                        $variantCount = $selectedBranch->stocks()
-                            ->whereHas('productVariant', function($query) use ($product) {
-                                $query->where('product_id', $product->id);
-                            })
-                            ->where('stock_quantity', '>', 0)
-                            ->distinct('product_variant_id')
-                            ->count('product_variant_id');
-                        
-                        $isAvailable = $variantCount > 0;
-                    }
+                    $variantCount = \App\Models\BranchStock::whereHas('productVariant', function($query) use ($product) {
+                            $query->where('product_id', $product->id);
+                        })
+                        ->where('branch_id', $selectedBranchId)
+                        ->where('stock_quantity', '>', 0)
+                        ->distinct('product_variant_id')
+                        ->count('product_variant_id');
+                    
+                    $isAvailable = $variantCount > 0;
                 }
             @endphp
             
             <!-- Hidden branch_id input for JS -->
             <input type="hidden" id="branch-select" value="{{ $selectedBranchId }}">
-{{--             
+
             @if($selectedBranchId && !$isAvailable)
-                <div class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
+                <div id="out-of-stock-message" class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
                     <p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>
                 </div>
-            @endif --}}
+            @endif
+
+            @php
+                // Debug log for selected branch and product
+                \Log::debug('Product and Branch Info:', [
+                    'product_id' => $product->id,
+                    'selected_branch_id' => $selectedBranchId
+                ]);
+            @endphp
 
             <!-- Product variants -->
             <div class="space-y-4" id="variants-container">
-                @if($selectedBranchId && !$isAvailable)
-                    <div id="out-of-stock-message" class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
-                        <p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>
-                    </div>
-                @endif
-                @php
-                    // Debug log for selected branch and product
-                    \Log::debug('Product and Branch Info:', [
-                        'product_id' => $product->id,
-                        'selected_branch_id' => $selectedBranchId,
-                        'selected_branch' => $selectedBranch ? $selectedBranch->toArray() : null
-                    ]);
-                @endphp
                 @foreach($variantAttributes as $attribute)
                 @if(count($attribute->values) > 0)
                 <div>
@@ -103,13 +95,13 @@
                     <div class="flex flex-wrap gap-2">
                         @foreach($attribute->values as $value)
                         @php
-                            $variantStock = $selectedBranch ? $selectedBranch->stocks()
-                                ->whereHas('productVariant', function($query) use ($product, $value) {
+                            $variantStock = $selectedBranchId ? \App\Models\BranchStock::whereHas('productVariant', function($query) use ($product, $value) {
                                     $query->where('product_id', $product->id)
                                           ->whereHas('variantValues', function($q) use ($value) {
                                               $q->where('variant_value_id', $value->id);
                                           });
                                 })
+                                ->where('branch_id', $selectedBranchId)
                                 ->first() : null;
                             
                             // Debug log for each variant

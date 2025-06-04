@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="flex flex-col">
                                 ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
                             </div>
-                            <a href="/shop/products/${productId}?branch_id=${currentBranchId}" class="add-to-cart-btn">
+                            <a href="/shop/products/${productId}" class="add-to-cart-btn">
                                 <i class="fas fa-shopping-cart"></i>
                                 Mua hàng
                             </a>
@@ -739,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             </div>
                             ${product.has_stock ? 
-                                `<a href="/shop/products/${product.id}?branch_id={{ session('selected_branch') }}" class="add-to-cart-btn">
+                                `<a href="/shop/products/${product.id}" class="add-to-cart-btn">
                                     <i class="fas fa-shopping-cart"></i>
                                     Mua hàng
                                 </a>` : 
