@@ -474,7 +474,7 @@
                             <div id="existingCaptionInputs">
                                 @foreach($branch->images as $index => $image)
                                     <div class="branch-form-group" data-existing-image-id="{{ $image->id }}">
-                                        <label class="branch-form-label">Mô tả ảnh hiện có {{ $index + 1 }}:</label>
+                                        <label class="branch-form-label">Mô tả ảnh hiện có {{ $index + 1 }}</label>
                                         <input type="text" class="branch-form-control" name="captions[{{ $image->id }}]"
                                                maxlength="255" placeholder="Nhập mô tả cho ảnh..."
                                                value="{{ old('captions.' . $image->id, $image->caption) }}"
@@ -492,7 +492,7 @@
                                     <option value="existing_{{ $image->id }}" {{ $image->is_primary ? 'selected' : '' }}>Ảnh hiện có {{ $index + 1 }}</option>
                                 @endforeach
                             </select>
-                            <input type="hidden" id="primary_image_type" name="primary_image_type" value="">
+                            <input type="hidden" id="primary_image_type" name="primary_image_type" value="{{ $branch->images->where('is_primary', true)->count() > 0 ? 'existing' : '' }}">
                         </div>
                     </div>
                 </div>
@@ -822,7 +822,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 captionGroup.className = 'branch-form-group';
                 captionGroup.innerHTML = `
                     <label class="branch-form-label">Mô tả ảnh mới ${index + 1}:</label>
-                    <input type="text" class="branch-form-control" name="captions[${index}]" maxlength="255" placeholder="Nhập mô tả cho ảnh..." aria-label="Mô tả cho ảnh mới ${index + 1}">
+                    <input type="text" class="branch-form-control" name="new_captions[${index}]" maxlength="255" placeholder="Nhập mô tả cho ảnh..." aria-label="Mô tả cho ảnh mới ${index + 1}">
                 `;
                 elements.captionInputs.appendChild(captionGroup);
             };
@@ -835,17 +835,24 @@ document.addEventListener('DOMContentLoaded', function() {
         elements.primaryImage.innerHTML = '<option value="">Không chọn ảnh chính</option>';
         const existingImages = elements.existingImagesContainer.querySelectorAll('.branch-image-preview-item');
         existingImages.forEach((item, index) => {
+            const imageId = item.dataset.existingImageId;
             const option = document.createElement('option');
-            option.value = `existing_${item.dataset.existingImageId}`;
+            option.value = imageId;
             option.textContent = `Ảnh hiện có ${index + 1}`;
-            if (`existing_${item.dataset.existingImageId}` === selectedValue) option.selected = true;
+            if (selectedType === 'existing' && imageId === selectedValue) {
+                option.selected = true;
+            }
             elements.primaryImage.appendChild(option);
         });
+        
+        // Thêm các ảnh mới vào dropdown
         uploadedImages.forEach((_, index) => {
             const option = document.createElement('option');
             option.value = `new_${index}`;
             option.textContent = `Ảnh mới ${index + 1}`;
-            if (`new_${index}` === selectedValue) option.selected = true;
+            if (selectedType === 'new' && `new_${index}` === selectedValue) {
+                option.selected = true;
+            }
             elements.primaryImage.appendChild(option);
         });
     }
@@ -854,19 +861,21 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.branch-image-preview-badge').forEach(badge => badge.remove());
         const value = elements.primaryImage.value;
         let selected = null;
-
-        if (value.startsWith('existing_')) {
-            const imageId = value.replace('existing_', '');
-            selected = elements.existingImagesContainer.querySelector(`[data-existing-image-id="${imageId}"]`);
+    
+        // Kiểm tra xem giá trị có phải là ID của ảnh hiện có không
+        const existingImage = elements.existingImagesContainer.querySelector(`[data-existing-image-id="${value}"]`);
+        if (existingImage) {
+            selected = existingImage;
             elements.primaryImageType.value = 'existing';
-        } else if (value.startsWith('new_')) {
-            const index = value.replace('new_', '');
+        } else if (value !== '' && !isNaN(value)) {
+            // Nếu là số, giả định đó là index của ảnh mới
+            const index = parseInt(value);
             selected = elements.previewContainer.querySelector(`[data-new-image-index="${index}"]`);
             elements.primaryImageType.value = 'new';
         } else {
             elements.primaryImageType.value = '';
         }
-
+    
         if (selected) {
             selected.innerHTML += '<div class="branch-image-preview-badge">Ảnh chính</div>';
         }
@@ -883,8 +892,8 @@ document.addEventListener('DOMContentLoaded', function() {
             elements.existingCaptionsContainer.classList.add('branch-hidden');
         }
         updatePrimaryImageSelect();
-        if (elements.primaryImage.value === `existing_${imageId}`) {
-            elements.primaryImage.value = uploadedImages.length ? `new_0` : (elements.existingImagesContainer.children.length ? `existing_${elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId}` : '');
+        if (elements.primaryImage.value === imageId) {
+            elements.primaryImage.value = uploadedImages.length ? 0 : (elements.existingImagesContainer.children.length ? elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId : '');
             updatePrimaryImage();
         }
     }
@@ -901,8 +910,8 @@ document.addEventListener('DOMContentLoaded', function() {
             elements.uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
         }
         updatePrimaryImageSelect();
-        if (elements.primaryImage.value === `new_${index}`) {
-            elements.primaryImage.value = uploadedImages.length ? `new_0` : (elements.existingImagesContainer.children.length ? `existing_${elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId}` : '');
+        if (elements.primaryImage.value === index.toString()) {
+            elements.primaryImage.value = uploadedImages.length ? 0 : (elements.existingImagesContainer.children.length ? elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId : '');
             updatePrimaryImage();
         }
     }
@@ -938,12 +947,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            // Không cần thay đổi giá trị của primary_image, chỉ cần đảm bảo primary_image_type được đặt đúng
             if (elements.primaryImage.value) {
-                if (elements.primaryImage.value.startsWith('existing_')) {
-                    elements.primaryImage.value = elements.primaryImage.value.replace('existing_', '');
+                // Kiểm tra xem giá trị có phải là ID của ảnh hiện có không
+                const existingImage = elements.existingImagesContainer.querySelector(`[data-existing-image-id="${elements.primaryImage.value}"]`);
+                if (existingImage) {
                     elements.primaryImageType.value = 'existing';
-                } else if (elements.primaryImage.value.startsWith('new_')) {
-                    elements.primaryImage.value = elements.primaryImage.value.replace('new_', '');
+                } else if (!isNaN(elements.primaryImage.value)) {
                     elements.primaryImageType.value = 'new';
                 }
             } else {
