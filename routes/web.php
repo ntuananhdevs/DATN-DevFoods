@@ -65,7 +65,7 @@ Route::get('/test-update-stock', function() {
     ]);
     
     $oldStock = $branchStock->stock_quantity;
-    $branchStock->stock_quantity = 10; // Thay đổi số lượng
+    $branchStock->stock_quantity = 0; // Thay đổi số lượng
     $branchStock->save();
     
     \Log::debug('Stock saved with new quantity:', [
@@ -73,21 +73,12 @@ Route::get('/test-update-stock', function() {
     ]);
     
     try {
-        // Dispatch the stock updated event
-        $event = new \App\Events\Customer\StockUpdated(
+        // Dispatch the stock updated event directly
+        event(new \App\Events\Customer\StockUpdated(
             $branchStock->branch_id,
             $branchStock->product_variant_id,
             $branchStock->stock_quantity
-        );
-        
-        \Log::debug('Event created:', [
-            'event_class' => get_class($event),
-            'broadcast_on' => $event->broadcastOn(),
-            'broadcast_as' => $event->broadcastAs(),
-            'broadcast_with' => $event->broadcastWith()
-        ]);
-        
-        event($event);
+        ));
         
         \Log::debug('Stock update event dispatched successfully');
     } catch (\Exception $e) {

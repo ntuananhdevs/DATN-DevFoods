@@ -145,9 +145,13 @@
                                         {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, ',', '.') }}đ
                                     </span>
                                 @endif
-                                @if($stockQuantity <= 5 && $stockQuantity > 0)
-                                    <span class="text-xs ml-1 text-orange-500 stock-display">(Còn {{ $stockQuantity }})</span>
-                                @endif
+                                <span class="text-xs ml-1 {{ $stockQuantity <= 5 ? 'text-orange-500' : 'text-gray-500' }} stock-display">
+                                    @if($stockQuantity > 0)
+                                        (Còn {{ $stockQuantity }})
+                                    @else
+                                        (Hết hàng)
+                                    @endif
+                                </span>
                             </span>
                         </label>
                         @endforeach
@@ -1015,18 +1019,15 @@
             
             // Update stock display
             let stockDisplay = label.querySelector('.stock-display');
-            if (data.stockQuantity <= 5 && data.stockQuantity > 0) {
-                if (stockDisplay) {
+            if (stockDisplay) {
+                if (data.stockQuantity > 0) {
                     stockDisplay.textContent = `(Còn ${data.stockQuantity})`;
+                    stockDisplay.className = `text-xs ml-1 ${data.stockQuantity <= 5 ? 'text-orange-500' : 'text-gray-500'} stock-display`;
+                    hasAvailableStock = true;
                 } else {
-                    stockDisplay = document.createElement('span');
-                    stockDisplay.className = 'text-xs ml-1 text-orange-500 stock-display';
-                    stockDisplay.textContent = `(Còn ${data.stockQuantity})`;
-                    label.appendChild(stockDisplay);
+                    stockDisplay.textContent = '(Hết hàng)';
+                    stockDisplay.className = 'text-xs ml-1 text-red-500 stock-display';
                 }
-                hasAvailableStock = true;
-            } else if (stockDisplay) {
-                stockDisplay.remove();
             }
             
             // Update disabled state
