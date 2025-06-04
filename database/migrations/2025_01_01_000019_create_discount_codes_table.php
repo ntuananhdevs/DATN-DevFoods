@@ -44,8 +44,9 @@ return new class extends Migration
             $table->integer('current_usage_count')->default(0); // Số lần đã sử dụng
             
             // Thời gian hiệu lực
-            $table->timestamp('start_date');
-            $table->timestamp('end_date');
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
+
             $table->boolean('is_active')->default(true);
             
             // Hiển thị

@@ -28,6 +28,7 @@ class User extends Authenticatable
         'phone',
         'avatar',
         'google_id',
+        'remember_token',
         'balance',
         'user_rank_id', 
         'total_spending', 
@@ -59,6 +60,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'active' => 'boolean',
             'balance' => 'decimal:2',
+            'rank_updated_at' => 'datetime',
         ];
     }
 
@@ -116,5 +118,21 @@ class User extends Authenticatable
     public function discountUsageHistory()
     {
         return $this->hasMany(DiscountUsageHistory::class);
+    }
+
+    /**
+     * Check if user is authenticated via Google
+     */
+    public function isGoogleUser()
+    {
+        return !empty($this->google_id);
+    }
+
+    /**
+     * Check if user is social login user
+     */
+    public function isSocialUser()
+    {
+        return $this->isGoogleUser();
     }
 }

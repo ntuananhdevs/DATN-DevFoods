@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use App\Rules\TurnstileRule;
+use App\Services\AvatarUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
@@ -17,9 +18,17 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Jobs\SendOTPJob;
 use Illuminate\Support\Facades\Mail;
+use App\Jobs\UploadGoogleAvatarJob;
 
 class AuthController extends Controller
 {
+    protected $avatarUploadService;
+
+    public function __construct(AvatarUploadService $avatarUploadService)
+    {
+        $this->avatarUploadService = $avatarUploadService;
+    }
+
     /**
      * Hiển thị form đăng nhập
      */
@@ -108,7 +117,7 @@ class AuthController extends Controller
         
         // Xóa remember token của người dùng
         if ($user) {
-            $user->setRememberToken(null);
+            $user->remember_token = null;
             $user->save();
         }
         
@@ -422,5 +431,177 @@ class AuthController extends Controller
     
         return redirect()->route('customer.login')
             ->with('success', 'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập với mật khẩu mới.');
+    }
+
+    /**
+     * Xử lý đăng nhập Google thông qua Firebase
+     */
+    public function handleGoogleAuth(Request $request)
+    {
+        $request->validate([
+            'firebase_token' => 'required|string',
+            'google_user_data' => 'required|array',
+            'google_user_data.uid' => 'required|string',
+            'google_user_data.email' => 'required|email',
+            'google_user_data.displayName' => 'required|string',
+            'google_user_data.photoURL' => 'nullable|string',
+        ]);
+
+        try {
+            $googleUserData = $request->google_user_data;
+            
+            // Tìm hoặc tạo user dựa trên email
+            $user = User::where('email', $googleUserData['email'])->first();
+            
+            if (!$user) {
+                // Tạo user mới từ Google data
+                $user = User::create([
+                    'user_name' => explode('@', $googleUserData['email'])[0],
+                    'full_name' => $googleUserData['displayName'],
+                    'email' => $googleUserData['email'],
+                    'google_id' => $googleUserData['uid'],
+                    'avatar' => $googleUserData['photoURL'] ?? null, // Temporary Google URL
+                    'email_verified_at' => now(),
+                    'active' => true,
+                    'password' => Hash::make(Str::random(24)), // Random password since they use Google auth
+                ]);
+
+                // Gán vai trò khách hàng
+                $customerRole = Role::where('name', 'customer')->first();
+                if ($customerRole) {
+                    $user->roles()->attach($customerRole->id);
+                }
+                
+                // Dispatch job to upload avatar to S3 in background
+                if (!empty($googleUserData['photoURL'])) {
+                    UploadGoogleAvatarJob::dispatch(
+                        $user->id,
+                        $googleUserData['photoURL'],
+                        $googleUserData['email']
+                    )->onQueue('default');
+                    
+                    Log::info('Dispatched avatar upload job for new user', [
+                        'user_id' => $user->id,
+                        'email' => $user->email
+                    ]);
+                }
+                
+                Log::info('Created new user from Google auth', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'has_avatar' => !empty($googleUserData['photoURL'])
+                ]);
+            } else {
+                // Cập nhật thông tin user hiện có
+                $needsUpdate = false;
+                
+                // Cập nhật Google ID nếu chưa có
+                if (!$user->google_id) {
+                    $user->google_id = $googleUserData['uid'];
+                    $user->email_verified_at = now();
+                    $needsUpdate = true;
+                }
+                
+                // Cập nhật tên nếu trống
+                if (empty($user->full_name) && !empty($googleUserData['displayName'])) {
+                    $user->full_name = $googleUserData['displayName'];
+                    $needsUpdate = true;
+                }
+                
+                // Check if avatar needs updating
+                if (!empty($googleUserData['photoURL'])) {
+                    if (empty($user->avatar) || $user->avatar !== $googleUserData['photoURL']) {
+                        // Update avatar immediately with Google URL
+                        $user->avatar = $googleUserData['photoURL'];
+                        $needsUpdate = true;
+                        
+                        // Dispatch job to upload to S3 in background
+                        UploadGoogleAvatarJob::dispatch(
+                            $user->id,
+                            $googleUserData['photoURL'],
+                            $googleUserData['email']
+                        )->onQueue('default');
+                        
+                        Log::info('Dispatched avatar upload job for existing user', [
+                            'user_id' => $user->id,
+                            'email' => $user->email
+                        ]);
+                    }
+                }
+                
+                if ($needsUpdate) {
+                    $user->save();
+                    Log::info('Updated existing user from Google auth', [
+                        'user_id' => $user->id,
+                        'email' => $user->email
+                    ]);
+                }
+            }
+
+            // Kiểm tra tài khoản có bị khóa không
+            if (!$user->active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.'
+                ], 403);
+            }
+
+            // Đăng nhập user
+            Auth::login($user, true);
+
+            // Kiểm tra vai trò và chuyển hướng phù hợp
+            if ($this->hasRole($user, 'admin')) {
+                $redirectUrl = route('admin.dashboard');
+            } else {
+                $redirectUrl = route('home');
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đăng nhập Google thành công!',
+                'redirect_url' => $redirectUrl,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Lỗi đăng nhập Google: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Kiểm tra trạng thái đăng nhập Firebase
+     */
+    public function checkAuthStatus(Request $request)
+    {
+        $user = Auth::user();
+        
+        if ($user) {
+            return response()->json([
+                'authenticated' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar,
+                ]
+            ]);
+        }
+        
+        return response()->json([
+            'authenticated' => false
+        ]);
     }
 }

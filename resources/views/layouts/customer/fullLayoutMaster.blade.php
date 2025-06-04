@@ -919,6 +919,53 @@
         axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
     </script>
     
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "{{ env('FIREBASE_API_KEY') }}",
+            authDomain: "{{ env('FIREBASE_AUTH_DOMAIN') }}",
+            projectId: "{{ env('FIREBASE_PROJECT_ID') }}",
+            storageBucket: "{{ env('FIREBASE_STORAGE_BUCKET') }}",
+            messagingSenderId: "{{ env('FIREBASE_MESSAGING_SENDER_ID') }}",
+            appId: "{{ env('FIREBASE_APP_ID') }}"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Configure Google provider
+        provider.addScope('profile');
+        provider.addScope('email');
+
+        // Make Firebase auth available globally
+        window.firebaseAuth = auth;
+        window.googleProvider = provider;
+        window.signInWithPopup = signInWithPopup;
+        window.firebaseSignOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.GoogleAuthProvider = GoogleAuthProvider;
+
+        // Listen for auth state changes
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in with Firebase
+                console.log('Firebase user signed in:', user);
+                window.firebaseUser = user;
+            } else {
+                // User is signed out
+                console.log('Firebase user signed out');
+                window.firebaseUser = null;
+            }
+        });
+    </script>
+    
     <!-- Scripts -->
     <script>
         // Global function to update the cart counter

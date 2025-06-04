@@ -119,6 +119,34 @@ Route::prefix('/')->group(function () {
         Route::get('/history', [CustomerChatController::class, 'getChatHistory'])->name('chat.history');
     });
 
+    // Google Firebase Authentication Routes
+    Route::prefix('api/auth')->group(function () {
+        Route::post('/google', [CustomerAuthController::class, 'handleGoogleAuth'])->name('api.auth.google');
+        Route::get('/status', [CustomerAuthController::class, 'checkAuthStatus'])->name('api.auth.status');
+    });
+
+    // Firebase Configuration Route
+    Route::get('/api/firebase/config', [App\Http\Controllers\FirebaseConfigController::class, 'getConfig'])->name('api.firebase.config');
+
+    // Firebase Debug Route (only in development)
+    if (app()->environment('local')) {
+        Route::get('/debug/firebase', function() {
+            return response()->json([
+                'env_check' => [
+                    'FIREBASE_PROJECT_ID' => env('FIREBASE_PROJECT_ID') ? 'SET' : 'MISSING',
+                    'FIREBASE_API_KEY' => env('FIREBASE_API_KEY') ? 'SET' : 'MISSING',
+                    'FIREBASE_AUTH_DOMAIN' => env('FIREBASE_AUTH_DOMAIN') ? 'SET' : 'MISSING',
+                    'FIREBASE_STORAGE_BUCKET' => env('FIREBASE_STORAGE_BUCKET') ? 'SET' : 'MISSING',
+                    'FIREBASE_MESSAGING_SENDER_ID' => env('FIREBASE_MESSAGING_SENDER_ID') ? 'SET' : 'MISSING',
+                    'FIREBASE_APP_ID' => env('FIREBASE_APP_ID') ? 'SET' : 'MISSING',
+                ],
+                'config_values' => config('firebase.web_config'),
+                'auth_enabled' => config('firebase.auth.enabled'),
+                'google_enabled' => config('firebase.auth.providers.google.enabled'),
+            ]);
+        })->name('debug.firebase');
+    }
+
     // Route Customer (login / logout / register) - Thêm middleware guest
     Route::middleware('guest')->group(function () {
         Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
