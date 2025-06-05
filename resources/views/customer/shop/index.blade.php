@@ -518,45 +518,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 const variants = JSON.parse(card.dataset.variants);
                 const currentBranchId = '{{ session('selected_branch') }}';
                 
-                // Update stock for the specific variant
-                const variantIndex = variants.findIndex(v => v.id == variantId && v.branch_id == branchId);
-                if (variantIndex !== -1) {
-                    variants[variantIndex].stock = stockQuantity;
-                }
+                // Check if this product has the variant that was updated
+                const hasUpdatedVariant = variants.some(v => v.id == variantId && v.branch_id == branchId);
                 
-                // Check if any variant has stock for current branch
-                const hasStock = variants.some(v => v.branch_id == currentBranchId && v.stock > 0);
-                card.dataset.hasStock = hasStock.toString();
-                
-                // Update the button
-                const buttonContainer = card.querySelector('.flex.justify-between.items-center');
-                if (buttonContainer) {
-                    const productId = card.dataset.productId;
-                    if (hasStock) {
-                        buttonContainer.innerHTML = `
-                            <div class="flex flex-col">
-                                ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
-                            </div>
-                            <a href="/shop/products/${productId}" class="add-to-cart-btn">
-                                <i class="fas fa-shopping-cart"></i>
-                                Mua hàng
-                            </a>
-                        `;
-                    } else {
-                        buttonContainer.innerHTML = `
-                            <div class="flex flex-col">
-                                ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
-                            </div>
-                            <button class="add-to-cart-btn disabled" disabled>
-                                <i class="fas fa-ban"></i>
-                                Hết hàng
-                            </button>
-                        `;
+                if (hasUpdatedVariant) {
+                    // Update stock for the specific variant
+                    const variantIndex = variants.findIndex(v => v.id == variantId && v.branch_id == branchId);
+                    if (variantIndex !== -1) {
+                        variants[variantIndex].stock = stockQuantity;
                     }
+                    
+                    // Check if any variant has stock for current branch
+                    const hasStock = variants.some(v => v.branch_id == currentBranchId && v.stock > 0);
+                    card.dataset.hasStock = hasStock.toString();
+                    
+                    // Update the button
+                    const buttonContainer = card.querySelector('.flex.justify-between.items-center');
+                    if (buttonContainer) {
+                        const productId = card.dataset.productId;
+                        if (hasStock) {
+                            buttonContainer.innerHTML = `
+                                <div class="flex flex-col">
+                                    ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
+                                </div>
+                                <a href="/shop/products/${productId}" class="add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    Mua hàng
+                                </a>
+                            `;
+                        } else {
+                            buttonContainer.innerHTML = `
+                                <div class="flex flex-col">
+                                    ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
+                                </div>
+                                <button class="add-to-cart-btn disabled" disabled>
+                                    <i class="fas fa-ban"></i>
+                                    Hết hàng
+                                </button>
+                            `;
+                        }
+                    }
+                    
+                    // Update the variants data attribute
+                    card.dataset.variants = JSON.stringify(variants);
                 }
-                
-                // Update the variants data attribute
-                card.dataset.variants = JSON.stringify(variants);
             } catch (error) {
                 console.error('Error updating product stock:', error);
             }

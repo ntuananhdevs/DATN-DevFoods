@@ -1055,7 +1055,7 @@
     <!-- Branch Selector Modal -->
     @include('partials.customer.branch-selector-modal')
 
-    {{-- <script>
+    <script>
         // Global function to update the wishlist counter
         window.updateWishlistCount = function(count) {
             // Save the wishlist count in localStorage for consistency between pages
@@ -1150,6 +1150,6 @@
                 });
             }
         });
-    </script> --}}
+    </script>
 </body>
 </html>
