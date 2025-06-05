@@ -37,17 +37,17 @@
             <div class="p-4">
                 <!-- Tabs -->
                 <div class="flex border-b border-gray-200 mb-4">
-                    <button @click="earningsTab = 'today'"
+                    <button @click="earningsTab = 'today'" 
                             :class="earningsTab === 'today' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
                             class="flex-1 py-2 px-1 border-b-2 font-medium text-sm">
                         Hôm nay
                     </button>
-                    <button @click="earningsTab = 'week'"
+                    <button @click="earningsTab = 'week'" 
                             :class="earningsTab === 'week' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
                             class="flex-1 py-2 px-1 border-b-2 font-medium text-sm">
                         Tuần này
                     </button>
-                    <button @click="earningsTab = 'month'"
+                    <button @click="earningsTab = 'month'" 
                             :class="earningsTab === 'month' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
                             class="flex-1 py-2 px-1 border-b-2 font-medium text-sm">
                         Tháng này
@@ -77,7 +77,7 @@
                 <template x-if="pendingOrders.length > 0">
                     <div class="space-y-3">
                         <template x-for="order in pendingOrders" :key="order.id">
-                            <div @click="viewOrder(order.id)"
+                            <div @click="viewOrder(order.id)" 
                                  class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -98,7 +98,7 @@
                         </template>
                     </div>
                 </template>
-
+                
                 <template x-if="pendingOrders.length === 0">
                     <div class="text-center py-6">
                         <i class="fas fa-box text-4xl text-gray-300 mb-2"></i>
@@ -158,7 +158,7 @@
         </div>
 
         <!-- Logout Button -->
-        <button @click="handleLogout"
+        <button @click="handleLogout" 
                 class="w-full flex items-center justify-center gap-2 py-3 px-4 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
             <i class="fas fa-sign-out-alt"></i>
             Đăng xuất
