@@ -14,7 +14,7 @@ class AvatarUploadService
      *
      * @param string|null $photoURL Google photo URL
      * @param string $userEmail User email for file naming
-     * @return string|null S3 URL or null if failed
+     * @return string|null Filename only (not including users/avatars/ path) or null if failed
      */
     public function uploadGoogleAvatar($photoURL, $userEmail)
     {
@@ -23,82 +23,231 @@ class AvatarUploadService
         }
 
         try {
-            // Download image from Google
-            $imageContent = $this->downloadImage($photoURL);
+            // Download image from Google to local temp file
+            $tempFilePath = $this->downloadImageToLocal($photoURL, $userEmail);
+            
+            if (!$tempFilePath) {
+                return null;
+            }
+
+            // Read the local file
+            $imageContent = Storage::disk('local')->get($tempFilePath);
             
             if (!$imageContent) {
-                Log::warning('Failed to download Google avatar', ['url' => $photoURL]);
-                return $photoURL; // Fallback to original URL
+                return null;
             }
 
-            // Generate file name
+            // Generate file name only (without path)
             $fileName = $this->generateFileName($userEmail, $photoURL);
             
-            // Upload to S3
-            $s3Path = "avatars/google/{$fileName}";
+            // Upload to S3 in users/avatars folder
+            $s3Path = "users/avatars/{$fileName}";
             
-            $uploaded = Storage::disk('s3')->put($s3Path, $imageContent, [
-                'visibility' => 'public',
-                'ContentType' => $this->getContentType($photoURL),
-            ]);
+            // Simple upload
+            $uploaded = Storage::disk('s3')->put($s3Path, $imageContent);
 
             if ($uploaded) {
-                // Build S3 URL manually
-                $s3Url = $this->buildS3Url($s3Path);
-                Log::info('Successfully uploaded Google avatar to S3', [
-                    'original_url' => $photoURL,
-                    's3_url' => $s3Url,
-                    'user_email' => $userEmail
-                ]);
-                return $s3Url;
+                return $fileName; // Return only filename (e.g., "avatar_hash_timestamp_random.jpg")
+            } else {
+                throw new \Exception('S3 upload failed');
             }
 
-        } catch (Exception $e) {
-            Log::error('Error uploading Google avatar to S3', [
+        } catch (\Exception $e) {
+            Log::error('Avatar upload failed', [
                 'error' => $e->getMessage(),
                 'url' => $photoURL,
                 'user_email' => $userEmail
             ]);
+            throw $e;
+        } finally {
+            // Clean up temp file
+            if (isset($tempFilePath) && Storage::disk('local')->exists($tempFilePath)) {
+                Storage::disk('local')->delete($tempFilePath);
+            }
         }
-
-        // Return original URL as fallback
-        return $photoURL;
     }
 
     /**
-     * Download image from URL
+     * Download image from URL to local temp storage
      *
      * @param string $url
-     * @return string|false
+     * @param string $userEmail
+     * @return string|null Path to temp file or null if failed
      */
-    private function downloadImage($url)
+    private function downloadImageToLocal($url, $userEmail)
     {
         try {
             // Add size parameter to get higher quality image
             $highQualityUrl = $this->getHighQualityGooglePhotoUrl($url);
             
-            $context = stream_context_create([
-                'http' => [
-                    'timeout' => 30,
-                    'user_agent' => 'FastFood App/1.0'
-                ]
-            ]);
+            Log::info('Attempting to download image to local', ['url' => $highQualityUrl]);
 
-            $imageContent = file_get_contents($highQualityUrl, false, $context);
-            
-            if ($imageContent === false) {
-                // Try original URL if high quality fails
-                $imageContent = file_get_contents($url, false, $context);
+            // Create temp directory if it doesn't exist
+            $tempDir = 'temp/avatars';
+            if (!Storage::disk('local')->exists($tempDir)) {
+                Storage::disk('local')->makeDirectory($tempDir);
             }
 
-            return $imageContent;
+            // Generate temp file name
+            $tempFileName = 'temp_avatar_' . md5($userEmail) . '_' . time() . '_' . Str::random(8) . '.jpg';
+            $tempFilePath = $tempDir . '/' . $tempFileName;
+
+            // Try to download with cURL first
+            $imageContent = $this->downloadWithCurl($highQualityUrl);
+            
+            if ($imageContent === false && $highQualityUrl !== $url) {
+                Log::warning('High quality download failed, trying original URL', ['original_url' => $url]);
+                $imageContent = $this->downloadWithCurl($url);
+            }
+
+            if ($imageContent === false) {
+                Log::error('Failed to download image with cURL', ['url' => $url]);
+                return null;
+            }
+
+            // Validate image content
+            if (!$this->isValidImageContent($imageContent)) {
+                Log::error('Downloaded content is not a valid image', ['url' => $url]);
+                return null;
+            }
+
+            // Save to local temp file
+            $saved = Storage::disk('local')->put($tempFilePath, $imageContent);
+            
+            if ($saved) {
+                Log::info('Image downloaded successfully to local', [
+                    'url' => $highQualityUrl,
+                    'temp_path' => $tempFilePath,
+                    'size' => strlen($imageContent) . ' bytes'
+                ]);
+                return $tempFilePath;
+            } else {
+                Log::error('Failed to save image to local storage', [
+                    'temp_path' => $tempFilePath,
+                    'url' => $url
+                ]);
+            }
+
         } catch (Exception $e) {
-            Log::error('Error downloading image', [
+            Log::error('Error downloading image to local', [
                 'url' => $url,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate if content is a valid image
+     *
+     * @param string $content
+     * @return bool
+     */
+    private function isValidImageContent($content)
+    {
+        if (empty($content) || strlen($content) < 100) {
+            return false;
+        }
+
+        // Check for common image file signatures
+        $imageSignatures = [
+            "\xFF\xD8\xFF", // JPEG
+            "\x89PNG\r\n\x1a\n", // PNG
+            "GIF87a", // GIF87a
+            "GIF89a", // GIF89a
+            "RIFF", // WebP (starts with RIFF)
+        ];
+
+        foreach ($imageSignatures as $signature) {
+            if (strpos($content, $signature) === 0) {
+                return true;
+            }
+        }
+
+        // Additional check for WebP
+        if (strpos($content, "RIFF") === 0 && strpos($content, "WEBP") !== false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Download image using cURL with better SSL handling
+     *
+     * @param string $url
+     * @return string|false
+     */
+    private function downloadWithCurl($url)
+    {
+        $ch = curl_init();
+        
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_TIMEOUT => 60, // Increased timeout for large images
+            CURLOPT_CONNECTTIMEOUT => 15, // Increased connection timeout
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            CURLOPT_SSL_VERIFYPEER => false, // Disable SSL verification for development
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_HTTPHEADER => [
+                'Accept: image/webp,image/apng,image/*,*/*;q=0.8',
+                'Accept-Language: en-US,en;q=0.5',
+                'Cache-Control: no-cache',
+                'DNT: 1',
+                'Upgrade-Insecure-Requests: 1',
+            ],
+            CURLOPT_ENCODING => '', // Enable all supported encodings
+        ]);
+
+        $imageContent = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        $error = curl_error($ch);
+        $downloadSize = curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD);
+        
+        curl_close($ch);
+
+        if ($imageContent === false || !empty($error)) {
+            Log::error('cURL download failed', [
+                'url' => $url,
+                'http_code' => $httpCode,
+                'curl_error' => $error,
+                'content_type' => $contentType
             ]);
             return false;
         }
+
+        if ($httpCode >= 400) {
+            Log::error('HTTP error during download', [
+                'url' => $url,
+                'http_code' => $httpCode,
+                'content_type' => $contentType
+            ]);
+            return false;
+        }
+
+        // Check if we actually got image content
+        if (!str_starts_with($contentType, 'image/') && !empty($contentType)) {
+            Log::warning('Downloaded content may not be an image', [
+                'url' => $url,
+                'content_type' => $contentType,
+                'size' => $downloadSize
+            ]);
+        }
+
+        Log::info('Image download successful', [
+            'url' => $url,
+            'http_code' => $httpCode,
+            'content_type' => $contentType,
+            'size' => $downloadSize . ' bytes'
+        ]);
+
+        return $imageContent;
     }
 
     /**
@@ -229,27 +378,73 @@ class AvatarUploadService
     }
 
     /**
-     * Build S3 URL manually
+     * Clean up old temporary files (older than 1 hour)
      *
-     * @param string $s3Path
-     * @return string
+     * @return int Number of files cleaned up
      */
-    private function buildS3Url($s3Path)
+    public function cleanupTempFiles()
     {
-        $bucket = env('AWS_BUCKET');
-        $region = env('AWS_DEFAULT_REGION', 'us-east-1');
-        $customUrl = env('AWS_URL');
-        
-        // If custom URL is set, use it
-        if ($customUrl) {
-            return rtrim($customUrl, '/') . '/' . ltrim($s3Path, '/');
+        try {
+            $tempDir = 'temp/avatars';
+            $cleanedCount = 0;
+            
+            if (!Storage::disk('local')->exists($tempDir)) {
+                return 0;
+            }
+
+            $files = Storage::disk('local')->files($tempDir);
+            $cutoffTime = time() - 3600; // 1 hour ago
+
+            foreach ($files as $file) {
+                $lastModified = Storage::disk('local')->lastModified($file);
+                
+                if ($lastModified < $cutoffTime) {
+                    Storage::disk('local')->delete($file);
+                    $cleanedCount++;
+                    Log::info('Cleaned up old temp file', ['file' => $file]);
+                }
+            }
+
+            Log::info('Temp file cleanup completed', ['files_cleaned' => $cleanedCount]);
+            return $cleanedCount;
+            
+        } catch (Exception $e) {
+            Log::error('Error during temp file cleanup', [
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+    /**
+     * Delete avatar from S3 using filename
+     *
+     * @param string $filename
+     * @return bool
+     */
+    public function deleteAvatarByFilename($filename)
+    {
+        try {
+            if (empty($filename)) {
+                return true;
+            }
+
+            // If it's a full URL, extract filename
+            if (str_starts_with($filename, 'http')) {
+                $filename = basename($filename);
+            }
+
+            $s3Path = "users/avatars/{$filename}";
+            Storage::disk('s3')->delete($s3Path);
+            Log::info('Deleted avatar from S3', ['filename' => $filename]);
+            return true;
+        } catch (Exception $e) {
+            Log::error('Error deleting avatar from S3', [
+                'filename' => $filename,
+                'error' => $e->getMessage()
+            ]);
         }
         
-        // Build standard S3 URL
-        if ($region === 'us-east-1') {
-            return "https://{$bucket}.s3.amazonaws.com/{$s3Path}";
-        } else {
-            return "https://{$bucket}.s3.{$region}.amazonaws.com/{$s3Path}";
-        }
+        return false;
     }
 } 

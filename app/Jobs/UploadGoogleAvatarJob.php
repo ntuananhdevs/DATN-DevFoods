@@ -41,56 +41,29 @@ class UploadGoogleAvatarJob implements ShouldQueue
             $user = User::find($this->userId);
             
             if (!$user) {
-                Log::warning('User not found for avatar upload job', ['user_id' => $this->userId]);
                 return;
             }
 
             if (empty($this->photoURL)) {
-                Log::info('No photo URL provided for avatar upload', ['user_id' => $this->userId]);
                 return;
             }
 
-            Log::info('Starting background avatar upload', [
-                'user_id' => $this->userId,
-                'email' => $this->userEmail,
-                'photo_url' => $this->photoURL
-            ]);
+            // Upload avatar to S3 - returns filename only
+            $filename = $avatarUploadService->uploadGoogleAvatar($this->photoURL, $this->userEmail);
 
-            // Upload avatar to S3
-            $s3Url = $avatarUploadService->uploadGoogleAvatar($this->photoURL, $this->userEmail);
-
-            if ($s3Url && $s3Url !== $this->photoURL) {
-                // Successfully uploaded to S3, update user
-                $oldAvatar = $user->avatar;
-                
-                $user->avatar = $s3Url;
+            if ($filename) {
+                // Save filename to user avatar field
+                $user->avatar = $filename;
                 $user->save();
-
-                // Delete old avatar if it was also an S3 URL
-                if ($oldAvatar && $oldAvatar !== $s3Url && str_contains($oldAvatar, 's3.amazonaws.com')) {
-                    $avatarUploadService->deleteAvatar($oldAvatar);
-                }
-
-                Log::info('Avatar upload job completed successfully', [
-                    'user_id' => $this->userId,
-                    'old_avatar' => $oldAvatar,
-                    'new_avatar' => $s3Url
-                ]);
             } else {
-                Log::info('Avatar upload job completed - using original URL', [
-                    'user_id' => $this->userId,
-                    'photo_url' => $this->photoURL
-                ]);
+                throw new \Exception('Avatar upload failed');
             }
 
         } catch (\Exception $e) {
             Log::error('Avatar upload job failed', [
                 'user_id' => $this->userId,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
-            
-            // Re-throw to trigger retry mechanism
             throw $e;
         }
     }

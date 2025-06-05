@@ -64,7 +64,17 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
+            'throw' => true,
+            'http' => [
+                'verify' => env('AWS_SSL_VERIFY', false), // Set to false for development to avoid SSL issues
+                'timeout' => 60, // Increased timeout for large files
+                'connect_timeout' => 15,
+                'curl' => [
+                    CURLOPT_SSL_VERIFYPEER => env('AWS_SSL_VERIFY', false),
+                    CURLOPT_SSL_VERIFYHOST => env('AWS_SSL_VERIFY', false) ? 2 : 0,
+                    CURLOPT_USERAGENT => 'FastFood-App/1.0',
+                ],
+            ],
         ],
 
         // S3 disk for driver documents

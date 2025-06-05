@@ -181,6 +181,12 @@ Route::prefix('/')->group(function () {
     });
 });
 
+// Phone required routes (outside main prefix group to avoid conflicts)
+Route::middleware('auth')->group(function () {
+    Route::get('/phone-required', [CustomerAuthController::class, 'showPhoneRequired'])->name('customer.phone-required');
+    Route::post('/customer/update-phone', [CustomerAuthController::class, 'updatePhone'])->name('customer.update-phone');
+});
+
 // Route Auth (login / logout)
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -442,4 +448,6 @@ Route::prefix('api')->group(function () {
         Route::get('/branches/nearest', [\App\Http\Controllers\Api\Customer\BranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
     });
 });
+
+Route::post('/update-phone', [AuthController::class, 'updatePhone'])->middleware('auth');
 

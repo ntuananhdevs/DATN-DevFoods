@@ -22,6 +22,9 @@ class Kernel extends ConsoleKernel
         
         // Xóa các job thất bại sau 30 ngày
         $schedule->command('queue:prune-failed --hours=720')->daily();
+        
+        // Dọn dẹp file avatar tạm thời mỗi giờ
+        $schedule->command('avatar:cleanup-temp --force')->hourly();
     }
 
     /**
