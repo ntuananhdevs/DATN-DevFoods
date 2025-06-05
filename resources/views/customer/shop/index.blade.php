@@ -263,7 +263,13 @@
         @forelse($products as $product)
             <div class="product-card bg-white rounded-lg overflow-hidden" 
                 data-product-id="{{ $product->id }}"
-                data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
+                data-variants="{{ json_encode($product->variants->map(function($variant) {
+                    return [
+                        'id' => $variant->id,
+                        'stock' => $variant->stock_quantity,
+                        'branch_id' => $variant->branch_id
+                    ];
+                })) }}"
                 data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
                 <div class="relative">
                     <a href="{{ route('products.show', $product->id) }}" class="block">
@@ -336,7 +342,7 @@
                             @endif
                         </div>
                         @if(isset($product->has_stock) && $product->has_stock)
-                            <a href="{{ route('products.show', ['id' => $product->id, 'branch_id' => session('selected_branch')]) }}" class="add-to-cart-btn">
+                            <a href="{{ route('products.show', ['id' => $product->id]) }}" class="add-to-cart-btn">
                                 <i class="fas fa-shopping-cart"></i>
                                 Mua hàng
                             </a>
@@ -463,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
         branchStockChannel.bind('stock-updated', function(data) {
             // Only update if the stock change is for the current branch
             if (data.branchId == currentBranchId) {
-                updateProductStock(data.productVariantId, data.stockQuantity);
+                updateProductStock(data.productVariantId, data.stockQuantity, data.branchId);
             }
         });
 
@@ -503,25 +509,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Function to update product stock
-    function updateProductStock(variantId, stockQuantity) {
-        // Find all product cards with this variant ID
-        const productCards = document.querySelectorAll(`.product-card[data-variant-id="${variantId}"]`);
-        
-        // Get current branch ID
-        const currentBranchId = '{{ session('selected_branch') }}';
+    function updateProductStock(variantId, stockQuantity, branchId) {
+        // Find all product cards
+        const productCards = document.querySelectorAll('.product-card');
         
         productCards.forEach(card => {
-            // Update the has-stock attribute
-            card.dataset.hasStock = stockQuantity > 0 ? 'true' : 'false';
-            
-            // Update the button
-            const buttonContainer = card.querySelector('.flex.justify-between.items-center');
-            if (buttonContainer) {
-                const button = buttonContainer.querySelector('button, a');
-                if (button) {
-                    if (stockQuantity > 0) {
-                        // Product is in stock
-                        const productId = card.dataset.productId;
+            try {
+                const variants = JSON.parse(card.dataset.variants);
+                const currentBranchId = '{{ session('selected_branch') }}';
+                
+                // Update stock for the specific variant
+                const variantIndex = variants.findIndex(v => v.id == variantId && v.branch_id == branchId);
+                if (variantIndex !== -1) {
+                    variants[variantIndex].stock = stockQuantity;
+                }
+                
+                // Check if any variant has stock for current branch
+                const hasStock = variants.some(v => v.branch_id == currentBranchId && v.stock > 0);
+                card.dataset.hasStock = hasStock.toString();
+                
+                // Update the button
+                const buttonContainer = card.querySelector('.flex.justify-between.items-center');
+                if (buttonContainer) {
+                    const productId = card.dataset.productId;
+                    if (hasStock) {
                         buttonContainer.innerHTML = `
                             <div class="flex flex-col">
                                 ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
@@ -532,7 +543,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             </a>
                         `;
                     } else {
-                        // Product is out of stock
                         buttonContainer.innerHTML = `
                             <div class="flex flex-col">
                                 ${buttonContainer.querySelector('.flex.flex-col').innerHTML}
@@ -544,6 +554,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         `;
                     }
                 }
+                
+                // Update the variants data attribute
+                card.dataset.variants = JSON.stringify(variants);
+            } catch (error) {
+                console.error('Error updating product stock:', error);
             }
         });
     }
@@ -687,7 +702,13 @@ document.addEventListener('DOMContentLoaded', function() {
             html += `
                 <div class="product-card bg-white rounded-lg overflow-hidden" 
                     data-product-id="${product.id}"
-                    data-variant-id="${product.first_variant ? product.first_variant.id : ''}"
+                    data-variants="${json_encode($product->variants->map(function($variant) {
+                        return [
+                            'id' => $variant->id,
+                            'stock' => $variant->stock_quantity,
+                            'branch_id' => $variant->branch_id
+                        ];
+                    })) }}"
                     data-has-stock="${product.has_stock ? 'true' : 'false'}">
                     <div class="relative">
                         <a href="/shop/products/${product.id}" class="block">

@@ -25,63 +25,84 @@ class FavoriteController extends Controller
             $isFavorite = $request->is_favorite;
             $message = '';
 
-            // Verificar si el usuario está autenticado
             if (Auth::check()) {
                 $userId = Auth::id();
+                \Log::info('Processing favorite toggle', [
+                    'user_id' => $userId,
+                    'product_id' => $productId,
+                    'is_favorite' => $isFavorite
+                ]);
                 
-                // Verificar si ya existe el favorito
                 $favorite = Favorite::where('user_id', $userId)
                     ->where('product_id', $productId)
                     ->first();
 
                 if ($isFavorite) {
-                    // Añadir a favoritos
                     if (!$favorite) {
-                        $favorite = Favorite::create([
+                        Favorite::create([
                             'user_id' => $userId,
                             'product_id' => $productId
                         ]);
                     }
                     $message = 'Đã thêm vào danh sách yêu thích';
                 } else {
-                    // Eliminar de favoritos
                     if ($favorite) {
                         $favorite->delete();
                     }
                     $message = 'Đã xóa khỏi danh sách yêu thích';
                 }
 
-                // Comentar la línea de Pusher temporalmente para evitar errores
-                event(new FavoriteUpdated($userId, $productId, $isFavorite));
+                // Get current wishlist count
+                $wishlistCount = Favorite::where('user_id', $userId)->count();
+                \Log::info('Current wishlist count', ['count' => $wishlistCount]);
+                
+                // Broadcast event with count
+                try {
+                    $event = new FavoriteUpdated($userId, $productId, $isFavorite, $wishlistCount);
+                    event($event);
+                    \Log::info('FavoriteUpdated event broadcasted', [
+                        'user_id' => $userId,
+                        'product_id' => $productId,
+                        'is_favorite' => $isFavorite,
+                        'count' => $wishlistCount
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Error broadcasting event: ' . $e->getMessage());
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'is_favorite' => $isFavorite,
+                    'count' => $wishlistCount
+                ]);
             } else {
-                // Manejar favoritos para usuarios no autenticados usando sesión
+                // Handle session-based favorites for guests
                 $sessionFavorites = $request->session()->get('wishlist_items', []);
                 
                 if ($isFavorite) {
-                    // Añadir a favoritos en sesión
                     if (!in_array($productId, $sessionFavorites)) {
                         $sessionFavorites[] = $productId;
                     }
                     $message = 'Đã thêm vào danh sách yêu thích';
                 } else {
-                    // Eliminar de favoritos en sesión
                     $sessionFavorites = array_filter($sessionFavorites, function($id) use ($productId) {
                         return $id != $productId;
                     });
                     $message = 'Đã xóa khỏi danh sách yêu thích';
                 }
                 
-                // Guardar favoritos actualizados en sesión
                 $request->session()->put('wishlist_items', $sessionFavorites);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'is_favorite' => $isFavorite,
+                    'count' => count($sessionFavorites)
+                ]);
             }
-
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'is_favorite' => $isFavorite
-            ]);
         } catch (\Exception $e) {
-            \Log::error('Error en toggle favoritos: ' . $e->getMessage());
+            \Log::error('Error in toggle favorite: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi: ' . $e->getMessage(),

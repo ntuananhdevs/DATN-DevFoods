@@ -17,15 +17,24 @@ class FavoriteUpdated implements ShouldBroadcast
     public $userId;
     public $productId;
     public $isFavorite;
+    public $count;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($userId, $productId, $isFavorite)
+    public function __construct($userId, $productId, $isFavorite, $count)
     {
         $this->userId = $userId;
         $this->productId = $productId;
         $this->isFavorite = $isFavorite;
+        $this->count = $count;
+        
+        \Log::info('FavoriteUpdated event constructed', [
+            'user_id' => $userId,
+            'product_id' => $productId,
+            'is_favorite' => $isFavorite,
+            'count' => $count
+        ]);
     }
 
     /**
@@ -35,8 +44,10 @@ class FavoriteUpdated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
+        $channel = 'private-user.' . $this->userId;
+        \Log::info('Broadcasting on channel', ['channel' => $channel]);
         return [
-            new PrivateChannel('user-wishlist-channel.'.$this->userId),
+            new PrivateChannel($channel),
         ];
     }
 
@@ -55,9 +66,13 @@ class FavoriteUpdated implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        return [
+        $data = [
+            'user_id' => $this->userId,
             'product_id' => $this->productId,
-            'is_favorite' => $this->isFavorite
+            'is_favorite' => $this->isFavorite,
+            'count' => $this->count
         ];
+        \Log::info('Broadcasting with data', $data);
+        return $data;
     }
 } 

@@ -874,80 +874,79 @@
     });
 
     // Function to update product availability UI
-    function updateProductAvailability(isAvailable) {
-        const outOfStockMessage = document.getElementById('out-of-stock-message');
+    function updateProductAvailability() {
         const addToCartBtn = document.getElementById('add-to-cart');
         const buyNowBtn = document.getElementById('buy-now');
         const quantityControls = document.querySelectorAll('#decrease-quantity, #increase-quantity');
         const toppingInputs = document.querySelectorAll('.topping-input');
+        const outOfStockMessage = document.getElementById('out-of-stock-message');
         
-        if (!isAvailable) {
-            // Show out of stock message if not exists
-            if (!outOfStockMessage) {
-                const messageDiv = document.createElement('div');
-                messageDiv.id = 'out-of-stock-message';
-                messageDiv.className = 'p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200';
-                messageDiv.innerHTML = '<p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>';
-                document.getElementById('variants-container').insertBefore(messageDiv, document.getElementById('variants-container').firstChild);
-            }
+        // Check if any variant is available
+        const hasAvailableVariant = Array.from(document.querySelectorAll('.variant-input'))
+            .some(input => parseInt(input.dataset.stockQuantity) > 0);
             
-            // Disable buttons and controls
-            if (addToCartBtn) {
+        // Check if currently selected variant is available
+        const selectedVariant = document.querySelector('.variant-input:checked');
+        const isSelectedVariantAvailable = selectedVariant && parseInt(selectedVariant.dataset.stockQuantity) > 0;
+        
+        // Update out of stock message
+        if (outOfStockMessage) {
+            if (!hasAvailableVariant) {
+                outOfStockMessage.style.display = 'block';
+                outOfStockMessage.innerHTML = '<p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>';
+            } else if (!isSelectedVariantAvailable) {
+                outOfStockMessage.style.display = 'block';
+                outOfStockMessage.innerHTML = '<p>Biến thể đã chọn hiện đang hết hàng. Vui lòng chọn biến thể khác.</p>';
+            } else {
+                outOfStockMessage.style.display = 'none';
+            }
+        }
+        
+        // Update add to cart and buy now buttons
+        if (addToCartBtn) {
+            if (!hasAvailableVariant) {
                 addToCartBtn.disabled = true;
                 addToCartBtn.classList.add('bg-gray-400');
                 addToCartBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
                 const span = addToCartBtn.querySelector('span');
                 if (span) span.textContent = 'Hết hàng';
-            }
-            
-            if (buyNowBtn) {
-                buyNowBtn.disabled = true;
-                buyNowBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-            
-            quantityControls.forEach(control => {
-                control.disabled = true;
-                control.classList.add('opacity-50', 'cursor-not-allowed');
-            });
-            
-            toppingInputs.forEach(input => {
-                input.disabled = true;
-                const label = input.closest('label');
-                if (label) {
-                    label.classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            });
-        } else {
-            // Remove out of stock message if exists
-            if (outOfStockMessage) outOfStockMessage.remove();
-            
-            // Enable buttons and controls
-            if (addToCartBtn) {
+            } else if (!isSelectedVariantAvailable) {
+                addToCartBtn.disabled = true;
+                addToCartBtn.classList.add('bg-gray-400');
+                addToCartBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                const span = addToCartBtn.querySelector('span');
+                if (span) span.textContent = 'Chọn biến thể khác';
+            } else {
                 addToCartBtn.disabled = false;
                 addToCartBtn.classList.remove('bg-gray-400');
                 addToCartBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
                 const span = addToCartBtn.querySelector('span');
                 if (span) span.textContent = 'Thêm vào giỏ hàng';
             }
-            
-            if (buyNowBtn) {
-                buyNowBtn.disabled = false;
-                buyNowBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-            
-            quantityControls.forEach(control => {
-                control.disabled = false;
-                control.classList.remove('opacity-50', 'cursor-not-allowed');
-            });
-            
-            toppingInputs.forEach(input => {
-                input.disabled = false;
-                const label = input.closest('label');
-                if (label) {
-                    label.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            });
         }
+        
+        if (buyNowBtn) {
+            buyNowBtn.disabled = !isSelectedVariantAvailable;
+            buyNowBtn.classList.toggle('opacity-50', !isSelectedVariantAvailable);
+            buyNowBtn.classList.toggle('cursor-not-allowed', !isSelectedVariantAvailable);
+        }
+        
+        // Update quantity controls and toppings based on selected variant
+        const isControlsEnabled = isSelectedVariantAvailable;
+        quantityControls.forEach(control => {
+            control.disabled = !isControlsEnabled;
+            control.classList.toggle('opacity-50', !isControlsEnabled);
+            control.classList.toggle('cursor-not-allowed', !isControlsEnabled);
+        });
+        
+        toppingInputs.forEach(input => {
+            input.disabled = !isControlsEnabled;
+            const label = input.closest('label');
+            if (label) {
+                label.classList.toggle('opacity-50', !isControlsEnabled);
+                label.classList.toggle('cursor-not-allowed', !isControlsEnabled);
+            }
+        });
     }
 
     // Initialize Pusher
@@ -1000,8 +999,6 @@
             return;
         }
         
-        let hasAvailableStock = false;
-        
         variantInputs.forEach(input => {
             // Update the stock quantity data attribute
             input.dataset.stockQuantity = data.stockQuantity;
@@ -1015,36 +1012,37 @@
                 if (data.stockQuantity > 0) {
                     stockDisplay.textContent = `(Còn ${data.stockQuantity})`;
                     stockDisplay.className = `text-xs ml-1 ${data.stockQuantity <= 5 ? 'text-orange-500' : 'text-gray-500'} stock-display`;
-                    hasAvailableStock = true;
                 } else {
                     stockDisplay.textContent = '(Hết hàng)';
                     stockDisplay.className = 'text-xs ml-1 text-red-500 stock-display';
                 }
             }
             
-            // Update disabled state
+            // Update disabled state of variant input
             if (data.stockQuantity <= 0) {
                 input.disabled = true;
                 label.classList.add('opacity-50', 'cursor-not-allowed');
                 label.classList.remove('hover:bg-gray-50');
+                
+                // If this is the currently selected variant, uncheck it
+                if (input.checked) {
+                    // Find first available variant in the same attribute group
+                    const attributeId = input.dataset.attributeId;
+                    const firstAvailableVariant = document.querySelector(`.variant-input[data-attribute-id="${attributeId}"]:not([disabled])`);
+                    if (firstAvailableVariant) {
+                        firstAvailableVariant.checked = true;
+                        firstAvailableVariant.dispatchEvent(new Event('change'));
+                    }
+                }
             } else {
                 input.disabled = false;
                 label.classList.remove('opacity-50', 'cursor-not-allowed');
                 label.classList.add('hover:bg-gray-50');
-                hasAvailableStock = true;
-            }
-            
-            // If this is the currently selected variant and stock is 0
-            if (input.checked && data.stockQuantity <= 0) {
-                // Show out of stock message only once
-                if (!document.getElementById('out-of-stock-message')) {
-                    showToast('Sản phẩm đã hết hàng', 'warning');
-                }
             }
         });
         
         // Update overall product availability
-        updateProductAvailability(hasAvailableStock);
+        updateProductAvailability();
     });
 </script>
 @endsection

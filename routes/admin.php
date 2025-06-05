@@ -28,12 +28,18 @@ use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
 // Route Auth (login / logout) for Admin
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->name('login.submit');
+    // Đăng nhập
+    Route::controller(AuthController::class)->group(function () {
+        Route::get('login', 'showLoginForm')->name('login');
+        Route::post('login', 'login')->name('login.submit');
+    });
+
+    // Đăng xuất (chỉ cho Admin đã đăng nhập)
+    Route::middleware(['auth:admin'])->post('logout', [AuthController::class, 'logout'])->name('logout');
 });
 
 // Route chỉ dành cho admin sau khi đăng nhập và có role:admin
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
@@ -41,7 +47,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/store_analytics', [DashboardController::class, 'store_analytics'])->name('store_analytics');
 
     // Đăng xuất
-    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+    // Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);

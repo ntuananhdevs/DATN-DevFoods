@@ -1054,5 +1054,107 @@
     
     <!-- Branch Selector Modal -->
     @include('partials.customer.branch-selector-modal')
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Pusher if available
+        if (typeof Pusher !== 'undefined') {
+            console.log('Initializing Pusher...');
+            
+            const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                encrypted: true,
+                enabledTransports: ['ws', 'wss'],
+                forceTLS: true
+            });
+
+            // Subscribe to user's wishlist channel if authenticated
+            const userId = '{{ auth()->id() }}';
+            console.log('Current user ID:', userId);
+
+            if (userId) {
+                const channelName = 'user-wishlist-channel.' + userId;
+                console.log('Subscribing to channel:', channelName);
+                
+                const channel = pusher.subscribe(channelName);
+                
+                // Log subscription events
+                channel.bind('pusher:subscription_succeeded', function() {
+                    console.log('Successfully subscribed to channel:', channelName);
+                });
+
+                channel.bind('pusher:subscription_error', function(error) {
+                    console.error('Error subscribing to channel:', error);
+                });
+                
+                // Listen for wishlist updates
+                channel.bind('favorite-updated', function(data) {
+                    console.log('Received favorite-updated event:', data);
+                    
+                    // Update wishlist count
+                    const wishlistCounters = document.querySelectorAll('#wishlist-container span');
+                    console.log('Found wishlist counters:', wishlistCounters.length);
+                    
+                    wishlistCounters.forEach(counter => {
+                        console.log('Updating counter from', counter.textContent, 'to', data.count);
+                        counter.textContent = data.count;
+                        counter.classList.add('animate-bounce');
+                        setTimeout(() => {
+                            counter.classList.remove('animate-bounce');
+                        }, 1000);
+                    });
+
+                    // Update favorite button states if on product page
+                    if (data.product_id) {
+                        const favoriteBtn = document.querySelector(`[data-product-id="${data.product_id}"]`);
+                        if (favoriteBtn) {
+                            console.log('Found favorite button for product:', data.product_id);
+                            const icon = favoriteBtn.querySelector('i');
+                            if (icon) {
+                                if (data.is_favorite) {
+                                    icon.classList.remove('far');
+                                    icon.classList.add('fas', 'text-red-500');
+                                } else {
+                                    icon.classList.remove('fas', 'text-red-500');
+                                    icon.classList.add('far');
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Log Pusher connection state
+                pusher.connection.bind('state_change', function(states) {
+                    console.log('Pusher connection state changed:', states);
+                });
+
+                pusher.connection.bind('connected', function() {
+                    console.log('Pusher connected successfully');
+                });
+
+                pusher.connection.bind('error', function(err) {
+                    console.error('Pusher connection error:', err);
+                });
+            } else {
+                console.log('No user ID available, skipping channel subscription');
+            }
+        } else {
+            console.error('Pusher is not available!');
+        }
+    });
+
+    // Global function to update wishlist count
+    window.updateWishlistCount = function(count) {
+        console.log('Global updateWishlistCount called with count:', count);
+        const wishlistCounters = document.querySelectorAll('#wishlist-container span');
+        wishlistCounters.forEach(counter => {
+            counter.textContent = count;
+            counter.classList.add('animate-bounce');
+            setTimeout(() => {
+                counter.classList.remove('animate-bounce');
+            }, 1000);
+        });
+    };
+    </script>
 </body>
 </html>
