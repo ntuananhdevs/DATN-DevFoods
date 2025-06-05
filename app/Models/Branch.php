@@ -27,7 +27,7 @@ class Branch extends Model
         'closing_hour',
         'active',
         'balance',
-        'rating', 
+        'rating',
         'reliability_score',
     ];
 
