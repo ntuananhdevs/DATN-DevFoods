@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Jobs\SendOTPJob;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\SendWelcomeEmail;
+use App\Mail\ForgotPasswordMail;
 
 class AuthController extends Controller
 {
@@ -108,8 +110,7 @@ class AuthController extends Controller
         
         // Xóa remember token của người dùng
         if ($user) {
-            $user->setRememberToken(null);
-            $user->save();
+            User::where('id', $user->id)->update(['remember_token' => null]);
         }
         
         // Vô hiệu hóa phiên hiện tại
@@ -179,8 +180,29 @@ class AuthController extends Controller
                 $user->roles()->attach($customerRole->id);
             }
 
-            // Tạo và gửi OTP qua queue
+            // Tạo mã OTP ngẫu nhiên 6 chữ số
             $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            
+            // Lưu OTP vào cache trước khi gửi email để đảm bảo có thể xác thực ngay cả khi email chưa đến
+            Cache::put('otp_' . $user->email, $otp, now()->addMinutes(10));
+            
+            // Log để debug
+            Log::info('OTP generated for ' . $user->email . ': ' . $otp);
+            
+            // Thử gửi OTP qua email trực tiếp trước khi dùng queue
+            try {
+                $emailContent = $this->getOTPEmailContent($otp);
+                Mail::html($emailContent, function ($message) use ($user) {
+                    $message->to($user->email)
+                        ->subject('Xác thực tài khoản - FastFood');
+                });
+                Log::info('OTP sent directly to ' . $user->email);
+            } catch (\Exception $e) {
+                Log::error('Error sending OTP directly: ' . $e->getMessage());
+                // Vẫn tiếp tục và thử gửi qua queue
+            }
+            
+            // Gửi OTP qua queue như cũ
             SendOTPJob::dispatch($user->email, $otp)->onQueue('default');
 
             // Lưu thông tin user vào session để sử dụng sau khi xác thực OTP
@@ -202,6 +224,19 @@ class AuthController extends Controller
                 'errors' => ['email' => ['Đã xảy ra lỗi. Vui lòng thử lại.']]
             ], 500);
         }
+    }
+
+    /**
+     * Tạo nội dung email OTP
+     */
+    private function getOTPEmailContent($otp)
+    {
+        // Phương thức này không còn cần thiết vì chúng ta đã sử dụng SendOTPMail
+        // Nhưng giữ lại để tránh lỗi nếu có code khác gọi đến
+        Log::warning('Deprecated method getOTPEmailContent called. Use SendOTPMail instead.');
+        
+        // Render view thành string và trả về
+        return view('emails.sendOTP', ['otp' => $otp])->render();
     }
 
     /**
@@ -260,8 +295,8 @@ class AuthController extends Controller
         }
 
         // Xác thực thành công, cập nhật trạng thái email đã xác thực
-        $user->email_verified_at = now();
-        $user->save();
+        User::where('id', $user->id)->update(['email_verified_at' => now()]);
+        $user->refresh(); // Refresh user model with updated data
         
         // Xóa OTP khỏi cache
         Cache::forget('otp_' . $user->email);
@@ -269,6 +304,14 @@ class AuthController extends Controller
         // Xóa session
         $request->session()->forget('pending_user_id');
         
+        // Gửi email chào mừng
+        try {
+            Mail::to($user->email)->queue(new SendWelcomeEmail($user));
+            Log::info('Welcome email queued for ' . $user->email);
+        } catch (\Exception $e) {
+            Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
+        }
+
         // Đăng nhập người dùng
         Auth::login($user);
         
@@ -325,44 +368,12 @@ class AuthController extends Controller
         // Lưu token vào cache với thời hạn 1 giờ
         Cache::put('password_reset_' . $token, $user->email, now()->addHour());
         
-        // Tạo nội dung email
-        $resetLink = url('/reset-password/' . $token);
-        $emailContent = '<!DOCTYPE html>
-        <html lang="vi">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Đặt lại mật khẩu - FastFood</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f4f4;">
-            <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                <div style="text-align: center; padding: 20px;">
-                    <h1 style="color: #f97316; margin: 0;">FastFood</h1>
-                    <p style="color: #666;">Đặt lại mật khẩu</p>
-                </div>
-                <div style="padding: 20px; color: #444;">
-                    <p>Xin chào,</p>
-                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Vui lòng click vào nút bên dưới để đặt lại mật khẩu:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="' . $resetLink . '" style="background-color: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Đặt lại mật khẩu</a>
-                    </div>
-                    <p>Liên kết này sẽ hết hạn sau 60 phút. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-                    <p>Trân trọng,<br>Đội ngũ FastFood</p>
-                </div>
-                <div style="text-align: center; padding: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
-                    <p>© ' . date('Y') . ' FastFood. Tất cả quyền được bảo lưu.</p>
-                </div>
-            </div>
-        </body>
-        </html>';
-    
-        // Gửi email
+        // Gửi email đặt lại mật khẩu qua queue
         try {
-            Mail::html($emailContent, function ($message) use ($request) {
-                $message->to($request->email)
-                        ->subject('Đặt lại mật khẩu - FastFood');
-            });
-    
+            $resetLink = url('/reset-password/' . $token);
+            Mail::to($user->email)->queue(new ForgotPasswordMail($user->email, $resetLink));
+            Log::info('Forgot password email queued for ' . $user->email);
+            
             // Thay thế JSON response bằng redirect với thông báo thành công
             $status = 'Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu đến địa chỉ email của bạn.';
             return back()->with('status', $status)->withInput();
