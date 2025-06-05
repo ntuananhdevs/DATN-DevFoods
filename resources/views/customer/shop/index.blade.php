@@ -695,20 +695,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const hasDiscount = product.discount_price && product.base_price > product.discount_price;
             const discountPercent = hasDiscount ? Math.round(((product.base_price - product.discount_price) / product.base_price) * 100) : 0;
             const isNew = new Date(product.created_at).getTime() > new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
-            
-            // Check if user is authenticated
             const isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+            
+            // Convert variants to JSON string
+            const variantsJson = JSON.stringify(product.variants.map(variant => ({
+                id: variant.id,
+                stock: variant.stock_quantity,
+                branch_id: variant.branch_id
+            })));
             
             html += `
                 <div class="product-card bg-white rounded-lg overflow-hidden" 
                     data-product-id="${product.id}"
-                    data-variants="${json_encode($product->variants->map(function($variant) {
-                        return [
-                            'id' => $variant->id,
-                            'stock' => $variant->stock_quantity,
-                            'branch_id' => $variant->branch_id
-                        ];
-                    })) }}"
+                    data-variants='${variantsJson}'
                     data-has-stock="${product.has_stock ? 'true' : 'false'}">
                     <div class="relative">
                         <a href="/shop/products/${product.id}" class="block">
@@ -719,12 +718,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>`
                             }
                         </a>
-
+                        
                         ${isAuthenticated ? 
-                            `<button class="favorite-btn" data-product-id="${product.id}">
+                            `<button class="favorite-btn absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors" data-product-id="${product.id}">
                                 <i class="${isFavorite}"></i>
                             </button>` : 
-                            `<button class="favorite-btn login-prompt-btn">
+                            `<button class="favorite-btn login-prompt-btn absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-colors">
                                 <i class="far fa-heart"></i>
                             </button>`
                         }
@@ -755,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="flex flex-col">
                                 ${hasDiscount ? 
                                     `<span class="product-price">${new Intl.NumberFormat('vi-VN').format(product.discount_price)}đ</span>
-                                     <span class="product-original-price">${new Intl.NumberFormat('vi-VN').format(product.base_price)}đ</span>` :
+                                    <span class="product-original-price">${new Intl.NumberFormat('vi-VN').format(product.base_price)}đ</span>` :
                                     `<span class="product-price">${new Intl.NumberFormat('vi-VN').format(product.base_price)}đ</span>`
                                 }
                             </div>
@@ -935,6 +934,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => {
                     if (response.data.success) {
+                        // Update wishlist counter if function exists
+                        if (typeof window.updateWishlistCount === 'function') {
+                            window.updateWishlistCount(response.data.count);
+                        }
                         showToast(response.data.message);
                     }
                 })
@@ -957,7 +960,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.login-prompt-btn').forEach(button => {
             button.addEventListener('click', function() {
                 const loginPopup = document.getElementById('login-popup');
-                loginPopup.classList.remove('hidden');
+                if (loginPopup) {
+                    loginPopup.classList.remove('hidden');
+                }
             });
         });
     }

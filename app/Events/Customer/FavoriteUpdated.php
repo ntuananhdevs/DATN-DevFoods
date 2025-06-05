@@ -44,7 +44,7 @@ class FavoriteUpdated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        $channel = 'private-user.' . $this->userId;
+        $channel = 'user-wishlist-channel.' . $this->userId;
         \Log::info('Broadcasting on channel', ['channel' => $channel]);
         return [
             new PrivateChannel($channel),
