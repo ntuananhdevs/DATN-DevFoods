@@ -30,9 +30,9 @@ class User extends Authenticatable
         'google_id',
         'remember_token',
         'balance',
-        'user_rank_id', 
-        'total_spending', 
-        'total_orders', 
+        'user_rank_id',
+        'total_spending',
+        'total_orders',
         'rank_updated_at',
         'active',
         'password',
@@ -97,6 +97,16 @@ class User extends Authenticatable
     public function userRankHistory()
     {
         return $this->hasMany(UserRankHistory::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(UserImage::class);
+    }
+
+    public function primaryImage()
+    {
+        return $this->hasMany(UserImage::class)->where('is_primary', true);
     }
 
     public function discountCodes()

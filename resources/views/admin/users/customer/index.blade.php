@@ -401,14 +401,14 @@ function updateTable(users) {
         `;
     } else {
         users.forEach(user => {
-            const avatarUrl = user.avatar ? `${response.s3_url}/${user.avatar}` : '/images/default-avatar.png';
+            const avatarUrl = user.avatar ? `/storage/${user.avatar}` : '/images/default-avatar.png';
             html += `
                 <tr data-user-id="${user.id}" class="border-b hover:bg-gray-50 transition-colors duration-200">
                     <td class="w-12 text-center py-4">
                         <div class="flex items-center justify-center">
-                            <input type="checkbox" 
-                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                                   id="user-${user.id}" 
+                            <input type="checkbox"
+                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                   id="user-${user.id}"
                                    value="${user.id}">
                         </div>
                     </td>

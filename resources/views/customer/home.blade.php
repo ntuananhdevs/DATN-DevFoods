@@ -8,6 +8,32 @@
       max-width: 1280px;
       margin: 0 auto;
    }
+   /* Example for badges - adjust to your styling system */
+    .custom-badge {
+        font-size: 0.75rem; /* 12px */
+        padding: 0.25rem 0.5rem; /* py-1 px-2 */
+        border-radius: 0.25rem; /* rounded */
+        color: white;
+        font-weight: bold;
+    }
+    .badge-sale {
+        background-color: #EF4444; /* bg-red-500 */
+    }
+    .badge-new {
+        background-color: #22C55E; /* bg-green-500 */
+    }
+    .product-card .no-image-placeholder { /* If you use this style for placeholder */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%; /* Or specific height like h-48 */
+        background-color: #f3f4f6; /* bg-gray-100 */
+    }
+    .product-card .no-image-placeholder i {
+        font-size: 2rem; /* text-3xl */
+        color: #9ca3af; /* text-gray-400 */
+    }
 </style>
 <!-- Banner/Slider -->
 <div class="relative h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden" id="banner-slider">
@@ -55,222 +81,211 @@
     <section class="py-10">
         <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center">Danh Mục Món Ăn</h2>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <a href="/products?category=burgers" class="group flex flex-col items-center text-center transition-transform hover:scale-105">
-                <div class="relative w-24 h-24 mb-3 rounded-full overflow-hidden border-2 border-orange-500 p-1">
-                    <div class="w-full h-full rounded-full overflow-hidden">
-                        <img src="/placeholder.svg?height=200&width=200" alt="Burger" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+        <div class="swiper category-slider">
+            <div class="swiper-wrapper">
+                @foreach ($categories as $category)
+                    <div class="swiper-slide">
+                        <a href="{{ url('/shop/products?category=' . $category->id ) }}" class="group flex flex-col items-center text-center transition-transform hover:scale-105">
+                            <div class="relative w-24 h-24 mb-3 rounded-full overflow-hidden border-2 border-orange-500 p-1">
+                                <div class="w-full h-full rounded-full overflow-hidden">
+                                    @php
+                                    $imagePath = $category->image ?? 'categories/default-logo.avif';
+                                    @endphp
+                                    <img src="{{ Storage::disk('s3')->url($imagePath) }}" alt="{{ $category->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                </div>
+                            </div>
+                            <h3 class="font-medium text-sm">{{ $category->name }}</h3>
+                        </a>
                     </div>
-                </div>
-                <h3 class="font-medium text-sm">Burger</h3>
-            </a>
-            <a href="/products?category=pizza" class="group flex flex-col items-center text-center transition-transform hover:scale-105">
-                <div class="relative w-24 h-24 mb-3 rounded-full overflow-hidden border-2 border-orange-500 p-1">
-                    <div class="w-full h-full rounded-full overflow-hidden">
-                        <img src="/placeholder.svg?height=200&width=200" alt="Pizza" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    </div>
-                </div>
-                <h3 class="font-medium text-sm">Pizza</h3>
-            </a>
-            <a href="/products?category=chicken" class="group flex flex-col items-center text-center transition-transform hover:scale-105">
-                <div class="relative w-24 h-24 mb-3 rounded-full overflow-hidden border-2 border-orange-500 p-1">
-                    <div class="w-full h-full rounded-full overflow-hidden">
-                        <img src="/placeholder.svg?height=200&width=200" alt="Gà Rán" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    </div>
-                </div>
-                <h3 class="font-medium text-sm">Gà Rán</h3>
-            </a>
-            <a href="/products?category=rice" class="group flex flex-col items-center text-center transition-transform hover:scale-105">
-                <div class="relative w-24 h-24 mb-3 rounded-full overflow-hidden border-2 border-orange-500 p-1">
-                    <div class="w-full h-full rounded-full overflow-hidden">
-                        <img src="/placeholder.svg?height=200&width=200" alt="Cơm" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    </div>
-                </div>
-                <h3 class="font-medium text-sm">Cơm</h3>
-            </a>
-            <a href="/products?category=noodles" class="group flex flex-col items-center text-center transition-transform hover:scale-105">
-                <div class="relative w-24 h-24 mb-3 rounded-full overflow-hidden border-2 border-orange-500 p-1">
-                    <div class="w-full h-full rounded-full overflow-hidden">
-                        <img src="/placeholder.svg?height=200&width=200" alt="Mì" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    </div>
-                </div>
-                <h3 class="font-medium text-sm">Mì</h3>
-            </a>
-            <a href="/products?category=drinks" class="group flex flex-col items-center text-center transition-transform hover:scale-105">
-                <div class="relative w-24 h-24 mb-3 rounded-full overflow-hidden border-2 border-orange-500 p-1">
-                    <div class="w-full h-full rounded-full overflow-hidden">
-                        <img src="/placeholder.svg?height=200&width=200" alt="Đồ Uống" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    </div>
-                </div>
-                <h3 class="font-medium text-sm">Đồ Uống</h3>
-            </a>
+                @endforeach
+            </div>
         </div>
     </section>
 
-    <!-- Featured Products Section -->
     <section class="py-10">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl md:text-3xl font-bold">Sản Phẩm Nổi Bật</h2>
-            <a href="/products" class="text-orange-500 hover:text-orange-600 flex items-center">
-                Xem tất cả
+            <a href="{{ route('products.index') }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
                 <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
             </a>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <!-- Product Card 1 -->
-            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                <a href="/products/burger-classic" class="block relative h-48 overflow-hidden">
-                    <img src="/placeholder.svg?height=400&width=400" alt="Burger Bò Cổ Điển" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    <span class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">Mới</span>
-                </a>
+            @forelse ($featuredProducts as $product)
+                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    data-product-id="{{ $product->id }}"
+                    data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
+                    data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
+                    
+                    <div class="relative"> 
+                        <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
+                            @if($product->primary_image && $product->primary_image->s3_url)
+                                <img src="{{ $product->primary_image->s3_url }}" 
+                                    alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                            @else
+                                <img src="{{ asset('images/default-placeholder.png') }}" 
+                                    alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                                {{-- Alternative placeholder like your other list:
+                                <div class="no-image-placeholder flex items-center justify-center h-full bg-gray-100">
+                                    <i class="far fa-image text-3xl text-gray-400"></i>
+                                </div>
+                                --}}
+                            @endif
+                        </a>
 
-                <div class="p-4">
-                    <div class="flex items-center gap-1 mb-2">
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star-half-alt text-yellow-400"></i>
-                        <span class="text-xs text-gray-500 ml-1">(120)</span>
+                        {{-- Favorite Button --}}
+                        {{-- <div class="absolute top-2 right-2">
+                            @auth
+                            <button class="favorite-btn bg-white p-1.5 rounded-full shadow text-gray-600 hover:text-red-500 focus:outline-none" data-product-id="{{ $product->id }}">
+                                @if($product->is_favorite)
+                                    <i class="fas fa-heart text-red-500"></i>
+                                @else
+                                    <i class="far fa-heart"></i>
+                                @endif
+                            </button>
+                            @else
+                            <button class="favorite-btn login-prompt-btn bg-white p-1.5 rounded-full shadow text-gray-600 hover:text-red-500 focus:outline-none">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            @endauth
+                        </div> --}}
+
+                        {{-- Badges (Sale/New) --}}
+                        <div class="absolute top-2 left-2">
+                            @if($product->discount_price && $product->base_price > $product->discount_price)
+                                @php
+                                    $discountPercent = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
+                                @endphp
+                                <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $discountPercent }}%</span>
+                            @elseif($product->created_at->diffInDays(now()) <= 7)
+                                <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
+                            @endif
+                        </div>
                     </div>
 
-                    <a href="/products/burger-classic">
-                        <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                            Burger Bò Cổ Điển
-                        </h3>
-                    </a>
-
-                    <p class="text-gray-500 text-sm mb-3 line-clamp-2">Burger bò với phô mai, rau xà lách, cà chua và sốt đặc biệt</p>
-
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-lg">59.000đ</span>
+                    <div class="p-4">
+                        <div class="flex items-center gap-1 mb-2">
+                            {{-- Rating Stars --}}
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= floor($product->average_rating))
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                @elseif($i - 0.5 <= $product->average_rating)
+                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                @else
+                                    <i class="far fa-star text-yellow-400"></i> {{-- or text-gray-300 for empty --}}
+                                @endif
+                            @endfor
+                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
                         </div>
 
-                        <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
-                            <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                            Thêm
-                        </button>
+                        <a href="{{ route('products.show', $product->id) }}"> 
+                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
+                                {{ $product->name }}
+                            </h3>
+                        </a>
+
+                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">
+                            {{ $product->short_description ?? Illuminate\Support\Str::limit($product->description, 80) }}
+                        </p>
+
+                        <div class="flex items-center justify-between">
+                            {{-- Price --}}
+                            <div class="flex flex-col">
+                                @if($product->discount_price && $product->base_price > $product->discount_price)
+                                    <span class="font-bold text-lg text-red-600">{{ number_format($product->discount_price, 0, ',', '.') }}đ</span>
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+                                @else
+                                    <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+                                @endif
+                            </div>
+                            
+                            {{-- Add to Cart Button --}}
+                            @if(isset($product->has_stock) && $product->has_stock)
+                                <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
+                                    <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
+                                    Thêm
+                                </button>
+                            @else
+                                <button class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
+                                    <i class="fas fa-ban h-4 w-4 mr-1"></i>
+                                    Hết hàng
+                                </button>
+                            @endif
+                        </div>
                     </div>
                 </div>
-            </div>
+            @empty
+                <div class="col-span-full text-center py-8"> 
+                    <i class="fas fa-box-open text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-700 mb-2">Chưa có sản phẩm nổi bật</h3>
+                    <p class="text-gray-500">Vui lòng quay lại sau để xem các sản phẩm nổi bật nhé!</p>
+                </div>
+            @endforelse
+        </div>
+    </section>
 
-            <!-- Product Card 2 -->
-            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                <a href="/products/burger-cheese" class="block relative h-48 overflow-hidden">
-                    <img src="/placeholder.svg?height=400&width=400" alt="Burger Phô Mai Đặc Biệt" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">-10%</span>
-                </a>
+    <section class="py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold">Sản Phẩm Được Yêu Thích Nhất</h2>
+            <a href="{{ route('products.index') }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
+                <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
+            </a>
+        </div>
 
-                <div class="p-4">
-                    <div class="flex items-center gap-1 mb-2">
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star-half-alt text-yellow-400"></i>
-                        <span class="text-xs text-gray-500 ml-1">(95)</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            @forelse ($topRatedProducts as $product)
+                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    data-product-id="{{ $product->id }}"
+                    data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
+                    data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
+
+                    <div class="relative">
+                        <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
+                            <img src="{{ $product->primary_image->s3_url ?? asset('images/default-placeholder.png') }}"
+                                alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
+                        </a>
                     </div>
 
-                    <a href="/products/burger-cheese">
-                        <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                            Burger Phô Mai Đặc Biệt
-                        </h3>
-                    </a>
-
-                    <p class="text-gray-500 text-sm mb-3 line-clamp-2">Burger với 2 lớp phô mai, thịt bò và sốt BBQ</p>
-
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-lg">69.000đ</span>
-                            <span class="text-gray-500 text-sm line-through">76.000đ</span>
+                    <div class="p-4">
+                        <div class="flex items-center gap-1 mb-2">
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= floor($product->average_rating))
+                                    <i class="fas fa-star text-yellow-400"></i>
+                                @elseif($i - 0.5 <= $product->average_rating)
+                                    <i class="fas fa-star-half-alt text-yellow-400"></i>
+                                @else
+                                    <i class="far fa-star text-yellow-400"></i>
+                                @endif
+                            @endfor
+                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
                         </div>
 
-                        <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
-                            <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                            Thêm
-                        </button>
-                    </div>
-                </div>
-            </div>
+                        <a href="{{ route('products.show', $product->id) }}">
+                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
+                                {{ $product->name }}
+                            </h3>
+                        </a>
 
-            <!-- Product Card 3 -->
-            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                <a href="/products/chicken-fried" class="block relative h-48 overflow-hidden">
-                    <img src="/placeholder.svg?height=400&width=400" alt="Gà Rán Giòn Cay" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    <span class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">Mới</span>
-                </a>
+                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">
+                            {{ $product->short_description ?? Illuminate\Support\Str::limit($product->description, 80) }}
+                        </p>
 
-                <div class="p-4">
-                    <div class="flex items-center gap-1 mb-2">
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-gray-200"></i>
-                        <span class="text-xs text-gray-500 ml-1">(78)</span>
-                    </div>
-
-                    <a href="/products/chicken-fried">
-                        <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                            Gà Rán Giòn Cay
-                        </h3>
-                    </a>
-
-                    <p class="text-gray-500 text-sm mb-3 line-clamp-2">Gà rán với lớp vỏ giòn và gia vị cay đặc biệt</p>
-
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-lg">55.000đ</span>
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
+                            <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
+                                <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
+                                Thêm
+                            </button>
                         </div>
-
-                        <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
-                            <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                            Thêm
-                        </button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Product Card 4 -->
-            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                <a href="/products/pizza-seafood" class="block relative h-48 overflow-hidden">
-                    <img src="/placeholder.svg?height=400&width=400" alt="Pizza Hải Sản Đặc Biệt" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
-                    <span class="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">-15%</span>
-                </a>
-
-                <div class="p-4">
-                    <div class="flex items-center gap-1 mb-2">
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <i class="fas fa-star text-yellow-400"></i>
-                        <span class="text-xs text-gray-500 ml-1">(112)</span>
-                    </div>
-
-                    <a href="/products/pizza-seafood">
-                        <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                            Pizza Hải Sản Đặc Biệt
-                        </h3>
-                    </a>
-
-                    <p class="text-gray-500 text-sm mb-3 line-clamp-2">Pizza với tôm, mực, sò điệp và rau củ tươi ngon</p>
-
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-lg">159.000đ</span>
-                            <span class="text-gray-500 text-sm line-through">187.000đ</span>
-                        </div>
-
-                        <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
-                            <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
-                            Thêm
-                        </button>
-                    </div>
+            @empty
+                <div class="col-span-full text-center py-8">
+                    <i class="fas fa-box-open text-gray-400 text-4xl mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-700 mb-2">Chưa có sản phẩm yêu thích</h3>
+                    <p class="text-gray-500">Vui lòng quay lại sau để xem các sản phẩm được yêu thích nhé!</p>
                 </div>
-            </div>
+            @endforelse
         </div>
     </section>
 
@@ -403,5 +418,26 @@
         // Start the slider
         startSlider();
     });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
+<script>
+    var swiper = new Swiper(".category-slider", {
+    slidesPerView: "auto",
+    spaceBetween: 10,
+    loop: true,
+    autoplay: {
+        delay: 0, // Loại bỏ thời gian chờ
+        disableOnInteraction: false
+    },
+    speed: 5000, // Tốc độ trượt chậm để tạo cảm giác mượt mà
+    grabCursor: true,
+    freeMode: true, // Cho phép trượt liên tục, không có điểm dừng
+    freeModeMomentum: false, // Giữ tốc độ đều đặn, không có gia tốc
+    breakpoints: {
+        640: { slidesPerView: 3 },
+        768: { slidesPerView: 4 },
+        1024: { slidesPerView: 6 }
+    }
+});
 </script>
 @endsection

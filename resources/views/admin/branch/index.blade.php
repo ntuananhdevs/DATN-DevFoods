@@ -40,6 +40,139 @@
     @keyframes spin {
         to { transform: translateY(-50%) rotate(360deg); }
     }
+
+    /* Grid view styles */
+    .grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .branch-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .branch-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px 0 rgba(0, 0, 0, 0.1);
+        border-color: #d1d5db;
+    }
+
+    .branch-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .branch-card-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 0.25rem;
+    }
+
+    .branch-card-id {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .branch-card-content {
+        margin-bottom: 1.5rem;
+    }
+
+    .branch-info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .branch-info-icon {
+        color: #6b7280;
+        width: 16px;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .branch-card-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f3f4f6;
+    }
+
+    .view-toggle {
+        display: flex;
+        background: #f3f4f6;
+        border-radius: 8px;
+        padding: 4px;
+    }
+
+    .view-toggle button {
+        padding: 8px 12px;
+        border: none;
+        background: none;
+        border-radius: 6px;
+        color: #6b7280;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .view-toggle button.active {
+        background: white;
+        color: #1f2937;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .branch-card-checkbox {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+    }
+
+    /* Responsive grid */
+    @media (max-width: 768px) {
+        .grid-view {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+    }
+
+    /* Loading spinner styles */
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 1rem;
+        color: #666;
+    }
+    .loading-spinner.active {
+        display: block;
+    }
+    .loading-spinner::after {
+        content: '';
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ccc;
+        border-top-color: #333;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
 </style>
 
 <div class="fade-in flex flex-col gap-4 pb-4">
@@ -65,11 +198,21 @@
         </div>
     </div>
 
-    <!-- Card containing table -->
+    <!-- Card containing content -->
     <div class="card border rounded-lg overflow-hidden">
-        <!-- Table header -->
-        <div class="p-6 border-b">
+        <!-- Header with view toggle -->
+        <div class="p-6 border-b flex justify-between items-center">
             <h3 class="text-lg font-medium">Danh sách chi nhánh</h3>
+            <div class="view-toggle">
+                <button id="tableViewBtn" class="active">
+                    <i class="fas fa-table"></i>
+                    Bảng
+                </button>
+                <button id="gridViewBtn">
+                    <i class="fas fa-th"></i>
+                    Lưới
+                </button>
+            </div>
         </div>
 
         <!-- Toolbar -->
@@ -122,8 +265,8 @@
             </div>
         </div>
 
-        <!-- Table container -->
-        <div class="overflow-x-auto">
+        <!-- Table View -->
+        <div id="tableView" class="overflow-x-auto">
             <table class="w-full">
                 <thead>
                     <tr class="border-b bg-muted/50">
@@ -141,7 +284,7 @@
                         <th class="py-3 px-4 text-left font-medium">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     @forelse($branches as $branch)
                     <tr class="border-b">
                         <td class="py-3 px-4">
@@ -180,7 +323,10 @@
                         </td>
                         <td class="py-3 px-4">
                             <a href="{{ route('admin.branches.show', $branch->id) }}" class="btn btn-ghost btn-sm">
-                                <i class="fas fa-eye"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
                             </a>
                         </td>
                     </tr>
@@ -195,44 +341,83 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Grid View -->
+        <div id="gridView" class="grid-view" style="display: none;">
+            <div id="gridContainer">
+                @forelse($branches as $branch)
+                <div class="branch-card">
+                    <input type="checkbox" class="branch-checkbox branch-card-checkbox" value="{{ $branch->id }}">
+                    <div class="branch-card-header">
+                        <div>
+                            <div class="branch-card-title">{{ $branch->name }}</div>
+                            <div class="branch-card-id">ID: {{ $branch->id }}</div>
+                        </div>
+                    </div>
+                    <div class="branch-card-content">
+                        <div class="branch-info-item">
+                            <i class="fas fa-map-marker-alt branch-info-icon"></i>
+                            <span>{{ $branch->address }}</span>
+                        </div>
+                        <div class="branch-info-item">
+                            <i class="fas fa-phone branch-info-icon"></i>
+                            <span>{{ $branch->phone }}</span>
+                        </div>
+                        @if($branch->email)
+                        <div class="branch-info-item">
+                            <i class="fas fa-envelope branch-info-icon"></i>
+                            <span>{{ $branch->email }}</span>
+                        </div>
+                        @endif
+                        <div class="branch-info-item">
+                            <i class="fas fa-clock branch-info-icon"></i>
+                            <span>{{ date('H:i', strtotime($branch->opening_hour)) }} - {{ date('H:i', strtotime($branch->closing_hour)) }}</span>
+                        </div>
+                    </div>
+                    <div class="branch-card-actions">
+                        <button type="button"
+                            class="px-3 py-1.5 rounded-full text-xs {{ $branch->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 transition-opacity duration-200"
+                            data-branch-id="{{ $branch->id }}"
+                            data-branch-name="{{ $branch->name }}"
+                            data-branch-active="{{ $branch->active ? 'true' : 'false' }}">
+                            @if($branch->active)
+                            <i class="fas fa-check mr-1"></i> Hoạt động
+                            @else
+                            <i class="fas fa-times mr-1"></i> Vô hiệu hóa
+                            @endif
+                        </button>
+                        <a href="{{ route('admin.branches.show', $branch->id) }}" class="btn btn-ghost btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                @empty
+                <div class="col-span-full py-12 text-center text-muted-foreground">
+                    <i class="fas fa-store-slash mr-2 text-2xl"></i>
+                    <p class="mt-2">Không có chi nhánh nào</p>
+                </div>
+                @endforelse
+            </div>
+        </div>
+
+        <!-- Loading spinner -->
+        <div class="loading-spinner"></div>
     </div>
 </div>
 @endsection
 
 @section('scripts')
-<style>
-    /* Thêm style cho loading spinner khi tải thêm dữ liệu */
-    .loading-spinner {
-        display: none;
-        text-align: center;
-        padding: 1rem;
-        color: #666;
-    }
-    .loading-spinner.active {
-        display: block;
-    }
-    .loading-spinner::after {
-        content: '';
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 2px solid #ccc;
-        border-top-color: #333;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-</style>
-
 <script>
-    // Khai báo biến trạng thái
+    // State variables
     let searchTimeout = null;
     let currentPage = {{ request('page', 1) }};
     let currentSearch = '{{ request('search') }}';
     let isLoading = false;
     let hasMore = true;
+    let currentView = 'table'; // 'table' or 'grid'
 
     // Ensure CSRF token is available
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -241,13 +426,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Xử lý chọn tất cả
+        // Initialize view toggle
+        initializeViewToggle();
+
+        // Handle select all
         const selectAllCheckbox = document.getElementById('selectAll');
         const selectAllButton = document.getElementById('selectAllButton');
 
-        // Hàm gắn sự kiện cho checkbox và nút "Chọn tất cả"
+        // Attach select all events
         function attachSelectAllEvents() {
-            // Sự kiện cho checkbox "Chọn tất cả"
             selectAllCheckbox.addEventListener('change', function() {
                 const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
                 branchCheckboxes.forEach(checkbox => {
@@ -257,28 +444,26 @@
                 updateSelectAllButtonText();
             });
 
-            // Sự kiện cho nút "Chọn tất cả"
             selectAllButton.addEventListener('click', function() {
                 selectAllCheckbox.checked = !selectAllCheckbox.checked;
                 selectAllCheckbox.dispatchEvent(new Event('change'));
             });
         }
 
-        // Hàm cập nhật văn bản của nút "Chọn tất cả"
+        // Update select all button text
         function updateSelectAllButtonText() {
             const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
             const allChecked = Array.from(branchCheckboxes).every(checkbox => checkbox.checked);
             selectAllButton.querySelector('span').textContent = allChecked ? 'Bỏ chọn tất cả' : 'Chọn tất cả';
         }
 
-        // Gắn sự kiện ban đầu
+        // Attach initial events
         attachSelectAllEvents();
 
-        // Theo dõi sự kiện thay đổi của các checkbox chi nhánh
+        // Monitor checkbox changes
         document.addEventListener('change', function(e) {
             if (e.target && e.target.classList.contains('branch-checkbox')) {
                 updateBulkActionsVisibility();
-                // Cập nhật trạng thái của "Chọn tất cả" nếu tất cả checkbox được chọn
                 const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
                 const allChecked = Array.from(branchCheckboxes).every(checkbox => checkbox.checked);
                 const someChecked = Array.from(branchCheckboxes).some(checkbox => checkbox.checked);
@@ -288,10 +473,10 @@
             }
         });
 
-        // Xử lý tìm kiếm
+        // Handle search
         const searchInput = document.getElementById('searchInput');
 
-        // Hàm debounce
+        // Debounce function
         function debounce(func, delay) {
             return function(...args) {
                 clearTimeout(searchTimeout);
@@ -299,21 +484,19 @@
             };
         }
 
-        // Hàm tìm kiếm
+        // Search handler
         const handleSearch = debounce(async (searchTerm) => {
             searchInput.classList.add('search-loading');
-            currentPage = 1; // Reset về trang 1 khi tìm kiếm
-            hasMore = true; // Reset hasMore
-            await loadBranches(1, searchTerm.trim(), false); // Không nối dữ liệu khi tìm kiếm
+            currentPage = 1;
+            hasMore = true;
+            await loadBranches(1, searchTerm.trim(), false);
             searchInput.classList.remove('search-loading');
         }, 500);
 
-        // Sự kiện input
         searchInput.addEventListener('input', function(e) {
             handleSearch(e.target.value);
         });
 
-        // Sự kiện nhấn Enter
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 clearTimeout(searchTimeout);
@@ -321,7 +504,7 @@
             }
         });
 
-        // Gắn sự kiện cho các nút trạng thái
+        // Attach status button events
         attachStatusButtonEvents();
 
         // Toggle dropdown actions
@@ -330,34 +513,56 @@
             dropdown.classList.toggle('hidden');
         };
 
-        // Thiết lập IntersectionObserver để tải dữ liệu khi cuộn đến cuối
-        const tableContainer = document.querySelector('.overflow-x-auto');
-        const observerTarget = document.createElement('div');
-        observerTarget.className = 'loading-spinner';
-        tableContainer.appendChild(observerTarget);
-
+        // Setup IntersectionObserver for infinite scrolling
+        const viewContainer = document.querySelector('.card');
+        const observerTarget = document.querySelector('.loading-spinner');
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && hasMore && !isLoading) {
                 loadBranches(currentPage + 1, currentSearch, true);
             }
         }, {
-            root: tableContainer,
+            root: viewContainer,
             threshold: 0.1
         });
 
         observer.observe(observerTarget);
     });
 
-    // Hàm gắn sự kiện cho các nút trạng thái
+    // Initialize view toggle functionality
+    function initializeViewToggle() {
+        const tableViewBtn = document.getElementById('tableViewBtn');
+        const gridViewBtn = document.getElementById('gridViewBtn');
+        const tableView = document.getElementById('tableView');
+        const gridView = document.getElementById('gridView');
+
+        tableViewBtn.addEventListener('click', function() {
+            currentView = 'table';
+            tableViewBtn.classList.add('active');
+            gridViewBtn.classList.remove('active');
+            tableView.style.display = 'block';
+            gridView.style.display = 'none';
+            loadBranches(currentPage, currentSearch, false);
+        });
+
+        gridViewBtn.addEventListener('click', function() {
+            currentView = 'grid';
+            gridViewBtn.classList.add('active');
+            tableViewBtn.classList.remove('active');
+            tableView.style.display = 'none';
+            gridView.style.display = 'block';
+            loadBranches(currentPage, currentSearch, false);
+        });
+    }
+
+    // Attach status button events
     function attachStatusButtonEvents() {
         document.querySelectorAll('button[data-branch-id]').forEach(button => {
-            // Xóa sự kiện cũ để tránh trùng lặp
             button.removeEventListener('click', handleStatusButtonClick);
             button.addEventListener('click', handleStatusButtonClick);
         });
     }
 
-    // Hàm xử lý sự kiện click cho nút trạng thái
+    // Handle status button click
     function handleStatusButtonClick() {
         const branchId = this.getAttribute('data-branch-id');
         const branchName = this.getAttribute('data-branch-name');
@@ -365,7 +570,7 @@
         window.toggleBranchStatus(this, branchId, branchName, currentStatus);
     }
 
-    // AJAX load dữ liệu
+    // AJAX load branches
     async function loadBranches(page = 1, search = currentSearch, append = false) {
         if (isLoading || !hasMore) return;
 
@@ -387,23 +592,18 @@
             const data = await response.json();
 
             if (data.success) {
-                updateTable(data.branches.data, append);
+                updateContent(data.branches.data, append);
                 currentPage = page;
                 hasMore = page < data.branches.last_page;
                 updateURL(page, search);
 
-                // Gắn lại sự kiện cho các nút trạng thái sau khi cập nhật bảng
                 attachStatusButtonEvents();
-
-                // Gắn lại sự kiện cho các checkbox chi nhánh
                 document.querySelectorAll('.branch-checkbox').forEach(checkbox => {
                     checkbox.removeEventListener('change', updateBulkActionsVisibility);
                     checkbox.addEventListener('change', updateBulkActionsVisibility);
                 });
 
-                // Cập nhật trạng thái của "Chọn tất cả"
                 const selectAllCheckbox = document.getElementById('selectAll');
-                const selectAllButton = document.getElementById('selectAllButton');
                 const branchCheckboxes = document.querySelectorAll('.branch-checkbox');
                 const allChecked = Array.from(branchCheckboxes).every(checkbox => checkbox.checked);
                 const someChecked = Array.from(branchCheckboxes).some(checkbox => checkbox.checked);
@@ -415,16 +615,22 @@
             }
         } catch (error) {
             console.error('Error:', error);
-          
+            showToast('error', 'Có lỗi xảy ra khi tải dữ liệu');
         } finally {
             isLoading = false;
             document.querySelector('.loading-spinner').classList.remove('active');
         }
     }
 
-    // Cập nhật bảng
+    // Update both table and grid content
+    function updateContent(branches, append = false) {
+        updateTable(branches, append);
+        updateGrid(branches, append);
+    }
+
+    // Update table
     function updateTable(branches, append = false) {
-        const tbody = document.querySelector('tbody');
+        const tbody = document.getElementById('tableBody');
         let html = branches.length > 0 ?
             branches.map(branch => `
                 <tr class="border-b">
@@ -454,14 +660,17 @@
                             data-branch-id="${branch.id}"
                             data-branch-name="${branch.name}"
                             data-branch-active="${branch.active}">
-                            ${branch.active ? 
-                                '<i class="fas fa-check mr-1"></i> Hoạt động' : 
+                            ${branch.active ?
+                                '<i class="fas fa-check mr-1"></i> Hoạt động' :
                                 '<i class="fas fa-times mr-1"></i> Vô hiệu hóa'}
                         </button>
                     </td>
                     <td class="py-3 px-4">
-                        <a href="/admin/branches/${branch.id}" class="btn btn-ghost btn-sm">
-                            <i class="fas fa-eye"></i>
+                        <a href="/admin/branches/show/${branch.id}" class="btn btn-ghost btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
                         </a>
                     </td>
                 </tr>
@@ -480,14 +689,77 @@
         }
     }
 
-    // Hàm định dạng thời gian
+    // Update grid
+    function updateGrid(branches, append = false) {
+        const gridContainer = document.getElementById('gridContainer');
+        let html = branches.length > 0 ?
+            branches.map(branch => `
+                <div class="branch-card">
+                    <input type="checkbox" class="branch-checkbox branch-card-checkbox" value="${branch.id}">
+                    <div class="branch-card-header">
+                        <div>
+                            <div class="branch-card-title">${branch.name}</div>
+                            <div class="branch-card-id">ID: ${branch.id}</div>
+                        </div>
+                    </div>
+                    <div class="branch-card-content">
+                        <div class="branch-info-item">
+                            <i class="fas fa-map-marker-alt branch-info-icon"></i>
+                            <span>${branch.address}</span>
+                        </div>
+                        <div class="branch-info-item">
+                            <i class="fas fa-phone branch-info-icon"></i>
+                            <span>${branch.phone}</span>
+                        </div>
+                        ${branch.email ? `
+                        <div class="branch-info-item">
+                            <i class="fas fa-envelope branch-info-icon"></i>
+                            <span>${branch.email}</span>
+                        </div>` : ''}
+                        <div class="branch-info-item">
+                            <i class="fas fa-clock branch-info-icon"></i>
+                            <span>${formatTime(branch.opening_hour)} - ${formatTime(branch.closing_hour)}</span>
+                        </div>
+                    </div>
+                    <div class="branch-card-actions">
+                        <button type="button"
+                            class="px-3 py-1.5 rounded-full text-xs ${branch.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} hover:opacity-80 transition-opacity duration-200"
+                            data-branch-id="${branch.id}"
+                            data-branch-name="${branch.name}"
+                            data-branch-active="${branch.active}">
+                            ${branch.active ?
+                                '<i class="fas fa-check mr-1"></i> Hoạt động' :
+                                '<i class="fas fa-times mr-1"></i> Vô hiệu hóa'}
+                        </button>
+                        <a href="/admin/branches/show/${branch.id}" class="btn btn-ghost btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            `).join('') :
+            `<div class="col-span-full py-12 text-center text-muted-foreground">
+                <i class="fas fa-store-slash mr-2 text-2xl"></i>
+                <p class="mt-2">Không có chi nhánh nào</p>
+            </div>`;
+
+        if (append) {
+            gridContainer.innerHTML += html;
+        } else {
+            gridContainer.innerHTML = html;
+        }
+    }
+
+    // Format time
     function formatTime(timeString) {
         if (!timeString) return 'N/A';
         const date = new Date(`2000-01-01T${timeString}`);
         return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     }
 
-    // Toggle trạng thái chi nhánh
+    // Toggle branch status
     window.toggleBranchStatus = async function(button, branchId, branchName, currentStatus) {
         const messages = {
             confirmTitle: 'Xác nhận thay đổi trạng thái',
@@ -514,7 +786,6 @@
             cancelText: 'Hủy bỏ',
             onConfirm: async () => {
                 try {
-                    // Vô hiệu hóa nút trong khi xử lý
                     button.disabled = true;
                     button.classList.add('opacity-50');
 
@@ -550,13 +821,11 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        // Cập nhật nút trạng thái
                         button.classList.remove('bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
                         button.classList.add(data.data.active ? 'bg-green-100' : 'bg-red-100', data.data.active ? 'text-green-700' : 'text-red-700');
                         button.innerHTML = `<i class="fas ${data.data.active ? 'fa-check' : 'fa-times'} mr-1"></i> ${data.data.status_text}`;
                         button.setAttribute('data-branch-active', data.data.active);
 
-                        // Gắn lại sự kiện click cho nút
                         button.removeEventListener('click', handleStatusButtonClick);
                         button.addEventListener('click', handleStatusButtonClick);
 
@@ -574,7 +843,6 @@
                         message: error.message || messages.errorMessage
                     });
                 } finally {
-                    // Bật lại nút
                     button.disabled = false;
                     button.classList.remove('opacity-50');
                 }
@@ -582,7 +850,7 @@
         });
     };
 
-    // Hàm xử lý hành động hàng loạt
+    // Handle bulk status update
     function updateSelectedStatus(status) {
         const selectedIds = [];
         document.querySelectorAll('.branch-checkbox:checked').forEach(checkbox => {
@@ -659,7 +927,6 @@
                             message: data.message || messages.successMessage
                         });
 
-                        // Tải lại toàn bộ bảng để đảm bảo dữ liệu đồng bộ
                         currentPage = 1;
                         hasMore = true;
                         await loadBranches(1, currentSearch, false);
@@ -680,28 +947,23 @@
         });
     }
 
-    // Hàm cập nhật hiển thị các nút hành động hàng loạt
+    // Update bulk actions visibility
     function updateBulkActionsVisibility() {
         const checkedCount = document.querySelectorAll('.branch-checkbox:checked').length;
         const actionsMenu = document.getElementById('actionsMenu');
-        
-        if (checkedCount > 0) {
-            actionsMenu.classList.remove('hidden');
-        } else {
-            actionsMenu.classList.add('hidden');
-        }
+        actionsMenu.classList.toggle('hidden', checkedCount === 0);
     }
 
-    // Helper functions
+    // Show toast notification
     function showToast(type, message) {
         const toast = document.createElement('div');
         toast.className = `toast toast-${type} fixed bottom-4 right-4 p-4 rounded-md shadow-md bg-${type === 'success' ? 'green-500' : 'red-500'} text-white`;
         toast.textContent = message;
         document.body.appendChild(toast);
-
         setTimeout(() => toast.remove(), 3000);
     }
 
+    // Update URL
     function updateURL(page, search) {
         const url = new URL(window.location);
         url.searchParams.set('page', page);
