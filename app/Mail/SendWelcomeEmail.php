@@ -12,6 +12,15 @@ class SendWelcomeEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
+    public $year;
+    public $contactLink;
+    public $termsLink;
+    public $privacyLink;
+    public $facebookLink;
+    public $instagramLink;
+    public $twitterLink;
+    public $googlePlayLink;
+    public $appStoreLink;
 
     /**
      * Create a new message instance.
@@ -22,6 +31,15 @@ class SendWelcomeEmail extends Mailable
     public function __construct(User $user)
     {
         $this->user = $user;
+        $this->year = date('Y');
+        $this->contactLink = url('/contact');
+        $this->termsLink = url('/terms');
+        $this->privacyLink = url('/privacy');
+        $this->facebookLink = '#';
+        $this->instagramLink = '#';
+        $this->twitterLink = '#';
+        $this->googlePlayLink = '#';
+        $this->appStoreLink = '#';
     }
 
     /**

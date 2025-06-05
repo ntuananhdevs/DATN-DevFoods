@@ -12,6 +12,15 @@ class SendOTPMail extends Mailable
 
     public $otp;
     public $email;
+    public $year;
+    public $contactLink;
+    public $termsLink;
+    public $privacyLink;
+    public $facebookLink;
+    public $instagramLink;
+    public $twitterLink;
+    public $googlePlayLink;
+    public $appStoreLink;
 
     /**
      * Create a new message instance.
@@ -24,6 +33,15 @@ class SendOTPMail extends Mailable
     {
         $this->email = $email;
         $this->otp = $otp;
+        $this->year = date('Y');
+        $this->contactLink = url('/contact');
+        $this->termsLink = url('/terms');
+        $this->privacyLink = url('/privacy');
+        $this->facebookLink = '#';
+        $this->instagramLink = '#';
+        $this->twitterLink = '#';
+        $this->googlePlayLink = '#';
+        $this->appStoreLink = '#';
     }
 
     /**

@@ -11,7 +11,7 @@
           <!-- Header -->
           <tr>
             <td align="center" bgcolor="#f97316" style="padding: 30px 20px;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">FastFood</h1>
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Poly Crispy Wings</h1>
               <div style="width: 50px; height: 3px; background-color: #ffffff; margin: 12px auto 8px;"></div>
               <p style="color: #fff9f5; margin: 0; font-size: 16px; font-weight: 500;">Đặt Lại Mật Khẩu</p>
             </td>
@@ -120,7 +120,7 @@
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto 0;">
           <tr>
             <td align="center">
-              <p style="color: #999; font-size: 13px; margin-bottom: 10px;">Tải ứng dụng FastFood để đặt món dễ dàng hơn</p>
+              <p style="color: #999; font-size: 13px; margin-bottom: 10px;">Tải ứng dụng Poly Crispy Wings để đặt món dễ dàng hơn</p>
               <table border="0" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding: 0 5px;">
