@@ -422,18 +422,22 @@
 <script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
 <script>
     var swiper = new Swiper(".category-slider", {
-        slidesPerView: 2,
-        spaceBetween: 10,
-        loop: true, // Cho phép quay vòng vô hạn
-        autoplay: {
-            delay: 3000, // Tự động chuyển slide sau 3 giây
-            disableOnInteraction: false // Vẫn tiếp tục autoplay khi người dùng tương tác
-        },
-        breakpoints: {
-            640: { slidesPerView: 3 },
-            768: { slidesPerView: 4 },
-            1024: { slidesPerView: 6 }
-        }
-    });
+    slidesPerView: "auto",
+    spaceBetween: 10,
+    loop: true,
+    autoplay: {
+        delay: 0, // Loại bỏ thời gian chờ
+        disableOnInteraction: false
+    },
+    speed: 5000, // Tốc độ trượt chậm để tạo cảm giác mượt mà
+    grabCursor: true,
+    freeMode: true, // Cho phép trượt liên tục, không có điểm dừng
+    freeModeMomentum: false, // Giữ tốc độ đều đặn, không có gia tốc
+    breakpoints: {
+        640: { slidesPerView: 3 },
+        768: { slidesPerView: 4 },
+        1024: { slidesPerView: 6 }
+    }
+});
 </script>
 @endsection
