@@ -193,20 +193,18 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mt-6">
+                <div class="mt-6">
                     <button
                         type="button"
-                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        id="googleRegisterBtn"
+                        class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <i class="fab fa-google text-red-500 mr-2"></i>
-                        Google
-                    </button>
-                    <button
-                        type="button"
-                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                    >
-                        <i class="fab fa-facebook text-blue-600 mr-2"></i>
-                        Facebook
+                        <span id="googleRegBtnText">Đăng ký với Google</span>
+                        <span id="googleRegBtnLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Đang xử lý...
+                        </span>
                     </button>
                 </div>
             </div>
@@ -226,6 +224,12 @@
 @endsection
 
 @section('scripts')
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+<!-- Firebase Config -->
+<script src="{{ asset('js/firebase-config.js') }}"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const registerForm = document.getElementById('registerForm');
@@ -239,6 +243,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const emailError = document.getElementById('emailError');
     const passwordError = document.getElementById('passwordError');
     const confirmPasswordError = document.getElementById('confirmPasswordError');
+    const googleRegisterBtn = document.getElementById('googleRegisterBtn');
+    const googleRegBtnText = document.getElementById('googleRegBtnText');
+    const googleRegBtnLoading = document.getElementById('googleRegBtnLoading');
 
     let turnstileToken = null;
 
@@ -369,6 +376,28 @@ document.addEventListener('DOMContentLoaded', function() {
             emailError.classList.remove('hidden');
         });
     });
+
+    // Google Register Button Handler
+    if (googleRegisterBtn) {
+        googleRegisterBtn.addEventListener('click', async function() {
+            // Show loading state
+            googleRegisterBtn.disabled = true;
+            googleRegBtnText.classList.add('hidden');
+            googleRegBtnLoading.classList.remove('hidden');
+
+            try {
+                await handleGoogleLogin();
+            } catch (error) {
+                console.error('Google register error:', error);
+                alert('Đã xảy ra lỗi trong quá trình đăng ký Google');
+            } finally {
+                // Reset button state
+                googleRegisterBtn.disabled = false;
+                googleRegBtnText.classList.remove('hidden');
+                googleRegBtnLoading.classList.add('hidden');
+            }
+        });
+    }
 
     // Handle Turnstile error or expiration
     window.onTurnstileError = function() {
