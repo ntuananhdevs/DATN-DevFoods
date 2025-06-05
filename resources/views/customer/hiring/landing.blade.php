@@ -109,6 +109,36 @@
         background-color: #38a169;
         border-color: #38a169;
     }
+
+    /* === Primary Color Overrides === */
+    :root {
+        --primary-color: #f97316;
+        --primary-dark: #c2410c;
+        --primary-light: #ffedd5;
+    }
+    .hero-title span { color: var(--primary-color); }
+    .benefit-icon { color: var(--primary-color); }
+    .timeline-number { background-color: var(--primary-color); }
+    .btn-primary {
+        background-color: var(--primary-color);
+        border: 1px solid var(--primary-color);
+    }
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    .btn-outline {
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    .btn-outline:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    .cta-section { background-color: var(--primary-color); }
+    .text-blue-600 { color: var(--primary-color) !important; }
+    .bg-blue-600 { background-color: var(--primary-color) !important; }
+    .border-blue-600 { border-color: var(--primary-color) !important; }
 </style>
 
 @if (session('error'))
