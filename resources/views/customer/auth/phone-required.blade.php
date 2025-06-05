@@ -35,14 +35,25 @@
                             class="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm" 
                             placeholder="Nhập số điện thoại của bạn"
                             required
-                            pattern="[0-9]{10,11}"
-                            maxlength="11"
+                            pattern="^0\d{9}$"
+                            maxlength="10"
                         >
                     </div>
                     <p class="mt-1 text-xs text-gray-500">
-                        Ví dụ: 0901234567 hoặc 84901234567
+                        Số điện thoại phải có 10 chữ số, bắt đầu bằng số 0
                     </p>
                 </div>
+
+                @if(session('warning'))
+                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
+                    <div class="flex">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 flex-shrink-0 mt-0.5"></i>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-800">{{ session('warning') }}</p>
+                        </div>
+                    </div>
+                </div>
+                @endif
 
                 <div id="error-message" class="hidden bg-red-50 border border-red-200 rounded-md p-3">
                     <div class="flex">
@@ -92,8 +103,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Format phone number while typing
     phoneInput.addEventListener('input', function(e) {
         let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-        if (value.length > 11) {
-            value = value.substring(0, 11);
+        if (value.length > 10) {
+            value = value.substring(0, 10);
         }
         e.target.value = value;
         
@@ -136,13 +147,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        if (phone.length < 10 || phone.length > 11) {
-            showError('Số điện thoại phải có 10-11 chữ số');
+        if (phone.length !== 10) {
+            showError('Số điện thoại phải có đúng 10 chữ số');
             return;
         }
         
-        if (!phone.match(/^[0-9]+$/)) {
-            showError('Số điện thoại chỉ được chứa các chữ số');
+        if (!phone.match(/^0\d{9}$/)) {
+            showError('Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số');
             return;
         }
 

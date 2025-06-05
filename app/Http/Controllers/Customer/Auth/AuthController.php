@@ -477,27 +477,7 @@ class AuthController extends Controller
         $googleUserData = $request->google_user_data;
         $emailFromGoogle = strtolower($googleUserData['email']);
 
-        // 2. Xác thực Firebase ID Token (tạm thời bỏ qua)
-        // try {
-        //     $verifiedToken = $this->firebaseAuth->verifyIdToken($request->firebase_token);
-        // } catch (\Throwable $ex) {
-        //     Log::warning('Firebase token invalid', [
-        //         'error'       => $ex->getMessage(),
-        //         'requestData' => $request->all()
-        //     ]);
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Token không hợp lệ hoặc đã hết hạn.'
-        //     ], 401);
-        // }
-
-        // // So sánh email trong token với email payload
-        // if ($verifiedToken->claims()->get('email') !== $emailFromGoogle) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'Email trong token không khớp với dữ liệu Google.'
-        //     ], 401);
-        // }
+       
 
         try {
             // 3. Bắt đầu transaction để tránh race condition khi tạo user
@@ -577,7 +557,7 @@ class AuthController extends Controller
                     ]);
                     return response()->json([
                         'success' => false,
-                        'message' => 'Có sự không khớp giữa tài khoản Google và hệ thống.'
+                        'message' => 'Tài khoản đã tồn tại, vui lòng đăng nhập bằng email/mật khẩu.'
                     ], 403);
                 }
 
@@ -729,11 +709,16 @@ class AuthController extends Controller
     public function updatePhone(Request $request)
     {
         $request->validate([
-            'phone' => 'required|string|max:15|unique:users,phone,' . Auth::id(),
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^0\d{9}$/', // <-- This is the magic
+                'unique:users,phone,' . Auth::id(),
+            ],
         ], [
             'phone.required' => 'Vui lòng nhập số điện thoại.',
             'phone.unique' => 'Số điện thoại đã được sử dụng bởi tài khoản khác.',
-            'phone.max' => 'Số điện thoại không được vượt quá 15 ký tự.',
+            'phone.regex' => 'Số điện thoại phải là 10 số và bắt đầu bằng số 0.',
         ]);
 
         try {
@@ -760,6 +745,7 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Kiểm tra trạng thái đăng nhập Firebase
