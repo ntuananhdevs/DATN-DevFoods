@@ -13,18 +13,18 @@
             <td align="center" bgcolor="#f97316" style="padding: 30px 20px;">
               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Poly Crispy Wings</h1>
               <div style="width: 50px; height: 3px; background-color: #ffffff; margin: 12px auto 8px;"></div>
-              <p style="color: #fff9f5; margin: 0; font-size: 16px; font-weight: 500;">Chào mừng bạn!</p>
+              <p style="color: #fff9f5; margin: 0; font-size: 16px; font-weight: 500;">Xác thực tài khoản</p>
             </td>
           </tr>
           
-          <!-- Welcome icon -->
+          <!-- OTP icon -->
           <tr>
             <td align="center" style="padding: 0;">
               <div style="margin-top: -25px; display: inline-block;">
                 <table border="0" cellpadding="0" cellspacing="0">
                   <tr>
                     <td align="center" bgcolor="#ffffff" style="border-radius: 50%; padding: 15px; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.2);">
-                      <img src="https://cdn-icons-png.flaticon.com/512/1642/1642068.png" alt="Welcome" width="50" height="50" style="display: block;">
+                      <img src="https://cdn-icons-png.flaticon.com/512/2343/2343701.png" alt="OTP Verification" width="50" height="50" style="display: block;">
                     </td>
                   </tr>
                 </table>
@@ -35,41 +35,23 @@
           <!-- Content -->
           <tr>
             <td style="padding: 30px 30px 20px;">
-              <p style="font-size: 16px; margin-top: 0; margin-bottom: 20px;">Xin chào <strong>{{ $notifiable->full_name }}</strong>,</p>
+              <h2 style="font-size: 20px; font-weight: 600; color: #1f2937; margin: 0 0 20px 0; text-align: center;">Mã OTP của bạn</h2>
               
               <p style="font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-                Chúng tôi rất vui mừng chào đón bạn đến với cộng đồng Poly Crispy Wings. Tài khoản của bạn đã được tạo thành công và bạn có thể bắt đầu sử dụng dịch vụ của chúng tôi ngay từ bây giờ.
+                Vui lòng sử dụng mã OTP dưới đây để xác thực tài khoản của bạn. Mã này có hiệu lực trong <strong>10 phút</strong>.
               </p>
               
-              <!-- Features box -->
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fff9f5; border-left: 4px solid #f97316; padding: 15px; margin: 25px 0; border-radius: 4px;">
+              <!-- OTP Code Box -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 30px 0;">
                 <tr>
-                  <td style="padding: 15px;">
-                    <p style="margin: 0 0 15px 0; font-size: 16px; color: #333;">Với tài khoản của mình, bạn có thể:</p>
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                  <td align="center">
+                    <table border="0" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; border: 2px dashed #f97316; border-radius: 12px; padding: 20px;">
                       <tr>
-                        <td width="20" valign="top" style="padding: 5px 0;">
-                          <img src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png" width="16" height="16" alt="Check" style="display: block;">
+                        <td align="center">
+                          <p style="margin: 0 0 10px 0; font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px;">Mã xác thực</p>
+                          <span style="letter-spacing: 8px; font-size: 32px; font-family: 'Courier New', monospace; font-weight: bold; color: #f97316; display: block; margin: 10px 0;">{{ $otp }}</span>
+                          <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">Nhập mã này để xác thực</p>
                         </td>
-                        <td style="padding: 5px 0 5px 10px; font-size: 14px; color: #555;">Đặt món ăn yêu thích của bạn</td>
-                      </tr>
-                      <tr>
-                        <td width="20" valign="top" style="padding: 5px 0;">
-                          <img src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png" width="16" height="16" alt="Check" style="display: block;">
-                        </td>
-                        <td style="padding: 5px 0 5px 10px; font-size: 14px; color: #555;">Theo dõi lịch sử đơn hàng</td>
-                      </tr>
-                      <tr>
-                        <td width="20" valign="top" style="padding: 5px 0;">
-                          <img src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png" width="16" height="16" alt="Check" style="display: block;">
-                        </td>
-                        <td style="padding: 5px 0 5px 10px; font-size: 14px; color: #555;">Quản lý thông tin cá nhân</td>
-                      </tr>
-                      <tr>
-                        <td width="20" valign="top" style="padding: 5px 0;">
-                          <img src="https://cdn-icons-png.flaticon.com/512/1828/1828640.png" width="16" height="16" alt="Check" style="display: block;">
-                        </td>
-                        <td style="padding: 5px 0 5px 10px; font-size: 14px; color: #555;">Nhận khuyến mãi đặc biệt</td>
                       </tr>
                     </table>
                   </td>
@@ -83,7 +65,7 @@
                     <table border="0" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center" bgcolor="#f97316" style="border-radius: 8px; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.25);">
-                          <a href="{{ route('customer.login') }}" target="_blank" style="display: inline-block; padding: 16px 36px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">Đăng nhập ngay</a>
+                          <a href="{{ route('customer.verify.otp.show') }}" target="_blank" style="display: inline-block; padding: 16px 36px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px;">Xác thực ngay</a>
                         </td>
                       </tr>
                     </table>
@@ -91,14 +73,27 @@
                 </tr>
               </table>
               
-              <!-- Special offer -->
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0f9ff; border: 1px dashed #93c5fd; padding: 15px; margin: 25px 0; border-radius: 4px;">
+              <!-- Security notice -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fff9f5; border-left: 4px solid #f97316; padding: 15px; margin: 25px 0; border-radius: 4px;">
                 <tr>
-                  <td style="padding: 15px;">
-                    <p style="margin: 0; font-size: 14px; color: #0369a1; text-align: center;">
-                      <strong>🎁 Ưu đãi đặc biệt cho thành viên mới!</strong><br>
-                      Sử dụng mã <span style="background-color: #dbeafe; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold;">WELCOME10</span> để được giảm 10% cho đơn hàng đầu tiên của bạn.
+                  <td>
+                    <p style="margin: 0; font-size: 14px; color: #666;">
+                      <strong>Lưu ý bảo mật:</strong> Mã OTP này chỉ có hiệu lực trong 10 phút. Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này hoặc <a href="mailto:support@fastfood.com" style="color: #f97316; text-decoration: none;">liên hệ với chúng tôi</a> ngay lập tức.
                     </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Tips -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f0f9ff; border: 1px solid #bfdbfe; padding: 15px; margin: 25px 0; border-radius: 4px;">
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #1e40af; font-weight: 600;">💡 Mẹo bảo mật:</p>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #1e40af;">
+                      <li>Không chia sẻ mã OTP với bất kỳ ai</li>
+                      <li>Chỉ nhập mã trên trang web chính thức</li>
+                      <li>Kiểm tra URL trước khi nhập mã</li>
+                    </ul>
                   </td>
                 </tr>
               </table>

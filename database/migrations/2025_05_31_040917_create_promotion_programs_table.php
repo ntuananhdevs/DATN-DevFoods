@@ -22,8 +22,8 @@ return new class extends Migration
             $table->enum('applicable_scope', ['all_branches', 'specific_branches'])->default('all_branches');
             
             // Thời gian
-            $table->timestamp('start_date');
-            $table->timestamp('end_date');
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
             
             // Hiển thị
             $table->boolean('is_active')->default(true);

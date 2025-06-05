@@ -165,6 +165,36 @@
         border-top: 1px solid #e2e8f0;
         text-align: right;
     }
+
+    /* === Primary Color Overrides === */
+    :root {
+        --primary-color: #f97316;
+        --primary-color-dark: #c2410c;
+        --primary-color-light: #ffedd5;
+    }
+    .section-title { border-bottom: 2px solid var(--primary-color); }
+    .form-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+    }
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+    }
+    .file-input-label:hover {
+        border-color: var(--primary-color);
+        background-color: var(--primary-color-light);
+    }
+    .btn-primary {
+        background-color: var(--primary-color);
+    }
+    .btn-primary:hover {
+        background-color: var(--primary-color-dark);
+    }
+    .text-blue-600 { color: var(--primary-color) !important; }
+    .hover\\:text-blue-800:hover { color: var(--primary-color-dark) !important; }
+    .bg-blue-600 { background-color: var(--primary-color) !important; }
+    .border-blue-600 { border-color: var(--primary-color) !important; }
 </style>
 
 @if (session('error'))

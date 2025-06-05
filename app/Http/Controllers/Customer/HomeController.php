@@ -164,7 +164,7 @@ class HomeController extends Controller
         });
 
         
-        $categories = Category::withCount('products')->get();
+        $categories = Category::withCount('products')->where('status', 1)->get();
         $banners = Banner::where('is_active', 1)->get();
         
         // Pass all necessary data to the view
