@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\UserRankController;
 use App\Http\Controllers\Admin\BranchStockController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Admin\DriverApplicationController;
+use App\Http\Controllers\Admin\DiscountCodeController;
 
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
@@ -87,6 +88,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
         });
     });
+
     // Branch Management
     Route::prefix('branches')->name('branches.')->group(function () {
         Route::get('/', [BranchController::class, 'index'])->name('index');
@@ -198,6 +200,32 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/{program}/discount-codes/{discountCode}', [PromotionProgramController::class, 'unlinkDiscountCode'])->name('unlink-discount');
         Route::post('/{program}/branches', [PromotionProgramController::class, 'linkBranch'])->name('link-branch');
         Route::delete('/{program}/branches/{branch}', [PromotionProgramController::class, 'unlinkBranch'])->name('unlink-branch');
+    });
+
+    // Discount Codes Management
+    Route::prefix('discount_codes')->name('discount_codes.')->group(function () {
+        Route::get('/', [DiscountCodeController::class, 'index'])->name('index');
+        Route::get('/create', [DiscountCodeController::class, 'create'])->name('create');
+        Route::post('/store', [DiscountCodeController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [DiscountCodeController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [DiscountCodeController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [DiscountCodeController::class, 'destroy'])->name('destroy');
+        Route::get('/show/{id}', [DiscountCodeController::class, 'show'])->name('show');
+        Route::post('/search', [DiscountCodeController::class, 'search'])->name('search');
+        Route::patch('/{id}/toggle-status', [DiscountCodeController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/bulk-status-update', [DiscountCodeController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::get('/export', [DiscountCodeController::class, 'export'])->name('export');
+        // Liên kết chi nhánh
+        Route::post('/{id}/branches', [DiscountCodeController::class, 'linkBranch'])->name('link-branch');
+        Route::delete('/{id}/branches/{branch}', [DiscountCodeController::class, 'unlinkBranch'])->name('unlink-branch');
+        // Liên kết sản phẩm/danh mục/combo
+        Route::post('/{id}/products', [DiscountCodeController::class, 'linkProduct'])->name('link-product');
+        Route::delete('/{id}/products/{product}', [DiscountCodeController::class, 'unlinkProduct'])->name('unlink-product');
+        // Gán mã cho người dùng
+        Route::post('/{id}/assign-users', [DiscountCodeController::class, 'assignUsers'])->name('assign-users');
+        Route::delete('/{id}/users/{user}', [DiscountCodeController::class, 'unassignUser'])->name('unassign-user');
+        // Lịch sử sử dụng
+        Route::get('/{id}/usage-history', [DiscountCodeController::class, 'usageHistory'])->name('usage-history');
     });
 
     // Product Stock Management Routes
