@@ -1,6 +1,6 @@
 @extends('layouts/admin/contentLayoutMaster')
 
-@section('title', 'Edit Promotion Program')
+@section('title', 'Chỉnh sửa chương trình khuyến mãi')
 
 @section('styles')
 <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.css" rel="stylesheet">
@@ -9,7 +9,7 @@
         max-width: 1200px;
         margin: 0 auto;
         animation: fadeIn 0.6s ease-out;
-        padding: 20px;
+        margin: 0;
     }
 
     @keyframes fadeIn {
@@ -226,7 +226,7 @@
         color: #0369a1;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: lateral;
     }
 
     .current-image {
@@ -251,14 +251,22 @@
         display: block;
     }
 
-    select[multiple] {
-        min-height: 120px;
+    .branch-checkboxes, .rank-checkboxes, .discount-checkboxes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
     }
 
     .form-actions {
         margin-top: 30px;
         padding-top: 25px;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid #e2e8f0;
         display: flex;
         gap: 15px;
         justify-content: flex-end;
@@ -320,6 +328,50 @@
         margin-bottom: 4px;
     }
 
+    .badge {
+        font-size: 12px;
+        padding: 4px 8px;
+        border-radius: 9999px;
+        font-weight: 500;
+    }
+
+    .badge-percentage {
+        background-color: #dcfce7;
+        color: #16a34a;
+    }
+
+    .badge-fixed {
+        background-color: #e0f2fe;
+        color: #0284c7;
+    }
+
+    .badge-special {
+        background-color: #f3e8ff;
+        color: #7c3aed;
+    }
+
+    .discount-code-item {
+        background: #f9fafb;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 10px;
+    }
+
+    .rank-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        margin-bottom: 4px;
+    }
+
+    .rank-item img {
+        width: 16px;
+        height: 16px;
+    }
+
     @media (max-width: 768px) {
         .form-grid {
             grid-template-columns: 1fr;
@@ -333,6 +385,10 @@
         .btn {
             justify-content: center;
         }
+        
+        .branch-checkboxes, .rank-checkboxes, .discount-checkboxes {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 @endsection
@@ -345,14 +401,14 @@
             <div class="icon">
                 <i data-feather="edit-3"></i>
             </div>
-            Edit {{ $program->name }}
+            Chỉnh sửa {{ $program->name }}
         </h1>
         <div class="breadcrumb">
-            <a href="{{ route('admin.promotions.index') }}">Promotion Programs</a>
+            <a href="{{ route('admin.promotions.index') }}">Chương trình khuyến mãi</a>
             <i data-feather="chevron-right"></i>
             <a href="{{ route('admin.promotions.show', $program) }}">{{ $program->name }}</a>
             <i data-feather="chevron-right"></i>
-            <span>Edit</span>
+            <span>Chỉnh sửa</span>
         </div>
     </div>
 
@@ -378,21 +434,21 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="info"></i>
-                        Basic Information
+                        Thông tin cơ bản
                     </h3>
                     
                     <div class="form-group">
-                        <label for="name">Program Name <span class="required">*</span></label>
+                        <label for="name">Tên chương trình <span class="required">*</span></label>
                         <input type="text" id="name" name="name" class="form-control" value="{{ old('name', $program->name) }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="description">Description</label>
-                        <textarea id="description" name="description" class="form-control" placeholder="Enter program description...">{{ old('description', $program->description) }}</textarea>
+                        <label for="description">Mô tả</label>
+                        <textarea id="description" name="description" class="form-control" placeholder="Nhập mô tả chương trình...">{{ old('description', $program->description) }}</textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="display_order">Display Order <span class="required">*</span></label>
+                        <label for="display_order">Thứ tự hiển thị <span class="required">*</span></label>
                         <input type="number" id="display_order" name="display_order" class="form-control" value="{{ old('display_order', $program->display_order) }}" min="0" required>
                     </div>
                 </div>
@@ -401,31 +457,31 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="calendar"></i>
-                        Schedule & Status
+                        Thời gian & Trạng thái
                     </h3>
                     
                     <div class="form-group">
-                        <label for="start_date">Start Date <span class="required">*</span></label>
-                        <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="{{ old('start_date', $program->start_date->format('Y-m-d\TH:i')) }}" required>
+                        <label for="start_date">Ngày bắt đầu <span class="required">*</span></label>
+                        <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="{{ old('start_date', $program->start_date->setTimezone('Asia/Ho_Chi_Minh')->format('Y-m-d\TH:i')) }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="end_date">End Date <span class="required">*</span></label>
-                        <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="{{ old('end_date', $program->end_date->format('Y-m-d\TH:i')) }}" required>
+                        <label for="end_date">Ngày kết thúc <span class="required">*</span></label>
+                        <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="{{ old('end_date', $program->end_date->setTimezone('Asia/Ho_Chi_Minh')->format('Y-m-d\TH:i')) }}" required>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', $program->is_active) ? 'checked' : '' }}>
-                            <label for="is_active">Active Program</label>
+                            <label for="is_active">Chương trình hoạt động</label>
                             <i data-feather="toggle-right"></i>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
-                            <input type="checkbox" id="is_featured" name="is_featured" value="1" {{ old('is_featured', $program->is_featured) ? 'checked' : '' }}>
-                            <label for="is_featured">Featured Program</label>
+                            <input type="checkbox" id="is_featured" name="is_featured" value="0" {{ old('is_featured', $program->is_featured) ? 'checked' : '' }}>
+                            <label for="is_featured">Chương trình nổi bật</label>
                             <i data-feather="star"></i>
                         </div>
                     </div>
@@ -435,45 +491,45 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="image"></i>
-                        Images
+                        Hình ảnh
                     </h3>
                     
                     <div class="form-group">
-                        <label for="banner_image">Banner Image</label>
+                        <label for="banner_image">Hình banner</label>
                         <div class="file-input-wrapper">
                             <input type="file" id="banner_image" name="banner_image" accept="image/*">
                             <label for="banner_image" class="file-input-label">
                                 <i data-feather="upload"></i>
-                                <span>Choose new banner image...</span>
+                                <span>Chọn hình banner mới...</span>
                             </label>
                         </div>
                         @if ($program->banner_image)
                             <div class="current-file">
                                 <i data-feather="file-text"></i>
-                                Current: {{ basename($program->banner_image) }}
+                                Hiện tại: {{ basename($program->banner_image) }}
                             </div>
                             <div class="current-image">
-                                <img src="{{ asset('storage/' . $program->banner_image) }}" alt="Current Banner">
+                                <img src="{{ asset('storage/' . $program->banner_image) }}" alt="Banner hiện tại">
                             </div>
                         @endif
                     </div>
 
                     <div class="form-group">
-                        <label for="thumbnail_image">Thumbnail Image</label>
+                        <label for="thumbnail_image">Hình thu nhỏ</label>
                         <div class="file-input-wrapper">
                             <input type="file" id="thumbnail_image" name="thumbnail_image" accept="image/*">
                             <label for="thumbnail_image" class="file-input-label">
                                 <i data-feather="upload"></i>
-                                <span>Choose new thumbnail image...</span>
+                                <span>Chọn hình thu nhỏ mới...</span>
                             </label>
                         </div>
                         @if ($program->thumbnail_image)
                             <div class="current-file">
                                 <i data-feather="file-text"></i>
-                                Current: {{ basename($program->thumbnail_image) }}
+                                Hiện tại: {{ basename($program->thumbnail_image) }}
                             </div>
                             <div class="current-image">
-                                <img src="{{ asset('storage/' . $program->thumbnail_image) }}" alt="Current Thumbnail">
+                                <img src="{{ asset('storage/' . $program->thumbnail_image) }}" alt="Thumbnail hiện tại">
                             </div>
                         @endif
                     </div>
@@ -483,26 +539,90 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="map-pin"></i>
-                        Applicable Scope
+                        Phạm vi áp dụng
                     </h3>
                     
                     <div class="form-group">
-                        <label for="applicable_scope">Scope <span class="required">*</span></label>
+                        <label for="applicable_scope">Phạm vi <span class="required">*</span></label>
                         <select id="applicable_scope" name="applicable_scope" class="form-control" required>
-                            <option value="all_branches" {{ old('applicable_scope', $program->applicable_scope) == 'all_branches' ? 'selected' : '' }}>All Branches</option>
-                            <option value="specific_branches" {{ old('applicable_scope', $program->applicable_scope) == 'specific_branches' ? 'selected' : '' }}>Specific Branches</option>
+                            <option value="all_branches" {{ old('applicable_scope', $program->applicable_scope) == 'all_branches' ? 'selected' : '' }}>Tất cả chi nhánh</option>
+                            <option value="specific_branches" {{ old('applicable_scope', $program->applicable_scope) == 'specific_branches' ? 'selected' : '' }}>Chi nhánh cụ thể</option>
                         </select>
                     </div>
 
                     <div class="form-group branch-selection {{ $program->applicable_scope == 'specific_branches' ? 'show' : '' }}" id="branch_selection">
-                        <label for="branch_ids">Select Branches <span class="required">*</span></label>
-                        <select name="branch_ids[]" id="branch_ids" class="form-control" multiple>
+                        <label>Chọn chi nhánh <span class="required">*</span></label>
+                        <div class="branch-checkboxes">
                             @foreach ($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ $program->branches->contains($branch->id) || in_array($branch->id, old('branch_ids', [])) ? 'selected' : '' }}>
-                                    {{ $branch->name }}
-                                </option>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="branch_{{ $branch->id }}" name="branch_ids[]" value="{{ $branch->id }}" {{ $program->branches->contains($branch->id) || in_array($branch->id, old('branch_ids', [])) ? 'checked' : '' }}>
+                                    <label for="branch_{{ $branch->id }}">{{ $branch->name }}</label>
+                                </div>
                             @endforeach
-                        </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Discount Codes (Read-only summary) -->
+                <div class="form-section">
+                    <h3>
+                        <i data-feather="tag"></i>
+                        Mã giảm giá đã liên kết
+                    </h3>
+                    
+                    <div class="form-group">
+                        @if($program->discountCodes->isNotEmpty())
+                            <div class="discount-checkboxes">
+                                @foreach($program->discountCodes as $discount)
+                                    <div class="discount-code-item">
+                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                            <strong>{{ $discount->code }}</strong>
+                                            @php
+                                                $typeClass = 'badge-percentage';
+                                                $typeText = $discount->discount_value . '%';
+                                                
+                                                if ($discount->discount_type == 'fixed_amount') {
+                                                    $typeClass = 'badge-fixed';
+                                                    $typeText = number_format($discount->discount_value) . ' đ';
+                                                } elseif ($discount->discount_type == 'free_shipping') {
+                                                    $typeClass = 'badge-special';
+                                                    $typeText = 'Miễn phí vận chuyển';
+                                                }
+                                            @endphp
+                                            <span class="badge {{ $typeClass }}">{{ $typeText }}</span>
+                                        </div>
+                                        <div style="font-size: 13px; color: #64748b">{{ $discount->name }}</div>
+                                        @if($discount->applicable_ranks)
+                                            @php
+                                                $ranks = is_string($discount->applicable_ranks) ? json_decode($discount->applicable_ranks, true) : $discount->applicable_ranks;
+                                                $ranks = is_array($ranks) ? $ranks : [];
+                                                $rankCount = count($ranks);
+                                            @endphp
+                                            <div style="margin-top: 8px; font-size: 12px; color: #475569;">
+                                                <i data-feather="users" style="width: 14px; height: 14px;"></i>
+                                                {{ $rankCount > 0 ? $rankCount . ' hạng thành viên' : 'Tất cả hạng' }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <p style="font-size: 13px; color: #64748b;">
+                                    <i data-feather="info" style="width: 14px; height: 14px;"></i>
+                                    Để thêm/xóa mã giảm giá, hãy sử dụng chức năng quản lý trên trang chi tiết chương trình.
+                                </p>
+                            </div>
+                        @else
+                            <div style="padding: 20px; text-align: center; background: #f9fafb; border-radius: 8px; border: 1px dashed #d1d5db;">
+                                <div style="color: #64748b; margin-bottom: 5px;">
+                                    <i data-feather="alert-circle"></i>
+                                </div>
+                                <p style="margin: 0; color: #475569;">Chưa có mã giảm giá nào được liên kết</p>
+                                <p style="margin-top: 5px; font-size: 13px; color: #64748b;">
+                                    Quay lại trang chi tiết chương trình để thêm mã giảm giá sau khi cập nhật.
+                                </p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -511,11 +631,11 @@
             <div class="form-actions">
                 <a href="{{ route('admin.promotions.show', $program) }}" class="btn btn-secondary">
                     <i data-feather="x"></i>
-                    Cancel
+                    Hủy
                 </a>
                 <button type="submit" class="btn btn-primary">
                     <i data-feather="save"></i>
-                    Update Program
+                    Cập nhật chương trình
                 </button>
             </div>
         </form>
@@ -546,9 +666,9 @@
                 label.textContent = this.files[0].name;
             } else {
                 if (this.id === 'banner_image') {
-                    label.textContent = 'Choose new banner image...';
+                    label.textContent = 'Chọn hình banner mới...';
                 } else {
-                    label.textContent = 'Choose new thumbnail image...';
+                    label.textContent = 'Chọn hình thu nhỏ mới...';
                 }
             }
         });

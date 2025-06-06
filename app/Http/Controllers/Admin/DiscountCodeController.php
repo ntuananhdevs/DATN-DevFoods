@@ -45,6 +45,10 @@ class DiscountCodeController extends Controller
             'max_discount_amount' => 'nullable|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'valid_days_of_week' => 'nullable|array',
+            'valid_days_of_week.*' => 'integer|between:0,6',
+            'valid_from_time' => 'nullable|date_format:H:i',
+            'valid_to_time' => 'nullable|date_format:H:i|after:valid_from_time',
         ]);
 
         $discountCode = DiscountCode::create([
@@ -58,8 +62,8 @@ class DiscountCodeController extends Controller
             'max_discount_amount' => $request->max_discount_amount,
             'applicable_scope' => $request->applicable_scope ?? 'all_branches',
             'applicable_items' => $request->applicable_items ?? 'all_items',
-            'applicable_ranks' => $request->applicable_ranks, // JSON
-            'valid_days_of_week' => $request->valid_days_of_week, // JSON
+            'applicable_ranks' => $request->applicable_ranks,
+            'valid_days_of_week' => $request->valid_days_of_week,
             'valid_from_time' => $request->valid_from_time,
             'valid_to_time' => $request->valid_to_time,
             'usage_type' => $request->usage_type ?? 'public',
@@ -93,6 +97,11 @@ class DiscountCodeController extends Controller
             'max_discount_amount' => 'nullable|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'valid_days_of_week' => 'nullable|array',
+            'valid_days_of_week.*' => 'integer|between:0,6',
+            'valid_from_time' => 'nullable|date_format:H:i',
+            'valid_to_time' => 'nullable|date_format:H:i|after:valid_from_time',
+            'usage_type' => 'required|in:public,personal', // Add this line
         ]);
 
         $discountCode->update($request->only([
