@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Facades\Response;
@@ -481,6 +482,7 @@ class ProductController extends Controller
             'images',
             'attributes.values',
             'variants.productVariantDetails.variantValue.attribute',
+            'variants.variantValues.attribute',
             'toppings'
         ])->findOrFail($id);
         
@@ -536,7 +538,7 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id) {
+    public function update(UpdateProductRequest $request, $id) {
         try {
 
             $validated = $request->validated();
