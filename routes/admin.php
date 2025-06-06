@@ -47,9 +47,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/ecommerce', [DashboardController::class, 'ecommerce'])->name('ecommerce');
     Route::get('/store_analytics', [DashboardController::class, 'store_analytics'])->name('store_analytics');
 
-    // Đăng xuất
-    // Route::post('logout', [AuthController::class, 'logout'])->name('logout');
-
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);
     Route::prefix('categories')->name('categories.')->group(function () {
@@ -126,7 +123,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         // Stock management
         Route::get('{product}/stock', [ProductController::class, 'stock'])->name('stock');
         Route::post('{product}/update-stocks', [ProductController::class, 'updateStocks'])->name('update-stocks');
-        Route::post('/update-topping-stocks', [ProductController::class, 'updateToppingStocksAjax'])->name('update-topping-stocks');
+        Route::post('/update-topping-stocks', [ProductController::class, 'updateToppingStocks'])->name('update-topping-stocks');
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
