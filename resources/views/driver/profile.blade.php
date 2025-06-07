@@ -1,4 +1,4 @@
-@extends('layout.master')
+@extends('layouts.driver.masterLayout')
 
 @section('title', 'Thông tin cá nhân - Ứng dụng Tài xế')
 

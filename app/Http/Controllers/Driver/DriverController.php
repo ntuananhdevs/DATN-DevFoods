@@ -104,13 +104,17 @@ class DriverController extends Controller
         
         $completedOrders = $todayOrders->where('status', 'delivered');
         
+        $totalOrders = $todayOrders->count();
+        $completedCount = $completedOrders->count();
+        $completionRate = $totalOrders > 0 ? round(($completedCount / $totalOrders) * 100, 1) : 0;
+        
         return [
-            'orders_count' => $todayOrders->count(),
-            'completed_count' => $completedOrders->count(),
-            'earnings' => floatval($completedOrders->sum('driver_earning') ?? 0),
-            'distance' => floatval($this->calculateTotalDistance($completedOrders)),
+            'orders_count' => $totalOrders,
+            'completed_count' => $completedCount,
+            'earnings' => (float)($completedOrders->sum('driver_earning') ?? 0),
+            'distance' => (float)$this->calculateTotalDistance($completedOrders),
+            'completion_rate' => $completionRate,
             'average_rating' => $this->calculateAverageRating($driver, $today),
-            'completion_rate' => $this->calculateCompletionRate($driver),
         ];
     }
     
@@ -140,7 +144,7 @@ class DriverController extends Controller
     private function calculateTotalDistance($orders)
     {
         // Placeholder implementation
-        return number_format($orders->count() * 2.5, 1);
+        return $orders->count() * 2.5;
     }
     
     /**
@@ -376,7 +380,7 @@ class DriverController extends Controller
     }
     
     /**
-     * Show driver notifications page.
+     * Show driver notifications page
      */
     public function notifications()
     {
@@ -386,25 +390,31 @@ class DriverController extends Controller
             return redirect()->route('driver.login')->with('error', 'Vui lòng đăng nhập để tiếp tục.');
         }
         
-        // Sample notifications data - this can be expanded later with actual notification functionality
+        // Sample notifications data - replace with actual notification logic
         $notifications = [
             [
                 'id' => 1,
-                'type' => 'new_order',
                 'title' => 'Đơn hàng mới',
-                'message' => 'Bạn có một đơn hàng mới cần xử lý.',
-                'timestamp' => '2 phút trước',
-                'read' => false,
-                'link' => route('driver.orders')
+                'message' => 'Bạn có đơn hàng mới cần giao tại quận 1',
+                'type' => 'order',
+                'created_at' => now()->subMinutes(5),
+                'read' => false
             ],
             [
                 'id' => 2,
-                'type' => 'system_message',
                 'title' => 'Cập nhật hệ thống',
-                'message' => 'Hệ thống đã được cập nhật với các tính năng mới.',
-                'timestamp' => '1 giờ trước',
-                'read' => true,
-                'link' => null
+                'message' => 'Hệ thống sẽ bảo trì từ 2:00 - 4:00 sáng ngày mai',
+                'type' => 'system',
+                'created_at' => now()->subHours(2),
+                'read' => true
+            ],
+            [
+                'id' => 3,
+                'title' => 'Thưởng hoàn thành',
+                'message' => 'Bạn đã hoàn thành 50 đơn hàng trong tháng này',
+                'type' => 'achievement',
+                'created_at' => now()->subDays(1),
+                'read' => false
             ]
         ];
         
