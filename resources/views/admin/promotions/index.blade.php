@@ -77,6 +77,29 @@
         transition: width 0.3s ease;
     }
 
+    /* Define progress classes for different percentages */
+    .progress-0 { width: 0%; }
+    .progress-5 { width: 5%; }
+    .progress-10 { width: 10%; }
+    .progress-15 { width: 15%; }
+    .progress-20 { width: 20%; }
+    .progress-25 { width: 25%; }
+    .progress-30 { width: 30%; }
+    .progress-35 { width: 35%; }
+    .progress-40 { width: 40%; }
+    .progress-45 { width: 45%; }
+    .progress-50 { width: 50%; }
+    .progress-55 { width: 55%; }
+    .progress-60 { width: 60%; }
+    .progress-65 { width: 65%; }
+    .progress-70 { width: 70%; }
+    .progress-75 { width: 75%; }
+    .progress-80 { width: 80%; }
+    .progress-85 { width: 85%; }
+    .progress-90 { width: 90%; }
+    .progress-95 { width: 95%; }
+    .progress-100 { width: 100%; }
+
     /* Status badges */
     .status-badge {
         display: inline-flex;
@@ -221,62 +244,6 @@
         color: #374151;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
-
-    /* Grid view styling */
-    .program-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
-    }
-
-    .program-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1.5rem;
-        transition: all 0.2s ease;
-        position: relative;
-    }
-
-    .program-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-
-    .program-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 1rem;
-    }
-
-    .program-card-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 0.5rem;
-    }
-
-    .program-card-description {
-        color: #6b7280;
-        font-size: 0.875rem;
-        margin-bottom: 1rem;
-    }
-
-    .program-card-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .program-card-actions {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: flex-end;
-    }
 </style>
 
 <div class="fade-in flex flex-col gap-4 pb-4 p-4">
@@ -297,28 +264,6 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <div class="view-toggle me-2">
-                <button type="button" class="active" onclick="switchView('table')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                        <line x1="8" y1="6" x2="21" y2="6"></line>
-                        <line x1="8" y1="12" x2="21" y2="12"></line>
-                        <line x1="8" y1="18" x2="21" y2="18"></line>
-                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                    </svg>
-                    Bảng
-                </button>
-                <button type="button" onclick="switchView('grid')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                        <rect width="7" height="7" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="7" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="7" x="14" y="14" rx="1"></rect>
-                        <rect width="7" height="7" x="3" y="14" rx="1"></rect>
-                    </svg>
-                    Lưới
-                </button>
-            </div>
             <div class="dropdown relative">
                 <button class="btn btn-outline flex items-center" id="exportDropdown" onclick="toggleDropdown('exportMenu')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
@@ -585,8 +530,7 @@
                                     @if($program->total_usage_limit)
                                     <div class="w-full max-w-[80px]">
                                         <div class="progress-bar">
-                                            <div class="progress-fill" style="width: {{ min(100, (int)(($program->total_usage_count / $program->total_usage_limit) * 100)) }}%;">
-                                            </div>
+                                            <div class="progress-fill progress-{{ min(100, (int)(($program->total_usage_count / $program->total_usage_limit) * 100)) }}"></div>
                                         </div>
                                     </div>
                                     <div class="text-xs text-muted-foreground">
@@ -709,118 +653,6 @@
             </div>
             @endif
         </div>
-
-        <!-- Grid View -->
-        <div id="gridView" class="hidden p-6">
-            <div class="program-grid">
-                @forelse ($programs as $program)
-                <div class="program-card">
-                    <div class="program-card-header">
-                        <div class="flex-1">
-                            <h3 class="program-card-title">{{ $program->name }}</h3>
-                            @php
-                                $discountTypes = $program->discountCodes ? $program->discountCodes->pluck('discount_type')->unique()->toArray() : [];
-                                if (count($discountTypes) == 1) {
-                                switch ($discountTypes[0] ?? '') {
-                                case 'percentage':
-                                $typeClass = 'discount';
-                                $typeText = 'Giảm giá %';
-                                break;
-                                case 'fixed_amount':
-                                $typeClass = 'discount';
-                                $typeText = 'Giảm giá cố định';
-                                break;
-                                case 'free_shipping':
-                                $typeClass = 'special';
-                                $typeText = 'Miễn phí vận chuyển';
-                                break;
-                                default:
-                                $typeClass = 'special';
-                                $typeText = 'Kết hợp';
-                                break;
-                                }
-                                } else {
-                                $typeClass = 'special';
-                                $typeText = 'Kết hợp';
-                                }
-                            @endphp
-                            <span class="program-type {{ $typeClass }}">{{ $typeText }}</span>spa                      </div>
-                        @php
-                        $now = now();
-                        if (!$program->is_active) {
-                        $status = 'inactive';
-                        $statusText = 'Không hoạt động';
-                        } elseif ($now->lt($program->start_date)) {
-                        $status = 'scheduled';
-                        $statusText = 'Sắp diễn ra';
-                        } elseif ($now->gt($program->end_date)) {
-                        $status = 'expired';
-                        $statusText = 'Đã hết hạn';
-                        } else {
-                        $status = 'active';
-                        $statusText = 'Đang hoạt động';
-                        }
-                        @endphp
-                        <span class="status-badge {{ $status }}">{{ $statusText }}</span>
-                    </div>
-
-                    <p class="program-card-description">{{ Str::limit($program->description ?? '', 100) }}</p>
-
-                    <div class="program-card-meta">
-                        <span>{{ $program->start_date->format('d/m/Y') }} - {{ $program->end_date->format('d/m/Y') }}</span>
-                        <span class="value-display {{ $program->value_range === 'Chưa xác định' ? '' : 'percentage' }}">
-                            {{ $program->value_range }}
-                        </span>
-                    </div>
-
-                    <div class="program-card-meta">
-                        <span>{{ $program->start_date->format('d/m/Y') }} - {{ $program->end_date->format('d/m/Y') }}</span>
-                        <span>{{ number_format($program->total_usage_count ?? 0) }} lượt sử dụng</span>
-                        @if ($program->total_usage_limit)
-                        <span>/ {{ number_format($program->total_usage_limit) }}</span>
-                        @else
-                        <span>/ Không giới hạn</span>
-                        @endif
-                    </div>
-
-                    <div class="program-card-actions">
-                        <a href="{{ route('admin.promotions.show', $program) }}" class="btn btn-outline btn-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                            Xem
-                        </a>
-                        <a href="{{ route('admin.promotions.edit', $program) }}" class="btn btn-outline btn-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                            Sửa
-                        </a>
-                    </div>
-                </div>
-                @empty
-                <div class="col-span-full text-center py-12">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto mb-4 text-muted-foreground">
-                        <rect x="3" y="8" width="18" height="4" rx="1"></rect>
-                        <path d="M12 8v13"></path>
-                        <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
-                        <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path>
-                    </svg>
-                    <h3 class="text-lg font-medium mb-2">Không có chương trình khuyến mãi nào</h3>
-                    <p class="text-muted-foreground mb-4">Hãy tạo chương trình khuyến mãi mới để bắt đầu</p>
-                    <a href="{{ route('admin.promotions.create') }}" class="btn btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
-                            <path d="M5 12h14"></path>
-                            <path d="M12 5v14"></path>
-                        </svg>
-                        Tạo chương trình mới
-                    </a>
-                </div>
-                @endforelse
-            </div>
-        </div>
     </div>
 </div>
 
@@ -926,25 +758,6 @@
         }
     }
 
-    // ----- View Switch -----
-    function switchView(view) {
-        const tableView = document.getElementById('tableView');
-        const gridView = document.getElementById('gridView');
-        const buttons = document.querySelectorAll('.view-toggle button');
-
-        buttons.forEach(btn => btn.classList.remove('active'));
-
-        if (view === 'table') {
-            tableView.classList.remove('hidden');
-            gridView.classList.add('hidden');
-            buttons[0].classList.add('active');
-        } else {
-            tableView.classList.add('hidden');
-            gridView.classList.remove('hidden');
-            buttons[1].classList.add('active');
-        }
-    }
-
     // ----- Reset Filters -----
     function resetFilters() {
         const form = document.getElementById('filterForm');
@@ -960,6 +773,30 @@
         }
     }
     
+    // Define constants and global variables
+    const ROUTES = {
+        search: '{{ route("admin.promotions.search") }}',
+    };
+
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content;
+    
+    // Utility functions
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function formatNumber(number) {
+        return new Intl.NumberFormat('vi-VN').format(number);
+    }
+
     // ----- Bulk Actions -----
     function bulkAction(action) {
         const checkboxes = document.querySelectorAll('.program-checkbox:checked');
@@ -1095,6 +932,229 @@
         }
     }
 
+    // Perform AJAX search
+    const performSearch = debounce(function(searchTerm) {
+        const programTableBody = document.querySelector('#tableView tbody');
+        if (!programTableBody) {
+            console.error('Program table body not found');
+            return;
+        }
+
+        if (!CSRF_TOKEN) {
+            console.error('CSRF token not found');
+            return;
+        }
+
+        // Show loading indicator
+        programTableBody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <div class="flex justify-center items-center py-4">
+                        <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        // Get filter values
+        const status = document.querySelector('input[name="status"]:checked')?.value || 'all';
+        const dateFrom = document.querySelector('#date_from')?.value || '';
+        const dateTo = document.querySelector('#date_to')?.value || '';
+        const type = document.querySelector('#filter_type')?.value || '';
+
+        fetch(ROUTES.search, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                search: searchTerm,
+                status: status,
+                date_from: dateFrom,
+                date_to: dateTo,
+                type: type
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            // Update stats first
+            const statCards = document.querySelectorAll('.stat-card .text-2xl');
+            if (statCards.length >= 4) {
+                statCards[0].textContent = formatNumber(data.total_programs);
+                statCards[1].textContent = formatNumber(data.active_programs);
+                statCards[2].textContent = formatNumber(data.scheduled_programs);
+                statCards[3].textContent = formatNumber(data.expired_programs);
+            }
+
+            // Clear the table body
+            programTableBody.innerHTML = '';
+
+            if (!data.programs || data.programs.length === 0) {
+                programTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="flex flex-col items-center justify-center text-muted-foreground py-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2">
+                                    <rect x="3" y="8" width="18" height="4" rx="1"></rect>
+                                    <path d="M12 8v13"></path>
+                                    <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path>
+                                    <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path>
+                                </svg>
+                                <h3 class="text-lg font-medium">Không có chương trình khuyến mãi nào</h3>
+                                <p class="text-sm">Không tìm thấy chương trình khuyến mãi phù hợp với bộ lọc</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Generate the rows for each program
+            data.programs.forEach(program => {
+                const tooltipContent = program.discount_codes.length > 0
+                    ? program.discount_codes.map(code => `${code.code}: ${code.current_usage_count}/${code.max_total_usage ?? 'Không giới hạn'}`).join(', ')
+                    : 'No codes';
+                
+                // Create usage progress HTML
+                let usageHTML = '';
+                if (program.total_usage_limit) {
+                    const progressPercent = Math.min(100, Math.floor((program.total_usage_count / program.total_usage_limit) * 100));
+                    usageHTML = `
+                        <div class="w-full max-w-[80px]">
+                            <div class="progress-bar">
+                                <div class="progress-fill progress-${progressPercent}"></div>
+                            </div>
+                        </div>
+                        <div class="text-xs text-muted-foreground">
+                            / ${formatNumber(program.total_usage_limit)}
+                        </div>
+                    `;
+                } else {
+                    usageHTML = `<div class="text-xs text-muted-foreground">/ Không giới hạn</div>`;
+                }
+
+                const rowHtml = `
+                    <tr class="border-b" data-id="${program.id}" data-start-date="${program.start_date}" data-end-date="${program.end_date}">
+                        <td class="py-3 px-4">
+                            <input type="checkbox" name="selected_programs[]" value="${program.id}" class="program-checkbox rounded border-gray-300">
+                        </td>
+                        <td class="py-3 px-4">
+                            <div>
+                                <div class="font-medium">${program.name}</div>
+                                <div class="text-sm text-muted-foreground">${program.description}</div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="program-type ${program.type_class}">${program.type_text}</span>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="date-range">
+                                <div class="start-date">${program.start_date}</div>
+                                <div>đến ${program.end_date}</div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="value-display ${program.value_range === 'Chưa xác định' ? '' : 'percentage'}">
+                                ${program.value_range}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="font-medium"
+                                    data-tooltip="true"
+                                    data-tooltip-content="${tooltipContent}">
+                                    ${formatNumber(program.total_usage_count)}
+                                </div>
+                                ${usageHTML}
+                            </div>
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="status-badge ${program.status}">${program.status_text}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <div class="flex justify-center space-x-1">
+                                <a href="{{ url('admin/promotions') }}/${program.id}"
+                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
+                                    title="Xem chi tiết">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </a>
+                                <a href="{{ url('admin/promotions') }}/${program.id}/edit"
+                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
+                                    title="Chỉnh sửa">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </a>
+                                <form action="{{ url('admin/promotions') }}/${program.id}" method="POST" class="delete-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
+                                        onclick="confirmDelete('${program.name}', this)"
+                                        title="Xóa">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18"></path>
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                programTableBody.insertAdjacentHTML('beforeend', rowHtml);
+            });
+
+            // Re-add event listeners for checkboxes
+            updateCheckboxes();
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            programTableBody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                    <div class="flex flex-col items-center justify-center text-muted-foreground">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                            <path d="m15 9-6 6"></path>
+                            <path d="m9 9 6 6"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium">Đã xảy ra lỗi</h3>
+                        <p class="text-sm">Không thể tải dữ liệu. Vui lòng thử lại.</p>
+                    </div>
+                </td>
+                </tr>
+            `;
+        });
+    }, 300);
+
+    // Update checkboxes when table changes
+    function updateCheckboxes() {
+        const programCheckboxes = document.querySelectorAll('.program-checkbox');
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        
+        programCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const allChecked = Array.from(programCheckboxes).every(cb => cb.checked);
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = allChecked;
+                }
+            });
+        });
+    }
+
     // ----- Initialize on DOM Ready -----
     document.addEventListener('DOMContentLoaded', function() {
         // Close dropdowns when clicking outside
@@ -1158,6 +1218,38 @@
             e.preventDefault();
             bulkAction('deactivate');
         });
+
+        // Observe table changes for checkbox updates
+        const tableView = document.getElementById('tableView');
+        if (tableView) {
+            new MutationObserver(updateCheckboxes).observe(tableView, {
+                childList: true,
+                subtree: true
+            });
+        }
+
+        // Handle search input
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => performSearch(searchInput.value.trim()));
+        }
+
+        // Handle filter form submission with AJAX
+        const filterForm = document.getElementById('filterForm');
+        if (filterForm) {
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(filterForm);
+                const searchTerm = document.getElementById('searchInput').value.trim();
+                const status = formData.get('status') || 'all';
+                const dateFrom = formData.get('date_from') || '';
+                const dateTo = formData.get('date_to') || '';
+                const type = formData.get('type') || '';
+                
+                performSearch(searchTerm);
+                toggleModal('filterModal');
+            });
+        }
     });
 </script>
 @endsection
