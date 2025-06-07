@@ -8,7 +8,7 @@
     <title>@yield('title', 'Ứng dụng Tài xế')</title>
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <!-- Heroicons -->
     <script src="https://unpkg.com/heroicons@2.0.18/24/outline/index.js" type="module"></script>
     <!-- Mapbox CSS -->
