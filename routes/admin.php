@@ -265,28 +265,3 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::get('/drivers/applications/stats', [DriverApplicationController::class, 'getStats'])->name('drivers.applications.stats');
     Route::get('/drivers/applications/image/{path}', [DriverApplicationController::class, 'streamImage'])->name('drivers.applications.image');
 });
-
-// Driver Authentication Routes
-Route::prefix('driver')->name('driver.')->group(function () {
-    Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
-    Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
-    // Forgot Password
-    Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
-    Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
-    // Verify OTP
-    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
-    Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
-    Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
-    // Reset Password
-    Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
-    Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
-});
-
-// Routes for logged-in drivers
-Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
-    Route::get('/', function () {
-        return view('driver.home');
-    })->name('home');
-    Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
-});

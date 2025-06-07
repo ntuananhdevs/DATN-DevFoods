@@ -9,6 +9,29 @@ class Authenticate extends Middleware
     protected function redirectTo($request): ?string
     {
         if (! $request->expectsJson()) {
+            // Check the current guard and redirect accordingly
+            $guard = $request->route() ? $request->route()->getAction('middleware') : null;
+            
+            if (is_array($guard)) {
+                foreach ($guard as $middleware) {
+                    if (str_contains($middleware, 'auth:driver')) {
+                        return route('driver.login');
+                    }
+                    if (str_contains($middleware, 'auth:customer')) {
+                        return route('customer.login');
+                    }
+                }
+            }
+            
+            // Check URL path as fallback
+            if (str_contains($request->path(), 'driver')) {
+                return route('driver.login');
+            }
+            if (str_contains($request->path(), 'customer')) {
+                return route('customer.login');
+            }
+            
+            // Default to admin login
             return route('admin.login');
         }
         return null;
