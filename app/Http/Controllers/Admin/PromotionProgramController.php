@@ -10,6 +10,7 @@ use App\Models\PromotionDiscountCode;
 use App\Models\PromotionBranch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class PromotionProgramController extends Controller
 {
@@ -85,6 +86,201 @@ class PromotionProgramController extends Controller
         });
     
         return view('admin.promotions.index', compact('programs', 'totalPrograms', 'activePrograms', 'scheduledPrograms', 'expiredPrograms'));
+    }
+
+    public function search(Request $request)
+    {
+        $request->validate([
+            'search' => 'nullable|string|max:255',
+            'status' => 'nullable|in:all,active,scheduled,expired,inactive',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'type' => 'nullable|string'
+        ]);
+
+        $search = $request->input('search', '');
+        $status = $request->input('status', 'all');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $type = $request->input('type');
+        
+        $now = now();
+        $query = PromotionProgram::with([
+            'discountCodes' => function ($query) {
+                $query->select(
+                    'discount_codes.id',
+                    'discount_type',
+                    'discount_value',
+                    'current_usage_count',
+                    'max_total_usage'
+                );
+            },
+            'branches:id',
+            'createdBy:id,full_name'
+        ])->orderBy('display_order');
+
+        if ($search) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        if ($status !== 'all') {
+            switch ($status) {
+                case 'active':
+                    $query->where('is_active', true)
+                          ->where('start_date', '<=', $now)
+                          ->where('end_date', '>=', $now);
+                    break;
+                case 'scheduled':
+                    $query->where('is_active', true)
+                          ->where('start_date', '>', $now);
+                    break;
+                case 'expired':
+                    $query->where('is_active', true)
+                          ->where('end_date', '<', $now);
+                    break;
+                case 'inactive':
+                    $query->where('is_active', false);
+                    break;
+            }
+        }
+
+        if ($dateFrom) {
+            $query->where('end_date', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->where('start_date', '<=', $dateTo);
+        }
+
+        $programs = $query->get();
+
+        // Transform programs to include value_range attribute
+        $programs->transform(function ($program) {
+            $discountCodes = $program->discountCodes;
+    
+            // Calculate discount value range
+            $percentageValues = $discountCodes->where('discount_type', 'percentage')
+                ->pluck('discount_value')
+                ->filter()
+                ->values();
+            $fixedAmountValues = $discountCodes->where('discount_type', 'fixed_amount')
+                ->pluck('discount_value')
+                ->filter()
+                ->values();
+            $hasFreeShipping = $discountCodes->where('discount_type', 'free_shipping')->isNotEmpty();
+    
+            $value_range = [];
+            if ($percentageValues->isNotEmpty()) {
+                $minPercentage = $percentageValues->min();
+                $maxPercentage = $percentageValues->max();
+                $value_range[] = $minPercentage == $maxPercentage
+                    ? "{$minPercentage}%"
+                    : "{$minPercentage}% - {$maxPercentage}%";
+            }
+            if ($fixedAmountValues->isNotEmpty()) {
+                $minAmount = $fixedAmountValues->min();
+                $maxAmount = $fixedAmountValues->max();
+                $value_range[] = $minAmount == $maxAmount
+                    ? number_format($minAmount) . ' đ'
+                    : number_format($minAmount) . ' đ - ' . number_format($maxAmount) . ' đ';
+            }
+            if ($hasFreeShipping) {
+                $value_range[] = 'Miễn phí vận chuyển';
+            }
+    
+            $program->setAttribute('value_range', !empty($value_range) ? implode(', ', $value_range) : 'Chưa xác định');
+    
+            return $program;
+        });
+
+        // Calculate statistics for the response
+        $totalPrograms = PromotionProgram::count();
+        $activePrograms = PromotionProgram::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->count();
+        $scheduledPrograms = PromotionProgram::where('is_active', true)
+            ->where('start_date', '>', $now)
+            ->count();
+        $expiredPrograms = PromotionProgram::where(function($query) use ($now) {
+                $query->where('end_date', '<', $now)
+                    ->orWhere('is_active', false);
+            })
+            ->count();
+
+        $response = [
+            'programs' => $programs->map(function ($program) use ($now) {
+                // Determine status
+                if (!$program->is_active) {
+                    $status = 'inactive';
+                    $statusText = 'Không hoạt động';
+                } elseif ($program->start_date && $now->lt($program->start_date)) {
+                    $status = 'scheduled';
+                    $statusText = 'Sắp diễn ra';
+                } elseif ($program->end_date && $now->gt($program->end_date)) {
+                    $status = 'expired';
+                    $statusText = 'Đã hết hạn';
+                } else {
+                    $status = 'active';
+                    $statusText = 'Đang hoạt động';
+                }
+                
+                // Determine program type
+                $discountTypes = $program->discountCodes ? $program->discountCodes->pluck('discount_type')->unique()->toArray() : [];
+                if (count($discountTypes) == 1) {
+                    switch ($discountTypes[0] ?? '') {
+                        case 'percentage':
+                            $typeClass = 'discount';
+                            $typeText = 'Giảm giá %';
+                            break;
+                        case 'fixed_amount':
+                            $typeClass = 'discount';
+                            $typeText = 'Giảm giá cố định';
+                            break;
+                        case 'free_shipping':
+                            $typeClass = 'special';
+                            $typeText = 'Miễn phí vận chuyển';
+                            break;
+                        default:
+                            $typeClass = 'special';
+                            $typeText = 'Kết hợp';
+                            break;
+                    }
+                } else {
+                    $typeClass = 'special';
+                    $typeText = 'Kết hợp';
+                }
+
+                return [
+                    'id' => $program->id,
+                    'name' => $program->name,
+                    'description' => $program->description ? Str::limit($program->description, 50) : '',
+                    'start_date' => $program->start_date ? $program->start_date->format('d/m/Y') : 'N/A',
+                    'end_date' => $program->end_date ? $program->end_date->format('d/m/Y') : 'N/A',
+                    'value_range' => $program->value_range,
+                    'total_usage_count' => $program->total_usage_count ?? 0,
+                    'total_usage_limit' => $program->total_usage_limit,
+                    'is_active' => $program->is_active,
+                    'status' => $status,
+                    'status_text' => $statusText,
+                    'type_class' => $typeClass,
+                    'type_text' => $typeText,
+                    'discount_codes' => $program->discountCodes ? $program->discountCodes->map(function($code) {
+                        return [
+                            'code' => $code->code,
+                            'current_usage_count' => $code->current_usage_count,
+                            'max_total_usage' => $code->max_total_usage
+                        ];
+                    }) : []
+                ];
+            }),
+            'total_programs' => $totalPrograms,
+            'active_programs' => $activePrograms,
+            'scheduled_programs' => $scheduledPrograms,
+            'expired_programs' => $expiredPrograms
+        ];
+
+        return response()->json($response);
     }
 
     public function show(PromotionProgram $program)

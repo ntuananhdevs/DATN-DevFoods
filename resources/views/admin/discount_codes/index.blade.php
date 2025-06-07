@@ -197,71 +197,7 @@
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
-    /* Grid view styling */
-    .discount-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
-    }
 
-    .discount-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1.5rem;
-        transition: all 0.2s ease;
-        position: relative;
-    }
-
-    .discount-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-
-    .discount-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 1rem;
-    }
-
-    .discount-card-title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #1f2937;
-        margin-bottom: 0.5rem;
-    }
-
-    .discount-card-code {
-        font-family: monospace;
-        background: #f3f4f6;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.875rem;
-        color: #374151;
-        margin-bottom: 1rem;
-    }
-
-    .discount-card-description {
-        color: #6b7280;
-        font-size: 0.875rem;
-        margin-bottom: 1rem;
-    }
-
-    .discount-card-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .discount-card-actions {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: flex-end;
-    }
 </style>
 
 <div class="fade-in flex flex-col gap-4 pb-4 p-4">
@@ -282,28 +218,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <div class="view-toggle me-2">
-                <button type="button" class="active" onclick="switchView('table')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                        <line x1="8" y1="6" x2="21" y2="6"></line>
-                        <line x1="8" y1="12" x2="21" y2="12"></line>
-                        <line x1="8" y1="18" x2="21" y2="18"></line>
-                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                    </svg>
-                    Bảng
-                </button>
-                <button type="button" onclick="switchView('grid')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                        <rect width="7" height="7" x="3" y="3" rx="1"></rect>
-                        <rect width="7" height="7" x="14" y="3" rx="1"></rect>
-                        <rect width="7" height="7" x="14" y="14" rx="1"></rect>
-                        <rect width="7" height="7" x="3" y="14" rx="1"></rect>
-                    </svg>
-                    Lưới
-                </button>
-            </div>
+
             <div class="dropdown relative">
                 <button class="btn btn-outline flex items-center" id="exportDropdown" onclick="toggleDropdown('exportMenu')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
@@ -432,7 +347,9 @@
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.3-4.3"></path>
                 </svg>
-                <input type="text" placeholder="Tìm kiếm theo mã hoặc tên..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" id="searchInput" value="{{ request('search') }}">
+                <form action="{{ route('admin.discount_codes.index') }}" method="GET">
+                    <input type="text" name="search" placeholder="Tìm kiếm theo mã hoặc tên..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" value="{{ request('search') }}">
+                </form>
             </div>
             <div class="flex items-center gap-2">
                 <button class="btn btn-outline flex items-center" id="selectAllButton">
@@ -442,14 +359,48 @@
                     </svg>
                     <span>Chọn tất cả</span>
                 </button>
-                <form action="{{ route('admin.discount_codes.bulk-status-update') }}" method="POST" class="flex items-center gap-2">
-                    @csrf
-                    <select name="is_active" class="border rounded-md px-3 py-2 bg-background text-sm">
-                        <option value="1">Kích hoạt</option>
-                        <option value="0">Hủy kích hoạt</option>
-                    </select>
-                    <button type="submit" class="btn btn-outline">Cập nhật trạng thái</button>
-                </form>
+                <div class="dropdown relative">
+                    <button class="btn btn-outline flex items-center" id="actionsDropdown" onclick="toggleDropdown('actionsMenu')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                            <circle cx="12" cy="12" r="2"></circle>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <circle cx="12" cy="19" r="2"></circle>
+                        </svg>
+                        Thao tác
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2">
+                            <path d="m6 9 6 6 6-6"></path>
+                        </svg>
+                    </button>
+                    <div id="actionsMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
+                        <div class="p-2">
+                            <form action="{{ route('admin.discount_codes.bulk-status-update') }}" method="POST" id="activateForm" class="bulk-form">
+                                @csrf
+                                <input type="hidden" name="is_active" value="1">
+                                <!-- Hidden inputs for IDs will be added dynamically -->
+                                <button type="button" onclick="submitBulkAction('activateForm')" class="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-500">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                        <path d="m9 11 3 3L22 4"></path>
+                                    </svg>
+                                    Kích hoạt đã chọn
+                                </button>
+                            </form>
+                            <form action="{{ route('admin.discount_codes.bulk-status-update') }}" method="POST" id="deactivateForm" class="bulk-form">
+                                @csrf
+                                <input type="hidden" name="is_active" value="0">
+                                <!-- Hidden inputs for IDs will be added dynamically -->
+                                <button type="button" onclick="submitBulkAction('deactivateForm')" class="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="m15 9-6 6"></path>
+                                        <path d="m9 9 6 6"></path>
+                                    </svg>
+                                    Vô hiệu hóa đã chọn
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
                 <button class="btn btn-outline flex items-center" onclick="toggleModal('filterModal')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
@@ -478,7 +429,7 @@
                             <th class="py-3 px-4 text-center font-medium">Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="discountCodesTableBody">
                         @forelse($discountCodes as $code)
                         <tr class="border-b">
                             <td class="py-3 px-4">
@@ -646,107 +597,7 @@
             @endif
         </div>
 
-        <!-- Grid View -->
-        <div id="gridView" class="hidden p-6">
-            <div class="discount-grid">
-                @forelse($discountCodes as $code)
-                <div class="discount-card">
-                    <div class="discount-card-header">
-                        <div class="flex-1">
-                            <h3 class="discount-card-title">{{ $code->name }}</h3>
-                            <div class="discount-card-code">{{ $code->code }}</div>
-                            @php
-                                $typeClass = 'percentage';
-                                $typeText = 'Phần trăm';
-                                switch($code->discount_type) {
-                                    case 'fixed_amount':
-                                        $typeClass = 'fixed-amount';
-                                        $typeText = 'Số tiền cố định';
-                                        break;
-                                    case 'free_shipping':
-                                        $typeClass = 'free-shipping';
-                                        $typeText = 'Miễn phí vận chuyển';
-                                        break;
-                                }
-                            @endphp
-                            <span class="discount-type {{ $typeClass }}">{{ $typeText }}</span>
-                        </div>
-                        @php
-                            $now = now();
-                            if (!$code->is_active) {
-                                $status = 'inactive';
-                                $statusText = 'Không hoạt động';
-                            } elseif ($now->gt($code->end_date)) {
-                                $status = 'expired';
-                                $statusText = 'Đã hết hạn';
-                            } else {
-                                $status = 'active';
-                                $statusText = 'Hoạt động';
-                            }
-                        @endphp
-                        <span class="status-badge {{ $status }}">{{ $statusText }}</span>
-                    </div>
-                    
-                    <p class="discount-card-description">{{ Str::limit($code->description ?? '', 100) }}</p>
-                    
-                    <div class="discount-card-meta">
-                        <span>{{ $code->start_date->format('d/m/Y') }} - {{ $code->end_date->format('d/m/Y') }}</span>
-                        @if($code->discount_type == 'percentage')
-                            <span class="value-display percentage">{{ $code->discount_value }}%</span>
-                        @elseif($code->discount_type == 'fixed_amount')
-                            <span class="value-display amount">{{ number_format($code->discount_value) }} đ</span>
-                        @else
-                            <span class="value-display">Miễn phí ship</span>
-                        @endif
-                    </div>
-                    
-                    <div class="discount-card-meta">
-                        <span>Đã sử dụng: {{ number_format($code->current_usage_count ?? 0) }}</span>
-                        @if($code->max_total_usage)
-                            <span>/ {{ number_format($code->max_total_usage) }}</span>
-                        @else
-                            <span>/ Không giới hạn</span>
-                        @endif
-                    </div>
-                    
-                    <div class="discount-card-actions">
-                        <a href="{{ route('admin.discount_codes.show', $code->id) }}" class="btn btn-outline btn-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                            Xem
-                        </a>
-                        <a href="{{ route('admin.discount_codes.edit', $code->id) }}" class="btn btn-outline btn-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                            Sửa
-                        </a>
-                    </div>
-                </div>
-                @empty
-                <div class="col-span-full text-center py-12">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto mb-4 text-muted-foreground">
-                        <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2Z"></path>
-                        <path d="M13 5v2"></path>
-                        <path d="M13 17v2"></path>
-                        <path d="M13 11v2"></path>
-                    </svg>
-                    <h3 class="text-lg font-medium mb-2">Không có mã giảm giá nào</h3>
-                    <p class="text-muted-foreground mb-4">Hãy tạo mã giảm giá mới để bắt đầu</p>
-                    <a href="{{ route('admin.discount_codes.create') }}" class="btn btn-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
-                            <path d="M5 12h14"></path>
-                            <path d="M12 5v14"></path>
-                        </svg>
-                        Tạo mã giảm giá mới
-                    </a>
-                </div>
-                @endforelse
-            </div>
-        </div>
+
     </div>
 </div>
 
@@ -847,25 +698,6 @@
         }
     }
 
-    // ----- View Switch -----
-    function switchView(view) {
-        const tableView = document.getElementById('tableView');
-        const gridView = document.getElementById('gridView');
-        const buttons = document.querySelectorAll('.view-toggle button');
-        
-        buttons.forEach(btn => btn.classList.remove('active'));
-        
-        if (view === 'table') {
-            tableView.classList.remove('hidden');
-            gridView.classList.add('hidden');
-            buttons[0].classList.add('active');
-        } else {
-            tableView.classList.add('hidden');
-            gridView.classList.remove('hidden');
-            buttons[1].classList.add('active');
-        }
-    }
-    
     // ----- Reset Filters -----
     function resetFilters() {
         const form = document.getElementById('filterForm');
@@ -879,6 +711,34 @@
         if (confirm(`Bạn có chắc chắn muốn xóa mã giảm giá "${codeName}"?`)) {
             button.closest('form').submit();
         }
+    }
+    
+    // ----- Submit Bulk Actions -----
+    function submitBulkAction(formId) {
+        const selectedCheckboxes = document.querySelectorAll('.discount-checkbox:checked');
+        
+        if (selectedCheckboxes.length === 0) {
+            alert('Vui lòng chọn ít nhất một mã giảm giá');
+            return;
+        }
+        
+        const form = document.getElementById(formId);
+        
+        // Clear any existing hidden inputs for IDs
+        const existingInputs = form.querySelectorAll('input[name="ids[]"]');
+        existingInputs.forEach(input => input.remove());
+        
+        // Add hidden inputs for each selected ID
+        selectedCheckboxes.forEach(checkbox => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = checkbox.value;
+            form.appendChild(input);
+        });
+        
+        // Submit the form
+        form.submit();
     }
     
     // ----- Initialize on DOM Ready -----
@@ -897,51 +757,48 @@
         });
 
         // ----- Checkbox Functionality -----
-        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-        const discountCheckboxes = document.querySelectorAll('.discount-checkbox');
-        const selectAllButton = document.getElementById('selectAllButton');
-
-        // Handle select all checkbox
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                const isChecked = this.checked;
-                discountCheckboxes.forEach(checkbox => {
-                    checkbox.checked = isChecked;
+        function setupCheckboxHandlers() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const discountCheckboxes = document.querySelectorAll('.discount-checkbox');
+            
+            // Handle select all checkbox
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    discountCheckboxes.forEach(checkbox => {
+                        checkbox.checked = isChecked;
+                    });
+                });
+            }
+            
+            // Handle individual checkboxes
+            discountCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(discountCheckboxes).every(cb => cb.checked);
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = allChecked;
+                    }
                 });
             });
         }
-
+        
+        // Initial setup
+        setupCheckboxHandlers();
+        
         // Handle select all button click
+        const selectAllButton = document.getElementById('selectAllButton');
         if (selectAllButton) {
             selectAllButton.addEventListener('click', function() {
+                const discountCheckboxes = document.querySelectorAll('.discount-checkbox');
+                const selectAllCheckbox = document.getElementById('selectAllCheckbox');
                 const isAllChecked = Array.from(discountCheckboxes).every(cb => cb.checked);
+                
                 discountCheckboxes.forEach(checkbox => {
                     checkbox.checked = !isAllChecked;
                 });
+                
                 if (selectAllCheckbox) {
                     selectAllCheckbox.checked = !isAllChecked;
-                }
-            });
-        }
-
-        // Handle individual checkboxes
-        discountCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const allChecked = Array.from(discountCheckboxes).every(cb => cb.checked);
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = allChecked;
-                }
-            });
-        });
-
-        // Search functionality
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const url = new URL(window.location);
-                    url.searchParams.set('search', this.value);
-                    window.location.href = url.toString();
                 }
             });
         }
