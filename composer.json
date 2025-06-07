@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
+        "kreait/laravel-firebase": "^6.0",
         "laravel/framework": "^12.0",
         "laravel/passport": "*",
         "laravel/tinker": "^2.10.1",

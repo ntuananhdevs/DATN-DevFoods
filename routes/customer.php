@@ -1,5 +1,16 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| Customer Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register customer routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "customer" middleware group.
+|
+*/
+
 use Illuminate\Support\Facades\Route;
 
 // Customer Controllers
