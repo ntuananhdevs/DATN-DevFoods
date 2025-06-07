@@ -1,10 +1,4 @@
 <?php
-
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\TestController;
-use App\Http\Controllers\Api\Customer\ProductController;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -15,6 +9,12 @@ use App\Http\Controllers\Api\Customer\ProductController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+// use App\Http\Controllers\TestController;
+use App\Http\Controllers\Api\Customer\ProductController;
+
 
 // Route::middleware('auth:api')->get('/user', function (Request $request) {
 //     return $request->user();

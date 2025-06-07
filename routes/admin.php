@@ -1,5 +1,16 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| Admin Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register admin routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "admin" middleware group.
+|
+*/
+
 use Illuminate\Support\Facades\Route;
 
 // Admin Controllers
