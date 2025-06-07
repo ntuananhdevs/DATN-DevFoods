@@ -245,7 +245,7 @@
 
     .program-card-header {
         display: flex;
-        justify-content: between;
+        justify-content: space-between;
         align-items: flex-start;
         margin-bottom: 1rem;
     }
@@ -441,13 +441,15 @@
         </div>
 
         <!-- Toolbar -->
-        <div class="p-4 border-b flex flex-col sm:flex-row justify-between gap-4">
+        <div class="p-4 border-b flex smleo:flex-row justify-between gap-4">
             <div class="relative w-full sm:w-auto sm:min-w-[300px]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.3-4.3"></path>
                 </svg>
-                <input type="text" placeholder="Tìm kiếm theo tên chương trình..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" id="searchInput">
+                <form action="">
+                    <input type="text" name="search" placeholder="Tìm kiếm theo tên chương trình..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" id="searchInput" value="">
+                </form>
             </div>
             <div class="flex items-center gap-2">
                 <button class="btn btn-outline flex items-center" id="selectAllButton">
@@ -471,14 +473,14 @@
                     </button>
                     <div id="actionsMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
                         <div class="p-2">
-                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground activate-selected">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-500">
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <path d="m9 11 3 3L22 4"></path>
                                 </svg>
                                 Kích hoạt đã chọn
                             </a>
-                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground deactivate-selected">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <path d="m15 9-6 6"></path>
@@ -508,7 +510,7 @@
                                 <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300">
                             </th>
                             <th class="py-3 px-4 text-left font-medium">Chương trình</th>
-                            <th class="py-3 px-4 text-left font-medium">Loại</th>
+                            <th class="py-3 px-4 text-center font-medium">Loại</th>
                             <th class="py-3 px-4 text-center font-medium">Thời gian</th>
                             <th class="py-3 px-4 text-center font-medium">Giá trị</th>
                             <th class="py-3 px-4 text-center font-medium">Lượt sử dụng</th>
@@ -518,7 +520,7 @@
                     </thead>
                     <tbody>
                         @forelse($programs as $program)
-                        <tr class="border-b">
+                        <tr class="border-b" data-id="{{ $program->id }}" data-start-date="{{ $program->start_date }}" data-end-date="{{ $program->end_date }}">
                             <td class="py-3 px-4">
                                 <input type="checkbox" name="selected_programs[]" value="{{ $program->id }}" class="program-checkbox rounded border-gray-300">
                             </td>
@@ -528,75 +530,89 @@
                                     <div class="text-sm text-muted-foreground">{{ Str::limit($program->description ?? '', 50) }}</div>
                                 </div>
                             </td>
-                            <td class="py-3 px-4">
+                            <td class="py-3 px-4 text-center">
                                 @php
-                                    $typeClass = 'discount';
-                                    $typeText = 'Giảm giá';
-                                    switch($program->type ?? 'discount') {
-                                        case 'cashback':
-                                            $typeClass = 'cashback';
-                                            $typeText = 'Hoàn tiền';
-                                            break;
-                                        case 'flash_sale':
-                                            $typeClass = 'flash-sale';
-                                            $typeText = 'Flash Sale';
-                                            break;
-                                        case 'special_event':
-                                            $typeClass = 'special';
-                                            $typeText = 'Sự kiện đặc biệt';
-                                            break;
-                                    }
+                                $discountTypes = $program->discountCodes ? $program->discountCodes->pluck('discount_type')->unique()->toArray() : [];
+                                if (count($discountTypes) == 1) {
+                                switch ($discountTypes[0] ?? '') {
+                                case 'percentage':
+                                $typeClass = 'discount';
+                                $typeText = 'Giảm giá %';
+                                break;
+                                case 'fixed_amount':
+                                $typeClass = 'discount';
+                                $typeText = 'Giảm giá cố định';
+                                break;
+                                case 'free_shipping':
+                                $typeClass = 'special';
+                                $typeText = 'Miễn phí vận chuyển';
+                                break;
+                                default:
+                                $typeClass = 'special';
+                                $typeText = 'Kết hợp';
+                                break;
+                                }
+                                } else {
+                                $typeClass = 'special';
+                                $typeText = 'Kết hợp';
+                                }
                                 @endphp
                                 <span class="program-type {{ $typeClass }}">{{ $typeText }}</span>
                             </td>
                             <td class="py-3 px-4 text-center">
                                 <div class="date-range">
-                                    <div class="start-date">{{ $program->start_date->format('d/m/Y') }}</div>
-                                    <div>đến {{ $program->end_date->format('d/m/Y') }}</div>
+                                    <div class="start-date">{{ $program->start_date ? $program->start_date->format('d/m/Y') : 'N/A' }}</div>
+                                    <div>đến {{ $program->end_date ? $program->end_date->format('d/m/Y') : 'N/A' }}</div>
                                 </div>
                             </td>
                             <td class="py-3 px-4 text-center">
-                                @if($program->discount_percentage)
-                                    <span class="value-display percentage">{{ $program->discount_percentage }}%</span>
-                                @elseif($program->discount_amount)
-                                    <span class="value-display amount">{{ number_format($program->discount_amount) }} đ</span>
-                                @else
-                                    <span class="text-muted-foreground">Chưa xác định</span>
-                                @endif
+                                <span class="value-display {{ $program->value_range === 'Chưa xác định' ? '' : 'percentage' }}">
+                                    {{ $program->value_range ?? 'N/A' }}
+                                </span>
                             </td>
                             <td class="py-3 px-4 text-center">
                                 <div class="flex flex-col items-center gap-1">
-                                    <div class="font-medium">{{ number_format($program->usage_count ?? 0) }}</div>
-                                    @if($program->usage_limit)
-                                        <div class="w-full max-w-[80px]">
-                                            <div class="progress-bar">
-                                                <div class="progress-fill" style="width: {{ min(100, ($program->usage_count / $program->usage_limit) * 100) }}%"></div>
+                                    @php
+                                    $tooltipContent = $program->discountCodes ? $program->discountCodes->map(function($code) {
+                                    return $code->code . ': ' . $code->current_usage_count . '/' . ($code->max_total_usage ?? 'Không giới hạn');
+                                    })->implode(', ') : 'No codes';
+                                    @endphp
+                                    <div class="font-medium"
+                                        data-tooltip="true"
+                                        data-tooltip-content="{{ $tooltipContent }}">
+                                        {{ number_format($program->total_usage_count ?? 0) }}
+                                    </div>
+                                    @if($program->total_usage_limit)
+                                    <div class="w-full max-w-[80px]">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: {{ min(100, (int)(($program->total_usage_count / $program->total_usage_limit) * 100)) }}%;">
                                             </div>
                                         </div>
-                                        <div class="text-xs text-muted-foreground">
-                                            / {{ number_format($program->usage_limit) }}
-                                        </div>
+                                    </div>
+                                    <div class="text-xs text-muted-foreground">
+                                        / {{ number_format($program->total_usage_limit) }}
+                                    </div>
                                     @else
-                                        <div class="text-xs text-muted-foreground">/ Không giới hạn</div>
+                                    <div class="text-xs text-muted-foreground">/ Không giới hạn</div>
                                     @endif
                                 </div>
                             </td>
                             <td class="py-3 px-4">
                                 @php
-                                    $now = now();
-                                    if (!$program->is_active) {
-                                        $status = 'inactive';
-                                        $statusText = 'Không hoạt động';
-                                    } elseif ($now->lt($program->start_date)) {
-                                        $status = 'scheduled';
-                                        $statusText = 'Sắp diễn ra';
-                                    } elseif ($now->gt($program->end_date)) {
-                                        $status = 'expired';
-                                        $statusText = 'Đã hết hạn';
-                                    } else {
-                                        $status = 'active';
-                                        $statusText = 'Đang hoạt động';
-                                    }
+                                $now = now();
+                                if (!$program->is_active) {
+                                $status = 'inactive';
+                                $statusText = 'Không hoạt động';
+                                } elseif ($program->start_date && $now->lt($program->start_date)) {
+                                $status = 'scheduled';
+                                $statusText = 'Sắp diễn ra';
+                                } elseif ($program->end_date && $now->gt($program->end_date)) {
+                                $status = 'expired';
+                                $statusText = 'Đã hết hạn';
+                                } else {
+                                $status = 'active';
+                                $statusText = 'Đang hoạt động';
+                                }
                                 @endphp
                                 <span class="status-badge {{ $status }}">{{ $statusText }}</span>
                             </td>
@@ -662,13 +678,13 @@
             </div>
 
             <!-- Pagination -->
-            @if($programs->hasPages())
+            @if ($programs->hasPages())
             <div class="flex items-center justify-between px-4 py-4 border-t">
                 <div class="text-sm text-muted-foreground">
                     Hiển thị {{ $programs->firstItem() }} đến {{ $programs->lastItem() }} của {{ $programs->total() }} mục
                 </div>
                 <div class="flex items-center space-x-2">
-                    @unless($programs->onFirstPage())
+                    @unless ($programs->onFirstPage())
                     <a href="{{ $programs->previousPageUrl() }}" class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
                             <path d="m15 18-6-6 6-6"></path>
@@ -682,7 +698,7 @@
                     </a>
                     @endforeach
 
-                    @unless($programs->currentPage() === $programs->lastPage())
+                    @unless ($programs->currentPage() === $programs->lastPage())
                     <a href="{{ $programs->nextPageUrl() }}" class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
                             <path d="m9 18 6-6-6-6"></path>
@@ -697,70 +713,76 @@
         <!-- Grid View -->
         <div id="gridView" class="hidden p-6">
             <div class="program-grid">
-                @forelse($programs as $program)
+                @forelse ($programs as $program)
                 <div class="program-card">
                     <div class="program-card-header">
                         <div class="flex-1">
                             <h3 class="program-card-title">{{ $program->name }}</h3>
                             @php
+                                $discountTypes = $program->discountCodes ? $program->discountCodes->pluck('discount_type')->unique()->toArray() : [];
+                                if (count($discountTypes) == 1) {
+                                switch ($discountTypes[0] ?? '') {
+                                case 'percentage':
                                 $typeClass = 'discount';
-                                $typeText = 'Giảm giá';
-                                switch($program->type ?? 'discount') {
-                                    case 'cashback':
-                                        $typeClass = 'cashback';
-                                        $typeText = 'Hoàn tiền';
-                                        break;
-                                    case 'flash_sale':
-                                        $typeClass = 'flash-sale';
-                                        $typeText = 'Flash Sale';
-                                        break;
-                                    case 'special_event':
-                                        $typeClass = 'special';
-                                        $typeText = 'Sự kiện đặc biệt';
-                                        break;
+                                $typeText = 'Giảm giá %';
+                                break;
+                                case 'fixed_amount':
+                                $typeClass = 'discount';
+                                $typeText = 'Giảm giá cố định';
+                                break;
+                                case 'free_shipping':
+                                $typeClass = 'special';
+                                $typeText = 'Miễn phí vận chuyển';
+                                break;
+                                default:
+                                $typeClass = 'special';
+                                $typeText = 'Kết hợp';
+                                break;
+                                }
+                                } else {
+                                $typeClass = 'special';
+                                $typeText = 'Kết hợp';
                                 }
                             @endphp
-                            <span class="program-type {{ $typeClass }}">{{ $typeText }}</span>
-                        </div>
+                            <span class="program-type {{ $typeClass }}">{{ $typeText }}</span>spa                      </div>
                         @php
-                            $now = now();
-                            if (!$program->is_active) {
-                                $status = 'inactive';
-                                $statusText = 'Không hoạt động';
-                            } elseif ($now->lt($program->start_date)) {
-                                $status = 'scheduled';
-                                $statusText = 'Sắp diễn ra';
-                            } elseif ($now->gt($program->end_date)) {
-                                $status = 'expired';
-                                $statusText = 'Đã hết hạn';
-                            } else {
-                                $status = 'active';
-                                $statusText = 'Đang hoạt động';
-                            }
+                        $now = now();
+                        if (!$program->is_active) {
+                        $status = 'inactive';
+                        $statusText = 'Không hoạt động';
+                        } elseif ($now->lt($program->start_date)) {
+                        $status = 'scheduled';
+                        $statusText = 'Sắp diễn ra';
+                        } elseif ($now->gt($program->end_date)) {
+                        $status = 'expired';
+                        $statusText = 'Đã hết hạn';
+                        } else {
+                        $status = 'active';
+                        $statusText = 'Đang hoạt động';
+                        }
                         @endphp
                         <span class="status-badge {{ $status }}">{{ $statusText }}</span>
                     </div>
-                    
+
                     <p class="program-card-description">{{ Str::limit($program->description ?? '', 100) }}</p>
-                    
+
                     <div class="program-card-meta">
                         <span>{{ $program->start_date->format('d/m/Y') }} - {{ $program->end_date->format('d/m/Y') }}</span>
-                        @if($program->discount_percentage)
-                            <span class="value-display percentage">{{ $program->discount_percentage }}%</span>
-                        @elseif($program->discount_amount)
-                            <span class="value-display amount">{{ number_format($program->discount_amount) }} đ</span>
-                        @endif
+                        <span class="value-display {{ $program->value_range === 'Chưa xác định' ? '' : 'percentage' }}">
+                            {{ $program->value_range }}
+                        </span>
                     </div>
-                    
+
                     <div class="program-card-meta">
-                        <span>{{ number_format($program->usage_count ?? 0) }} lượt sử dụng</span>
-                        @if($program->usage_limit)
-                            <span>/ {{ number_format($program->usage_limit) }}</span>
+                        <span>{{ $program->start_date->format('d/m/Y') }} - {{ $program->end_date->format('d/m/Y') }}</span>
+                        <span>{{ number_format($program->total_usage_count ?? 0) }} lượt sử dụng</span>
+                        @if ($program->total_usage_limit)
+                        <span>/ {{ number_format($program->total_usage_limit) }}</span>
                         @else
-                            <span>/ Không giới hạn</span>
+                        <span>/ Không giới hạn</span>
                         @endif
                     </div>
-                    
+
                     <div class="program-card-actions">
                         <a href="{{ route('admin.promotions.show', $program) }}" class="btn btn-outline btn-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
@@ -909,9 +931,9 @@
         const tableView = document.getElementById('tableView');
         const gridView = document.getElementById('gridView');
         const buttons = document.querySelectorAll('.view-toggle button');
-        
+
         buttons.forEach(btn => btn.classList.remove('active'));
-        
+
         if (view === 'table') {
             tableView.classList.remove('hidden');
             gridView.classList.add('hidden');
@@ -922,7 +944,7 @@
             buttons[1].classList.add('active');
         }
     }
-    
+
     // ----- Reset Filters -----
     function resetFilters() {
         const form = document.getElementById('filterForm');
@@ -938,15 +960,150 @@
         }
     }
     
+    // ----- Bulk Actions -----
+    function bulkAction(action) {
+        const checkboxes = document.querySelectorAll('.program-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Vui lòng chọn ít nhất một chương trình khuyến mãi');
+            return;
+        }
+        
+        const ids = Array.from(checkboxes).map(checkbox => checkbox.value);
+        
+        // Hiển thị xác nhận
+        const actionText = action === 'activate' ? 'kích hoạt' : 'vô hiệu hóa';
+        if (!confirm(`Bạn có chắc chắn muốn ${actionText} ${checkboxes.length} chương trình khuyến mãi đã chọn?`)) {
+            return;
+        }
+        
+        // Hiển thị loading spinner
+        const actionButtons = document.querySelectorAll('.activate-selected, .deactivate-selected');
+        actionButtons.forEach(btn => {
+            btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.dataset.originalText = originalText;
+            btn.innerHTML = `<div class="spinner mr-2"></div> Đang xử lý...`;
+        });
+        
+        // Đóng dropdown
+        document.getElementById('actionsMenu').classList.add('hidden');
+        
+        // Gửi request
+        fetch('{{ route("admin.promotions.bulk-status-update") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                ids: ids,
+                action: action
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Có lỗi xảy ra khi xử lý yêu cầu');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Cập nhật trạng thái của các hàng đã chọn
+                if (data.programs && data.programs.length > 0) {
+                    updateRowStatus(data.programs);
+                }
+                
+                // Hiển thị thông báo thành công
+                alert(data.message);
+                
+                // Bỏ chọn tất cả các checkbox
+                const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+                if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            } else {
+                alert(data.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.');
+        })
+        .finally(() => {
+            // Khôi phục trạng thái nút
+            actionButtons.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = btn.dataset.originalText;
+            });
+        });
+    }
+    
+    // Cập nhật trạng thái hiển thị của hàng
+    function updateRowStatus(programs) {
+        programs.forEach(program => {
+            const row = document.querySelector(`tr[data-id="${program.id}"]`);
+            if (!row) return;
+            
+            const statusCell = row.querySelector('td:nth-last-child(2)');
+            if (!statusCell) return;
+            
+            const statusBadge = statusCell.querySelector('.status-badge');
+            if (!statusBadge) return;
+            
+            // Xóa tất cả các class trạng thái
+            statusBadge.classList.remove('active', 'inactive', 'scheduled', 'expired');
+            
+            if (program.is_active) {
+                const now = new Date();
+                const startDate = new Date(program.start_date);
+                const endDate = new Date(program.end_date);
+                
+                if (now < startDate) {
+                    statusBadge.classList.add('scheduled');
+                    statusBadge.textContent = 'Sắp diễn ra';
+                } else if (now > endDate) {
+                    statusBadge.classList.add('expired');
+                    statusBadge.textContent = 'Đã hết hạn';
+                } else {
+                    statusBadge.classList.add('active');
+                    statusBadge.textContent = 'Đang hoạt động';
+                }
+            } else {
+                statusBadge.classList.add('inactive');
+                statusBadge.textContent = 'Không hoạt động';
+            }
+        });
+        
+        // Cập nhật số liệu thống kê
+        updateStatistics();
+    }
+    
+    // Cập nhật số liệu thống kê
+    function updateStatistics() {
+        // Đếm số lượng chương trình theo trạng thái
+        const activeCount = document.querySelectorAll('.status-badge.active').length;
+        const scheduledCount = document.querySelectorAll('.status-badge.scheduled').length;
+        const expiredCount = document.querySelectorAll('.status-badge.expired').length;
+        const inactiveCount = document.querySelectorAll('.status-badge.inactive').length;
+        
+        // Cập nhật hiển thị
+        const statCards = document.querySelectorAll('.stat-card .text-2xl');
+        if (statCards.length >= 4) {
+            statCards[1].textContent = activeCount;
+            statCards[2].textContent = scheduledCount;
+            statCards[3].textContent = expiredCount + inactiveCount;
+        }
+    }
+
     // ----- Initialize on DOM Ready -----
     document.addEventListener('DOMContentLoaded', function() {
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(event) {
             const dropdowns = document.querySelectorAll('.dropdown > div:not(.hidden)');
             dropdowns.forEach(dropdown => {
-                const isClickInside = dropdown.contains(event.target) || 
-                                     dropdown.previousElementSibling.contains(event.target);
-                
+                const isClickInside = dropdown.contains(event.target) ||
+                    dropdown.previousElementSibling.contains(event.target);
+
                 if (!isClickInside) {
                     dropdown.classList.add('hidden');
                 }
@@ -990,18 +1147,18 @@
                 }
             });
         });
-
-        // Search functionality
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const url = new URL(window.location);
-                    url.searchParams.set('search', this.value);
-                    window.location.href = url.toString();
-                }
-            });
-        }
+        
+        // Bulk action buttons
+        document.querySelector('.activate-selected')?.addEventListener('click', function(e) {
+            e.preventDefault();
+            bulkAction('activate');
+        });
+        
+        document.querySelector('.deactivate-selected')?.addEventListener('click', function(e) {
+            e.preventDefault();
+            bulkAction('deactivate');
+        });
     });
 </script>
 @endsection
+

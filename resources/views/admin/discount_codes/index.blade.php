@@ -526,8 +526,12 @@
                                 </div>
                             </td>
                             <td class="py-3 px-4">
-                                @if ($code->branches && $code->branches->isNotEmpty())
-                                    {{ $code->branches->pluck('name')->implode(', ') }}
+                                @if ($code->applicable_scope === 'specific_branches')
+                                    @if ($code->branches && $code->branches->isNotEmpty())
+                                        {{ $code->branches->pluck('name')->implode(', ') }}
+                                    @else
+                                        <span class="text-muted-foreground">Chưa liên kết chi nhánh</span>
+                                    @endif
                                 @else
                                     <span class="text-muted-foreground">Tất cả chi nhánh</span>
                                 @endif
