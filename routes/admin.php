@@ -197,6 +197,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/{program}/discount-codes/{discountCode}', [PromotionProgramController::class, 'unlinkDiscountCode'])->name('unlink-discount');
         Route::post('/{program}/branches', [PromotionProgramController::class, 'linkBranch'])->name('link-branch');
         Route::delete('/{program}/branches/{branch}', [PromotionProgramController::class, 'unlinkBranch'])->name('unlink-branch');
+        Route::post('/bulk-status-update', [PromotionProgramController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
     });
 
     // Discount Codes Management
