@@ -259,21 +259,14 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     });
 });
 
-// Hiring driver routes (these are publicly accessible for applications but relate to driver management)
-Route::prefix('hiring-driver')->name('driver.')->group(function () {
-    Route::get('/', [HiringController::class, 'landing'])->name('landing');
-    Route::get('/apply', [HiringController::class, 'applicationForm'])->name('application.form');
-    Route::post('/apply', [HiringController::class, 'submitApplication'])->name('application.submit');
-    Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
-});
 
-// Admin routes for driver applications (these are protected and belong in admin context)
-Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'role:admin']], function () {
-    Route::get('/drivers/applications', [DriverApplicationController::class, 'index'])->name('drivers.applications.index');
-    Route::get('/drivers/applications/{application}', [DriverApplicationController::class, 'show'])->name('drivers.applications.show');
-    Route::patch('/drivers/applications/{application}/status', [DriverApplicationController::class, 'updateStatus'])->name('drivers.applications.update-status');
-    Route::delete('/drivers/applications/{application}', [DriverApplicationController::class, 'destroy'])->name('drivers.applications.destroy');
-    Route::get('/drivers/applications/export/{type}', [DriverApplicationController::class, 'export'])->name('drivers.applications.export');
-    Route::get('/drivers/applications/stats', [DriverApplicationController::class, 'getStats'])->name('drivers.applications.stats');
-    Route::get('/drivers/applications/image/{path}', [DriverApplicationController::class, 'streamImage'])->name('drivers.applications.image');
+// Admin routes for driver applications
+Route::prefix('drivers/applications')->name('drivers.applications.')->group(function () {
+    Route::get('/', [DriverApplicationController::class, 'index'])->name('index');
+    Route::get('/{application}', [DriverApplicationController::class, 'show'])->name('show');
+    Route::patch('/{application}/status', [DriverApplicationController::class, 'updateStatus'])->name('update-status');
+    Route::delete('/{application}', [DriverApplicationController::class, 'destroy'])->name('destroy');
+    Route::get('/export/{type}', [DriverApplicationController::class, 'export'])->name('export');
+    Route::get('/stats', [DriverApplicationController::class, 'getStats'])->name('stats');
+    Route::get('/image/{path}', [DriverApplicationController::class, 'streamImage'])->name('image');
 });
