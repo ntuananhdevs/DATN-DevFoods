@@ -347,6 +347,61 @@
                     <div class="info-value">{{ $discountCode->description }}</div>
                 </div>
             @endif
+
+            <!-- Member Ranks Section -->
+            @if($discountCode->applicable_ranks)
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                    <h3 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        Hạng thành viên áp dụng
+                    </h3>
+                    
+                    <div class="info-value">
+                        @php
+                            $ranks = [
+                                1 => 'Đồng',
+                                2 => 'Bạc',
+                                3 => 'Vàng',
+                                4 => 'Bạch Kim',
+                                5 => 'Kim Cương'
+                            ];
+                            
+                            $selectedRanks = is_string($discountCode->applicable_ranks) 
+                                ? json_decode($discountCode->applicable_ranks, true) 
+                                : (array) $discountCode->applicable_ranks;
+                            
+                            $rankNames = [];
+                            foreach ($selectedRanks as $rankId) {
+                                if (isset($ranks[$rankId])) {
+                                    $rankNames[] = $ranks[$rankId];
+                                }
+                            }
+                        @endphp
+                        
+                        @if(count($rankNames) > 0)
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                @foreach($rankNames as $rank)
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $rank }}
+                                    </span>
+                                @endforeach
+                            </div>
+                            
+                            @if($discountCode->rank_exclusive)
+                                <p class="mt-2 text-sm text-gray-500">Chỉ áp dụng cho các hạng đã chọn</p>
+                            @else
+                                <p class="mt-2 text-sm text-gray-500">Ưu tiên cho các hạng đã chọn</p>
+                            @endif
+                        @else
+                            <p>Áp dụng cho tất cả hạng thành viên</p>
+                        @endif
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -431,7 +486,7 @@
     </div>
 
     <!-- Assigned Users -->
-    @if($discountCode->usage_type == 'private')
+    @if($discountCode->usage_type == 'personal')
     <div class="detail-card">
         <div class="detail-header">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
