@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Branch;
 use App\Models\Favorite;
 use App\Models\DiscountCode;
+use App\Models\UserDiscountCode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -92,7 +93,7 @@ class ProductController extends Controller
         
         // Lấy danh sách mã giảm giá đang hoạt động
         $now = Carbon::now();
-        $activeDiscountCodes = DiscountCode::where('is_active', true)
+        $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
             ->where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
             ->where(function($query) use ($selectedBranchId) {
@@ -103,8 +104,23 @@ class ProductController extends Controller
                             $q->where('branches.id', $selectedBranchId);
                         });
                 }
-            })
-            ->with(['products' => function($query) {
+            });
+        
+        // Chỉ lấy mã giảm giá công khai hoặc mã riêng tư được gán cho người dùng hiện tại
+        $activeDiscountCodesQuery->where(function($query) {
+            $query->where('usage_type', 'public');
+            
+            if (Auth::check()) {
+                $query->orWhere(function($q) {
+                    $q->where('usage_type', 'personal')
+                      ->whereHas('users', function($userQuery) {
+                          $userQuery->where('user_id', Auth::id());
+                      });
+                });
+            }
+        });
+            
+        $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
             ->get();
@@ -264,7 +280,7 @@ class ProductController extends Controller
         
         // Lấy danh sách mã giảm giá áp dụng cho sản phẩm này
         $now = Carbon::now();
-        $activeDiscountCodes = DiscountCode::where('is_active', true)
+        $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
             ->where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
             ->where(function($query) use ($selectedBranchId) {
@@ -275,8 +291,23 @@ class ProductController extends Controller
                             $q->where('branches.id', $selectedBranchId);
                         });
                 }
-            })
-            ->with(['products' => function($query) {
+            });
+            
+        // Chỉ lấy mã giảm giá công khai hoặc mã riêng tư được gán cho người dùng hiện tại
+        $activeDiscountCodesQuery->where(function($query) {
+            $query->where('usage_type', 'public');
+            
+            if (Auth::check()) {
+                $query->orWhere(function($q) {
+                    $q->where('usage_type', 'personal')
+                      ->whereHas('users', function($userQuery) {
+                          $userQuery->where('user_id', Auth::id());
+                      });
+                });
+            }
+        });
+        
+        $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
             ->get();

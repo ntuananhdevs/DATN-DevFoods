@@ -211,9 +211,10 @@
             <!-- Promotions -->
             <a href="{{ route('admin.promotions.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.promotions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Promotions">
                 <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag">
-                        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.828 2.828 0 0 0 4-4l-8.704-8.704Z"></path>
-                        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-percent">
+                        <line x1="19" x2="5" y1="5" y2="19"></line>
+                        <circle cx="6.5" cy="6.5" r="2.5"></circle>
+                        <circle cx="17.5" cy="17.5" r="2.5"></circle>
                     </svg>
                 </span>
                 <span class="sidebar-text">Chương trình khuyến mãi</span>
@@ -227,6 +228,16 @@
                     </svg>
                 </span>
                 <span class="sidebar-text">Mã giảm giá</span>
+            </a>
+            <!-- User Rank History -->
+            <a href="{{ route('admin.user_rank_history.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_rank_history.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="User Rank History">
+                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag">
+                        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.828 2.828 0 0 0 4-4l-8.704-8.704Z"></path>
+                        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Lịch sử rank</span>
             </a>
         </div>
     </div>

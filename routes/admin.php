@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\BranchStockController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Admin\DriverApplicationController;
 use App\Http\Controllers\Admin\DiscountCodeController;
+use App\Http\Controllers\Admin\UserRankHistoryController;
 
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
@@ -95,6 +96,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
         });
+    });
+
+    // User Rank History Management
+    Route::prefix('user_rank_history')->name('user_rank_history.')->group(function () {
+        Route::get('/', [UserRankHistoryController::class, 'index'])->name('index');
     });
 
     // Branch Management
