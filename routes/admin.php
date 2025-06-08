@@ -204,6 +204,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/{program}/branches', [PromotionProgramController::class, 'linkBranch'])->name('link-branch');
         Route::delete('/{program}/branches/{branch}', [PromotionProgramController::class, 'unlinkBranch'])->name('unlink-branch');
         Route::post('/bulk-status-update', [PromotionProgramController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::post('/search', [PromotionProgramController::class, 'search'])->name('search');
     });
 
     // Discount Codes Management
