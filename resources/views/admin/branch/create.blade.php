@@ -140,12 +140,12 @@
                         <div class="card-body">
                             <div class="grid-2">
                                 <div class="form-group">
-                                    <label for="opening_hour" class="form-label"><i class="fas fa-sun text-success" style="color: #4361ee;"></i> Giờ mở cửa</label>
+                                    <label for="opening_hour" class="form-label"><i class="fas fa-sun text-success" style="color:rgb(128, 231, 103);"></i> Giờ mở cửa</label>
                                     <input type="time" id="opening_hour" name="opening_hour" class="form-control @error('opening_hour') is-invalid @enderror" value="{{ old('opening_hour', '08:00') }}">
                                     @error('opening_hour') <div class="form-error">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="form-group">
-                                    <label for="closing_hour" class="form-label"><i class="fas fa-moon text-danger" style="color: #4361ee;"></i> Giờ đóng cửa</label>
+                                    <label for="closing_hour" class="form-label"><i class="fas fa-moon text-danger" style="color:rgb(237, 72, 72);"></i> Giờ đóng cửa</label>
                                     <input type="time" id="closing_hour" name="closing_hour" class="form-control @error('closing_hour') is-invalid @enderror" value="{{ old('closing_hour', '22:00') }}">
                                     @error('closing_hour') <div class="form-error">{{ $message }}</div> @enderror
                                     <div class="form-hint">Giờ đóng cửa phải sau giờ mở cửa</div>
@@ -184,8 +184,8 @@
                         </div>
                         <div class="card-body">
                             <div class="form-group">
-                                <label for="images" class="form-label"><i class="fas fa-upload" style="color: #4361ee;"></i> Tải lên hình ảnh</label>
-                                <div class="upload-label">
+                                <label for="images" class="form-label" style="border: 1px solid #4361ee; padding: 8px; border-radius: 8px; display: inline-block;"><i class="fas fa-upload" style="color: #4361ee;"></i> Tải lên hình ảnh</label>
+                                <div class="">
                                     <input type="file" id="images" name="images[]" class="upload-input @error('images') is-invalid @enderror" accept="image/jpeg,image/png,image/jpg,image/gif" multiple>
                                     <span class="upload-label-text">Chọn nhiều hình ảnh...</span>
                                 </div>
@@ -272,23 +272,23 @@
                         <div class="card-header"><h3>Xem trước</h3></div>
                         <div class="card-body">
                             <div class="preview-card">
-                                <div class="preview-header">
+                                <div class="preview-header" style="display: flex; align-items: center; gap: 0.5rem;">
                                     <i class="fas fa-building" style="color: #4361ee;"></i>
-                                    <h4 id="previewName">Tên chi nhánh</h4>
+                                    <h4 id="previewName" style="margin: 0;">Tên chi nhánh</h4>
                                 </div>
-                                <div class="preview-item"><i class="fas fa-map-marker-alt text-danger"></i> <span id="previewAddress">Địa chỉ chi nhánh</span></div>
+                                <div class="preview-item"><i class="fas fa-map-marker-alt text-danger"style="color: #4361ee;" ></i> <span id="previewAddress">Địa chỉ chi nhánh</span></div>
                                 <div class="preview-item"><i class="fas fa-phone" style="color: #4361ee;"></i> <span id="previewPhone">Số điện thoại</span></div>
                                 <div class="preview-item hidden" id="previewEmailContainer"><i class="fas fa-envelope" style="color: #4361ee;"></i> <span id="previewEmail">Email</span></div>
                                 <div class="preview-item" id="previewManagerContainer"><i class="fas fa-user-tie" style="color: #4361ee;"></i> <span id="previewManager">Chưa chọn quản lý</span></div>
                             </div>
                             <div class="preview-hours">
                                 <div class="preview-hour opening">
-                                    <i class="fas fa-sun text-success"></i>
+                                    <i class="fas fa-sun text-success" style="color:rgb(93, 242, 130);"></i>
                                     <div class="preview-hour-label">Mở cửa</div>
                                     <div class="preview-hour-value opening" id="previewOpeningHour">08:00</div>
                                 </div>
                                 <div class="preview-hour closing">
-                                    <i class="fas fa-moon text-danger"></i>
+                                    <i class="fas fa-moon text-danger" style="color:rgb(235, 86, 86);"></i>
                                     <div class="preview-hour-label">Đóng cửa</div>
                                     <div class="preview-hour-value closing" id="previewClosingHour">22:00</div>
                                 </div>
