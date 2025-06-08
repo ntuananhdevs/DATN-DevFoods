@@ -206,7 +206,18 @@
                         <path d="M9 12h6"></path>
                     </svg>
                 </span>
-                <span class="sidebar-text">Rank</span>
+                <span class="sidebar-text">Thăng hạng</span>
+            </a>
+            <!-- User Rank History -->
+            <a href="{{ route('admin.user_rank_history.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_rank_history.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="User Rank History">
+                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-history">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                        <path d="M12 7v5l4 2"></path>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Lịch sử thăng hạng</span>
             </a>
             <!-- Promotions -->
             <a href="{{ route('admin.promotions.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.promotions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Promotions">
@@ -228,16 +239,6 @@
                     </svg>
                 </span>
                 <span class="sidebar-text">Mã giảm giá</span>
-            </a>
-            <!-- User Rank History -->
-            <a href="{{ route('admin.user_rank_history.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_rank_history.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="User Rank History">
-                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-tag">
-                        <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.828 2.828 0 0 0 4-4l-8.704-8.704Z"></path>
-                        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
-                    </svg>
-                </span>
-                <span class="sidebar-text">Lịch sử rank</span>
             </a>
         </div>
     </div>
