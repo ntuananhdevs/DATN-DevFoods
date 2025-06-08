@@ -660,26 +660,28 @@ public function bulkStatusUpdate(Request $request)
     public function setFeatured(Request $request, $branchId, $imageId)
     {
         try {
-            Log::info('Set featured called', ['branch' => $branchId, 'image' => $imageId]);
-
-            $image = BranchImage::where(['id' => $imageId, 'branch_id' => $branchId])->firstOrFail();
-            BranchImage::where('branch_id', $branchId)->update(['is_featured' => false]);
+            // Find the image
+            $image = BranchImage::where('id', $imageId)
+                ->where('branch_id', $branchId)
+                ->firstOrFail();
+    
+            // Set all other images for this branch to not featured
+            BranchImage::where('branch_id', $branchId)
+                ->where('id', '!=', $imageId)
+                ->update(['is_featured' => false]);
+    
+            // Set this image as featured
             $image->update(['is_featured' => true]);
-
+    
             return response()->json([
-                'toast' => [
-                    'type' => 'success',
-                    'title' => 'Thành công',
-                    'message' => 'Đã thêm chi nhánh mới thành công'
-                ]
+                'success' => true,
+                'message' => 'Ảnh đã được đặt làm ảnh nổi bật'
             ]);
         } catch (\Exception $e) {
-            Log::error('Set featured failed', ['error' => $e->getMessage()]);
-            var_dump($e->getMessage());
-            die();
+            Log::error('Error setting featured image: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi khi cài đặt ảnh đại diện: ' . $e->getMessage()
+                'message' => 'Có lỗi xảy ra khi đặt ảnh nổi bật'
             ], 500);
         }
     }
