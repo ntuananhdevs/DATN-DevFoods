@@ -78,6 +78,8 @@
         border-radius: 8px;
         transition: all 0.2s;
         cursor: pointer;
+        position: relative;
+        padding-top: 16px;
     }
 
     .checkbox-group:hover {
@@ -93,6 +95,19 @@
         margin: 0;
         cursor: pointer;
         flex: 1;
+    }
+
+    .tag-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 2px 6px;
+        border-bottom-left-radius: 6px;
+        font-size: 0.65rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        z-index: 1;
     }
 
     .days-of-week {
@@ -266,105 +281,212 @@
                         </h3>
                         
                         <div class="form-group mb-3">
-                            <label for="applicable_items" class="form-label">Áp dụng cho</label>
-                            <select name="applicable_items" id="applicable_items" class="form-control">
-                                <option value="all_items" {{ old('applicable_items') == 'all_items' ? 'selected' : '' }}>Tất cả sản phẩm</option>
-                                <option value="specific_products" {{ old('applicable_items') == 'specific_products' ? 'selected' : '' }}>Sản phẩm cụ thể</option>
-                                <option value="specific_categories" {{ old('applicable_items') == 'specific_categories' ? 'selected' : '' }}>Danh mục cụ thể</option>
-                                <option value="combos_only" {{ old('applicable_items') == 'combos_only' ? 'selected' : '' }}>Chỉ áp dụng cho combo</option>
-                            </select>
+                            <label class="form-label">Áp dụng cho</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_all" value="all_items" {{ old('applicable_items') == 'all_items' ? 'checked' : '' }} checked>
+                                    <label for="applicable_items_all">Tất cả sản phẩm</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_products" value="specific_products" {{ old('applicable_items') == 'specific_products' ? 'checked' : '' }}>
+                                    <label for="applicable_items_products">Sản phẩm cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_categories" value="specific_categories" {{ old('applicable_items') == 'specific_categories' ? 'checked' : '' }}>
+                                    <label for="applicable_items_categories">Danh mục cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_combos" value="combos_only" {{ old('applicable_items') == 'combos_only' ? 'checked' : '' }}>
+                                    <label for="applicable_items_combos">Chỉ áp dụng cho combo</label>
+                                </div>
+                            </div>
                             @error('applicable_items')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_products' ? '' : 'display: none;' }}">
-                            <label for="items" class="form-label">Chọn sản phẩm</label>
-                            <select name="items[]" class="form-control" multiple size="6">
-                                @foreach($products as $product)
-                                    <option value="{{ $product->id }}" 
-                                        {{ in_array($product->id, old('items', [])) ? 'selected' : '' }}>
-                                        {{ $product->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Giữ phím Ctrl (hoặc Command trên Mac) để chọn nhiều sản phẩm</small>
+                            <label class="form-label font-medium">Chọn sản phẩm</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="relative mb-2">
+                                    <input type="text" id="product_search" placeholder="Tìm kiếm sản phẩm..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($products as $product)
+                                        <div class="product-item checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-green-100 text-green-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                SP
+                                            </span>
+                                            <input type="checkbox" name="items[]" id="product_{{ $product->id }}" value="{{ $product->id }}" 
+                                                {{ in_array($product->id, old('items', [])) ? 'checked' : '' }}>
+                                            <label for="product_{{ $product->id }}">
+                                                {{ $product->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-products">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-products">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div id="categories_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_categories' ? '' : 'display: none;' }}">
-                            <label for="items" class="form-label">Chọn danh mục</label>
-                            <select name="items[]" class="form-control" multiple size="6">
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" 
-                                        {{ in_array($category->id, old('items', [])) ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Giữ phím Ctrl (hoặc Command trên Mac) để chọn nhiều danh mục</small>
+                            <label class="form-label font-medium">Chọn danh mục</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($categories as $category)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                                </svg>
+                                                DM
+                                            </span>
+                                            <input type="checkbox" name="items[]" id="category_{{ $category->id }}" value="{{ $category->id }}" 
+                                                {{ in_array($category->id, old('items', [])) ? 'checked' : '' }}>
+                                            <label for="category_{{ $category->id }}">
+                                                {{ $category->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-categories">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-categories">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div id="combos_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'combos_only' ? '' : 'display: none;' }}">
-                            <label for="items" class="form-label">Chọn combo</label>
-                            <select name="items[]" class="form-control" multiple size="6">
-                                @foreach($combos as $combo)
-                                    <option value="{{ $combo->id }}" 
-                                        {{ in_array($combo->id, old('items', [])) ? 'selected' : '' }}>
-                                        {{ $combo->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Giữ phím Ctrl (hoặc Command trên Mac) để chọn nhiều combo</small>
+                            <label class="form-label font-medium">Chọn combo</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($combos as $combo)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-purple-100 text-purple-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                                </svg>
+                                                Combo
+                                            </span>
+                                            <input type="checkbox" name="items[]" id="combo_{{ $combo->id }}" value="{{ $combo->id }}" 
+                                                {{ in_array($combo->id, old('items', [])) ? 'checked' : '' }}>
+                                            <label for="combo_{{ $combo->id }}">
+                                                {{ $combo->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-combos">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="applicable_scope" class="form-label">Phạm vi áp dụng</label>
-                            <select name="applicable_scope" id="applicable_scope" class="form-control">
-                                <option value="all_branches" {{ old('applicable_scope') == 'all_branches' ? 'selected' : '' }}>Tất cả chi nhánh</option>
-                                <option value="specific_branches" {{ old('applicable_scope') == 'specific_branches' ? 'selected' : '' }}>Chi nhánh cụ thể</option>
-                            </select>
+                            <label class="form-label">Phạm vi áp dụng</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_scope" id="applicable_scope_all" value="all_branches" {{ old('applicable_scope') == 'all_branches' ? 'checked' : '' }} checked>
+                                    <label for="applicable_scope_all">Tất cả chi nhánh</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_scope" id="applicable_scope_specific" value="specific_branches" {{ old('applicable_scope') == 'specific_branches' ? 'checked' : '' }}>
+                                    <label for="applicable_scope_specific">Chi nhánh cụ thể</label>
+                                </div>
+                            </div>
                             @error('applicable_scope')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3" id="branch_selection" style="{{ old('applicable_scope') == 'specific_branches' ? '' : 'display: none;' }}">
-                            <label for="branch_ids" class="form-label">Chọn chi nhánh</label>
-                            <select name="branch_ids[]" id="branch_ids" class="form-control" multiple size="5">
-                                @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}" 
-                                        {{ in_array($branch->id, old('branch_ids', [])) ? 'selected' : '' }}>
-                                        {{ $branch->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Giữ phím Ctrl (hoặc Command trên Mac) để chọn nhiều chi nhánh</small>
+                            <label class="form-label font-medium">Chọn chi nhánh</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($branches as $branch)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-cyan-100 text-cyan-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                </svg>
+                                                CN
+                                            </span>
+                                            <input type="checkbox" name="branch_ids[]" id="branch_{{ $branch->id }}" value="{{ $branch->id }}" 
+                                                {{ in_array($branch->id, old('branch_ids', [])) ? 'checked' : '' }}>
+                                            <label for="branch_{{ $branch->id }}">
+                                                {{ $branch->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-branches">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-branches">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="form-group mb-3">
-                            <label class="form-label">Hạng thành viên áp dụng</label>
-                            <div class="ranks-selection">
-                                @php
-                                    $ranks = [
-                                        1 => 'Đồng',
-                                        2 => 'Bạc',
-                                        3 => 'Vàng',
-                                        4 => 'Bạch Kim',
-                                        5 => 'Kim Cương'
-                                    ];
-                                    $selectedRanks = old('applicable_ranks', []);
-                                    if (!is_array($selectedRanks)) $selectedRanks = [];
-                                @endphp
-                                @foreach ($ranks as $rankValue => $rankName)
-                                    <div class="checkbox-group">
-                                        <input type="checkbox" name="applicable_ranks[]" id="rank_{{ $rankValue }}" value="{{ $rankValue }}" {{ in_array($rankValue, $selectedRanks) ? 'checked' : '' }}>
-                                        <label for="rank_{{ $rankValue }}">{{ $rankName }}</label>
+                            <label class="form-label font-medium">Hạng thành viên áp dụng</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
+                                    @php
+                                        $ranks = [
+                                            1 => ['name' => 'Đồng', 'color' => 'bg-amber-100 text-amber-800'],
+                                            2 => ['name' => 'Bạc', 'color' => 'bg-gray-100 text-gray-800'],
+                                            3 => ['name' => 'Vàng', 'color' => 'bg-yellow-100 text-yellow-800'],
+                                            4 => ['name' => 'Bạch Kim', 'color' => 'bg-indigo-100 text-indigo-800'],
+                                            5 => ['name' => 'Kim Cương', 'color' => 'bg-blue-100 text-blue-800']
+                                        ];
+                                        $selectedRanks = old('applicable_ranks', []);
+                                        if (!is_array($selectedRanks)) $selectedRanks = [];
+                                    @endphp
+                                    @foreach ($ranks as $rankValue => $rank)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                                            <input type="checkbox" name="applicable_ranks[]" id="rank_{{ $rankValue }}" value="{{ $rankValue }}" {{ in_array($rankValue, $selectedRanks) ? 'checked' : '' }}>
+                                            <label for="rank_{{ $rankValue }}" class="flex items-center">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $rank['color'] }} mr-2">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    {{ $rank['name'] }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                
+                                <div class="mt-4 border-t pt-4">
+                                    <div class="bg-white p-3 rounded border border-gray-200">
+                                        <div class="flex items-start">
+                                            <div class="flex items-center h-5">
+                                                <input type="checkbox" name="rank_exclusive" id="rank_exclusive" value="1" 
+                                                    {{ old('rank_exclusive') ? 'checked' : '' }}
+                                                    class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                                            </div>
+                                            <div class="ml-3 text-sm">
+                                                <label for="rank_exclusive" class="font-medium text-gray-700">Áp dụng giới hạn cho hạng đã chọn</label>
+                                                <p class="text-gray-500">
+                                                    Khi bật tùy chọn này, mã giảm giá sẽ <strong>chỉ áp dụng</strong> cho những hạng đã chọn, 
+                                                    không bao gồm các hạng cao hơn. Nếu tắt, mã giảm giá sẽ áp dụng cho các hạng đã chọn và tất cả các hạng cao hơn.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                @endforeach
-                            </div>
-                            <div class="checkbox-group mt-2">
-                                <input type="checkbox" name="rank_exclusive" id="rank_exclusive" value="1" {{ old('rank_exclusive') ? 'checked' : '' }}>
-                                <label for="rank_exclusive">Chỉ áp dụng cho các hạng đã chọn</label>
+                                </div>
                             </div>
                             @error('applicable_ranks')
                                 <div class="text-danger">{{ $message }}</div>
@@ -428,7 +550,8 @@
                         
                         <div class="form-group mb-3">
                             <label for="start_date" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
-                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', now()->format('Y-m-d')) }}" required>
+                            <input type="datetime-local" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', now()->format('Y-m-d\TH:i')) }}" required>
+                            <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('start_date')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -436,7 +559,8 @@
 
                         <div class="form-group mb-3">
                             <label for="end_date" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
-                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', now()->addDay()->format('Y-m-d')) }}" required>
+                            <input type="datetime-local" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', now()->addDays(30)->format('Y-m-d\TH:i')) }}" required>
+                            <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('end_date')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -544,48 +668,165 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Branch selection toggle
-        const applicableScopeSelect = document.getElementById('applicable_scope');
         const branchSelectionDiv = document.getElementById('branch_selection');
+        const branchRadios = document.querySelectorAll('input[name="applicable_scope"]');
         
         // Items selection toggle
-        const applicableItemsSelect = document.getElementById('applicable_items');
         const productsSelectionDiv = document.getElementById('products_selection');
         const categoriesSelectionDiv = document.getElementById('categories_selection');
         const combosSelectionDiv = document.getElementById('combos_selection');
+        const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
+        
+        // Select/Unselect all buttons
+        const selectAllProducts = document.querySelector('.select-all-products');
+        const unselectAllProducts = document.querySelector('.unselect-all-products');
+        const selectAllCategories = document.querySelector('.select-all-categories');
+        const unselectAllCategories = document.querySelector('.unselect-all-categories');
+        const selectAllCombos = document.querySelector('.select-all-combos');
+        const unselectAllCombos = document.querySelector('.unselect-all-combos');
+        const selectAllBranches = document.querySelector('.select-all-branches');
+        const unselectAllBranches = document.querySelector('.unselect-all-branches');
+        
+        // Product search
+        const productSearch = document.getElementById('product_search');
+        
+        // Date fields
+        const startDateField = document.getElementById('start_date');
+        const endDateField = document.getElementById('end_date');
         
         // Initial state check
         toggleBranchSelection();
         toggleItemsSelection();
+        validateDates();
         
         // Add event listeners for changes
-        applicableScopeSelect.addEventListener('change', toggleBranchSelection);
-        applicableItemsSelect.addEventListener('change', toggleItemsSelection);
+        branchRadios.forEach(radio => {
+            radio.addEventListener('change', toggleBranchSelection);
+        });
+        
+        itemRadios.forEach(radio => {
+            radio.addEventListener('change', toggleItemsSelection);
+        });
+        
+        // Add event listeners for date validation
+        if (startDateField && endDateField) {
+            startDateField.addEventListener('change', validateDates);
+            endDateField.addEventListener('change', validateDates);
+        }
+        
+        // Add event listeners for select/unselect all buttons
+        if (selectAllProducts) {
+            selectAllProducts.addEventListener('click', function() {
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllProducts) {
+            unselectAllProducts.addEventListener('click', function() {
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (selectAllCategories) {
+            selectAllCategories.addEventListener('click', function() {
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllCategories) {
+            unselectAllCategories.addEventListener('click', function() {
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (selectAllCombos) {
+            selectAllCombos.addEventListener('click', function() {
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllCombos) {
+            unselectAllCombos.addEventListener('click', function() {
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (selectAllBranches) {
+            selectAllBranches.addEventListener('click', function() {
+                const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllBranches) {
+            unselectAllBranches.addEventListener('click', function() {
+                const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (productSearch) {
+            productSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const productItems = productsSelectionDiv.querySelectorAll('.checkbox-group');
+                
+                productItems.forEach(item => {
+                    const label = item.querySelector('label').textContent.toLowerCase();
+                    if (label.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
         
         function toggleBranchSelection() {
-            if (applicableScopeSelect.value === 'specific_branches') {
-                branchSelectionDiv.style.display = 'block';
-            } else {
-                branchSelectionDiv.style.display = 'none';
+            const selectedScope = document.querySelector('input[name="applicable_scope"]:checked').value;
+            
+            if (branchSelectionDiv) {
+                if (selectedScope === 'specific_branches') {
+                    branchSelectionDiv.style.display = 'block';
+                } else {
+                    branchSelectionDiv.style.display = 'none';
+                }
             }
         }
         
         function toggleItemsSelection() {
-            // Hide all selection divs first
-            productsSelectionDiv.style.display = 'none';
-            categoriesSelectionDiv.style.display = 'none';
-            combosSelectionDiv.style.display = 'none';
+            const selectedItems = document.querySelector('input[name="applicable_items"]:checked').value;
             
-            // Show the appropriate selection div based on selected value
-            switch(applicableItemsSelect.value) {
-                case 'specific_products':
-                    productsSelectionDiv.style.display = 'block';
-                    break;
-                case 'specific_categories':
-                    categoriesSelectionDiv.style.display = 'block';
-                    break;
-                case 'combos_only':
-                    combosSelectionDiv.style.display = 'block';
-                    break;
+            if (productsSelectionDiv) {
+                productsSelectionDiv.style.display = selectedItems === 'specific_products' ? 'block' : 'none';
+            }
+            
+            if (categoriesSelectionDiv) {
+                categoriesSelectionDiv.style.display = selectedItems === 'specific_categories' ? 'block' : 'none';
+            }
+            
+            if (combosSelectionDiv) {
+                combosSelectionDiv.style.display = selectedItems === 'combos_only' ? 'block' : 'none';
+            }
+        }
+        
+        function validateDates() {
+            if (!startDateField || !endDateField) return;
+            
+            const startDate = new Date(startDateField.value);
+            const endDate = new Date(endDateField.value);
+            
+            if (endDate < startDate) {
+                alert('Ngày kết thúc không thể trước ngày bắt đầu!');
+                // Đặt ngày kết thúc thành ngày bắt đầu + 30 ngày
+                const newEndDate = new Date(startDate);
+                newEndDate.setDate(newEndDate.getDate() + 30);
+                endDateField.value = newEndDate.toISOString().split('T')[0];
             }
         }
     });
