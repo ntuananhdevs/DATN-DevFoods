@@ -8,9 +8,15 @@ use App\Models\DiscountCodeBranch;
 use App\Models\DiscountCodeProduct;
 use App\Models\UserDiscountCode;
 use App\Models\DiscountUsageHistory;
+use App\Models\Branch;
+use App\Models\Product;
+use App\Models\Category;
+use App\Models\Combo;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class DiscountCodeController extends Controller
 {
@@ -56,6 +62,10 @@ class DiscountCodeController extends Controller
                     $query->where('is_active', true)
                           ->where('end_date', '<', $now);
                     break;
+                case 'upcoming':
+                    $query->where('is_active', true)
+                          ->where('start_date', '>', $now);
+                    break;
             }
         }
 
@@ -90,7 +100,12 @@ class DiscountCodeController extends Controller
 
     public function create()
     {
-        return view('admin.discount_codes.create');
+        $branches = Branch::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+        $products = Product::orderBy('name')->get();
+        $combos = Combo::orderBy('name')->get();
+        
+        return view('admin.discount_codes.create', compact('branches', 'categories', 'products', 'combos'));
     }
 
     public function store(Request $request)
@@ -102,45 +117,114 @@ class DiscountCodeController extends Controller
             'discount_value' => 'required|numeric|min:0',
             'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
+            'applicable_items' => 'nullable|string',
+            'applicable_scope' => 'nullable|string',
+            'applicable_ranks' => 'nullable|array',
+            'applicable_ranks.*' => 'integer|between:1,5',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'valid_days_of_week' => 'nullable|array',
             'valid_days_of_week.*' => 'integer|between:0,6',
             'valid_from_time' => 'nullable|date_format:H:i',
-            'valid_to_time' => 'nullable|date_format:H:i|after:valid_from_time',
+            'valid_to_time' => 'nullable|date_format:H:i|after_or_equal:valid_from_time',
+            'usage_type' => 'required|in:public,personal',
+            'max_total_usage' => 'nullable|integer|min:0',
+            'max_usage_per_user' => 'nullable|integer|min:1',
         ]);
 
-        $discountCode = DiscountCode::create([
-            'code' => $request->code,
-            'name' => $request->name,
-            'description' => $request->description,
-            'image' => $request->image, // Xử lý upload ảnh nếu cần
-            'discount_type' => $request->discount_type,
-            'discount_value' => $request->discount_value,
-            'min_order_amount' => $request->min_order_amount ?? 0,
-            'max_discount_amount' => $request->max_discount_amount,
-            'applicable_scope' => $request->applicable_scope ?? 'all_branches',
-            'applicable_items' => $request->applicable_items ?? 'all_items',
-            'applicable_ranks' => $request->applicable_ranks,
-            'valid_days_of_week' => $request->valid_days_of_week,
-            'valid_from_time' => $request->valid_from_time,
-            'valid_to_time' => $request->valid_to_time,
-            'usage_type' => $request->usage_type ?? 'public',
-            'max_total_usage' => $request->max_total_usage,
-            'max_usage_per_user' => $request->max_usage_per_user ?? 1,
-            'is_active' => $request->is_active ?? true,
-            'is_featured' => $request->is_featured ?? false,
-            'display_order' => $request->display_order ?? 0,
-            'created_by' => Auth::guard('admin')->id(),
-        ]);
-
-        return redirect()->route('admin.discount_codes.index')->with('success', 'Tạo mã giảm giá thành công.');
+        DB::beginTransaction();
+        
+        try {
+            $discountCode = DiscountCode::create([
+                'code' => $request->code,
+                'name' => $request->name,
+                'description' => $request->description,
+                'image' => $request->image, 
+                'discount_type' => $request->discount_type,
+                'discount_value' => $request->discount_value,
+                'min_order_amount' => $request->min_order_amount ?? 0,
+                'max_discount_amount' => $request->max_discount_amount,
+                'applicable_scope' => $request->applicable_scope ?? 'all_branches',
+                'applicable_items' => $request->applicable_items ?? 'all_items',
+                'applicable_ranks' => $request->applicable_ranks,
+                'rank_exclusive' => $request->has('rank_exclusive'),
+                'valid_days_of_week' => $request->valid_days_of_week,
+                'valid_from_time' => $request->valid_from_time,
+                'valid_to_time' => $request->valid_to_time,
+                'usage_type' => $request->usage_type ?? 'public',
+                'max_total_usage' => $request->max_total_usage,
+                'max_usage_per_user' => $request->max_usage_per_user ?? 1,
+                'is_active' => $request->has('is_active'),
+                'is_featured' => $request->has('is_featured'),
+                'display_order' => $request->display_order ?? 0,
+                'created_by' => Auth::guard('admin')->id(),
+            ]);
+            
+            // Handle specific branches if applicable
+            if ($request->applicable_scope === 'specific_branches' && $request->has('branch_ids')) {
+                foreach ($request->branch_ids as $branchId) {
+                    DiscountCodeBranch::create([
+                        'discount_code_id' => $discountCode->id,
+                        'branch_id' => $branchId,
+                    ]);
+                }
+            }
+            
+            // Handle specific products/categories/combos if applicable
+            if ($request->applicable_items !== 'all_items' && $request->has('items')) {
+                $type = $request->applicable_items;
+                $items = $request->items;
+                
+                foreach ($items as $itemId) {
+                    $data = [
+                        'discount_code_id' => $discountCode->id,
+                        'product_id' => null,
+                        'category_id' => null,
+                        'combo_id' => null,
+                    ];
+                    
+                    switch ($type) {
+                        case 'specific_products':
+                            $data['product_id'] = $itemId;
+                            break;
+                        case 'specific_categories':
+                            $data['category_id'] = $itemId;
+                            break;
+                        case 'combos_only':
+                            $data['combo_id'] = $itemId;
+                            break;
+                    }
+                    
+                    DiscountCodeProduct::create($data);
+                }
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('admin.discount_codes.index')->with('success', 'Tạo mã giảm giá thành công.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Đã xảy ra lỗi: ' . $e->getMessage());
+        }
     }
 
     public function edit($id)
     {
         $discountCode = DiscountCode::with(['branches', 'products'])->findOrFail($id);
-        return view('admin.discount_codes.edit', compact('discountCode'));
+        $branches = Branch::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+        $products = Product::orderBy('name')->get();
+        $combos = Combo::orderBy('name')->get();
+        
+        $selectedBranches = $discountCode->branches->pluck('id')->toArray();
+        $selectedProducts = $discountCode->products->where('product_id', '!=', null)->pluck('product_id')->toArray();
+        $selectedCategories = $discountCode->products->where('category_id', '!=', null)->pluck('category_id')->toArray();
+        $selectedCombos = $discountCode->products->where('combo_id', '!=', null)->pluck('combo_id')->toArray();
+        
+        return view('admin.discount_codes.edit', compact(
+            'discountCode', 'branches', 'categories', 'products', 'combos',
+            'selectedBranches', 'selectedProducts', 'selectedCategories', 'selectedCombos'
+        ));
     }
 
     public function update(Request $request, $id)
@@ -154,36 +238,144 @@ class DiscountCodeController extends Controller
             'discount_value' => 'required|numeric|min:0',
             'min_order_amount' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
+            'applicable_items' => 'nullable|string',
+            'applicable_scope' => 'nullable|string',
+            'applicable_ranks' => 'nullable|array',
+            'applicable_ranks.*' => 'integer|between:1,5',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'valid_days_of_week' => 'nullable|array',
             'valid_days_of_week.*' => 'integer|between:0,6',
             'valid_from_time' => 'nullable|date_format:H:i',
-            'valid_to_time' => 'nullable|date_format:H:i|after:valid_from_time',
-            'usage_type' => 'required|in:public,personal', // Add this line
+            'valid_to_time' => 'nullable|date_format:H:i|after_or_equal:valid_from_time',
+            'usage_type' => 'required|in:public,personal', 
+            'max_total_usage' => 'nullable|integer|min:0',
+            'max_usage_per_user' => 'nullable|integer|min:1',
         ]);
 
-        $discountCode->update($request->only([
-            'code', 'name', 'description', 'image', 'discount_type', 'discount_value',
-            'min_order_amount', 'max_discount_amount', 'applicable_scope', 'applicable_items',
-            'applicable_ranks', 'valid_days_of_week', 'valid_from_time', 'valid_to_time',
-            'usage_type', 'max_total_usage', 'max_usage_per_user', 'is_active', 'is_featured',
-            'display_order'
-        ]));
-
-        return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật mã giảm giá thành công.');
+        DB::beginTransaction();
+        
+        try {
+            $discountCode->update([
+                'code' => $request->code,
+                'name' => $request->name,
+                'description' => $request->description,
+                'image' => $request->image,
+                'discount_type' => $request->discount_type,
+                'discount_value' => $request->discount_value,
+                'min_order_amount' => $request->min_order_amount ?? 0,
+                'max_discount_amount' => $request->max_discount_amount,
+                'applicable_scope' => $request->applicable_scope ?? 'all_branches',
+                'applicable_items' => $request->applicable_items ?? 'all_items',
+                'applicable_ranks' => $request->applicable_ranks,
+                'rank_exclusive' => $request->has('rank_exclusive'),
+                'valid_days_of_week' => $request->valid_days_of_week,
+                'valid_from_time' => $request->valid_from_time,
+                'valid_to_time' => $request->valid_to_time,
+                'usage_type' => $request->usage_type,
+                'max_total_usage' => $request->max_total_usage,
+                'max_usage_per_user' => $request->max_usage_per_user ?? 1,
+                'is_active' => $request->has('is_active'),
+                'is_featured' => $request->has('is_featured'),
+                'display_order' => $request->display_order ?? 0
+            ]);
+            
+            // Handle specific branches update if applicable
+            if ($request->applicable_scope === 'specific_branches') {
+                // Remove existing branch relationships
+                DiscountCodeBranch::where('discount_code_id', $discountCode->id)->delete();
+                
+                // Add new branch relationships
+                if ($request->has('branch_ids')) {
+                    foreach ($request->branch_ids as $branchId) {
+                        DiscountCodeBranch::create([
+                            'discount_code_id' => $discountCode->id,
+                            'branch_id' => $branchId,
+                        ]);
+                    }
+                }
+            }
+            
+            // Handle specific products/categories/combos update if applicable
+            if ($request->applicable_items !== 'all_items') {
+                // Remove existing product relationships
+                DiscountCodeProduct::where('discount_code_id', $discountCode->id)->delete();
+                
+                // Add new product relationships
+                if ($request->has('items')) {
+                    $type = $request->applicable_items;
+                    $items = $request->items;
+                    
+                    foreach ($items as $itemId) {
+                        $data = [
+                            'discount_code_id' => $discountCode->id,
+                            'product_id' => null,
+                            'category_id' => null,
+                            'combo_id' => null,
+                        ];
+                        
+                        switch ($type) {
+                            case 'specific_products':
+                                $data['product_id'] = $itemId;
+                                break;
+                            case 'specific_categories':
+                                $data['category_id'] = $itemId;
+                                break;
+                            case 'combos_only':
+                                $data['combo_id'] = $itemId;
+                                break;
+                        }
+                        
+                        DiscountCodeProduct::create($data);
+                    }
+                }
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật mã giảm giá thành công.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Đã xảy ra lỗi: ' . $e->getMessage());
+        }
     }
 
     public function destroy($id)
     {
-        DiscountCode::findOrFail($id)->delete();
-        return redirect()->route('admin.discount_codes.index')->with('success', 'Xóa mã giảm giá thành công.');
+        try {
+            DB::beginTransaction();
+            
+            // Delete related records first
+            DiscountCodeBranch::where('discount_code_id', $id)->delete();
+            DiscountCodeProduct::where('discount_code_id', $id)->delete();
+            UserDiscountCode::where('discount_code_id', $id)->delete();
+            
+            // Then delete the discount code
+            DiscountCode::findOrFail($id)->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('admin.discount_codes.index')->with('success', 'Xóa mã giảm giá thành công.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('admin.discount_codes.index')->with('error', 'Không thể xóa mã giảm giá: ' . $e->getMessage());
+        }
     }
 
     public function show($id)
     {
-        $discountCode = DiscountCode::with(['createdBy', 'branches', 'products.product', 'products.category', 'products.combo'])
-            ->findOrFail($id);
+        $discountCode = DiscountCode::with([
+            'createdBy', 
+            'branches', 
+            'products.product', 
+            'products.category', 
+            'products.combo',
+            'users.user'
+        ])->findOrFail($id);
+        
+        $usageCount = DiscountUsageHistory::where('discount_code_id', $id)->count();
+        $discountCode->current_usage_count = $usageCount;
+        
         return view('admin.discount_codes.show', compact('discountCode'));
     }
 
@@ -199,6 +391,30 @@ class DiscountCodeController extends Controller
         $request->validate(['ids' => 'required|array', 'is_active' => 'required|boolean']);
         DiscountCode::whereIn('id', $request->ids)->update(['is_active' => $request->is_active]);
         return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật trạng thái hàng loạt thành công.');
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $request->validate(['ids' => 'required|array']);
+        
+        try {
+            DB::beginTransaction();
+            
+            foreach ($request->ids as $id) {
+                DiscountCodeBranch::where('discount_code_id', $id)->delete();
+                DiscountCodeProduct::where('discount_code_id', $id)->delete();
+                UserDiscountCode::where('discount_code_id', $id)->delete();
+            }
+            
+            DiscountCode::whereIn('id', $request->ids)->delete();
+            
+            DB::commit();
+            
+            return redirect()->route('admin.discount_codes.index')->with('success', 'Xóa hàng loạt mã giảm giá thành công.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('admin.discount_codes.index')->with('error', 'Không thể xóa mã giảm giá: ' . $e->getMessage());
+        }
     }
 
     public function export()
@@ -277,9 +493,12 @@ class DiscountCodeController extends Controller
 
     public function usageHistory($id)
     {
+        $discountCode = DiscountCode::findOrFail($id);
         $usageHistory = DiscountUsageHistory::with(['discountCode', 'user', 'branch'])
             ->where('discount_code_id', $id)
-            ->paginate(10);
-        return view('admin.discount_codes.usage_history', compact('usageHistory'));
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+        
+        return view('admin.discount_codes.usage_history', compact('discountCode', 'usageHistory'));
     }
 }
