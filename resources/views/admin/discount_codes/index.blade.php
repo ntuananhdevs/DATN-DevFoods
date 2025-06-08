@@ -155,7 +155,7 @@
         </div>
         <div class="flex items-center gap-2">
             <div class="dropdown relative">
-                <button class="btn btn-outline flex items-center" id="exportDropdown" onclick="toggleDropdown('exportMenu')">
+                <button class="btn btn-outline flex items-center dropdown-toggle" id="exportDropdown" data-dropdown="exportMenu">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
@@ -260,16 +260,16 @@
     </div>
 
     <!-- Filter and Search Bar -->
-    <div class="card border rounded-lg overflow-hidden mb-4">
+    <div class="card border rounded-lg mb-4">
         <div class="p-4 flex flex-col sm:flex-row justify-between gap-4 border-b">
             <div class="relative w-full sm:w-auto sm:min-w-[300px]">
-                <form action="{{ route('admin.discount_codes.index') }}" method="GET" class="flex items-center">
+                <form id="searchForm" action="{{ route('admin.discount_codes.index') }}" method="GET" class="flex items-center">
                     <div class="relative flex-grow">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.3-4.3"></path>
                         </svg>
-                        <input type="text" name="search" placeholder="Tìm kiếm theo mã hoặc tên..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" value="{{ request('search') }}">
+                        <input type="text" id="searchInput" name="search" placeholder="Tìm kiếm theo mã hoặc tên..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" value="{{ request('search') }}">
                     </div>
                     <button type="submit" class="ml-2 btn btn-default">Tìm</button>
                 </form>
@@ -283,7 +283,7 @@
                     <span>Chọn tất cả</span>
                 </button>
                 <div class="dropdown relative">
-                    <button class="btn btn-outline flex items-center" id="actionsDropdown" onclick="toggleDropdown('actionsMenu')">
+                    <button class="btn btn-outline flex items-center dropdown-toggle" id="actionsDropdown" data-dropdown="actionsMenu">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                             <circle cx="12" cy="12" r="2"></circle>
                             <circle cx="12" cy="5" r="2"></circle>
@@ -299,7 +299,7 @@
                             <form action="{{ route('admin.discount_codes.bulk-status-update') }}" method="POST" id="activateForm" class="bulk-form">
                                 @csrf
                                 <input type="hidden" name="is_active" value="1">
-                                <button type="button" onclick="submitBulkAction('activateForm')" class="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                <button type="button" class="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground bulk-action-btn" data-form-id="activateForm">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-green-500">
                                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                         <path d="m9 11 3 3L22 4"></path>
@@ -310,7 +310,7 @@
                             <form action="{{ route('admin.discount_codes.bulk-status-update') }}" method="POST" id="deactivateForm" class="bulk-form">
                                 @csrf
                                 <input type="hidden" name="is_active" value="0">
-                                <button type="button" onclick="submitBulkAction('deactivateForm')" class="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                <button type="button" class="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground bulk-action-btn" data-form-id="deactivateForm">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500">
                                         <circle cx="12" cy="12" r="10"></circle>
                                         <path d="m15 9-6 6"></path>
@@ -322,7 +322,7 @@
                         </div>
                     </div>
                 </div>
-                <button class="btn btn-outline flex items-center" onclick="toggleModal('filterModal')">
+                <button type="button" class="btn btn-outline flex items-center" id="filterBtn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                     </svg>
@@ -338,163 +338,14 @@
             <h3 class="text-lg font-medium">Danh sách mã giảm giá</h3>
         </div>
         
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b bg-muted/50">
-                        <th class="py-3 px-4 text-left font-medium">
-                            <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300">
-                        </th>
-                        <th class="py-3 px-4 text-left font-medium">Mã</th>
-                        <th class="py-3 px-4 text-left font-medium">Tên</th>
-                        <th class="py-3 px-4 text-left font-medium">Loại giảm giá</th>
-                        <th class="py-3 px-4 text-center font-medium">Giá trị</th>
-                        <th class="py-3 px-4 text-center font-medium">Hiệu lực</th>
-                        <th class="py-3 px-4 text-center font-medium">Loại sử dụng</th>
-                        <th class="py-3 px-4 text-left font-medium">Trạng thái</th>
-                        <th class="py-3 px-4 text-center font-medium">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($discountCodes as $code)
-                    <tr class="border-b hover:bg-muted/20">
-                        <td class="py-3 px-4">
-                            <input type="checkbox" name="ids[]" value="{{ $code->id }}" class="discount-checkbox rounded border-gray-300">
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="font-mono font-medium">{{ $code->code }}</div>
-                        </td>
-                        <td class="py-3 px-4">
-                            <div>
-                                <div class="font-medium">{{ $code->name }}</div>
-                                <div class="text-sm text-muted-foreground">{{ Str::limit($code->description ?? '', 50) }}</div>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4">
-                            @php
-                                $typeClass = 'percentage';
-                                $typeText = 'Phần trăm';
-                                switch($code->discount_type) {
-                                    case 'fixed_amount':
-                                        $typeClass = 'fixed-amount';
-                                        $typeText = 'Số tiền cố định';
-                                        break;
-                                    case 'free_shipping':
-                                        $typeClass = 'free-shipping';
-                                        $typeText = 'Miễn phí vận chuyển';
-                                        break;
-                                }
-                            @endphp
-                            <span class="discount-type {{ $typeClass }}">{{ $typeText }}</span>
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            @if($code->discount_type == 'percentage')
-                                <span class="value-display percentage">{{ $code->discount_value }}%</span>
-                            @elseif($code->discount_type == 'fixed_amount')
-                                <span class="value-display amount">{{ number_format($code->discount_value) }} đ</span>
-                            @else
-                                <span class="value-display">Miễn phí ship</span>
-                            @endif
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            <div class="date-range">
-                                <div class="start-date">{{ $code->start_date->format('d/m/Y') }}</div>
-                                <div>đến {{ $code->end_date->format('d/m/Y') }}</div>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                            <span class="px-2 py-1 rounded-full text-xs {{ $code->usage_type === 'public' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800' }}">
-                                {{ $code->usage_type === 'public' ? 'Công khai' : 'Cá nhân' }}
-                            </span>
-                        </td>
-                        <td class="py-3 px-4">
-                            @php
-                                $now = now();
-                                if (!$code->is_active) {
-                                    $status = 'inactive';
-                                    $statusText = 'Không hoạt động';
-                                } elseif ($now->gt($code->end_date)) {
-                                    $status = 'expired';
-                                    $statusText = 'Đã hết hạn';
-                                } else {
-                                    $status = 'active';
-                                    $statusText = 'Hoạt động';
-                                }
-                            @endphp
-                            <span class="status-badge {{ $status }}">{{ $statusText }}</span>
-                        </td>
-                        <td class="py-3 px-4">
-                            <div class="flex justify-center space-x-1">
-                                <a href="{{ route('admin.discount_codes.show', $code->id) }}"
-                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
-                                    title="Xem chi tiết">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </a>
-                                <a href="{{ route('admin.discount_codes.edit', $code->id) }}"
-                                    class="flex items-center justify-center rounded-md hover:bg-accent p-2"
-                                    title="Chỉnh sửa">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                </a>
-                                <form action="{{ route('admin.discount_codes.destroy', $code->id) }}" method="POST" class="delete-form">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-accent"
-                                        onclick="confirmDelete('{{ $code->code }}', this)"
-                                        title="Xóa">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M3 6h18"></path>
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                        </svg>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="text-center py-4">
-                            <div class="flex flex-col items-center justify-center text-muted-foreground py-6">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2">
-                                    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2Z"></path>
-                                    <path d="M13 5v2"></path>
-                                    <path d="M13 17v2"></path>
-                                    <path d="M13 11v2"></path>
-                                </svg>
-                                <h3 class="text-lg font-medium">Không có mã giảm giá nào</h3>
-                                <p class="text-sm">Hãy tạo mã giảm giá mới để bắt đầu</p>
-                                <a href="{{ route('admin.discount_codes.create') }}" class="btn btn-primary mt-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
-                                        <path d="M5 12h14"></path>
-                                        <path d="M12 5v14"></path>
-                                    </svg>
-                                    Tạo mã giảm giá mới
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="overflow-x-auto" id="discount-codes-table-container">
+            @include('admin.discount_codes.partials.discount_codes_table', ['discountCodes' => $discountCodes])
         </div>
 
         <!-- Pagination -->
-        @if($discountCodes->hasPages())
-        <div class="flex items-center justify-between px-4 py-4 border-t">
-            <div class="text-sm text-muted-foreground">
-                Hiển thị {{ $discountCodes->firstItem() }} đến {{ $discountCodes->lastItem() }} của {{ $discountCodes->total() }} mục
-            </div>
-            <div class="flex items-center space-x-2">
-                {{ $discountCodes->links() }}
-            </div>
+        <div id="pagination-container">
+            @include('admin.discount_codes.partials.pagination', ['discountCodes' => $discountCodes])
         </div>
-        @endif
     </div>
     
     <!-- Filter Modal -->
@@ -502,7 +353,7 @@
         <div class="filter-modal-content">
             <div class="flex items-center justify-between p-4 border-b">
                 <h3 class="text-lg font-medium">Lọc mã giảm giá</h3>
-                <button type="button" class="text-muted-foreground hover:text-foreground" onclick="toggleModal('filterModal')">
+                <button type="button" class="text-muted-foreground hover:text-foreground" id="closeFilterBtn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 6 6 18"></path>
                         <path d="m6 6 12 12"></path>
@@ -567,91 +418,462 @@
                     </div>
                 </div>
                 <div class="flex items-center justify-end p-4 border-t space-x-2">
-                    <button type="button" class="btn btn-outline" onclick="resetFilters()">Xóa bộ lọc</button>
-                    <button type="button" class="btn btn-outline" onclick="toggleModal('filterModal')">Đóng</button>
+                    <button type="button" class="btn btn-outline" id="resetFilterModalBtn">Xóa bộ lọc</button>
+                    <button type="button" class="btn btn-outline" id="closeFilterModalBtn">Đóng</button>
                     <button type="submit" class="btn btn-primary">Áp dụng</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+@endsection
 
 @section('scripts')
 <script>
-    // ----- Dropdown Toggle -----
-    function toggleDropdown(id) {
-        const dropdown = document.getElementById(id);
-        if (dropdown) {
-            dropdown.classList.toggle('hidden');
-        }
-    }
-
-    // ----- Modal Toggle -----
-    function toggleModal(id) {
-        const modal = document.getElementById(id);
-        if (modal) {
-            modal.classList.toggle('hidden');
-        }
-    }
-
-    // ----- Reset Filters -----
-    function resetFilters() {
-        const form = document.getElementById('filterForm');
-        form.reset();
-        toggleModal('filterModal');
-        window.location.href = '{{ route("admin.discount_codes.index") }}';
-    }
-
-    // ----- Confirm Delete -----
-    function confirmDelete(codeName, button) {
-        if (confirm(`Bạn có chắc chắn muốn xóa mã giảm giá "${codeName}"?`)) {
-            button.closest('form').submit();
-        }
-    }
-    
-    // ----- Submit Bulk Actions -----
-    function submitBulkAction(formId) {
-        const selectedCheckboxes = document.querySelectorAll('.discount-checkbox:checked');
-        
-        if (selectedCheckboxes.length === 0) {
-            alert('Vui lòng chọn ít nhất một mã giảm giá');
-            return;
-        }
-        
-        const form = document.getElementById(formId);
-        
-        // Clear any existing hidden inputs for IDs
-        const existingInputs = form.querySelectorAll('input[name="ids[]"]');
-        existingInputs.forEach(input => input.remove());
-        
-        // Add hidden inputs for each selected ID
-        selectedCheckboxes.forEach(checkbox => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'ids[]';
-            input.value = checkbox.value;
-            form.appendChild(input);
-        });
-        
-        // Submit the form
-        form.submit();
-    }
-    
-    // ----- Initialize on DOM Ready -----
+    // Khởi tạo các animation và styles
     document.addEventListener('DOMContentLoaded', function() {
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const dropdowns = document.querySelectorAll('.dropdown > div:not(.hidden)');
-            dropdowns.forEach(dropdown => {
-                const isClickInside = dropdown.contains(event.target) || 
-                                     dropdown.previousElementSibling.contains(event.target);
-                
-                if (!isClickInside) {
-                    dropdown.classList.add('hidden');
-                }
+        
+        // Thêm CSS cho animation
+        const style = document.createElement('style');
+        style.textContent = `
+            .fade-out {
+                opacity: 0;
+                transition: opacity 0.3s ease-out;
+            }
+            #toast-notification {
+                transition: transform 0.3s ease-out;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Tìm kiếm Ajax với debounce
+        const searchInput = document.getElementById('searchInput');
+        const searchForm = document.getElementById('searchForm');
+        let searchTimeout;
+        
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(performSearch, 500);
             });
-        });
+            
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                performSearch();
+            });
+        }
+        
+        // Xử lý tìm kiếm Ajax
+        function performSearch() {
+            const searchTerm = searchInput.value.trim();
+            const tableContainer = document.getElementById('discount-codes-table-container');
+            const paginationContainer = document.getElementById('pagination-container');
+            
+            // Hiển thị hiệu ứng loading
+            tableContainer.innerHTML = `
+                <div class="flex justify-center items-center py-8">
+                    <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            `;
+            
+            // Lấy các tham số từ form
+            const queryParams = new URLSearchParams(new FormData(searchForm));
+            
+            // Thêm tham số Ajax
+            queryParams.append('_ajax', '1');
+            
+            // Gửi yêu cầu tìm kiếm
+            fetch(`${searchForm.action}?${queryParams.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cập nhật nội dung bảng
+                    tableContainer.innerHTML = data.html;
+                    paginationContainer.innerHTML = data.pagination;
+                    
+                    // Cập nhật lại các event listener cho các nút trong bảng
+                    setupDeleteButtons();
+                    setupToggleStatusButtons();
+                    setupCheckboxHandlers();
+                    setupBulkActionButtons();
+                    setupUiEventHandlers();
+                    
+                    // Cập nhật URL với tham số tìm kiếm
+                    const url = new URL(window.location);
+                    url.searchParams.set('search', searchTerm);
+                    window.history.pushState({}, '', url);
+                } else {
+                    // Hiển thị thông báo lỗi
+                    showToast('error', data.message || 'Có lỗi xảy ra khi tìm kiếm');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                tableContainer.innerHTML = '<div class="p-4 text-center">Có lỗi xảy ra khi tải dữ liệu</div>';
+            });
+        }
+        
+        // Xử lý sự kiện cho nút Delete
+        function setupDeleteButtons() {
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const codeName = this.getAttribute('data-code');
+                    confirmDelete(codeName, this);
+                });
+            });
+        }
+        
+        // Xử lý sự kiện cho nút Toggle Status
+        function setupToggleStatusButtons() {
+            document.querySelectorAll('.toggle-status-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    toggleStatus(id, this);
+                });
+            });
+        }
+        
+        // Xử lý sự kiện cho nút Bulk Action
+        function setupBulkActionButtons() {
+            console.log('Setting up bulk action buttons');
+            document.querySelectorAll('.bulk-action-btn').forEach(button => {
+                console.log('Found bulk action button:', button);
+                
+                // Thêm event listener mới
+                button.addEventListener('click', function(e) {
+                    console.log('Bulk action button clicked', this);
+                    const formId = this.getAttribute('data-form-id');
+                    submitBulkAction(formId);
+                });
+            });
+        }
+        
+        // Khởi tạo các bulk action buttons
+        setupBulkActionButtons();
+        
+        // Khởi tạo sự kiện cho các nút
+        setupDeleteButtons();
+        setupToggleStatusButtons();
+        
+        // ----- Dropdown Toggle -----
+        // Định nghĩa toggleDropdown trong global scope để có thể gọi từ attribute onclick
+        window.toggleDropdown = function(id) {
+            console.log('Toggle dropdown called for', id);
+            const dropdown = document.getElementById(id);
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
+        }
 
+        // ----- Modal Toggle -----
+        window.toggleModal = function(id) {
+            console.log('Toggle modal called for', id);
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.toggle('hidden');
+            }
+        }
+
+        // ----- Reset Filters -----
+        window.resetFilters = function() {
+            const form = document.getElementById('filterForm');
+            form.reset();
+            window.toggleModal('filterModal');
+            window.location.href = '{{ route("admin.discount_codes.index") }}';
+        }
+        
+        // Thêm sự kiện cho các nút trong modal lọc
+        const resetFilterModalBtn = document.getElementById('resetFilterModalBtn');
+        const closeFilterModalBtn = document.getElementById('closeFilterModalBtn');
+        
+        if (resetFilterModalBtn) {
+            resetFilterModalBtn.addEventListener('click', function() {
+                window.resetFilters();
+            });
+        }
+        
+        if (closeFilterModalBtn) {
+            closeFilterModalBtn.addEventListener('click', function() {
+                window.toggleModal('filterModal');
+            });
+        }
+
+        // ----- Toast Notification Function -----
+        function showToast(type, message) {
+            // Kiểm tra và xóa toast cũ nếu có
+            const existingToast = document.getElementById('toast-notification');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Tạo toast mới
+            const toast = document.createElement('div');
+            toast.id = 'toast-notification';
+            toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+            
+            let bgColor, iconSvg;
+            if (type === 'success') {
+                bgColor = 'bg-green-100 border border-green-400 text-green-700';
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>';
+            } else {
+                bgColor = 'bg-red-100 border border-red-400 text-red-700';
+                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>';
+            }
+            
+            toast.className += ` ${bgColor}`;
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    ${iconSvg}
+                    <span>${message}</span>
+                    <button class="ml-auto" onclick="this.parentElement.parentElement.remove()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+                toast.classList.add('translate-x-0');
+            }, 10);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 5000);
+        }
+
+        // ----- Create Empty Row Function -----
+        function createEmptyRow() {
+            const tr = document.createElement('tr');
+            tr.className = 'empty-row';
+            tr.innerHTML = `
+                <td colspan="9" class="text-center py-4">
+                    <div class="flex flex-col items-center justify-center text-muted-foreground py-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2">
+                            <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2Z"></path>
+                            <path d="M13 5v2"></path>
+                            <path d="M13 17v2"></path>
+                            <path d="M13 11v2"></path>
+                        </svg>
+                        <h3 class="text-lg font-medium">Không có mã giảm giá nào</h3>
+                        <p class="text-sm">Hãy tạo mã giảm giá mới để bắt đầu</p>
+                        <a href="{{ route('admin.discount_codes.create') }}" class="btn btn-primary mt-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
+                                <path d="M5 12h14"></path>
+                                <path d="M12 5v14"></path>
+                            </svg>
+                            Tạo mã giảm giá mới
+                        </a>
+                    </div>
+                </td>
+            `;
+            return tr;
+        }
+
+        // ----- Confirm Delete -----
+        function confirmDelete(codeName, button) {
+            if (confirm(`Bạn có chắc chắn muốn xóa mã giảm giá "${codeName}"?`)) {
+                const form = button.closest('form');
+                const url = form.action;
+                
+                // Hiển thị loading state
+                button.disabled = true;
+                button.innerHTML = '<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+                
+                // Gửi yêu cầu AJAX để xóa
+                fetch(url, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Nếu thành công, xóa hàng khỏi bảng
+                        const row = button.closest('tr');
+                        row.classList.add('fade-out');
+                        setTimeout(() => {
+                            row.remove();
+                            
+                            // Kiểm tra nếu không còn hàng nào, hiển thị thông báo trống
+                            const tableBody = document.querySelector('table tbody');
+                            if (tableBody.querySelectorAll('tr:not(.empty-row)').length === 0) {
+                                const emptyRow = createEmptyRow();
+                                tableBody.appendChild(emptyRow);
+                            }
+                            
+                            // Hiển thị thông báo thành công
+                            showToast('success', data.message);
+                        }, 300);
+                    } else {
+                        // Nếu có lỗi, hiển thị thông báo lỗi
+                        showToast('error', data.message || 'Có lỗi xảy ra');
+                        button.disabled = false;
+                        button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                    button.disabled = false;
+                    button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>';
+                });
+            }
+        }
+        
+        // ----- Submit Bulk Actions -----
+        function submitBulkAction(formId) {
+            const selectedCheckboxes = document.querySelectorAll('.discount-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                showToast('error', 'Vui lòng chọn ít nhất một mã giảm giá');
+                return;
+            }
+            
+            const form = document.getElementById(formId);
+            const url = form.action;
+            const formData = new FormData(form);
+            
+            // Thêm IDs vào formData
+            selectedCheckboxes.forEach(checkbox => {
+                formData.append('ids[]', checkbox.value);
+            });
+            
+            // Hiển thị loading state
+            const button = form.querySelector('button[type="button"]');
+            const originalButtonContent = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<svg class="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            
+            // Gửi yêu cầu AJAX
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Nếu thành công, cập nhật UI
+                    if (formId === 'activateForm' || formId === 'deactivateForm') {
+                        // Đối với cập nhật trạng thái, tải lại trang để cập nhật UI
+                        showToast('success', data.message);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else if (formId.includes('delete')) {
+                        // Đối với xóa hàng loạt, xóa các hàng khỏi bảng
+                        selectedCheckboxes.forEach(checkbox => {
+                            const row = checkbox.closest('tr');
+                            row.classList.add('fade-out');
+                            setTimeout(() => {
+                                row.remove();
+                            }, 300);
+                        });
+                        
+                        // Kiểm tra nếu không còn hàng nào, hiển thị thông báo trống
+                        setTimeout(() => {
+                            const tableBody = document.querySelector('table tbody');
+                            if (tableBody.querySelectorAll('tr:not(.empty-row)').length === 0) {
+                                const emptyRow = createEmptyRow();
+                                tableBody.appendChild(emptyRow);
+                            }
+                            
+                            // Reset checkbox chọn tất cả
+                            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+                            if (selectAllCheckbox) {
+                                selectAllCheckbox.checked = false;
+                            }
+                            
+                            // Hiển thị thông báo thành công
+                            showToast('success', data.message);
+                        }, 400);
+                    }
+                } else {
+                    // Nếu có lỗi, hiển thị thông báo lỗi
+                    showToast('error', data.message || 'Có lỗi xảy ra');
+                }
+                
+                // Khôi phục trạng thái nút
+                button.disabled = false;
+                button.innerHTML = originalButtonContent;
+                
+                // Đóng dropdown
+                document.getElementById('actionsMenu').classList.add('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                button.disabled = false;
+                button.innerHTML = originalButtonContent;
+            });
+        }
+        
+        // ----- Toggle Status Function -----
+        function toggleStatus(id, button) {
+            // Hiển thị loading state
+            const originalHTML = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<svg class="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            
+            // Gửi yêu cầu AJAX
+            fetch(`{{ url('admin/discount-codes') }}/${id}/toggle-status`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cập nhật badge trạng thái
+                    const statusCell = button.closest('tr').querySelector('td:nth-child(8)');
+                    statusCell.innerHTML = data.status_html;
+                    
+                    // Hiển thị thông báo thành công
+                    showToast('success', data.message);
+                } else {
+                    // Hiển thị thông báo lỗi
+                    showToast('error', data.message || 'Có lỗi xảy ra');
+                }
+                
+                // Khôi phục trạng thái nút
+                button.disabled = false;
+                button.innerHTML = originalHTML;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                button.disabled = false;
+                button.innerHTML = originalHTML;
+            });
+        }
+        
         // ----- Checkbox Functionality -----
         function setupCheckboxHandlers() {
             const selectAllCheckbox = document.getElementById('selectAllCheckbox');
@@ -698,9 +920,308 @@
                 }
             });
         }
+
+        // Xử lý phân trang Ajax
+        function setupPaginationLinks() {
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationContainer) {
+                paginationContainer.addEventListener('click', function(e) {
+                    // Nếu là liên kết phân trang
+                    if (e.target.tagName === 'A' || e.target.closest('a')) {
+                        e.preventDefault();
+                        const link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+                        const url = link.getAttribute('href');
+                        
+                        if (url) {
+                            // Lấy nội dung từ trang mới
+                            fetchPage(url);
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Lấy nội dung trang qua Ajax
+        function fetchPage(url) {
+            const tableContainer = document.getElementById('discount-codes-table-container');
+            const paginationContainer = document.getElementById('pagination-container');
+            
+            // Hiển thị hiệu ứng loading
+            tableContainer.innerHTML = `
+                <div class="flex justify-center items-center py-8">
+                    <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            `;
+            
+            // Thêm tham số Ajax vào URL
+            const ajaxUrl = new URL(url, window.location.origin);
+            ajaxUrl.searchParams.append('_ajax', '1');
+            
+            // Gửi yêu cầu
+            fetch(ajaxUrl.toString(), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cập nhật nội dung bảng
+                    tableContainer.innerHTML = data.html;
+                    paginationContainer.innerHTML = data.pagination;
+                    
+                    // Cập nhật lại các event listener cho các nút trong bảng
+                    setupDeleteButtons();
+                    setupToggleStatusButtons();
+                    setupCheckboxHandlers();
+                    setupBulkActionButtons();
+                    setupUiEventHandlers();
+                    
+                    // Cập nhật URL
+                    window.history.pushState({}, '', url);
+                } else {
+                    // Hiển thị thông báo lỗi
+                    showToast('error', data.message || 'Có lỗi xảy ra khi tải trang');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                tableContainer.innerHTML = '<div class="p-4 text-center">Có lỗi xảy ra khi tải dữ liệu</div>';
+            });
+        }
+        
+        // Khởi tạo sự kiện phân trang
+        setupPaginationLinks();
+        
+        // Xử lý form lọc AJAX
+        const filterForm = document.getElementById('filterForm');
+        const resetFilterBtn = document.getElementById('resetFilterBtn');
+        
+        if (filterForm) {
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Lấy các tham số từ form
+                const formData = new FormData(filterForm);
+                
+                // Thêm tham số Ajax
+                formData.append('_ajax', '1');
+                
+                // Hiển thị hiệu ứng loading
+                const tableContainer = document.getElementById('discount-codes-table-container');
+                tableContainer.innerHTML = `
+                    <div class="flex justify-center items-center py-8">
+                        <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                `;
+                
+                // Xây dựng URL với các tham số lọc
+                const queryParams = new URLSearchParams(formData);
+                const url = `${filterForm.action}?${queryParams.toString()}`;
+                
+                // Gửi yêu cầu
+                fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật nội dung bảng và phân trang
+                        tableContainer.innerHTML = data.html;
+                        document.getElementById('pagination-container').innerHTML = data.pagination;
+                        
+                        // Cập nhật URL với các tham số lọc
+                        window.history.pushState({}, '', url);
+                        
+                        // Cập nhật lại các event listener
+                        setupDeleteButtons();
+                        setupToggleStatusButtons();
+                        setupCheckboxHandlers();
+                        setupBulkActionButtons();
+                        setupUiEventHandlers();
+                        
+                        // Đóng modal lọc nếu đang mở
+                        const filterModal = document.getElementById('filterModal');
+                        if (filterModal && !filterModal.classList.contains('hidden')) {
+                            toggleModal('filterModal');
+                        }
+                    } else {
+                        showToast('error', data.message || 'Có lỗi xảy ra khi áp dụng bộ lọc');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                });
+            });
+        }
+        
+        // Nút reset bộ lọc
+        if (resetFilterBtn) {
+            resetFilterBtn.addEventListener('click', function() {
+                const url = '{{ route("admin.discount_codes.index") }}';
+                
+                // Gửi yêu cầu AJAX để lấy dữ liệu không lọc
+                fetch(`${url}?_ajax=1`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật bảng và phân trang
+                        document.getElementById('discount-codes-table-container').innerHTML = data.html;
+                        document.getElementById('pagination-container').innerHTML = data.pagination;
+                        
+                        // Cập nhật URL
+                        window.history.pushState({}, '', url);
+                        
+                        // Cập nhật lại các event listener
+                        setupDeleteButtons();
+                        setupToggleStatusButtons();
+                        setupCheckboxHandlers();
+                        setupBulkActionButtons();
+                        setupUiEventHandlers();
+                        
+                        // Reset form lọc
+                        filterForm.reset();
+                        
+                        // Đóng dropdown lọc
+                        const dropdownMenu = filterForm.closest('.dropdown-menu');
+                        if (dropdownMenu) {
+                            dropdownMenu.classList.add('hidden');
+                        }
+                    } else {
+                        showToast('error', data.message || 'Có lỗi xảy ra khi đặt lại bộ lọc');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                });
+            });
+        }
+        
+        // Xử lý các tham số lọc từ URL khi tải trang
+        const initializeFiltersFromURL = () => {
+            const url = new URL(window.location.href);
+            const params = new URLSearchParams(url.search);
+            
+            // Đặt giá trị cho form tìm kiếm
+            if (params.has('search')) {
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.value = params.get('search');
+                }
+            }
+            
+            // Đặt giá trị cho form lọc (có thể ở cả dropdown và modal)
+            if (filterForm) {
+                // Đặt trạng thái
+                if (params.has('status')) {
+                    const statusInput = filterForm.querySelector('select[name="status"]');
+                    if (statusInput) {
+                        statusInput.value = params.get('status');
+                    }
+                }
+                
+                // Đặt loại giảm giá
+                if (params.has('discount_type')) {
+                    const discountTypeInput = filterForm.querySelector('select[name="discount_type"]');
+                    if (discountTypeInput) {
+                        discountTypeInput.value = params.get('discount_type');
+                    }
+                }
+                
+                // Đặt ngày từ
+                if (params.has('date_from')) {
+                    const dateFromInput = filterForm.querySelector('input[name="date_from"]');
+                    if (dateFromInput) {
+                        dateFromInput.value = params.get('date_from');
+                    }
+                }
+                
+                // Đặt ngày đến
+                if (params.has('date_to')) {
+                    const dateToInput = filterForm.querySelector('input[name="date_to"]');
+                    if (dateToInput) {
+                        dateToInput.value = params.get('date_to');
+                    }
+                }
+            }
+        };
+        
+        // Khởi tạo các giá trị lọc từ URL
+        initializeFiltersFromURL();
+
+        // Define helper functions for event handlers
+        function filterButtonClickHandler(e) {
+            e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
+            console.log('Filter button clicked');
+            window.toggleModal('filterModal');
+        }
+        
+        function exportDropdownClickHandler(e) {
+            e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
+            console.log('Export dropdown clicked');
+            window.toggleDropdown('exportMenu');
+        }
+        
+        function actionsDropdownClickHandler(e) {
+            e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
+            console.log('Actions dropdown clicked');
+            window.toggleDropdown('actionsMenu');
+        }
+        
+        function closeFilterButtonClickHandler(e) {
+            e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
+            console.log('Close filter button clicked');
+            window.toggleModal('filterModal');
+        }
+        
+        // Khởi tạo các event listeners
+        function setupUiEventHandlers() {
+            // Nút lọc
+            const filterBtn = document.getElementById('filterBtn');
+            if (filterBtn) {
+                filterBtn.removeEventListener('click', filterButtonClickHandler);
+                filterBtn.addEventListener('click', filterButtonClickHandler);
+            }
+            
+            // Export dropdown
+            const exportDropdown = document.getElementById('exportDropdown');
+            if (exportDropdown) {
+                exportDropdown.removeEventListener('click', exportDropdownClickHandler);
+                exportDropdown.addEventListener('click', exportDropdownClickHandler);
+            }
+            
+            // Actions dropdown
+            const actionsDropdown = document.getElementById('actionsDropdown');
+            if (actionsDropdown) {
+                actionsDropdown.removeEventListener('click', actionsDropdownClickHandler);
+                actionsDropdown.addEventListener('click', actionsDropdownClickHandler);
+            }
+            
+            // Nút đóng modal
+            const closeFilterBtn = document.getElementById('closeFilterBtn');
+            if (closeFilterBtn) {
+                closeFilterBtn.removeEventListener('click', closeFilterButtonClickHandler);
+                closeFilterBtn.addEventListener('click', closeFilterButtonClickHandler);
+            }
+        }
+        
+        // Khởi tạo tất cả sự kiện UI
+        setupUiEventHandlers();
     });
 </script>
 @endsection
-
-@endsection
-
