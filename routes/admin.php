@@ -112,7 +112,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/{id}/update-manager', [BranchController::class, 'updateManager'])->name('update-manager');
         Route::post('/{id}/remove-manager', [BranchController::class, 'removeManager'])->name('remove-manager');
         Route::post('/{branch}/upload-image', [BranchController::class, 'uploadImage'])->name('upload-image');
-        Route::post('/{id}/set-featured', [BranchController::class, 'setFeatured'])->name('set-featured');
+        Route::post('/{id}/images/{imageId}/set-featured', [BranchController::class, 'setFeatured'])->name('set-featured');
         Route::delete('/{branch}/images/{image}', [BranchController::class, 'deleteImage'])->name('delete-image');
         Route::post('/bulk-update', [BranchController::class, 'bulkStatusUpdate'])->name('bulk-update');
     });
