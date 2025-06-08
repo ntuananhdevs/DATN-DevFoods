@@ -104,11 +104,11 @@
                             @endphp
                     
                             <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea name="ingredients" class="w-full p-2 border border-gray-300 rounded-lg" rows="6">{{ $ingredientsText }}</textarea>
+                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border border-gray-300 rounded-lg" rows="6">{{ $ingredientsText }}</textarea>
                             </div>
                         @else
-                            <div class="bg-gray-50 rounded-lg p-4 text-center">
-                                <p class="text-gray-500">Chưa có thông tin nguyên liệu</p>
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border border-gray-300 rounded-lg" rows="6" placeholder="Nhập nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, hành tây, ớt chuông)"></textarea>
                             </div>
                         @endif
                     
@@ -311,7 +311,7 @@
                                 foreach ($variant->productVariantDetails as $detail) {
                                     $attrName = $detail->variantValue->attribute->name;
                                     $attrValue = $detail->variantValue->value;
-                                    $attrPrice = $detail->price_adjustment;
+                                    $attrPrice = $detail->variantValue->price_adjustment;
                                     
                                     // Find existing attribute or create new one
                                     $attrIndex = null;
@@ -342,7 +342,7 @@
                                         if (!$valueExists) {
                                             $attributesData[$attrIndex]['values'][] = [
                                                 'value' => $attrValue,
-                                                'price' => $attrPrice
+                                                'price_adjustment' => $attrPrice
                                             ];
                                         }
                                     }
@@ -394,9 +394,9 @@
                                                 </div>
                                                 <div>
                                                     <label for="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                                    <input type="number" id="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price]" placeholder="0" step="any"
-                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ $value['price'] ?? '' }}">
-                                                    @error("attributes.{$attrIndex}.values.{$valueIndex}.price")
+                                                    <input type="number" id="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" placeholder="0" step="any"
+                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ $value['price_adjustment'] ?? 0 }}">
+                                                    @error("attributes.{$attrIndex}.values.{$valueIndex}.price_adjustment")
                                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                                     @enderror
                                                 </div>
@@ -601,7 +601,15 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="text-center py-4 px-4 font-medium">{{ number_format($variant->price ?? $product->base_price) }}₫</td>
+                                        <td class="text-center py-4 px-4 font-medium">
+                                            @php
+                                                $variantPrice = $product->base_price;
+                                                if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                                                    $variantPrice += $variant->variantValues->sum('price_adjustment');
+                                                }
+                                            @endphp
+                                            {{ number_format($variantPrice, 0, ',', '.') }}₫
+                                        </td>
                                         @foreach($branches as $branch)
                                         @php
                                             $quantity = isset($branchStocks[$branch->id][$variant->id]) ? $branchStocks[$branch->id][$variant->id] : 0;
@@ -736,6 +744,14 @@
 
         // Function to handle primary image selection
         selectPrimaryImageBtn.addEventListener('click', () => primaryImageUpload.click());
+        
+        // Handle change primary image button
+        const changePrimaryImageBtn = document.getElementById('change-primary-image-btn');
+        if (changePrimaryImageBtn) {
+            changePrimaryImageBtn.addEventListener('click', () => {
+                primaryImageUpload.click();
+            });
+        }
 
         primaryImageUpload.addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -861,7 +877,7 @@
                                 </div>
                                 <div>
                                     <label for="attribute_price_${index}_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                    <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price]" placeholder="0" step="any"
+                                    <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any" value="0"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                                 </div>
                             </div>
@@ -888,7 +904,7 @@
                 </div>
                 <div>
                     <label for="attribute_price_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                    <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price]" placeholder="0" step="any"
+                    <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any" value="0"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                 </div>
                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
@@ -1065,7 +1081,7 @@
         editProductForm.addEventListener('submit', function(e) {
             // Convert ingredients textarea to JSON array
             const ingredientsText = document.getElementById('ingredients').value;
-            const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
+            const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
             const ingredientsInput = document.createElement('input');
             ingredientsInput.type = 'hidden';
             ingredientsInput.name = 'ingredients_json';
@@ -1075,6 +1091,43 @@
             // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
+            
+            // Collect variant stock data
+            const variantStockInputs = document.querySelectorAll('input[name^="variant_stocks["]');
+            const variantStocks = {};
+            variantStockInputs.forEach(input => {
+                if (input.value && input.value.trim() !== '') {
+                    const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
+                    if (matches) {
+                        const variantId = matches[1];
+                        const branchId = matches[2];
+                        if (!variantStocks[variantId]) {
+                            variantStocks[variantId] = {};
+                        }
+                        variantStocks[variantId][branchId] = parseInt(input.value) || 0;
+                    }
+                }
+            });
+            
+            // Collect topping stock data
+            const toppingStockInputs = document.querySelectorAll('input[name^="topping_stocks["]');
+            const toppingStocks = {};
+            toppingStockInputs.forEach(input => {
+                if (input.value && input.value.trim() !== '') {
+                    const matches = input.name.match(/topping_stocks\[(\d+)\]\[(\d+)\]/);
+                    if (matches) {
+                        const toppingId = matches[1];
+                        const branchId = matches[2];
+                        if (!toppingStocks[toppingId]) {
+                            toppingStocks[toppingId] = {};
+                        }
+                        toppingStocks[toppingId][branchId] = parseInt(input.value) || 0;
+                    }
+                }
+            });
+            
+            console.log('Variant Stocks:', variantStocks);
+            console.log('Topping Stocks:', toppingStocks);
         });
 
         // Handle status and release date visibility

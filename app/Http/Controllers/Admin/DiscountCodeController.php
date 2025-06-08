@@ -95,6 +95,17 @@ class DiscountCodeController extends Controller
             ->count();
         $expiredCodes = DiscountCode::where('end_date', '<', $now)->count();
 
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'html' => view('admin.discount_codes.partials.discount_codes_table', compact('discountCodes'))->render(),
+                'pagination' => view('admin.discount_codes.partials.pagination', compact('discountCodes'))->render(),
+                'total' => $discountCodes->total(),
+                'from' => $discountCodes->firstItem() ?? 0,
+                'to' => $discountCodes->lastItem() ?? 0
+            ]);
+        }
+
         return view('admin.discount_codes.index', compact('discountCodes', 'totalCodes', 'activeCodes', 'expiringSoon', 'expiredCodes'));
     }
 
@@ -130,12 +141,15 @@ class DiscountCodeController extends Controller
             'usage_type' => 'required|in:public,personal',
             'max_total_usage' => 'nullable|integer|min:0',
             'max_usage_per_user' => 'nullable|integer|min:1',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         DB::beginTransaction();
         
         try {
-            $discountCode = DiscountCode::create([
+            // Dữ liệu tạo mới
+            $createData = [
                 'code' => $request->code,
                 'name' => $request->name,
                 'description' => $request->description,
@@ -158,7 +172,11 @@ class DiscountCodeController extends Controller
                 'is_featured' => $request->has('is_featured'),
                 'display_order' => $request->display_order ?? 0,
                 'created_by' => Auth::guard('admin')->id(),
-            ]);
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+            ];
+            
+            $discountCode = DiscountCode::create($createData);
             
             // Handle specific branches if applicable
             if ($request->applicable_scope === 'specific_branches' && $request->has('branch_ids')) {
@@ -199,12 +217,51 @@ class DiscountCodeController extends Controller
                 }
             }
             
+            // Handle assigned users if discount code is personal
+            if ($request->usage_type === 'personal' && $request->has('assigned_users')) {
+                // Get users with eligible ranks
+                $eligibleUserIds = $request->assigned_users;
+                $requestedUserCount = count($request->assigned_users);
+                
+                // If there are rank restrictions, filter users by rank
+                if (!empty($request->applicable_ranks)) {
+                    $selectedRanks = (array) $request->applicable_ranks;
+                    $eligibleUsers = User::whereIn('id', $request->assigned_users)
+                                        ->whereIn('user_rank_id', $selectedRanks)
+                                        ->get();
+                    $eligibleUserIds = $eligibleUsers->pluck('id')->toArray();
+                    $eligibleUserCount = count($eligibleUserIds);
+                    
+                    // Add a warning message if some users were filtered out
+                    if ($eligibleUserCount < $requestedUserCount) {
+                        $filteredOutCount = $requestedUserCount - $eligibleUserCount;
+                        session()->flash('warning', "Có {$filteredOutCount} người dùng không được gán mã giảm giá vì không đạt hạng thành viên yêu cầu.");
+                    }
+                }
+                
+                foreach ($eligibleUserIds as $userId) {
+                    UserDiscountCode::create([
+                        'discount_code_id' => $discountCode->id,
+                        'user_id' => $userId,
+                        'status' => 'available'
+                    ]);
+                }
+            }
+            
             DB::commit();
             
             return redirect()->route('admin.discount_codes.index')->with('success', 'Tạo mã giảm giá thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Đã xảy ra lỗi: ' . $e->getMessage());
+            // Chi tiết lỗi để debug
+            $errorDetails = 'Lỗi: ' . $e->getMessage() . 
+                            ' trong file ' . $e->getFile() . 
+                            ' dòng ' . $e->getLine() . 
+                            '. Dữ liệu: ' . json_encode([
+                                'start_date' => $request->start_date,
+                                'end_date' => $request->end_date
+                            ]);
+            return redirect()->back()->withInput()->with('error', $errorDetails);
         }
     }
 
@@ -251,12 +308,15 @@ class DiscountCodeController extends Controller
             'usage_type' => 'required|in:public,personal', 
             'max_total_usage' => 'nullable|integer|min:0',
             'max_usage_per_user' => 'nullable|integer|min:1',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         DB::beginTransaction();
         
         try {
-            $discountCode->update([
+            // Dữ liệu cập nhật
+            $updateData = [
                 'code' => $request->code,
                 'name' => $request->name,
                 'description' => $request->description,
@@ -277,8 +337,12 @@ class DiscountCodeController extends Controller
                 'max_usage_per_user' => $request->max_usage_per_user ?? 1,
                 'is_active' => $request->has('is_active'),
                 'is_featured' => $request->has('is_featured'),
-                'display_order' => $request->display_order ?? 0
-            ]);
+                'display_order' => $request->display_order ?? 0,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+            ];
+            
+            $discountCode->update($updateData);
             
             // Handle specific branches update if applicable
             if ($request->applicable_scope === 'specific_branches') {
@@ -331,12 +395,57 @@ class DiscountCodeController extends Controller
                 }
             }
             
+            // Handle assigned users if discount code is personal
+            if ($request->usage_type === 'personal') {
+                // Remove existing user assignments
+                UserDiscountCode::where('discount_code_id', $discountCode->id)->delete();
+                
+                // Add new user assignments
+                if ($request->has('assigned_users')) {
+                    // Get users with eligible ranks
+                    $eligibleUserIds = $request->assigned_users;
+                    $requestedUserCount = count($request->assigned_users);
+                    
+                    // If there are rank restrictions, filter users by rank
+                    if (!empty($request->applicable_ranks)) {
+                        $selectedRanks = (array) $request->applicable_ranks;
+                        $eligibleUsers = User::whereIn('id', $request->assigned_users)
+                                            ->whereIn('user_rank_id', $selectedRanks)
+                                            ->get();
+                        $eligibleUserIds = $eligibleUsers->pluck('id')->toArray();
+                        $eligibleUserCount = count($eligibleUserIds);
+                        
+                        // Add a warning message if some users were filtered out
+                        if ($eligibleUserCount < $requestedUserCount) {
+                            $filteredOutCount = $requestedUserCount - $eligibleUserCount;
+                            session()->flash('warning', "Có {$filteredOutCount} người dùng không được gán mã giảm giá vì không đạt hạng thành viên yêu cầu.");
+                        }
+                    }
+                    
+                    foreach ($eligibleUserIds as $userId) {
+                        UserDiscountCode::create([
+                            'discount_code_id' => $discountCode->id,
+                            'user_id' => $userId,
+                            'status' => 'available'
+                        ]);
+                    }
+                }
+            }
+            
             DB::commit();
             
             return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật mã giảm giá thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Đã xảy ra lỗi: ' . $e->getMessage());
+            // Chi tiết lỗi để debug
+            $errorDetails = 'Lỗi: ' . $e->getMessage() . 
+                            ' trong file ' . $e->getFile() . 
+                            ' dòng ' . $e->getLine() . 
+                            '. Dữ liệu: ' . json_encode([
+                                'start_date' => $request->start_date,
+                                'end_date' => $request->end_date
+                            ]);
+            return redirect()->back()->withInput()->with('error', $errorDetails);
         }
     }
 
@@ -355,9 +464,21 @@ class DiscountCodeController extends Controller
             
             DB::commit();
             
+            if (request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Xóa mã giảm giá thành công.'
+                ]);
+            }
+            
             return redirect()->route('admin.discount_codes.index')->with('success', 'Xóa mã giảm giá thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            if (request()->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+            }
+            
             return redirect()->route('admin.discount_codes.index')->with('error', 'Không thể xóa mã giảm giá: ' . $e->getMessage());
         }
     }
@@ -381,23 +502,59 @@ class DiscountCodeController extends Controller
 
     public function toggleStatus(Request $request, $id)
     {
-        $discountCode = DiscountCode::findOrFail($id);
-        $discountCode->update(['is_active' => !$discountCode->is_active]);
-        return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật trạng thái thành công.');
+        try {
+            $discountCode = DiscountCode::findOrFail($id);
+            $discountCode->update(['is_active' => !$discountCode->is_active]);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cập nhật trạng thái thành công.',
+                    'is_active' => $discountCode->is_active,
+                    'status_html' => view('admin.discount_codes.partials.status_badge', ['discountCode' => $discountCode])->render()
+                ]);
+            }
+            
+            return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật trạng thái thành công.');
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+            }
+            
+            return redirect()->route('admin.discount_codes.index')->with('error', 'Lỗi: ' . $e->getMessage());
+        }
     }
 
     public function bulkStatusUpdate(Request $request)
     {
-        $request->validate(['ids' => 'required|array', 'is_active' => 'required|boolean']);
-        DiscountCode::whereIn('id', $request->ids)->update(['is_active' => $request->is_active]);
-        return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật trạng thái hàng loạt thành công.');
+        try {
+            $request->validate(['ids' => 'required|array', 'is_active' => 'required|boolean']);
+            
+            DiscountCode::whereIn('id', $request->ids)->update(['is_active' => $request->is_active]);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Cập nhật trạng thái hàng loạt thành công.',
+                    'count' => count($request->ids)
+                ]);
+            }
+            
+            return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật trạng thái hàng loạt thành công.');
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+            }
+            
+            return redirect()->route('admin.discount_codes.index')->with('error', 'Lỗi: ' . $e->getMessage());
+        }
     }
 
     public function bulkDelete(Request $request)
     {
-        $request->validate(['ids' => 'required|array']);
-        
         try {
+            $request->validate(['ids' => 'required|array']);
+            
             DB::beginTransaction();
             
             foreach ($request->ids as $id) {
@@ -406,13 +563,27 @@ class DiscountCodeController extends Controller
                 UserDiscountCode::where('discount_code_id', $id)->delete();
             }
             
+            $count = DiscountCode::whereIn('id', $request->ids)->count();
             DiscountCode::whereIn('id', $request->ids)->delete();
             
             DB::commit();
             
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Xóa hàng loạt mã giảm giá thành công.',
+                    'count' => $count
+                ]);
+            }
+            
             return redirect()->route('admin.discount_codes.index')->with('success', 'Xóa hàng loạt mã giảm giá thành công.');
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+            }
+            
             return redirect()->route('admin.discount_codes.index')->with('error', 'Không thể xóa mã giảm giá: ' . $e->getMessage());
         }
     }
@@ -496,7 +667,7 @@ class DiscountCodeController extends Controller
         $discountCode = DiscountCode::findOrFail($id);
         $usageHistory = DiscountUsageHistory::with(['discountCode', 'user', 'branch'])
             ->where('discount_code_id', $id)
-            ->orderBy('created_at', 'desc')
+            ->orderBy('used_at', 'desc')
             ->paginate(15);
         
         return view('admin.discount_codes.usage_history', compact('discountCode', 'usageHistory'));
