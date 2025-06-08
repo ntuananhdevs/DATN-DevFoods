@@ -520,6 +520,111 @@
                             @enderror
                         </div>
 
+                        <!-- User Selection for Personal Discount Codes -->
+                        <div id="users_selection" class="form-group mb-3" style="{{ old('usage_type', $discountCode->usage_type) == 'personal' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn người dùng được áp dụng</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="relative mb-2">
+                                    <input type="text" id="user_search" placeholder="Tìm kiếm người dùng..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @php
+                                        // Get assigned users from user_discount_codes table
+                                        $assignedUsers = $discountCode->users->pluck('user_id')->toArray();
+                                        // Get all non-admin users from the database
+                                        $users = \App\Models\User::whereDoesntHave('roles', function($query) {
+                                                $query->where('name', 'admin');
+                                            })
+                                            ->orderBy('full_name')
+                                            ->get();
+                                        
+                                        // Parse applicable_ranks to ensure it's an array
+                                        $rawRanks = old('applicable_ranks', $discountCode->applicable_ranks ?? []);
+                                        $selectedRanks = is_string($rawRanks) ? json_decode($rawRanks, true) ?? [] : (array) $rawRanks;
+                                    @endphp
+                                    
+                                    @foreach($users as $user)
+                                        @php
+                                            $userRankId = $user->user_rank_id ?? 0;
+                                            $isEligible = empty($selectedRanks) || in_array($userRankId, $selectedRanks);
+                                            
+                                            // Skip this user if they're not eligible
+                                            if (!$isEligible) continue;
+                                            
+                                            $rankName = '';
+                                            $rankClass = 'bg-gray-100 text-gray-800';
+                                            
+                                            if ($userRankId == 1) {
+                                                $rankName = 'Đồng';
+                                                $rankClass = 'bg-amber-100 text-amber-800';
+                                            } elseif ($userRankId == 2) {
+                                                $rankName = 'Bạc';
+                                                $rankClass = 'bg-gray-100 text-gray-800';
+                                            } elseif ($userRankId == 3) {
+                                                $rankName = 'Vàng';
+                                                $rankClass = 'bg-yellow-100 text-yellow-800';
+                                            } elseif ($userRankId == 4) {
+                                                $rankName = 'Bạch Kim';
+                                                $rankClass = 'bg-indigo-100 text-indigo-800';
+                                            } elseif ($userRankId == 5) {
+                                                $rankName = 'Kim Cương';
+                                                $rankClass = 'bg-blue-100 text-blue-800';
+                                            }
+                                        @endphp
+                                        <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium {{ $rankClass }}">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                                {{ $rankName ?: 'Chưa xếp hạng' }}
+                                            </span>
+                                            <input type="checkbox" name="assigned_users[]" id="user_{{ $user->id }}" value="{{ $user->id }}" 
+                                                {{ in_array($user->id, $assignedUsers ?? []) ? 'checked' : '' }}>
+                                            <label for="user_{{ $user->id }}" class="flex flex-col">
+                                                <span class="font-medium">{{ $user->full_name }}</span>
+                                                <span class="text-xs text-gray-500">{{ $user->email }}</span>
+                                                <span class="text-xs text-gray-500">{{ $user->phone ?? 'Không có SĐT' }}</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @php
+                                    // Count eligible users only
+                                    $eligibleUsers = 0;
+                                    foreach($users as $user) {
+                                        $userRankId = $user->user_rank_id ?? 0;
+                                        if(empty($selectedRanks) || in_array($userRankId, $selectedRanks)) {
+                                            $eligibleUsers++;
+                                        }
+                                    }
+                                @endphp
+                                <div class="flex justify-between items-center mt-2">
+                                    <span class="text-xs text-gray-500">Đang hiển thị {{ $eligibleUsers }} người dùng hợp lệ (trong tổng số {{ $users->count() }} người dùng)</span>
+                                    <div>
+                                        <span class="text-sm text-blue-600 cursor-pointer select-all-users">Chọn tất cả</span> | 
+                                        <span class="text-sm text-red-600 cursor-pointer unselect-all-users">Bỏ chọn tất cả</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Lưu ý:</strong> Chỉ hiển thị những người dùng có hạng thành viên phù hợp với các hạng đã chọn. 
+                                            Người dùng không đủ điều kiện sẽ không được hiển thị trong danh sách.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group mb-3">
                             <label for="max_total_usage" class="form-label">Số lần sử dụng tối đa</label>
                             <input type="number" name="max_total_usage" id="max_total_usage" class="form-control" min="0" value="{{ old('max_total_usage', $discountCode->max_total_usage) }}">
@@ -601,19 +706,36 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="valid_from_time" class="form-label">Giờ bắt đầu</label>
-                            <input type="time" name="valid_from_time" id="valid_from_time" class="form-control" value="{{ old('valid_from_time', $discountCode->valid_from_time ? $discountCode->valid_from_time->format('H:i') : '') }}">
-                            @error('valid_from_time')
-                            <div class="text-danger">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="valid_to_time" class="form-label">Giờ kết thúc</label>
-                            <input type="time" name="valid_to_time" id="valid_to_time" class="form-control" value="{{ old('valid_to_time', $discountCode->valid_to_time ? $discountCode->valid_to_time->format('H:i') : '') }}">
-                            @error('valid_to_time')
-                            <div class="text-danger">{{ $message }}</div>
-                            @enderror
+                            <label for="valid_from_time" class="form-label">Giờ áp dụng trong ngày</label>
+                            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded mb-3">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <p>
+                                        <strong>Lưu ý:</strong> Các trường này dùng để giới hạn thời gian trong ngày mà mã giảm giá có hiệu lực (ví dụ: chỉ áp dụng từ 9:00 đến 17:00 hàng ngày). 
+                                        Khác với ngày bắt đầu và kết thúc ở trên là thời gian tổng thể mã giảm giá có hiệu lực.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="valid_from_time" class="form-label">Giờ bắt đầu trong ngày</label>
+                                    <input type="time" name="valid_from_time" id="valid_from_time" class="form-control" value="{{ old('valid_from_time', $discountCode->valid_from_time ? $discountCode->valid_from_time->format('H:i') : '') }}">
+                                    <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
+                                    @error('valid_from_time')
+                                    <div class="text-danger">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="valid_to_time" class="form-label">Giờ kết thúc trong ngày</label>
+                                    <input type="time" name="valid_to_time" id="valid_to_time" class="form-control" value="{{ old('valid_to_time', $discountCode->valid_to_time ? $discountCode->valid_to_time->format('H:i') : '') }}">
+                                    <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
+                                    @error('valid_to_time')
+                                    <div class="text-danger">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group mb-3">
@@ -833,6 +955,67 @@
                 const newEndDate = new Date(startDate);
                 newEndDate.setDate(newEndDate.getDate() + 30);
                 endDateField.value = newEndDate.toISOString().split('T')[0];
+            }
+        }
+
+        // Usage Type and User Selection
+        const usageTypeSelect = document.getElementById('usage_type');
+        const usersSelectionDiv = document.getElementById('users_selection');
+        const userSearchInput = document.getElementById('user_search');
+        const selectAllUsers = document.querySelector('.select-all-users');
+        const unselectAllUsers = document.querySelector('.unselect-all-users');
+        
+        // Initial state check for user selection
+        toggleUserSelection();
+        
+        // Add event listener for usage type change
+        if (usageTypeSelect) {
+            usageTypeSelect.addEventListener('change', toggleUserSelection);
+        }
+        
+        // Add event listeners for user search
+        if (userSearchInput) {
+            userSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const userItems = usersSelectionDiv.querySelectorAll('.user-item');
+                
+                userItems.forEach(item => {
+                    const fullName = item.querySelector('label .font-medium').textContent.toLowerCase();
+                    const email = item.querySelector('label .text-gray-500:nth-child(2)').textContent.toLowerCase();
+                    const phone = item.querySelector('label .text-gray-500:nth-child(3)').textContent.toLowerCase();
+                    
+                    if (fullName.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Add event listeners for select/unselect all users
+        if (selectAllUsers) {
+            selectAllUsers.addEventListener('click', function() {
+                const checkboxes = usersSelectionDiv.querySelectorAll('input[type="checkbox"]:not([disabled])');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllUsers) {
+            unselectAllUsers.addEventListener('click', function() {
+                const checkboxes = usersSelectionDiv.querySelectorAll('input[type="checkbox"]:not([disabled])');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+
+        function toggleUserSelection() {
+            if (!usersSelectionDiv || !usageTypeSelect) return;
+            
+            const selectedType = usageTypeSelect.value;
+            if (selectedType === 'personal') {
+                usersSelectionDiv.style.display = 'block';
+            } else {
+                usersSelectionDiv.style.display = 'none';
             }
         }
     });

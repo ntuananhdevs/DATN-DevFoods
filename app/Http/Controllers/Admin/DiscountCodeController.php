@@ -141,6 +141,8 @@ class DiscountCodeController extends Controller
             'usage_type' => 'required|in:public,personal',
             'max_total_usage' => 'nullable|integer|min:0',
             'max_usage_per_user' => 'nullable|integer|min:1',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         DB::beginTransaction();
@@ -215,6 +217,37 @@ class DiscountCodeController extends Controller
                 }
             }
             
+            // Handle assigned users if discount code is personal
+            if ($request->usage_type === 'personal' && $request->has('assigned_users')) {
+                // Get users with eligible ranks
+                $eligibleUserIds = $request->assigned_users;
+                $requestedUserCount = count($request->assigned_users);
+                
+                // If there are rank restrictions, filter users by rank
+                if (!empty($request->applicable_ranks)) {
+                    $selectedRanks = (array) $request->applicable_ranks;
+                    $eligibleUsers = User::whereIn('id', $request->assigned_users)
+                                        ->whereIn('user_rank_id', $selectedRanks)
+                                        ->get();
+                    $eligibleUserIds = $eligibleUsers->pluck('id')->toArray();
+                    $eligibleUserCount = count($eligibleUserIds);
+                    
+                    // Add a warning message if some users were filtered out
+                    if ($eligibleUserCount < $requestedUserCount) {
+                        $filteredOutCount = $requestedUserCount - $eligibleUserCount;
+                        session()->flash('warning', "Có {$filteredOutCount} người dùng không được gán mã giảm giá vì không đạt hạng thành viên yêu cầu.");
+                    }
+                }
+                
+                foreach ($eligibleUserIds as $userId) {
+                    UserDiscountCode::create([
+                        'discount_code_id' => $discountCode->id,
+                        'user_id' => $userId,
+                        'status' => 'available'
+                    ]);
+                }
+            }
+            
             DB::commit();
             
             return redirect()->route('admin.discount_codes.index')->with('success', 'Tạo mã giảm giá thành công.');
@@ -275,6 +308,8 @@ class DiscountCodeController extends Controller
             'usage_type' => 'required|in:public,personal', 
             'max_total_usage' => 'nullable|integer|min:0',
             'max_usage_per_user' => 'nullable|integer|min:1',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         DB::beginTransaction();
@@ -356,6 +391,43 @@ class DiscountCodeController extends Controller
                         }
                         
                         DiscountCodeProduct::create($data);
+                    }
+                }
+            }
+            
+            // Handle assigned users if discount code is personal
+            if ($request->usage_type === 'personal') {
+                // Remove existing user assignments
+                UserDiscountCode::where('discount_code_id', $discountCode->id)->delete();
+                
+                // Add new user assignments
+                if ($request->has('assigned_users')) {
+                    // Get users with eligible ranks
+                    $eligibleUserIds = $request->assigned_users;
+                    $requestedUserCount = count($request->assigned_users);
+                    
+                    // If there are rank restrictions, filter users by rank
+                    if (!empty($request->applicable_ranks)) {
+                        $selectedRanks = (array) $request->applicable_ranks;
+                        $eligibleUsers = User::whereIn('id', $request->assigned_users)
+                                            ->whereIn('user_rank_id', $selectedRanks)
+                                            ->get();
+                        $eligibleUserIds = $eligibleUsers->pluck('id')->toArray();
+                        $eligibleUserCount = count($eligibleUserIds);
+                        
+                        // Add a warning message if some users were filtered out
+                        if ($eligibleUserCount < $requestedUserCount) {
+                            $filteredOutCount = $requestedUserCount - $eligibleUserCount;
+                            session()->flash('warning', "Có {$filteredOutCount} người dùng không được gán mã giảm giá vì không đạt hạng thành viên yêu cầu.");
+                        }
+                    }
+                    
+                    foreach ($eligibleUserIds as $userId) {
+                        UserDiscountCode::create([
+                            'discount_code_id' => $discountCode->id,
+                            'user_id' => $userId,
+                            'status' => 'available'
+                        ]);
                     }
                 }
             }
