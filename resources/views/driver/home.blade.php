@@ -121,22 +121,24 @@
                     </svg>
                 </button>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5 hover:shadow-md transition-all">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="text-lg font-semibold text-amber-800 mb-1">Chờ xử lý</h4>
-                            <p class="text-3xl font-bold text-amber-600">{{ $orderCounts['pending'] ?? 0 }}</p>
-                            <p class="text-xs text-amber-600 mt-1">đơn hàng</p>
-                        </div>
-                        <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="absolute top-0 right-0 w-20 h-20 bg-amber-200/30 rounded-full -mr-10 -mt-10"></div>
+            <div class="p-4">
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-200 mb-4">
+                    <button @click="earningsTab = 'today'" 
+                            :class="earningsTab === 'today' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+                            class="flex-1 py-2 px-1 border-b-2 font-medium text-sm">
+                        Hôm nay
+                    </button>
+                    <button @click="earningsTab = 'week'" 
+                            :class="earningsTab === 'week' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+                            class="flex-1 py-2 px-1 border-b-2 font-medium text-sm">
+                        Tuần này
+                    </button>
+                    <button @click="earningsTab = 'month'" 
+                            :class="earningsTab === 'month' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'"
+                            class="flex-1 py-2 px-1 border-b-2 font-medium text-sm">
+                        Tháng này
+                    </button>
                 </div>
                 
                 <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 hover:shadow-md transition-all">
@@ -189,16 +191,27 @@
                     </button>
                 </div>
             </div>
-            
-            <div class="space-y-4">
-                @foreach($pendingOrders as $order)
-                <div class="border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-blue-200 transition-all duration-200 bg-gradient-to-r from-white to-gray-50">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                                </svg>
+            <div class="p-4">
+                <template x-if="pendingOrders.length > 0">
+                    <div class="space-y-3">
+                        <template x-for="order in pendingOrders" :key="order.id">
+                            <div @click="viewOrder(order.id)" 
+                                 class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-box text-blue-600"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium" x-text="'Đơn #' + order.id"></div>
+                                        <div class="text-sm text-gray-500 flex items-center gap-1">
+                                            <i class="fas fa-map-marker-alt text-xs"></i>
+                                            <span x-text="order.delivery_address.substring(0, 20) + '...'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-xs rounded-full"
+                                      :class="order.status === 'assigned' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'"
+                                      x-text="order.status === 'assigned' ? 'Chờ lấy hàng' : 'Đã lấy hàng'"></span>
                             </div>
                             <div>
                                 <h4 class="font-bold text-gray-900 text-lg">#{{ $order['id'] }}</h4>
@@ -217,27 +230,13 @@
                             </span>
                         </div>
                     </div>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                        <div class="bg-orange-50 rounded-lg p-3 border border-orange-200">
-                            <div class="flex items-center mb-2">
-                                <svg class="w-4 h-4 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                </svg>
-                                <p class="text-sm font-semibold text-orange-800">Lấy hàng</p>
-                            </div>
-                            <p class="text-sm text-orange-700">{{ $order['pickup_branch'] }}</p>
-                        </div>
-                        <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                            <div class="flex items-center mb-2">
-                                <svg class="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                </svg>
-                                <p class="text-sm font-semibold text-blue-800">Giao hàng</p>
-                            </div>
-                            <p class="text-sm text-blue-700">{{ $order['delivery_address'] }}</p>
-                        </div>
+                </template>
+                
+                <template x-if="pendingOrders.length === 0">
+                    <div class="text-center py-6">
+                        <i class="fas fa-box text-4xl text-gray-300 mb-2"></i>
+                        <h3 class="font-medium text-gray-600">Không có đơn hàng</h3>
+                        <p class="text-sm text-gray-500 mt-1" x-text="isOnline ? 'Đơn hàng mới sẽ xuất hiện ở đây' : 'Bạn đang offline. Chuyển sang online để nhận đơn'"></p>
                     </div>
                     
                     <div class="flex items-center justify-between pt-4 border-t border-gray-200">
@@ -341,35 +340,14 @@
                 </a>
             </div>
         </div>
-        
-        <!-- Branch Selector (if multiple branches) -->
-        @if(isset($branches) && count($branches) > 1)
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Chi nhánh hoạt động</h3>
-                <span class="text-sm text-gray-500">Chọn chi nhánh để nhận đơn</span>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                @foreach($branches as $branch)
-                <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer {{ $branch['is_selected'] ? 'border-blue-500 bg-blue-50' : '' }}">
-                    <div class="flex-shrink-0">
-                        <div class="w-3 h-3 rounded-full {{ $branch['is_selected'] ? 'bg-blue-500' : 'bg-gray-300' }}"></div>
-                    </div>
-                    <div class="ml-3 flex-1">
-                        <p class="text-sm font-medium text-gray-900">{{ $branch['name'] }}</p>
-                        <p class="text-xs text-gray-500">{{ $branch['address'] }}</p>
-                    </div>
-                    @if($branch['is_selected'])
-                    <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    @endif
-                </div>
-                @endforeach
-            </div>
-        </div>
-        @endif
+
+        <!-- Logout Button -->
+        <button @click="handleLogout" 
+                class="w-full flex items-center justify-center gap-2 py-3 px-4 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">
+            <i class="fas fa-sign-out-alt"></i>
+            Đăng xuất
+        </button>
+    </div>
 </div>
 
 @push('scripts')

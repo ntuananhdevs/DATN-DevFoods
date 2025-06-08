@@ -277,8 +277,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [106.6297, 10.8231], // Default to Ho Chi Minh City
-        zoom: 10
+        center: [107.9902, 14.0583], // Approximate center of Vietnam
+        zoom: 4 // Adjust zoom level to show more of Vietnam
     });
 
     // Store markers for later reference
@@ -437,6 +437,11 @@ document.addEventListener('DOMContentLoaded', function() {
         addAllBranchMarkers();
     });
 
+    // Add a resize event listener to the window to ensure the map re-renders correctly
+    window.addEventListener('resize', function() {
+        map.resize();
+    });
+
     // Dữ liệu mẫu cho quận/huyện
     const districtData = {
         'hcm': ['Quận 1', 'Quận 3', 'Quận 7', 'Quận Tân Bình', 'Quận Bình Thạnh'],
@@ -498,7 +503,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (branchItems.length > 0 && branchDetail && closeDetail) {
         branchItems.forEach(item => {
-            item.addEventListener('click', function() {
+            item.addEventListener('click', function(event) {
+                event.preventDefault(); // Prevent default scroll behavior
+
                 // Get branch coordinates
                 const lat = parseFloat(this.getAttribute('data-lat'));
                 const lng = parseFloat(this.getAttribute('data-lng'));
@@ -590,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 branchDetail.classList.remove('hidden');
 
                 // Cuộn đến chi tiết
-                branchDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // branchDetail.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
 
