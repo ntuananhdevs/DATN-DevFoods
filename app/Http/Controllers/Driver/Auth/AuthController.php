@@ -176,7 +176,7 @@ class AuthController extends Controller
                 'message' => 'Đăng nhập thành công!'
             ]);
 
-            return redirect()->route('driver.home')->with('success', 'Đăng nhập thành công!');
+            return redirect()->route('driver.dashboard')->with('success', 'Đăng nhập thành công!');
         } catch (Exception $e) {
             $message = 'Đã xảy ra lỗi: ' . $e->getMessage();
 

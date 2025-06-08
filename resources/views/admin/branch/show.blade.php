@@ -1248,13 +1248,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.set-featured-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             btn.classList.add('btn-loading');
-            fetch(`/admin/branch/branches-images/${btn.dataset.imageId}/set-featured`, {
+            fetch(`/admin/branches/{{ $branch->id }}/set-featured`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify({ branch_id: {{ $branch->id }} })
+                body: JSON.stringify({ image_id: btn.dataset.imageId })
             })
             .then(res => res.json())
             .then(data => {
