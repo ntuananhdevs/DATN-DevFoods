@@ -40,7 +40,6 @@ Route::prefix('driver')->name('driver.')->group(function () {
     // Authenticated driver routes
     Route::middleware(['auth:driver'])->group(function () {
         // Dashboard
-        // Dashboard
         Route::get('/', [DriverController::class, 'home'])->name('home');
         Route::get('/dashboard', [DriverController::class, 'home'])->name('dashboard');
         
@@ -49,9 +48,8 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
         
         // Orders management
-        // Orders management
-        Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
-        Route::get('orders/{orderId}', [OrderController::class, 'show'])->name('orders.show');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.detail');
         Route::post('/orders/{order}/accept', [OrderController::class, 'accept'])->name('orders.accept');
         Route::post('/orders/{order}/start-pickup', [OrderController::class, 'startPickup'])->name('orders.start_pickup');
         Route::post('/orders/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('orders.confirm_pickup');
@@ -63,7 +61,6 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::put('/profile', [DriverController::class, 'updateProfile'])->name('profile.update');
         Route::get('/history', [DriverController::class, 'history'])->name('history');
         Route::get('/earnings', [DriverController::class, 'earnings'])->name('earnings');
-        Route::get('/notifications', [DriverController::class, 'notifications'])->name('notifications');
         
         // API routes for mobile app
         Route::prefix('api')->name('api.')->group(function () {
