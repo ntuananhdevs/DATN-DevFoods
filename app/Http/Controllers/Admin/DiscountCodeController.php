@@ -10,23 +10,82 @@ use App\Models\UserDiscountCode;
 use App\Models\DiscountUsageHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class DiscountCodeController extends Controller
 {
     public function index(Request $request)
     {
-        $query = DiscountCode::with(['createdBy', 'branches', 'products.product', 'products.category', 'products.combo'])
-            ->orderBy('display_order', 'asc')
-            ->orderBy('start_date', 'desc');
+        $request->validate([
+            'search' => 'nullable|string|max:255',
+            'status' => 'nullable|string',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
+            'discount_type' => 'nullable|string'
+        ]);
 
-        if ($request->has('search')) {
-            $query->where('code', 'like', '%' . $request->search . '%')
-                  ->orWhere('name', 'like', '%' . $request->search . '%');
+        $search = $request->input('search', '');
+        $status = $request->input('status', 'all');
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $discountType = $request->input('discount_type');
+        
+        $now = now();
+        $query = DiscountCode::with(['createdBy', 'branches', 'products.product', 'products.category', 'products.combo'])
+                ->orderBy('display_order', 'asc')
+                ->orderBy('start_date', 'desc');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status && $status !== 'all') {
+            switch ($status) {
+                case 'active':
+                    $query->where('is_active', true)
+                          ->where('start_date', '<=', $now)
+                          ->where('end_date', '>=', $now);
+                    break;
+                case 'inactive':
+                    $query->where('is_active', false);
+                    break;
+                case 'expired':
+                    $query->where('is_active', true)
+                          ->where('end_date', '<', $now);
+                    break;
+            }
+        }
+
+        if ($dateFrom) {
+            $query->where('end_date', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->where('start_date', '<=', $dateTo);
+        }
+
+        if ($discountType) {
+            $query->where('discount_type', $discountType);
         }
 
         $discountCodes = $query->paginate(10);
 
-        return view('admin.discount_codes.index', compact('discountCodes'));
+        // Calculate statistics
+        $totalCodes = DiscountCode::count();
+        $activeCodes = DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->count();
+        $expiringSoon = DiscountCode::where('is_active', true)
+            ->where('end_date', '>', $now)
+            ->where('end_date', '<=', $now->copy()->addDays(7))
+            ->count();
+        $expiredCodes = DiscountCode::where('end_date', '<', $now)->count();
+
+        return view('admin.discount_codes.index', compact('discountCodes', 'totalCodes', 'activeCodes', 'expiringSoon', 'expiredCodes'));
     }
 
     public function create()
@@ -45,6 +104,10 @@ class DiscountCodeController extends Controller
             'max_discount_amount' => 'nullable|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'valid_days_of_week' => 'nullable|array',
+            'valid_days_of_week.*' => 'integer|between:0,6',
+            'valid_from_time' => 'nullable|date_format:H:i',
+            'valid_to_time' => 'nullable|date_format:H:i|after:valid_from_time',
         ]);
 
         $discountCode = DiscountCode::create([
@@ -58,8 +121,8 @@ class DiscountCodeController extends Controller
             'max_discount_amount' => $request->max_discount_amount,
             'applicable_scope' => $request->applicable_scope ?? 'all_branches',
             'applicable_items' => $request->applicable_items ?? 'all_items',
-            'applicable_ranks' => $request->applicable_ranks, // JSON
-            'valid_days_of_week' => $request->valid_days_of_week, // JSON
+            'applicable_ranks' => $request->applicable_ranks,
+            'valid_days_of_week' => $request->valid_days_of_week,
             'valid_from_time' => $request->valid_from_time,
             'valid_to_time' => $request->valid_to_time,
             'usage_type' => $request->usage_type ?? 'public',
@@ -93,6 +156,11 @@ class DiscountCodeController extends Controller
             'max_discount_amount' => 'nullable|numeric|min:0',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
+            'valid_days_of_week' => 'nullable|array',
+            'valid_days_of_week.*' => 'integer|between:0,6',
+            'valid_from_time' => 'nullable|date_format:H:i',
+            'valid_to_time' => 'nullable|date_format:H:i|after:valid_from_time',
+            'usage_type' => 'required|in:public,personal', // Add this line
         ]);
 
         $discountCode->update($request->only([
@@ -117,11 +185,6 @@ class DiscountCodeController extends Controller
         $discountCode = DiscountCode::with(['createdBy', 'branches', 'products.product', 'products.category', 'products.combo'])
             ->findOrFail($id);
         return view('admin.discount_codes.show', compact('discountCode'));
-    }
-
-    public function search(Request $request)
-    {
-        return $this->index($request);
     }
 
     public function toggleStatus(Request $request, $id)

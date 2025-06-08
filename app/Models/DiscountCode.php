@@ -42,6 +42,8 @@ class DiscountCode extends Model
         'valid_days_of_week' => 'array',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'valid_from_time' => 'datetime:H:i',
+        'valid_to_time' => 'datetime:H:i',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'rank_exclusive' => 'boolean',

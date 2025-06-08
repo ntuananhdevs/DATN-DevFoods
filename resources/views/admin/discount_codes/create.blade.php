@@ -9,6 +9,7 @@
     input[type="text"],
     input[type="number"],
     input[type="date"],
+    input[type="time"],
     input[type="datetime-local"],
     textarea,
     select {
@@ -25,6 +26,7 @@
     input[type="text"]:hover,
     input[type="number"]:hover,
     input[type="date"]:hover,
+    input[type="time"]:hover,
     input[type="datetime-local"]:hover,
     textarea:hover,
     select:hover {
@@ -35,6 +37,7 @@
     input[type="text"]:focus,
     input[type="number"]:focus,
     input[type="date"]:focus,
+    input[type="time"]:focus,
     input[type="datetime-local"]:focus,
     textarea:focus,
     select:focus {
@@ -91,6 +94,12 @@
         cursor: pointer;
         flex: 1;
     }
+
+    .days-of-week {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
 </style>
 
 <div class="fade-in flex flex-col gap-4 pb-4 p-4">
@@ -98,10 +107,9 @@
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 12h8"></path>
-                    <path d="M12 8v8"></path>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
             <div>
@@ -300,7 +308,7 @@
                         
                         <div class="form-group mb-3">
                             <label for="start_date" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
-                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date') }}" required>
+                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', now()->format('Y-m-d')) }}" required>
                             @error('start_date')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -308,8 +316,51 @@
 
                         <div class="form-group mb-3">
                             <label for="end_date" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
-                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date') }}" required>
+                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', now()->addDay()->format('Y-m-d')) }}" required>
                             @error('end_date')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label">Các ngày áp dụng trong tuần</label>
+                            <div class="days-of-week">
+                                @php
+                                    $days = [
+                                        1 => 'Thứ Hai',
+                                        2 => 'Thứ Ba',
+                                        3 => 'Thứ Tư',
+                                        4 => 'Thứ Năm',
+                                        5 => 'Thứ Sáu',
+                                        6 => 'Thứ Bảy',
+                                        0 => 'Chủ Nhật',
+                                    ];
+                                    $selectedDays = old('valid_days_of_week', []);
+                                @endphp
+                                @foreach ($days as $dayValue => $dayName)
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" name="valid_days_of_week[]" id="day_{{ $dayValue }}" value="{{ $dayValue }}" {{ in_array($dayValue, $selectedDays) ? 'checked' : '' }}>
+                                        <label for="day_{{ $dayValue }}">{{ $dayName }}</label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @error('valid_days_of_week')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="valid_from_time" class="form-label">Giờ bắt đầu</label>
+                            <input type="time" name="valid_from_time" id="valid_from_time" class="form-control" value="{{ old('valid_from_time') }}">
+                            @error('valid_from_time')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="valid_to_time" class="form-label">Giờ kết thúc</label>
+                            <input type="time" name="valid_to_time" id="valid_to_time" class="form-control" value="{{ old('valid_to_time') }}">
+                            @error('valid_to_time')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>

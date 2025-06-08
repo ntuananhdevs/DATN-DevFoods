@@ -147,6 +147,10 @@ class AuthController extends Controller
             // Đăng nhập thành công
             RateLimiter::clear($key); // reset khi đúng
 
+            // Sử dụng Laravel Auth guard để đăng nhập
+            Auth::guard('driver')->login($driver);
+            
+            // Vẫn giữ session cho backward compatibility
             session([
                 'driver_id' => $driver->id,
                 'driver_name' => $driver->full_name,

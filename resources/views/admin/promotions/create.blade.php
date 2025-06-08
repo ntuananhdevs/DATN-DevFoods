@@ -1,6 +1,6 @@
 @extends('layouts/admin/contentLayoutMaster')
 
-@section('title', 'Create Promotion Program')
+@section('title', 'Tạo chương trình khuyến mãi')
 
 @section('styles')
 <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.css" rel="stylesheet">
@@ -9,7 +9,7 @@
         max-width: 1200px;
         margin: 0 auto;
         animation: fadeIn 0.6s ease-out;
-        padding: 20px;
+        margin: 0;
     }
 
     @keyframes fadeIn {
@@ -234,8 +234,16 @@
         display: block;
     }
 
-    select[multiple] {
-        min-height: 120px;
+    .branch-checkboxes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 10px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
     }
 
     .form-actions {
@@ -316,6 +324,10 @@
         .btn {
             justify-content: center;
         }
+        
+        .branch-checkboxes {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 @endsection
@@ -328,12 +340,12 @@
             <div class="icon">
                 <i data-feather="plus-circle"></i>
             </div>
-            Create Promotion Program
+            Tạo chương trình khuyến mãi
         </h1>
         <div class="breadcrumb">
-            <a href="{{ route('admin.promotions.index') }}">Promotion Programs</a>
+            <a href="{{ route('admin.promotions.index') }}">Chương trình khuyến mãi</a>
             <i data-feather="chevron-right"></i>
-            <span>Create New</span>
+            <span>Tạo mới</span>
         </div>
     </div>
 
@@ -358,21 +370,21 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="info"></i>
-                        Basic Information
+                        Thông tin cơ bản
                     </h3>
                     
                     <div class="form-group">
-                        <label for="name">Program Name <span class="required">*</span></label>
+                        <label for="name">Tên chương trình <span class="required">*</span></label>
                         <input type="text" id="name" name="name" class="form-control" value="{{ old('name') }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="description">Description</label>
-                        <textarea id="description" name="description" class="form-control" placeholder="Enter program description...">{{ old('description') }}</textarea>
+                        <label for="description">Mô tả</label>
+                        <textarea id="description" name="description" class="form-control" placeholder="Nhập mô tả chương trình...">{{ old('description') }}</textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="display_order">Display Order <span class="required">*</span></label>
+                        <label for="display_order">Thứ tự hiển thị <span class="required">*</span></label>
                         <input type="number" id="display_order" name="display_order" class="form-control" value="{{ old('display_order', 0) }}" min="0" required>
                     </div>
                 </div>
@@ -381,23 +393,23 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="calendar"></i>
-                        Schedule & Status
+                        Thời gian & Trạng thái
                     </h3>
                     
                     <div class="form-group">
-                        <label for="start_date">Start Date <span class="required">*</span></label>
+                        <label for="start_date">Ngày bắt đầu <span class="required">*</span></label>
                         <input type="datetime-local" id="start_date" name="start_date" class="form-control" value="{{ old('start_date') }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="end_date">End Date <span class="required">*</span></label>
+                        <label for="end_date">Ngày kết thúc <span class="required">*</span></label>
                         <input type="datetime-local" id="end_date" name="end_date" class="form-control" value="{{ old('end_date') }}" required>
                     </div>
 
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}>
-                            <label for="is_active">Active Program</label>
+                            <label for="is_active">Chương trình hoạt động</label>
                             <i data-feather="toggle-right"></i>
                         </div>
                     </div>
@@ -405,7 +417,7 @@
                     <div class="form-group">
                         <div class="checkbox-group">
                             <input type="checkbox" id="is_featured" name="is_featured" value="1" {{ old('is_featured') ? 'checked' : '' }}>
-                            <label for="is_featured">Featured Program</label>
+                            <label for="is_featured">Chương trình nổi bật</label>
                             <i data-feather="star"></i>
                         </div>
                     </div>
@@ -415,27 +427,27 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="image"></i>
-                        Images
+                        Hình ảnh
                     </h3>
                     
                     <div class="form-group">
-                        <label for="banner_image">Banner Image</label>
+                        <label for="banner_image">Hình banner</label>
                         <div class="file-input-wrapper">
                             <input type="file" id="banner_image" name="banner_image" accept="image/*">
                             <label for="banner_image" class="file-input-label">
                                 <i data-feather="upload"></i>
-                                <span>Choose banner image...</span>
+                                <span>Chọn hình banner...</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label for="thumbnail_image">Thumbnail Image</label>
+                        <label for="thumbnail_image">Hình thu nhỏ</label>
                         <div class="file-input-wrapper">
                             <input type="file" id="thumbnail_image" name="thumbnail_image" accept="image/*">
                             <label for="thumbnail_image" class="file-input-label">
                                 <i data-feather="upload"></i>
-                                <span>Choose thumbnail image...</span>
+                                <span>Chọn hình thu nhỏ...</span>
                             </label>
                         </div>
                     </div>
@@ -445,26 +457,27 @@
                 <div class="form-section">
                     <h3>
                         <i data-feather="map-pin"></i>
-                        Applicable Scope
+                        Phạm vi áp dụng
                     </h3>
                     
                     <div class="form-group">
-                        <label for="applicable_scope">Scope <span class="required">*</span></label>
+                        <label for="applicable_scope">Phạm vi <span class="required">*</span></label>
                         <select id="applicable_scope" name="applicable_scope" class="form-control" required>
-                            <option value="all_branches" {{ old('applicable_scope') == 'all_branches' ? 'selected' : '' }}>All Branches</option>
-                            <option value="specific_branches" {{ old('applicable_scope') == 'specific_branches' ? 'selected' : '' }}>Specific Branches</option>
+                            <option value="all_branches" {{ old('applicable_scope') == 'all_branches' ? 'selected' : '' }}>Tất cả chi nhánh</option>
+                            <option value="specific_branches" {{ old('applicable_scope') == 'specific_branches' ? 'selected' : '' }}>Chi nhánh cụ thể</option>
                         </select>
                     </div>
 
                     <div class="form-group branch-selection" id="branch_selection">
-                        <label for="branch_ids">Select Branches <span class="required">*</span></label>
-                        <select name="branch_ids[]" id="branch_ids" class="form-control" multiple>
+                        <label>Chọn chi nhánh <span class="required">*</span></label>
+                        <div class="branch-checkboxes">
                             @foreach ($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ in_array($branch->id, old('branch_ids', [])) ? 'selected' : '' }}>
-                                    {{ $branch->name }}
-                                </option>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="branch_{{ $branch->id }}" name="branch_ids[]" value="{{ $branch->id }}" {{ in_array($branch->id, old('branch_ids', [])) ? 'checked' : '' }}>
+                                    <label for="branch_{{ $branch->id }}">{{ $branch->name }}</label>
+                                </div>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -473,11 +486,11 @@
             <div class="form-actions">
                 <a href="{{ route('admin.promotions.index') }}" class="btn btn-secondary">
                     <i data-feather="x"></i>
-                    Cancel
+                    Hủy
                 </a>
                 <button type="submit" class="btn btn-primary">
                     <i data-feather="save"></i>
-                    Create Program
+                    Tạo chương trình
                 </button>
             </div>
         </form>
@@ -512,7 +525,11 @@
             if (this.files.length > 0) {
                 label.textContent = this.files[0].name;
             } else {
-                label.textContent = this.id === 'banner_image' ? 'Choose banner image...' : 'Choose thumbnail image...';
+                if (this.id === 'banner_image') {
+                    label.textContent = 'Chọn hình banner...';
+                } else {
+                    label.textContent = 'Chọn hình thu nhỏ...';
+                }
             }
         });
     });
