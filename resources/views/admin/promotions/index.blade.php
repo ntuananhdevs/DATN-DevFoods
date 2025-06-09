@@ -77,28 +77,7 @@
         transition: width 0.3s ease;
     }
 
-    /* Define progress classes for different percentages */
-    .progress-0 { width: 0%; }
-    .progress-5 { width: 5%; }
-    .progress-10 { width: 10%; }
-    .progress-15 { width: 15%; }
-    .progress-20 { width: 20%; }
-    .progress-25 { width: 25%; }
-    .progress-30 { width: 30%; }
-    .progress-35 { width: 35%; }
-    .progress-40 { width: 40%; }
-    .progress-45 { width: 45%; }
-    .progress-50 { width: 50%; }
-    .progress-55 { width: 55%; }
-    .progress-60 { width: 60%; }
-    .progress-65 { width: 65%; }
-    .progress-70 { width: 70%; }
-    .progress-75 { width: 75%; }
-    .progress-80 { width: 80%; }
-    .progress-85 { width: 85%; }
-    .progress-90 { width: 90%; }
-    .progress-95 { width: 95%; }
-    .progress-100 { width: 100%; }
+    /* Progress bar will be controlled by inline styles */
 
     /* Status badges */
     .status-badge {
@@ -318,18 +297,7 @@
         </div>
     </div>
 
-    <!-- Success Message -->
-    @if (session('success'))
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-        <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <path d="m9 11 3 3L22 4"></path>
-            </svg>
-            <span>{{ session('success') }}</span>
-        </div>
-    </div>
-    @endif
+
 
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -518,26 +486,44 @@
                             <td class="py-3 px-4 text-center">
                                 <div class="flex flex-col items-center gap-1">
                                     @php
-                                    $tooltipContent = $program->discountCodes ? $program->discountCodes->map(function($code) {
-                                    return $code->code . ': ' . $code->current_usage_count . '/' . ($code->max_total_usage ?? 'Không giới hạn');
-                                    })->implode(', ') : 'No codes';
+                                    // Calculate total usage across all discount codes
+                                    $totalUsageCount = $program->discountCodes->sum('current_usage_count');
+                                    $maxUsage = $program->discountCodes->sum('max_total_usage');
+                                    
+                                    // Generate tooltip content with detailed information
+                                    $tooltipContent = '';
+                                    if ($program->discountCodes && $program->discountCodes->count() > 0) {
+                                        $tooltipContent = $program->discountCodes->map(function($code) {
+                                            $maxUsage = $code->max_total_usage ? number_format($code->max_total_usage) : 'Không giới hạn';
+                                            return "{$code->code}: {$code->current_usage_count}/{$maxUsage}" . 
+                                                   ($code->is_active ? '' : ' (Không hoạt động)');
+                                        })->implode('<br>');
+                                    } else {
+                                        $tooltipContent = 'Chưa có mã giảm giá';
+                                    }
                                     @endphp
-                                    <div class="font-medium"
-                                        data-tooltip="true"
-                                        data-tooltip-content="{{ $tooltipContent }}">
-                                        {{ number_format($program->total_usage_count ?? 0) }}
+                                    
+                                    <div class="font-medium" data-tooltip="true" data-tooltip-content="{{ $tooltipContent }}">
+                                        {{ number_format($totalUsageCount) }}
+                                        @if($maxUsage > 0)
+                                            <span class="text-xs text-muted-foreground">/ {{ number_format($maxUsage) }}</span>
+                                        @endif
                                     </div>
-                                    @if($program->total_usage_limit)
-                                    <div class="w-full max-w-[80px]">
-                                        <div class="progress-bar">
-                                            <div class="progress-fill progress-{{ min(100, (int)(($program->total_usage_count / $program->total_usage_limit) * 100)) }}"></div>
+                                    
+                                    @if($maxUsage > 0)
+                                        @php
+                                        $percentage = min(100, (int)(($totalUsageCount / $maxUsage) * 100));
+                                        @endphp
+                                        <div class="w-full max-w-[100px]">
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width: {{ $percentage }}%;"></div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="text-xs text-muted-foreground">
-                                        / {{ number_format($program->total_usage_limit) }}
-                                    </div>
+                                        <div class="text-xs text-muted-foreground">
+                                            {{ $percentage }}%
+                                        </div>
                                     @else
-                                    <div class="text-xs text-muted-foreground">/ Không giới hạn</div>
+                                        <div class="text-xs text-muted-foreground">Không giới hạn</div>
                                     @endif
                                 </div>
                             </td>
@@ -801,77 +787,94 @@
     function bulkAction(action) {
         const checkboxes = document.querySelectorAll('.program-checkbox:checked');
         if (checkboxes.length === 0) {
-            alert('Vui lòng chọn ít nhất một chương trình khuyến mãi');
+            dtmodalShowToast("error", {
+                title: "Lỗi!",
+                message: "Vui lòng chọn ít nhất một chương trình khuyến mãi"
+            });
             return;
         }
         
         const ids = Array.from(checkboxes).map(checkbox => checkbox.value);
         
-        // Hiển thị xác nhận
+        // Hiển thị xác nhận bằng modal
         const actionText = action === 'activate' ? 'kích hoạt' : 'vô hiệu hóa';
-        if (!confirm(`Bạn có chắc chắn muốn ${actionText} ${checkboxes.length} chương trình khuyến mãi đã chọn?`)) {
-            return;
-        }
         
-        // Hiển thị loading spinner
-        const actionButtons = document.querySelectorAll('.activate-selected, .deactivate-selected');
-        actionButtons.forEach(btn => {
-            btn.disabled = true;
-            const originalText = btn.innerHTML;
-            btn.dataset.originalText = originalText;
-            btn.innerHTML = `<div class="spinner mr-2"></div> Đang xử lý...`;
-        });
-        
-        // Đóng dropdown
-        document.getElementById('actionsMenu').classList.add('hidden');
-        
-        // Gửi request
-        fetch('{{ route("admin.promotions.bulk-status-update") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                ids: ids,
-                action: action
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Có lỗi xảy ra khi xử lý yêu cầu');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Cập nhật trạng thái của các hàng đã chọn
-                if (data.programs && data.programs.length > 0) {
-                    updateRowStatus(data.programs);
-                }
+        dtmodalConfirmIndex({
+            title: `Xác nhận ${actionText} chương trình`,
+            subtitle: `Bạn có chắc chắn muốn ${actionText} các chương trình đã chọn?`,
+            message: "Hành động này sẽ thay đổi trạng thái của các chương trình khuyến mãi.",
+            itemName: `${checkboxes.length} chương trình khuyến mãi`,
+            onConfirm: () => {
+                // Hiển thị loading spinner
+                const actionButtons = document.querySelectorAll('.activate-selected, .deactivate-selected');
+                actionButtons.forEach(btn => {
+                    btn.disabled = true;
+                    const originalText = btn.innerHTML;
+                    btn.dataset.originalText = originalText;
+                    btn.innerHTML = `<div class="spinner mr-2"></div> Đang xử lý...`;
+                });
                 
-                // Hiển thị thông báo thành công
-                alert(data.message);
+                // Đóng dropdown
+                document.getElementById('actionsMenu').classList.add('hidden');
                 
-                // Bỏ chọn tất cả các checkbox
-                const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-                if (selectAllCheckbox) selectAllCheckbox.checked = false;
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-            } else {
-                alert(data.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.');
+                // Gửi request
+                fetch('{{ route("admin.promotions.bulk-status-update") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ids: ids,
+                        action: action
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Có lỗi xảy ra khi xử lý yêu cầu');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Cập nhật trạng thái của các hàng đã chọn
+                        if (data.programs && data.programs.length > 0) {
+                            updateRowStatus(data.programs);
+                        }
+                        
+                        // Hiển thị thông báo thành công bằng toast
+                        dtmodalShowToast("success", {
+                            title: "Thành công!",
+                            message: data.message
+                        });
+                        
+                        // Bỏ chọn tất cả các checkbox
+                        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+                        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                        checkboxes.forEach(checkbox => checkbox.checked = false);
+                    } else {
+                        dtmodalShowToast("error", {
+                            title: "Lỗi!",
+                            message: data.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    dtmodalShowToast("error", {
+                        title: "Lỗi!",
+                        message: error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.'
+                    });
+                })
+                .finally(() => {
+                    // Khôi phục trạng thái nút
+                    actionButtons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.innerHTML = btn.dataset.originalText;
+                    });
+                });
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert(error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.');
-        })
-        .finally(() => {
-            // Khôi phục trạng thái nút
-            actionButtons.forEach(btn => {
-                btn.disabled = false;
-                btn.innerHTML = btn.dataset.originalText;
-            });
         });
     }
     
@@ -1019,26 +1022,36 @@
 
             // Generate the rows for each program
             data.programs.forEach(program => {
+                const activeDiscountCodes = program.discount_codes.filter(code => code.is_active);
+                const activeUsageCount = activeDiscountCodes.reduce((sum, code) => sum + code.current_usage_count, 0);
+                
                 const tooltipContent = program.discount_codes.length > 0
-                    ? program.discount_codes.map(code => `${code.code}: ${code.current_usage_count}/${code.max_total_usage ?? 'Không giới hạn'}`).join(', ')
+                    ? program.discount_codes.map(code => 
+                        `${code.code} (${code.is_active ? 'Hoạt động' : 'Không hoạt động'}): ${code.current_usage_count}/${code.max_total_usage ?? 'Không giới hạn'}`
+                      ).join(', ')
                     : 'No codes';
+                
+                // Calculate total max usage across discount codes
+                const totalUsageCount = program.total_usage_count || 0;
+                const discountCodes = program.discount_codes || [];
+                const totalMaxUsage = discountCodes.reduce((sum, code) => sum + (code.max_total_usage || 0), 0);
                 
                 // Create usage progress HTML
                 let usageHTML = '';
-                if (program.total_usage_limit) {
-                    const progressPercent = Math.min(100, Math.floor((program.total_usage_count / program.total_usage_limit) * 100));
+                if (totalMaxUsage > 0) {
+                    const progressPercent = Math.min(100, Math.floor((totalUsageCount / totalMaxUsage) * 100));
                     usageHTML = `
-                        <div class="w-full max-w-[80px]">
+                        <div class="w-full max-w-[100px]">
                             <div class="progress-bar">
-                                <div class="progress-fill progress-${progressPercent}"></div>
+                                <div class="progress-fill" style="width: ${progressPercent}%;"></div>
                             </div>
                         </div>
                         <div class="text-xs text-muted-foreground">
-                            / ${formatNumber(program.total_usage_limit)}
+                            ${progressPercent}%
                         </div>
                     `;
                 } else {
-                    usageHTML = `<div class="text-xs text-muted-foreground">/ Không giới hạn</div>`;
+                    usageHTML = `<div class="text-xs text-muted-foreground">Không giới hạn</div>`;
                 }
 
                 const rowHtml = `
@@ -1068,10 +1081,9 @@
                         </td>
                         <td class="py-3 px-4 text-center">
                             <div class="flex flex-col items-center gap-1">
-                                <div class="font-medium"
-                                    data-tooltip="true"
-                                    data-tooltip-content="${tooltipContent}">
-                                    ${formatNumber(program.total_usage_count)}
+                                <div class="font-medium" data-tooltip="true" data-tooltip-content="${tooltipContent}">
+                                    ${formatNumber(totalUsageCount)}
+                                    ${totalMaxUsage > 0 ? `<span class="text-xs text-muted-foreground">/ ${formatNumber(totalMaxUsage)}</span>` : ''}
                                 </div>
                                 ${usageHTML}
                             </div>

@@ -39,7 +39,8 @@ class PromotionProgramController extends Controller
                     'discount_type',
                     'discount_value',
                     'current_usage_count',
-                    'max_total_usage'
+                    'max_total_usage',
+                    'is_active'
                 );
             },
             'branches:id',
@@ -112,7 +113,8 @@ class PromotionProgramController extends Controller
                     'discount_type',
                     'discount_value',
                     'current_usage_count',
-                    'max_total_usage'
+                    'max_total_usage',
+                    'is_active'
                 );
             },
             'branches:id',
@@ -269,7 +271,8 @@ class PromotionProgramController extends Controller
                         return [
                             'code' => $code->code,
                             'current_usage_count' => $code->current_usage_count,
-                            'max_total_usage' => $code->max_total_usage
+                            'max_total_usage' => $code->max_total_usage,
+                            'is_active' => $code->is_active
                         ];
                     }) : []
                 ];
@@ -355,7 +358,11 @@ class PromotionProgramController extends Controller
             $program->branches()->sync($request->input('branch_ids', []));
         }
 
-        return redirect()->route('admin.promotions.index')->with('success', 'Chương trình khuyến mãi đã được tạo thành công.');
+        return redirect()->route('admin.promotions.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Chương trình khuyến mãi đã được tạo thành công.'
+        ]);
     }
 
     public function edit(PromotionProgram $program)
@@ -412,13 +419,21 @@ class PromotionProgramController extends Controller
             $program->branches()->detach();
         }
 
-        return redirect()->route('admin.promotions.index')->with('success', 'Chương trình khuyến mãi đã được cập nhật thành công.');
+        return redirect()->route('admin.promotions.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Chương trình khuyến mãi đã được cập nhật thành công.'
+        ]);
     }
 
     public function destroy(PromotionProgram $program)
     {
         $program->delete();
-        return redirect()->route('admin.promotions.index')->with('success', 'Promotion program deleted successfully.');
+        return redirect()->route('admin.promotions.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Chương trình khuyến mãi đã được xóa thành công.'
+        ]);
     }
 
     public function linkDiscountCode(Request $request, PromotionProgram $program)
@@ -430,7 +445,11 @@ class PromotionProgramController extends Controller
         $program->discountCodes()->syncWithoutDetaching([$request->discount_code_id]);
         
         return redirect()->route('admin.promotions.show', $program)
-            ->with('success', 'Discount code linked successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Mã giảm giá đã được liên kết thành công.'
+            ]);
     }
 
     public function unlinkDiscountCode(PromotionProgram $program, DiscountCode $discountCode)
@@ -438,7 +457,11 @@ class PromotionProgramController extends Controller
         $program->discountCodes()->detach($discountCode->id);
         
         return redirect()->route('admin.promotions.show', $program)
-            ->with('success', 'Discount code unlinked successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Đã hủy liên kết mã giảm giá thành công.'
+            ]);
     }
 
     public function linkBranch(Request $request, PromotionProgram $program)
@@ -450,7 +473,11 @@ class PromotionProgramController extends Controller
         $program->branches()->syncWithoutDetaching([$request->branch_id]);
         
         return redirect()->route('admin.promotions.show', $program)
-            ->with('success', 'Branch linked successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Chi nhánh đã được liên kết thành công.'
+            ]);
     }
 
     public function unlinkBranch(PromotionProgram $program, Branch $branch)
@@ -458,7 +485,11 @@ class PromotionProgramController extends Controller
         $program->branches()->detach($branch->id);
         
         return redirect()->route('admin.promotions.show', $program)
-            ->with('success', 'Branch unlinked successfully.');
+            ->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => 'Đã hủy liên kết chi nhánh thành công.'
+            ]);
     }
 
     public function bulkStatusUpdate(Request $request)

@@ -199,19 +199,6 @@
         </div>
     </div>
 
-    <!-- Success Message -->
-    @if (session('success'))
-    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-        <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <path d="m9 11 3 3L22 4"></path>
-            </svg>
-            <span>{{ session('success') }}</span>
-        </div>
-    </div>
-    @endif
-
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
         <div class="stat-card">
@@ -271,7 +258,6 @@
                         </svg>
                         <input type="text" id="searchInput" name="search" placeholder="Tìm kiếm theo mã hoặc tên..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" value="{{ request('search') }}">
                     </div>
-                    <button type="submit" class="ml-2 btn btn-default">Tìm</button>
                 </form>
             </div>
             <div class="flex items-center gap-2">
@@ -446,6 +432,24 @@
         `;
         document.head.appendChild(style);
         
+        // Kiểm tra và hiển thị toast từ localStorage nếu có
+        const toastMessage = localStorage.getItem('toast_message');
+        const toastType = localStorage.getItem('toast_type');
+        
+        if (toastMessage && toastType) {
+            // Thêm một timeout nhỏ để đảm bảo DOM đã hoàn toàn tải xong
+            setTimeout(() => {
+                dtmodalShowToast(toastType, {
+                    title: toastType === 'success' ? 'Thành công' : 'Lỗi',
+                    message: toastMessage
+                });
+                
+                // Xóa thông báo sau khi hiển thị
+                localStorage.removeItem('toast_message');
+                localStorage.removeItem('toast_type');
+            }, 300);
+        }
+        
         // Tìm kiếm Ajax với debounce
         const searchInput = document.getElementById('searchInput');
         const searchForm = document.getElementById('searchForm');
@@ -480,7 +484,8 @@
             `;
             
             // Lấy các tham số từ form
-            const queryParams = new URLSearchParams(new FormData(searchForm));
+            const formData = new FormData(searchForm);
+            const queryParams = new URLSearchParams(formData);
             
             // Thêm tham số Ajax
             queryParams.append('_ajax', '1');
@@ -488,7 +493,8 @@
             // Gửi yêu cầu tìm kiếm
             fetch(`${searchForm.action}?${queryParams.toString()}`, {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             })
             .then(response => response.json())
@@ -509,14 +515,30 @@
                     const url = new URL(window.location);
                     url.searchParams.set('search', searchTerm);
                     window.history.pushState({}, '', url);
+                    
+                    // Hiển thị thông báo thành công nếu có
+                    if (data.message) {
+                        setTimeout(() => {
+                            dtmodalShowToast('success', {
+                                title: 'Thành công',
+                                message: data.message
+                            });
+                        }, 300);
+                    }
                 } else {
                     // Hiển thị thông báo lỗi
-                    showToast('error', data.message || 'Có lỗi xảy ra khi tìm kiếm');
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: data.message || 'Có lỗi xảy ra khi tìm kiếm'
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi xảy ra khi xử lý yêu cầu'
+                });
                 tableContainer.innerHTML = '<div class="p-4 text-center">Có lỗi xảy ra khi tải dữ liệu</div>';
             });
         }
@@ -592,7 +614,7 @@
         
         // Thêm sự kiện cho các nút trong modal lọc
         const resetFilterModalBtn = document.getElementById('resetFilterModalBtn');
-        const closeFilterModalBtn = document.getElementById('closeFilterModalBtn');
+        const closeFilterModalBtn = document.getElementById('closeFilterBtn');
         
         if (resetFilterModalBtn) {
             resetFilterModalBtn.addEventListener('click', function() {
@@ -606,55 +628,7 @@
             });
         }
 
-        // ----- Toast Notification Function -----
-        function showToast(type, message) {
-            // Kiểm tra và xóa toast cũ nếu có
-            const existingToast = document.getElementById('toast-notification');
-            if (existingToast) {
-                existingToast.remove();
-            }
-            
-            // Tạo toast mới
-            const toast = document.createElement('div');
-            toast.id = 'toast-notification';
-            toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
-            
-            let bgColor, iconSvg;
-            if (type === 'success') {
-                bgColor = 'bg-green-100 border border-green-400 text-green-700';
-                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>';
-            } else {
-                bgColor = 'bg-red-100 border border-red-400 text-red-700';
-                iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>';
-            }
-            
-            toast.className += ` ${bgColor}`;
-            toast.innerHTML = `
-                <div class="flex items-center">
-                    ${iconSvg}
-                    <span>${message}</span>
-                    <button class="ml-auto" onclick="this.parentElement.parentElement.remove()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(toast);
-            
-            // Animate in
-            setTimeout(() => {
-                toast.classList.remove('translate-x-full');
-                toast.classList.add('translate-x-0');
-            }, 10);
-            
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }, 5000);
-        }
+        // Sử dụng dtmodalShowToast từ modal.js thay vì tự tạo hàm showToast
 
         // ----- Create Empty Row Function -----
         function createEmptyRow() {
@@ -684,59 +658,79 @@
             return tr;
         }
 
-        // ----- Confirm Delete -----
+        // ----- Delete Functionality -----
         function confirmDelete(codeName, button) {
-            if (confirm(`Bạn có chắc chắn muốn xóa mã giảm giá "${codeName}"?`)) {
-                const form = button.closest('form');
-                const url = form.action;
-                
-                // Hiển thị loading state
-                button.disabled = true;
-                button.innerHTML = '<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-                
-                // Gửi yêu cầu AJAX để xóa
-                fetch(url, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Nếu thành công, xóa hàng khỏi bảng
-                        const row = button.closest('tr');
-                        row.classList.add('fade-out');
-                        setTimeout(() => {
-                            row.remove();
+            const form = button.closest('form');
+            const url = form.action;
+            
+            // Hiển thị xác nhận bằng modal
+            dtmodalConfirmIndex({
+                title: "Xác nhận xóa mã giảm giá",
+                subtitle: `Bạn có chắc chắn muốn xóa mã giảm giá "${codeName}"?`,
+                message: "Hành động này không thể hoàn tác và sẽ xóa tất cả dữ liệu liên quan.",
+                itemName: codeName,
+                confirmText: "Xác nhận xóa",
+                cancelText: "Hủy",
+                onConfirm: function() {
+                    // Hiển thị loading state
+                    button.disabled = true;
+                    button.innerHTML = '<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+                    
+                    // Gửi yêu cầu AJAX để xóa
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Nếu thành công, xóa hàng khỏi bảng
+                            const row = button.closest('tr');
+                            row.classList.add('fade-out');
                             
-                            // Kiểm tra nếu không còn hàng nào, hiển thị thông báo trống
-                            const tableBody = document.querySelector('table tbody');
-                            if (tableBody.querySelectorAll('tr:not(.empty-row)').length === 0) {
-                                const emptyRow = createEmptyRow();
-                                tableBody.appendChild(emptyRow);
-                            }
-                            
-                            // Hiển thị thông báo thành công
-                            showToast('success', data.message);
-                        }, 300);
-                    } else {
-                        // Nếu có lỗi, hiển thị thông báo lỗi
-                        showToast('error', data.message || 'Có lỗi xảy ra');
+                            // Thêm một khoảng thời gian nhỏ để hiệu ứng fade-out hoàn thành
+                            setTimeout(() => {
+                                row.remove();
+                                
+                                // Kiểm tra nếu không còn hàng nào, hiển thị thông báo trống
+                                const tableBody = document.querySelector('table tbody');
+                                if (tableBody.querySelectorAll('tr:not(.empty-row)').length === 0) {
+                                    const emptyRow = createEmptyRow();
+                                    tableBody.appendChild(emptyRow);
+                                }
+                                
+                                // Hiển thị thông báo thành công
+                                dtmodalShowToast('success', {
+                                    title: 'Thành công',
+                                    message: data.message
+                                });
+                            }, 300);
+                        } else {
+                            // Nếu có lỗi, hiển thị thông báo lỗi
+                            dtmodalShowToast('error', {
+                                title: 'Lỗi',
+                                message: data.message || 'Có lỗi xảy ra'
+                            });
+                            button.disabled = false;
+                            button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: 'Có lỗi xảy ra khi xử lý yêu cầu'
+                        });
                         button.disabled = false;
                         button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
-                    button.disabled = false;
-                    button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>';
-                });
-            }
+                    });
+                }
+            });
         }
         
         // ----- Submit Bulk Actions -----
@@ -744,7 +738,10 @@
             const selectedCheckboxes = document.querySelectorAll('.discount-checkbox:checked');
             
             if (selectedCheckboxes.length === 0) {
-                showToast('error', 'Vui lòng chọn ít nhất một mã giảm giá');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Vui lòng chọn ít nhất một mã giảm giá'
+                });
                 return;
             }
             
@@ -757,77 +754,103 @@
                 formData.append('ids[]', checkbox.value);
             });
             
-            // Hiển thị loading state
-            const button = form.querySelector('button[type="button"]');
-            const originalButtonContent = button.innerHTML;
-            button.disabled = true;
-            button.innerHTML = '<svg class="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            // Xác định loại hành động
+            const actionText = formId === 'activateForm' ? 'kích hoạt' : 'vô hiệu hóa';
             
-            // Gửi yêu cầu AJAX
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Nếu thành công, cập nhật UI
-                    if (formId === 'activateForm' || formId === 'deactivateForm') {
-                        // Đối với cập nhật trạng thái, tải lại trang để cập nhật UI
-                        showToast('success', data.message);
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    } else if (formId.includes('delete')) {
-                        // Đối với xóa hàng loạt, xóa các hàng khỏi bảng
-                        selectedCheckboxes.forEach(checkbox => {
-                            const row = checkbox.closest('tr');
-                            row.classList.add('fade-out');
-                            setTimeout(() => {
-                                row.remove();
-                            }, 300);
-                        });
+            // Hiển thị xác nhận bằng modal
+            dtmodalConfirmIndex({
+                title: `Xác nhận ${actionText} mã giảm giá`,
+                subtitle: `Bạn có chắc chắn muốn ${actionText} các mã giảm giá đã chọn?`,
+                message: "Hành động này sẽ thay đổi trạng thái của các mã giảm giá.",
+                itemName: `${selectedCheckboxes.length} mã giảm giá`,
+                confirmText: "Xác nhận",
+                cancelText: "Hủy",
+                onConfirm: function() {
+                    // Hiển thị loading state
+                    const button = form.querySelector('button[type="button"]');
+                    const originalButtonContent = button.innerHTML;
+                    button.disabled = true;
+                    button.innerHTML = '<svg class="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+                    
+                    // Gửi yêu cầu AJAX
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Nếu thành công, cập nhật UI
+                            if (formId === 'activateForm' || formId === 'deactivateForm') {
+                                // Lưu thông báo vào localStorage để hiển thị sau khi tải lại trang
+                                localStorage.setItem('toast_message', data.message);
+                                localStorage.setItem('toast_type', 'success');
+                                // Thêm một khoảng thời gian nhỏ để tránh vấn đề UI
+                                setTimeout(() => {
+                                    // Tải lại trang để cập nhật UI
+                                    window.location.reload();
+                                }, 300);
+                            } else if (formId.includes('delete')) {
+                                // Đối với xóa hàng loạt, xóa các hàng khỏi bảng
+                                selectedCheckboxes.forEach(checkbox => {
+                                    const row = checkbox.closest('tr');
+                                    row.classList.add('fade-out');
+                                    setTimeout(() => {
+                                        row.remove();
+                                    }, 300);
+                                });
+                                
+                                // Kiểm tra nếu không còn hàng nào, hiển thị thông báo trống
+                                setTimeout(() => {
+                                    const tableBody = document.querySelector('table tbody');
+                                    if (tableBody.querySelectorAll('tr:not(.empty-row)').length === 0) {
+                                        const emptyRow = createEmptyRow();
+                                        tableBody.appendChild(emptyRow);
+                                    }
+                                    
+                                    // Reset checkbox chọn tất cả
+                                    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+                                    if (selectAllCheckbox) {
+                                        selectAllCheckbox.checked = false;
+                                    }
+                                    
+                                    // Hiển thị thông báo thành công
+                                    dtmodalShowToast('success', {
+                                        title: 'Thành công',
+                                        message: data.message
+                                    });
+                                }, 400);
+                            }
+                        } else {
+                            // Nếu có lỗi, hiển thị thông báo lỗi
+                            dtmodalShowToast('error', {
+                                title: 'Lỗi',
+                                message: data.message || 'Có lỗi xảy ra'
+                            });
+                        }
                         
-                        // Kiểm tra nếu không còn hàng nào, hiển thị thông báo trống
-                        setTimeout(() => {
-                            const tableBody = document.querySelector('table tbody');
-                            if (tableBody.querySelectorAll('tr:not(.empty-row)').length === 0) {
-                                const emptyRow = createEmptyRow();
-                                tableBody.appendChild(emptyRow);
-                            }
-                            
-                            // Reset checkbox chọn tất cả
-                            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-                            if (selectAllCheckbox) {
-                                selectAllCheckbox.checked = false;
-                            }
-                            
-                            // Hiển thị thông báo thành công
-                            showToast('success', data.message);
-                        }, 400);
-                    }
-                } else {
-                    // Nếu có lỗi, hiển thị thông báo lỗi
-                    showToast('error', data.message || 'Có lỗi xảy ra');
+                        // Khôi phục trạng thái nút
+                        button.disabled = false;
+                        button.innerHTML = originalButtonContent;
+                        
+                        // Đóng dropdown
+                        document.getElementById('actionsMenu').classList.add('hidden');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: 'Có lỗi xảy ra khi xử lý yêu cầu'
+                        });
+                        button.disabled = false;
+                        button.innerHTML = originalButtonContent;
+                    });
                 }
-                
-                // Khôi phục trạng thái nút
-                button.disabled = false;
-                button.innerHTML = originalButtonContent;
-                
-                // Đóng dropdown
-                document.getElementById('actionsMenu').classList.add('hidden');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
-                button.disabled = false;
-                button.innerHTML = originalButtonContent;
             });
         }
         
@@ -855,11 +878,19 @@
                     const statusCell = button.closest('tr').querySelector('td:nth-child(8)');
                     statusCell.innerHTML = data.status_html;
                     
-                    // Hiển thị thông báo thành công
-                    showToast('success', data.message);
+                    // Hiển thị thông báo thành công sau khi cập nhật UI
+                    setTimeout(() => {
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: data.message
+                        });
+                    }, 300);
                 } else {
                     // Hiển thị thông báo lỗi
-                    showToast('error', data.message || 'Có lỗi xảy ra');
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: data.message || 'Có lỗi xảy ra'
+                    });
                 }
                 
                 // Khôi phục trạng thái nút
@@ -868,7 +899,10 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi xảy ra khi xử lý yêu cầu'
+                });
                 button.disabled = false;
                 button.innerHTML = originalHTML;
             });
@@ -963,7 +997,8 @@
             // Gửi yêu cầu
             fetch(ajaxUrl.toString(), {
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
                 }
             })
             .then(response => response.json())
@@ -984,12 +1019,18 @@
                     window.history.pushState({}, '', url);
                 } else {
                     // Hiển thị thông báo lỗi
-                    showToast('error', data.message || 'Có lỗi xảy ra khi tải trang');
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: data.message || 'Có lỗi xảy ra khi tải trang'
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi xảy ra khi xử lý yêu cầu'
+                });
                 tableContainer.innerHTML = '<div class="p-4 text-center">Có lỗi xảy ra khi tải dữ liệu</div>';
             });
         }
@@ -1029,7 +1070,8 @@
                 // Gửi yêu cầu
                 fetch(url, {
                     headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
                     }
                 })
                 .then(response => response.json())
@@ -1054,13 +1096,29 @@
                         if (filterModal && !filterModal.classList.contains('hidden')) {
                             toggleModal('filterModal');
                         }
+                        
+                        // Hiển thị thông báo thành công nếu có
+                        if (data.message) {
+                            setTimeout(() => {
+                                dtmodalShowToast('success', {
+                                    title: 'Thành công',
+                                    message: data.message
+                                });
+                            }, 300);
+                        }
                     } else {
-                        showToast('error', data.message || 'Có lỗi xảy ra khi áp dụng bộ lọc');
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Có lỗi xảy ra khi áp dụng bộ lọc'
+                        });
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showToast('error', 'Có lỗi xảy ra khi xử lý yêu cầu');
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Có lỗi xảy ra khi xử lý yêu cầu'
+                    });
                 });
             });
         }
@@ -1073,7 +1131,8 @@
                 // Gửi yêu cầu AJAX để lấy dữ liệu không lọc
                 fetch(`${url}?_ajax=1`, {
                     headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
                     }
                 })
                 .then(response => response.json())
@@ -1101,8 +1160,19 @@
                         if (dropdownMenu) {
                             dropdownMenu.classList.add('hidden');
                         }
+                        
+                        // Hiển thị thông báo thành công
+                        setTimeout(() => {
+                            dtmodalShowToast('success', {
+                                title: 'Thành công',
+                                message: 'Đã đặt lại bộ lọc thành công'
+                            });
+                        }, 300);
                     } else {
-                        showToast('error', data.message || 'Có lỗi xảy ra khi đặt lại bộ lọc');
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Có lỗi xảy ra khi đặt lại bộ lọc'
+                        });
                     }
                 })
                 .catch(error => {
