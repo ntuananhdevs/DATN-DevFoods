@@ -6,7 +6,9 @@
     <title>Ứng dụng Tài xế Giao hàng - @yield('title', 'Dashboard')</title>
     <!-- Mapbox GL JS CSS -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-    <!-- Compiled Tailwind CSS (assuming you're using Laravel Mix) -->
+    <!-- Tailwind CSS with full utilities -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
     @yield('head_scripts')
 </head>
@@ -41,8 +43,6 @@
             <span>Cá nhân</span>
         </a>
     </nav>
-
-    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Mapbox GL JS Script -->
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
