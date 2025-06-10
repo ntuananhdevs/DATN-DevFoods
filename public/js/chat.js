@@ -222,6 +222,53 @@ class Chat {
         }
     }
 
+    async sendMessage() {
+        const messageInput = document.getElementById("message-input");
+        const fileInput = document.getElementById("attachment");
+        const message = messageInput?.value.trim();
+        if (!message && !fileInput?.files.length) {
+            return;
+        }
+        const formData = new FormData();
+        formData.append("conversation_id", this.conversationId);
+        formData.append("message", message || "");
+        if (fileInput?.files.length) {
+            formData.append("attachment", fileInput.files[0]);
+        }
+        formData.append(
+            "_token",
+            document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute("content")
+        );
+        try {
+            this.stopTyping();
+            let endpoint = "/admin/chat/send-message";
+            if (this.userType === "branch") {
+                endpoint = "/branch/chat/send-message";
+            } else if (this.userType === "customer") {
+                endpoint = "/api/customer/send-message";
+            }
+            const response = await fetch(endpoint, {
+                method: "POST",
+                body: formData,
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            });
+            const result = await response.json();
+            if (result.success) {
+                if (messageInput) messageInput.value = "";
+                if (fileInput) fileInput.value = "";
+                this.showNotification("Tin nhắn đã được gửi", "success");
+            } else {
+                throw new Error(result.message || "Failed to send message");
+            }
+        } catch (error) {
+            this.showError("Không thể gửi tin nhắn. Vui lòng thử lại.");
+        }
+    }
+
     displayMessage(message) {
         if (!this.messageContainer) return;
         const currentUserId = this.userId;
