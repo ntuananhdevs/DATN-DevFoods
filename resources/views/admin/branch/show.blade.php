@@ -1736,14 +1736,25 @@
         document.querySelectorAll('.set-featured-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 btn.classList.add('btn-loading');
-                fetch(`/admin/branches/{{ $branch->id }}/images/${btn.dataset.imageId}/set-featured`, {
+                // Sửa URL để khớp với route đã định nghĩa
+                fetch(`/admin/branches/{{ $branch->id }}/set-featured`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        }
+                        },
+                        // Gửi imageId trong body thay vì URL
+                        body: JSON.stringify({
+                            imageId: btn.dataset.imageId
+                        })
                     })
-                    .then(res => res.json())
+                    .then(res => {
+                        // Kiểm tra response status trước khi parse JSON
+                        if (!res.ok) {
+                            throw new Error(`HTTP error! status: ${res.status}`);
+                        }
+                        return res.json();
+                    })
                     .then(data => {
                         btn.classList.remove('btn-loading');
                         if (data.success) {
@@ -1795,6 +1806,7 @@
                     })
                     .catch(err => {
                         btn.classList.remove('btn-loading');
+                        console.error('Error setting featured image:', err);
                         dtmodalShowToast('error', {
                             message: 'Có lỗi khi đặt ảnh đại diện: ' + err.message
                         });
