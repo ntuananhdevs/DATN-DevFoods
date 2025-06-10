@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
-//Admin
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ManagerController;
 use App\Http\Controllers\Admin\ProductController;
@@ -14,8 +12,6 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
-use App\Http\Controllers\TestController;
-//Customer
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Customer\ProductController as CustomerProductController;
@@ -29,17 +25,13 @@ use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
 use App\Http\Controllers\Customer\ChatController as CustomerChatController;
-use Illuminate\Database\Capsule\Manager;
-
-//Driver 
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
-
-// Product Stock Management Routes
 use App\Http\Controllers\Admin\BranchStockController;
-
-// Product Variant Routes
 use App\Http\Controllers\Admin\ProductVariantController;
+use App\Http\Controllers\BranchChatController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\Admin\HiringController;
+use App\Http\Controllers\TestController;
 
 Route::prefix('/')->group(function () {
     // Home
@@ -49,47 +41,25 @@ Route::prefix('/')->group(function () {
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/show', [CustomerProductController::class, 'show'])->name('products.show');
 
-    // // Store Locations
-    // Route::get('/store', [StoreController::class, 'index'])->name('store.index');
-
-    // // Blog
-    // Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
-    // Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
-    // Route::get('/blog/category/{category}', [BlogController::class, 'category'])->name('blog.category');
-    // Route::get('/blog/tag/{tag}', [BlogController::class, 'tag'])->name('blog.tag');
-    // Route::get('/blog/search', [BlogController::class, 'search'])->name('blog.search');
-
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
-    // Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-    // Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
-    // Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
 
     // Checkout
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
     Route::get('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
 
-    // // User Profile
-    // Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-    // Route::get('/profile/orders', [ProfileController::class, 'orders'])->name('profile.orders');
-    // Route::get('/profile/orders/{id}', [ProfileController::class, 'orderDetail'])->name('profile.order.detail');
-
     // About
     Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
 
     // Contact
     Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
-    // Route::post('/contact/send', [ContactController::class, 'send'])->name('contact.send');
 
     // Promotions
     Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
 
-    // Promotions
+    // Branches
     Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branchs.index');
-
-    // // Newsletter Subscription
-    // Route::post('/subscribe', [HomeController::class, 'subscribe'])->name('subscribe');
 
     // Support
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
@@ -186,6 +156,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
         });
     });
+
     // Branch Management
     Route::prefix('branches')->name('branches.')->group(function () {
         Route::get('/', [BranchController::class, 'index'])->name('index');
@@ -242,16 +213,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/search-product', [BannerController::class, 'searchProducts'])->name('search.product');
     });
 
-    // Banner Management
-    Route::prefix('discount')->name('discount.')->group(function () {
-        Route::get('/', [BannerController::class, 'index'])->name('index');
-        Route::get('/create', [BannerController::class, 'create'])->name('create');
-        Route::post('/store', [BannerController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
-        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
-    });
-
     // Product Stock Management Routes
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('{product}/stock', [BranchStockController::class, 'index'])->name('stock');
@@ -261,46 +222,36 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
     });
 
-    // Product Variant Routes
-    // Route::prefix('products')->name('products.')->group(function () {
-    //     Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
-    //     Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
-    //     Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
-    // });
-
-    Route::get('/chat', [AdminChatController::class, 'index'])->name('chat');
-    // Chat API routes
-    Route::prefix('api/chat')->group(function () {
-        Route::get('/chats', [AdminChatController::class, 'getChats'])->name('chat.list');
-        Route::get('/chats/{chatId}/messages', [AdminChatController::class, 'getChatMessages'])->name('chat.messages');
-        Route::post('/send', [AdminChatController::class, 'sendMessage'])->name('chat.send');
-        Route::post('/status', [AdminChatController::class, 'updateStatus'])->name('chat.status');
-        Route::post('/chats/{chatId}/close', [AdminChatController::class, 'closeChat'])->name('chat.close');
-        Route::get('/statistics', [AdminChatController::class, 'getStatistics'])->name('chat.stats');
+    // Chat routes
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [AdminChatController::class, 'index'])->name('index');
+        Route::post('/send-message', [AdminChatController::class, 'sendMessage'])->name('send');
+        Route::post('/distribute', [AdminChatController::class, 'distributeConversation'])->name('distribute');
+        Route::get('/messages/{conversationId}', [AdminChatController::class, 'getMessages'])->name('messages');
+        Route::post('/typing', [AdminChatController::class, 'handleTyping'])->name('typing');
     });
 });
 
 // Customer Cart Routes
-// Route::prefix('cart')->name('customer.cart.')->group(function () {
-//     Route::get('/', [CustomerCartController::class, 'index'])->name('index');
-//     Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
-//     Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
-//     Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
-//     Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
-//     Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
-// });
+Route::prefix('cart')->name('customer.cart.')->group(function () {
+    Route::get('/', [CustomerCartController::class, 'index'])->name('index');
+    Route::post('/add', [CustomerCartController::class, 'add'])->name('add');
+    Route::post('/update', [CustomerCartController::class, 'update'])->name('update');
+    Route::post('/update-batch', [CustomerCartController::class, 'updateBatch'])->name('update-batch');
+    Route::post('/remove', [CustomerCartController::class, 'remove'])->name('remove');
+    Route::post('/clear', [CustomerCartController::class, 'clear'])->name('clear');
+});
+
+// Driver Auth Routes
 Route::prefix('driver')->name('driver.')->group(function () {
     Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
     Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
-    // Quên mật khẩu
     Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
     Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
-    // Xác minh OTP
     Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
     Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
     Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
-    // Đặt lại mật khẩu
     Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
     Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
 });
@@ -313,15 +264,15 @@ Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(fun
     Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
 });
 
-//hiring driver
+// Hiring Driver Routes
 Route::prefix('hiring-driver')->name('driver.')->group(function () {
-    Route::get('/', [App\Http\Controllers\Admin\HiringController::class, 'landing'])->name('landing');
-    Route::get('/apply', [App\Http\Controllers\Admin\HiringController::class, 'applicationForm'])->name('application.form');
-    Route::post('/apply', [App\Http\Controllers\Admin\HiringController::class, 'submitApplication'])->name('application.submit');
-    Route::get('/success', [App\Http\Controllers\Admin\HiringController::class, 'applicationSuccess'])->name('application.success');
+    Route::get('/', [HiringController::class, 'landing'])->name('landing');
+    Route::get('/apply', [HiringController::class, 'applicationForm'])->name('application.form');
+    Route::post('/apply', [HiringController::class, 'submitApplication'])->name('application.submit');
+    Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-// Test routes for AWS S3 uploadd
+// Test routes for AWS S3 upload
 Route::prefix('test')->name('test.')->group(function () {
     Route::get('/upload', [TestController::class, 'showUploadForm'])->name('upload.form');
     Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
@@ -330,97 +281,45 @@ Route::prefix('test')->name('test.')->group(function () {
     Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
-    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
 
-    // Đăng xuất
-    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+Route::prefix('admin')->group(function () {
+    Route::get('/chat', [AdminChatController::class, 'index'])->name('admin.chat.index');
+    Route::post('/chat/send-message', [AdminChatController::class, 'sendMessage'])->name('admin.chat.send');
+    Route::post('/chat/distribute', [AdminChatController::class, 'distributeConversation'])->name('admin.chat.distribute');
+});
 
-    // Categories Management
-    Route::resource('categories', CategoryController::class)->except(['destroy']);
-    Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
-
-    // Users Management
-    Route::prefix('users')->name('users.')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index');
-    });
-
-    // Roles Management
-    Route::prefix('roles')->name('roles.')->group(function () {
-        Route::get('/', [RoleController::class, 'index'])->name('index');
-        Route::get('/create', [RoleController::class, 'create'])->name('create');
-        Route::post('/store', [RoleController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [RoleController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [RoleController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [RoleController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [RoleController::class, 'destroy'])->name('destroy');
-    });
-
-    // Users Management
-    Route::prefix('users')->name('users.')->group(function () {
-        Route::get('/', [UserController::class, 'index'])->name('index');
-        Route::get('/create', [UserController::class, 'create'])->name('create');
-        Route::post('/store', [UserController::class, 'store'])->name('store');
-        Route::get('/show/{id}', [UserController::class, 'show'])->name('show');
-        Route::get('/export', [UserController::class, 'export'])->name('export');
-
-        // Sửa lại route toggle-status để đúng path
-        Route::patch('/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('toggle-status');
-        Route::patch('/bulk-status-update', [UserController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
-        Route::get('/data', [UserController::class, 'getData'])->name('data');
+Route::prefix('branch')->group(function () {
+    Route::get('/chat', [BranchChatController::class, 'index'])->name('branch.chat.index');
+    Route::get('/chat/api/conversation/{id}', [BranchChatController::class, 'apiGetConversation'])->name('branch.chat.conversation');
+    Route::post('/chat/send-message', [BranchChatController::class, 'sendMessage'])->name('branch.chat.send');
+    Route::post('/chat/update-status', [BranchChatController::class, 'updateStatus'])->name('branch.chat.status');
+    Route::post('/chat/typing', [BranchChatController::class, 'typing'])->name('branch.chat.typing');
+});
 
 
-        Route::get('/users/data', [UserController::class, 'getData'])->name('data');
-    });
+Route::prefix('customer')->group(function () {
+    Route::get('/chat', function () {
+        $conversations = \App\Models\Conversation::where('customer_id', auth()->id())
+            ->with(['branch', 'messages.sender'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        return view('customer.chat', compact('conversations'));
+    })->name('customer.chat.index');
 
-    // Products Management
-    Route::prefix('products')->name('products.')->group(function () {
-        Route::get('/', [ProductController::class, 'index'])->name('index');
-        Route::get('/create', [ProductController::class, 'create'])->name('create');
-        Route::post('/store', [ProductController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [ProductController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [ProductController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [ProductController::class, 'destroy'])->name('destroy');
-        Route::get('/trashed', [ProductController::class, 'trashed'])->name('trashed');
-        Route::patch('/restore/{id}', [ProductController::class, 'restore'])->name('restore');
-        Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
-        Route::get('/export', [ProductController::class, 'export'])->name('export');
-    });
+    Route::post('/chat/create', [App\Http\Controllers\Customer\ChatController::class, 'createConversation'])->name('customer.chat.create');
+    Route::post('/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
+    Route::get('/chat/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('customer.chat.conversations');
+    Route::get('/chat/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('customer.chat.messages');
+    Route::post('/chat/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('customer.chat.typing');
+});
 
-    // Driver Application Management
-    Route::prefix('drivers')->name('drivers.')->group(function () {
-        Route::get('/', [DriverController::class, 'index'])->name('index');
-        Route::get('/applications', [DriverController::class, 'listApplications'])->name('applications.index');
-        Route::get('/applications/{application}', [DriverController::class, 'viewApplicationDetails'])->name('applications.show');
-        Route::post('/applications/{application}/approve', [DriverController::class, 'approve'])->name('applications.approve');
-        Route::post('/applications/{application}/reject', [DriverController::class, 'rejectApplication'])->name('applications.reject');
-    });
-
-    // Banner Management
-    Route::prefix('banners')->name('banners.')->group(function () {
-        Route::get('/', [BannerController::class, 'index'])->name('index');
-        Route::get('/create', [BannerController::class, 'create'])->name('create');
-        Route::post('/store', [BannerController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [BannerController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [BannerController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [BannerController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [BannerController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/toggle-status', [BannerController::class, 'toggleStatus'])->name('toggle-status');
-        Route::patch('/bulk-status-update', [BannerController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
-    });
+Route::prefix('api')->group(function () {
+    Route::get('/conversations/{id}', [CustomerChatController::class, 'getMessages']);
+    Route::post('/customer/send-message', [CustomerChatController::class, 'sendMessage']);
+    Route::post('/customer/typing', [CustomerChatController::class, 'typing']);
 });
 
 // Chat routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/chat/customer/{conversationId}', [ChatController::class, 'customerChat'])->name('chat.customer'); // Khách hàng chat
-    Route::get('/chat/admin', [ChatController::class, 'adminChat'])->name('chat.admin'); // Admin tổng quản lý chat
-    Route::get('/chat/branch/{conversationId}', [ChatController::class, 'branchChat'])->name('chat.branch'); // Chi nhánh chat
-    Route::post('/chat/{conversationId}/send', [ChatController::class, 'sendMessage'])->name('chat.send'); // Gửi tin nhắn
-    Route::patch('/chat/distribute/{conversationId}', [ChatController::class, 'distributeConversation'])->name('chat.distribute'); // Phân phối chat
-});
-
-Route::get('/driver', function () {
-    return view('driver.home');
-});
+Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+Route::post('/customer/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
+Route::post('/branch/chat/send', [BranchChatController::class, 'sendMessage'])->name('branch.chat.send');

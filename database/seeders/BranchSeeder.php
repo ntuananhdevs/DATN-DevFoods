@@ -55,7 +55,7 @@ class BranchSeeder extends Seeder
         // Tạo các chi nhánh cố định
         $fixedBranches = [
             [
-                'branch_code' => 'HN001',
+
                 'name' => 'Chi nhánh Hà Nội',
                 'address' => '123 Đường Láng, Đống Đa, Hà Nội',
                 'phone' => '0243123456',
@@ -66,7 +66,7 @@ class BranchSeeder extends Seeder
                 'closing_hour' => '22:30',
             ],
             [
-                'branch_code' => 'HN002',
+
                 'name' => 'Chi nhánh Hồ Chí Minh',
                 'address' => '456 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
                 'phone' => '0283456789',
@@ -77,7 +77,7 @@ class BranchSeeder extends Seeder
                 'closing_hour' => '23:00',
             ],
             [
-                'branch_code' => 'HN003',
+
                 'name' => 'Chi nhánh Đà Nẵng',
                 'address' => '789 Nguyễn Văn Linh, Hải Châu, Đà Nẵng',
                 'phone' => '0236789012',
@@ -104,14 +104,6 @@ class BranchSeeder extends Seeder
         }
 
         // Tạo thêm chi nhánh ngẫu nhiên
-        $maxBranchCode = Branch::max('branch_code');
-        $startNumber = $maxBranchCode ? (int) str_replace('HN', '', $maxBranchCode) : 3;
-        $branchCount = $startNumber;
 
-        Branch::factory()->count(7)->make()->each(function ($branch) use (&$branchCount) {
-            $branchCount++;
-            $branch->branch_code = 'HN' . str_pad($branchCount, 3, '0', STR_PAD_LEFT);
-            $branch->save();
-        });
     }
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,10 +24,10 @@
 
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -88,7 +89,7 @@
             },
         }
     </script>
-    
+
     <style>
         :root {
             --background: 0 0% 100%;
@@ -111,13 +112,13 @@
             --input: 214.3 31.8% 91.4%;
             --ring: 221.2 83.2% 53.3%;
             --radius: 0.5rem;
-            
+
             /* Scrollbar variables */
             --scrollbar-width: 5px;
             --scrollbar-track: transparent;
             --scrollbar-thumb: rgba(156, 163, 175, 0.5);
             --scrollbar-thumb-hover: rgba(156, 163, 175, 0.8);
-            
+
             /* Sidebar variables */
             --sidebar-background: 0 0% 98%;
             --sidebar-foreground: 240 5.3% 26.1%;
@@ -127,7 +128,7 @@
             --sidebar-accent-foreground: 240 5.9% 10%;
             --sidebar-border: 220 13% 91%;
             --sidebar-ring: 217.2 91.2% 59.8%;
-            
+
             /* Sidebar width variables */
             --sidebar-width: 16rem;
             --sidebar-width-collapsed: 5rem;
@@ -153,7 +154,7 @@
             --border: 217.2 32.6% 17.5%;
             --input: 217.2 32.6% 17.5%;
             --ring: 224.3 76.3% 48%;
-            
+
             /* Sidebar variables */
             --sidebar-background: 240 5.9% 10%;
             --sidebar-foreground: 240 4.8% 95.9%;
@@ -199,7 +200,7 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        
+
         /* Sidebar styles */
         .sidebar {
             width: var(--sidebar-width);
@@ -216,11 +217,11 @@
             display: flex;
             flex-direction: column;
         }
-        
+
         .sidebar.collapsed {
             width: var(--sidebar-width-collapsed);
         }
-        
+
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
@@ -257,38 +258,38 @@
         .dark .sidebar-content::-webkit-scrollbar-thumb:hover {
             background-color: rgba(75, 85, 99, 0.8);
         }
-        
+
         /* Sidebar text hiding when collapsed */
         .sidebar.collapsed .sidebar-text {
             display: none;
         }
-        
+
         .sidebar.collapsed .sidebar-logo-text {
             display: none;
         }
-        
+
         .sidebar.collapsed .sidebar-dropdown-icon {
             display: none;
         }
-        
+
         .sidebar.collapsed .sidebar-dropdown-content {
             display: none !important;
         }
-        
+
         .sidebar.collapsed .sidebar-group-label {
             display: none;
         }
-        
+
         /* Center icons when collapsed */
         .sidebar.collapsed .sidebar-menu-item {
             display: flex;
             justify-content: center;
         }
-        
+
         .sidebar.collapsed .sidebar-icon-container {
             margin-right: 0 !important;
         }
-        
+
         /* Main content styles */
         .main-content {
             margin-left: var(--sidebar-width);
@@ -296,12 +297,12 @@
             transition: margin-left 0.3s ease, width 0.3s ease;
             min-height: 100vh;
         }
-        
+
         .main-content.expanded {
             margin-left: var(--sidebar-width-collapsed);
             width: calc(100% - var(--sidebar-width-collapsed));
         }
-        
+
         /* Card styles */
         .card {
             background-color: hsl(var(--card));
@@ -309,7 +310,7 @@
             border: 1px solid hsl(var(--border));
             border-radius: var(--radius);
         }
-        
+
         /* Button styles */
         .btn {
             display: inline-flex;
@@ -320,27 +321,27 @@
             padding: 0.5rem 1rem;
             transition: all 0.2s ease;
         }
-        
+
         .btn-primary {
             background-color: hsl(var(--primary));
             color: hsl(var(--primary-foreground));
         }
-        
+
         .btn-primary:hover {
             opacity: 0.9;
         }
-        
+
         .btn-outline {
             background-color: transparent;
             border: 1px solid hsl(var(--border));
             color: hsl(var(--foreground));
         }
-        
+
         .btn-outline:hover {
             background-color: hsl(var(--accent));
             color: hsl(var(--accent-foreground));
         }
-        
+
         /* Badge styles */
         .badge {
             display: inline-flex;
@@ -351,18 +352,18 @@
             font-size: 0.75rem;
             font-weight: 500;
         }
-        
+
         .badge-primary {
             background-color: hsl(var(--primary));
             color: hsl(var(--primary-foreground));
         }
-        
+
         .badge-outline {
             background-color: transparent;
             border: 1px solid hsl(var(--border));
             color: hsl(var(--foreground));
         }
-        
+
         /* Progress bar */
         .progress {
             height: 0.5rem;
@@ -371,28 +372,35 @@
             border-radius: 9999px;
             overflow: hidden;
         }
-        
+
         .progress-bar {
             height: 100%;
             background-color: hsl(var(--primary));
             transition: width 0.3s ease;
         }
-        
+
         /* Animation classes */
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
         }
-        
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
+
         /* Tooltip for collapsed sidebar */
         .sidebar-tooltip {
             position: relative;
         }
-        
+
         .sidebar.collapsed .sidebar-tooltip:hover::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -408,39 +416,39 @@
             z-index: 50;
             margin-left: 10px;
         }
-        
+
         /* Responsive */
         @media (max-width: 1024px) {
             .sidebar {
                 transform: translateX(-100%);
                 box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             }
-            
+
             .sidebar.mobile-open {
                 transform: translateX(0);
                 width: var(--sidebar-width) !important;
             }
-            
+
             .sidebar.mobile-open .sidebar-text,
             .sidebar.mobile-open .sidebar-logo-text,
             .sidebar.mobile-open .sidebar-dropdown-icon,
             .sidebar.mobile-open .sidebar-group-label {
                 display: block;
             }
-            
+
             .sidebar.mobile-open .sidebar-icon-container {
                 margin-right: 0.5rem;
             }
-            
+
             .sidebar.mobile-open .sidebar-menu-item {
                 justify-content: flex-start;
             }
-            
+
             .main-content {
                 width: 100%;
                 margin-left: 0;
             }
-            
+
             .main-content.expanded {
                 width: 100%;
                 margin-left: 0;
@@ -451,17 +459,17 @@
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 3px;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 3px;
         }
-        
+
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
@@ -474,43 +482,45 @@
         .message-enter {
             animation: messageSlideIn 0.3s ease-out;
         }
-        
+
         @keyframes messageSlideIn {
             from {
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
     </style>
-    
+
     @yield('styles')
 </head>
+
 <body class="bg-background text-foreground">
     <div class="flex min-h-screen">
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar">
             @include('partials.admin.sidebar')
         </aside>
-        
+
         <!-- Main Content -->
         <main id="main-content" class="main-content">
             <!-- Header -->
             @include('partials.admin.header')
-            
+
             <!-- Page Content -->
             <div class="flex-1 p-4 md:p-6 overflow-auto">
                 @yield('content')
             </div>
-            
+
             <!-- Footer -->
             @include('partials.admin.footer')
         </main>
     </div>
-    
+
     <script>
         // Toggle sidebar
         document.addEventListener('DOMContentLoaded', function() {
@@ -518,20 +528,20 @@
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
             const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-            
+
             // Check for saved sidebar state
             const savedSidebarState = localStorage.getItem('sidebar-state');
             if (savedSidebarState === 'collapsed') {
                 sidebar.classList.add('collapsed');
                 mainContent.classList.add('expanded');
             }
-            
+
             // Desktop sidebar toggle
             if (toggleSidebarBtn) {
                 toggleSidebarBtn.addEventListener('click', function() {
                     sidebar.classList.toggle('collapsed');
                     mainContent.classList.toggle('expanded');
-                    
+
                     // Save sidebar state to localStorage
                     if (sidebar.classList.contains('collapsed')) {
                         localStorage.setItem('sidebar-state', 'collapsed');
@@ -540,30 +550,31 @@
                     }
                 });
             }
-            
+
             // Mobile sidebar toggle
             if (mobileMenuBtn) {
                 mobileMenuBtn.addEventListener('click', function() {
                     sidebar.classList.toggle('mobile-open');
                 });
             }
-            
+
             // Close sidebar when clicking outside on mobile
             document.addEventListener('click', function(event) {
                 const isMobile = window.innerWidth < 1024;
-                if (isMobile && !sidebar.contains(event.target) && !mobileMenuBtn.contains(event.target) && sidebar.classList.contains('mobile-open')) {
+                if (isMobile && !sidebar.contains(event.target) && !mobileMenuBtn.contains(event.target) &&
+                    sidebar.classList.contains('mobile-open')) {
                     sidebar.classList.remove('mobile-open');
                 }
             });
-            
+
             // Theme toggle
             const themeToggleBtn = document.getElementById('theme-toggle');
             const html = document.documentElement;
-            
+
             if (themeToggleBtn) {
                 themeToggleBtn.addEventListener('click', function() {
                     html.classList.toggle('dark');
-                    
+
                     // Save preference to localStorage
                     if (html.classList.contains('dark')) {
                         localStorage.setItem('theme', 'dark');
@@ -572,13 +583,13 @@
                     }
                 });
             }
-            
+
             // Check for saved theme preference
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'dark') {
                 html.classList.add('dark');
             }
-            
+
             // Handle window resize
             window.addEventListener('resize', function() {
                 if (window.innerWidth >= 1024 && sidebar.classList.contains('mobile-open')) {
@@ -587,11 +598,12 @@
             });
         });
     </script>
-    
+
     <script src="{{ asset('js/modal.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @yield('scripts')
     @include('components.modal')
 
 </body>
+
 </html>

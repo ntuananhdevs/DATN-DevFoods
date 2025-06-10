@@ -2,396 +2,263 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Conversation;
+use App\Models\ChatMessage;
+use App\Models\Branch;
+use App\Events\NewMessage;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use App\Models\ChatConversation;
+use App\Events\TypingStatus;
 
 class ChatController extends Controller
 {
-    /**
-     * Display the chat management interface
-     */
+    public function __construct()
+    {
+        // Bỏ middleware để test dễ dàng
+        // $this->middleware('auth');
+    }
+
     public function index()
     {
-        return view('admin.chat.index');
+        $conversations = Conversation::with(['customer', 'branch', 'messages.sender'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $branches = Branch::all();
+
+        // Get the first conversation as selected conversation
+        $selectedConversation = $conversations->first();
+
+        return view('admin.chat', compact('conversations', 'branches', 'selectedConversation'));
     }
 
-    /**
-     * Get all chat conversations
-     */
-    public function getChats(Request $request): JsonResponse
+
+    public function sendMessage(Request $request)
     {
-        // Here you would fetch chats from database
-        // $chats = Chat::with(['customer', 'messages'])
-        //     ->orderBy('updated_at', 'desc')
-        //     ->get();
+        try {
+            $request->validate([
+                'conversation_id' => 'required|exists:conversations,id',
+                'message' => 'nullable|string',
+                'attachment' => 'nullable|file|max:10240' // 10MB max
+            ]);
 
-        $chats = [
-            [
-                'id' => '1',
-                'customer' => [
-                    'name' => 'Nguyễn Văn Minh',
-                    'email' => 'nguyenvanminh@gmail.com',
-                    'phone' => '0123456789',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Tôi muốn hỏi về combo gia đình mới',
-                'last_message_time' => now()->subMinutes(2),
-                'status' => 'waiting',
-                'unread_count' => 3,
-            ],
-            [
-                'id' => '2',
-                'customer' => [
-                    'name' => 'Trần Thị Hương',
-                    'email' => 'tranhuong2024@email.com',
-                    'phone' => '0987654321',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Cảm ơn bạn đã hỗ trợ nhiệt tình!',
-                'last_message_time' => now()->subMinutes(8),
-                'status' => 'active',
-                'unread_count' => 0,
-            ],
-            [
-                'id' => '3',
-                'customer' => [
-                    'name' => 'Lê Hoàng Nam',
-                    'email' => 'hoangnam.dev@outlook.com',
-                    'phone' => '0369852147',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Đơn hàng #FF2024001 của tôi bị delay không ạ?',
-                'last_message_time' => now()->subMinutes(15),
-                'status' => 'waiting',
-                'unread_count' => 1,
-            ],
-            [
-                'id' => '4',
-                'customer' => [
-                    'name' => 'Phạm Thị Lan',
-                    'email' => 'phamlan.work@gmail.com',
-                    'phone' => '0912345678',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Tôi có thể đổi địa chỉ giao hàng được không?',
-                'last_message_time' => now()->subMinutes(25),
-                'status' => 'active',
-                'unread_count' => 0,
-            ],
-            [
-                'id' => '5',
-                'customer' => [
-                    'name' => 'Võ Minh Tuấn',
-                    'email' => 'vominhtuan88@yahoo.com',
-                    'phone' => '0834567890',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Món ăn rất ngon, cảm ơn FastFood!',
-                'last_message_time' => now()->subHour(1),
-                'status' => 'closed',
-                'unread_count' => 0,
-            ],
-            [
-                'id' => '6',
-                'customer' => [
-                    'name' => 'Đặng Thị Mai',
-                    'email' => 'dangmai.student@edu.vn',
-                    'phone' => '0756789012',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Có chương trình khuyến mãi nào cho sinh viên không ạ?',
-                'last_message_time' => now()->subHour(2),
-                'status' => 'waiting',
-                'unread_count' => 2,
-            ],
-            [
-                'id' => '7',
-                'customer' => [
-                    'name' => 'Bùi Văn Đức',
-                    'email' => 'buivanduc.biz@company.com',
-                    'phone' => '0678901234',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Tôi muốn đặt tiệc cho 50 người',
-                'last_message_time' => now()->subHours(3),
-                'status' => 'active',
-                'unread_count' => 0,
-            ],
-            [
-                'id' => '8',
-                'customer' => [
-                    'name' => 'Hoàng Thị Linh',
-                    'email' => 'hoanglinh.designer@creative.vn',
-                    'phone' => '0590123456',
-                    'avatar' => '/placeholder.svg?height=40&width=40'
-                ],
-                'last_message' => 'Cảm ơn đã giải quyết vấn đề!',
-                'last_message_time' => now()->subHours(5),
-                'status' => 'closed',
-                'unread_count' => 0,
-            ],
-        ];
+            // Debug log
+            Log::info('Admin sending message', [
+                'conversation_id' => $request->conversation_id,
+                'message' => $request->message,
+                'user_id' => Auth::id()
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'chats' => $chats,
-        ]);
+            $attachmentPath = null;
+            $attachmentType = null;
+
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
+                $attachmentPath = $file->store('chat-attachments', 'public');
+                $attachmentType = $file->getMimeType();
+
+                if (str_starts_with($attachmentType, 'image/')) {
+                    $attachmentType = 'image';
+                } else {
+                    $attachmentType = 'file';
+                }
+            }
+
+            // Sử dụng user ID mặc định cho test
+            $userId = Auth::id() ?? 1;
+
+            // Lấy thông tin conversation để xác định receiver
+            $conversation = Conversation::findOrFail($request->conversation_id);
+
+            // Debug log conversation
+            Log::info('Conversation found', [
+                'conversation' => $conversation->toArray()
+            ]);
+
+            // Tạo data cho message
+            $messageData = [
+                'conversation_id' => $request->conversation_id,
+                'sender_id' => $userId,
+                'receiver_id' => $conversation->customer_id,
+                'sender_type' => 'super_admin',
+                'message' => $request->message,
+                'attachment' => $attachmentPath,
+                'attachment_type' => $attachmentType,
+                'sent_at' => now(),
+                'status' => 'sent'
+            ];
+
+            // Debug log message data
+            Log::info('Message data before create', $messageData);
+
+            $message = ChatMessage::create($messageData);
+
+            // Update conversation timestamp
+            Conversation::where('id', $request->conversation_id)
+                ->update(['updated_at' => now()]);
+
+            // Broadcast message với Pusher
+            try {
+                broadcast(new NewMessage($message->load('sender'), $request->conversation_id))->toOthers();
+            } catch (\Exception $e) {
+                Log::error('Pusher broadcast error: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tin nhắn đã được gửi thành công',
+                'data' => $message->load('sender')
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Admin send message error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi gửi tin nhắn: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Get messages for a specific chat
-     */
-    public function getChatMessages(Request $request, $chatId): JsonResponse
+    public function distributeConversation(Request $request)
     {
-        // Here you would fetch messages from database
-        // $messages = Message::where('chat_id', $chatId)
-        //     ->orderBy('created_at', 'asc')
-        //     ->get();
+        try {
+            $request->validate([
+                'conversation_id' => 'required|exists:conversations,id',
+                'branch_id' => 'required|exists:branches,id'
+            ]);
 
-        $messagesByChat = [
-            '1' => [
-                [
-                    'id' => '1',
-                    'content' => 'Xin chào! Tôi muốn hỏi về combo gia đình mới mà FastFood vừa ra mắt',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(5),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '2',
-                    'content' => 'Combo này có những món gì và giá bao nhiêu ạ?',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(4),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '3',
-                    'content' => 'Tôi muốn hỏi về combo gia đình mới',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(2),
-                    'type' => 'text',
-                ],
-            ],
-            '2' => [
-                [
-                    'id' => '1',
-                    'content' => 'Chào bạn! Tôi vừa đặt đơn hàng nhưng quên không chọn thêm nước uống',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(20),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '2',
-                    'content' => 'Xin chào! Để tôi kiểm tra đơn hàng của bạn. Bạn có thể cung cấp mã đơn hàng không?',
-                    'sender' => 'admin',
-                    'timestamp' => now()->subMinutes(18),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '3',
-                    'content' => 'Mã đơn hàng là FF2024002 ạ',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(17),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '4',
-                    'content' => 'Tôi đã cập nhật đơn hàng và thêm 2 ly Coca cho bạn. Không tính thêm phí giao hàng nhé!',
-                    'sender' => 'admin',
-                    'timestamp' => now()->subMinutes(15),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '5',
-                    'content' => 'Cảm ơn bạn đã hỗ trợ nhiệt tình!',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(8),
-                    'type' => 'text',
-                ],
-            ],
-            '3' => [
-                [
-                    'id' => '1',
-                    'content' => 'Chào admin! Tôi đặt đơn hàng từ 45 phút trước rồi mà chưa thấy shipper liên hệ',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(20),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '2',
-                    'content' => 'Đơn hàng #FF2024001 của tôi bị delay không ạ?',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(15),
-                    'type' => 'text',
-                ],
-            ],
-            '4' => [
-                [
-                    'id' => '1',
-                    'content' => 'Xin chào! Tôi vừa đặt đơn hàng nhưng cần đổi địa chỉ giao hàng',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(30),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '2',
-                    'content' => 'Chào bạn! Tôi có thể hỗ trợ bạn thay đổi địa chỉ. Bạn cho tôi mã đơn hàng nhé',
-                    'sender' => 'admin',
-                    'timestamp' => now()->subMinutes(28),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '3',
-                    'content' => 'Mã đơn hàng FF2024003. Địa chỉ mới là: 123 Nguyễn Văn Linh, Quận 7, TP.HCM',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(27),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '4',
-                    'content' => 'Đã cập nhật địa chỉ mới cho bạn. Shipper sẽ giao đến địa chỉ mới trong 20 phút nữa',
-                    'sender' => 'admin',
-                    'timestamp' => now()->subMinutes(26),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '5',
-                    'content' => 'Tôi có thể đổi địa chỉ giao hàng được không?',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subMinutes(25),
-                    'type' => 'text',
-                ],
-            ],
-            '6' => [
-                [
-                    'id' => '1',
-                    'content' => 'Chào FastFood! Mình là sinh viên, có chương trình ưu đãi gì không ạ?',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subHour(2)->subMinutes(5),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '2',
-                    'content' => 'Có chương trình khuyến mãi nào cho sinh viên không ạ?',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subHour(2),
-                    'type' => 'text',
-                ],
-            ],
-            '7' => [
-                [
-                    'id' => '1',
-                    'content' => 'Xin chào! Công ty tôi muốn đặt tiệc cho sự kiện 50 người',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subHours(3)->subMinutes(10),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '2',
-                    'content' => 'Chào anh! Chúng tôi có gói tiệc doanh nghiệp rất phù hợp. Tôi sẽ gửi bảng giá cho anh',
-                    'sender' => 'admin',
-                    'timestamp' => now()->subHours(3)->subMinutes(8),
-                    'type' => 'text',
-                ],
-                [
-                    'id' => '3',
-                    'content' => 'Tôi muốn đặt tiệc cho 50 người',
-                    'sender' => 'customer',
-                    'timestamp' => now()->subHours(3),
-                    'type' => 'text',
-                ],
-            ],
-        ];
+            $conversation = Conversation::findOrFail($request->conversation_id);
 
-        $messages = $messagesByChat[$chatId] ?? [];
+            $conversation->update([
+                'branch_id' => $request->branch_id,
+                'status' => 'distributed',
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'messages' => $messages,
-        ]);
+            // Create system message
+            $branch = Branch::find($request->branch_id);
+            $systemMessage = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => Auth::id() ?? 1,
+                'receiver_id' => $conversation->customer_id,
+                'sender_type' => 'super_admin',
+                'message' => 'Cuộc trò chuyện đã được phân phối đến chi nhánh: ' . $branch->name,
+                'sent_at' => now(),
+                'status' => 'sent',
+                'is_system_message' => true
+            ]);
+
+            // Broadcast system message
+            try {
+                broadcast(new NewMessage($systemMessage->load('sender'), $conversation->id))->toOthers();
+            } catch (\Exception $e) {
+                Log::error('Pusher broadcast error: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Phân phối thành công'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Distribute conversation error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi phân phối: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Send message from admin
-     */
-    public function sendMessage(Request $request): JsonResponse
+    public function getMessages($conversationId)
+    {
+        try {
+            Log::info('Bắt đầu lấy tin nhắn', [
+                'conversation_id' => $conversationId,
+                'user_id' => auth()->id(),
+                'user_type' => 'admin'
+            ]);
+
+            $conversation = Conversation::findOrFail($conversationId);
+
+            Log::info('Tìm thấy conversation', [
+                'conversation' => $conversation->toArray()
+            ]);
+
+            $messages = ChatMessage::where('conversation_id', $conversationId)
+                ->with('sender')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            Log::info('Lấy được tin nhắn', [
+                'message_count' => $messages->count(),
+                'first_message' => $messages->first() ? $messages->first()->toArray() : null,
+                'last_message' => $messages->last() ? $messages->last()->toArray() : null
+            ]);
+
+            // Mark messages as read
+            ChatMessage::where('conversation_id', $conversationId)
+                ->where('sender_id', '!=', auth()->id())
+                ->where('sender_type', '!=', 'App\Models\Admin')
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+
+            Log::info('Đã cập nhật trạng thái đọc');
+
+            return response()->json([
+                'success' => true,
+                'messages' => $messages
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi lấy tin nhắn', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'conversation_id' => $conversationId
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi lấy tin nhắn: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function handleTyping(Request $request)
     {
         $request->validate([
-            'chat_id' => 'required|string',
-            'message' => 'required|string|max:1000',
-            'type' => 'required|in:text,image,file',
+            'conversation_id' => 'required|exists:conversations,id',
+            'is_typing' => 'required|boolean'
         ]);
 
-        // Here you would save the message to database
-        // $message = Message::create([
-        //     'chat_id' => $request->chat_id,
-        //     'content' => $request->message,
-        //     'sender' => 'admin',
-        //     'type' => $request->type,
-        // ]);
+        $conversation = Conversation::findOrFail($request->conversation_id);
+        $userId = Auth::id();
 
-        // Send real-time notification to customer
-        // broadcast(new MessageSent($message));
+        // Kiểm tra quyền truy cập
+        if (
+            $conversation->admin_id !== $userId &&
+            $conversation->customer_id !== $userId &&
+            $conversation->branch_id !== $userId
+        ) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Message sent successfully',
-        ]);
+        // Xác định user type
+        $userType = 'admin';
+        if ($conversation->customer_id === $userId) {
+            $userType = 'customer';
+        } elseif ($conversation->branch_id === $userId) {
+            $userType = 'branch';
+        }
+
+        // Broadcast typing status
+        broadcast(new TypingStatus(
+            $request->conversation_id,
+            $userId,
+            $request->is_typing,
+            $userType
+        ))->toOthers();
+
+        return response()->json(['success' => true]);
     }
-
-    /**
-     * Update admin online status
-     */
-    public function updateStatus(Request $request): JsonResponse
-    {
-        $request->validate([
-            'online' => 'required|boolean',
-        ]);
-
-        // Here you would update admin status in database or cache
-        // Cache::put('admin_online_' . auth()->id(), $request->online, 3600);
-
-        return response()->json([
-            'success' => true,
-            'status' => $request->online ? 'online' : 'offline',
-        ]);
-    }
-
-    /**
-     * Close a chat conversation
-     */
-    public function closeChat(Request $request, $chatId): JsonResponse
-    {
-        // Here you would update chat status in database
-        // Chat::where('id', $chatId)->update(['status' => 'closed']);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Chat closed successfully',
-        ]);
-    }
-
-    /**
-     * Get chat statistics
-     */
-    public function getStatistics(): JsonResponse
-    {
-        // Here you would calculate real statistics
-        $stats = [
-            'total_chats' => 248,
-            'active_chats' => 18,
-            'waiting_chats' => 7,
-            'closed_chats' => 223,
-            'response_time' => '1.8 phút',
-            'satisfaction_rate' => 4.7,
-            'today_chats' => 32,
-            'resolved_today' => 28,
-        ];
-
-        return response()->json([
-            'success' => true,
-            'statistics' => $stats,
-        ]);
-    }
-}
+};

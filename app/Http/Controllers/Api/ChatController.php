@@ -6,6 +6,8 @@ use App\Events\NewMessageEvent;
 use App\Http\Controllers\Controller;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
+use App\Models\ConversationUser;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -85,6 +87,16 @@ class ChatController extends Controller
         return response()->json(['conversations' => $conversations], 200);
     }
 
+    public function getUnassignedConversations()
+    {
+        $conversations = Conversation::whereNull('branch_id')
+            ->with(['messages', 'customer'])
+            ->latest()
+            ->get();
+
+        return response()->json(['conversations' => $conversations], 200);
+    }
+
     public function distributeConversation(Request $request, $conversationId)
     {
         $request->validate([
@@ -95,7 +107,18 @@ class ChatController extends Controller
         $conversation->update([
             'branch_id' => $request->branch_id,
             'status' => 'distributed',
+            'is_distributed' => true,
+            'distribution_time' => now(),
         ]);
+
+        // Tự động thêm các thành viên của chi nhánh vào conversation_users
+        $branchUsers = User::where('branch_id', $request->branch_id)->get();
+        foreach ($branchUsers as $user) {
+            ConversationUser::updateOrCreate(
+                ['conversation_id' => $conversationId, 'user_id' => $user->id],
+                ['user_type' => 'branch_staff']
+            );
+        }
 
         return response()->json(['conversation' => $conversation], 200);
     }

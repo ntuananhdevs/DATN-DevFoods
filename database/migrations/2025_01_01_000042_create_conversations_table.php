@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('customer_id')->constrained('users');
             $table->foreignId('branch_id')->nullable()->constrained('branches');
-            $table->enum('status', ['new', 'distributed', 'closed'])->default('new');
+            $table->enum('status', ['new', 'distributed', 'closed', 'active', 'resolved', 'open', 'pending'])->default('new');
             $table->boolean('is_distributed')->default(false); // Trạng thái phân phối
             $table->timestamp('distribution_time')->nullable(); // Thời gian phân phối
             $table->timestamps();

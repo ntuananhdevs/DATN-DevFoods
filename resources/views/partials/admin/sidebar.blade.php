@@ -257,7 +257,7 @@
                 </a>
 
                 <!-- Chat -->
-                <a href="{{ route('chat.admin') }}"
+                <a href="{{ route('admin.chat.index') }}"
                     class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('chat.admin.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
                     data-tooltip="Chat">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">

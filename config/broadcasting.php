@@ -39,7 +39,6 @@ return [
             'options' => [
                 'cluster' => env('PUSHER_APP_CLUSTER'),
                 'encrypted' => true,
-                'useTLS' => true, // Đảm bảo kết nối an toàn
             ],
         ],
 

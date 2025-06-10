@@ -93,7 +93,7 @@ mixAssetsDir("vendors/css/editors/quill/fonts/", (src, dest) =>
 );
 mix.copyDirectory("resources/images", "public/images");
 mix.copyDirectory("resources/fonts", "public/fonts");
-mix.js("resources/js/chat.js", "public/js");
+mix.js("resources/js/chat-realtime.js", "public/js");
 
 mix.then(() => {
     if (process.env.MIX_CONTENT_DIRECTION === "rtl") {
@@ -118,3 +118,40 @@ mix.then(() => {
 //   });
 //   mix.setResourceRoot("/demo/vuexy-bootstrap-laravel-admin-template/demo-1/");
 // }
+
+mix.webpackConfig({
+    module: {
+        rules: [
+            {
+                test: /\.js$/,
+                exclude: /node_modules\/(?!(laravel-echo|pusher-js)\/).*/,
+                use: {
+                    loader: "babel-loader",
+                    options: {
+                        presets: [
+                            [
+                                "@babel/preset-env",
+                                {
+                                    targets: {
+                                        browsers: [
+                                            ">0.25%",
+                                            "not ie 11",
+                                            "not op_mini all",
+                                        ],
+                                    },
+                                    useBuiltIns: "usage",
+                                    corejs: 3,
+                                },
+                            ],
+                        ],
+                        plugins: [
+                            "@babel/plugin-transform-nullish-coalescing-operator",
+                            "@babel/plugin-transform-optional-chaining",
+                            "@babel/plugin-proposal-object-rest-spread",
+                        ],
+                    },
+                },
+            },
+        ],
+    },
+});
