@@ -57,6 +57,7 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::post('/orders/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('orders.confirm_pickup');
         Route::post('/orders/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirm_delivery');
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+        Route::get('orders/{orderId}/navigate', [OrderController::class, 'navigate'])->name('orders.navigate');
         
         // Driver profile and history
         Route::get('/profile', [DriverController::class, 'profile'])->name('profile');
