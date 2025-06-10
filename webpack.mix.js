@@ -93,7 +93,6 @@ mixAssetsDir("vendors/css/editors/quill/fonts/", (src, dest) =>
 );
 mix.copyDirectory("resources/images", "public/images");
 mix.copyDirectory("resources/fonts", "public/fonts");
-mix.js("resources/js/chat-realtime.js", "public/js");
 
 mix.then(() => {
     if (process.env.MIX_CONTENT_DIRECTION === "rtl") {

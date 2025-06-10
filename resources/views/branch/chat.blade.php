@@ -1,6 +1,7 @@
 @extends('layouts.admin.contentLayoutMaster')
 
-@section('title', 'Chat Chi nhánh - ' . $branch->name)
+@section('title', 'Chat Chi nhánh - ')
+
 
 @section('content')
     <style>
@@ -874,7 +875,7 @@
     <div class="branch-chat-container">
         <!-- Enhanced Branch Header -->
         <div class="branch-header">
-            <h1>💬 Chat Chi nhánh {{ $branch->name }}</h1>
+
             <div class="header-content">
                 <div class="user-info">
                     <div class="user-avatar">
@@ -902,10 +903,10 @@
                         <i class="fas fa-inbox"></i>
                     </div>
                 </div>
-                <div class="stat-number">{{ $conversations->where('status', 'distributed')->count() }}</div>
+                <div class="stat-number">{{ $conversationsByBranch->where('status', 'distributed')->count() }}</div>
                 <div class="stat-label">Mới nhận</div>
                 <div class="stat-trend">
-                    +{{ $conversations->where('status', 'distributed')->where('created_at', '>=', now()->subDay())->count() }}
+                    +{{ $conversationsByBranch->where('status', 'distributed')->where('created_at', '>=', now()->subDay())->count() }}
                     hôm nay</div>
             </div>
 
@@ -1065,16 +1066,6 @@
                                         <li><a class="dropdown-item" href="#" onclick="updateStatus('closed')">
                                                 <i class="fas fa-times me-2 text-danger"></i>Đóng cuộc trò chuyện
                                             </a></li>
-                                        {{-- 
-                                    <!-- COMMENTED OUT: Staff Assignment Feature -->
-                                    @if ($user->role === 'branch_manager')
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
-                                                data-bs-target="#assignModal">
-                                                <i class="fas fa-user-plus me-2 text-primary"></i>Phân công nhân viên
-                                            </a></li>
-                                    @endif
-                                    --}}
                                     </ul>
                                 </div>
                             </div>

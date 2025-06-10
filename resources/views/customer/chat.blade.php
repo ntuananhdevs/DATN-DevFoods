@@ -726,8 +726,8 @@
                                             </span>
                                             ${data.conversation.branch ? 
                                                 `<span class="text-muted small">
-                                                                                                                    <i class="fas fa-building me-1"></i>${data.conversation.branch.name}
-                                                                                                                </span>` : ''}
+                                                                                                                                                                                                    <i class="fas fa-building me-1"></i>${data.conversation.branch.name}
+                                                                                                                                                                                                </span>` : ''}
                                         </div>
                                     </div>
                                     <div>

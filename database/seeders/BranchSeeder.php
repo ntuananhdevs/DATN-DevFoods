@@ -13,10 +13,7 @@ class BranchSeeder extends Seeder
     public function run()
     {
         // Đảm bảo có role manager
-        $managerRole = Role::firstOrCreate(['name' => 'manager'], [
-            'display_name' => 'Quản lý chi nhánh',
-            'description' => 'Quản lý chi nhánh cửa hàng'
-        ]);
+        $managerRole = Role::firstOrCreate(['name' => 'manager'], []);
 
         // Tạo một số manager nếu chưa có
         if (User::whereHas('roles', function ($query) {
@@ -64,6 +61,7 @@ class BranchSeeder extends Seeder
                 'longitude' => 105.8342,
                 'opening_hour' => '07:30',
                 'closing_hour' => '22:30',
+                'branch_code' => 'HCM001',
             ],
             [
 
@@ -75,6 +73,7 @@ class BranchSeeder extends Seeder
                 'longitude' => 106.7009,
                 'opening_hour' => '07:00',
                 'closing_hour' => '23:00',
+                'branch_code' => 'HCM002',
             ],
             [
 
@@ -85,6 +84,7 @@ class BranchSeeder extends Seeder
                 'latitude' => 16.0544,
                 'longitude' => 108.2022,
                 'opening_hour' => '08:00',
+                'branch_code' => 'DN003',
                 'closing_hour' => '22:00',
             ],
         ];

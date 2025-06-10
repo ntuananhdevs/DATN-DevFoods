@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\BranchChatController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\Admin\HiringController;
+use App\Http\Controllers\Api\ChatController as ApiChatController;
 use App\Http\Controllers\TestController;
 
 Route::prefix('/')->group(function () {
@@ -228,9 +229,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/send-message', [AdminChatController::class, 'sendMessage'])->name('send');
         Route::post('/distribute', [AdminChatController::class, 'distributeConversation'])->name('distribute');
         Route::get('/messages/{conversationId}', [AdminChatController::class, 'getMessages'])->name('messages');
+        Route::post('/typing', [AdminChatController::class, 'handleTyping'])->name('typing');
     });
-
-    Route::post('/admin/chat/typing', [ChatController::class, 'handleTyping'])->name('admin.chat.typing');
 });
 
 // Customer Cart Routes
@@ -287,7 +287,6 @@ Route::prefix('admin')->group(function () {
     Route::get('/chat', [AdminChatController::class, 'index'])->name('admin.chat.index');
     Route::post('/chat/send-message', [AdminChatController::class, 'sendMessage'])->name('admin.chat.send');
     Route::post('/chat/distribute', [AdminChatController::class, 'distributeConversation'])->name('admin.chat.distribute');
-    Route::post('/admin/chat/typing', [ChatController::class, 'handleTyping'])->name('admin.chat.typing');
 });
 
 Route::prefix('branch')->group(function () {
@@ -322,6 +321,6 @@ Route::prefix('api')->group(function () {
 });
 
 // Chat routes
-Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
+Route::post('/chat/send', [ApiChatController::class, 'sendMessage'])->name('chat.send');
 Route::post('/customer/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
 Route::post('/branch/chat/send', [BranchChatController::class, 'sendMessage'])->name('branch.chat.send');
