@@ -32,19 +32,25 @@ class OrderController extends Controller
             $statusCounts[$status] = count($filtered);
         }
 
-        return view('driver.orders', compact('ordersByStatus', 'initialStatus', 'tabStatuses', 'statusCounts'));
+        return view('driver.orders.index', compact('ordersByStatus', 'initialStatus', 'tabStatuses', 'statusCounts'));
     }
 
     public function show($orderId)
     {
-        $mockOrders = MockDriverData::getMockOrders();
-        $order = collect($mockOrders)->firstWhere('id', $orderId);
+        // $mockOrders = MockDriverData::getMockOrders();
+        // $order = collect($mockOrders)->firstWhere('id', $orderId);
 
-        if (!$order) {
-            abort(404, 'Order not found');
-        }
+        // if (!$order) {
+        //     abort(404, 'Order not found');
+        // }
 
-        return view('driver.order-detail', compact('order'));
+        // return view('driver.orders.show', compact('order'));
+        return view('driver.orders.show', ['orderId' => $orderId]);
+    }
+
+    public function navigate($orderId)
+    {
+        return view('driver.orders.navigate', ['orderId' => $orderId]);
     }
 
     public function updateStatus(Request $request, $orderId)

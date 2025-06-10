@@ -8,46 +8,72 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <!-- Tailwind CSS with full utilities -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Custom styles -->
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-    @yield('head_scripts')
-</head>
-<body class="min-h-screen bg-muted/40 flex flex-col">
-    <div id="app-root" class="flex-1 pb-16 md:pb-0">
-        @yield('content')
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-4 right-4 z-[100] space-y-2"></div>
-
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white bg-background border-t h-16 flex md:hidden z-50 shadow-lg">
-        <a href="{{ route('driver.dashboard') }}" class="nav-item flex-1 flex flex-col items-center justify-center text-xs gap-1 text-gray-500 hover:text-blue-600 {{ request()->routeIs('driver.dashboard') ? 'text-primary font-semibold' : '' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            <span>Tổng quan</span>
-        </a>
-        <a href="{{ route('driver.orders.index') }}" class="nav-item flex-1 flex flex-col items-center justify-center text-xs gap-1 text-gray-500 hover:text-blue-600 {{ request()->routeIs('driver.orders.*') ? 'text-primary font-semibold' : '' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M7 21h10"/><path d="M7 7v14"/><path d="M17 7v14"/><path d="M17 3H7v4h10V3z"/></svg>
-            <span>Đơn hàng</span>
-        </a>
-        <a href="{{ route('driver.history') }}" class="nav-item flex-1 flex flex-col items-center justify-center text-xs gap-1 text-gray-500 hover:text-blue-600 {{ request()->routeIs('driver.history') ? 'text-primary font-semibold' : '' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 18.34"/><path d="M12 12v6"/><path d="M12 12h4"/></svg>
-            <span>Lịch sử</span>
-        </a>
-        <a href="{{ route('driver.notifications') }}" class="nav-item flex-1 flex flex-col items-center justify-center text-xs gap-1 text-gray-500 hover:text-blue-600 {{ request()->routeIs('driver.notifications') ? 'text-primary font-semibold' : '' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-            <span>Thông báo</span>
-        </a>
-        <a href="{{ route('driver.profile') }}" class="nav-item flex-1 flex flex-col items-center justify-center text-xs gap-1 text-gray-500 hover:text-blue-600 {{ request()->routeIs('driver.profile') ? 'text-primary font-semibold' : '' }}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Cá nhân</span>
-        </a>
-    </nav>
-
-    <!-- Mapbox GL JS Script -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <!-- Main JavaScript Logic -->
-    <script src="{{ asset('js/script.js') }}"></script>
-    @yield('page_scripts')
+    <script>
+        // Set Mapbox access token - THAY BẰNG TOKEN THỰC CỦA BẠN
+        if (typeof mapboxgl !== 'undefined') {
+            mapboxgl.accessToken = 'pk.eyJ1IjoibmhhdG5ndXllbnF2IiwiYSI6ImNtYjZydDNnZDAwY24ybm9qcTdxcTNocG8ifQ.u7X_0DfN7d52xZ8cGFbWyQ';
+        }
+    </script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body class="bg-gray-50">
+    @include('partials.driver.header')
+    
+    <main class="pb-20">
+        @yield('content')
+    </main>
+    
+    @include('partials.driver.bottom-nav')
+    
+    <script>
+        // Mapbox access token - thay bằng token thực của bạn
+        mapboxgl.accessToken = 'pk.eyJ1IjoibmhhdG5ndXllbnF2IiwiYSI6ImNtYjZydDNnZDAwY24ybm9qcTdxcTNocG8ifQ.u7X_0DfN7d52xZ8cGFbWyQ';
+        
+        // GPS tracking
+        let currentPosition = null;
+        let watchId = null;
+        
+        function startLocationTracking() {
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(
+                    function(position) {
+                        currentPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        updateLocationOnServer(currentPosition);
+                    },
+                    function(error) {
+                        console.error('GPS Error:', error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            }
+        }
+        
+        function updateLocationOnServer(position) {
+            fetch('/api/update-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(position)
+            });
+        }
+        
+        // Start tracking when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            startLocationTracking();
+        });
+    </script>
+    
+    @stack('scripts')
 </body>
 </html>
