@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Admin\Product;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StoreProductRequest extends FormRequest
+class ProductRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,6 +22,9 @@ class StoreProductRequest extends FormRequest
      */
     public function rules(): array
     {
+        $productId = $this->route('product') ? $this->route('product')->id : null;
+        $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
+        
         return [
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -28,23 +32,39 @@ class StoreProductRequest extends FormRequest
             'preparation_time' => 'required|integer|min:0',
             'short_description' => 'required|string|max:500',
             'description' => 'nullable|string',
-            'ingredients' => 'required|string',
+            'ingredients' => 'nullable|string',
+            'ingredients_json' => 'nullable|string',
             'attributes' => 'required|array',
             'attributes.*.name' => 'required_with:attributes|string|max:255',
             'attributes.*.values' => 'required_with:attributes|array',
             'attributes.*.values.*.value' => 'required_with:attributes.*.values|string|max:255',
-            'attributes.*.values.*.price' => 'required_with:attributes.*.values|numeric|min:0',
+            'attributes.*.values.*.price_adjustment' => 'nullable|numeric',
             'toppings' => 'nullable|array',
             'toppings.*.name' => 'required_with:toppings|string|max:255',
             'toppings.*.price' => 'required_with:toppings|numeric|min:0',
             'toppings.*.available' => 'nullable|boolean',
             'toppings.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'primary_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'primary_image' => $isUpdate ? 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048' : 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'required|in:coming_soon,selling,discontinued',
             'release_at' => 'nullable|date',
             'is_featured' => 'nullable|boolean',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     *
+     * @param  \Illuminate\Validation\Validator  $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            if (empty($this->input('ingredients')) && empty($this->input('ingredients_json'))) {
+                $validator->errors()->add('ingredients', 'Nguyên liệu là bắt buộc.');
+            }
+        });
     }
 
     /**
@@ -61,10 +81,10 @@ class StoreProductRequest extends FormRequest
             'category_id.required' => 'Danh mục là bắt buộc.',
             'category_id.exists' => 'Danh mục đã chọn không hợp lệ.',
             'base_price.required' => 'Giá cơ bản là bắt buộc.',
-            'short_description' => 'Mô tả ngắn là bắt buộc.',
+            'short_description.required' => 'Mô tả ngắn là bắt buộc.',
             'base_price.numeric' => 'Giá cơ bản phải là số.',
-            'ingredients.required' => 'Nguyên liệu là bắt buộc.',
             'ingredients.string' => 'Nguyên liệu phải là chuỗi ký tự.',
+            'ingredients_json.string' => 'Dữ liệu nguyên liệu phải là chuỗi ký tự.',
             'base_price.min' => 'Giá cơ bản phải lớn hơn hoặc bằng 0.',
             'preparation_time.required' => 'Thời gian chuẩn bị là bắt buộc.',
             'preparation_time.integer' => 'Thời gian chuẩn bị phải là số nguyên.',
@@ -72,7 +92,7 @@ class StoreProductRequest extends FormRequest
             'short_description.string' => 'Mô tả ngắn phải là chuỗi ký tự.',
             'short_description.max' => 'Mô tả ngắn không được vượt quá 500 ký tự.',
             'description.string' => 'Mô tả chi tiết phải là chuỗi ký tự.',
-            'ingredients.string' => 'Nguyên liệu phải là chuỗi ký tự.',
+            'attributes.required' => 'Thuộc tính là bắt buộc.',
             'attributes.array' => 'Thuộc tính phải là một mảng.',
             'attributes.*.name.required_with' => 'Tên thuộc tính là bắt buộc khi có thuộc tính.',
             'attributes.*.name.string' => 'Tên thuộc tính phải là chuỗi.',
@@ -82,9 +102,7 @@ class StoreProductRequest extends FormRequest
             'attributes.*.values.*.value.required_with' => 'Tên giá trị là bắt buộc cho mỗi giá trị thuộc tính.',
             'attributes.*.values.*.value.string' => 'Tên giá trị phải là chuỗi.',
             'attributes.*.values.*.value.max' => 'Tên giá trị không được vượt quá 255 ký tự.',
-            'attributes.*.values.*.price.required_with' => 'Giá là bắt buộc cho mỗi giá trị thuộc tính.',
-            'attributes.*.values.*.price.numeric' => 'Giá phải là số.',
-            'attributes.*.values.*.price.min' => 'Giá phải lớn hơn hoặc bằng 0.',
+            'attributes.*.values.*.price_adjustment.numeric' => 'Giá điều chỉnh phải là số.',
             'toppings.array' => 'Topping phải là một mảng.',
             'toppings.*.name.required_with' => 'Tên topping là bắt buộc khi có topping.',
             'toppings.*.name.string' => 'Tên topping phải là chuỗi.',

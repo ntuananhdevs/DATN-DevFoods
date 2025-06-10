@@ -347,6 +347,61 @@
                     <div class="info-value">{{ $discountCode->description }}</div>
                 </div>
             @endif
+
+            <!-- Member Ranks Section -->
+            @if($discountCode->applicable_ranks)
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                    <h3 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        Hạng thành viên áp dụng
+                    </h3>
+                    
+                    <div class="info-value">
+                        @php
+                            $ranks = [
+                                1 => 'Đồng',
+                                2 => 'Bạc',
+                                3 => 'Vàng',
+                                4 => 'Bạch Kim',
+                                5 => 'Kim Cương'
+                            ];
+                            
+                            $selectedRanks = is_string($discountCode->applicable_ranks) 
+                                ? json_decode($discountCode->applicable_ranks, true) 
+                                : (array) $discountCode->applicable_ranks;
+                            
+                            $rankNames = [];
+                            foreach ($selectedRanks as $rankId) {
+                                if (isset($ranks[$rankId])) {
+                                    $rankNames[] = $ranks[$rankId];
+                                }
+                            }
+                        @endphp
+                        
+                        @if(count($rankNames) > 0)
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                @foreach($rankNames as $rank)
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $rank }}
+                                    </span>
+                                @endforeach
+                            </div>
+                            
+                            @if($discountCode->rank_exclusive)
+                                <p class="mt-2 text-sm text-gray-500">Chỉ áp dụng cho các hạng đã chọn</p>
+                            @else
+                                <p class="mt-2 text-sm text-gray-500">Ưu tiên cho các hạng đã chọn</p>
+                            @endif
+                        @else
+                            <p>Áp dụng cho tất cả hạng thành viên</p>
+                        @endif
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -431,7 +486,7 @@
     </div>
 
     <!-- Assigned Users -->
-    @if($discountCode->usage_type == 'private')
+    @if($discountCode->usage_type == 'personal')
     <div class="detail-card">
         <div class="detail-header">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -449,7 +504,73 @@
         <div class="detail-content">
             @if ($discountCode->users && $discountCode->users->isNotEmpty())
                 <div class="info-value">
-                    {{ $discountCode->users->pluck('user.name')->implode(', ') }}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($discountCode->users as $userAssignment)
+                            @php
+                                $user = $userAssignment->user;
+                                if (!$user) continue;
+                                
+                                $userRankId = $user->user_rank_id ?? 0;
+                                $rankName = 'Chưa xếp hạng';
+                                $rankClass = 'bg-gray-100 text-gray-800';
+                                
+                                if ($userRankId == 1) {
+                                    $rankName = 'Đồng';
+                                    $rankClass = 'bg-amber-100 text-amber-800';
+                                } elseif ($userRankId == 2) {
+                                    $rankName = 'Bạc';
+                                    $rankClass = 'bg-gray-100 text-gray-800';
+                                } elseif ($userRankId == 3) {
+                                    $rankName = 'Vàng';
+                                    $rankClass = 'bg-yellow-100 text-yellow-800';
+                                } elseif ($userRankId == 4) {
+                                    $rankName = 'Bạch Kim';
+                                    $rankClass = 'bg-indigo-100 text-indigo-800';
+                                } elseif ($userRankId == 5) {
+                                    $rankName = 'Kim Cương';
+                                    $rankClass = 'bg-blue-100 text-blue-800';
+                                }
+                            @endphp
+                            <div class="p-4 border rounded-lg bg-white shadow-sm flex items-start space-x-3">
+                                <div class="flex-shrink-0">
+                                    @if(!empty($user->avatar_url))
+                                        <img src="{{ $user->avatar_url }}" alt="{{ $user->full_name }}" class="w-10 h-10 rounded-full">
+                                    @else
+                                        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
+                                            </svg>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-sm font-medium text-gray-900">{{ $user->full_name }}</h4>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $rankClass }}">
+                                            {{ $rankName }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">{{ $user->email }}</p>
+                                    <p class="text-xs text-gray-500">{{ $user->phone ?? 'Không có SĐT' }}</p>
+                                    <div class="mt-2 text-xs">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700">
+                                            Sử dụng: {{ $userAssignment->usage_count ?? 0 }}/{{ $discountCode->max_usage_per_user ?? 'Không giới hạn' }}
+                                        </span>
+                                        @if($userAssignment->status == 'available')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-50 text-green-700 ml-2">
+                                                Khả dụng
+                                            </span>
+                                        @elseif($userAssignment->status == 'used')
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-50 text-red-700 ml-2">
+                                                Đã sử dụng
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             @else
                 <div class="empty-state">

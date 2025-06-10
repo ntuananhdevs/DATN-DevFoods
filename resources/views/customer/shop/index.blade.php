@@ -3,6 +3,14 @@
 @section('title', 'FastFood - Thực Đơn')
 
 @section('content')
+<script>
+    // Add authentication class to body
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(Auth::check())
+            document.body.classList.add('user-authenticated');
+        @endif
+    });
+</script>
 <style>
     .container {
       max-width: 1280px;
@@ -32,6 +40,46 @@
         border-radius: 100px;
         font-size: 10px;
         z-index: 10;
+    }
+    
+    /* Discount code pill badges */
+    .discount-code-pill {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 10;
+    }
+    
+    .discount-code-item {
+        display: inline-flex;
+        align-items: center;
+        background-color: rgba(249, 115, 22, 0.9);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 600;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .discount-code-item i {
+        margin-right: 4px;
+        font-size: 9px;
+    }
+    
+    .discount-code-item.free-shipping {
+        background-color: rgba(10, 132, 255, 0.9);
+    }
+    
+    .discount-code-item.fixed-amount {
+        background-color: rgba(130, 32, 246, 0.9);
     }
 
     /* Product card styling */
@@ -287,6 +335,34 @@
                         <span class="custom-badge badge-sale">-{{ $discountPercent }}%</span>
                     @elseif($product->created_at->diffInDays(now()) <= 7)
                         <span class="custom-badge badge-new">Mới</span>
+                    @endif
+                    
+                    @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
+                        <div class="discount-code-pill">
+                            @foreach($product->applicable_discount_codes as $discountCode)
+                                @php
+                                    $badgeClass = 'discount-code-item';
+                                    $icon = 'fa-percent';
+                                    if($discountCode->discount_type === 'fixed_amount') {
+                                        $badgeClass .= ' fixed-amount';
+                                        $icon = 'fa-money-bill-wave';
+                                    } elseif($discountCode->discount_type === 'free_shipping') {
+                                        $badgeClass .= ' free-shipping';
+                                        $icon = 'fa-shipping-fast';
+                                    }
+                                @endphp
+                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
+                                    <i class="fas {{ $icon }}"></i>
+                                    @if($discountCode->discount_type === 'percentage')
+                                        Giảm {{ $discountCode->discount_value }}%
+                                    @elseif($discountCode->discount_type === 'fixed_amount')
+                                        Giảm {{ number_format($discountCode->discount_value) }}đ
+                                    @else
+                                        Miễn phí vận chuyển
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     @endif
                 </div>
 
@@ -655,7 +731,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const isNew = new Date(product.created_at).getTime() > new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
             
             // Check if user is authenticated
-            const isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+            const isAuthenticated = document.body.classList.contains('user-authenticated');
+            
+            // Discount codes rendering
+            let discountCodesHtml = '';
+            if (product.applicable_discount_codes && product.applicable_discount_codes.length > 0) {
+                discountCodesHtml = '<div class="discount-code-pill">';
+                product.applicable_discount_codes.forEach(discountCode => {
+                    let badgeClass = 'discount-code-item';
+                    let icon = 'fa-percent';
+                    
+                    if (discountCode.discount_type === 'fixed_amount') {
+                        badgeClass += ' fixed-amount';
+                        icon = 'fa-money-bill-wave';
+                    } else if (discountCode.discount_type === 'free_shipping') {
+                        badgeClass += ' free-shipping';
+                        icon = 'fa-shipping-fast';
+                    }
+                    
+                    let discountText = '';
+                    if (discountCode.discount_type === 'percentage') {
+                        discountText = `Giảm ${discountCode.discount_value}%`;
+                    } else if (discountCode.discount_type === 'fixed_amount') {
+                        discountText = `Giảm ${new Intl.NumberFormat('vi-VN').format(discountCode.discount_value)}đ`;
+                    } else {
+                        discountText = 'Miễn phí vận chuyển';
+                    }
+                    
+                    discountCodesHtml += `
+                        <div class="${badgeClass}" title="${discountCode.name}">
+                            <i class="fas ${icon}"></i>
+                            ${discountText}
+                        </div>
+                    `;
+                });
+                discountCodesHtml += '</div>';
+            }
             
             html += `
                 <div class="product-card bg-white rounded-lg overflow-hidden" 
@@ -685,6 +796,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             `<span class="custom-badge badge-sale">-${discountPercent}%</span>` : 
                             (isNew ? `<span class="custom-badge badge-new">Mới</span>` : '')
                         }
+                        
+                        ${discountCodesHtml}
                     </div>
 
                     <div class="p-4">

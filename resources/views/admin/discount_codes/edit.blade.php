@@ -78,6 +78,8 @@
         border-radius: 8px;
         transition: all 0.2s;
         cursor: pointer;
+        position: relative;
+        padding-top: 16px;
     }
 
     .checkbox-group:hover {
@@ -95,10 +97,33 @@
         flex: 1;
     }
 
+    .tag-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 2px 6px;
+        border-bottom-left-radius: 6px;
+        font-size: 0.65rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        z-index: 1;
+    }
+
     .days-of-week {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 10px;
+    }
+    
+    .ranks-selection {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    select[multiple] {
+        height: auto;
     }
 </style>
 
@@ -118,7 +143,7 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('admin.discount_codes.show', $discountCode) }}" class="btn btn-outline flex items-center">
+            <a href="{{ route('admin.discount_codes.index', $discountCode) }}" class="btn btn-outline flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                     <path d="m12 19-7-7 7-7"></path>
                     <path d="M19 12H5"></path>
@@ -173,6 +198,7 @@
                         <div class="form-group mb-3">
                             <label for="code" class="form-label">Mã giảm giá <span class="text-danger">*</span></label>
                             <input type="text" name="code" id="code" class="form-control" value="{{ old('code', $discountCode->code) }}" required>
+                            <small class="text-muted">Ví dụ: SUMMER2023, WELCOME10</small>
                             @error('code')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -237,8 +263,235 @@
                         <div class="form-group mb-3">
                             <label for="max_discount_amount" class="form-label">Số tiền giảm tối đa</label>
                             <input type="number" name="max_discount_amount" id="max_discount_amount" class="form-control" step="0.01" min="0" value="{{ old('max_discount_amount', $discountCode->max_discount_amount) }}">
+                            <small class="text-muted">Áp dụng khi loại giảm giá là phần trăm</small>
                             @error('max_discount_amount')
                             <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Applicable Items -->
+                    <div class="form-section">
+                        <h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                                <line x1="3" y1="6" x2="21" y2="6"/>
+                                <path d="M16 10a4 4 0 0 1-8 0"/>
+                            </svg>
+                            Phạm vi áp dụng
+                        </h3>
+                        
+                        <div class="form-group mb-3">
+                            <label class="form-label">Áp dụng cho</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_all" value="all_items" {{ old('applicable_items', $discountCode->applicable_items) == 'all_items' ? 'checked' : '' }}>
+                                    <label for="applicable_items_all">Tất cả sản phẩm</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_products" value="specific_products" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_products' ? 'checked' : '' }}>
+                                    <label for="applicable_items_products">Sản phẩm cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_categories" value="specific_categories" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_categories' ? 'checked' : '' }}>
+                                    <label for="applicable_items_categories">Danh mục cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_combos" value="combos_only" {{ old('applicable_items', $discountCode->applicable_items) == 'combos_only' ? 'checked' : '' }}>
+                                    <label for="applicable_items_combos">Chỉ áp dụng cho combo</label>
+                                </div>
+                            </div>
+                            @error('applicable_items')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items', $discountCode->applicable_items) == 'specific_products' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn sản phẩm</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="relative mb-2">
+                                    <input type="text" id="product_search" placeholder="Tìm kiếm sản phẩm..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($products as $product)
+                                        <div class="product-item checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-green-100 text-green-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                                SP
+                                            </span>
+                                            <input type="checkbox" name="items[]" id="product_{{ $product->id }}" value="{{ $product->id }}" 
+                                                {{ in_array($product->id, $selectedProducts ?? []) ? 'checked' : '' }}>
+                                            <label for="product_{{ $product->id }}">
+                                                {{ $product->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-products">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-products">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="categories_selection" class="form-group mb-3" style="{{ old('applicable_items', $discountCode->applicable_items) == 'specific_categories' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn danh mục</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($categories as $category)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                                </svg>
+                                                DM
+                                            </span>
+                                            <input type="checkbox" name="items[]" id="category_{{ $category->id }}" value="{{ $category->id }}" 
+                                                {{ in_array($category->id, $selectedCategories ?? []) ? 'checked' : '' }}>
+                                            <label for="category_{{ $category->id }}">
+                                                {{ $category->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-categories">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-categories">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="combos_selection" class="form-group mb-3" style="{{ old('applicable_items', $discountCode->applicable_items) == 'combos_only' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn combo</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($combos as $combo)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-purple-100 text-purple-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                                </svg>
+                                                Combo
+                                            </span>
+                                            <input type="checkbox" name="items[]" id="combo_{{ $combo->id }}" value="{{ $combo->id }}" 
+                                                {{ in_array($combo->id, $selectedCombos ?? []) ? 'checked' : '' }}>
+                                            <label for="combo_{{ $combo->id }}">
+                                                {{ $combo->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-combos">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label">Phạm vi áp dụng</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_scope" id="applicable_scope_all" value="all_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'all_branches' ? 'checked' : '' }}>
+                                    <label for="applicable_scope_all">Tất cả chi nhánh</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_scope" id="applicable_scope_specific" value="specific_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'specific_branches' ? 'checked' : '' }}>
+                                    <label for="applicable_scope_specific">Chi nhánh cụ thể</label>
+                                </div>
+                            </div>
+                            @error('applicable_scope')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group mb-3" id="branch_selection" style="{{ old('applicable_scope', $discountCode->applicable_scope) == 'specific_branches' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn chi nhánh</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @foreach($branches as $branch)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-cyan-100 text-cyan-800">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                </svg>
+                                                CN
+                                            </span>
+                                            <input type="checkbox" name="branch_ids[]" id="branch_{{ $branch->id }}" value="{{ $branch->id }}" 
+                                                {{ in_array($branch->id, $selectedBranches ?? []) ? 'checked' : '' }}>
+                                            <label for="branch_{{ $branch->id }}">
+                                                {{ $branch->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-branches">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-branches">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label font-medium">Hạng thành viên áp dụng</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
+                                    @php
+                                        $ranks = [
+                                            1 => ['name' => 'Đồng', 'color' => 'bg-amber-100 text-amber-800'],
+                                            2 => ['name' => 'Bạc', 'color' => 'bg-gray-100 text-gray-800'],
+                                            3 => ['name' => 'Vàng', 'color' => 'bg-yellow-100 text-yellow-800'],
+                                            4 => ['name' => 'Bạch Kim', 'color' => 'bg-indigo-100 text-indigo-800'],
+                                            5 => ['name' => 'Kim Cương', 'color' => 'bg-blue-100 text-blue-800']
+                                        ];
+                                        // Parse applicable_ranks to ensure it's an array
+                                        $rawRanks = old('applicable_ranks', $discountCode->applicable_ranks ?? []);
+                                        $selectedRanks = is_string($rawRanks) ? json_decode($rawRanks, true) ?? [] : (array) $rawRanks;
+                                    @endphp
+                                    @foreach ($ranks as $rankValue => $rank)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                                            <input type="checkbox" name="applicable_ranks[]" id="rank_{{ $rankValue }}" value="{{ $rankValue }}" {{ in_array($rankValue, $selectedRanks) ? 'checked' : '' }}>
+                                            <label for="rank_{{ $rankValue }}" class="flex items-center">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $rank['color'] }} mr-2">
+                                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                    {{ $rank['name'] }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                
+                                <div class="mt-4 border-t pt-4">
+                                    <div class="bg-white p-3 rounded border border-gray-200">
+                                        <div class="flex items-start">
+                                            <div class="flex items-center h-5">
+                                                <input type="checkbox" name="rank_exclusive" id="rank_exclusive" value="1" 
+                                                    {{ old('rank_exclusive', $discountCode->rank_exclusive ?? false) ? 'checked' : '' }}
+                                                    class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                                            </div>
+                                            <div class="ml-3 text-sm">
+                                                <label for="rank_exclusive" class="font-medium text-gray-700">Áp dụng giới hạn cho hạng đã chọn</label>
+                                                <p class="text-gray-500">
+                                                    Khi bật tùy chọn này, mã giảm giá sẽ <strong>chỉ áp dụng</strong> cho những hạng đã chọn, 
+                                                    không bao gồm các hạng cao hơn. Nếu tắt, mã giảm giá sẽ áp dụng cho các hạng đã chọn và tất cả các hạng cao hơn.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @error('applicable_ranks')
+                                <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -261,9 +514,115 @@
                                 <option value="public" {{ old('usage_type', $discountCode->usage_type) == 'public' ? 'selected' : '' }}>Công khai</option>
                                 <option value="personal" {{ old('usage_type', $discountCode->usage_type) == 'personal' ? 'selected' : '' }}>Riêng tư</option>
                             </select>
+                            <small class="text-muted">Mã riêng tư chỉ dành cho người dùng được chỉ định</small>
                             @error('usage_type')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
+                        </div>
+
+                        <!-- User Selection for Personal Discount Codes -->
+                        <div id="users_selection" class="form-group mb-3" style="{{ old('usage_type', $discountCode->usage_type) == 'personal' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn người dùng được áp dụng</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="relative mb-2">
+                                    <input type="text" id="user_search" placeholder="Tìm kiếm người dùng..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                    @php
+                                        // Get assigned users from user_discount_codes table
+                                        $assignedUsers = $discountCode->users->pluck('user_id')->toArray();
+                                        // Get all non-admin users from the database
+                                        $users = \App\Models\User::whereDoesntHave('roles', function($query) {
+                                                $query->where('name', 'admin');
+                                            })
+                                            ->orderBy('full_name')
+                                            ->get();
+                                        
+                                        // Parse applicable_ranks to ensure it's an array
+                                        $rawRanks = old('applicable_ranks', $discountCode->applicable_ranks ?? []);
+                                        $selectedRanks = is_string($rawRanks) ? json_decode($rawRanks, true) ?? [] : (array) $rawRanks;
+                                    @endphp
+                                    
+                                    @foreach($users as $user)
+                                        @php
+                                            $userRankId = $user->user_rank_id ?? 0;
+                                            $isEligible = empty($selectedRanks) || in_array($userRankId, $selectedRanks);
+                                            
+                                            // Skip this user if they're not eligible
+                                            if (!$isEligible) continue;
+                                            
+                                            $rankName = '';
+                                            $rankClass = 'bg-gray-100 text-gray-800';
+                                            
+                                            if ($userRankId == 1) {
+                                                $rankName = 'Đồng';
+                                                $rankClass = 'bg-amber-100 text-amber-800';
+                                            } elseif ($userRankId == 2) {
+                                                $rankName = 'Bạc';
+                                                $rankClass = 'bg-gray-100 text-gray-800';
+                                            } elseif ($userRankId == 3) {
+                                                $rankName = 'Vàng';
+                                                $rankClass = 'bg-yellow-100 text-yellow-800';
+                                            } elseif ($userRankId == 4) {
+                                                $rankName = 'Bạch Kim';
+                                                $rankClass = 'bg-indigo-100 text-indigo-800';
+                                            } elseif ($userRankId == 5) {
+                                                $rankName = 'Kim Cương';
+                                                $rankClass = 'bg-blue-100 text-blue-800';
+                                            }
+                                        @endphp
+                                        <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium {{ $rankClass }}">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                                {{ $rankName ?: 'Chưa xếp hạng' }}
+                                            </span>
+                                            <input type="checkbox" name="assigned_users[]" id="user_{{ $user->id }}" value="{{ $user->id }}" 
+                                                {{ in_array($user->id, $assignedUsers ?? []) ? 'checked' : '' }}>
+                                            <label for="user_{{ $user->id }}" class="flex flex-col">
+                                                <span class="font-medium">{{ $user->full_name }}</span>
+                                                <span class="text-xs text-gray-500">{{ $user->email }}</span>
+                                                <span class="text-xs text-gray-500">{{ $user->phone ?? 'Không có SĐT' }}</span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @php
+                                    // Count eligible users only
+                                    $eligibleUsers = 0;
+                                    foreach($users as $user) {
+                                        $userRankId = $user->user_rank_id ?? 0;
+                                        if(empty($selectedRanks) || in_array($userRankId, $selectedRanks)) {
+                                            $eligibleUsers++;
+                                        }
+                                    }
+                                @endphp
+                                <div class="flex justify-between items-center mt-2">
+                                    <span class="text-xs text-gray-500">Đang hiển thị {{ $eligibleUsers }} người dùng hợp lệ (trong tổng số {{ $users->count() }} người dùng)</span>
+                                    <div>
+                                        <span class="text-sm text-blue-600 cursor-pointer select-all-users">Chọn tất cả</span> | 
+                                        <span class="text-sm text-red-600 cursor-pointer unselect-all-users">Bỏ chọn tất cả</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Lưu ý:</strong> Chỉ hiển thị những người dùng có hạng thành viên phù hợp với các hạng đã chọn. 
+                                            Người dùng không đủ điều kiện sẽ không được hiển thị trong danh sách.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group mb-3">
@@ -279,17 +638,6 @@
                             <label for="max_usage_per_user" class="form-label">Số lần sử dụng tối đa mỗi người dùng</label>
                             <input type="number" name="max_usage_per_user" id="max_usage_per_user" class="form-control" min="1" value="{{ old('max_usage_per_user', $discountCode->max_usage_per_user) }}">
                             @error('max_usage_per_user')
-                            <div class="text-danger">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="applicable_scope" class="form-label">Phạm vi áp dụng</label>
-                            <select name="applicable_scope" id="applicable_scope" class="form-control">
-                                <option value="all_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'all_branches' ? 'selected' : '' }}>Tất cả chi nhánh</option>
-                                <option value="specific_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'specific_branches' ? 'selected' : '' }}>Chi nhánh cụ thể</option>
-                            </select>
-                            @error('applicable_scope')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
@@ -309,7 +657,9 @@
 
                         <div class="form-group mb-3">
                             <label for="start_date" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
-                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', $discountCode->start_date->format('Y-m-d')) }}" required>
+                            <input type="datetime-local" name="start_date" id="start_date" class="form-control" 
+                                value="{{ old('start_date', $discountCode->start_date ? $discountCode->start_date->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}" required>
+                            <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('start_date')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -317,7 +667,9 @@
 
                         <div class="form-group mb-3">
                             <label for="end_date" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
-                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', $discountCode->end_date->format('Y-m-d')) }}" required>
+                            <input type="datetime-local" name="end_date" id="end_date" class="form-control" 
+                                value="{{ old('end_date', $discountCode->end_date ? $discountCode->end_date->format('Y-m-d\TH:i') : now()->addDays(30)->format('Y-m-d\TH:i')) }}" required>
+                            <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('end_date')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -347,25 +699,43 @@
                                 </div>
                                 @endforeach
                             </div>
+                            <small class="text-muted">Nếu không chọn ngày nào, mã sẽ áp dụng mọi ngày trong tuần</small>
                             @error('valid_days_of_week')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="valid_from_time" class="form-label">Giờ bắt đầu</label>
-                            <input type="time" name="valid_from_time" id="valid_from_time" class="form-control" value="{{ old('valid_from_time', $discountCode->valid_from_time ? $discountCode->valid_from_time->format('H:i') : '') }}">
-                            @error('valid_from_time')
-                            <div class="text-danger">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="valid_to_time" class="form-label">Giờ kết thúc</label>
-                            <input type="time" name="valid_to_time" id="valid_to_time" class="form-control" value="{{ old('valid_to_time', $discountCode->valid_to_time ? $discountCode->valid_to_time->format('H:i') : '') }}">
-                            @error('valid_to_time')
-                            <div class="text-danger">{{ $message }}</div>
-                            @enderror
+                            <label for="valid_from_time" class="form-label">Giờ áp dụng trong ngày</label>
+                            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded mb-3">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <p>
+                                        <strong>Lưu ý:</strong> Các trường này dùng để giới hạn thời gian trong ngày mà mã giảm giá có hiệu lực (ví dụ: chỉ áp dụng từ 9:00 đến 17:00 hàng ngày). 
+                                        Khác với ngày bắt đầu và kết thúc ở trên là thời gian tổng thể mã giảm giá có hiệu lực.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="valid_from_time" class="form-label">Giờ bắt đầu trong ngày</label>
+                                    <input type="time" name="valid_from_time" id="valid_from_time" class="form-control" value="{{ old('valid_from_time', $discountCode->valid_from_time ? $discountCode->valid_from_time->format('H:i') : '') }}">
+                                    <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
+                                    @error('valid_from_time')
+                                    <div class="text-danger">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="valid_to_time" class="form-label">Giờ kết thúc trong ngày</label>
+                                    <input type="time" name="valid_to_time" id="valid_to_time" class="form-control" value="{{ old('valid_to_time', $discountCode->valid_to_time ? $discountCode->valid_to_time->format('H:i') : '') }}">
+                                    <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
+                                    @error('valid_to_time')
+                                    <div class="text-danger">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group mb-3">
@@ -420,4 +790,234 @@
         </form>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Branch selection toggle
+        const branchSelectionDiv = document.getElementById('branch_selection');
+        const branchRadios = document.querySelectorAll('input[name="applicable_scope"]');
+        
+        // Items selection toggle
+        const productsSelectionDiv = document.getElementById('products_selection');
+        const categoriesSelectionDiv = document.getElementById('categories_selection');
+        const combosSelectionDiv = document.getElementById('combos_selection');
+        const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
+        
+        // Select/Unselect all buttons
+        const selectAllProducts = document.querySelector('.select-all-products');
+        const unselectAllProducts = document.querySelector('.unselect-all-products');
+        const selectAllCategories = document.querySelector('.select-all-categories');
+        const unselectAllCategories = document.querySelector('.unselect-all-categories');
+        const selectAllCombos = document.querySelector('.select-all-combos');
+        const unselectAllCombos = document.querySelector('.unselect-all-combos');
+        const selectAllBranches = document.querySelector('.select-all-branches');
+        const unselectAllBranches = document.querySelector('.unselect-all-branches');
+        
+        // Product search
+        const productSearch = document.getElementById('product_search');
+        
+        // Date fields
+        const startDateField = document.getElementById('start_date');
+        const endDateField = document.getElementById('end_date');
+        
+        // Initial state check
+        toggleBranchSelection();
+        toggleItemsSelection();
+        validateDates();
+        
+        // Add event listeners for changes
+        branchRadios.forEach(radio => {
+            radio.addEventListener('change', toggleBranchSelection);
+        });
+        
+        itemRadios.forEach(radio => {
+            radio.addEventListener('change', toggleItemsSelection);
+        });
+        
+        // Add event listeners for date validation
+        if (startDateField && endDateField) {
+            startDateField.addEventListener('change', validateDates);
+            endDateField.addEventListener('change', validateDates);
+        }
+        
+        // Add event listeners for select/unselect all buttons
+        if (selectAllProducts) {
+            selectAllProducts.addEventListener('click', function() {
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllProducts) {
+            unselectAllProducts.addEventListener('click', function() {
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (selectAllCategories) {
+            selectAllCategories.addEventListener('click', function() {
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllCategories) {
+            unselectAllCategories.addEventListener('click', function() {
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (selectAllCombos) {
+            selectAllCombos.addEventListener('click', function() {
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllCombos) {
+            unselectAllCombos.addEventListener('click', function() {
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (selectAllBranches) {
+            selectAllBranches.addEventListener('click', function() {
+                const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllBranches) {
+            unselectAllBranches.addEventListener('click', function() {
+                const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (productSearch) {
+            productSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const productItems = productsSelectionDiv.querySelectorAll('.checkbox-group');
+                
+                productItems.forEach(item => {
+                    const label = item.querySelector('label').textContent.toLowerCase();
+                    if (label.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        function toggleBranchSelection() {
+            const selectedScope = document.querySelector('input[name="applicable_scope"]:checked').value;
+            
+            if (branchSelectionDiv) {
+                if (selectedScope === 'specific_branches') {
+                    branchSelectionDiv.style.display = 'block';
+                } else {
+                    branchSelectionDiv.style.display = 'none';
+                }
+            }
+        }
+        
+        function toggleItemsSelection() {
+            const selectedItems = document.querySelector('input[name="applicable_items"]:checked').value;
+            
+            if (productsSelectionDiv) {
+                productsSelectionDiv.style.display = selectedItems === 'specific_products' ? 'block' : 'none';
+            }
+            
+            if (categoriesSelectionDiv) {
+                categoriesSelectionDiv.style.display = selectedItems === 'specific_categories' ? 'block' : 'none';
+            }
+            
+            if (combosSelectionDiv) {
+                combosSelectionDiv.style.display = selectedItems === 'combos_only' ? 'block' : 'none';
+            }
+        }
+        
+        function validateDates() {
+            if (!startDateField || !endDateField) return;
+            
+            const startDate = new Date(startDateField.value);
+            const endDate = new Date(endDateField.value);
+            
+            if (endDate < startDate) {
+                alert('Ngày kết thúc không thể trước ngày bắt đầu!');
+                // Đặt ngày kết thúc thành ngày bắt đầu + 30 ngày
+                const newEndDate = new Date(startDate);
+                newEndDate.setDate(newEndDate.getDate() + 30);
+                endDateField.value = newEndDate.toISOString().split('T')[0];
+            }
+        }
+
+        // Usage Type and User Selection
+        const usageTypeSelect = document.getElementById('usage_type');
+        const usersSelectionDiv = document.getElementById('users_selection');
+        const userSearchInput = document.getElementById('user_search');
+        const selectAllUsers = document.querySelector('.select-all-users');
+        const unselectAllUsers = document.querySelector('.unselect-all-users');
+        
+        // Initial state check for user selection
+        toggleUserSelection();
+        
+        // Add event listener for usage type change
+        if (usageTypeSelect) {
+            usageTypeSelect.addEventListener('change', toggleUserSelection);
+        }
+        
+        // Add event listeners for user search
+        if (userSearchInput) {
+            userSearchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const userItems = usersSelectionDiv.querySelectorAll('.user-item');
+                
+                userItems.forEach(item => {
+                    const fullName = item.querySelector('label .font-medium').textContent.toLowerCase();
+                    const email = item.querySelector('label .text-gray-500:nth-child(2)').textContent.toLowerCase();
+                    const phone = item.querySelector('label .text-gray-500:nth-child(3)').textContent.toLowerCase();
+                    
+                    if (fullName.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Add event listeners for select/unselect all users
+        if (selectAllUsers) {
+            selectAllUsers.addEventListener('click', function() {
+                const checkboxes = usersSelectionDiv.querySelectorAll('input[type="checkbox"]:not([disabled])');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllUsers) {
+            unselectAllUsers.addEventListener('click', function() {
+                const checkboxes = usersSelectionDiv.querySelectorAll('input[type="checkbox"]:not([disabled])');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+
+        function toggleUserSelection() {
+            if (!usersSelectionDiv || !usageTypeSelect) return;
+            
+            const selectedType = usageTypeSelect.value;
+            if (selectedType === 'personal') {
+                usersSelectionDiv.style.display = 'block';
+            } else {
+                usersSelectionDiv.style.display = 'none';
+            }
+        }
+    });
+</script>
 @endsection

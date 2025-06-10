@@ -585,15 +585,6 @@
 
 @section('scripts')
 <script>
-@if (session('toast'))
-    <script>
-        dtmodalShowToast('{{ session('toast.type') }}', {
-            title: '{{ session('toast.title') }}',
-            message: '{{ session('toast.message') }}'
-        });
-    </script>
-@endif
-
 // Define constants and global variables
 const ROUTES = {
     search: '{{ route("admin.user_ranks.search") }}',
@@ -639,37 +630,6 @@ function resetFilters() {
     window.location.href = '{{ route("admin.user_ranks.index") }}';
 }
 
-// Hàm hiển thị thông báo
-function dtmodalShowToast(type, { title, message }) {
-    // Tạo phần tử toast
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg text-sm max-w-sm transition-opacity duration-300 opacity-0 ${
-        type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-    }`;
-
-    // Đặt nội dung
-    toast.innerHTML = `
-        <div class="font-medium">${title}</div>
-        <div>${message}</div>
-    `;
-
-    // Thêm vào body
-    document.body.appendChild(toast);
-
-    // Hiệu ứng fade-in
-    setTimeout(() => {
-        toast.style.opacity = '1';
-    }, 100);
-
-    // Tự động xóa sau 3 giây
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-    }, 3000);
-}
-
 function updateSelectedStatus(status) {
     const selectedRanks = Array.from(document.querySelectorAll('.rank-checkbox:checked')).map(cb => cb.value);
 
@@ -690,6 +650,16 @@ function updateSelectedStatus(status) {
         return;
     }
 
+    // Hiển thị xác nhận bằng modal
+    const actionText = status ? 'kích hoạt' : 'vô hiệu hóa';
+    
+    dtmodalConfirmIndex({
+        title: `Xác nhận ${actionText} hạng thành viên`,
+        subtitle: `Bạn có chắc chắn muốn ${actionText} các hạng thành viên đã chọn?`,
+        message: "Hành động này sẽ thay đổi trạng thái của các hạng thành viên.",
+        itemName: `${selectedRanks.length} hạng thành viên`,
+        onConfirm: () => {
+            // Gửi request
     fetch(ROUTES.updateStatus, {
         method: 'POST',
         headers: {
@@ -758,6 +728,8 @@ function updateSelectedStatus(status) {
             title: 'Lỗi',
             message: errorMessage
         });
+            });
+        }
     });
 }
 
@@ -905,7 +877,7 @@ const performSearch = debounce(function(searchTerm) {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M3 6h18"></path>
                                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                        <path d="M8 6V4c0-1 1-2 2h4c1 0 2 1 2 2v2"></path>
+                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                                     </svg>
                                 </button>
                             </form>
@@ -1078,6 +1050,14 @@ class UserRangeSlider {
 
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Check for session toast notification
+    @if(session('toast'))
+    dtmodalShowToast("{{ session('toast.type') }}", {
+        title: "{{ session('toast.title') }}",
+        message: "{{ session('toast.message') }}"
+    });
+    @endif
+    
     // Initialize user range slider
     window.userSlider = new UserRangeSlider({
         min: {{ $minUsers }},

@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\BranchStockController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Admin\DriverApplicationController;
 use App\Http\Controllers\Admin\DiscountCodeController;
+use App\Http\Controllers\Admin\UserRankHistoryController;
 
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
@@ -84,6 +85,11 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
             Route::get('/create', [UserController::class, 'createManager'])->name('create');
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
         });
+    });
+
+    // User Rank History Management
+    Route::prefix('user_rank_history')->name('user_rank_history.')->group(function () {
+        Route::get('/', [UserRankHistoryController::class, 'index'])->name('index');
     });
 
     // Branch Management
@@ -198,6 +204,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/{program}/branches', [PromotionProgramController::class, 'linkBranch'])->name('link-branch');
         Route::delete('/{program}/branches/{branch}', [PromotionProgramController::class, 'unlinkBranch'])->name('unlink-branch');
         Route::post('/bulk-status-update', [PromotionProgramController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::post('/search', [PromotionProgramController::class, 'search'])->name('search');
     });
 
     // Discount Codes Management
@@ -264,29 +271,4 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'r
     Route::get('/drivers/applications/export/{type}', [DriverApplicationController::class, 'export'])->name('drivers.applications.export');
     Route::get('/drivers/applications/stats', [DriverApplicationController::class, 'getStats'])->name('drivers.applications.stats');
     Route::get('/drivers/applications/image/{path}', [DriverApplicationController::class, 'streamImage'])->name('drivers.applications.image');
-});
-
-// Driver Authentication Routes
-Route::prefix('driver')->name('driver.')->group(function () {
-    Route::get('/login', [DriverAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [DriverAuthController::class, 'login'])->name('login.submit');
-    Route::post('/change-password', [DriverAuthController::class, 'changePassword'])->name('change_password');
-    // Forgot Password
-    Route::get('/forgot-password', [DriverAuthController::class, 'showForgotPasswordForm'])->name('forgot_password');
-    Route::post('/forgot-password', [DriverAuthController::class, 'SendOTP'])->name('send_otp');
-    // Verify OTP
-    Route::get('/verify-otp/{driver_id}', [DriverAuthController::class, 'showVerifyOtpForm'])->name('verify_otp');
-    Route::post('/verify-otp', [DriverAuthController::class, 'verifyOtp'])->name('verify_otp.submit');
-    Route::post('/resend-otp', [DriverAuthController::class, 'resendOTP'])->name('resend_otp');
-    // Reset Password
-    Route::get('/reset-password/{driver_id}', [DriverAuthController::class, 'showResetPasswordForm'])->name('reset_password');
-    Route::post('/reset-password/{driver_id}', [DriverAuthController::class, 'processResetPassword'])->name('reset_password.submit');
-});
-
-// Routes for logged-in drivers
-Route::middleware(['driver.auth'])->prefix('driver')->name('driver.')->group(function () {
-    Route::get('/', function () {
-        return view('driver.home');
-    })->name('home');
-    Route::post('/logout', [DriverAuthController::class, 'logout'])->name('logout');
 });

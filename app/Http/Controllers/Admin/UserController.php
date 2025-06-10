@@ -243,7 +243,7 @@ class UserController extends Controller
                 $managedActiveBranches = Branch::where('manager_user_id', $user->id)
                     ->where('active', true) // Thêm điều kiện chi nhánh đang hoạt động
                     ->count();
-
+    
                 if ($managedActiveBranches > 0) {
                     throw new \Exception('Không thể thay đổi trạng thái quản lý đang quản lý chi nhánh HOẠT ĐỘNG');
                 }
@@ -506,33 +506,70 @@ class UserController extends Controller
         try {
             // Kiểm tra xem dữ liệu đến từ form hay từ AJAX
             $userIds = $request->has('ids') ? $request->ids : explode(',', $request->user_ids);
-
+    
             // Xác định trạng thái từ action hoặc status
             $status = $request->has('action')
                 ? ($request->action === 'activate')
                 : (bool)$request->status;
-
-            User::whereIn('id', $userIds)->update(['active' => $status]);
-
+    
+            // Lọc ra những user có thể thay đổi trạng thái
+            $eligibleUserIds = [];
+            $skippedUsers = [];
+            
+            foreach ($userIds as $userId) {
+                $user = User::with('roles')->find($userId);
+                
+                if (!$user) {
+                    continue;
+                }
+                
+                // Kiểm tra nếu là quản lý và đang quản lý chi nhánh hoạt động
+                if ($user->roles()->where('name', 'manager')->exists()) {
+                    $managedActiveBranches = Branch::where('manager_user_id', $user->id)
+                        ->where('active', true)
+                        ->count();
+                    
+                    if ($managedActiveBranches > 0) {
+                        $skippedUsers[] = $user->full_name;
+                        continue;
+                    }
+                }
+                
+                $eligibleUserIds[] = $userId;
+            }
+    
+            // Cập nhật trạng thái cho những user đủ điều kiện
+            if (!empty($eligibleUserIds)) {
+                User::whereIn('id', $eligibleUserIds)->update(['active' => $status]);
+            }
+            
+            // Tạo thông báo kết quả
+            $message = 'Đã cập nhật trạng thái người dùng thành công';
+            if (!empty($skippedUsers)) {
+                $message .= '. Bỏ qua: ' . implode(', ', $skippedUsers) . ' (đang quản lý chi nhánh hoạt động)';
+            }
+    
             // Xử lý phản hồi cho AJAX
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Đã cập nhật trạng thái người dùng thành công'
+                    'message' => $message,
+                    'updated_count' => count($eligibleUserIds),
+                    'skipped_count' => count($skippedUsers)
                 ]);
             }
-
+    
             // Xử lý phản hồi cho form thông thường
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
-                'message' => 'Đã cập nhật trạng thái người dùng thành công'
+                'message' => $message
             ]);
-
+    
             return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Lỗi khi cập nhật trạng thái hàng loạt: ' . $e->getMessage());
-
+    
             // Xử lý lỗi cho AJAX
             if ($request->ajax()) {
                 return response()->json([
@@ -540,14 +577,14 @@ class UserController extends Controller
                     'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
                 ], 500);
             }
-
+    
             // Xử lý lỗi cho form thông thường
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
-
+    
             return redirect()->back();
         }
     }

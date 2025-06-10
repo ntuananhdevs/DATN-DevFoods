@@ -1,157 +1,106 @@
-@extends('layouts.master')
+@extends('layouts.driver.masterLayout')
 
-@section('title', 'Hồ sơ - FoodDriver')
+@section('title', 'Cá nhân')
 
 @section('content')
-<div class="pb-16" x-data="profileData()">
-    <!-- Profile Header -->
-    <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-        <div class="max-w-lg mx-auto px-4 py-6">
-            <div class="flex items-center gap-4">
-                <div class="relative">
-                    <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-2xl font-bold">
-                        <span x-text="driverName.charAt(0).toUpperCase()"></span>
+    <div class="p-4 md:p-6 space-y-6">
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm profile-header-card">
+            <div class="flex flex-row items-center justify-between p-4">
+                <div class="flex items-center gap-4">
+                    <img src="{{ $driver->avatarUrl ?? '/placeholder.svg?width=128&height=128' }}" alt="{{ $driver->name }}" width="80" height="80" class="rounded-full border-2 border-primary" />
+                    <div>
+                        <h3 class="text-2xl font-semibold tracking-tight">{{ $driver->name }}</h3>
+                        <p class="text-sm text-muted-foreground">{{ $driver->phone }}</p>
                     </div>
-                    <button @click="showImagePicker = true"
-                            class="absolute bottom-0 right-0 w-6 h-6 bg-blue-700 rounded-full flex items-center justify-center">
-                        <i class="fas fa-camera text-xs"></i>
+                </div>
+                <button id="toggle-edit-profile" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2">
+                    {{-- Button text and classes will be updated by JS --}}
+                </button>
+            </div>
+            <div class="p-4 pt-0 space-y-4">
+                <div class="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                    <label for="driver-status" class="text-base font-medium">Trạng thái hoạt động</label>
+                    <button type="button" role="switch" aria-checked="{{ $driver->isActive ? 'true' : 'false' }}" data-state="{{ $driver->isActive ? 'checked' : 'unchecked' }}" class="peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 {{ $driver->isActive ? 'bg-primary' : 'bg-input' }}" id="driver-status">
+                        <span data-state="{{ $driver->isActive ? 'checked' : 'unchecked' }}" class="pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform {{ $driver->isActive ? 'translate-x-5' : 'translate-x-0' }}"></span>
                     </button>
                 </div>
-                <div class="flex-1">
-                    <h2 class="text-xl font-semibold" x-text="driverName"></h2>
-                    <div class="flex items-center gap-2 mt-1">
-                        <i class="fas fa-phone text-sm"></i>
-                        <span x-text="driverPhone"></span>
-                    </div>
-                    <div class="flex items-center gap-2 mt-2">
-                        <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full flex items-center gap-1">
-                            <i class="fas fa-star"></i>
-                            <span x-text="rating"></span>
-                        </span>
-                        <span class="px-2 py-1 bg-white bg-opacity-20 text-xs rounded-full" x-text="'ID: ' + driverId"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="bg-white shadow-sm">
-        <div class="max-w-lg mx-auto px-4 py-4">
-            <div class="grid grid-cols-3 gap-4">
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-600" x-text="stats.totalOrders"></div>
-                    <div class="text-sm text-gray-500">Đơn giao</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-green-600" x-text="stats.successRate + '%'"></div>
-                    <div class="text-sm text-gray-500">Thành công</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-orange-600" x-text="stats.experienceMonths"></div>
-                    <div class="text-sm text-gray-500">Tháng</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="max-w-lg mx-auto px-4 py-4 space-y-4">
-        <!-- Personal Info -->
-        <div class="bg-white rounded-lg shadow-sm">
-            <div class="p-4 border-b border-gray-100">
-                <h3 class="text-lg font-semibold text-gray-900">Thông tin cá nhân</h3>
-            </div>
-            <div class="divide-y divide-gray-100">
-                <template x-for="item in personalInfo" :key="item.key">
-                    <div @click="editField(item.key)"
-                         class="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <i :class="item.icon" class="text-gray-400 w-5"></i>
-                            <div>
-                                <div class="font-medium text-gray-900" x-text="item.label"></div>
-                                <div class="text-sm text-gray-600" x-text="item.value"></div>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-gray-400"></i>
-                    </div>
-                </template>
+                <p class="text-xs text-muted-foreground px-3"></p> {{-- Text updated by JS --}}
             </div>
         </div>
 
-        <!-- Vehicle Info -->
-        <div class="bg-white rounded-lg shadow-sm">
-            <div class="p-4 border-b border-gray-100">
-                <h3 class="text-lg font-semibold text-gray-900">Thông tin xe</h3>
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-4">
+                <h3 class="text-2xl font-semibold leading-none tracking-tight flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-5 w-5 text-primary"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Thông tin cá nhân
+                </h3>
             </div>
-            <div class="divide-y divide-gray-100">
-                <template x-for="item in vehicleInfo" :key="item.key">
-                    <div @click="editField(item.key)"
-                         class="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <i :class="item.icon" class="text-gray-400 w-5"></i>
-                            <div>
-                                <div class="font-medium text-gray-900" x-text="item.label"></div>
-                                <div class="text-sm text-gray-600" x-text="item.value"></div>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-gray-400"></i>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        <!-- Menu Items -->
-        <div class="bg-white rounded-lg shadow-sm">
-            <div class="divide-y divide-gray-100">
-                <template x-for="item in menuItems" :key="item.key">
-                    <div @click="handleMenuClick(item.key)"
-                         class="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center"
-                                 :class="item.bgColor">
-                                <i :class="item.icon + ' ' + item.textColor"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-gray-900" x-text="item.title"></div>
-                                <div class="text-sm text-gray-500" x-text="item.subtitle"></div>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-gray-400"></i>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        <!-- App Info -->
-        <div class="bg-white rounded-lg shadow-sm p-4">
-            <h3 class="text-lg font-semibold text-gray-900 mb-3">Thông tin ứng dụng</h3>
-            <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Phiên bản:</span>
-                    <span class="font-medium">1.2.0</span>
+            <div id="profile-form" class="p-4 pt-0 space-y-4">
+                <div>
+                    <label for="name" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Họ và tên</label>
+                    <input type="text" id="name" value="{{ $driver->name }}" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1" disabled />
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Cập nhật cuối:</span>
-                    <span class="font-medium">15/01/2024</span>
+                <div>
+                    <label for="phone" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Số điện thoại</label>
+                    <input type="tel" id="phone" value="{{ $driver->phone }}" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1" disabled />
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Kích thước:</span>
-                    <span class="font-medium">28.4 MB</span>
+                <div>
+                    <label for="idCard" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Số CCCD</label>
+                    <input type="text" id="idCard" value="{{ $driver->idCardNumber }}" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1" disabled />
+                    <p class="text-xs text-muted-foreground mt-1">Thông tin này không thể thay đổi trực tiếp.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Logout Button -->
-        <button @click="handleLogout"
-                class="w-full flex items-center justify-center gap-2 py-3 px-4 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-            <i class="fas fa-sign-out-alt"></i>
-            Đăng xuất
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-4">
+                <h3 class="text-2xl font-semibold leading-none tracking-tight flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-5 w-5 text-primary"><path d="M2 12h6"/><path d="M16 12h6"/><path d="M12 2v20"/><path d="M12 7l-5 5 5 5"/><path d="M12 17l5-5-5-5"/></svg> Thông tin phương tiện
+                </h3>
+            </div>
+            <div class="p-4 pt-0 space-y-2">
+                <p><strong>Phương tiện:</strong> {{ $driver->vehicle }}</p>
+                <p><strong>Biển số xe:</strong> {{ $driver->licensePlate }}</p>
+                <p class="text-xs text-muted-foreground mt-1">Để thay đổi thông tin phương tiện, vui lòng liên hệ hỗ trợ.</p>
+            </div>
+        </div>
+
+        <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-4">
+                <h3 class="text-2xl font-semibold leading-none tracking-tight flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-5 w-5 text-primary"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg> Tài khoản ngân hàng
+                </h3>
+                <p class="text-sm text-muted-foreground">Dùng để nhận tiền ship hàng ngày/tuần.</p>
+            </div>
+            <div class="p-4 pt-0 space-y-4">
+                <div>
+                    <label for="bankName" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Tên ngân hàng</label>
+                    <input type="text" id="bankName" value="{{ $driver->bankAccount['bankName'] }}" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1" disabled />
+                </div>
+                <div>
+                    <label for="accountNumber" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Số tài khoản</label>
+                    <input type="text" id="accountNumber" value="{{ $driver->bankAccount['accountNumber'] }}" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1" disabled />
+                </div>
+                <div>
+                    <label for="accountHolderName" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Chủ tài khoản</label>
+                    <input type="text" id="accountHolderName" value="{{ $driver->bankAccount['accountHolderName'] }}" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 mt-1" disabled />
+                </div>
+            </div>
+        </div>
+
+        <button id="save-profile-changes" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full" style="display: none;">
+            Lưu thay đổi
+        </button>
+
+        <button class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-10 px-4 py-2 w-full mt-8">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 h-4 w-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="17 16 22 12 17 8"/><line x1="22" x2="10" y1="12" y2="12"/></svg> Đăng xuất
         </button>
     </div>
-</div>
 @endsection
 
-@push('scripts')
-<script src="assets/js/profile.js"></script>
-@endpush
+@section('page_scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            DriverApp.initProfilePage();
+        });
+    </script>
+@endsection
