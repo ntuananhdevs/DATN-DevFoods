@@ -24,7 +24,7 @@ use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Admin\DriverApplicationController;
 use App\Http\Controllers\Admin\DiscountCodeController;
 use App\Http\Controllers\Admin\UserRankHistoryController;
-use App\Http\Controllers\Customer\ChatController;
+use App\Http\Controllers\Admin\ChatController;
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
@@ -243,44 +243,38 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
     });
 
-    // Admin Chat Routes
-    Route::get('/chat', [AdminChatController::class, 'index'])->name('chat');
-    Route::prefix('api/chat')->group(function () {
-        Route::get('/chats', [AdminChatController::class, 'getChats'])->name('chat.list');
-        Route::get('/chats/{chatId}/messages', [AdminChatController::class, 'getChatMessages'])->name('chat.messages');
-        Route::post('/send', [AdminChatController::class, 'sendMessage'])->name('chat.send');
-        Route::post('/status', [AdminChatController::class, 'updateStatus'])->name('chat.status');
-        Route::post('/chats/{chatId}/close', [AdminChatController::class, 'closeChat'])->name('chat.close');
-        Route::get('/statistics', [AdminChatController::class, 'getStatistics'])->name('chat.stats');
+
+
+    // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
+    Route::prefix('hiring-driver')->name('driver.')->group(function () {
+        Route::get('/', [HiringController::class, 'landing'])->name('landing');
+        Route::get('/apply', [HiringController::class, 'applicationForm'])->name('application.form');
+        Route::post('/apply', [HiringController::class, 'submitApplication'])->name('application.submit');
+        Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
+    });
+
+    // Admin routes for driver applications (these are protected and belong in admin context)
+    Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'role:admin']], function () {
+        Route::get('/drivers/applications', [DriverApplicationController::class, 'index'])->name('drivers.applications.index');
+        Route::get('/drivers/applications/{application}', [DriverApplicationController::class, 'show'])->name('drivers.applications.show');
+        Route::patch('/drivers/applications/{application}/status', [DriverApplicationController::class, 'updateStatus'])->name('drivers.applications.update-status');
+        Route::delete('/drivers/applications/{application}', [DriverApplicationController::class, 'destroy'])->name('drivers.applications.destroy');
+        Route::get('/drivers/applications/export/{type}', [DriverApplicationController::class, 'export'])->name('drivers.applications.export');
+        Route::get('/drivers/applications/stats', [DriverApplicationController::class, 'getStats'])->name('drivers.applications.stats');
+        Route::get('/drivers/applications/image/{path}', [DriverApplicationController::class, 'streamImage'])->name('drivers.applications.image');
+    });
+
+    // Chat Admin
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->name('index');
+        Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
+        Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
+        Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
+        // ... các route khác nếu có
     });
 });
 
-// Hiring driver routes (these are publicly accessible for applications but relate to driver management)
-Route::prefix('hiring-driver')->name('driver.')->group(function () {
-    Route::get('/', [HiringController::class, 'landing'])->name('landing');
-    Route::get('/apply', [HiringController::class, 'applicationForm'])->name('application.form');
-    Route::post('/apply', [HiringController::class, 'submitApplication'])->name('application.submit');
-    Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
-});
-
-// Admin routes for driver applications (these are protected and belong in admin context)
-Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['auth', 'role:admin']], function () {
-    Route::get('/drivers/applications', [DriverApplicationController::class, 'index'])->name('drivers.applications.index');
-    Route::get('/drivers/applications/{application}', [DriverApplicationController::class, 'show'])->name('drivers.applications.show');
-    Route::patch('/drivers/applications/{application}/status', [DriverApplicationController::class, 'updateStatus'])->name('drivers.applications.update-status');
-    Route::delete('/drivers/applications/{application}', [DriverApplicationController::class, 'destroy'])->name('drivers.applications.destroy');
-    Route::get('/drivers/applications/export/{type}', [DriverApplicationController::class, 'export'])->name('drivers.applications.export');
-    Route::get('/drivers/applications/stats', [DriverApplicationController::class, 'getStats'])->name('drivers.applications.stats');
-    Route::get('/drivers/applications/image/{path}', [DriverApplicationController::class, 'streamImage'])->name('drivers.applications.image');
-});
-
-Route::prefix('admin')->group(function () {
-    Route::get('/chat', [AdminChatController::class, 'index'])->name('admin.chat.index');
-    Route::post('/chat/send-message', [AdminChatController::class, 'sendMessage'])->name('admin.chat.send');
-    Route::post('/chat/distribute', [AdminChatController::class, 'distributeConversation'])->name('admin.chat.distribute');
-});
-
-Route::prefix('branch')->group(function () {
+Route::prefix('branch')->middleware(['auth'])->group(function () {
     Route::get('/chat', [BranchChatController::class, 'index'])->name('branch.chat.index');
     Route::get('/chat/api/conversation/{id}', [BranchChatController::class, 'apiGetConversation'])->name('branch.chat.conversation');
     Route::post('/chat/send-message', [BranchChatController::class, 'sendMessage'])->name('branch.chat.send');
@@ -289,29 +283,10 @@ Route::prefix('branch')->group(function () {
 });
 
 
-Route::prefix('customer')->group(function () {
-    Route::get('/chat', function () {
-        $conversations = \App\Models\Conversation::where('customer_id', auth()->id())
-            ->with(['branch', 'messages.sender'])
-            ->orderBy('updated_at', 'desc')
-            ->get();
-        return view('customer.chat', compact('conversations'));
-    })->name('customer.chat.index');
 
-    Route::post('/chat/create', [App\Http\Controllers\Customer\ChatController::class, 'createConversation'])->name('customer.chat.create');
-    Route::post('/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
-    Route::get('/chat/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('customer.chat.conversations');
-    Route::get('/chat/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('customer.chat.messages');
-    Route::post('/chat/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('customer.chat.typing');
-});
 
 Route::prefix('api')->group(function () {
     Route::get('/conversations/{id}', [ChatController::class, 'getMessages']);
     Route::post('/customer/send-message', [ChatController::class, 'sendMessage']);
     Route::post('/customer/typing', [ChatController::class, 'typing']);
 });
-
-// Chat routes
-Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('chat.send');
-Route::post('/customer/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
-Route::post('/branch/chat/send', [BranchChatController::class, 'sendMessage'])->name('branch.chat.send');

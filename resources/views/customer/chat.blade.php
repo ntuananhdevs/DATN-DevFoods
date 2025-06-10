@@ -500,6 +500,7 @@
     @endsection
 
     @section('page-script')
+        <script src="{{ asset('js/chat-realtime.js') }}" defer></script>
         <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
         <script>
             // Error logging function
@@ -726,8 +727,8 @@
                                             </span>
                                             ${data.conversation.branch ? 
                                                 `<span class="text-muted small">
-                                                                                                                                                                                                    <i class="fas fa-building me-1"></i>${data.conversation.branch.name}
-                                                                                                                                                                                                </span>` : ''}
+                                                                                                                                                                                                            <i class="fas fa-building me-1"></i>${data.conversation.branch.name}
+                                                                                                                                                                                                        </span>` : ''}
                                         </div>
                                     </div>
                                     <div>

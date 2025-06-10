@@ -23,24 +23,14 @@ class BranchChatController extends Controller
 
     public function index()
     {
-        // Sử dụng branch mặc định cho test
-        $branchId = 1; // Chi nhánh Hà Nội
-
-        // Get conversations assigned to this branch
+        $branchId = Auth::user()->branch_id;
+        $branch = Branch::find($branchId);
         $conversations = Conversation::with(['customer', 'messages.sender'])
+            ->whereNotNull('branch_id')
             ->where('branch_id', $branchId)
             ->orderBy('updated_at', 'desc')
             ->get();
-
-        $branch = Branch::find($branchId);
-
-        // Tạo user mặc định cho test
-        $user = (object) [
-            'id' => 1,
-            'name' => 'Nguyễn Văn Manager',
-            'role' => 'branch_manager',
-            'branch_id' => $branchId
-        ];
+        $user = Auth::user();
 
         return view('branch.chat', compact('conversations', 'branch', 'user'));
     }
@@ -104,25 +94,15 @@ class BranchChatController extends Controller
             ]);
 
             $userId = Auth::id() ?? 1;
-            $branchId = 1; // Chi nhánh mặc định
-
-            // Debug log
-            Log::info('Branch sending message', [
-                'conversation_id' => $request->conversation_id,
-                'message' => $request->message,
-                'user_id' => $userId,
-                'branch_id' => $branchId
-            ]);
+            $branchId = Auth::user()->branch_id; // Lấy branch_id từ người dùng hiện tại
 
             // Lấy thông tin conversation trước để xác định receiver
             $conversation = Conversation::where('id', $request->conversation_id)
                 ->where('branch_id', $branchId)
                 ->firstOrFail();
 
-            // Debug log conversation
-            Log::info('Branch conversation found', [
-                'conversation' => $conversation->toArray()
-            ]);
+            // Gửi lại dữ liệu cho người dùng dựa trên customer_id
+            $customerId = $conversation->customer_id; // Lấy customer_id từ conversation
 
             $attachmentPath = null;
             $attachmentType = null;
@@ -143,7 +123,7 @@ class BranchChatController extends Controller
             $messageData = [
                 'conversation_id' => $request->conversation_id,
                 'sender_id' => $userId,
-                'receiver_id' => $conversation->customer_id, // QUAN TRỌNG: Branch gửi cho customer
+                'receiver_id' => $customerId, // Gửi lại cho người dùng
                 'sender_type' => 'branch_staff',
                 'message' => $request->message,
                 'attachment' => $attachmentPath,
@@ -152,12 +132,10 @@ class BranchChatController extends Controller
                 'status' => 'sent'
             ];
 
-            // Debug log message data
-            Log::info('Branch message data before create', $messageData);
-
+            // Tạo tin nhắn mới
             $message = ChatMessage::create($messageData);
 
-            //Update conversation status
+            // Cập nhật trạng thái conversation
             if ($conversation->status === 'distributed') {
                 $conversation->update([
                     'status' => 'active', // Chuyển sang active khi branch bắt đầu trả lời
@@ -209,7 +187,7 @@ class BranchChatController extends Controller
             ]);
 
             $userId = Auth::id() ?? 1;
-            $branchId = 1; // Chi nhánh mặc định
+            $branchId = Auth::user()->branch_id; // Lấy branch_id từ người dùng hiện tại
 
             // Verify the conversation belongs to this branch
             $conversation = Conversation::where('id', $request->conversation_id)

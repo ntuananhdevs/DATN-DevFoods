@@ -9607,9 +9607,12 @@
                                     );
                                     return;
                                 }
-                                var currentUserId = document
-                                    .querySelector('meta[name="user-id"]')
-                                    .getAttribute("content");
+                                var userMeta = document.querySelector(
+                                    'meta[name="user-id"]'
+                                );
+                                var currentUserId = userMeta
+                                    ? userMeta.getAttribute("content")
+                                    : null;
                                 var isAdmin =
                                     String(message.sender_id) ===
                                     String(currentUserId);
@@ -10227,11 +10230,24 @@
                         }
                     }
                 });
-                window.adminChat = new ChatRealtime(
-                    conversationId,
-                    userId,
-                    userType
-                );
+                var chatContainer = document.getElementById("chat-container");
+                var conversationId = chatContainer
+                    ? chatContainer.getAttribute("data-conversation-id")
+                    : null;
+                var userId = chatContainer
+                    ? chatContainer.getAttribute("data-user-id")
+                    : null;
+                var userType = chatContainer
+                    ? chatContainer.getAttribute("data-user-type")
+                    : "customer";
+
+                if (conversationId && userId) {
+                    window.adminChat = new ChatRealtime(
+                        conversationId,
+                        userId,
+                        userType
+                    );
+                }
                 function appendMessageToChat(message) {
                     var chatMessages = document.querySelector(".chat-messages");
                     if (!chatMessages) return;

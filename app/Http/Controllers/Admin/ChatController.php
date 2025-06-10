@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Models\ChatConversation;
 use App\Events\TypingStatus;
 
 class ChatController extends Controller
@@ -33,7 +32,7 @@ class ChatController extends Controller
         // Get the first conversation as selected conversation
         $selectedConversation = $conversations->first();
 
-        return view('admin.chat', compact('conversations', 'branches', 'selectedConversation'));
+        return view('admin.chat.index', compact('conversations', 'branches', 'selectedConversation'));
     }
 
 
