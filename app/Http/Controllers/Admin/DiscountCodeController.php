@@ -250,18 +250,26 @@ class DiscountCodeController extends Controller
             
             DB::commit();
             
-            return redirect()->route('admin.discount_codes.index')->with('success', 'Tạo mã giảm giá thành công.');
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Mã giảm giá '{$request->code}' đã được tạo thành công."
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            // Chi tiết lỗi để debug
-            $errorDetails = 'Lỗi: ' . $e->getMessage() . 
-                            ' trong file ' . $e->getFile() . 
-                            ' dòng ' . $e->getLine() . 
-                            '. Dữ liệu: ' . json_encode([
-                                'start_date' => $request->start_date,
-                                'end_date' => $request->end_date
-                            ]);
-            return redirect()->back()->withInput()->with('error', $errorDetails);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lỗi: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể tạo mã giảm giá: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -434,18 +442,33 @@ class DiscountCodeController extends Controller
             
             DB::commit();
             
-            return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật mã giảm giá thành công.');
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Mã giảm giá '{$request->code}' đã được cập nhật thành công."
+                ]);
+            }
+            
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Mã giảm giá '{$request->code}' đã được cập nhật thành công."
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            // Chi tiết lỗi để debug
-            $errorDetails = 'Lỗi: ' . $e->getMessage() . 
-                            ' trong file ' . $e->getFile() . 
-                            ' dòng ' . $e->getLine() . 
-                            '. Dữ liệu: ' . json_encode([
-                                'start_date' => $request->start_date,
-                                'end_date' => $request->end_date
-                            ]);
-            return redirect()->back()->withInput()->with('error', $errorDetails);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lỗi: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->back()->withInput()->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể cập nhật mã giảm giá: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -460,26 +483,39 @@ class DiscountCodeController extends Controller
             UserDiscountCode::where('discount_code_id', $id)->delete();
             
             // Then delete the discount code
-            DiscountCode::findOrFail($id)->delete();
+            $discountCode = DiscountCode::findOrFail($id);
+            $codeName = $discountCode->code;
+            $discountCode->delete();
             
             DB::commit();
             
             if (request()->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Xóa mã giảm giá thành công.'
+                    'message' => "Mã giảm giá '{$codeName}' đã được xóa thành công."
                 ]);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('success', 'Xóa mã giảm giá thành công.');
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Mã giảm giá '{$codeName}' đã được xóa thành công."
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             
             if (request()->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Lỗi: ' . $e->getMessage()
+                ], 500);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('error', 'Không thể xóa mã giảm giá: ' . $e->getMessage());
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể xóa mã giảm giá: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -497,7 +533,38 @@ class DiscountCodeController extends Controller
         $usageCount = DiscountUsageHistory::where('discount_code_id', $id)->count();
         $discountCode->current_usage_count = $usageCount;
         
-        return view('admin.discount_codes.show', compact('discountCode'));
+        // Get available branches for this discount code
+        $availableBranches = $this->getAvailableBranchesForDiscountCode($discountCode);
+        
+        return view('admin.discount_codes.show', compact('discountCode', 'availableBranches'));
+    }
+
+    /**
+     * Get branches available for a discount code based on its applicable scope
+     * 
+     * @param DiscountCode $discountCode
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    protected function getAvailableBranchesForDiscountCode(DiscountCode $discountCode)
+    {
+        // If the discount code applies to all branches
+        if ($discountCode->applicable_scope === 'all_branches') {
+            return Branch::orderBy('name')->get();
+        }
+        
+        // If the discount code applies to specific branches
+        if ($discountCode->applicable_scope === 'specific_branches') {
+            // Get the IDs of branches already linked to this discount code
+            $linkedBranchIds = $discountCode->branches->pluck('id')->toArray();
+            
+            // Return only branches that are already linked
+            return Branch::whereIn('id', $linkedBranchIds)
+                ->orderBy('name')
+                ->get();
+        }
+        
+        // Default to empty collection if applicable_scope is not recognized
+        return collect();
     }
 
     public function toggleStatus(Request $request, $id)
@@ -506,22 +573,35 @@ class DiscountCodeController extends Controller
             $discountCode = DiscountCode::findOrFail($id);
             $discountCode->update(['is_active' => !$discountCode->is_active]);
             
+            $statusText = $discountCode->is_active ? 'kích hoạt' : 'vô hiệu hóa';
+            
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Cập nhật trạng thái thành công.',
+                    'message' => "Mã giảm giá '{$discountCode->code}' đã được {$statusText} thành công.",
                     'is_active' => $discountCode->is_active,
                     'status_html' => view('admin.discount_codes.partials.status_badge', ['discountCode' => $discountCode])->render()
                 ]);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật trạng thái thành công.');
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Mã giảm giá '{$discountCode->code}' đã được {$statusText} thành công."
+            ]);
         } catch (\Exception $e) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Lỗi: ' . $e->getMessage()
+                ], 500);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('error', 'Lỗi: ' . $e->getMessage());
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -530,23 +610,44 @@ class DiscountCodeController extends Controller
         try {
             $request->validate(['ids' => 'required|array', 'is_active' => 'required|boolean']);
             
-            DiscountCode::whereIn('id', $request->ids)->update(['is_active' => $request->is_active]);
+            $isActive = $request->is_active;
+            $count = count($request->ids);
+            $action = $isActive ? 'kích hoạt' : 'vô hiệu hóa';
+            
+            DiscountCode::whereIn('id', $request->ids)->update(['is_active' => $isActive]);
+            
+            // Lấy thông tin cập nhật về các mã giảm giá
+            $updatedCodes = DiscountCode::whereIn('id', $request->ids)
+                ->select('id', 'code', 'is_active', 'start_date', 'end_date')
+                ->get();
             
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Cập nhật trạng thái hàng loạt thành công.',
-                    'count' => count($request->ids)
+                    'message' => "Đã {$action} thành công {$count} mã giảm giá.",
+                    'codes' => $updatedCodes,
+                    'count' => $count
                 ]);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('success', 'Cập nhật trạng thái hàng loạt thành công.');
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Đã {$action} thành công {$count} mã giảm giá."
+            ]);
         } catch (\Exception $e) {
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Lỗi: ' . $e->getMessage()
+                ], 500);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('error', 'Lỗi: ' . $e->getMessage());
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -571,37 +672,97 @@ class DiscountCodeController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Xóa hàng loạt mã giảm giá thành công.',
+                    'message' => "Đã xóa thành công {$count} mã giảm giá.",
                     'count' => $count
                 ]);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('success', 'Xóa hàng loạt mã giảm giá thành công.');
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'success',
+                'title' => 'Thành công!',
+                'message' => "Đã xóa thành công {$count} mã giảm giá."
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             
             if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Lỗi: ' . $e->getMessage()
+                ], 500);
             }
             
-            return redirect()->route('admin.discount_codes.index')->with('error', 'Không thể xóa mã giảm giá: ' . $e->getMessage());
+            return redirect()->route('admin.discount_codes.index')->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Không thể xóa mã giảm giá: ' . $e->getMessage()
+            ]);
         }
     }
 
     public function export()
     {
         // Logic xuất Excel/CSV sử dụng package như Maatwebsite\Excel
-        return redirect()->route('admin.discount_codes.index')->with('success', 'Xuất danh sách thành công.');
+        return redirect()->route('admin.discount_codes.index')->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Xuất danh sách thành công.'
+        ]);
     }
 
     public function linkBranch(Request $request, $id)
     {
+        $discountCode = DiscountCode::findOrFail($id);
+        
+        // Validate the basic request
         $request->validate(['branch_id' => 'required|exists:branches,id']);
+        
+        // Get available branches for this discount code
+        $availableBranchIds = [];
+        
+        if ($discountCode->applicable_scope === 'all_branches') {
+            // If applicable to all branches, any branch can be linked
+            $availableBranchIds = Branch::pluck('id')->toArray();
+        } else if ($discountCode->applicable_scope === 'specific_branches') {
+            // If applicable to specific branches, only certain branches can be linked
+            // Get the branches already linked
+            $linkedBranchIds = $discountCode->branches->pluck('id')->toArray();
+            $availableBranchIds = $linkedBranchIds;
+        }
+        
+        // Check if the requested branch is in the available branches
+        if (!in_array($request->branch_id, $availableBranchIds)) {
+            return redirect()->back()->with('toast', [
+                'type' => 'error',
+                'title' => 'Lỗi!',
+                'message' => 'Chi nhánh này không thể liên kết với mã giảm giá do phạm vi áp dụng.'
+            ]);
+        }
+        
+        // Check if the branch is already linked
+        $exists = DiscountCodeBranch::where('discount_code_id', $id)
+            ->where('branch_id', $request->branch_id)
+            ->exists();
+        
+        if ($exists) {
+            return redirect()->back()->with('toast', [
+                'type' => 'warning',
+                'title' => 'Cảnh báo!',
+                'message' => 'Chi nhánh này đã được liên kết với mã giảm giá.'
+            ]);
+        }
+        
+        // Create the link
         DiscountCodeBranch::create([
             'discount_code_id' => $id,
             'branch_id' => $request->branch_id,
         ]);
-        return redirect()->back()->with('success', 'Liên kết chi nhánh thành công.');
+        
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Liên kết chi nhánh thành công.'
+        ]);
     }
 
     public function unlinkBranch($id, $branch)
@@ -609,7 +770,11 @@ class DiscountCodeController extends Controller
         DiscountCodeBranch::where('discount_code_id', $id)
             ->where('branch_id', $branch)
             ->delete();
-        return redirect()->back()->with('success', 'Hủy liên kết chi nhánh thành công.');
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Hủy liên kết chi nhánh thành công.'
+        ]);
     }
 
     public function linkProduct(Request $request, $id)
@@ -627,7 +792,11 @@ class DiscountCodeController extends Controller
             'combo_id' => $request->combo_id,
         ]);
 
-        return redirect()->back()->with('success', 'Liên kết sản phẩm/danh mục/combo thành công.');
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Liên kết sản phẩm/danh mục/combo thành công.'
+        ]);
     }
 
     public function unlinkProduct($id, $product)
@@ -638,7 +807,11 @@ class DiscountCodeController extends Controller
                      ->orWhere('category_id', $product)
                      ->orWhere('combo_id', $product);
             })->delete();
-        return redirect()->back()->with('success', 'Hủy liên kết sản phẩm/danh mục/combo thành công.');
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Hủy liên kết sản phẩm/danh mục/combo thành công.'
+        ]);
     }
 
     public function assignUsers(Request $request, $id)
@@ -651,7 +824,11 @@ class DiscountCodeController extends Controller
                 'status' => 'available',
             ]);
         }
-        return redirect()->back()->with('success', 'Gán mã giảm giá cho người dùng thành công.');
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Gán mã giảm giá cho người dùng thành công.'
+        ]);
     }
 
     public function unassignUser($id, $user)
@@ -659,7 +836,11 @@ class DiscountCodeController extends Controller
         UserDiscountCode::where('discount_code_id', $id)
             ->where('user_id', $user)
             ->delete();
-        return redirect()->back()->with('success', 'Hủy gán mã giảm giá thành công.');
+        return redirect()->back()->with('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => 'Hủy gán mã giảm giá thành công.'
+        ]);
     }
 
     public function usageHistory($id)

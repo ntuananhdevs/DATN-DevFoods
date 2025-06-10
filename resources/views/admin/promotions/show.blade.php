@@ -652,9 +652,28 @@
                             <td>{{ $discount->max_discount_amount ? number_format($discount->max_discount_amount, 0) . 'đ' : 'Không giới hạn' }}</td>
                             <td>
                                 @if($discount->applicable_scope === 'all_branches')
+                                    <span style="display: inline-block; padding: 4px 8px; background: #dcfce7; color: #166534; border-radius: 10px; font-size: 0.75rem;">
                                     Tất cả chi nhánh
+                                    </span>
                                 @else
-                                    Chi nhánh cụ thể
+                                    @if($discount->branches->isEmpty())
+                                        <span style="color: #ef4444; font-size: 0.75rem;">Chưa có chi nhánh nào</span>
+                                    @else
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            @foreach($discount->branches->take(2) as $branch)
+                                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; font-size: 0.875rem;" 
+                                                      title="{{ $branch->name }} ({{ $branch->address ?? 'Không có địa chỉ' }})">
+                                                    {{ $branch->name }}
+                                                </span>
+                                            @endforeach
+                                            @if($discount->branches->count() > 2)
+                                                <span style="color: #3b82f6; font-size: 0.75rem; cursor: pointer;" 
+                                                      title="{{ $discount->branches->skip(2)->take(5)->pluck('name')->implode(', ') }}{{ $discount->branches->count() > 7 ? ',...' : '' }}">
+                                                    +{{ $discount->branches->count() - 2 }} chi nhánh khác
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 @endif
                             </td>
                             <td>
