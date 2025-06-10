@@ -16,6 +16,8 @@ Với sự kết hợp mạnh mẽ giữa Laravel Blade và Tailwind CSS, hệ t
   <img src="https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL"/>
   <img src="https://img.shields.io/badge/Alpine.js-8BC0D0?style=for-the-badge&logo=alpine.js&logoColor=black" alt="Alpine.js"/>
   <img src="https://img.shields.io/badge/Pusher-FF691E?style=for-the-badge&logo=pusher&logoColor=white" alt="Pusher"/>
+  <img src="https://img.shields.io/badge/Amazon_Cloud-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Cloud"/>
+
 </p>
 
 ## 🏗️ Kiến Trúc & Công Nghệ

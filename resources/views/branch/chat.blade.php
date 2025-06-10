@@ -1219,7 +1219,6 @@
     --}}
 
         <script src="{{ asset('js/chat-realtime.js') }}"></script>
-        <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 console.log('🚀 Branch Chat Interface Loading...');
@@ -1836,63 +1835,91 @@
                     return div.innerHTML;
                 }
 
-                // Khởi tạo Pusher
-                const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
-                    cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
-                    encrypted: true
+                // Khởi tạo Echo
+                window.Echo = new Echo({
+                    broadcaster: 'pusher',
+                    key: '{{ env('PUSHER_APP_KEY') }}',
+                    cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                    forceTLS: true
                 });
 
-                // Lắng nghe tất cả các conversation mà branch có thể thấy
-                @foreach ($conversations as $conv)
-                    pusher.subscribe('chat.{{ $conv->id }}')
-                        .bind('new-message', function(data) {
-                            handleNewMessage(data.message);
+                // Lắng nghe sự kiện tin nhắn mới
+                window.Echo.channel('chat')
+                    .listen('.message.sent', (e) => {
+                        if (e.conversation_id == selectedConversationId) {
+                            const messageHtml = createMessageElement(e);
+                            chatMessages.appendChild(messageHtml);
+                            scrollToBottom();
+                            playNotificationSound();
+                        }
+                        updateConversationPreview(e.conversation_id, e.message || '📎 Tệp đính kèm');
+                    });
+
+                // Hàm tạo element tin nhắn
+                function createMessageElement(message) {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${message.sender_id == {{ Auth::id() }} ? 'sent' : 'received'}`;
+
+                    let content = `
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="sender-name">${message.sender_name}</span>
+                                <span class="message-time">${formatTime(message.created_at)}</span>
+                            </div>
+                            <div class="message-text">${message.message || ''}</div>
+                    `;
+
+                    if (message.attachments && message.attachments.length > 0) {
+                        content += '<div class="attachments">';
+                        message.attachments.forEach(attachment => {
+                            if (attachment.type.startsWith('image/')) {
+                                content += `
+                                    <div class="attachment">
+                                        <img src="${attachment.url}" alt="Image" class="img-fluid">
+                                    </div>
+                                `;
+                            } else {
+                                content += `
+                                    <div class="attachment">
+                                        <a href="${attachment.url}" target="_blank" class="file-link">
+                                            <i class="fas fa-file"></i> ${attachment.original_name}
+                                        </a>
+                                    </div>
+                                `;
+                            }
                         });
-                @endforeach
-
-                function handleNewMessage(message) {
-                    const convId = message.conversation_id;
-                    const convItem = document.querySelector(`.conversation-item[data-conversation-id='${convId}']`);
-                    const isCurrent = (window.selectedConversationId == convId); // Cần set biến này khi click vào chat
-
-                    // Nếu đang mở đúng cuộc trò chuyện
-                    if (isCurrent && typeof appendMessageToChat === 'function') {
-                        appendMessageToChat(message);
-                        if (typeof scrollToBottom === 'function') scrollToBottom();
+                        content += '</div>';
                     }
 
-                    // Luôn cập nhật preview ở sidebar
-                    if (convItem) {
-                        // Cập nhật preview tin nhắn
-                        const preview = convItem.querySelector('.message-preview');
-                        if (preview) preview.textContent = message.message;
-                        // Cập nhật thời gian
-                        const time = convItem.querySelector('.time');
-                        if (time) time.textContent = formatTime(message.sent_at);
-                        // Tăng badge số chưa đọc nếu chưa mở
-                        if (!isCurrent) {
-                            let badge = convItem.querySelector('.unread-badge');
-                            if (badge) {
-                                badge.textContent = parseInt(badge.textContent || 0) + 1;
-                                badge.style.display = 'inline-block';
-                            } else {
-                                // Nếu chưa có badge, tạo mới
-                                const newBadge = document.createElement('div');
-                                newBadge.className = 'unread-badge';
-                                newBadge.textContent = 1;
-                                convItem.querySelector('.conversation-meta').appendChild(newBadge);
-                            }
-                        }
-                        // Đưa lên đầu danh sách
-                        if (convItem.parentNode.firstChild !== convItem) {
-                            convItem.parentNode.insertBefore(convItem, convItem.parentNode.firstChild);
+                    content += '</div>';
+                    messageDiv.innerHTML = content;
+                    return messageDiv;
+                }
+
+                // Hàm cập nhật preview tin nhắn
+                function updateConversationPreview(conversationId, lastMessage) {
+                    const conversationElement = document.querySelector(`[data-conversation-id="${conversationId}"]`);
+                    if (conversationElement) {
+                        const lastMessageElement = conversationElement.querySelector('.message-preview');
+                        if (lastMessageElement) {
+                            lastMessageElement.textContent = lastMessage;
                         }
                     }
                 }
 
-                function formatTime(timeStr) {
-                    const d = new Date(timeStr);
-                    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                // Hàm phát âm thanh thông báo
+                function playNotificationSound() {
+                    const audio = new Audio('/sounds/notification.mp3');
+                    audio.play();
+                }
+
+                // Hàm format thời gian
+                function formatTime(timestamp) {
+                    const date = new Date(timestamp);
+                    return date.toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
                 }
 
                 console.log('🎉 Branch Chat Interface fully loaded and ready!');

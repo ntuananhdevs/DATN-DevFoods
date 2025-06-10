@@ -2,15 +2,8 @@
 
 @section('title', 'User Details')
 
-@section('vendor-style')
-{{-- vendor css files --}}
-<link rel="stylesheet" href="{{ asset(mix('vendors/css/charts/apexcharts.css')) }}">
-<link rel="stylesheet" href="{{ asset(mix('vendors/css/extensions/sweetalert2.min.css')) }}">
-@endsection
-
 @section('page-style')
-{{-- Page css files --}}
-<link rel="stylesheet" href="{{ asset(mix('css/pages/card-analytics.css')) }}">
+
 <style>
     :root {
         --primary: #7367f0;
@@ -281,7 +274,7 @@
 @endsection
 
 @section('content')
-<div class="content-body p-6">
+<div class="content-body p-6" style="min-height: calc(100vh - 180px);">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- User Profile Card -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -289,7 +282,7 @@
             <div class="flex justify-center -mt-16 mb-4">
                 <div class="w-32 h-32 rounded-full border-4 border-white shadow-lg">
                     @if($user->avatar)
-                    <img src="{{ Storage::url($user->avatar) }}" alt="Avatar" class="w-full h-full object-cover rounded-full">
+                    <img src="{{ Storage::disk('s3')->url($user->avatar) }}" alt="Avatar" class="w-full h-full object-cover rounded-full">
                     @else
                     <div class="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
                         <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -321,7 +314,7 @@
                     </div>
                 </div>
                 
-                <a href="{{ route('admin.users.index') }}" 
+                <a href="{{ url()->previous() }}"
                    class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>

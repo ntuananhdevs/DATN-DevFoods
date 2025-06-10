@@ -20,6 +20,10 @@ return new class extends Migration
             $table->string('avatar')->nullable();
             $table->string('google_id')->nullable();
             $table->decimal('balance', 10, 2)->default(0); 
+            $table->foreignId('user_rank_id')->nullable()->constrained('user_ranks');
+            $table->decimal('total_spending', 12, 2)->default(0);
+            $table->integer('total_orders')->default(0);
+            $table->timestamp('rank_updated_at')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

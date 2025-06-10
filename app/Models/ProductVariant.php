@@ -18,6 +18,38 @@ class ProductVariant extends Model
         'active'
     ];
 
+    protected $casts = [
+        'active' => 'boolean'
+    ];
+
+    protected $appends = ['price', 'variant_description'];
+
+    /**
+     * Get the price for the variant.
+     *
+     * @return float
+     */
+    public function getPriceAttribute()
+    {
+        // Get the base price from the product
+        $basePrice = $this->product ? $this->product->base_price : 0;
+        
+        // Add any price adjustments from variant values
+        $priceAdjustments = $this->variantValues->sum('price_adjustment');
+        
+        return floatval($basePrice) + floatval($priceAdjustments);
+    }
+
+    /**
+     * Get a description of the variant based on its values.
+     *
+     * @return string
+     */
+    public function getVariantDescriptionAttribute()
+    {
+        return $this->variantValues->pluck('value')->implode(', ');
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

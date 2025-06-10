@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Driver;
 
 return [
 
@@ -43,6 +44,16 @@ return [
             'provider' => 'users',
         ],
 
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'users', // Dùng chung bảng users
+        ],
+
+        'driver' => [
+            'driver' => 'session',
+            'provider' => 'drivers',
+        ],
+
         'api' => [
           'driver' => 'passport',
           'provider' => 'users',
@@ -70,6 +81,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => User::class,
+        ],
+
+        'drivers' => [
+            'driver' => 'eloquent',
+            'model' => Driver::class,
         ],
 
         // 'users' => [

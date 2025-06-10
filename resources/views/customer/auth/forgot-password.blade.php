@@ -3,6 +3,12 @@
 @section('title', 'FastFood - Quên Mật Khẩu')
 
 @section('content')
+<style>
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+   }
+</style>
 <div class="min-h-screen flex flex-col items-center justify-center px-4">
     <div class="w-full max-w-md">
         <div class="text-center mb-8">
@@ -25,7 +31,7 @@
                         </div>
                         <div class="ml-3">
                             <p class="text-sm text-green-800">
-                                Nếu email <span id="emailSent"></span> tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn.
+                            Hãy kiểm tra hộp thư email <span id="emailSent"></span>, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu. Vui lòng kiểm tra hộp thư của bạn.
                             </p>
                         </div>
                     </div>
@@ -91,11 +97,10 @@ document.addEventListener('DOMContentLoaded', function() {
     @if(session('status'))
         document.getElementById('emailSent').textContent = "{{ old('email') }}";
         document.getElementById('successMessage').classList.remove('hidden');
+        document.getElementById('forgotPasswordForm').classList.add('hidden');
     @endif
 
     forgotPasswordForm.addEventListener('submit', function(e) {
-        // Không ngăn chặn form submit để cho phép form gửi đến server
-        // Chỉ hiển thị trạng thái loading
         submitBtn.disabled = true;
         submitBtnText.classList.add('hidden');
         submitBtnLoading.classList.remove('hidden');

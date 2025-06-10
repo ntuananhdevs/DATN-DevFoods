@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Customer\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
+use App\Rules\TurnstileRule;
+use App\Services\AvatarUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
@@ -12,12 +14,24 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log; // Thêm dòng này
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Jobs\SendOTPJob;
+use Illuminate\Support\Facades\Mail;
+use App\Jobs\UploadGoogleAvatarJob;
+use App\Mail\SendWelcomeEmail;
+use App\Mail\ForgotPasswordMail;
 
 class AuthController extends Controller
 {
+    protected $avatarUploadService;
+
+    public function __construct(AvatarUploadService $avatarUploadService)
+    {
+        $this->avatarUploadService = $avatarUploadService;
+    }
+
     /**
      * Hiển thị form đăng nhập
      */
@@ -99,6 +113,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         // Lấy người dùng hiện tại trước khi đăng xuất
+        /** @var \App\Models\User|null $user */
         $user = Auth::user();
         
         // Đăng xuất người dùng
@@ -106,8 +121,7 @@ class AuthController extends Controller
         
         // Xóa remember token của người dùng
         if ($user) {
-            $user->setRememberToken(null);
-            $user->save();
+            User::where('id', $user->id)->update(['remember_token' => null]);
         }
         
         // Vô hiệu hóa phiên hiện tại
@@ -129,6 +143,24 @@ class AuthController extends Controller
     }
 
     /**
+     * Tạo user_name duy nhất từ email với 3 số ngẫu nhiên
+     */
+    private function generateUniqueUserName(string $email): string
+    {
+        // Lấy phần trước dấu '@' làm base
+        $base = Str::slug(explode('@', $email)[0]);
+        $candidate = $base;
+        $suffix = 0;
+
+        // Kiểm tra lặp cho đến khi có user_name chưa tồn tại
+        while (User::where('user_name', $candidate . ($suffix ? "_{$suffix}" : ""))->exists()) {
+            $suffix++;
+        }
+
+        return $candidate . ($suffix ? "_{$suffix}" : "");
+    }
+
+    /**
      * Hiển thị form đăng ký
      */
     public function showRegisterForm()
@@ -146,6 +178,7 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'required|string|max:15|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'cf-turnstile-response' => 'required', new TurnstileRule(),
         ], [
             'full_name.required' => 'Vui lòng nhập họ và tên.',
             'email.required' => 'Vui lòng nhập địa chỉ email.',
@@ -156,31 +189,83 @@ class AuthController extends Controller
             'password.required' => 'Vui lòng nhập mật khẩu.',
             'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
             'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
+            'cf-turnstile-response.required' => 'Vui lòng hoàn thành xác minh bảo mật.',
         ]);
 
-        // Tạo người dùng mới nhưng chưa active
-        $user = User::create([
-            'user_name' => explode('@', $request->email)[0],
-            'full_name' => $request->full_name,
-            'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
-            'active' => true, // Vẫn set active là true vì chúng ta chỉ xác thực email
-        ]);
+        try{
+            // Tạo người dùng mới nhưng chưa active
+            $user = User::create([
+                'user_name' => $this->generateUniqueUserName($request->email),
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => Hash::make($request->password),
+                'active' => true,
+            ]);
 
-        // Gán vai trò khách hàng
-        $customerRole = Role::where('name', 'customer')->first();
-        if ($customerRole) {
-            $user->roles()->attach($customerRole->id);
+            // Gán vai trò khách hàng
+            $customerRole = Role::where('name', 'customer')->first();
+            if ($customerRole) {
+                $user->roles()->attach($customerRole->id);
+            }
+
+            // Tạo mã OTP ngẫu nhiên 6 chữ số
+            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            
+            // Lưu OTP vào cache trước khi gửi email để đảm bảo có thể xác thực ngay cả khi email chưa đến
+            Cache::put('otp_' . $user->email, $otp, now()->addMinutes(10));
+            
+            // Log để debug
+            Log::info('OTP generated for ' . $user->email . ': ' . $otp);
+            
+            // Thử gửi OTP qua email trực tiếp trước khi dùng queue
+            try {
+                $emailContent = $this->getOTPEmailContent($otp);
+                Mail::html($emailContent, function ($message) use ($user) {
+                    $message->to($user->email)
+                        ->subject('Xác thực tài khoản - FastFood');
+                });
+                Log::info('OTP sent directly to ' . $user->email);
+            } catch (\Exception $e) {
+                Log::error('Error sending OTP directly: ' . $e->getMessage());
+                // Vẫn tiếp tục và thử gửi qua queue
+            }
+            
+            // Gửi OTP qua queue như cũ
+            SendOTPJob::dispatch($user->email, $otp)->onQueue('default');
+
+            // Lưu thông tin user vào session để sử dụng sau khi xác thực OTP
+            $request->session()->put('pending_user_id', $user->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.'
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Lỗi đăng ký: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'errors' => ['email' => ['Đã xảy ra lỗi. Vui lòng thử lại.']]
+            ], 500);
         }
+    }
 
-        // Tạo và gửi OTP
-        $this->sendOTP($user->email);
-
-        // Lưu thông tin user vào session để sử dụng sau khi xác thực OTP
-        $request->session()->put('pending_user_id', $user->id);
-
-        return redirect()->route('customer.verify.otp.show');
+    /**
+     * Tạo nội dung email OTP
+     */
+    private function getOTPEmailContent($otp)
+    {
+        // Phương thức này không còn cần thiết vì chúng ta đã sử dụng SendOTPMail
+        // Nhưng giữ lại để tránh lỗi nếu có code khác gọi đến
+        Log::warning('Deprecated method getOTPEmailContent called. Use SendOTPMail instead.');
+        
+        // Render view thành string và trả về
+        return view('emails.sendOTP', ['otp' => $otp])->render();
     }
 
     /**
@@ -188,99 +273,13 @@ class AuthController extends Controller
      */
     private function sendOTP($email)
     {
-        try {
-            // Tạo mã OTP ngẫu nhiên 6 chữ số
-            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-            
-            // Lưu OTP vào cache với key là email, thời gian sống là 10 phút
-            Cache::put('otp_' . $email, $otp, now()->addMinutes(10));
-            
-            // Tạo nội dung email HTML
-            $emailContent = '<!DOCTYPE html>
-                            <html lang="vi">
-                            <head>
-                                <meta charset="UTF-8">
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                <title>Xác thực tài khoản - FastFood</title>
-                                <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-                                <style>
-                                    /* Additional styles to ensure email client compatibility */
-                                    .otp-code {
-                                        letter-spacing: 0.5rem;
-                                    }
-                                    @media only screen and (max-width: 600px) {
-                                        .container {
-                                            padding: 16px !important;
-                                        }
-                                        .otp-code {
-                                            font-size: 1.5rem !important;
-                                        }
-                                    }
-                                </style>
-                            </head>
-                            <body class="bg-gray-100 font-sans" style="margin: 0; padding: 0;">
-                                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 20px auto;">
-                                    <tr>
-                                        <td bgcolor="#ffffff">
-                                            <!-- Header -->
-                                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td bgcolor="#f97316" style="padding: 24px; text-align: center;">
-                                                        <h1 style="font-size: 24px; font-weight: bold; color: #ffffff; margin: 0;">FastFood</h1>
-                                                        <p style="font-size: 14px; color: #fed7aa; margin: 4px 0 0;">Xác thực tài khoản của bạn</p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                            <!-- Body -->
-                                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td style="padding: 24px;">
-                                                        <h2 style="font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 16px; text-align: center;">Mã OTP của bạn</h2>
-                                                        <p style="font-size: 16px; color: #4b5563; margin-bottom: 16px;">Vui lòng sử dụng mã OTP dưới đây để xác thực tài khoản của bạn. Mã này có hiệu lực trong <strong>10 phút</strong>.</p>
-                                                        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; text-align: center;">
-                                                            <span class="otp-code" style="font-size: 28px; font-family: monospace; font-weight: bold; color: #f97316;">' . $otp . '</span>
-                                                        </div>
-                                                        <p style="font-size: 16px; color: #4b5563; margin-top: 16px;">Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email này hoặc liên hệ với chúng tôi qua <a href="mailto:support@fastfood.com" style="color: #f97316; text-decoration: underline;">support@fastfood.com</a>.</p>
-                                                        <div style="text-align: center; margin-top: 24px;">
-                                                            <a href="' . url('/verify-otp') . '" style="display: inline-block; background-color: #f97316; color: #ffffff; font-weight: 500; padding: 10px 20px; border-radius: 6px; text-decoration: none;">Xác thực ngay</a>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                            <!-- Footer -->
-                                            <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td bgcolor="#f9fafb" style="padding: 16px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
-                                                        <p style="margin: 0;">© ' . date('Y') . ' FastFood. Tất cả quyền được bảo lưu.</p>
-                                                        <p style="margin-top: 4px;">
-                                                            <a href="' . url('/terms') . '" style="color: #f97316; text-decoration: underline;">Điều khoản dịch vụ</a> | 
-                                                            <a href="' . url('/privacy') . '" style="color: #f97316; text-decoration: underline;">Chính sách bảo mật</a>
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </body>
-                            </html>';
-            
-            // Gửi email HTML
-            Mail::html($emailContent, function ($message) use ($email) {
-                $message->to($email)
-                    ->subject('Xác thực tài khoản - FastFood');
-            });
-            
-            return $otp;
-        } catch (\Exception $e) {
-            // Ghi log lỗi
-            Log::error('Lỗi gửi OTP: ' . $e->getMessage());
-            
-            // Trong môi trường phát triển, tạo một OTP mặc định
-            $defaultOtp = '123456';
-            Cache::put('otp_' . $email, $defaultOtp, now()->addMinutes(10));
-            return $defaultOtp;
-        }
+        // Tạo mã OTP ngẫu nhiên 6 chữ số
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        
+        // Gửi OTP qua queue
+        SendOTPJob::dispatch($email, $otp)->onQueue('default');
+        
+        return $otp;
     }
 
     /**
@@ -325,8 +324,8 @@ class AuthController extends Controller
         }
 
         // Xác thực thành công, cập nhật trạng thái email đã xác thực
-        $user->email_verified_at = now();
-        $user->save();
+        User::where('id', $user->id)->update(['email_verified_at' => now()]);
+        $user->refresh(); // Refresh user model with updated data
         
         // Xóa OTP khỏi cache
         Cache::forget('otp_' . $user->email);
@@ -334,6 +333,14 @@ class AuthController extends Controller
         // Xóa session
         $request->session()->forget('pending_user_id');
         
+        // Gửi email chào mừng
+        try {
+            Mail::to($user->email)->queue(new SendWelcomeEmail($user));
+            Log::info('Welcome email queued for ' . $user->email);
+        } catch (\Exception $e) {
+            Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
+        }
+
         // Đăng nhập người dùng
         Auth::login($user);
         
@@ -355,10 +362,10 @@ class AuthController extends Controller
             return response()->json(['error' => 'Không tìm thấy thông tin người dùng.'], 400);
         }
 
-        // Gửi lại OTP
+        // Gửi lại OTP qua queue
         $this->sendOTP($user->email);
         
-        return response()->json(['success' => true]);
+        return response()->json(['success' => true, 'message' => 'Mã OTP mới đã được gửi.']);
     }
 
     /**
@@ -390,44 +397,12 @@ class AuthController extends Controller
         // Lưu token vào cache với thời hạn 1 giờ
         Cache::put('password_reset_' . $token, $user->email, now()->addHour());
         
-        // Tạo nội dung email
-        $resetLink = url('/reset-password/' . $token);
-        $emailContent = '<!DOCTYPE html>
-        <html lang="vi">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Đặt lại mật khẩu - FastFood</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f4f4;">
-            <div style="max-width: 600px; margin: 20px auto; background: white; border-radius: 10px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                <div style="text-align: center; padding: 20px;">
-                    <h1 style="color: #f97316; margin: 0;">FastFood</h1>
-                    <p style="color: #666;">Đặt lại mật khẩu</p>
-                </div>
-                <div style="padding: 20px; color: #444;">
-                    <p>Xin chào,</p>
-                    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Vui lòng click vào nút bên dưới để đặt lại mật khẩu:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="' . $resetLink . '" style="background-color: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">Đặt lại mật khẩu</a>
-                    </div>
-                    <p>Liên kết này sẽ hết hạn sau 60 phút. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-                    <p>Trân trọng,<br>Đội ngũ FastFood</p>
-                </div>
-                <div style="text-align: center; padding: 20px; border-top: 1px solid #eee; color: #666; font-size: 12px;">
-                    <p>© ' . date('Y') . ' FastFood. Tất cả quyền được bảo lưu.</p>
-                </div>
-            </div>
-        </body>
-        </html>';
-    
-        // Gửi email
+        // Gửi email đặt lại mật khẩu qua queue
         try {
-            Mail::html($emailContent, function ($message) use ($request) {
-                $message->to($request->email)
-                        ->subject('Đặt lại mật khẩu - FastFood');
-            });
-    
+            $resetLink = url('/reset-password/' . $token);
+            Mail::to($user->email)->queue(new ForgotPasswordMail($user->email, $resetLink));
+            Log::info('Forgot password email queued for ' . $user->email);
+            
             // Thay thế JSON response bằng redirect với thông báo thành công
             $status = 'Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu đến địa chỉ email của bạn.';
             return back()->with('status', $status)->withInput();
@@ -487,5 +462,323 @@ class AuthController extends Controller
     
         return redirect()->route('customer.login')
             ->with('success', 'Mật khẩu đã được đặt lại thành công. Vui lòng đăng nhập với mật khẩu mới.');
+    }
+
+    /**
+     * Xử lý đăng nhập Google thông qua Firebase
+     */
+    public function handleGoogleAuth(Request $request)
+    {
+        // 1. Validate request cơ bản
+        $request->validate([
+            'firebase_token'                  => 'required|string',
+            'google_user_data'                => 'required|array',
+            'google_user_data.uid'            => 'required|string',
+            'google_user_data.email'          => 'required|email|max:255',
+            'google_user_data.displayName'    => 'required|string|max:255',
+            'google_user_data.photoURL'       => 'nullable|string|max:2048',
+        ], [
+            'google_user_data.email.email'       => 'Email không đúng định dạng.',
+            'google_user_data.displayName.required' => 'Google không trả về tên người dùng.',
+            'google_user_data.displayName.max'      => 'Tên người dùng quá dài (vượt 255 ký tự).',
+            'google_user_data.photoURL.max'         => 'URL avatar quá dài.',
+        ]);
+
+        // Lấy dữ liệu từ request
+        $googleUserData = $request->google_user_data;
+        $emailFromGoogle = strtolower($googleUserData['email']);
+
+       
+
+        try {
+            // 3. Bắt đầu transaction để tránh race condition khi tạo user
+            DB::beginTransaction();
+
+            // 4. Tìm user theo google_id hoặc email, kèm lock để tránh đồng thời quá nhiều luồng
+            $user = User::where('google_id', $googleUserData['uid'])
+                        ->orWhere('email', $emailFromGoogle)
+                        ->lockForUpdate()
+                        ->first();
+
+            if (!$user) {
+                // 4a. Nếu chưa có user, tạo mới
+                $userName  = $this->generateUniqueUserName($emailFromGoogle);
+                $fullName  = Str::limit(strip_tags($googleUserData['displayName']), 255);
+
+                $user = User::create([
+                    'user_name'         => $userName,
+                    'full_name'         => $fullName,
+                    'email'             => $emailFromGoogle,
+                    'google_id'         => $googleUserData['uid'],
+                    'avatar'            => null,
+                    'user_rank_id'      => 1,
+                    'rank_updated_at'   => now(),
+                    'email_verified_at' => now(),
+                    'active'            => true,
+                    'password'          => Hash::make(Str::random(24)), // mật khẩu ngẫu nhiên
+                ]);
+
+                // Gán role customer (nếu chưa có, tạo mới)
+                $customerRole = Role::firstOrCreate(
+                    ['name' => 'customer'],
+                    ['display_name' => 'Khách hàng']
+                );
+                $user->roles()->attach($customerRole->id);
+
+                // Dispatch job upload avatar nếu có ảnh từ Google
+                if (!empty($googleUserData['photoURL'])) {
+                    UploadGoogleAvatarJob::dispatch(
+                        $user->id,
+                        $googleUserData['photoURL'],
+                        $emailFromGoogle
+                    )->onQueue('default');
+                }
+            } else {
+                // 4b. Nếu user đã tồn tại
+                $needsUpdate = false;
+
+                // Trường hợp user bị soft-deleted (nếu dùng SoftDeletes) hoặc inactive
+                if (method_exists($user, 'trashed') && $user->trashed()) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản đã bị xóa.'
+                    ], 403);
+                }
+                if (!$user->active) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản của bạn đã bị khóa.'
+                    ], 403);
+                }
+
+                // Nếu user chưa có google_id (trường hợp đăng ký bằng email/password trước đó)
+                if (!$user->google_id) {
+                    $user->google_id = $googleUserData['uid'];
+                    $user->email_verified_at = now();
+                    $needsUpdate = true;
+                } elseif ($user->google_id !== $googleUserData['uid']) {
+                    // Nếu google_id không khớp với dữ liệu từ request, khả năng cao có hành vi bất thường
+                    DB::rollBack();
+                    Log::warning('Google ID mismatch', [
+                        'expected' => $user->google_id,
+                        'actual'   => $googleUserData['uid'],
+                        'user_id'  => $user->id
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Tài khoản đã tồn tại, vui lòng đăng nhập bằng email/mật khẩu.'
+                    ], 403);
+                }
+
+                // Cập nhật full_name nếu đang rỗng và Google truyền về displayName
+                if (empty($user->full_name) && !empty($googleUserData['displayName'])) {
+                    $user->full_name = Str::limit(strip_tags($googleUserData['displayName']), 255);
+                    $needsUpdate = true;
+                }
+
+                // Dispatch job upload avatar nếu có ảnh mới từ Google
+                if (!empty($googleUserData['photoURL'])) {
+                    UploadGoogleAvatarJob::dispatch(
+                        $user->id,
+                        $googleUserData['photoURL'],
+                        $emailFromGoogle
+                    )->onQueue('default');
+                }
+
+                if ($needsUpdate) {
+                    $user->save();
+                }
+            }
+
+            // 5. Commit transaction
+            DB::commit();
+
+            // 6. Đăng nhập user và regenerate session để tránh session fixation
+            Auth::login($user, true);
+            $request->session()->regenerate();
+
+            // 7. Xác định redirect URL theo role
+            if ($this->hasRole($user, 'admin')) {
+                $redirectUrl = route('admin.dashboard');
+            } else {
+                $redirectUrl = route('home');
+            }
+
+            // 8. Kiểm tra số điện thoại và redirect
+            if (empty($user->phone)) {
+                // Nếu chưa có số điện thoại, redirect đến trang nhập số
+                $redirectUrl = route('customer.phone-required');
+            } elseif ($this->hasRole($user, 'admin')) {
+                $redirectUrl = route('admin.dashboard');
+            } else {
+                $redirectUrl = route('home');
+            }
+            
+            return response()->json([
+                'success'      => true,
+                'message'      => 'Đăng nhập Google thành công!',
+                'redirect_url' => $redirectUrl,
+                'user'         => [
+                    'id'     => $user->id,
+                    'name'   => $user->full_name,
+                    'email'  => $user->email,
+                    'avatar' => $user->avatar,
+                    'phone'  => $user->phone,
+                ]
+            ]);
+        }
+        // Nếu có lỗi database (ví dụ duplicate key)
+        catch (\Illuminate\Database\QueryException $qe) {
+            DB::rollBack();
+
+            // Nếu duplicate entry (mã lỗi MySQL 1062)
+            if ($qe->errorInfo[1] == 1062) {
+                Log::warning('Duplicate entry when creating user via Google', [
+                    'email' => $emailFromGoogle,
+                    'error' => $qe->getMessage()
+                ]);
+
+                                 // Lấy lại user vừa bị create bởi luồng khác
+                 $user = User::where('email', $emailFromGoogle)->first();
+                 if ($user) {
+                     Auth::login($user, true);
+                     $request->session()->regenerate();
+                     
+                     if (empty($user->phone)) {
+                         $redirectUrl = route('customer.phone-required');
+                     } elseif ($this->hasRole($user, 'admin')) {
+                         $redirectUrl = route('admin.dashboard');
+                     } else {
+                         $redirectUrl = route('home');
+                     }
+                     
+                     return response()->json([
+                         'success'      => true,
+                         'message'      => 'Đăng nhập Google thành công!',
+                         'redirect_url' => $redirectUrl,
+                         'user'         => [
+                             'id'     => $user->id,
+                             'name'   => $user->full_name,
+                             'email'  => $user->email,
+                             'avatar' => $user->avatar,
+                             'phone'  => $user->phone,
+                         ]
+                     ]);
+                 }
+            }
+
+            // Nếu lỗi database khác
+            Log::error('Database error during Google login', [
+                'error' => $qe->getMessage(),
+                'stack' => $qe->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi cơ sở dữ liệu. Vui lòng thử lại sau.'
+            ], 500);
+        }
+        // Bắt tất cả các exception còn lại
+        catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Unhandled exception in handleGoogleAuth', [
+                'error'        => $e->getMessage(),
+                'stack'        => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Hiển thị trang yêu cầu nhập số điện thoại
+     */
+    public function showPhoneRequired()
+    {
+        // Kiểm tra user đã đăng nhập
+        if (!Auth::check()) {
+            return redirect()->route('customer.login');
+        }
+
+        $user = Auth::user();
+        
+        // Nếu đã có số điện thoại, chuyển về trang chủ
+        if (!empty($user->phone)) {
+            return redirect()->route('home');
+        }
+
+        return view('customer.auth.phone-required');
+    }
+
+    /**
+     * Cập nhật số điện thoại cho user sau khi đăng nhập Google
+     */
+    public function updatePhone(Request $request)
+    {
+        $request->validate([
+            'phone' => [
+                'required',
+                'string',
+                'regex:/^0\d{9}$/', // <-- This is the magic
+                'unique:users,phone,' . Auth::id(),
+            ],
+        ], [
+            'phone.required' => 'Vui lòng nhập số điện thoại.',
+            'phone.unique' => 'Số điện thoại đã được sử dụng bởi tài khoản khác.',
+            'phone.regex' => 'Số điện thoại phải là 10 số và bắt đầu bằng số 0.',
+        ]);
+
+        try {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $user->update(['phone' => $request->phone]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật số điện thoại thành công!',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'avatar' => $user->avatar,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi cập nhật số điện thoại: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi. Vui lòng thử lại.'
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Kiểm tra trạng thái đăng nhập Firebase
+     */
+    public function checkAuthStatus(Request $request)
+    {
+        $user = Auth::user();
+        
+        if ($user) {
+            return response()->json([
+                'authenticated' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'avatar' => $user->avatar_url,
+                ]
+            ]);
+        }
+        
+        return response()->json([
+            'authenticated' => false
+        ]);
     }
 }

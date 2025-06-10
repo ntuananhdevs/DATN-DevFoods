@@ -721,342 +721,332 @@
     <script src="{{ asset('js/chat.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const messageInput = document.getElementById('message-input');
-            const sendBtn = document.getElementById('send-button');
-            const chatForm = document.getElementById('chat-form');
-            const fileInput = document.getElementById('file-input');
-            const chatMessages = document.getElementById('chat-messages');
+                    const messageInput = document.getElementById('message-input');
+                    const sendBtn = document.getElementById('send-button');
+                    const chatForm = document.getElementById('chat-form');
+                    const fileInput = document.getElementById('file-input');
+                    const chatMessages = document.getElementById('chat-messages');
 
-            // Thêm biến selectedConversationId
-            window.selectedConversationId = {{ $selectedConversation ? $selectedConversation->id : 'null' }};
+                    // Thêm biến selectedConversationId
+                    window.selectedConversationId = {{ $selectedConversation ? $selectedConversation->id : 'null' }};
 
-            // Thêm xử lý typing indicator
-            let typingTimeout;
-            messageInput.addEventListener('input', function() {
-                updateSendButtonState();
-                autoResizeTextarea();
+                    // Thêm xử lý typing indicator
+                    let typingTimeout;
+                    messageInput.addEventListener('input', function() {
+                        updateSendButtonState();
+                        autoResizeTextarea();
 
-                // Gửi typing indicator
-                if (window.selectedConversationId) {
-                    clearTimeout(typingTimeout);
-                    sendTypingIndicator(true);
+                        // Gửi typing indicator
+                        if (window.selectedConversationId) {
+                            clearTimeout(typingTimeout);
+                            sendTypingIndicator(true);
 
-                    // Reset typing status sau 3 giây
-                    typingTimeout = setTimeout(() => {
-                        sendTypingIndicator(false);
-                    }, 3000);
-                }
-            });
-
-            // Hàm gửi typing indicator
-            function sendTypingIndicator(isTyping) {
-                if (!window.selectedConversationId) return;
-
-                fetch('{{ route('admin.chat.typing') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
-                            'content')
-                    },
-                    body: JSON.stringify({
-                        conversation_id: window.selectedConversationId,
-                        is_typing: isTyping
-                    })
-                }).catch(error => console.error('Typing indicator error:', error));
-            }
-
-            // Lắng nghe sự kiện typing status
-            @foreach ($conversations as $conv)
-                pusher.subscribe('chat.{{ $conv->id }}')
-                    .bind('typing-status', function(data) {
-                        handleTypingStatus(data);
+                            // Reset typing status sau 3 giây
+                            typingTimeout = setTimeout(() => {
+                                sendTypingIndicator(false);
+                            }, 3000);
+                        }
                     });
-            @endforeach
 
-            function handleTypingStatus(data) {
-                if (data.user_id === {{ auth()->id() }}) return; // Bỏ qua nếu là chính mình
+                    // Hàm gửi typing indicator
+                    function sendTypingIndicator(isTyping) {
+                        if (!window.selectedConversationId) return;
 
-                const typingIndicator = document.querySelector('.typing-indicator');
-                if (typingIndicator) {
-                    typingIndicator.style.display = data.is_typing ? 'block' : 'none';
-                }
-            }
 
-            if (messageInput) {
-                messageInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (!sendBtn.disabled) {
-                            chatForm.dispatchEvent(new Event('submit'));
+
+                        // Lắng nghe sự kiện typing status
+                        @foreach ($conversations as $conv)
+                            pusher.subscribe('chat.{{ $conv->id }}')
+                                .bind('typing-status', function(data) {
+                                    handleTypingStatus(data);
+                                });
+                        @endforeach
+
+                        function handleTypingStatus(data) {
+                            if (data.user_id === {{ auth()->id() }}) return; // Bỏ qua nếu là chính mình
+
+                            const typingIndicator = document.querySelector('.typing-indicator');
+                            if (typingIndicator) {
+                                typingIndicator.style.display = data.is_typing ? 'block' : 'none';
+                            }
+                        }
+
+                        if (messageInput) {
+                            messageInput.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    if (!sendBtn.disabled) {
+                                        chatForm.dispatchEvent(new Event('submit'));
+                                    }
+                                }
+                            });
+                        }
+
+                        if (chatForm) {
+                            chatForm.addEventListener('submit', function(e) {
+                                e.preventDefault();
+                                const message = messageInput.value.trim();
+                                if (!message) return;
+
+                                const formData = new FormData();
+                                formData.append('conversation_id', selectedConversationId);
+                                formData.append('message', message);
+
+                                sendBtn.disabled = true;
+                                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                                fetch('{{ route('admin.chat.send') }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                                .getAttribute('content')
+                                        },
+                                        body: formData
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            messageInput.value = '';
+                                            messageInput.style.height = 'auto';
+                                            updateSendButtonState();
+                                            // Append luôn tin nhắn vào khung chat
+                                            if (typeof appendMessageToChat === 'function') {
+                                                appendMessageToChat(data.data);
+                                                if (typeof scrollToBottom === 'function') scrollToBottom();
+                                            }
+                                            // Cập nhật preview, badge, thời gian sidebar
+                                            updateSidebarAfterSend(data.data);
+                                        } else {
+                                            alert('Gửi tin nhắn thất bại: ' + (data.message ||
+                                                'Lỗi không xác định'));
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        alert('Lỗi gửi tin nhắn: ' + error.message);
+                                    })
+                                    .finally(() => {
+                                        sendBtn.disabled = false;
+                                        sendBtn.innerHTML =
+                                        '<i class="fas fa-paper-plane"></i><span>Gửi</span>';
+                                    });
+                            });
+                        }
+
+                        if (fileInput) {
+                            fileInput.addEventListener('change', function(e) {
+                                console.log('📎 Handling file upload...');
+
+                                const file = e.target.files[0];
+                                if (!file || !selectedConversationId) return;
+
+                                console.log('📎 File selected:', file.name, file.size, 'bytes');
+
+                                const formData = new FormData();
+                                formData.append('conversation_id', selectedConversationId);
+                                formData.append('attachment', file);
+
+                                sendBtn.disabled = true;
+                                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                                fetch('{{ route('admin.chat.send') }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                                .getAttribute('content')
+                                        },
+                                        body: formData
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            e.target.value = '';
+                                            // Append luôn tin nhắn vào khung chat
+                                            if (typeof appendMessageToChat === 'function') {
+                                                appendMessageToChat(data.data);
+                                                if (typeof scrollToBottom === 'function') scrollToBottom();
+                                            }
+                                            // Cập nhật preview, badge, thời gian sidebar
+                                            updateSidebarAfterSend(data.data);
+                                        } else {
+                                            alert('Gửi tệp đính kèm thất bại: ' + (data.message ||
+                                                'Lỗi không xác định'));
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        alert('Lỗi gửi tệp đính kèm: ' + error.message);
+                                    })
+                                    .finally(() => {
+                                        sendBtn.disabled = false;
+                                        sendBtn.innerHTML =
+                                        '<i class="fas fa-paper-plane"></i><span>Gửi</span>';
+                                    });
+                            });
+                        }
+
+                        function updateSendButtonState() {
+                            if (messageInput && sendBtn) {
+                                const hasText = messageInput.value.trim().length > 0;
+                                sendBtn.disabled = !hasText;
+                            }
+                        }
+
+                        function autoResizeTextarea() {
+                            if (messageInput) {
+                                messageInput.style.height = 'auto';
+                                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+                            }
+                        }
+
+                        function scrollToBottom() {
+                            if (chatMessages) {
+                                setTimeout(() => {
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }, 100);
+                            }
+                        }
+
+                        const firstConversation = document.querySelector('.chat-item[data-conversation-id]');
+                        const conversationId = firstConversation ? firstConversation.getAttribute('data-conversation-id') :
+                            null;
+                        const userId = document.querySelector('meta[name="user-id"]')?.getAttribute('content') || null;
+                        const userType = 'admin';
+
+                        window.adminChat = new Chat(conversationId, userId, userType);
+
+                        document.querySelectorAll('.chat-item').forEach(item => {
+                            item.addEventListener('click', function() {
+                                const conversationId = this.getAttribute('data-conversation-id');
+                                if (conversationId) {
+                                    window.adminChat.conversationId = conversationId;
+                                    window.adminChat.loadMessages();
+                                }
+                            });
+                        });
+
+                        document.querySelectorAll('.distribution-select').forEach(select => {
+                            select.addEventListener('change', function() {
+                                const conversationId = this.getAttribute('data-conversation-id');
+                                const branchId = this.value;
+
+                                if (!confirm('Bạn có chắc muốn phân phối cuộc trò chuyện này?')) {
+                                    this.selectedIndex = 0;
+                                    return;
+                                }
+
+                                fetch('{{ route('admin.chat.distribute') }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': document.querySelector(
+                                                'meta[name="csrf-token"]').getAttribute('content'),
+                                        },
+                                        body: JSON.stringify({
+                                            conversation_id: conversationId,
+                                            branch_id: branchId
+                                        }),
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            alert('✅ Phân phối thành công!');
+                                            location.reload();
+                                        } else {
+                                            alert('❌ Phân phối thất bại: ' + (data.message ||
+                                                'Lỗi không xác định'));
+                                            this.selectedIndex = 0;
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('❌ Assignment error:', error);
+                                        alert('❌ Lỗi phân phối: ' + error.message);
+                                        this.selectedIndex = 0;
+                                    });
+                            });
+                        });
+                    });
+
+                const adminId = {{ auth()->id() }};
+                const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
+                    cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
+                    encrypted: true
+                });
+
+                // Lắng nghe tất cả các conversation mà admin có thể thấy
+                @foreach ($conversations as $conv)
+                    pusher.subscribe('chat.{{ $conv->id }}')
+                        .bind('new-message', function(data) {
+                            console.log('Received new message:', data);
+                            handleNewMessage(data.message);
+                        });
+                @endforeach
+
+                function handleNewMessage(message) {
+                    console.log('Handling new message:', message);
+                    const convId = message.conversation_id;
+                    const convItem = document.querySelector(`.chat-item[data-conversation-id='${convId}']`);
+                    const isCurrent = (window.selectedConversationId == convId);
+
+                    // Nếu đang mở đúng cuộc trò chuyện
+                    if (isCurrent && typeof appendMessageToChat === 'function') {
+                        appendMessageToChat(message);
+                        if (typeof scrollToBottom === 'function') scrollToBottom();
+                    }
+
+                    // Luôn cập nhật preview ở sidebar
+                    if (convItem) {
+                        const preview = convItem.querySelector('.chat-item-preview');
+                        if (preview) preview.textContent = message.message;
+                        const time = convItem.querySelector('.chat-item-time');
+                        if (time) time.textContent = formatTime(message.created_at);
+
+                        // Tăng badge số chưa đọc nếu chưa mở
+                        if (!isCurrent) {
+                            let badge = convItem.querySelector('.unread-badge');
+                            if (badge) {
+                                badge.textContent = parseInt(badge.textContent || 0) + 1;
+                                badge.style.display = 'flex';
+                            } else {
+                                // Nếu chưa có badge, tạo mới
+                                const newBadge = document.createElement('div');
+                                newBadge.className = 'unread-badge';
+                                newBadge.textContent = 1;
+                                convItem.querySelector('.chat-item-header').appendChild(newBadge);
+                            }
+                        }
+                        // Đưa lên đầu danh sách
+                        if (convItem.parentNode.firstChild !== convItem) {
+                            convItem.parentNode.insertBefore(convItem, convItem.parentNode.firstChild);
                         }
                     }
-                });
-            }
-
-            if (chatForm) {
-                chatForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const message = messageInput.value.trim();
-                    if (!message) return;
-
-                    const formData = new FormData();
-                    formData.append('conversation_id', selectedConversationId);
-                    formData.append('message', message);
-
-                    sendBtn.disabled = true;
-                    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-                    fetch('{{ route('admin.chat.send') }}', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                    .getAttribute('content')
-                            },
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                messageInput.value = '';
-                                messageInput.style.height = 'auto';
-                                updateSendButtonState();
-                                // Append luôn tin nhắn vào khung chat
-                                if (typeof appendMessageToChat === 'function') {
-                                    appendMessageToChat(data.data);
-                                    if (typeof scrollToBottom === 'function') scrollToBottom();
-                                }
-                                // Cập nhật preview, badge, thời gian sidebar
-                                updateSidebarAfterSend(data.data);
-                            } else {
-                                alert('Gửi tin nhắn thất bại: ' + (data.message ||
-                                    'Lỗi không xác định'));
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Lỗi gửi tin nhắn: ' + error.message);
-                        })
-                        .finally(() => {
-                            sendBtn.disabled = false;
-                            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Gửi</span>';
-                        });
-                });
-            }
-
-            if (fileInput) {
-                fileInput.addEventListener('change', function(e) {
-                    console.log('📎 Handling file upload...');
-
-                    const file = e.target.files[0];
-                    if (!file || !selectedConversationId) return;
-
-                    console.log('📎 File selected:', file.name, file.size, 'bytes');
-
-                    const formData = new FormData();
-                    formData.append('conversation_id', selectedConversationId);
-                    formData.append('attachment', file);
-
-                    sendBtn.disabled = true;
-                    sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-                    fetch('{{ route('admin.chat.send') }}', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                    .getAttribute('content')
-                            },
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                e.target.value = '';
-                                // Append luôn tin nhắn vào khung chat
-                                if (typeof appendMessageToChat === 'function') {
-                                    appendMessageToChat(data.data);
-                                    if (typeof scrollToBottom === 'function') scrollToBottom();
-                                }
-                                // Cập nhật preview, badge, thời gian sidebar
-                                updateSidebarAfterSend(data.data);
-                            } else {
-                                alert('Gửi tệp đính kèm thất bại: ' + (data.message ||
-                                    'Lỗi không xác định'));
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Lỗi gửi tệp đính kèm: ' + error.message);
-                        })
-                        .finally(() => {
-                            sendBtn.disabled = false;
-                            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Gửi</span>';
-                        });
-                });
-            }
-
-            function updateSendButtonState() {
-                if (messageInput && sendBtn) {
-                    const hasText = messageInput.value.trim().length > 0;
-                    sendBtn.disabled = !hasText;
                 }
-            }
 
-            function autoResizeTextarea() {
-                if (messageInput) {
-                    messageInput.style.height = 'auto';
-                    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+                function formatTime(timeStr) {
+                    const d = new Date(timeStr);
+                    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
                 }
-            }
 
-            function scrollToBottom() {
-                if (chatMessages) {
-                    setTimeout(() => {
-                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                    }, 100);
-                }
-            }
-
-            const firstConversation = document.querySelector('.chat-item[data-conversation-id]');
-            const conversationId = firstConversation ? firstConversation.getAttribute('data-conversation-id') :
-                null;
-            const userId = document.querySelector('meta[name="user-id"]')?.getAttribute('content') || null;
-            const userType = 'admin';
-
-            window.adminChat = new Chat(conversationId, userId, userType);
-
-            document.querySelectorAll('.chat-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const conversationId = this.getAttribute('data-conversation-id');
-                    if (conversationId) {
-                        window.adminChat.conversationId = conversationId;
-                        window.adminChat.loadMessages();
-                    }
-                });
-            });
-
-            document.querySelectorAll('.distribution-select').forEach(select => {
-                select.addEventListener('change', function() {
-                    const conversationId = this.getAttribute('data-conversation-id');
-                    const branchId = this.value;
-
-                    if (!confirm('Bạn có chắc muốn phân phối cuộc trò chuyện này?')) {
-                        this.selectedIndex = 0;
-                        return;
-                    }
-
-                    fetch('{{ route('admin.chat.distribute') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector(
-                                    'meta[name="csrf-token"]').getAttribute('content'),
-                            },
-                            body: JSON.stringify({
-                                conversation_id: conversationId,
-                                branch_id: branchId
-                            }),
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                alert('✅ Phân phối thành công!');
-                                location.reload();
-                            } else {
-                                alert('❌ Phân phối thất bại: ' + (data.message ||
-                                    'Lỗi không xác định'));
-                                this.selectedIndex = 0;
-                            }
-                        })
-                        .catch(error => {
-                            console.error('❌ Assignment error:', error);
-                            alert('❌ Lỗi phân phối: ' + error.message);
-                            this.selectedIndex = 0;
-                        });
-                });
-            });
-        });
-
-        const adminId = {{ auth()->id() }};
-        const pusher = new Pusher('{{ config('broadcasting.connections.pusher.key') }}', {
-            cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
-            encrypted: true
-        });
-
-        // Lắng nghe tất cả các conversation mà admin có thể thấy
-        @foreach ($conversations as $conv)
-            pusher.subscribe('chat.{{ $conv->id }}')
-                .bind('new-message', function(data) {
-                    console.log('Received new message:', data);
-                    handleNewMessage(data.message);
-                });
-        @endforeach
-
-        function handleNewMessage(message) {
-            console.log('Handling new message:', message);
-            const convId = message.conversation_id;
-            const convItem = document.querySelector(`.chat-item[data-conversation-id='${convId}']`);
-            const isCurrent = (window.selectedConversationId == convId);
-
-            // Nếu đang mở đúng cuộc trò chuyện
-            if (isCurrent && typeof appendMessageToChat === 'function') {
-                appendMessageToChat(message);
-                if (typeof scrollToBottom === 'function') scrollToBottom();
-            }
-
-            // Luôn cập nhật preview ở sidebar
-            if (convItem) {
-                const preview = convItem.querySelector('.chat-item-preview');
-                if (preview) preview.textContent = message.message;
-                const time = convItem.querySelector('.chat-item-time');
-                if (time) time.textContent = formatTime(message.created_at);
-
-                // Tăng badge số chưa đọc nếu chưa mở
-                if (!isCurrent) {
-                    let badge = convItem.querySelector('.unread-badge');
-                    if (badge) {
-                        badge.textContent = parseInt(badge.textContent || 0) + 1;
-                        badge.style.display = 'flex';
-                    } else {
-                        // Nếu chưa có badge, tạo mới
-                        const newBadge = document.createElement('div');
-                        newBadge.className = 'unread-badge';
-                        newBadge.textContent = 1;
-                        convItem.querySelector('.chat-item-header').appendChild(newBadge);
+                function updateSidebarAfterSend(message) {
+                    console.log('Updating sidebar after send:', message);
+                    const convId = message.conversation_id;
+                    const convItem = document.querySelector(`.chat-item[data-conversation-id='${convId}']`);
+                    if (convItem) {
+                        const preview = convItem.querySelector('.chat-item-preview');
+                        if (preview) preview.textContent = message.message;
+                        const time = convItem.querySelector('.chat-item-time');
+                        if (time) time.textContent = formatTime(message.created_at);
+                        // Reset badge số chưa đọc về 0 (vì admin vừa gửi)
+                        let badge = convItem.querySelector('.unread-badge');
+                        if (badge) {
+                            badge.textContent = 0;
+                            badge.style.display = 'none';
+                        }
+                        // Đưa lên đầu danh sách
+                        if (convItem.parentNode.firstChild !== convItem) {
+                            convItem.parentNode.insertBefore(convItem, convItem.parentNode.firstChild);
+                        }
                     }
                 }
-                // Đưa lên đầu danh sách
-                if (convItem.parentNode.firstChild !== convItem) {
-                    convItem.parentNode.insertBefore(convItem, convItem.parentNode.firstChild);
-                }
-            }
-        }
-
-        function formatTime(timeStr) {
-            const d = new Date(timeStr);
-            return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-        }
-
-        function updateSidebarAfterSend(message) {
-            console.log('Updating sidebar after send:', message);
-            const convId = message.conversation_id;
-            const convItem = document.querySelector(`.chat-item[data-conversation-id='${convId}']`);
-            if (convItem) {
-                const preview = convItem.querySelector('.chat-item-preview');
-                if (preview) preview.textContent = message.message;
-                const time = convItem.querySelector('.chat-item-time');
-                if (time) time.textContent = formatTime(message.created_at);
-                // Reset badge số chưa đọc về 0 (vì admin vừa gửi)
-                let badge = convItem.querySelector('.unread-badge');
-                if (badge) {
-                    badge.textContent = 0;
-                    badge.style.display = 'none';
-                }
-                // Đưa lên đầu danh sách
-                if (convItem.parentNode.firstChild !== convItem) {
-                    convItem.parentNode.insertBefore(convItem, convItem.parentNode.firstChild);
-                }
-            }
-        }
     </script>
 @endsection

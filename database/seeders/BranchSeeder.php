@@ -102,8 +102,5 @@ class BranchSeeder extends Seeder
                 'reliability_score' => rand(90, 100),
             ]));
         }
-
-        // Tạo thêm chi nhánh ngẫu nhiên
-
     }
 }

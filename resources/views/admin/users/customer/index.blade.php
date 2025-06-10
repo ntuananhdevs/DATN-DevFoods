@@ -12,8 +12,8 @@
                 </svg>
             </div>
             <div>
-                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản quản lý </h2>
-                <p class="text-muted-foreground">Quản lý tài khoản quản lý của hệ thống</p>
+                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản người dùng  </h2>
+                <p class="text-muted-foreground">Quản lý tài khoản người dùng của hệ thống</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
@@ -65,7 +65,7 @@
     <div class="bg-white rounded-lg shadow-md">
         <!-- Table Header -->
         <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-800">Danh sách quản lý </h2>
+            <h2 class="text-xl font-semibold text-gray-800">Danh sách người dùng </h2>
         </div>
 
         <!-- Controls -->
@@ -99,17 +99,17 @@
                          x-transition:leave="transition ease-in duration-75"
                          x-transition:leave-start="opacity-100 transform scale-100"
                          x-transition:leave-end="opacity-0 transform scale-95"
-                         class="absolute right-0 mt-2 w-40 bg-white border rounded-md shadow-lg z-10"
+                         class="absolute right-0 mt-2 w-50 bg-white border rounded-md shadow-lg z-10 whitespace-nowrap"
                          @click="open = false">
                         <a href="#" class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                            @click.prevent="handleBulkAction('activate'); open = false">
                             <i class="fas fa-check-circle text-green-500"></i>
-                            <span>Kích hoạt đã chọn</span>
+                            <span class="whitespace-nowrap">Kích hoạt đã chọn</span>
                         </a>
                         <a href="#" class="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                            @click.prevent="handleBulkAction('deactivate'); open = false">
                             <i class="fas fa-times-circle text-red-500"></i>
-                            <span>Vô hiệu hóa đã chọn</span>
+                            <span class="whitespace-nowrap">Vô hiệu hóa đã chọn</span>
                         </a>
                     </div>
                 </div>
@@ -159,7 +159,7 @@
                         </td>
                         <td class="px-4 py-4">{{ $user->id }}</td>
                         <td class="px-4 py-4">
-                            <img src="{{ $user->avatar ? asset('storage/'.$user->avatar) : asset('images/default-avatar.png') }}"
+                            <img src="{{ $user->avatar ? Storage::disk('s3')->url($user->avatar) : asset('images/default-avatar.png') }}"
                                  alt="{{ $user->full_name }}"
                                  class="rounded-full w-10 h-10 object-cover">
                         </td>
@@ -168,12 +168,12 @@
                         <td class="px-4 py-4">{{ $user->phone ?? 'N/A' }}</td>
                         <td class="px-4 py-4">
                             <button type="button"
-                                    class="px-3 py-1.5 rounded-full text-xs {{ $user->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 w-24 transition-opacity duration-200"
+                                    class="px-3 py-1.5 rounded-full text-xs whitespace-nowrap overflow-hidden {{ $user->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 w-24 transition-opacity duration-200 flex items-center"
                                     onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }})">
                                 @if($user->active)
-                                <i class="fas fa-check mr-1"></i> Hoạt động
+                                <i class="fas fa-check mr-1"></i> <span class="inline-block">Hoạt động</span>
                                 @else
-                                <i class="fas fa-times mr-1"></i> Vô hiệu hóa
+                                <i class="fas fa-times mr-1"></i> <span class="inline-block">Vô hiệu hóa</span>
                                 @endif
                             </button>
                         </td>
@@ -406,9 +406,9 @@ function updateTable(users) {
                 <tr data-user-id="${user.id}" class="border-b hover:bg-gray-50 transition-colors duration-200">
                     <td class="w-12 text-center py-4">
                         <div class="flex items-center justify-center">
-                            <input type="checkbox" 
-                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
-                                   id="user-${user.id}" 
+                            <input type="checkbox"
+                                   class="user-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                   id="user-${user.id}"
                                    value="${user.id}">
                         </div>
                     </td>

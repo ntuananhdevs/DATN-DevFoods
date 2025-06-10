@@ -1,37 +1,160 @@
-@extends('layouts/admin/contentLayoutMaster')
+@extends('layouts.admin.contentLayoutMaster')
+
+@section('title', 'Thêm danh mục mới')
 
 @section('content')
-    <h3>Thêm danh mục mới</h3>
-    <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        <div class="mb-3">
-            <label class="form-label">Tên danh mục</label>
-            <input type="text" name="name" class="form-control" value="{{ old('name') }}" >
-        </div>
+<style>
+  input[type="text"], textarea, input[type="file"], select {
+    padding: 0.625rem 0.75rem;
+    height: 2.75rem;
+  }
+  textarea {
+    min-height: 6rem;
+  }
+  #image-upload-area {
+    transition: all 0.2s ease;
+    border: 2px dashed #d1d5db;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 0.5rem;
+  }
+  #image-upload-area:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+  }
+  #image-preview {
+    width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    display: none;
+    margin-top: 0.75rem;
+    border-radius: 0.375rem;
+  }
+  #image-placeholder {
+    transition: all 0.2s ease;
+  }
+  #main-image-preview img {
+    border-radius: 0.375rem;
+  }
+</style>
 
-        <div class="mb-3">
-            <label class="form-label">Mô tả</label>
-            <textarea name="description" class="form-control">{{ old('description') }}</textarea>
-        </div>
+<main class="container">
+  <h1 class="text-3xl font-extrabold mb-1">Thêm Danh Mục Mới</h1>
+  <p class="text-gray-500 mb-8">Nhập thông tin chi tiết để tạo danh mục</p>
 
-        <div class="mb-3">
-            <label class="form-label">Ảnh</label>
-            <input type="file" name="image" class="form-control">
-        </div>
+  <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    @csrf
 
-        <div class="mb-3">
-            <label class="form-label">Trạng thái</label>
-            <select name="status" class="form-control">
-                <option value="1">Hiển thị</option>
-                <option value="0">Ẩn</option>
+    <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <header class="px-6 py-4 border-b border-gray-100">
+        <h2 class="text-xl font-semibold text-gray-900">Thông tin cơ bản</h2>
+        <p class="text-gray-500 text-sm mt-1">Nhập thông tin của danh mục</p>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+        <!-- Left Column -->
+        <div class="space-y-6">
+          <!-- Tên danh mục -->
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700">Tên danh mục <span class="text-red-500">*</span></label>
+            <input type="text" id="name" name="name" value="{{ old('name') }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+            @error('name')
+            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+            @enderror
+          </div>
+
+          <!-- Mô tả -->
+          <div>
+            <label for="description" class="block text-sm font-medium text-gray-700">Mô tả</label>
+            <textarea id="description" /name="description" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">{{ old('description') }}</textarea>
+            @error('description')
+            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+            @enderror
+          </div>
+
+          <!-- Trạng thái -->
+          <div>
+            <label for="status" class="block text-sm font-medium text-gray-700">Trạng thái</label>
+            <select id="status" name="status" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+              <option value="1" {{ old('status', 1) == 1 ? 'selected' : '' }}>Hiển thị</option>
+              <option value="0" {{ old('status') === '0' ? 'selected' : '' }}>Ẩn</option>
             </select>
+          </div>
         </div>
 
-        <div class="d-flex">
-        <button type="submit" class="btn btn-success mr-1">Lưu</button>
-        <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Quay lại
-        </a>
+        <!-- Right Column - Upload Ảnh -->
+        <div class="md:col-span-1">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh danh mục</label>
+          <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+            <div id="image-placeholder" class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+              <div id="main-image-preview" class="absolute inset-0 w-full h-full hidden">
+                <img src="" alt="Main image preview" class="w-full h-full object-cover" />
+              </div>
+              <div id="upload-content" class="flex flex-col items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-3" width="48" height="48" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <p class="text-base text-gray-600 mb-2">Kéo thả ảnh chính vào đây</p>
+                <p class="text-sm text-gray-500 mb-4">hoặc</p>
+                <button type="button" id="select-primary-image-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Chọn ảnh</button>
+                <p class="text-xs text-gray-500 mt-3">Hỗ trợ: JPG, PNG, GIF (Tối đa 5MB)</p>
+              </div>
+              <input type="file" id="primary-image-upload" name="image" accept="image/*" class="hidden" />
+              @error('image')
+                <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                @enderror
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh sẽ được sử dụng làm ảnh đại diện danh mục.
+          </p>
         </div>
-    </form>
+      </div>
+    </section>
+
+    <div class="px-6 pb-6">
+      <button type="submit" class="btn btn-primary">Lưu danh mục</button>
+      <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary ml-2">Hủy</a>
+    </div>
+  </form>
+</main>
+
+<script>
+  document.getElementById('select-primary-image-btn').addEventListener('click', () => {
+    document.getElementById('primary-image-upload').click();
+  });
+
+  document.getElementById('image-placeholder').addEventListener('click', (e) => {
+    if (e.target.id === 'image-placeholder' || e.target.id === 'upload-content') {
+      document.getElementById('primary-image-upload').click();
+    }
+  });
+
+  function previewImage(event) {
+    const input = event.target;
+    const previewWrapper = document.getElementById('main-image-preview');
+    const previewImage = previewWrapper.querySelector('img');
+    const uploadContent = document.getElementById('upload-content');
+
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        previewImage.src = e.target.result;
+        previewWrapper.style.display = 'block';
+        uploadContent.style.display = 'none';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  document.getElementById('primary-image-upload').addEventListener('change', previewImage);
+
+  document.getElementById('main-image-preview').addEventListener('click', () => {
+  document.getElementById('primary-image-upload').click();
+});
+
+</script>
 @endsection

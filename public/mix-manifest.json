@@ -1,3 +1,4 @@
 {
-    "/js/chat.js": "/js/chat.js"
+    "/js/core/app.js": "/js/core/app.js",
+    "/js/core/app-menu.js": "/js/core/app-menu.js"
 }

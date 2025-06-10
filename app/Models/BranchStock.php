@@ -18,6 +18,10 @@ class BranchStock extends Model
         'stock_quantity',
     ];
 
+    protected $casts = [
+        'stock_quantity' => 'integer'
+    ];
+
     public $timestamps = false;
 
     public function branch(): BelongsTo
@@ -28,5 +32,17 @@ class BranchStock extends Model
     public function productVariant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function product()
+    {
+        return $this->hasOneThrough(
+            Product::class,
+            ProductVariant::class,
+            'id', // Foreign key on product_variants table
+            'id', // Foreign key on products table
+            'product_variant_id', // Local key on branch_stocks table
+            'product_id' // Local key on product_variants table
+        );
     }
 }

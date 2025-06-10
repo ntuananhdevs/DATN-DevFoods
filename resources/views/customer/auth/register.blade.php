@@ -3,12 +3,24 @@
 @section('title', 'FastFood - Đăng Ký')
 
 @section('content')
+<style>
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+   }
+</style>
 <div class="min-h-screen flex flex-col items-center justify-center px-4">
     <div class="w-full max-w-xl">
         <div class="text-center">
             <h1 class="text-3xl font-bold text-gray-900">FastFood</h1>
             <p class="text-orange-500 font-medium">Đăng ký tài khoản</p>
         </div>
+
+        @if (session('status'))
+            <div class="mt-4 text-center text-sm text-green-600">
+                {{ session('status') }}
+            </div>
+        @endif
 
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="p-6">
@@ -51,7 +63,7 @@
                             <div class="text-red-500 text-sm mt-1" id="emailError">{{ $message }}</div>
                         @else
                             <div class="text-red-500 text-sm mt-1 hidden" id="emailError"></div>
-                        @enderror
+                        @endif
                     </div>
 
                     <div>
@@ -95,7 +107,7 @@
                             <div class="text-red-500 text-sm mt-1" id="passwordError">{{ $message }}</div>
                         @else
                             <div class="text-red-500 text-sm mt-1 hidden" id="passwordError"></div>
-                        @enderror
+                        @endif
                     </div>
 
                     <div>
@@ -119,6 +131,22 @@
                             <div class="text-red-500 text-sm mt-1" id="confirmPasswordError">{{ $message }}</div>
                         @else
                             <div class="text-red-500 text-sm mt-1 hidden" id="confirmPasswordError"></div>
+                        @endif
+                    </div>
+
+                    <!-- Cloudflare Turnstile CAPTCHA -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Xác minh captcha
+                        </label>
+                        <div class="cf-turnstile" 
+                             data-sitekey="{{ config('turnstile.site_key') }}"
+                             data-theme="{{ config('turnstile.theme') }}"
+                             data-size="{{ config('turnstile.size') }}"
+                             data-callback="onTurnstileCallback">
+                        </div>
+                        @error('cf-turnstile-response')
+                            <div class="text-red-500 text-sm mt-1">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -144,8 +172,9 @@
 
                     <button
                         type="submit"
-                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         id="registerBtn"
+                        disabled
                     >
                         <span id="registerBtnText">Đăng ký</span>
                         <span id="registerBtnLoading" class="hidden">
@@ -164,20 +193,18 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mt-6">
+                <div class="mt-6">
                     <button
                         type="button"
-                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        id="googleRegisterBtn"
+                        class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <i class="fab fa-google text-red-500 mr-2"></i>
-                        Google
-                    </button>
-                    <button
-                        type="button"
-                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                    >
-                        <i class="fab fa-facebook text-blue-600 mr-2"></i>
-                        Facebook
+                        <span id="googleRegBtnText">Đăng ký với Google</span>
+                        <span id="googleRegBtnLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Đang xử lý...
+                        </span>
                     </button>
                 </div>
             </div>
@@ -191,9 +218,18 @@
         </p>
     </div>
 </div>
+
+<!-- Cloudflare Turnstile Script -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 @endsection
 
 @section('scripts')
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+<!-- Firebase Config -->
+<script src="{{ asset('js/firebase-config.js') }}"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const registerForm = document.getElementById('registerForm');
@@ -204,6 +240,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordInput = document.getElementById('password');
     const togglePasswordConfirmButton = document.getElementById('toggle-password-confirm');
     const passwordConfirmInput = document.getElementById('password_confirmation');
+    const emailError = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+    const confirmPasswordError = document.getElementById('confirmPasswordError');
+    const googleRegisterBtn = document.getElementById('googleRegisterBtn');
+    const googleRegBtnText = document.getElementById('googleRegBtnText');
+    const googleRegBtnLoading = document.getElementById('googleRegBtnLoading');
+
+    let turnstileToken = null;
+
+    // Cloudflare Turnstile callback
+    window.onTurnstileCallback = function(token) {
+        turnstileToken = token;
+        registerBtn.disabled = false;
+        registerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    };
 
     // Toggle password visibility
     if (togglePasswordButton && passwordInput) {
@@ -241,31 +292,127 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Form submission handling
+    // Form submission handling with AJAX
     registerForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
+
         // Clear previous errors
         document.getElementById('emailError').classList.add('hidden');
         document.getElementById('passwordError').classList.add('hidden');
         document.getElementById('confirmPasswordError').classList.add('hidden');
         
-        // Validate passwords match
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('password_confirmation').value;
-        
-        if (password !== confirmPassword) {
-            e.preventDefault(); // Chỉ ngăn chặn khi mật khẩu không khớp
-            document.getElementById('confirmPasswordError').textContent = 'Mật khẩu không khớp';
-            document.getElementById('confirmPasswordError').classList.remove('hidden');
+        // Check if Turnstile token exists
+        if (!turnstileToken) {
+            e.preventDefault();
+            alert('Vui lòng hoàn thành xác minh bảo mật');
             return;
         }
         
+        // Validate passwords match
+        const password = passwordInput.value;
+        const confirmPassword = passwordConfirmInput.value;
+        
+        if (password !== confirmPassword) {
+            confirmPasswordError.textContent = 'Mật khẩu không khớp';
+            confirmPasswordError.classList.remove('hidden');
+            return;
+        }
+
         // Show loading state
         registerBtn.disabled = true;
         registerBtnText.classList.add('hidden');
         registerBtnLoading.classList.remove('hidden');
-        
-        // Form sẽ tự submit nếu không có e.preventDefault()
+
+        // Collect form data
+        const formData = new FormData(registerForm);
+
+        // Send AJAX request
+        fetch(registerForm.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Reset button state
+            registerBtn.disabled = false;
+            registerBtnText.classList.remove('hidden');
+            registerBtnLoading.classList.add('hidden');
+
+            if (data.success) {
+                // Redirect to OTP verification page
+                window.location.href = '{{ route("customer.verify.otp.show") }}';
+            } else {
+                // Handle validation errors
+                if (data.errors) {
+                    if (data.errors.email) {
+                        emailError.textContent = data.errors.email[0];
+                        emailError.classList.remove('hidden');
+                    }
+                    if (data.errors.password) {
+                        passwordError.textContent = data.errors.password[0];
+                        passwordError.classList.remove('hidden');
+                    }
+                    if (data.errors.full_name) {
+                        document.querySelector('#full_name ~ .text-red-500').textContent = data.errors.full_name[0];
+                    }
+                    if (data.errors.phone) {
+                        document.querySelector('#phone ~ .text-red-500').textContent = data.errors.phone[0];
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            // Reset button state on error
+            registerBtn.disabled = false;
+            registerBtnText.classList.remove('hidden');
+            registerBtnLoading.classList.add('hidden');
+            
+            console.error('Error:', error);
+            emailError.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+            emailError.classList.remove('hidden');
+        });
     });
+
+    // Google Register Button Handler
+    if (googleRegisterBtn) {
+        googleRegisterBtn.addEventListener('click', async function() {
+            // Show loading state
+            googleRegisterBtn.disabled = true;
+            googleRegBtnText.classList.add('hidden');
+            googleRegBtnLoading.classList.remove('hidden');
+
+            try {
+                await handleGoogleLogin();
+            } catch (error) {
+                console.error('Google register error:', error);
+                alert('Đã xảy ra lỗi trong quá trình đăng ký Google');
+            } finally {
+                // Reset button state
+                googleRegisterBtn.disabled = false;
+                googleRegBtnText.classList.remove('hidden');
+                googleRegBtnLoading.classList.add('hidden');
+            }
+        });
+    }
+
+    // Handle Turnstile error or expiration
+    window.onTurnstileError = function() {
+        turnstileToken = null;
+        registerBtn.disabled = true;
+        registerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        alert('Xác minh bảo mật thất bại. Vui lòng thử lại.');
+    };
+
+    window.onTurnstileExpired = function() {
+        turnstileToken = null;
+        registerBtn.disabled = true;
+        registerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        alert('Xác minh bảo mật đã hết hạn. Vui lòng thực hiện lại.');
+    };
 });
 </script>
 @endsection

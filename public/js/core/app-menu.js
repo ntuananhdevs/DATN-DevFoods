@@ -84,16 +84,36 @@
 /******/ 	return __webpack_require__(__webpack_require__.s = 0);
 /******/ })
 /************************************************************************/
-/******/ ([
-/* 0 */
-/*!*********************************************!*\
-  !*** multi ./resources/js/core/app-menu.js ***!
-  \*********************************************/
+/******/ ({
+
+/***/ "./resources/css/app.css":
+/*!*******************************!*\
+  !*** ./resources/css/app.css ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+throw new Error("Module build failed (from ./node_modules/css-loader/index.js):\nModuleBuildError: Module build failed (from ./node_modules/postcss-loader/src/index.js):\nError: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.\n    at We (C:\\laragon\\www\\DATN-DevFoods\\node_modules\\tailwindcss\\dist\\lib.js:35:2121)\n    at LazyResult.run (C:\\laragon\\www\\DATN-DevFoods\\node_modules\\postcss-loader\\node_modules\\postcss\\lib\\lazy-result.js:288:14)\n    at LazyResult.asyncTick (C:\\laragon\\www\\DATN-DevFoods\\node_modules\\postcss-loader\\node_modules\\postcss\\lib\\lazy-result.js:212:26)\n    at C:\\laragon\\www\\DATN-DevFoods\\node_modules\\postcss-loader\\node_modules\\postcss\\lib\\lazy-result.js:254:14\n    at new Promise (<anonymous>)\n    at LazyResult.async (C:\\laragon\\www\\DATN-DevFoods\\node_modules\\postcss-loader\\node_modules\\postcss\\lib\\lazy-result.js:250:23)\n    at LazyResult.then (C:\\laragon\\www\\DATN-DevFoods\\node_modules\\postcss-loader\\node_modules\\postcss\\lib\\lazy-result.js:131:17)\n    at C:\\laragon\\www\\DATN-DevFoods\\node_modules\\postcss-loader\\src\\index.js:142:8\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at C:\\laragon\\www\\DATN-DevFoods\\node_modules\\webpack\\lib\\NormalModule.js:316:20\n    at C:\\laragon\\www\\DATN-DevFoods\\node_modules\\loader-runner\\lib\\LoaderRunner.js:367:11\n    at C:\\laragon\\www\\DATN-DevFoods\\node_modules\\loader-runner\\lib\\LoaderRunner.js:233:18\n    at context.callback (C:\\laragon\\www\\DATN-DevFoods\\node_modules\\loader-runner\\lib\\LoaderRunner.js:111:13)\n    at C:\\laragon\\www\\DATN-DevFoods\\node_modules\\postcss-loader\\src\\index.js:208:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)");
+
+/***/ }),
+
+/***/ 0:
+/*!**********************************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** multi ./resources/js/core/app-menu.js ./resources/sass/bootstrap.scss ./resources/sass/bootstrap-extended.scss ./resources/sass/colors.scss ./resources/sass/components.scss ./resources/sass/custom-rtl.scss ./resources/sass/custom-laravel.scss ./resources/css/app.css ***!
+  \**********************************************************************************************************************************************************************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-!(function webpackMissingModule() { var e = new Error("Cannot find module 'D:\\KY_3\\WEB2014\\www\\DATN-DevFoods-main\\resources\\js\\core\\app-menu.js'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'C:\\laragon\\www\\DATN-DevFoods\\resources\\js\\core\\app-menu.js'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'C:\\laragon\\www\\DATN-DevFoods\\resources\\sass\\bootstrap.scss'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'C:\\laragon\\www\\DATN-DevFoods\\resources\\sass\\bootstrap-extended.scss'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'C:\\laragon\\www\\DATN-DevFoods\\resources\\sass\\colors.scss'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'C:\\laragon\\www\\DATN-DevFoods\\resources\\sass\\components.scss'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'C:\\laragon\\www\\DATN-DevFoods\\resources\\sass\\custom-rtl.scss'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+!(function webpackMissingModule() { var e = new Error("Cannot find module 'C:\\laragon\\www\\DATN-DevFoods\\resources\\sass\\custom-laravel.scss'"); e.code = 'MODULE_NOT_FOUND'; throw e; }());
+module.exports = __webpack_require__(/*! C:\laragon\www\DATN-DevFoods\resources\css\app.css */"./resources/css/app.css");
 
 
 /***/ })
-/******/ ]);
+
+/******/ });

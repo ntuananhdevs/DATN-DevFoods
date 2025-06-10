@@ -1,85 +1,50 @@
 @extends('layouts.admin.contentLayoutMaster')
 
 @section('content')
-<!-- Main Container -->
 <div class="branch-details-container">
     <!-- Page Header -->
     <div class="page-header">
         <div class="header-content">
             <div class="header-left">
-                <div class="header-icon">
-                    <i class="fas fa-building"></i>
-                </div>
+                <i class="fas fa-building header-icon"></i>
                 <div class="header-text">
                     <h1>Chi tiết chi nhánh</h1>
                     <p>Quản lý thông tin chi nhánh {{ $branch->name }}</p>
                 </div>
             </div>
             <div class="header-actions">
-                <a href="{{ route('admin.branches.edit', $branch->id) }}" class="btn btn-primary">
-                    <i class="fas fa-edit"></i>
-                    <span>Chỉnh sửa</span>
-                </a>
-                <a href="{{ route('admin.branches.index') }}" class="btn btn-outline">
-                    <i class="fas fa-arrow-left"></i>
-                    <span>Quay lại</span>
-                </a>
+                <a href="{{ route('admin.branches.edit', $branch->id) }}" class="btn btn-primary"><i class="fas fa-edit"></i> Chỉnh sửa</a>
+                <a href="{{ route('admin.branches.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Quay lại</a>
             </div>
         </div>
     </div>
 
-    <!-- Branch Overview Card -->
+    <!-- Branch Overview -->
     <div class="card branch-overview">
         <div class="branch-banner">
-            <div class="branch-status">
-                @if($branch->active)
-                    <span class="status-badge active">
-                        <i class="fas fa-check-circle"></i>
-                        Đang hoạt động
-                    </span>
-                @else
-                    <span class="status-badge inactive">
-                        <i class="fas fa-times-circle"></i>
-                        Ngưng hoạt động
-                    </span>
-                @endif
-            </div>
+            <span class="status-badge {{ $branch->active ? 'active' : 'inactive' }}">
+                <i class="fas {{ $branch->active ? 'fa-check-circle' : 'fa-times-circle' }}"></i>
+                {{ $branch->active ? 'Đang hoạt động' : 'Ngưng hoạt động' }}
+            </span>
         </div>
         <div class="branch-overview-content">
             <div class="branch-overview-left">
-                <div class="branch-avatar">
-                    <i class="fas fa-store-alt"></i>
-                </div>
+                <i class="fas fa-store-alt branch-avatar"></i>
                 <div class="branch-info">
                     <h2>{{ $branch->name }}</h2>
-                    <div class="branch-address">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>{{ $branch->address }}</span>
-                    </div>
+                    <div class="branch-address"><i class="fas fa-map-marker-alt"></i> {{ $branch->address }}</div>
                     <div class="branch-contact">
-                        <div class="contact-item">
-                            <i class="fas fa-phone"></i>
-                            <a href="tel:{{ $branch->phone }}">{{ $branch->phone }}</a>
-                        </div>
+                        <div class="contact-item"><i class="fas fa-phone"></i> <a href="tel:{{ $branch->phone }}">{{ $branch->phone }}</a></div>
                         @if($branch->email)
-                        <div class="contact-item">
-                            <i class="fas fa-envelope"></i>
-                            <a href="mailto:{{ $branch->email }}">{{ $branch->email }}</a>
-                        </div>
+                        <div class="contact-item"><i class="fas fa-envelope"></i> <a href="mailto:{{ $branch->email }}">{{ $branch->email }}</a></div>
                         @endif
                     </div>
                     @if($branch->rating)
                     <div class="branch-rating">
                         <div class="stars">
                             @for($i = 1; $i <= 5; $i++)
-                                @if($i <= $branch->rating)
-                                    <i class="fas fa-star"></i>
-                                @elseif($i - 0.5 <= $branch->rating)
-                                    <i class="fas fa-star-half-alt"></i>
-                                @else
-                                    <i class="far fa-star"></i>
-                                @endif
-                            @endfor
+                                <i class="fa{{ $i <= $branch->rating ? 's fa-star' : ($i - 0.5 <= $branch->rating ? 's fa-star-half-alt' : 'r fa-star') }}"></i>
+                                @endfor
                         </div>
                         <span class="rating-value">{{ number_format($branch->rating, 1) }}</span>
                     </div>
@@ -89,21 +54,17 @@
             <div class="branch-overview-right">
                 <div class="hours-container">
                     <div class="hours-item opening">
-                        <div class="hours-icon">
-                            <i class="fas fa-sun"></i>
-                        </div>
+                        <i class="fas fa-sun hours-icon" style="color: #47d46b;"></i>
                         <div class="hours-info">
-                            <span class="hours-label">Giờ mở cửa</span>
-                            <span class="hours-value">{{ $branch->opening_hour }}</span>
+                            <span class="hours-label">Giờ mở cửa</span><br>
+                            <span class="hours-value">{{ date('H:i', strtotime($branch->opening_hour)) }}</span>
                         </div>
                     </div>
                     <div class="hours-item closing">
-                        <div class="hours-icon">
-                            <i class="fas fa-moon"></i>
-                        </div>
+                        <i class="fas fa-moon hours-icon" style="color: #db5757;"></i>
                         <div class="hours-info">
                             <span class="hours-label">Giờ đóng cửa</span>
-                            <span class="hours-value">{{ $branch->closing_hour }}</span>
+                            <span class="hours-value">{{ date('H:i', strtotime($branch->closing_hour)) }}</span>
                         </div>
                     </div>
                 </div>
@@ -115,75 +76,44 @@
     <div class="content-grid">
         <!-- Left Column -->
         <div class="main-column">
-            <!-- Branch Images Gallery -->
+            <!-- Branch Images -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-images"></i>
-                    </div>
+                    <i class="fas fa-images card-icon" style="color: #2563eb;"></i>
                     <h3>Hình ảnh chi nhánh</h3>
-                    <div class="card-actions">
-                        <button type="button" class="btn btn-sm btn-outline" id="uploadImagesBtn">
-                            <i class="fas fa-upload"></i>
-                            <span>Tải lên</span>
-                        </button>
-                    </div>
+                    <button class="btn btn-sm btn-outline" id="uploadImagesBtn"><i class="fas fa-upload"></i> Tải lên</button>
                 </div>
                 <div class="card-body">
-                    <form id="uploadImageForm" action="{{ route('admin.branches.upload-image', $branch->id) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        <input type="file" id="imageUpload" name="image" accept="image/*" style="display: none;">
-    </form>
-    
-    @if(isset($branch->images) && count($branch->images) > 0)
+                    @if($branch->images->count())
                     <div class="gallery-grid">
                         @foreach($branch->images as $index => $image)
-                        <div class="gallery-item">
-                            <img src="{{ asset('storage/' . $image->image_path) }}" 
-                                 alt="{{ $branch->name }} - Hình {{ $index + 1 }}" 
-                                 class="gallery-img">
+                        <div class="gallery-item" data-image-id="{{ $image->id }}">
+                            <img src="{{ Storage::disk('s3')->url($image->image_path) }}" alt="{{ $branch->name }} - Hình {{ $index + 1 }}" class="gallery-img">
+                            @if($image->is_primary)
+                            <div class="primary-badge">
+                                <i class="fas fa-star"></i>
+                                <span>Ảnh đại diện</span>
+                            </div>
+                            @endif
                             <div class="gallery-overlay">
-                                <div class="gallery-actions">
-                                    <a href="{{ asset('storage/' . $image->path) }}" 
-                                       class="gallery-btn view-btn" 
-                                       data-fancybox="branch-gallery"
-                                       data-caption="{{ $branch->name }} - {{ $image->caption ?? 'Hình ' . ($index + 1) }}">
-                                        <i class="fas fa-search-plus"></i>
-                                    </a>
-                                    @if($image->is_featured)
-                                        <span class="gallery-btn featured-btn">
-                                            <i class="fas fa-star"></i>
-                                        </span>
-                                    @else
-                                        <button type="button" 
-                                                class="gallery-btn set-featured-btn"
-                                                data-image-id="{{ $image->id }}"
-                                               
-                                            <i class="far fa-star"></i>
-                                        </button>
-                                    @endif
-                                 
-                                </div>
+                                <a href="{{ Storage::disk('s3')->url($image->image_path) }}" class="gallery-btn view-btn" data-fancybox="branch-gallery" data-caption="{{ $branch->name }} - {{ $image->caption ?? 'Hình ' . ($index + 1) }}"><i class="fas fa-search-plus"></i></a>
+                                <button class="gallery-btn {{ $image->is_primary ? 'featured-btn' : 'set-featured-btn' }}" data-image-id="{{ $image->id }}"><i class="fa{{ $image->is_primary ? 's' : 'r' }} fa-star"></i></button>
+                                <button class="gallery-btn delete-btn" data-image-id="{{ $image->id }}" data-branch-id="{{ $branch->id }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
                             </div>
                             @if($image->caption)
-                                <div class="gallery-caption">
-                                    {{ $image->caption }}
-                                </div>
+                            <div class="gallery-caption">{{ $image->caption }}</div>
                             @endif
                         </div>
                         @endforeach
                     </div>
                     @else
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-images"></i>
-                        </div>
+                    <div class="empty-state" id="emptyState">
+                        <i class="fas fa-images empty-icon"></i>
                         <h4>Chưa có hình ảnh</h4>
                         <p>Chi nhánh này chưa có hình ảnh nào</p>
-                        <button type="button" class="btn btn-primary" id="emptyStateUploadBtn">
-                            <i class="fas fa-upload"></i>
-                            <span>Tải lên hình ảnh</span>
-                        </button>
+                        <button class="btn btn-primary" id="emptyStateUploadBtn"><i class="fas fa-upload"></i> Tải lên hình ảnh</button>
                     </div>
                     @endif
                 </div>
@@ -192,83 +122,43 @@
             <!-- Basic Information -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-info-circle"></i>
-                    </div>
+                    <i class="fas fa-info-circle card-icon" style="color: #2563eb;"></i>
                     <h3>Thông tin cơ bản</h3>
                 </div>
                 <div class="card-body p-0">
                     <div class="info-table">
                         <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-hashtag"></i>
-                                <span>ID Chi nhánh</span>
-                            </div>
-                            <div class="info-value">
-                                <span class="id-badge">#{{ $branch->id }}</span>
-                            </div>
+                            <div class="info-label"><i class="fas fa-hashtag"></i> Mã Chi nhánh</div>
+                            <div class="info-value"><span class="id-badge">#{{ $branch->branch_code }}</span></div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-building"></i>
-                                <span>Tên chi nhánh</span>
-                            </div>
-                            <div class="info-value">
-                                <span class="fw-bold">{{ $branch->name }}</span>
-                            </div>
+                            <div class="info-label"><i class="fas fa-building"></i> Tên chi nhánh</div>
+                            <div class="info-value fw-bold">{{ $branch->name }}</div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span>Địa chỉ</span>
-                            </div>
-                            <div class="info-value">
-                                {{ $branch->address }}
-                            </div>
+                            <div class="info-label"><i class="fas fa-map-marker-alt"></i> Địa chỉ</div>
+                            <div class="info-value">{{ $branch->address }}</div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-phone"></i>
-                                <span>Số điện thoại</span>
-                            </div>
-                            <div class="info-value">
-                                <a href="tel:{{ $branch->phone }}" class="link-hover">
-                                    {{ $branch->phone }}
-                                </a>
-                            </div>
+                            <div class="info-label"><i class="fas fa-phone"></i> Số điện thoại</div>
+                            <div class="info-value"><a href="tel:{{ $branch->phone }}" class="link-hover">{{ $branch->phone }}</a></div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-envelope"></i>
-                                <span>Email</span>
-                            </div>
+                            <div class="info-label"><i class="fas fa-envelope"></i> Email</div>
                             <div class="info-value">
                                 @if($branch->email)
-                                    <a href="mailto:{{ $branch->email }}" class="link-hover">
-                                        {{ $branch->email }}
-                                    </a>
+                                <a href="mailto:{{ $branch->email }}" class="link-hover">{{ $branch->email }}</a>
                                 @else
-                                    <span class="text-muted">
-                                        <i class="fas fa-minus"></i> Chưa cập nhật
-                                    </span>
+                                <span class="text-muted"><i class="fas fa-minus"></i> Chưa cập nhật</span>
                                 @endif
                             </div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">
-                                <i class="fas fa-calendar-plus"></i>
-                                <span>Ngày tạo</span>
-                            </div>
+                            <div class="info-label"><i class="fas fa-calendar-plus"></i> Ngày tạo</div>
                             <div class="info-value">
                                 <div class="date-time">
-                                    <span class="date">
-                                        <i class="far fa-calendar-alt"></i>
-                                        {{ $branch->created_at->format('d/m/Y') }}
-                                    </span>
-                                    <span class="time">
-                                        <i class="far fa-clock"></i>
-                                        {{ $branch->created_at->format('H:i') }}
-                                    </span>
+                                    <span class="date"><i class="far fa-calendar-alt"></i> {{ $branch->created_at->format('d/m/Y') }}</span>
+                                    <span class="time"><i class="far fa-clock"></i> {{ $branch->created_at->format('H:i') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -279,29 +169,23 @@
             <!-- Operating Hours -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
+                    <i class="fas fa-clock card-icon" style="color: #2563eb;"></i>
                     <h3>Giờ hoạt động</h3>
                 </div>
                 <div class="card-body">
                     <div class="hours-grid">
                         <div class="hours-card opening-hours">
-                            <div class="hours-card-icon">
-                                <i class="fas fa-sun"></i>
-                            </div>
+                            <i class="fas fa-sun hours-card-icon" style="color: #84d973;"></i>
                             <div class="hours-card-content">
                                 <span class="hours-card-label">Giờ mở cửa</span>
-                                <span class="hours-card-value">{{ $branch->opening_hour }}</span>
+                                <span class="hours-card-value">{{ date('H:i', strtotime($branch->opening_hour)) }}</span>
                             </div>
                         </div>
                         <div class="hours-card closing-hours">
-                            <div class="hours-card-icon">
-                                <i class="fas fa-moon"></i>
-                            </div>
+                            <i class="fas fa-moon hours-card-icon" style="color: #d86565;"></i>
                             <div class="hours-card-content">
                                 <span class="hours-card-label">Giờ đóng cửa</span>
-                                <span class="hours-card-value">{{ $branch->closing_hour }}</span>
+                                <span class="hours-card-value">{{ date('H:i', strtotime($branch->closing_hour)) }}</span>
                             </div>
                         </div>
                     </div>
@@ -311,67 +195,48 @@
 
         <!-- Right Column -->
         <div class="side-column">
-            <!-- Manager Information -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-user-tie"></i>
-                    </div>
+                    <i class="fas fa-user-tie card-icon" style="color: #2563eb;"></i>
                     <h3>Quản lý chi nhánh</h3>
                 </div>
                 <div class="card-body">
                     @if($branch->manager)
                     <div class="manager-profile">
                         <div class="manager-cover"></div>
-                        <div class="manager-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
+                        <i class="fas fa-user manager-avatar"></i>
                         <div class="manager-info">
                             <h4>{{ $branch->manager->full_name }}</h4>
-                            <div class="manager-role">
-                                <i class="fas fa-briefcase"></i>
-                                <span>Quản lý chi nhánh</span>
-                            </div>
+                            <div class="manager-role"><i class="fas fa-briefcase" style="color: #2563eb;"></i> Quản lý chi nhánh</div>
                             <div class="manager-actions">
                                 <div class="action-row">
-                                    <a href="mailto:{{ $branch->manager->email }}" class="btn btn-outline btn-sm">
-                                        <i class="fas fa-envelope"></i>
-                                        <span>Gửi email</span>
-                                    </a>
-                                    <a href="tel:{{ $branch->manager->phone }}" class="btn btn-outline btn-sm">
-                                        <i class="fas fa-phone"></i>
-                                        <span>Liên hệ</span>
-                                    </a>
+                                    <a href="mailto:{{ $branch->manager->email }}" class="btn btn-outline btn-sm"><i class="fas fa-envelope"></i> Gửi email</a>
+                                    <a href="tel:{{ $branch->manager->phone }}" class="btn btn-outline btn-sm"><i class="fas fa-phone"></i> Liên hệ</a>
                                 </div>
-                                <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-outline btn-block btn-sm">
-                                    <i class="fas fa-exchange-alt"></i>
-                                    <span>Thay đổi quản lý</span>
-                                </a>
+                                @if($branch->active)
+                                <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-outline btn-block btn-sm"><i class="fas fa-exchange-alt"></i> Thay đổi quản lý</a>
+                                @endif
                             </div>
                         </div>
                     </div>
                     @else
                     <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-user-slash"></i>
-                        </div>
+                        <i class="fas fa-user-slash empty-icon"></i>
                         <h4>Chưa phân công quản lý</h4>
+                        @if($branch->active)
                         <p>Chi nhánh này chưa có người quản lý</p>
-                        <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i>
-                            <span>Phân công quản lý</span>
-                        </a>
+                        <a href="{{ route('admin.branches.assign-manager', $branch->id) }}" class="btn btn-primary"><i class="fas fa-plus"></i> Phân công quản lý</a>
+                        @else
+                        <p>Chi nhánh đã bị vô hiệu hóa</p>
+                        @endif
                     </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Rating & Reviews -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-star"></i>
-                    </div>
+                    <i class="fas fa-star card-icon" style="color: #2563eb;"></i>
                     <h3>Đánh giá khách hàng</h3>
                 </div>
                 <div class="card-body">
@@ -383,22 +248,14 @@
                         </div>
                         <div class="rating-stars">
                             @for($i = 1; $i <= 5; $i++)
-                                @if($i <= $branch->rating)
-                                    <i class="fas fa-star"></i>
-                                @elseif($i - 0.5 <= $branch->rating)
-                                    <i class="fas fa-star-half-alt"></i>
-                                @else
-                                    <i class="far fa-star"></i>
-                                @endif
-                            @endfor
+                                <i class="fa{{ $i <= $branch->rating ? 's fa-star' : ($i - 0.5 <= $branch->rating ? 's fa-star-half-alt' : 'r fa-star') }}"></i>
+                                @endfor
                         </div>
                         <p class="rating-caption">Dựa trên đánh giá của khách hàng</p>
                     </div>
                     @else
                     <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-star-half-alt"></i>
-                        </div>
+                        <i class="fas fa-star-half-alt empty-icon"></i>
                         <h4>Chưa có đánh giá</h4>
                         <p>Chi nhánh này chưa nhận được đánh giá nào</p>
                     </div>
@@ -406,40 +263,17 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-icon">
-                        <i class="fas fa-bolt"></i>
-                    </div>
+                    <i class="fas fa-bolt card-icon" style="color: #2563eb;"></i>
                     <h3>Thao tác nhanh</h3>
                 </div>
                 <div class="card-body">
                     <div class="quick-actions">
-                        <div class="action-item" data-action="report">
-                            <div class="action-icon">
-                                <i class="fas fa-chart-bar"></i>
-                            </div>
-                            <span class="action-label">Báo cáo</span>
-                        </div>
-                        <div class="action-item" data-action="staff">
-                            <div class="action-icon">
-                                <i class="fas fa-users"></i>
-                            </div>
-                            <span class="action-label">Nhân viên</span>
-                        </div>
-                        <div class="action-item" data-action="schedule">
-                            <div class="action-icon">
-                                <i class="fas fa-calendar-alt"></i>
-                            </div>
-                            <span class="action-label">Lịch làm việc</span>
-                        </div>
-                        <div class="action-item" data-action="settings">
-                            <div class="action-icon">
-                                <i class="fas fa-cog"></i>
-                            </div>
-                            <span class="action-label">Cài đặt</span>
-                        </div>
+                        <div class="action-item" data-action="report"><i class="fas fa-chart-bar action-icon"></i> Báo cáo</div>
+                        <div class="action-item" data-action="staff"><i class="fas fa-users action-icon"></i> Nhân viên</div>
+                        <div class="action-item" data-action="schedule"><i class="fas fa-calendar-alt action-icon"></i> Lịch làm việc</div>
+                        <div class="action-item" data-action="settings"><i class="fas fa-cog action-icon"></i> Cài đặt</div>
                     </div>
                 </div>
             </div>
@@ -450,11 +284,14 @@
 <!-- Upload Images Modal -->
 <div class="modal" id="uploadImagesModal">
     <div class="modal-backdrop"></div>
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Tải lên hình ảnh chi nhánh</h3>
-                <button type="button" class="modal-close" id="closeUploadModal">
+                <div class="modal-title">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Tải lên hình ảnh chi nhánh</h3>
+                </div>
+                <button class="modal-close" id="closeUploadModal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -462,1396 +299,1571 @@
                 <form id="uploadImagesForm" action="{{ route('admin.branches.upload-image', $branch->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="form-group">
-                        <label for="branchImages">Chọn hình ảnh</label>
-                        <input type="file" id="branchImages" name="images[]" multiple accept="image/*" required>
-                        <div class="form-hint">Bạn có thể chọn nhiều hình ảnh cùng lúc. Định dạng hỗ trợ: JPG, PNG, GIF.</div>
+                        <label for="branchImages" class="form-label">
+                            <i class="fas fa-images"></i>
+                            Chọn hình ảnh
+                        </label>
+                        <div class="file-upload-wrapper enhanced">
+                            <input type="file" id="branchImages" name="images[]" multiple accept="image/*" required class="file-upload-input">
+                            <div class="file-upload-content">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="upload-text">
+                                    <h4>Kéo thả hoặc click để chọn ảnh</h4>
+                                    <p>Hỗ trợ định dạng: JPG, PNG, GIF</p>
+                                </div>
+                                <div class="upload-button">
+                                    <span class="btn btn-primary btn-sm">
+                                        <i class="fas fa-folder-open"></i>
+                                        Chọn tệp
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-hint enhanced">
+                            <div class="hint-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Tối đa 5MB/ảnh</span>
+                            </div>
+                            <div class="hint-item">
+                                <i class="fas fa-images"></i>
+                                <span>Có thể chọn nhiều ảnh cùng lúc</span>
+                            </div>
+                        </div>
                     </div>
-                    
+
                     <div class="form-group">
-                        <div class="form-check">
-                            <input type="checkbox" id="setAsFeatured" name="set_as_featured">
-                            <label for="setAsFeatured">
-                                Đặt hình ảnh đầu tiên làm ảnh đại diện
+                        <div class="featured-option">
+                            <label class="form-check enhanced">
+                                <input type="checkbox" id="setAsFeatured" name="set_as_featured" class="form-check-input">
+                                <span class="form-check-label">
+                                    <div class="check-icon">
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                    <div class="check-text">
+                                        <strong>Đặt ảnh đầu làm ảnh đại diện</strong>
+                                        <small>Ảnh đầu tiên sẽ được hiển thị làm ảnh đại diện của chi nhánh</small>
+                                    </div>
+                                </span>
                             </label>
                         </div>
                     </div>
-                    
+
                     <div class="image-preview-container hidden">
-                        <h4>Xem trước</h4>
-                        <div class="image-preview-grid" id="imagePreviewGrid"></div>
+                        <div class="preview-header">
+                            <h4><i class="fas fa-eye"></i> Xem trước</h4>
+                            <button type="button" class="btn btn-link btn-sm clear-preview">
+                                <i class="fas fa-trash-alt"></i> Xóa tất cả
+                            </button>
+                        </div>
+                        <div class="image-preview-grid enhanced" id="imagePreviewGrid"></div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline" id="cancelUploadBtn">Hủy</button>
+                <button class="btn btn-outline" id="cancelUploadBtn">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
                 <button type="submit" form="uploadImagesForm" class="btn btn-primary">
-                    <i class="fas fa-upload"></i>
-                    <span>Tải lên</span>
+                    <i class="fas fa-upload"></i> Tải lên
                 </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Image Confirmation Modal -->
-<div class="modal" id="deleteImageModal">
-    <div class="modal-backdrop"></div>
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Xác nhận xóa</h3>
-                <button type="button" class="modal-close" id="closeDeleteModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Bạn có chắc chắn muốn xóa hình ảnh này?</p>
-                <p class="text-danger">Lưu ý: Hành động này không thể hoàn tác.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline" id="cancelDeleteBtn">Hủy</button>
-                <form id="deleteImageForm" action="" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">Xóa</button>
-                </form>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-/* Variables */
-:root {
-    --primary: #4361ee;
-    --primary-light: #4895ef;
-    --primary-dark: #3f37c9;
-    --secondary: #4cc9f0;
-    --success: #4ade80;
-    --danger: #f43f5e;
-    --warning: #f59e0b;
-    --info: #3b82f6;
-    --light: #f9fafb;
-    --dark: #1f2937;
-    --gray: #6b7280;
-    --gray-light: #e5e7eb;
-    --gray-dark: #4b5563;
-    --white: #ffffff;
-    --black: #000000;
-    
-    --border-radius: 12px;
-    --border-radius-sm: 8px;
-    --border-radius-lg: 16px;
-    --border-radius-xl: 24px;
-    --border-radius-full: 9999px;
-    
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    
-    --transition: all 0.3s ease;
-    --transition-fast: all 0.15s ease;
-    --transition-slow: all 0.5s ease;
-}
-
-/* Base Styles */
-.branch-details-container {
-    font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
-    color: var(--dark);
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-}
-
-/* Typography */
-h1, h2, h3, h4, h5, h6 {
-    margin: 0;
-    font-weight: 600;
-    line-height: 1.2;
-}
-
-h1 {
-    font-size: 1.5rem;
-}
-
-h2 {
-    font-size: 1.25rem;
-}
-
-h3 {
-    font-size: 1.125rem;
-}
-
-h4 {
-    font-size: 1rem;
-}
-
-p {
-    margin: 0;
-    line-height: 1.5;
-}
-
-a {
-    color: var(--primary);
-    text-decoration: none;
-    transition: var(--transition-fast);
-}
-
-a:hover {
-    color: var(--primary-dark);
-}
-
-/* Buttons */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-    border-radius: var(--border-radius);
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition-fast);
-    border: none;
-    font-size: 0.875rem;
-    gap: 0.5rem;
-}
-
-.btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.75rem;
-}
-
-.btn-block {
-    width: 100%;
-}
-
-.btn-primary {
-    background-color: var(--primary);
-    color: var(--white);
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-dark);
-    color: var(--white);
-}
-
-.btn-outline {
-    background-color: transparent;
-    color: var(--gray-dark);
-    border: 1px solid var(--gray-light);
-}
-
-.btn-outline:hover {
-    background-color: var(--gray-light);
-    color: var(--dark);
-}
-
-.btn-danger {
-    background-color: var(--danger);
-    color: var(--white);
-}
-
-.btn-danger:hover {
-    background-color: #e11d48;
-    color: var(--white);
-}
-
-/* Page Header */
-.page-header {
-    margin-bottom: 1.5rem;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.header-icon {
-    width: 3rem;
-    height: 3rem;
-    background-color: rgba(67, 97, 238, 0.1);
-    color: var(--primary);
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-}
-
-.header-text p {
-    color: var(--gray);
-    margin-top: 0.25rem;
-}
-
-.header-actions {
-    display: flex;
-    gap: 0.75rem;
-}
-
-/* Cards */
-.card {
-    background-color: var(--white);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    transition: var(--transition);
-    margin-bottom: 1.5rem;
-}
-
-.card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-}
-
-.card-header {
-    display: flex;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--gray-light);
-    gap: 0.75rem;
-}
-
-.card-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    background-color: rgba(67, 97, 238, 0.1);
-    color: var(--primary);
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-}
-
-.card-header h3 {
-    flex-grow: 1;
-}
-
-.card-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.card-body {
-    padding: 1.5rem;
-}
-
-.card-body.p-0 {
-    padding: 0;
-}
-
-/* Branch Overview */
-.branch-overview {
-    margin-bottom: 2rem;
-}
-
-.branch-banner {
-    height: 8rem;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    position: relative;
-}
-
-.branch-status {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-}
-
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    border-radius: var(--border-radius-full);
-    font-weight: 500;
-    font-size: 0.875rem;
-    gap: 0.5rem;
-}
-
-.status-badge.active {
-    background-color: rgba(74, 222, 128, 0.2);
-    color: var(--success);
-}
-
-.status-badge.inactive {
-    background-color: rgba(244, 63, 94, 0.2);
-    color: var(--danger);
-}
-
-.branch-overview-content {
-    display: flex;
-    flex-wrap: wrap;
-    margin-top: -3rem;
-    padding: 0 1.5rem 1.5rem;
-    z-index: 1000;
-}
-
-.branch-overview-left {
-    display: flex;
-    align-items: flex-start;
-    gap: 1.5rem;
-    flex: 1;
-    min-width: 0;
-}
-
-.branch-avatar {
-    width: 6rem;
-    height: 6rem;
-    background-color: var(--primary);
-    color: var(--white);
-    border-radius: var(--border-radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    box-shadow: var(--shadow);
-    border: 4px solid var(--white);
-    flex-shrink: 0;
-}
-
-.branch-info {
-    padding-top: 1rem;
-}
-
-.branch-address {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--gray);
-    margin: 0.5rem 0 1rem;
-}
-
-.branch-address i {
-    color: var(--danger);
-}
-
-.branch-contact {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.contact-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.contact-item i {
-    color: var(--primary);
-}
-
-.branch-rating {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.stars {
-    color: var(--warning);
-    display: flex;
-    gap: 0.125rem;
-}
-
-.rating-value {
-    font-weight: 600;
-}
-
-.branch-overview-right {
-    margin-top: 1rem;
-    flex-basis: 100%;
-}
-
-@media (min-width: 768px) {
-    .branch-overview-right {
-        flex-basis: auto;
-        margin-top: 0;
-        margin-left: auto;
+    .branch-details-container {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        max-width: 100%;
+        margin: 0 auto;
     }
-}
 
-.hours-container {
-    display: flex;
-    gap: 1rem;
-    background-color: var(--light);
-    border-radius: var(--border-radius);
-    padding: 1rem;
-    box-shadow: var(--shadow-sm);
-}
-
-.hours-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: var(--border-radius);
-    flex: 1;
-}
-
-.hours-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-}
-
-.hours-item.opening .hours-icon {
-    background-color: rgba(74, 222, 128, 0.2);
-    color: var(--success);
-}
-
-.hours-item.closing .hours-icon {
-    background-color: rgba(244, 63, 94, 0.2);
-    color: var(--danger);
-}
-
-.hours-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.hours-label {
-    font-size: 0.75rem;
-    color: var(--gray);
-}
-
-.hours-value {
-    font-weight: 600;
-    font-size: 1.125rem;
-}
-
-.hours-item.opening .hours-value {
-    color: var(--success);
-}
-
-.hours-item.closing .hours-value {
-    color: var(--danger);
-}
-
-/* Content Grid */
-.content-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-}
-
-@media (min-width: 992px) {
-    .content-grid {
-        grid-template-columns: 2fr 1fr;
+    h1 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        line-height: 1.2;
     }
-}
 
-/* Gallery */
-.gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.gallery-item {
-    position: relative;
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    aspect-ratio: 4/3;
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
-}
-
-.gallery-item:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-md);
-}
-
-.gallery-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.gallery-overlay {
-    position: absolute;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: var(--transition);
-}
-
-.gallery-item:hover .gallery-overlay {
-    opacity: 1;
-}
-
-.gallery-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.gallery-btn {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--white);
-    color: var(--dark);
-    border: none;
-    cursor: pointer;
-    transition: var(--transition-fast);
-}
-
-.gallery-btn:hover {
-    transform: scale(1.1);
-}
-
-.gallery-btn.view-btn:hover {
-    background-color: var(--primary);
-    color: var(--white);
-}
-
-.gallery-btn.featured-btn {
-    background-color: var(--warning);
-    color: var(--white);
-}
-
-.gallery-btn.set-featured-btn:hover {
-    background-color: var(--warning);
-    color: var(--white);
-}
-
-.gallery-btn.delete-btn:hover {
-    background-color: var(--danger);
-    color: var(--white);
-}
-
-.gallery-caption {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: var(--white);
-    padding: 0.5rem;
-    font-size: 0.75rem;
-}
-
-/* Info Table */
-.info-table {
-    display: flex;
-    flex-direction: column;
-}
-
-.info-row {
-    display: flex;
-    border-bottom: 1px solid var(--gray-light);
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    font-weight: 500;
-    flex: 0 0 200px;
-}
-
-.info-label i {
-    color: var(--primary);
-}
-
-.info-value {
-    padding: 1rem 1.5rem;
-    flex: 1;
-}
-
-.id-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    background-color: var(--gray-light);
-    border-radius: var(--border-radius);
-    font-size: 0.875rem;
-}
-
-.fw-bold {
-    font-weight: 600;
-}
-
-.text-muted {
-    color: var(--gray);
-}
-
-.link-hover:hover {
-    text-decoration: underline;
-}
-
-.date-time {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.date {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.25rem 0.75rem;
-    background-color: var(--gray-light);
-    border-radius: var(--border-radius-full);
-    font-size: 0.875rem;
-}
-
-.time {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    color: var(--gray);
-    font-size: 0.875rem;
-}
-
-/* Hours Grid */
-.hours-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-}
-
-@media (min-width: 576px) {
-    .hours-grid {
-        grid-template-columns: 1fr 1fr;
+    h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
     }
-}
 
-.hours-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.25rem;
-    border-radius: var(--border-radius);
-    background-color: var(--light);
-    transition: var(--transition);
-}
-
-.hours-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow);
-}
-
-.hours-card-icon {
-    width: 3rem;
-    height: 3rem;
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-}
-
-.opening-hours .hours-card-icon {
-    background-color: rgba(74, 222, 128, 0.2);
-    color: var(--success);
-}
-
-.closing-hours .hours-card-icon {
-    background-color: rgba(244, 63, 94, 0.2);
-    color: var(--danger);
-}
-
-.hours-card-content {
-    display: flex;
-    flex-direction: column;
-}
-
-.hours-card-label {
-    font-size: 0.875rem;
-    color: var(--gray);
-}
-
-.hours-card-value {
-    font-weight: 600;
-    font-size: 1.25rem;
-}
-
-.opening-hours .hours-card-value {
-    color: var(--success);
-}
-
-.closing-hours .hours-card-value {
-    color: var(--danger);
-}
-
-/* Manager Profile */
-.manager-profile {
-    text-align: center;
-}
-
-.manager-cover {
-    height: 5rem;
-    background-color: rgba(59, 130, 246, 0.1);
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
-}
-
-.manager-avatar {
-    width: 5rem;
-    height: 5rem;
-    background-color: var(--info);
-    color: var(--white);
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    margin: -2.5rem auto 0.75rem;
-    border: 4px solid var(--white);
-    box-shadow: var(--shadow);
-}
-
-.manager-info h4 {
-    margin-bottom: 0.5rem;
-}
-
-.manager-role {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    background-color: rgba(59, 130, 246, 0.1);
-    color: var(--info);
-    border-radius: var(--border-radius-full);
-    font-size: 0.75rem;
-    margin-bottom: 1.25rem;
-}
-
-.manager-actions {
-    padding: 0 0.5rem;
-}
-
-.action-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-}
-
-/* Rating Summary */
-.rating-summary {
-    text-align: center;
-}
-
-.rating-circle {
-    width: 6rem;
-    height: 6rem;
-    background-color: var(--white);
-    border-radius: var(--border-radius-full);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.5rem;
-    box-shadow: var(--shadow);
-    border: 4px solid rgba(245, 158, 11, 0.1);
-}
-
-.rating-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--warning);
-    line-height: 1;
-}
-
-.rating-max {
-    font-size: 0.75rem;
-    color: var(--gray);
-}
-
-.rating-stars {
-    color: var(--warning);
-    font-size: 1.5rem;
-    margin-bottom: 0.75rem;
-    display: flex;
-    justify-content: center;
-    gap: 0.25rem;
-}
-
-.rating-caption {
-    color: var(--gray);
-    font-size: 0.875rem;
-}
-
-/* Quick Actions */
-.quick-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.action-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1.25rem 1rem;
-    border-radius: var(--border-radius);
-    transition: var(--transition);
-    cursor: pointer;
-}
-
-.action-item:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow);
-}
-
-.action-icon {
-    width: 3rem;
-    height: 3rem;
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    margin-bottom: 0.75rem;
-    transition: var(--transition);
-}
-
-.action-item:hover .action-icon {
-    transform: scale(1.1);
-}
-
-.action-item[data-action="report"] .action-icon {
-    background-color: rgba(67, 97, 238, 0.1);
-    color: var(--primary);
-}
-
-.action-item[data-action="staff"] .action-icon {
-    background-color: rgba(59, 130, 246, 0.1);
-    color: var(--info);
-}
-
-.action-item[data-action="schedule"] .action-icon {
-    background-color: rgba(74, 222, 128, 0.1);
-    color: var(--success);
-}
-
-.action-item[data-action="settings"] .action-icon {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: var(--warning);
-}
-
-.action-item[data-action="report"]:hover {
-    background-color: var(--primary);
-    color: var(--white);
-}
-
-.action-item[data-action="staff"]:hover {
-    background-color: var(--info);
-    color: var(--white);
-}
-
-.action-item[data-action="schedule"]:hover {
-    background-color: var(--success);
-    color: var(--white);
-}
-
-.action-item[data-action="settings"]:hover {
-    background-color: var(--warning);
-    color: var(--white);
-}
-
-.action-item:hover .action-icon {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: var(--white);
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 2rem 1rem;
-}
-
-.empty-icon {
-    width: 5rem;
-    height: 5rem;
-    background-color: var(--gray-light);
-    color: var(--gray);
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.75rem;
-    margin: 0 auto 1rem;
-    transition: var(--transition);
-}
-
-.empty-state:hover .empty-icon {
-    transform: scale(1.05);
-}
-
-.empty-state h4 {
-    margin-bottom: 0.5rem;
-}
-
-.empty-state p {
-    color: var(--gray);
-    margin-bottom: 1.25rem;
-}
-
-/* Modal */
-.modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-}
-
-.modal.show {
-    display: flex;
-}
-
-.modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-}
-
-.modal-dialog {
-    position: relative;
-    width: 100%;
-    max-width: 32rem;
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
-}
-
-.modal-dialog.modal-sm {
-    max-width: 24rem;
-}
-
-.modal-content {
-    background-color: var(--white);
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-lg);
-    overflow: hidden;
-}
-
-.modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--gray-light);
-}
-
-.modal-close {
-    width: 2rem;
-    height: 2rem;
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: transparent;
-    color: var(--gray);
-    border: none;
-    cursor: pointer;
-    transition: var(--transition-fast);
-}
-
-.modal-close:hover {
-    background-color: var(--gray-light);
-    color: var(--dark);
-}
-
-.modal-body {
-    padding: 1.5rem;
-}
-
-.modal-footer {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    border-top: 1px solid var(--gray-light);
-}
-
-/* Form Elements */
-.form-group {
-    margin-bottom: 1.25rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-.form-hint {
-    margin-top: 0.375rem;
-    font-size: 0.75rem;
-    color: var(--gray);
-}
-
-input[type="file"] {
-    display: block;
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid var(--gray-light);
-    border-radius: var(--border-radius);
-    background-color: var(--light);
-}
-
-.form-check {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.form-check input[type="checkbox"] {
-    width: 1rem;
-    height: 1rem;
-}
-
-/* Image Preview */
-.image-preview-container {
-    margin-top: 1.5rem;
-}
-
-.image-preview-container.hidden {
-    display: none;
-}
-
-.image-preview-container h4 {
-    margin-bottom: 1rem;
-    font-size: 1rem;
-}
-
-.image-preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 0.75rem;
-}
-
-.preview-item {
-    position: relative;
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    aspect-ratio: 1;
-}
-
-.preview-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.preview-remove {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: var(--border-radius-full);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(255, 255, 255, 0.8);
-    color: var(--dark);
-    border: none;
-    cursor: pointer;
-    transition: var(--transition-fast);
-}
-
-.preview-remove:hover {
-    background-color: var(--danger);
-    color: var(--white);
-}
-
-/* Utilities */
-.hidden {
-    display: none;
-}
-
-.text-danger {
-    color: var(--danger);
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Modal functionality
-    const uploadImagesBtn = document.getElementById('uploadImagesBtn');
-    const emptyStateUploadBtn = document.getElementById('emptyStateUploadBtn');
-    const closeUploadModal = document.getElementById('closeUploadModal');
-    const cancelUploadBtn = document.getElementById('cancelUploadBtn');
-    const uploadImagesModal = document.getElementById('uploadImagesModal');
-    
-    const deleteImageModal = document.getElementById('deleteImageModal');
-    const closeDeleteModal = document.getElementById('closeDeleteModal');
-    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-    
-    // Open upload modal
-    function openUploadModal() {
-        uploadImagesModal.classList.add('show');
-        document.body.style.overflow = 'hidden';
+    h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
     }
-    
-    // Close upload modal
-    function closeUploadModal() {
-        uploadImagesModal.classList.remove('show');
-        document.body.style.overflow = '';
+
+    h4 {
+        font-size: 1rem;
+        font-weight: 500;
     }
-    
-    // Open delete modal
-    function openDeleteModal() {
-        deleteImageModal.classList.add('show');
-        document.body.style.overflow = 'hidden';
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        text-decoration: none;
     }
-    
-    // Close delete modal
-    function closeDeleteModal() {
-        deleteImageModal.classList.remove('show');
-        document.body.style.overflow = '';
+
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
     }
-    
-    if (uploadImagesBtn) {
-        uploadImagesBtn.addEventListener('click', openUploadModal);
+
+    .btn-primary {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
     }
-    
-    if (emptyStateUploadBtn) {
-        emptyStateUploadBtn.addEventListener('click', openUploadModal);
+
+    .btn-primary:hover {
+        background: #1d4ed8;
     }
-    
-    if (closeUploadModal) {
-        closeUploadModal.addEventListener('click', closeUploadModal);
+
+    .btn-outline {
+        border: 1px solid #6b7280;
+        color: #6b7280;
+        background: transparent;
     }
-    
-    if (cancelUploadBtn) {
-        cancelUploadBtn.addEventListener('click', closeUploadModal);
+
+    .btn-outline:hover {
+        background: #f9fafb;
+        border-color: #2563eb;
+        color: #2563eb;
     }
-    
-    if (closeDeleteModal) {
-        closeDeleteModal.addEventListener('click', closeDeleteModal);
+
+    .btn-danger {
+        background: #ef4444;
+        color: #ffffff;
+        border: none;
     }
-    
-    if (cancelDeleteBtn) {
-        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+
+    .btn-danger:hover {
+        background: #dc2626;
     }
-    
-    // Close modals when clicking on backdrop
-    window.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal-backdrop')) {
-            closeUploadModal();
-            closeDeleteModal();
+
+    .btn-loading {
+        position: relative;
+        pointer-events: none;
+        opacity: 0.7;
+    }
+
+    .btn-loading::after {
+        content: '';
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ffffff;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-left: 8px;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
         }
-    });
-    
-    // Image upload preview
-    const imageInput = document.getElementById('branchImages');
-    const previewContainer = document.querySelector('.image-preview-container');
-    const previewGrid = document.getElementById('imagePreviewGrid');
-    
-    if (imageInput) {
-        imageInput.addEventListener('change', function() {
-            previewGrid.innerHTML = '';
-            
-            if (this.files.length > 0) {
-                previewContainer.classList.remove('hidden');
-                
-                Array.from(this.files).forEach((file, index) => {
-                    if (!file.type.match('image.*')) return;
-                    
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        const previewItem = document.createElement('div');
-                        previewItem.className = 'preview-item';
-                        
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.alt = `Preview ${index + 1}`;
-                        img.className = 'preview-img';
-                        
-                        const removeBtn = document.createElement('button');
-                        removeBtn.className = 'preview-remove';
-                        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                        removeBtn.addEventListener('click', function() {
-                            previewItem.remove();
-                            
-                            // If no previews left, hide the container
-                            if (previewGrid.children.length === 0) {
-                                previewContainer.classList.add('hidden');
-                            }
-                        });
-                        
-                        previewItem.appendChild(img);
-                        previewItem.appendChild(removeBtn);
-                        previewGrid.appendChild(previewItem);
-                    };
-                    
-                    reader.readAsDataURL(file);
-                });
-            } else {
-                previewContainer.classList.add('hidden');
-            }
-        });
     }
 
-    // Single image upload handling
-    document.getElementById('uploadImagesBtn').addEventListener('click', function() {
-        document.getElementById('imageUpload').click();
-    });
+    .page-header {
+        margin-bottom: 2rem;
+        background: #ffffff;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
 
-    document.getElementById('imageUpload').addEventListener('change', function(e) {
-        const formData = new FormData(document.getElementById('uploadImageForm'));
-        
-        fetch("{{ route('admin.branches.upload-image', $branch->id) }}", {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .header-icon,
+    .card-icon,
+    .hours-icon,
+    .hours-card-icon,
+    .empty-icon,
+    .action-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.125rem;
+    }
+
+    .header-icon {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb;
+    }
+
+    .header-text p {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .card {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        gap: 0.75rem;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .card-body.p-0 {
+        padding: 0;
+    }
+
+    .branch-banner {
+        height: 7rem;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+        position: relative;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+
+    .status-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-badge.active {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+    }
+
+    .status-badge.inactive {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+    }
+
+    .branch-overview-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        background: #ffffff;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    .branch-overview-left {
+        display: flex;
+        gap: 1.25rem;
+        flex: 1;
+    }
+
+    .branch-avatar {
+        width: 4.5rem;
+        height: 4.5rem;
+        background: #2563eb;
+        color: #ffffff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        border: 4px solid #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .branch-address {
+        display: flex;
+        gap: 0.5rem;
+        color: #6b7280;
+        margin: 0.75rem 0;
+        font-size: 0.875rem;
+    }
+
+    .branch-address i {
+        color: #ef4444;
+    }
+
+    .branch-contact {
+        display: flex;
+        gap: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .contact-item {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        font-size: 0.875rem;
+    }
+
+    .contact-item i {
+        color: #2563eb;
+    }
+
+    .branch-rating {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .stars {
+        color: #f59e0b;
+        display: flex;
+        gap: 0.25rem;
+        font-size: 1rem;
+    }
+
+    .rating-value {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .hours-container {
+        display: flex;
+        gap: 1rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .hours-item {
+        display: flex;
+        gap: 0.75rem;
+        flex: 1;
+        padding: 0.75rem;
+        border-radius: 8px;
+    }
+
+    .hours-item.opening {
+        background: rgba(34, 197, 94, 0.1);
+    }
+
+    .hours-item.closing {
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .hours-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .hours-value {
+        font-weight: 600;
+        font-size: 1.125rem;
+    }
+
+    .hours-item.opening .hours-value {
+        color: #22c55e;
+    }
+
+    .hours-item.closing .hours-value {
+        color: #ef4444;
+    }
+
+    .content-grid {
+        display: grid;
+        gap: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+        .content-grid {
+            grid-template-columns: 3fr 1fr;
+        }
+    }
+
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .gallery-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        aspect-ratio: 4/3;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .gallery-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .gallery-item:hover .gallery-img {
+        transform: scale(1.05);
+    }
+
+    /* Primary Badge for Main Image */
+    .gallery-item {
+        position: relative;
+    }
+
+    .primary-badge {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        padding: 0.5rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        z-index: 10;
+        animation: slideInFromTop 0.5s ease-out;
+    }
+
+    .primary-badge i {
+        font-size: 0.875rem;
+    }
+
+    @keyframes slideInFromTop {
+        0% {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.8);
+        }
+        50% {
+            transform: translateY(5px) scale(1.05);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        }
+        50% {
+            box-shadow: 0 4px 16px rgba(245, 158, 11, 0.6);
+        }
+    }
+
+    /* Enhanced Gallery Item */
+    .gallery-item {
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .gallery-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .gallery-img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        transition: all 0.3s ease;
+    }
+
+    .gallery-item:hover .gallery-img {
+        transform: scale(1.05);
+    }
+
+    .gallery-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        opacity: 0;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .gallery-item:hover .gallery-overlay {
+        opacity: 1;
+    }
+
+    .gallery-btn {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 50%;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .gallery-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .gallery-btn.view-btn:hover {
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    .gallery-btn.featured-btn {
+        background: #f59e0b;
+        color: #ffffff;
+    }
+
+    .gallery-btn.set-featured-btn:hover {
+        background: #f59e0b;
+        color: #ffffff;
+    }
+
+    .gallery-btn.delete-btn:hover {
+        background: #ef4444;
+        color: #ffffff;
+    }
+
+    .gallery-caption {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.75);
+        color: #ffffff;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+        text-align: center;
+    }
+
+    .info-table {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .info-row {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb;
+        align-items: center;
+    }
+
+    .info-label {
+        display: flex;
+        gap: 0.5rem;
+        padding: 1rem 1.5rem;
+        font-weight: 500;
+        flex: 0 0 200px;
+        background: #f9fafb;
+    }
+
+    .info-label i {
+        color: #2563eb;
+    }
+
+    .info-value {
+        padding: 1rem 1.5rem;
+        flex: 1;
+    }
+
+    .id-badge {
+        padding: 0.375rem 0.75rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        font-size: 0.875rem;
+    }
+
+    .text-muted {
+        color: #6b7280;
+    }
+
+    .link-hover:hover {
+        color: #2563eb;
+        text-decoration: underline;
+    }
+
+    .date-time่วย {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .date,
+    .time {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .date {
+        background: #f9fafb;
+        border-radius: 9999px;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .time {
+        color: #6b7280;
+    }
+
+    .hours-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+        .hours-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .hours-card {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .hours-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .hours-card-icon {
+        font-size: 1.5rem;
+    }
+
+    .opening-hours .hours-card-icon {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+    }
+
+    .closing-hours .hours-card-icon {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+    }
+
+    .hours-card-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .hours-card-value {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+
+    .opening-hours .hours-card-value {
+        color: #22c55e;
+    }
+
+    .closing-hours .hours-card-value {
+        color: #ef4444;
+    }
+
+    .manager-profile {
+        text-align: center;
+    }
+
+    .manager-cover {
+        height: 5rem;
+        background: linear-gradient(135deg, #3b82f6, rgba(59, 130, 246, 0.1));
+    }
+
+    .manager-avatar {
+        width: 4rem;
+        height: 4rem;
+        background: #3b82f6;
+        color: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin: -2rem auto 0.75rem;
+        border: 4px solid #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .manager-role {
+        display: inline-flex;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .action-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .rating-summary {
+        text-align: center;
+    }
+
+    .rating-circle {
+        width: 5.5rem;
+        height: 5.5rem;
+        background: #ffffff;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        border: 3px solid rgba(245, 158, 11, 0.2);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .rating-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #f59e0b;
+    }
+
+    .rating-max {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .rating-stars {
+        color: #f59e0b;
+        font-size: 1.25rem;
+        display: flex;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .rating-caption {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .action-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1.25rem;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #f9fafb;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .action-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        background: #ffffff;
+    }
+
+    .action-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .action-item[data-action="report"] .action-icon {
+        background: rgba(37, 99, 235, 0.1);
+        color: #2563eb;
+    }
+
+    .action-item[data-action="staff"] .action-icon {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+
+    .action-item[data-action="schedule"] .action-icon {
+        background: rgba(34, 197, 94, 0.1);
+        color: #22c55e;
+    }
+
+    .action-item[data-action="settings"] .action-icon {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+
+    .action-item:hover .action-icon {
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .empty-icon {
+        font-size: 2rem;
+        background: rgba(107, 114, 128, 0.1);
+        color: #6b7280;
+        padding: 0.75rem;
+        border-radius: 50%;
+    }
+
+    .empty-state p {
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1050;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .modal-dialog {
+        max-width: 32rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        position: relative;
+        z-index: 1051;
+    }
+
+    .modal-content {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .modal-close {
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        background: #f9fafb;
+        color: #6b7280;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .modal-close:hover {
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    /* Enhanced Modal */
+    .modal-dialog.modal-lg {
+        max-width: 42rem;
+    }
+
+    .modal-content {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        color: white;
+        border-bottom: none;
+    }
+
+    .modal-title h3 {
+        color: white;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-hint {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 0.5rem;
+    }
+
+    .form-hint.enhanced {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        border-left: 4px solid #2563eb;
+    }
+
+    .hint-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .hint-item i {
+        color: #2563eb;
+    }
+
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-check-input {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .form-check-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Enhanced Checkbox Styling */
+    .form-check.enhanced {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-radius: 12px;
+        border: 2px solid #f59e0b;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .form-check.enhanced:hover {
+        background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    }
+
+    .check-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        background: #f59e0b;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .check-text {
+        flex: 1;
+    }
+
+    .check-text strong {
+        display: block;
+        color: #92400e;
+        margin-bottom: 0.25rem;
+    }
+
+    .check-text small {
+        color: #a16207;
+        font-size: 0.875rem;
+    }
+
+    .file-upload-wrapper {
+        position: relative;
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 1.5rem;
+        text-align: center;
+        background: #f9fafb;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .file-upload-wrapper:hover {
+        border-color: #2563eb;
+    }
+
+    .file-upload-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-upload-text {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+    }
+
+    .file-upload-text:hover {
+        color: #2563eb;
+    }
+
+    /* Enhanced File Upload Styling */
+    .file-upload-wrapper.enhanced {
+        position: relative;
+        border: 2px dashed #d1d5db;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .file-upload-wrapper.enhanced:hover {
+        border-color: #2563eb;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+    }
+
+    .file-upload-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .upload-icon {
+        width: 4rem;
+        height: 4rem;
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .upload-text h4 {
+        margin: 0;
+        color: #1f2937;
+        font-weight: 600;
+    }
+
+    .upload-text p {
+        margin: 0;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .upload-button {
+        margin-top: 0.5rem;
+    }
+
+    .image-preview-container {
+        margin-top: 1.5rem;
+    }
+
+    .image-preview-container.hidden {
+        display: none;
+    }
+
+    .image-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .preview-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        aspect-ratio: 1;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .preview-remove {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .preview-remove:hover {
+        background: #ef4444;
+        color: #ffffff;
+    }
+
+    /* Enhanced Preview Grid */
+    .image-preview-grid.enhanced {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 1rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .preview-item {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        aspect-ratio: 1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .preview-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .preview-remove {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .preview-remove:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+
+    .text-danger {
+        color: #ef4444;
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Modal handling
+        const toggleModal = (modal, show) => {
+            modal.classList.toggle('show', show);
+            modal.style.display = show ? 'flex' : 'none';
+            document.body.style.overflow = show ? 'hidden' : 'auto';
+        };
+
+        const uploadModal = document.getElementById('uploadImagesModal');
+
+        // Open upload modal
+        ['uploadImagesBtn', 'emptyStateUploadBtn'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => toggleModal(uploadModal, true));
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if(data.success) {
-                window.location.reload();
-            } else {
-                alert('Upload thất bại: ' + data.message);
+        });
+
+        // Close upload modal
+        ['closeUploadModal', 'cancelUploadBtn'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    toggleModal(uploadModal, false);
+                    document.getElementById('branchImages').value = '';
+                    document.getElementById('imagePreviewGrid').innerHTML = '';
+                    document.querySelector('.image-preview-container').classList.add('hidden');
+                });
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Có lỗi xảy ra khi upload ảnh');
         });
-    });
-    
-    // Delete image functionality
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    const deleteForm = document.getElementById('deleteImageForm');
-    
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const imageId = this.getAttribute('data-image-id');
-            deleteForm.action = `/admin/branch-images/${imageId}`;
-            openDeleteModal();
+
+        // Close modals on backdrop click
+        window.addEventListener('click', e => {
+            if (e.target.classList.contains('modal-backdrop')) {
+                toggleModal(uploadModal, false);
+                document.getElementById('branchImages').value = '';
+                document.getElementById('imagePreviewGrid').innerHTML = '';
+                document.querySelector('.image-preview-container').classList.add('hidden');
+            }
         });
-    });
-    
-    // Set featured image functionality
-    const featuredButtons = document.querySelectorAll('.set-featured-btn');
-    
-    featuredButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const imageId = this.getAttribute('data-image-id');
-            
-            // Send AJAX request to set as featured
-            fetch(`/admin/branch-images/${imageId}/set-featured`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: JSON.stringify({
-                    branch_id: {{ $branch->id }}
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Reload the page to reflect changes
-                    window.location.reload();
+
+        // Image upload preview
+        const imageInput = document.getElementById('branchImages');
+        const previewContainer = document.querySelector('.image-preview-container');
+        const previewGrid = document.getElementById('imagePreviewGrid');
+        if (imageInput) {
+            imageInput.addEventListener('change', () => {
+                previewGrid.innerHTML = '';
+                const files = imageInput.files;
+                if (files.length) {
+                    previewContainer.classList.remove('hidden');
+                    Array.from(files).forEach((file, idx) => {
+                        if (!file.type.match('image.*')) return;
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            const item = document.createElement('div');
+                            item.className = 'preview-item';
+                            item.innerHTML = `<img src="${e.target.result}" alt="Preview" class="preview-img"><button class="preview-remove"><i class="fas fa-times"></i></button>`;
+                            const removeBtn = item.querySelector('.preview-remove');
+                            removeBtn.addEventListener('click', () => {
+                                item.remove();
+                                const dt = new DataTransfer();
+                                Array.from(files).forEach((f, i) => {
+                                    if (i !== idx) dt.items.add(f);
+                                });
+                                imageInput.files = dt.files;
+                                if (!previewGrid.children.length) {
+                                    previewContainer.classList.add('hidden');
+                                }
+                            });
+                            previewGrid.appendChild(item);
+                        };
+                        reader.readAsDataURL(file);
+                    });
                 } else {
-                    alert('Có lỗi xảy ra khi đặt ảnh đại diện');
+                    previewContainer.classList.add('hidden');
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Có lỗi xảy ra khi đặt ảnh đại diện');
+            });
+        }
+
+        // Clear preview button
+        const clearPreviewBtn = document.querySelector('.clear-preview');
+        if (clearPreviewBtn) {
+            clearPreviewBtn.addEventListener('click', () => {
+                previewGrid.innerHTML = '';
+                previewContainer.classList.add('hidden');
+                imageInput.value = '';
+            });
+        }
+
+        // Delete image with AJAX
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const imageId = btn.dataset.imageId;
+                const branchId = btn.dataset.branchId;
+                dtmodalConfirmDelete({
+                    itemName: 'hình ảnh',
+                    onConfirm: () => {
+                        btn.classList.add('btn-loading');
+                        fetch(`/admin/branches/${branchId}/images/${imageId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                }
+                            })
+                            .then(res => {
+                                if (res.headers.get('content-type')?.includes('application/json')) {
+                                    return res.json();
+                                } else {
+                                    throw new Error('Server did not return JSON.');
+                                }
+                            })
+                            .then(data => {
+                                btn.classList.remove('btn-loading');
+                                if (data.success) {
+                                    const galleryItem = document.querySelector(`.gallery-item[data-image-id="${imageId}"]`);
+                                    if (galleryItem) {
+                                        galleryItem.style.animation = 'fadeOut 0.3s ease forwards';
+                                        setTimeout(() => galleryItem.remove(), 300);
+                                    }
+                                    const galleryGrid = document.querySelector('.gallery-grid');
+                                    if (galleryGrid && !galleryGrid.children.length) {
+                                        const cardBody = galleryGrid.closest('.card-body');
+                                        cardBody.innerHTML = `
+                                    <div class="empty-state" id="emptyState">
+                                        <i class="fas fa-images empty-icon"></i>
+                                        <h4>Chưa có hình ảnh</h4>
+                                        <p>Chi nhánh này chưa có hình ảnh nào</p>
+                                        <button class="btn btn-primary" id="emptyStateUploadBtn"><i class="fas fa-upload"></i> Tải lên hình ảnh</button>
+                                    </div>`;
+                                        const newUploadBtn = document.getElementById('emptyStateUploadBtn');
+                                        if (newUploadBtn) {
+                                            newUploadBtn.addEventListener('click', () => toggleModal(uploadModal, true));
+                                        }
+                                    }
+                                    dtmodalShowToast('success', {
+                                        message: 'Xóa hình ảnh thành công'
+                                    });
+                                } else {
+                                    dtmodalShowToast('error', {
+                                        message: 'Có lỗi khi xóa hình ảnh: ' + (data.message || 'Unknown error')
+                                    });
+                                }
+                            })
+                            .catch(err => {
+                                btn.classList.remove('btn-loading');
+                                dtmodalShowToast('error', {
+                                    message: 'Có lỗi khi xóa hình ảnh: ' + err.message
+                                });
+                            });
+                    }
+                });
             });
         });
-    });
-    
-    // Quick action items
-    const actionItems = document.querySelectorAll('.action-item');
-    
-    actionItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const action = this.getAttribute('data-action');
-            
-            // Handle different actions
-            switch (action) {
-                case 'report':
-                    console.log('Opening reports');
-                    // Add your report action here
-                    break;
-                case 'staff':
-                    console.log('Managing staff');
-                    // Add your staff management action here
-                    break;
-                case 'schedule':
-                    console.log('Viewing schedule');
-                    // Add your schedule action here
-                    break;
-                case 'settings':
-                    console.log('Opening settings');
-                    // Add your settings action here
-                    break;
-            }
+
+        // Set featured image
+        document.querySelectorAll('.set-featured-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.add('btn-loading');
+                // Sửa URL để khớp với route đã định nghĩa
+                fetch(`/admin/branches/{{ $branch->id }}/set-featured`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        // Gửi imageId trong body thay vì URL
+                        body: JSON.stringify({
+                            imageId: btn.dataset.imageId
+                        })
+                    })
+                    .then(res => {
+                        // Kiểm tra response status trước khi parse JSON
+                        if (!res.ok) {
+                            throw new Error(`HTTP error! status: ${res.status}`);
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        btn.classList.remove('btn-loading');
+                        if (data.success) {
+                            // Thay vì reload trang, cập nhật UI trực tiếp
+                            // Bỏ featured từ tất cả các nút khác
+                            document.querySelectorAll('.featured-btn').forEach(featuredBtn => {
+                                featuredBtn.classList.remove('featured-btn');
+                                featuredBtn.classList.add('set-featured-btn');
+                                featuredBtn.innerHTML = '<i class="far fa-star"></i>';
+                            });
+
+                            // Xóa tất cả badge "ảnh đại diện" hiện có
+                            document.querySelectorAll('.primary-badge').forEach(badge => {
+                                badge.remove();
+                            });
+
+                            // Đặt nút hiện tại thành featured
+                            btn.classList.remove('set-featured-btn');
+                            btn.classList.add('featured-btn');
+                            btn.innerHTML = '<i class="fas fa-star"></i>';
+
+                            // Thêm badge "ảnh đại diện" vào ảnh vừa được set
+                            const currentGalleryItem = btn.closest('.gallery-item');
+                            if (currentGalleryItem) {
+                                const primaryBadge = document.createElement('div');
+                                primaryBadge.className = 'primary-badge';
+                                primaryBadge.innerHTML = '<i class="fas fa-star"></i><span>Ảnh đại diện</span>';
+                                currentGalleryItem.appendChild(primaryBadge);
+                                
+                                // Thêm hiệu ứng animation cho badge mới
+                                primaryBadge.style.opacity = '0';
+                                primaryBadge.style.transform = 'scale(0.8)';
+                                setTimeout(() => {
+                                    primaryBadge.style.transition = 'all 0.3s ease';
+                                    primaryBadge.style.opacity = '1';
+                                    primaryBadge.style.transform = 'scale(1)';
+                                }, 100);
+                            }
+
+                            // Hiển thị thông báo thành công
+                            dtmodalShowToast('success', {
+                                message: 'Đã đặt ảnh làm ảnh chính thành công'
+                            });
+                        } else {
+                            dtmodalShowToast('error', {
+                                message: 'Có lỗi khi đặt ảnh đại diện: ' + (data.message || 'Unknown error')
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        btn.classList.remove('btn-loading');
+                        console.error('Error setting featured image:', err);
+                        dtmodalShowToast('error', {
+                            message: 'Có lỗi khi đặt ảnh đại diện: ' + err.message
+                        });
+                    });
+            });
         });
-    });
-    
-    // Initialize Fancybox for gallery
-    if (typeof Fancybox !== 'undefined') {
-        Fancybox.bind("[data-fancybox]", {
-            // Options here
+
+        // Quick click actions with feedback
+        document.querySelectorAll('.action-item').forEach(item => {
+            item.addEventListener('click', () => {
+                item.style.animation = 'pulse 0.2s ease';
+                setTimeout(() => item.style.animation = '', 200);
+                console.log(`Action clicked: ${item.dataset.action}`);
+            });
         });
-    }
-    
-    // Add animation to cards on scroll
-    const cards = document.querySelectorAll('.card');
-    
-    function animateOnScroll() {
+
+        // Card animations
+        const cards = document.querySelectorAll('.card');
         cards.forEach(card => {
-            const cardTop = card.getBoundingClientRect().top;
-            const windowHeight = window.innerHeight;
-            
-            if (cardTop < windowHeight * 0.9) {
-                card.classList.add('animate-in');
-            }
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
         });
-    }
-    
-    // Add initial animation class
-    cards.forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        const animateCards = () => {
+            cards.forEach(card => {
+                if (card.getBoundingClientRect().top < window.innerHeight * 0.85) {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }
+            });
+        };
+        window.addEventListener('scroll', animateCards);
+        setTimeout(animateCards, 100);
+
+        // Fancybox bind
+        if (typeof Fancybox !== 'undefined') {
+            Fancybox.bind("[data-fancybox]", {
+                Thumbs: {
+                    autoStart: false
+                }
+            });
+        }
     });
-    
-    // Add animation class on scroll
-    window.addEventListener('scroll', animateOnScroll);
-    
-    // Trigger initial animation
-    setTimeout(animateOnScroll, 100);
-});
+
+    // Animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; transform: scale(0.95); }
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+`;
+    document.head.appendChild(style);
 </script>
 @endsection
