@@ -36,7 +36,7 @@ Route::middleware([CartCountMiddleware::class])->group(function () {
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
 
     // Wishlist
-    Route::get('/wishlist', [CustomerWishlistController::class,'index'])->name('wishlist.index');
+    Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
     Route::delete('/wishlist/{id}', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
 
@@ -96,10 +96,10 @@ Route::middleware('auth')->group(function () {
 Route::prefix('api')->group(function () {
     // Product AJAX filtering
     Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
-    
+
     // Favorites
     Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
-    
+
     // Cart APIs
     Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add');
     Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update');
@@ -131,3 +131,18 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
+Route::prefix('customer')->group(function () {
+    Route::get('/chat', function () {
+        $conversations = \App\Models\Conversation::where('customer_id', auth()->id())
+            ->with(['branch', 'messages.sender'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        return view('customer.chat', compact('conversations'));
+    })->name('customer.chat.index');
+
+    Route::post('/chat/create', [App\Http\Controllers\Customer\ChatController::class, 'createConversation'])->name('customer.chat.create');
+    Route::post('/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
+    Route::get('/chat/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('customer.chat.conversations');
+    Route::get('/chat/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('customer.chat.messages');
+    Route::post('/chat/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('customer.chat.typing');
+});

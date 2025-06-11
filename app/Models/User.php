@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\Admin\UserFactory> */
-    use HasFactory, Notifiable , SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
 
     /**
@@ -72,7 +72,7 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
-       public function roles()
+    public function roles()
     {
         return $this->belongsToMany(Role::class, 'user_roles')
             ->withTimestamps();

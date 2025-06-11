@@ -53,33 +53,39 @@
         </div>
     @endforeach --}}
 
-    @php
-        $banners = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('homepage');
-    @endphp
-    @include('components.banner', ['banners' => $banners])
+        {{-- @php
+            $banners = app('App\Http\Controllers\Customer\BannerController')->getBannersByPosition('homepage');
+        @endphp --}}
+        {{-- tam thoi cmt lai --}}
+        @include('components.banner', ['banners' => $banners])
 
-    <button class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 z-10 p-2 rounded-full" id="prev-slide">
-        <i class="fas fa-chevron-left h-6 w-6"></i>
-    </button>
+        <button
+            class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 z-10 p-2 rounded-full"
+            id="prev-slide">
+            <i class="fas fa-chevron-left h-6 w-6"></i>
+        </button>
 
-    <button class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 z-10 p-2 rounded-full" id="next-slide">
-        <i class="fas fa-chevron-right h-6 w-6"></i>
-    </button>
+        <button
+            class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 text-white hover:bg-black/50 z-10 p-2 rounded-full"
+            id="next-slide">
+            <i class="fas fa-chevron-right h-6 w-6"></i>
+        </button>
 
-    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10" id="slider-dots">
-        @foreach ($banners as $index => $banner)
-            <button class="w-2 h-2 rounded-full {{ $index === 0 ? 'bg-white' : 'bg-white/50' }}" data-index="{{ $index }}"></button>
-        @endforeach
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10" id="slider-dots">
+            @foreach ($banners as $index => $banner)
+                <button class="w-2 h-2 rounded-full {{ $index === 0 ? 'bg-white' : 'bg-white/50' }}"
+                    data-index="{{ $index }}"></button>
+            @endforeach
+        </div>
     </div>
-</div>
 
 
 
 
-<div class="container mx-auto px-4 py-8">
-    <!-- Categories Section -->
-    <section class="py-10">
-        <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center">Danh Mục Món Ăn</h2>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Categories Section -->
+        <section class="py-10">
+            <h2 class="text-2xl md:text-3xl font-bold mb-6 text-center">Danh Mục Món Ăn</h2>
 
         <div class="swiper category-slider">
             <div class="swiper-wrapper">
@@ -287,6 +293,9 @@
                 </div>
             @endforelse
         </div>
+    </div>
+    </div>
+    </div>
     </section>
 
     <!-- Order Now Section -->
@@ -319,101 +328,90 @@
                     </ul>
 
                     <div class="flex flex-wrap gap-4">
-                        <a href="/products" class="bg-white text-orange-500 hover:bg-white/90 px-6 py-3 rounded-md font-medium transition-colors">
+                        <a href="/products"
+                            class="bg-white text-orange-500 hover:bg-white/90 px-6 py-3 rounded-md font-medium transition-colors">
                             Đặt Hàng Ngay
                         </a>
-                        <a href="/products" class="text-white border border-white hover:bg-white/10 px-6 py-3 rounded-md font-medium transition-colors">
+                        <a href="/products"
+                            class="text-white border border-white hover:bg-white/10 px-6 py-3 rounded-md font-medium transition-colors">
                             Xem Thực Đơn
                         </a>
                     </div>
                 </div>
 
                 <div class="relative h-60 md:h-auto">
-                    <img src="https://marketingai.mediacdn.vn/thumb_w/784/603488451643117568/2024/8/7/thumb-1280-x-800-px-61-1723017058646933002606.png" alt="Đặt hàng ngay" class="object-cover w-full h-full">
+                    <img src="https://marketingai.mediacdn.vn/thumb_w/784/603488451643117568/2024/8/7/thumb-1280-x-800-px-61-1723017058646933002606.png"
+                        alt="Đặt hàng ngay" class="object-cover w-full h-full">
                 </div>
             </div>
         </div>
     </section>
-</div>
+    </div>
 @endsection
 
 @section('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Banner slider functionality
-        const slides = document.querySelectorAll('.banner-slide');
-        const dots = document.querySelectorAll('#slider-dots button');
-        const prevButton = document.getElementById('prev-slide');
-        const nextButton = document.getElementById('next-slide');
-        let currentSlide = 0;
-        let slideInterval;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Banner slider functionality
+            const slides = document.querySelectorAll('.banner-slide');
+            const dots = document.querySelectorAll('#slider-dots button');
+            const prevButton = document.getElementById('prev-slide');
+            const nextButton = document.getElementById('next-slide');
+            let currentSlide = 0;
+            let slideInterval;
 
-        function showSlide(index) {
-            // Hide all slides
-            slides.forEach(slide => {
-                slide.classList.remove('opacity-100');
-                slide.classList.add('opacity-0');
-            });
-            
-            // Show the selected slide
-            slides[index].classList.remove('opacity-0');
-            slides[index].classList.add('opacity-100');
-            
-            // Update dots
-            dots.forEach((dot, i) => {
-                if (i === index) {
-                    dot.classList.remove('bg-white/50');
-                    dot.classList.add('bg-white');
-                } else {
-                    dot.classList.remove('bg-white');
-                    dot.classList.add('bg-white/50');
-                }
-            });
-            
-            currentSlide = index;
-        }
+            function showSlide(index) {
+                // Hide all slides
+                slides.forEach(slide => {
+                    slide.classList.remove('opacity-100');
+                    slide.classList.add('opacity-0');
+                });
 
-        function nextSlide() {
-            let next = currentSlide + 1;
-            if (next >= slides.length) next = 0;
-            showSlide(next);
-        }
+                // Show the selected slide
+                slides[index].classList.remove('opacity-0');
+                slides[index].classList.add('opacity-100');
 
-        function prevSlide() {
-            let prev = currentSlide - 1;
-            if (prev < 0) prev = slides.length - 1;
-            showSlide(prev);
-        }
+                // Update dots
+                dots.forEach((dot, i) => {
+                    if (i === index) {
+                        dot.classList.remove('bg-white/50');
+                        dot.classList.add('bg-white');
+                    } else {
+                        dot.classList.remove('bg-white');
+                        dot.classList.add('bg-white/50');
+                    }
+                });
 
-        // Initialize slider
-        function startSlider() {
-            slideInterval = setInterval(nextSlide, 5000);
-        }
+                currentSlide = index;
+            }
 
-        function stopSlider() {
-            clearInterval(slideInterval);
-        }
+            function nextSlide() {
+                let next = currentSlide + 1;
+                if (next >= slides.length) next = 0;
+                showSlide(next);
+            }
 
-        // Event listeners
-        prevButton.addEventListener('click', function() {
-            stopSlider();
-            prevSlide();
-            startSlider();
-        });
+            function prevSlide() {
+                let prev = currentSlide - 1;
+                if (prev < 0) prev = slides.length - 1;
+                showSlide(prev);
+            }
 
-        nextButton.addEventListener('click', function() {
-            stopSlider();
-            nextSlide();
-            startSlider();
-        });
+            // Initialize slider
+            function startSlider() {
+                slideInterval = setInterval(nextSlide, 5000);
+            }
 
-        dots.forEach((dot, index) => {
-            dot.addEventListener('click', function() {
+            function stopSlider() {
+                clearInterval(slideInterval);
+            }
+
+            // Event listeners
+            prevButton.addEventListener('click', function() {
                 stopSlider();
-                showSlide(index);
+                prevSlide();
                 startSlider();
             });
-        });
 
         // Start the slider
         startSlider();
