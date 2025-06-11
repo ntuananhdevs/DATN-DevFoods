@@ -93,7 +93,7 @@
                         <span class="sidebar-text">Quản lý</span>
                     </a>
                     {{-- <a href="{{ route('admin.permissions.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.permissions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                        <span class="sidebar-text">Quyền hạn</span>
+                    <span class="sidebar-text">Quyền hạn</span>
                     </a> --}}
                 </div>
             </div>
@@ -141,7 +141,7 @@
                         <span class="sidebar-text">Món ăn</span>
                     </a>
                     {{-- <a href="{{ route('admin.combo.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.combo.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                        <span class="sidebar-text">Combo</span>
+                    <span class="sidebar-text">Combo</span>
                     </a> --}}
                 </div>
             </div>
@@ -176,15 +176,15 @@
                 </a> --}}
             <!-- Orders -->
             {{-- <a href="{{ route('admin.orders.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.orders.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Orders">
-                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package">
-                        <path d="m7.5 4.27 9 5.15"></path>
-                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
-                        <path d="m3.3 7 8.7 5 8.7-5"></path>
-                        <path d="M12 22V12"></path>
-                    </svg>
-                </span>
-                <span class="sidebar-text">Đơn hàng</span>
+            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package">
+                    <path d="m7.5 4.27 9 5.15"></path>
+                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                    <path d="m3.3 7 8.7 5 8.7-5"></path>
+                    <path d="M12 22V12"></path>
+                </svg>
+            </span>
+            <span class="sidebar-text">Đơn hàng</span>
             </a> --}}
             <!-- Driver -->
             <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Drivers">
@@ -220,15 +220,15 @@
             </div>
             <!-- Analytics Reports -->
             {{-- <a href="{{ route('admin.analytics-reports.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics-reports.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Analytics">
-                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3">
-                        <path d="M3 3v18h18"></path>
-                        <path d="M18 17V9"></path>
-                        <path d="M13 17V5"></path>
-                        <path d="M8 17v-3"></path>
-                    </svg>
-                </span>
-                <span class="sidebar-text">Báo cáo</span>
+            <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-3">
+                    <path d="M3 3v18h18"></path>
+                    <path d="M18 17V9"></path>
+                    <path d="M13 17V5"></path>
+                    <path d="M8 17v-3"></path>
+                </svg>
+            </span>
+            <span class="sidebar-text">Báo cáo</span>
             </a> --}}
             <!-- Branches -->
             <a href="{{ route('admin.branches.index') }}"
@@ -249,42 +249,35 @@
                 </span>
                 <span class="sidebar-text">Chi nhánh</span>
             </a>
-            <!-- User Rank -->
-            <a href="{{ route('admin.user_ranks.index') }}"
-                class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_ranks.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
-                data-tooltip="Ranks">
-                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-medal">
-                        <path
-                            d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.61 2.14a2 2 0 0 1 .13 2.2L16.79 15">
-                        </path>
-                        <path d="M11 12 5.12 2.2"></path>
-                        <path d="m13 12 5.88-9.8"></path>
-                        <path d="M8 7h8"></path>
-                        <circle cx="12" cy="17" r="5"></circle>
-                        <path d="m9 22 3-3 3 3"></path>
-                        <path d="M9 12h6"></path>
+            <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Member Ranks">
+                <button type="button" class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_ranks.*') || request()->routeIs('admin.user_rank_history.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-medal">
+                            <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.61 2.14a2 2 0 0 1 .13 2.2L16.79 15"></path>
+                            <path d="M11 12 5.12 2.2"></path>
+                            <path d="m13 12 5.88-9.8"></path>
+                            <path d="M8 7h8"></path>
+                            <circle cx="12" cy="17" r="5"></circle>
+                            <path d="m9 22 3-3 3 3"></path>
+                            <path d="M9 12h6"></path>
+                        </svg>
+                    </span>
+                    <span class="sidebar-text">Hạng thành viên</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down ml-auto transition-transform sidebar-dropdown-icon">
+                        <path d="m6 9 6 6 6-6"></path>
                     </svg>
-                </span>
-                <span class="sidebar-text">Thăng hạng</span>
-            </a>
-            <!-- User Rank History -->
-            <a href="{{ route('admin.user_rank_history.index') }}"
-                class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_rank_history.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
-                data-tooltip="User Rank History">
-                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-history">
-                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                        <path d="M3 3v5h5"></path>
-                        <path d="M12 7v5l4 2"></path>
-                    </svg>
-                </span>
-                <span class="sidebar-text">Lịch sử thăng hạng</span>
-            </a>
+                </button>
+                <!-- User Rank -->
+                <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
+                    <a href="{{ route('admin.user_ranks.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_ranks.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="Ranks">
+                        <span class="sidebar-text">Thông tin hạng</span>
+                    </a>
+                    <!-- User Rank History -->
+                    <a href="{{ route('admin.user_rank_history.index') }}" class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.user_rank_history.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip" data-tooltip="User Rank History">
+                        <span class="sidebar-text">Lịch sử hạng thành viên</span>
+                    </a>
+                </div>
+            </div>
             <!-- Promotions -->
             <a href="{{ route('admin.promotions.index') }}"
                 class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.promotions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
