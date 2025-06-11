@@ -4,7 +4,7 @@
 @section('page-title', 'Điều hướng đến khách hàng')
 
 @section('content')
-<div class="pt-16 relative">
+<div class="pt-4 relative">
     <!-- Full screen map -->
     <div id="navigationMap" style="height: calc(100vh - 4rem); width: 100%;"></div>
     

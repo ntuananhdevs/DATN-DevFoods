@@ -4,7 +4,7 @@
 @section('page-title', 'Chi tiết đơn hàng #' . $orderId)
 
 @section('content')
-<div class="pt-16 p-4 space-y-4">
+<div class="pt-4 p-4 space-y-4">
     <!-- Order Status -->
     <div class="bg-white rounded-lg p-4 shadow-sm">
         <div class="flex items-center space-x-3">

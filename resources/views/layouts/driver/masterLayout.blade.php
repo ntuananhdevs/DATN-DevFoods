@@ -19,7 +19,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body class="bg-gray-50">
-    @include('partials.driver.header')
+    {{-- @include('partials.driver.header') --}}
     
     <main class="pb-20">
         @yield('content')

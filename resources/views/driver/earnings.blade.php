@@ -4,7 +4,7 @@
 @section('page-title', 'Thu nhập')
 
 @section('content')
-<div class="pt-16 p-4 space-y-4">
+<div class="pt-4 p-4 space-y-4">
     <!-- Period Selector -->
     <div class="flex space-x-2 mb-4">
         <button class="px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium">Hôm nay</button>
