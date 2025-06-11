@@ -168,7 +168,7 @@ window.handleGoogleLogin = async function() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 },
                 body: JSON.stringify({
                     firebase_token: result.idToken,
@@ -176,14 +176,24 @@ window.handleGoogleLogin = async function() {
                 })
             });
 
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('HTTP Error:', response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText || 'Unknown error'}`);
+            }
+
             const data = await response.json();
             console.log('Laravel response:', data);
             
             if (data.success) {
+                console.log('Login successful, redirecting to:', data.redirect_url);
                 // Redirect to appropriate page
                 window.location.href = data.redirect_url || '/';
             } else {
-                alert(data.message || 'Đăng nhập thất bại');
+                throw new Error(data.message || 'Đăng nhập thất bại');
             }
         } else {
             console.error('Google Sign In failed:', result.error);
@@ -201,7 +211,23 @@ window.handleGoogleLogin = async function() {
         }
     } catch (error) {
         console.error('Handle Google Login Error:', error);
-        alert('Đã xảy ra lỗi trong quá trình đăng nhập: ' + error.message);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        let errorMessage = 'Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại.';
+        
+        if (error.message.includes('HTTP 419')) {
+            errorMessage = 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang và thử lại.';
+        } else if (error.message.includes('HTTP 422')) {
+            errorMessage = 'Dữ liệu không hợp lệ. Vui lòng thử lại.';
+        } else if (error.message.includes('HTTP 500')) {
+            errorMessage = 'Lỗi server. Vui lòng thử lại sau.';
+        }
+        
+        alert(errorMessage);
     }
 };
 
