@@ -11,11 +11,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script>
-        // Set Mapbox access token - THAY BẰNG TOKEN THỰC CỦA BẠN
         if (typeof mapboxgl !== 'undefined') {
-            mapboxgl.accessToken = 'pk.eyJ1IjoibmhhdG5ndXllbnF2IiwiYSI6ImNtYjZydDNnZDAwY24ybm9qcTdxcTNocG8ifQ.u7X_0DfN7d52xZ8cGFbWyQ';
+            mapboxgl.accessToken = "{{ config('services.mapbox.access_token') }}";
         }
     </script>
+
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body class="bg-gray-50">
@@ -29,7 +29,7 @@
     
     <script>
         // Mapbox access token - thay bằng token thực của bạn
-        mapboxgl.accessToken = 'pk.eyJ1IjoibmhhdG5ndXllbnF2IiwiYSI6ImNtYjZydDNnZDAwY24ybm9qcTdxcTNocG8ifQ.u7X_0DfN7d52xZ8cGFbWyQ';
+        mapboxgl.accessToken = "{{ config('services.mapbox.access_token') }}"
         
         // GPS tracking
         let currentPosition = null;
