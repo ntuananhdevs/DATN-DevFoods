@@ -11,14 +11,22 @@ use Illuminate\Support\Facades\Storage; // Added
 use App\Models\ProductVariant;          // Added
 use App\Models\Favorite;                 // Added
 use Illuminate\Support\Facades\DB;
+use App\Services\BranchService;
 
 class HomeController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
 
     public function index(Request $request) // Added $request parameter
     {
-        // Get selected branch ID from session
-        $selectedBranchId = session('selected_branch');
+        // Get selected branch ID from BranchService
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $selectedBranchId = $currentBranch ? $currentBranch->id : null;
         
         // Query for general products (existing logic)
         $productsQuery = Product::with(['category', 'images' => function($query) {

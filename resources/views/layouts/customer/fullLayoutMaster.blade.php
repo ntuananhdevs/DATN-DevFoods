@@ -675,19 +675,6 @@
     <script>
         // Fixed JavaScript for dropdown functionality
         document.addEventListener('DOMContentLoaded', function() {
-            // Show branch selection modal automatically if no branch is selected
-            const branchModal = document.getElementById('branch-selector-modal');
-            
-            if (branchModal) {
-                // Check if there's no selected branch in session
-                const hasSelectedBranch = {{ session()->has('selected_branch') ? 'true' : 'false' }};
-                
-                if (!hasSelectedBranch) {
-                    // Show the modal automatically
-                    branchModal.style.display = 'flex';
-                    document.body.classList.add('overflow-hidden'); // Prevent body scrolling
-                }
-            }
 
             // Notification functionality
             const notifications = document.querySelectorAll('.notification-alert');
@@ -875,17 +862,7 @@
                 });
             }
 
-            // Branch selector button - FIXED
-            const branchSelectorButton = document.getElementById('branch-selector-button');
-            
-            if (branchSelectorButton && branchModal) {
-                branchSelectorButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    branchModal.style.display = 'flex';
-                    document.body.classList.add('overflow-hidden');
-                });
-            }
+
 
             // General dropdown close functionality
             document.addEventListener('keydown', function(e) {
@@ -1099,7 +1076,5 @@
     
     @stack('scripts')
     
-    <!-- Branch Selector Modal -->
-    @include('partials.customer.branch-selector-modal')
 </body>
 </html>

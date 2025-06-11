@@ -10,9 +10,16 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Services\BranchService;
 
 class CartController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
     /**
      * Display a listing of the resource.
      */
