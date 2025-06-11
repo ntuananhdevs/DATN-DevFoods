@@ -28,7 +28,7 @@ use App\Http\Controllers\Api\Customer\BranchController as ApiCustomerBranchContr
 use App\Http\Controllers\Api\Customer\CartController as ApiCustomerCartController;
 
 // ===== WEB ROUTES (giao diện web, view) =====
-Route::middleware([CartCountMiddleware::class])->group(function () {
+Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
     // Product
@@ -86,10 +86,16 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
 // Customer Profile (cần đăng nhập)
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
     Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
     Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+});
+
+// Phone Required routes (không cần phone.required middleware)
+Route::middleware('auth')->group(function () {
+    Route::get('/phone-required', [CustomerAuthController::class, 'showPhoneRequired'])->name('customer.phone-required');
+    Route::post('/phone-required', [CustomerAuthController::class, 'updatePhone'])->name('customer.phone-required.post');
 });
 
 // ===== API ROUTES (prefix /api/...) =====
@@ -131,7 +137,7 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-Route::prefix('customer')->group(function () {
+Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::get('/chat', function () {
         $conversations = \App\Models\Conversation::where('customer_id', auth()->id())
             ->with(['branch', 'messages.sender'])
