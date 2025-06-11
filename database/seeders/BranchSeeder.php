@@ -13,13 +13,10 @@ class BranchSeeder extends Seeder
     public function run()
     {
         // Đảm bảo có role manager
-        $managerRole = Role::firstOrCreate(['name' => 'manager'], [
-            'display_name' => 'Quản lý chi nhánh',
-            'description' => 'Quản lý chi nhánh cửa hàng'
-        ]);
-        
+        $managerRole = Role::firstOrCreate(['name' => 'manager'], []);
+
         // Tạo một số manager nếu chưa có
-        if (User::whereHas('roles', function($query) {
+        if (User::whereHas('roles', function ($query) {
             $query->where('name', 'manager');
         })->count() < 3) {
             $managers = [
@@ -45,17 +42,17 @@ class BranchSeeder extends Seeder
                     'password' => Hash::make('password123'),
                 ],
             ];
-            
+
             foreach ($managers as $managerData) {
                 $manager = User::create($managerData);
                 $manager->roles()->attach($managerRole->id);
             }
         }
-        
+
         // Tạo các chi nhánh cố định
         $fixedBranches = [
             [
-                'branch_code' => 'HN001',
+
                 'name' => 'Chi nhánh Hà Nội',
                 'address' => '123 Đường Láng, Đống Đa, Hà Nội',
                 'phone' => '0243123456',
@@ -64,9 +61,10 @@ class BranchSeeder extends Seeder
                 'longitude' => 105.8342,
                 'opening_hour' => '07:30',
                 'closing_hour' => '22:30',
+                'branch_code' => 'HCM001',
             ],
             [
-                'branch_code' => 'HN002',
+
                 'name' => 'Chi nhánh Hồ Chí Minh',
                 'address' => '456 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
                 'phone' => '0283456789',
@@ -75,9 +73,10 @@ class BranchSeeder extends Seeder
                 'longitude' => 106.7009,
                 'opening_hour' => '07:00',
                 'closing_hour' => '23:00',
+                'branch_code' => 'HCM002',
             ],
             [
-                'branch_code' => 'HN003',
+
                 'name' => 'Chi nhánh Đà Nẵng',
                 'address' => '789 Nguyễn Văn Linh, Hải Châu, Đà Nẵng',
                 'phone' => '0236789012',
@@ -85,14 +84,15 @@ class BranchSeeder extends Seeder
                 'latitude' => 16.0544,
                 'longitude' => 108.2022,
                 'opening_hour' => '08:00',
+                'branch_code' => 'DN003',
                 'closing_hour' => '22:00',
             ],
         ];
-        
-        $managerIds = User::whereHas('roles', function($query) {
+
+        $managerIds = User::whereHas('roles', function ($query) {
             $query->where('name', 'manager');
         })->pluck('id')->toArray();
-        
+
         foreach ($fixedBranches as $index => $branchData) {
             Branch::create(array_merge($branchData, [
                 'manager_user_id' => $managerIds[$index % count($managerIds)],
