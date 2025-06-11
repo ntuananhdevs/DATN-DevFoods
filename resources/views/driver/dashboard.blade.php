@@ -3,7 +3,7 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="pt-16 p-4 space-y-4">
+<div class="pt-4 p-4 space-y-4">
     <!-- User Info -->
     <div class="bg-white rounded-lg p-4 shadow-sm">
         <div class="flex items-center justify-between">
@@ -15,13 +15,19 @@
                     <h2 class="font-semibold">Xin chào, Nguyễn Văn A</h2>
                     <div class="flex items-center space-x-2">
                         <span class="text-sm text-gray-500">Offline</span>
-                        <span class="text-xs text-gray-400">ID: TH2345</span>
+                        {{-- <span class="text-xs text-gray-400">ID: TH2345</span> --}}
                     </div>
                 </div>
             </div>
-            <button class="text-blue-600">
-                <i class="fas fa-bell"></i>
+            <div class="flex items-center space-x-4">
+            <button class="relative">
+                <i class="fas fa-bell text-xl"></i>
+                <span class="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
             </button>
+            <button>
+                <i class="fas fa-cog text-xl"></i>
+            </button>
+        </div>
         </div>
     </div>
 
@@ -45,7 +51,7 @@
             <h3 class="font-medium">Thu nhập</h3>
             <a href="{{ route('driver.earnings') }}" class="text-blue-600 text-sm">Chi tiết</a>
         </div>
-        <div class="flex space-x-4 mb-4">
+        <div class="flex justify-between space-x-4 mb-4">
             <button class="px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium">Hôm nay</button>
             <button class="px-3 py-1 text-gray-500 text-sm">Tuần này</button>
             <button class="px-3 py-1 text-gray-500 text-sm">Tháng này</button>
@@ -89,7 +95,7 @@
     </div>
 
     <!-- Quick Access -->
-    <div class="bg-white rounded-lg p-4 shadow-sm">
+    {{-- <div class="bg-white rounded-lg p-4 shadow-sm">
         <h3 class="font-medium mb-3">Truy cập nhanh</h3>
         <div class="grid grid-cols-4 gap-4">
             <a href="{{ route('driver.orders.index') }}" class="flex flex-col items-center p-3 rounded-lg bg-gray-50">
@@ -109,10 +115,10 @@
                 <span class="text-xs text-center">Hồ sơ</span>
             </a>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Today's Schedule -->
-    <div class="bg-white rounded-lg p-4 shadow-sm">
+    {{-- <div class="bg-white rounded-lg p-4 shadow-sm">
         <h3 class="font-medium mb-3">Lịch làm việc hôm nay</h3>
         <div class="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
             <i class="fas fa-clock text-green-600"></i>
@@ -122,15 +128,15 @@
             </div>
             <span class="bg-green-600 text-white px-2 py-1 rounded text-xs ml-auto">Đang làm việc</span>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Logout Button -->
-    <div class="bg-white rounded-lg p-4 shadow-sm">
+    {{-- <div class="bg-white rounded-lg p-4 shadow-sm">
         <button class="w-full text-red-600 font-medium py-2">
             <i class="fas fa-sign-out-alt mr-2"></i>
             Đăng xuất
         </button>
-    </div>
+    </div> --}}
 </div>
 
 <script>
