@@ -175,7 +175,6 @@ class ProductController extends Controller
 
                     $product->images()->create([
                         'img' => 'products/' . $filename,
-                        'img_url' => $url,
                         'is_primary' => true,
                     ]);
                 }
@@ -202,7 +201,6 @@ class ProductController extends Controller
 
                         $product->images()->create([
                             'img' => 'products/' . $filename,
-                            'img_url' => $url,
                             'is_primary' => false,
                         ]);
                     }
@@ -728,7 +726,6 @@ class ProductController extends Controller
 
             $product->images()->create([
                 'img' => 'products/' . $filename,
-                'img_url' => $url,
                 'is_primary' => true,
             ]);
 
@@ -752,7 +749,6 @@ class ProductController extends Controller
                 $url = Storage::disk('s3')->url('products/' . $filename);
                 $product->images()->create([
                     'img' => 'products/' . $filename,
-                    'img_url' => $url,
                     'is_primary' => false,
                 ]);
             }
