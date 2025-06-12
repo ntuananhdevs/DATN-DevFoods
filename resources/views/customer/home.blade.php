@@ -295,7 +295,6 @@
         </div>
     </div>
     </div>
-    </div>
     </section>
 
     <!-- Order Now Section -->
@@ -452,4 +451,8 @@
     }
 });
 </script>
+
+{{-- Include branch checking logic --}}
+@include('partials.customer.branch-check')
+<!-- Branch Selector Modal -->
 @endsection

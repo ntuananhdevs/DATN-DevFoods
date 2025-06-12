@@ -211,7 +211,7 @@
                                         @endphp
                                         @if($primaryImage)
                                             <div id="main-image-preview" class="absolute inset-0 w-full h-full">
-                                                <img src="{{ $primaryImage->img_url ?? (str_starts_with($primaryImage->img, 'http') ? $primaryImage->img : asset('storage/' . $primaryImage->img)) }}" alt="Current main image"
+                                                <img src="{{ Storage::disk('s3')->url($primaryImage->img) }}" alt="Current main image"
                                                     class="w-full h-full object-cover" />
                                                 <div class="absolute top-2 right-2">
                                                     <button type="button" id="change-primary-image-btn"
@@ -273,7 +273,7 @@
                                     @if($product->images && $product->images->count() > 0)
                                         @foreach($product->images->where('is_primary', false) as $image)
                                             <div class="relative group">
-                                                <img src="{{ $image->img_url ?? (str_starts_with($image->img, 'http') ? $image->img : asset('storage/' . $image->img)) }}" alt="Product image"
+                                                <img src="{{ Storage::disk('s3')->url($image->img) }}" alt="Product image"
                                                     class="w-full h-24 object-cover rounded-md border border-gray-200">
                                                 <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button type="button" class="remove-existing-image bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
@@ -717,9 +717,11 @@
         </section>
 
         <!-- Save Buttons -->
-        <div class="p-4 flex justify-end gap-4 mt-6">
+        <div class="p-4 flex justify-end gap-2 mt-6">
             <button type="submit" id="save-product-btn"
-                class="fixed bottom-4 right-4 rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 shadow-lg z-50">Cập nhật sản phẩm</button>
+                class="fixed bottom-4 right-4 rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 shadow-lg z-50">
+                Cập nhật sản phẩm
+            </button>
         </div>
     </form>
 </main>

@@ -100,13 +100,8 @@ Route::middleware('auth')->group(function () {
 
 // ===== API ROUTES (prefix /api/...) =====
 Route::prefix('api')->group(function () {
-    // Product AJAX filtering
     Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
-
-    // Favorites
     Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
-
-    // Cart APIs
     Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add');
     Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove');
@@ -115,7 +110,6 @@ Route::prefix('api')->group(function () {
     // Customer API
     Route::prefix('customer')->group(function () {
         Route::post('/products/get-variant', [ApiCustomerProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
-        // Branch APIs
         Route::post('/branches/set-selected', [ApiCustomerBranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
         Route::get('/branches/nearest', [ApiCustomerBranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
     });

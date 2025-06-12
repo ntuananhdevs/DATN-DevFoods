@@ -417,9 +417,9 @@
             <div class="col-span-4 text-center py-8">
                 <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
                 <h3 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy sản phẩm</h3>
-                @if(session('selected_branch'))
+                @if($currentBranch)
                     @php
-                        $branch = App\Models\Branch::find(session('selected_branch'));
+                        $branch = $currentBranch;
                     @endphp
                     @if($branch)
                         <p class="text-gray-500">Không tìm thấy sản phẩm nào tại chi nhánh {{ $branch->name }}.</p>
@@ -1252,4 +1252,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+{{-- Include branch checking logic --}}
+@include('partials.customer.branch-check')
+<!-- Branch Selector Modal -->
 @endsection

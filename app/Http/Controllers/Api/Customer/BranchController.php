@@ -4,14 +4,18 @@ namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Branch;
-use App\Models\Cart;
-use App\Models\CartItem;
-use Illuminate\Support\Facades\DB;
+use App\Services\BranchService;
 use Illuminate\Support\Facades\Log;
 
 class BranchController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
+
     /**
      * Set the selected branch in session and handle cart changes
      */
@@ -19,63 +23,15 @@ class BranchController extends Controller
     {
         try {
             $request->validate([
-                'branch_id' => 'required|exists:branches,id',
+                'branch_id' => 'required|integer|min:1',
             ]);
 
             $branchId = $request->branch_id;
-            $previousBranchId = session('selected_branch');
             
-            // Check if changing branch
-            if ($previousBranchId && $previousBranchId != $branchId) {
-                Log::info('Changing branch from ' . $previousBranchId . ' to ' . $branchId);
-                
-                // Clear the cart if changing branch
-                if (auth()->check()) {
-                    $userId = auth()->id();
-                    Log::info('Clearing cart for authenticated user: ' . $userId);
-                    
-                    // Delete cart items
-                    $cartItemsDeleted = CartItem::whereHas('cart', function($query) use ($userId) {
-                        $query->where('user_id', $userId)
-                              ->where('status', 'active');
-                    })->delete();
-                    
-                    // Delete the cart itself
-                    $cartDeleted = Cart::where('user_id', $userId)
-                        ->where('status', 'active')
-                        ->delete();
-                    
-                    Log::info('Cart cleanup: ' . $cartItemsDeleted . ' items deleted, cart delete result: ' . $cartDeleted);
-                } else {
-                    // Handle non-logged-in users with session-based carts
-                    $sessionId = session()->getId();
-                    Log::info('Clearing cart for session: ' . $sessionId);
-                    
-                    // Delete cart items
-                    $cartItemsDeleted = CartItem::whereHas('cart', function($query) use ($sessionId) {
-                        $query->where('session_id', $sessionId)
-                              ->where('status', 'active');
-                    })->delete();
-                    
-                    // Delete the cart itself
-                    $cartDeleted = Cart::where('session_id', $sessionId)
-                        ->where('status', 'active')
-                        ->delete();
-                    
-                    Log::info('Session cart cleanup: ' . $cartItemsDeleted . ' items deleted, cart delete result: ' . $cartDeleted);
-                }
-                
-                // Reset cart count in session
-                session(['cart_count' => 0]);
-            }
+            // Use BranchService to handle branch selection
+            $this->branchService->setSelectedBranch($branchId, true);
             
-            // Set selected branch in session
-            session(['selected_branch' => $branchId]);
-            
-            // Make sure session is saved immediately - don't use regenerate() which can cause errors
-            session()->save();
-            
-            // Also set a cookie as fallback
+            // Set cookie as fallback
             $cookie = cookie('selected_branch', $branchId, 60*24*30); // 30 days
             
             return response()->json([
@@ -85,11 +41,17 @@ class BranchController extends Controller
                 'session_has_branch' => session()->has('selected_branch'),
                 'session_branch_id' => session('selected_branch')
             ])->cookie($cookie);
+            
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
         } catch (\Exception $e) {
             Log::error('Error setting selected branch: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Đã xảy ra lỗi: ' . $e->getMessage()
+                'message' => 'Đã xảy ra lỗi hệ thống'
             ], 500);
         }
     }
@@ -101,48 +63,113 @@ class BranchController extends Controller
     {
         try {
             $request->validate([
-                'lat' => 'required|numeric',
-                'lng' => 'required|numeric',
+                'lat' => 'required|numeric|between:-90,90',
+                'lng' => 'required|numeric|between:-180,180',
             ]);
 
             $latitude = $request->lat;
             $longitude = $request->lng;
             
-            // Use Haversine formula to calculate distance
-            $branches = Branch::select([
-                'id',
-                'name',
-                'address',
-                'latitude',
-                'longitude',
-                DB::raw("(6371 * acos(cos(radians($latitude)) * cos(radians(latitude)) * cos(radians(longitude) - radians($longitude)) + sin(radians($latitude)) * sin(radians(latitude)))) AS distance")
-            ])
-            ->where('active', true)
-            ->orderBy('distance', 'asc')
-            ->limit(1)
-            ->get();
+            $nearestBranch = $this->branchService->findNearestBranch($latitude, $longitude);
             
-            if ($branches->isEmpty()) {
+            if (!$nearestBranch) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Không tìm thấy chi nhánh nào gần bạn'
                 ]);
             }
             
-            $nearestBranch = $branches->first();
-            
             return response()->json([
                 'success' => true,
                 'branch_id' => $nearestBranch->id,
                 'branch_name' => $nearestBranch->name,
+                'branch_address' => $nearestBranch->address,
                 'distance' => round($nearestBranch->distance, 2) // Distance in km
             ]);
         } catch (\Exception $e) {
             Log::error('Error finding nearest branch: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Đã xảy ra lỗi: ' . $e->getMessage()
+                'message' => 'Đã xảy ra lỗi hệ thống'
             ], 500);
         }
     }
-} 
+
+    /**
+     * Get all active branches
+     */
+    public function getActiveBranches()
+    {
+        try {
+            $branches = $this->branchService->getActiveBranches();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $branches
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting active branches: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi hệ thống'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get current selected branch
+     */
+    public function getCurrentBranch()
+    {
+        try {
+            $currentBranch = $this->branchService->getCurrentBranch();
+            
+            if (!$currentBranch) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chưa chọn chi nhánh'
+                ]);
+            }
+            
+            $status = $this->branchService->getBranchStatus($currentBranch->id);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'branch' => $currentBranch,
+                    'status' => $status
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting current branch: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi hệ thống'
+            ], 500);
+        }
+    }
+
+    /**
+     * Clear selected branch
+     */
+    public function clearSelectedBranch()
+    {
+        try {
+            $this->branchService->clearSelectedBranch();
+            
+            // Clear cookie
+            $cookie = cookie()->forget('selected_branch');
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa chi nhánh đã chọn'
+            ])->cookie($cookie);
+        } catch (\Exception $e) {
+            Log::error('Error clearing selected branch: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi hệ thống'
+            ], 500);
+        }
+    }
+}
