@@ -5,11 +5,101 @@
 
 @section('content')
 <style>
+    /* Dark mode variables */
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 84% 4.9%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --accent-foreground: 222.2 84% 4.9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 84% 4.9%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 94.1%;
+    }
+
+    /* Theme toggle button */
+    .theme-toggle {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background-color: hsl(var(--muted));
+        border-radius: 12px;
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .dark .theme-toggle {
+        background-color: hsl(var(--primary));
+    }
+
+    .theme-toggle-handle {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        background-color: hsl(var(--background));
+        border-radius: 50%;
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+    }
+
+    .dark .theme-toggle-handle {
+        transform: translateX(20px);
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+    
     /* Basic styles */
     .card {
-        background: #fff;
+        background: hsl(var(--card));
         border-radius: 0.5rem;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid hsl(var(--border));
+    }
+    
+    .dark .card {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
     
     /* Status badges */
@@ -27,14 +117,29 @@
         color: #15803d;
     }
     
+    .dark .status-badge.active {
+        background-color: rgba(22, 163, 74, 0.2);
+        color: #4ade80;
+    }
+    
     .status-badge.inactive {
         background-color: #fee2e2;
         color: #dc2626;
     }
     
+    .dark .status-badge.inactive {
+        background-color: rgba(220, 38, 38, 0.2);
+        color: #f87171;
+    }
+    
     .status-badge.expired {
         background-color: #f3f4f6;
         color: #6b7280;
+    }
+    
+    .dark .status-badge.expired {
+        background-color: rgba(107, 114, 128, 0.2);
+        color: #9ca3af;
     }
     
     /* Discount type styling */
@@ -52,14 +157,29 @@
         color: #1e40af;
     }
     
+    .dark .discount-type.percentage {
+        background-color: rgba(30, 64, 175, 0.2);
+        color: #60a5fa;
+    }
+    
     .discount-type.fixed-amount {
         background-color: #dcfce7;
         color: #15803d;
     }
     
+    .dark .discount-type.fixed-amount {
+        background-color: rgba(21, 128, 61, 0.2);
+        color: #4ade80;
+    }
+    
     .discount-type.free-shipping {
         background-color: #fef3c7;
         color: #d97706;
+    }
+    
+    .dark .discount-type.free-shipping {
+        background-color: rgba(217, 119, 6, 0.2);
+        color: #fbbf24;
     }
     
     /* Value display styling */
@@ -76,20 +196,30 @@
         color: #1e40af;
     }
     
+    .dark .value-display.percentage {
+        background-color: rgba(30, 64, 175, 0.2);
+        color: #60a5fa;
+    }
+    
     .value-display.amount {
         background-color: #fef3c7;
         color: #d97706;
     }
     
+    .dark .value-display.amount {
+        background-color: rgba(217, 119, 6, 0.2);
+        color: #fbbf24;
+    }
+    
     /* Date range styling */
     .date-range {
         font-size: 0.875rem;
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
     }
     
     .date-range .start-date {
         font-weight: 600;
-        color: #374151;
+        color: hsl(var(--foreground));
     }
     
     /* Filter modal styling */
@@ -108,18 +238,23 @@
     }
     
     .filter-modal-content {
-        background: white;
+        background: hsl(var(--card));
         border-radius: 8px;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         width: 100%;
         max-width: 32rem;
         margin: 1rem;
+        border: 1px solid hsl(var(--border));
+    }
+    
+    .dark .filter-modal-content {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
     }
     
     /* Statistics cards */
     .stat-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
         border-radius: 8px;
         padding: 1rem;
         transition: all 0.2s ease;
@@ -129,10 +264,34 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
+    .dark .stat-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+    
     .stat-icon {
         width: 16px;
         height: 16px;
         margin-right: 8px;
+    }
+    
+    .text-muted-foreground {
+        color: hsl(var(--muted-foreground));
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
 
@@ -154,6 +313,14 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
+            <div class="flex items-center mr-4">
+                <span class="text-sm text-muted-foreground mr-2">Theme:</span>
+                <button id="themeToggle" class="theme-toggle">
+                    <div class="theme-toggle-handle">
+                        <span id="themeIcon">🌙</span>
+                    </div>
+                </button>
+            </div>
             <div class="dropdown relative">
                 <button class="btn btn-outline flex items-center dropdown-toggle" id="exportDropdown" data-dropdown="exportMenu">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
@@ -256,7 +423,7 @@
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.3-4.3"></path>
                         </svg>
-                        <input type="text" id="searchInput" name="search" placeholder="Tìm kiếm theo mã hoặc tên..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" value="{{ request('search') }}">
+                        <input type="text" id="searchInput" name="search" placeholder="Tìm kiếm theo mã hoặc tên..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9 border-border text-foreground" value="{{ request('search') }}">
                     </div>
                 </form>
             </div>
@@ -416,8 +583,40 @@
 
 @section('scripts')
 <script>
+    // Theme Management
+    function initThemeToggle() {
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+        
+        // Load saved theme or default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+        
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                html.classList.add('dark');
+                themeToggle.classList.add('dark');
+                themeIcon.textContent = '☀️';
+            } else {
+                html.classList.remove('dark');
+                themeToggle.classList.remove('dark');
+                themeIcon.textContent = '🌙';
+            }
+            localStorage.setItem('theme', theme);
+        }
+        
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+    }
+
     // Khởi tạo các animation và styles
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize theme toggle
+        initThemeToggle();
         
         // Thêm CSS cho animation
         const style = document.createElement('style');

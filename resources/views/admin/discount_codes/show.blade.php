@@ -13,9 +13,19 @@
         transition: all 0.3s ease;
     }
     
+    .dark .detail-card {
+        background: hsl(var(--card));
+        border-color: hsl(var(--border));
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+    
     .detail-card:hover {
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         transform: translateY(-2px);
+    }
+    
+    .dark .detail-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     }
     
     .detail-header {
@@ -26,6 +36,10 @@
         display: flex;
         align-items: center;
         gap: 12px;
+    }
+    
+    .dark .detail-header {
+        background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.8) 100%);
     }
     
     .detail-content {
@@ -53,10 +67,18 @@
         letter-spacing: 0.05em;
     }
     
+    .dark .info-label {
+        color: hsl(var(--muted-foreground));
+    }
+    
     .info-value {
         color: #1f2937;
         font-size: 1rem;
         line-height: 1.5;
+    }
+    
+    .dark .info-value {
+        color: hsl(var(--foreground));
     }
     
     .status-badge {
@@ -74,9 +96,19 @@
         color: #166534;
     }
     
+    .dark .status-active {
+        background: #166534;
+        color: #dcfce7;
+    }
+    
     .status-inactive {
         background: #fee2e2;
         color: #991b1b;
+    }
+    
+    .dark .status-inactive {
+        background: #991b1b;
+        color: #fee2e2;
     }
     
     .type-badge {
@@ -92,14 +124,29 @@
         color: #1e40af;
     }
     
+    .dark .type-percentage {
+        background: #1e40af;
+        color: #dbeafe;
+    }
+    
     .type-fixed {
         background: #d1fae5;
         color: #065f46;
     }
     
+    .dark .type-fixed {
+        background: #065f46;
+        color: #d1fae5;
+    }
+    
     .type-shipping {
         background: #fef3c7;
         color: #d97706;
+    }
+    
+    .dark .type-shipping {
+        background: #d97706;
+        color: #fef3c7;
     }
     
     .value-display {
@@ -111,15 +158,30 @@
         font-size: 14px;
         font-weight: 500;
     }
+    
+    .dark .value-display {
+        background-color: #15803d;
+        color: #dcfce7;
+    }
 
     .value-display.percentage {
         background-color: #dbeafe;
         color: #1e40af;
     }
+    
+    .dark .value-display.percentage {
+        background-color: #1e40af;
+        color: #dbeafe;
+    }
 
     .value-display.amount {
         background-color: #fef3c7;
         color: #d97706;
+    }
+    
+    .dark .value-display.amount {
+        background-color: #d97706;
+        color: #fef3c7;
     }
     
     .section-title {
@@ -132,6 +194,10 @@
         gap: 8px;
     }
     
+    .dark .section-title {
+        color: hsl(var(--foreground));
+    }
+    
     .empty-state {
         text-align: center;
         padding: 2rem;
@@ -139,6 +205,16 @@
         background: #f9fafb;
         border-radius: 8px;
         border: 2px dashed #d1d5db;
+    }
+    
+    .dark .empty-state {
+        color: hsl(var(--muted-foreground));
+        background: hsl(var(--card) / 0.6);
+        border-color: hsl(var(--border));
+    }
+    
+    .dark .empty-state svg {
+        color: hsl(var(--muted-foreground));
     }
 
     .code-display {
@@ -149,6 +225,66 @@
         border: 1px solid #d1d5db;
         font-weight: 600;
         color: #374151;
+    }
+    
+    .dark .code-display {
+        background: hsl(var(--muted) / 0.3);
+        border-color: hsl(var(--border));
+        color: hsl(var(--foreground));
+    }
+    
+    .dark .text-gray-500,
+    .dark .text-gray-900 {
+        color: hsl(var(--foreground));
+    }
+    
+    .dark .bg-white {
+        background: hsl(var(--card));
+    }
+    
+    .dark .border {
+        border-color: hsl(var(--border));
+    }
+    
+    .dark .shadow-sm {
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    }
+    
+    .dark .bg-gray-200 {
+        background: hsl(var(--muted));
+    }
+    
+    .dark .bg-blue-50 {
+        background: hsl(var(--primary) / 0.2);
+    }
+    
+    .dark .text-blue-700 {
+        color: hsl(var(--primary));
+    }
+    
+    .dark .bg-green-50 {
+        background: rgba(16, 185, 129, 0.2);
+    }
+    
+    .dark .text-green-700 {
+        color: rgb(16, 185, 129);
+    }
+    
+    .dark .bg-red-50 {
+        background: hsl(var(--destructive) / 0.2);
+    }
+    
+    .dark .text-red-700 {
+        color: hsl(var(--destructive));
+    }
+    
+    .dark .text-blue-800,
+    .dark .text-blue-600 {
+        color: hsl(var(--primary));
+    }
+    
+    .dark .bg-blue-100 {
+        background: hsl(var(--primary) / 0.2);
     }
 </style>
 
@@ -385,16 +521,16 @@
                         @if(count($rankNames) > 0)
                             <div class="flex flex-wrap gap-2 mt-2">
                                 @foreach($rankNames as $rank)
-                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                                         {{ $rank }}
                                     </span>
                                 @endforeach
                             </div>
                             
                             @if($discountCode->rank_exclusive)
-                                <p class="mt-2 text-sm text-gray-500">Chỉ áp dụng cho các hạng đã chọn</p>
+                                <p class="mt-2 text-sm text-gray-500 dark:text-muted-foreground">Chỉ áp dụng cho các hạng đã chọn</p>
                             @else
-                                <p class="mt-2 text-sm text-gray-500">Ưu tiên cho các hạng đã chọn</p>
+                                <p class="mt-2 text-sm text-gray-500 dark:text-muted-foreground">Ưu tiên cho các hạng đã chọn</p>
                             @endif
                         @else
                             <p>Áp dụng cho tất cả hạng thành viên</p>
@@ -512,23 +648,23 @@
                                 
                                 $userRankId = $user->user_rank_id ?? 0;
                                 $rankName = 'Chưa xếp hạng';
-                                $rankClass = 'bg-gray-100 text-gray-800';
+                                $rankClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
                                 
                                 if ($userRankId == 1) {
                                     $rankName = 'Đồng';
-                                    $rankClass = 'bg-amber-100 text-amber-800';
+                                    $rankClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200';
                                 } elseif ($userRankId == 2) {
                                     $rankName = 'Bạc';
-                                    $rankClass = 'bg-gray-100 text-gray-800';
+                                    $rankClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
                                 } elseif ($userRankId == 3) {
                                     $rankName = 'Vàng';
-                                    $rankClass = 'bg-yellow-100 text-yellow-800';
+                                    $rankClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200';
                                 } elseif ($userRankId == 4) {
                                     $rankName = 'Bạch Kim';
-                                    $rankClass = 'bg-indigo-100 text-indigo-800';
+                                    $rankClass = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200';
                                 } elseif ($userRankId == 5) {
                                     $rankName = 'Kim Cương';
-                                    $rankClass = 'bg-blue-100 text-blue-800';
+                                    $rankClass = 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200';
                                 }
                             @endphp
                             <div class="p-4 border rounded-lg bg-white shadow-sm flex items-start space-x-3">
