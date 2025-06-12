@@ -1,4 +1,4 @@
-<div class="sidebar-header p-3 border-b border-sidebar-border flex items-center">
+<div class="sidebar-header p-3 border-b border-sidebar-border flex justify-center items-center">
     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3">
         <div
             class="flex aspect-square w-8 h-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -12,7 +12,7 @@
             </svg>
         </div>
         <div class="flex flex-col gap-0.5 leading-none sidebar-logo-text">
-            <span class="font-semibold">Admin Panel</span>
+            <span class="font-semibold">PolyCrispyWings</span>
             <span class="text-xs text-muted-foreground">v1.0.0</span>
         </div>
     </a>

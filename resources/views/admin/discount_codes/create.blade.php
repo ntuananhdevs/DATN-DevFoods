@@ -23,6 +23,18 @@
         background: white;
     }
 
+    .dark input[type="text"],
+    .dark input[type="number"],
+    .dark input[type="date"],
+    .dark input[type="time"],
+    .dark input[type="datetime-local"],
+    .dark textarea,
+    .dark select {
+        background: hsl(var(--background));
+        border-color: hsl(var(--border));
+        color: hsl(var(--foreground));
+    }
+
     input[type="text"]:hover,
     input[type="number"]:hover,
     input[type="date"]:hover,
@@ -32,6 +44,17 @@
     select:hover {
         border-color: #3b82f6;
         box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .dark input[type="text"]:hover,
+    .dark input[type="number"]:hover,
+    .dark input[type="date"]:hover,
+    .dark input[type="time"]:hover,
+    .dark input[type="datetime-local"]:hover,
+    .dark textarea:hover,
+    .dark select:hover {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
     }
 
     input[type="text"]:focus,
@@ -46,12 +69,28 @@
         outline: none;
     }
 
+    .dark input[type="text"]:focus,
+    .dark input[type="number"]:focus,
+    .dark input[type="date"]:focus,
+    .dark input[type="time"]:focus,
+    .dark input[type="datetime-local"]:focus,
+    .dark textarea:focus,
+    .dark select:focus {
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 3px hsl(var(--primary) / 0.3);
+    }
+
     .form-section {
         background: #f8fafc;
         border-radius: 8px;
         padding: 20px;
         margin-bottom: 20px;
         border: 1px solid #e2e8f0;
+    }
+
+    .dark .form-section {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
     }
 
     .form-section h3 {
@@ -64,8 +103,17 @@
         gap: 10px;
     }
 
+    .dark .form-section h3 {
+        color: hsl(var(--foreground));
+    }
+
     .form-section h3 i {
         color: #667eea;
+    }
+
+    .dark .form-section h3 i,
+    .dark .form-section h3 svg {
+        color: hsl(var(--primary));
     }
 
     .checkbox-group {
@@ -82,8 +130,18 @@
         padding-top: 16px;
     }
 
+    .dark .checkbox-group {
+        background: hsl(var(--background));
+        border-color: hsl(var(--border));
+    }
+
     .checkbox-group:hover {
         border-color: #667eea;
+    }
+
+    .dark .checkbox-group:hover {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--accent) / 0.2);
     }
 
     .checkbox-group input[type="checkbox"] {
@@ -95,6 +153,10 @@
         margin: 0;
         cursor: pointer;
         flex: 1;
+    }
+
+    .dark .checkbox-group label {
+        color: hsl(var(--foreground));
     }
 
     .tag-badge {
@@ -124,6 +186,60 @@
     
     select[multiple] {
         height: auto;
+    }
+
+    .dark .text-muted,
+    .dark small.text-muted {
+        color: hsl(var(--muted-foreground)) !important;
+    }
+
+    .dark .bg-gray-50 {
+        background: hsl(var(--accent));
+    }
+
+    .dark .bg-white {
+        background: hsl(var(--card));
+    }
+
+    .dark .border-gray-200,
+    .dark .border-gray-300 {
+        border-color: hsl(var(--border));
+    }
+
+    .dark .text-gray-400,
+    .dark .text-gray-500,
+    .dark .text-gray-700 {
+        color: hsl(var(--muted-foreground));
+    }
+
+    .dark .text-danger {
+        color: hsl(var(--destructive));
+    }
+
+    .dark .bg-red-100 {
+        background: hsl(var(--destructive) / 0.2);
+    }
+
+    .dark .text-red-700 {
+        color: hsl(var(--destructive-foreground));
+    }
+
+    .dark .border-red-400 {
+        border-color: hsl(var(--destructive));
+    }
+
+    /* Special badges and notifications */
+    .dark .bg-yellow-50 {
+        background: hsl(var(--warning) / 0.2);
+    }
+
+    .dark .border-yellow-200 {
+        border-color: hsl(var(--warning) / 0.5);
+    }
+
+    .dark .text-yellow-800,
+    .dark .text-yellow-600 {
+        color: hsl(var(--warning-foreground));
     }
 </style>
 
@@ -155,7 +271,7 @@
 
     <!-- Error Messages -->
     @if ($errors->any())
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <div class="bg-red-100 dark:bg-red-950/30 border border-red-400 dark:border-red-900 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" role="alert">
             <div class="flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -174,7 +290,7 @@
     @endif
 
     <!-- Form Card -->
-    <div class="card border rounded-lg overflow-hidden">
+    <div class="card border rounded-lg overflow-hidden bg-card">
         <div class="p-6 border-b">
             <h3 class="text-lg font-medium">Thông tin mã giảm giá</h3>
         </div>
@@ -305,7 +421,7 @@
                             @enderror
                         </div>
 
-                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_products' ? '' : 'display: none;' }}">
+                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_products' ? '' : 'display: none;' }}"
                             <label class="form-label font-medium">Chọn sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -316,10 +432,10 @@
                                         </svg>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @foreach($products as $product)
-                                        <div class="product-item checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-green-100 text-green-800">
+                                        <div class="product-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200">
                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                 </svg>
@@ -343,10 +459,10 @@
                         <div id="categories_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_categories' ? '' : 'display: none;' }}">
                             <label class="form-label font-medium">Chọn danh mục</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @foreach($categories as $category)
-                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-indigo-100 text-indigo-800">
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                                                 </svg>
@@ -370,10 +486,10 @@
                         <div id="combos_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'combos_only' ? '' : 'display: none;' }}">
                             <label class="form-label font-medium">Chọn combo</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @foreach($combos as $combo)
-                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-purple-100 text-purple-800">
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200">
                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                                                 </svg>
@@ -414,10 +530,10 @@
                         <div class="form-group mb-3" id="branch_selection" style="{{ old('applicable_scope') == 'specific_branches' ? '' : 'display: none;' }}">
                             <label class="form-label font-medium">Chọn chi nhánh</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @foreach($branches as $branch)
-                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-cyan-100 text-cyan-800">
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -445,11 +561,11 @@
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
                                     @php
                                         $ranks = [
-                                            1 => ['name' => 'Đồng', 'color' => 'bg-amber-100 text-amber-800'],
-                                            2 => ['name' => 'Bạc', 'color' => 'bg-gray-100 text-gray-800'],
-                                            3 => ['name' => 'Vàng', 'color' => 'bg-yellow-100 text-yellow-800'],
-                                            4 => ['name' => 'Bạch Kim', 'color' => 'bg-indigo-100 text-indigo-800'],
-                                            5 => ['name' => 'Kim Cương', 'color' => 'bg-blue-100 text-blue-800']
+                                            1 => ['name' => 'Đồng', 'color' => 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200'],
+                                            2 => ['name' => 'Bạc', 'color' => 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'],
+                                            3 => ['name' => 'Vàng', 'color' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200'],
+                                            4 => ['name' => 'Bạch Kim', 'color' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200'],
+                                            5 => ['name' => 'Kim Cương', 'color' => 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200']
                                         ];
                                         $selectedRanks = old('applicable_ranks', []);
                                         if (!is_array($selectedRanks)) $selectedRanks = [];
@@ -470,16 +586,16 @@
                                 </div>
                                 
                                 <div class="mt-4 border-t pt-4">
-                                    <div class="bg-white p-3 rounded border border-gray-200">
+                                    <div class="bg-white dark:bg-card p-3 rounded border border-gray-200 dark:border-border">
                                         <div class="flex items-start">
                                             <div class="flex items-center h-5">
                                                 <input type="checkbox" name="rank_exclusive" id="rank_exclusive" value="1" 
                                                     {{ old('rank_exclusive') ? 'checked' : '' }}
-                                                    class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                                                    class="focus:ring-blue-500 h-4 w-4 text-blue-600 dark:text-primary border-gray-300 dark:border-border rounded">
                                             </div>
                                             <div class="ml-3 text-sm">
-                                                <label for="rank_exclusive" class="font-medium text-gray-700">Áp dụng giới hạn cho hạng đã chọn</label>
-                                                <p class="text-gray-500">
+                                                <label for="rank_exclusive" class="font-medium text-gray-700 dark:text-foreground">Áp dụng giới hạn cho hạng đã chọn</label>
+                                                <p class="text-gray-500 dark:text-muted-foreground">
                                                     Khi bật tùy chọn này, mã giảm giá sẽ <strong>chỉ áp dụng</strong> cho những hạng đã chọn, 
                                                     không bao gồm các hạng cao hơn. Nếu tắt, mã giảm giá sẽ áp dụng cho các hạng đã chọn và tất cả các hạng cao hơn.
                                                 </p>
@@ -530,7 +646,7 @@
                                         </svg>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @php
                                         // Get all non-admin users from the database
                                         $users = \App\Models\User::whereDoesntHave('roles', function($query) {
@@ -553,6 +669,7 @@
                                             if (!$isEligible) continue;
                                             
                                             $rankName = '';
+                                            
                                             $rankClass = 'bg-gray-100 text-gray-800';
                                             
                                             if ($userRankId == 1) {
@@ -572,8 +689,8 @@
                                                 $rankClass = 'bg-blue-100 text-blue-800';
                                             }
                                         @endphp
-                                        <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium {{ $rankClass }}">
+                                        <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium {{ $rankClass }} @if($userRankId == 1) dark:bg-amber-950 dark:text-amber-200 @elseif($userRankId == 2) dark:bg-gray-800 dark:text-gray-200 @elseif($userRankId == 3) dark:bg-yellow-950 dark:text-yellow-200 @elseif($userRankId == 4) dark:bg-indigo-950 dark:text-indigo-200 @elseif($userRankId == 5) dark:bg-blue-950 dark:text-blue-200 @else dark:bg-gray-800 dark:text-gray-200 @endif">
                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                                 </svg>
@@ -607,9 +724,9 @@
                                     </div>
                                 </div>
                                 
-                                <div class="mt-3 bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded">
+                                <div class="mt-3 bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded">
                                     <div class="flex items-center">
-                                        <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
                                         <p>
@@ -699,9 +816,9 @@
 
                         <div class="form-group mb-3">
                             <label for="valid_from_time" class="form-label">Giờ áp dụng trong ngày</label>
-                            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 rounded mb-3">
+                            <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
                                 <div class="flex items-center">
-                                    <svg class="w-5 h-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                     <p>
