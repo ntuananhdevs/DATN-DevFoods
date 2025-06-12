@@ -692,10 +692,11 @@ class BranchController extends Controller
         }
     }
     
-    public function setFeatured(Request $request, $id, $imageId)
+    public function setFeatured(Request $request, $id)
     {
         try {
             $branch = Branch::findOrFail($id);
+            $imageId = $request->input('imageId'); // Lấy từ request body
             $image = BranchImage::where('branch_id', $branch->id)->findOrFail($imageId);
             
             // Reset all images to not primary
