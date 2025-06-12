@@ -11,14 +11,22 @@ use Illuminate\Support\Facades\Storage; // Added
 use App\Models\ProductVariant;          // Added
 use App\Models\Favorite;                 // Added
 use Illuminate\Support\Facades\DB;
+use App\Services\BranchService;
 
 class HomeController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
 
     public function index(Request $request) // Added $request parameter
     {
-        // Get selected branch ID from session
-        $selectedBranchId = session('selected_branch');
+        // Get selected branch ID from BranchService
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $selectedBranchId = $currentBranch ? $currentBranch->id : null;
         
         // Query for general products (existing logic)
         $productsQuery = Product::with(['category', 'images' => function($query) {
@@ -152,13 +160,15 @@ class HomeController extends Controller
 
         // Xử lý dữ liệu sản phẩm yêu thích
         $topRatedProducts->transform(function ($product) {
-            $product->primary_image = $product->images->where('is_primary', true)->first() ?? $product->images->first();
-
-            if ($product->primary_image && $product->primary_image->img) {
-                $product->primary_image->s3_url = Storage::disk('s3')->url($product->primary_image->img);
+            $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+            
+            if ($primaryImage && $primaryImage->img) {
+                $product->setAttribute('primary_image_url', Storage::disk('s3')->url($primaryImage->img));
             } else {
-                $product->primary_image->s3_url = asset('images/default-placeholder.png');
+                $product->setAttribute('primary_image_url', asset('images/default-placeholder.png'));
             }
+            
+            $product->setAttribute('primary_image', $primaryImage);
 
             return $product;
         });

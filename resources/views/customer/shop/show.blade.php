@@ -158,7 +158,7 @@
 
             <!-- Get selected branch information for JS -->
             @php
-                $selectedBranchId = session('selected_branch');
+                $selectedBranchId = $currentBranch ? $currentBranch->id : null;
                 $isAvailable = false;
                 
                 if ($selectedBranchId) {
@@ -705,7 +705,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         // Auto-show branch selector if no branch is selected
-        const selectedBranchId = {{ session('selected_branch') ? session('selected_branch') : 'null' }};
+        const selectedBranchId = {{ $currentBranch ? $currentBranch->id : 'null' }};
         if (!selectedBranchId) {
             const branchModal = document.getElementById('branch-selector-modal');
             if (branchModal) {
@@ -996,6 +996,8 @@
                 document.getElementById('content-' + tabName).classList.remove('hidden');
             });
         });
-    });
+    }); 
 </script>
+@include('partials.customer.branch-check')
+
 @endsection

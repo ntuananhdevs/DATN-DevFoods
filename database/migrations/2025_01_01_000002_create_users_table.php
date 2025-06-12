@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('full_name');
             $table->string('email')->unique();
             $table->string('phone')->nullable();
+            $table->string('google_id')->unique()->nullable();
             $table->string('avatar')->nullable();
-            $table->string('google_id')->nullable();
             $table->decimal('balance', 10, 2)->default(0); 
             $table->foreignId('user_rank_id')->nullable()->constrained('user_ranks');
             $table->decimal('total_spending', 12, 2)->default(0);

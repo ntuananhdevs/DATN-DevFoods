@@ -8,17 +8,25 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Favorite;
 use Illuminate\Support\Facades\Storage;
+use App\Services\BranchService;
 
 class ProductController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
     /**
      * Get products list with filtering and sorting for AJAX
      */
     public function getProducts(Request $request)
     {
         try {
-            // Get selected branch from session
-            $selectedBranchId = session('selected_branch');
+            // Get selected branch from BranchService
+            $currentBranch = $this->branchService->getCurrentBranch();
+            $selectedBranchId = $currentBranch ? $currentBranch->id : null;
             
             // Query cơ bản cho products
             $query = Product::with([
