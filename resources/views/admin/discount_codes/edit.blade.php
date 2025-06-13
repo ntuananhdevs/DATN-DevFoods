@@ -422,7 +422,7 @@
                             @enderror
                         </div>
 
-                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items', $discountCode->applicable_items) == 'specific_products' ? '' : 'display: none;' }}">
+                        <div id="products_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_products') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -457,7 +457,7 @@
                             </div>
                         </div>
 
-                        <div id="categories_selection" class="form-group mb-3" style="{{ old('applicable_items', $discountCode->applicable_items) == 'specific_categories' ? '' : 'display: none;' }}">
+                        <div id="categories_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_categories') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn danh mục</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -484,7 +484,7 @@
                             </div>
                         </div>
 
-                        <div id="combos_selection" class="form-group mb-3" style="{{ old('applicable_items', $discountCode->applicable_items) == 'combos_only' ? '' : 'display: none;' }}">
+                        <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'combos_only') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn combo</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -528,7 +528,7 @@
                             @enderror
                         </div>
 
-                        <div class="form-group mb-3" id="branch_selection" style="{{ old('applicable_scope', $discountCode->applicable_scope) == 'specific_branches' ? '' : 'display: none;' }}">
+                        <div class="form-group mb-3" id="branch_selection" @if(old('applicable_scope', $discountCode->applicable_scope) != 'specific_branches') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn chi nhánh</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -637,7 +637,7 @@
                         </div>
 
                         <!-- User Selection for Personal Discount Codes -->
-                        <div id="users_selection" class="form-group mb-3" style="{{ old('usage_type', $discountCode->usage_type) == 'personal' ? '' : 'display: none;' }}">
+                        <div id="users_selection" class="form-group mb-3" @if(old('usage_type', $discountCode->usage_type) != 'personal') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn người dùng được áp dụng</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -909,6 +909,7 @@
 @endsection
 
 @section('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Branch selection toggle
@@ -920,6 +921,14 @@
         const categoriesSelectionDiv = document.getElementById('categories_selection');
         const combosSelectionDiv = document.getElementById('combos_selection');
         const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
+        
+        // Branch checkboxes
+        const branchCheckboxes = document.querySelectorAll('input[name="branch_ids[]"]');
+        
+        // Product containers
+        const productContainer = document.querySelector('#products_selection .grid');
+        const categoryContainer = document.querySelector('#categories_selection .grid');
+        const comboContainer = document.querySelector('#combos_selection .grid');
         
         // Select/Unselect all buttons
         const selectAllProducts = document.querySelector('.select-all-products');
@@ -938,6 +947,13 @@
         const startDateField = document.getElementById('start_date');
         const endDateField = document.getElementById('end_date');
         
+        // Rank checkboxes
+        const rankCheckboxes = document.querySelectorAll('input[name="applicable_ranks[]"]');
+        
+        // User container div
+        const userContainer = document.querySelector('#users_selection .grid');
+        const userCountDisplay = document.querySelector('#users_selection .text-xs.text-gray-500');
+        
         // Initial state check
         toggleBranchSelection();
         toggleItemsSelection();
@@ -950,6 +966,13 @@
         
         itemRadios.forEach(radio => {
             radio.addEventListener('change', toggleItemsSelection);
+        });
+        
+        // Branch checkbox event listeners removed
+        
+        // Add event listeners for rank checkboxes to fetch users
+        rankCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', fetchUsersByRank);
         });
         
         // Add event listeners for date validation
@@ -1084,6 +1107,9 @@
         // Initial state check for user selection
         toggleUserSelection();
         
+        // Initial load of users based on selected ranks
+        fetchUsersByRank();
+        
         // Add event listener for usage type change
         if (usageTypeSelect) {
             usageTypeSelect.addEventListener('change', toggleUserSelection);
@@ -1134,6 +1160,136 @@
                 usersSelectionDiv.style.display = 'none';
             }
         }
+        
+        /**
+         * Fetch users by selected ranks via AJAX
+         */
+        function fetchUsersByRank() {
+            // Get all selected ranks
+            const selectedRanks = [];
+            rankCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedRanks.push(checkbox.value);
+                }
+            });
+            
+            // If no ranks selected, clear user list
+            if (selectedRanks.length === 0) {
+                if (userContainer) {
+                    userContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                            <p class="text-gray-500 dark:text-muted-foreground">Vui lòng chọn ít nhất một hạng thành viên để hiển thị danh sách người dùng.</p>
+                        </div>
+                    `;
+                }
+                if (userCountDisplay) {
+                    userCountDisplay.textContent = 'Đang hiển thị 0 người dùng hợp lệ';
+                }
+                return;
+            }
+            
+            // Show loading indicator
+            if (userContainer) {
+                userContainer.innerHTML = `
+                    <div class="col-span-full p-4 text-center">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách người dùng...</p>
+                    </div>
+                `;
+            }
+            
+            // Get the current discount code ID
+            const discountCodeId = {{ isset($discountCode->id) ? $discountCode->id : 'null' }};
+            
+            // Make AJAX request using jQuery
+            $.ajax({
+                url: "{{ route('admin.discount_codes.users-by-rank') }}",
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    ranks: selectedRanks,
+                    discount_code_id: discountCodeId
+                }),
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                success: function(data) {
+                    console.log('User data received:', data);
+                    if (data.success) {
+                    // Update user count display
+                    if (userCountDisplay) {
+                        userCountDisplay.textContent = `Đang hiển thị ${data.count} người dùng hợp lệ`;
+                    }
+                    
+                    // Generate HTML for users
+                    if (userContainer) {
+                        if (data.users.length === 0) {
+                            userContainer.innerHTML = `
+                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy người dùng nào với hạng đã chọn.</p>
+                                </div>
+                            `;
+                        } else {
+                            let usersHtml = '';
+                            
+                            data.users.forEach(user => {
+                                usersHtml += `
+                                    <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${user.rank_class}">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                            ${user.rank_name || 'Chưa xếp hạng'}
+                                        </span>
+                                        <input type="checkbox" name="assigned_users[]" id="user_${user.id}" value="${user.id}" ${user.is_assigned ? 'checked' : ''}>
+                                        <label for="user_${user.id}" class="flex flex-col">
+                                            <span class="font-medium">${user.full_name}</span>
+                                            <span class="text-xs text-gray-500">${user.email}</span>
+                                            <span class="text-xs text-gray-500">${user.phone}</span>
+                                        </label>
+                                    </div>
+                                `;
+                            });
+                            
+                            userContainer.innerHTML = usersHtml;
+                        }
+                    }
+                } else {
+                    console.error('Error fetching users:', data.message);
+                    if (userContainer) {
+                        userContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
+                            </div>
+                        `;
+                    }
+                }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+                    if (userContainer) {
+                        userContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách người dùng.</p>
+                                <p class="text-red-500 text-sm mt-2">${error}</p>
+                            </div>
+                        `;
+                    }
+                }
+            });
+        }
+        
+        // Function to fetch products by branch removed
+
+        // Setup jQuery AJAX with CSRF token
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
     });
 </script>
 @endsection

@@ -232,6 +232,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/{id}/users/{user}', [DiscountCodeController::class, 'unassignUser'])->name('unassign-user');
         // Lịch sử sử dụng
         Route::get('/{id}/usage-history', [DiscountCodeController::class, 'usageHistory'])->name('usage-history');
+        // Ajax endpoint to get users by rank
+        Route::post('/get-users-by-rank', [DiscountCodeController::class, 'getUsersByRank'])->name('users-by-rank');
     });
 
     // Product Stock Management Routes

@@ -17,6 +17,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Get users by rank IDs for AJAX request
+ * 
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
 
 class DiscountCodeController extends Controller
 {
@@ -840,6 +848,75 @@ class DiscountCodeController extends Controller
             'type' => 'success',
             'title' => 'Thành công!',
             'message' => 'Hủy gán mã giảm giá thành công.'
+        ]);
+    }
+
+    public function getUsersByRank(Request $request)
+    {
+        $request->validate([
+            'ranks' => 'required|array',
+            'ranks.*' => 'integer|between:1,5',
+            'discount_code_id' => 'nullable|exists:discount_codes,id'
+        ]);
+
+        $rankIds = $request->ranks;
+        $discountCodeId = $request->discount_code_id;
+        
+        // Get users with selected ranks
+        $users = User::whereIn('user_rank_id', $rankIds)
+            ->whereDoesntHave('roles', function($query) {
+                $query->where('name', 'admin');
+            })
+            ->orderBy('full_name')
+            ->get();
+            
+        // Get assigned users if discount code ID is provided
+        $assignedUsers = [];
+        if ($discountCodeId) {
+            $assignedUsers = UserDiscountCode::where('discount_code_id', $discountCodeId)
+                ->pluck('user_id')
+                ->toArray();
+        }
+        
+        // Prepare the response data
+        $userData = [];
+        foreach ($users as $user) {
+            $rankName = '';
+            $rankClass = 'bg-gray-100 text-gray-800';
+            
+            if ($user->user_rank_id == 1) {
+                $rankName = 'Đồng';
+                $rankClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200';
+            } elseif ($user->user_rank_id == 2) {
+                $rankName = 'Bạc';
+                $rankClass = 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+            } elseif ($user->user_rank_id == 3) {
+                $rankName = 'Vàng';
+                $rankClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200';
+            } elseif ($user->user_rank_id == 4) {
+                $rankName = 'Bạch Kim';
+                $rankClass = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200';
+            } elseif ($user->user_rank_id == 5) {
+                $rankName = 'Kim Cương';
+                $rankClass = 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200';
+            }
+            
+            $userData[] = [
+                'id' => $user->id,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'phone' => $user->phone ?? 'Không có SĐT',
+                'rank_id' => $user->user_rank_id,
+                'rank_name' => $rankName,
+                'rank_class' => $rankClass,
+                'is_assigned' => in_array($user->id, $assignedUsers)
+            ];
+        }
+        
+        return response()->json([
+            'success' => true,
+            'users' => $userData,
+            'count' => count($userData)
         ]);
     }
 
