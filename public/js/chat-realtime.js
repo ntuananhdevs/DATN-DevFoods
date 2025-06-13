@@ -1018,7 +1018,7 @@ class ChatRealtime {
                 status === "distributed" || status === "active"
                     ? "Đã phân phối"
                     : status === "new"
-                    ? "Chờ xử lý"
+                    ? "Chờ phản hồi"
                     : status === "closed"
                     ? "Đã đóng"
                     : status;
@@ -1783,7 +1783,7 @@ class ChatCommon {
                 status === "distributed" || status === "active"
                     ? "Đã phân phối"
                     : status === "new"
-                    ? "Chờ xử lý"
+                    ? "Chờ phản hồi"
                     : status === "closed"
                     ? "Đã đóng"
                     : status;
@@ -1886,22 +1886,22 @@ class ChatCommon {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     preview.innerHTML = `
-                        <div class="file-preview-item">
-                            <img src="${e.target.result}" alt="Preview" style="max-width: 100px; max-height: 100px;">
-                            <span>${file.name}</span>
-                            <button type="button" onclick="this.parentElement.parentElement.innerHTML=''; document.getElementById('fileInput').value='';">✕</button>
-                        </div>
-                    `;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = `
                     <div class="file-preview-item">
-                        <i class="fas fa-file"></i>
+                        <img src="${e.target.result}" alt="Preview" style="max-width: 100px; max-height: 100px;">
                         <span>${file.name}</span>
                         <button type="button" onclick="this.parentElement.parentElement.innerHTML=''; document.getElementById('fileInput').value='';">✕</button>
                     </div>
                 `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = `
+                <div class="file-preview-item">
+                    <i class="fas fa-file"></i>
+                    <span>${file.name}</span>
+                    <button type="button" onclick="this.parentElement.parentElement.innerHTML=''; document.getElementById('fileInput').value='';">✕</button>
+                </div>
+            `;
             }
             preview.style.display = "block";
         }
@@ -2149,3 +2149,435 @@ function createDistributionModal(
         modal.remove();
     };
 }
+
+class BranchChat {
+    constructor(options) {
+        console.log("[BranchChat] Init with options:", options);
+        if (!options || !options.conversationId || !options.userId) {
+            throw new Error(
+                "Missing required options: conversationId and userId"
+            );
+        }
+        this.conversationId = options.conversationId;
+        this.userId = options.userId;
+        this.userType = options.userType || "branch";
+        this.api = options.api || {};
+        this.messageInput = document.querySelector(
+            options.messageInputSelector || "#chat-input-message"
+        );
+        this.sendBtn = document.querySelector(
+            options.sendButtonSelector || "#chat-send-btn"
+        );
+        this.attachmentInput = document.querySelector(
+            options.fileInputSelector || "#chat-input-file"
+        );
+        this.imageInput = document.querySelector(
+            options.imageInputSelector || "#chat-input-image"
+        );
+        this.attachmentPreview = document.getElementById("attachment-preview");
+        this.messageContainer = document.getElementById("chat-messages");
+        this.chatContainer = document.getElementById("chat-container");
+        this.pusher = new Pusher("6ef607214efab0d72419", {
+            cluster: "ap1",
+            encrypted: true,
+        });
+        this.init();
+    }
+    init() {
+        console.log("[BranchChat] init()");
+        this.setupEventListeners();
+        this.setupPusherChannels();
+        this.loadMessages();
+    }
+    setupEventListeners() {
+        console.log("[BranchChat] setupEventListeners");
+        if (this.messageInput && this.sendBtn) {
+            this.sendBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                this.sendMessage();
+            });
+            this.messageInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        } else {
+            console.warn(
+                "[BranchChat] Không tìm thấy messageInput hoặc sendBtn"
+            );
+        }
+        // Gửi file
+        if (this.attachmentInput) {
+            this.attachmentInput.addEventListener("change", (e) => {
+                if (e.target.files.length) {
+                    this.sendAttachment("file", e.target.files[0]);
+                }
+            });
+        } else {
+            console.warn("[BranchChat] Không tìm thấy attachmentInput");
+        }
+        // Gửi ảnh
+        if (this.imageInput) {
+            this.imageInput.addEventListener("change", (e) => {
+                if (e.target.files.length) {
+                    this.sendAttachment("image", e.target.files[0]);
+                }
+            });
+        } else {
+            console.warn("[BranchChat] Không tìm thấy imageInput");
+        }
+    }
+    setupPusherChannels() {
+        console.log("[BranchChat] setupPusherChannels", this.conversationId);
+        const channel = this.pusher.subscribe(`chat.${this.conversationId}`);
+        channel.bind("new-message", (data) => {
+            console.log("[BranchChat] new-message", data);
+            if (
+                data.message &&
+                String(data.message.conversation_id) ===
+                    String(this.conversationId)
+            ) {
+                this.appendMessage(data.message);
+                this.scrollToBottom();
+            }
+        });
+        channel.bind("conversation-updated", (data) => {
+            console.log("[BranchChat] conversation-updated", data);
+            // Có thể cập nhật trạng thái nếu cần
+        });
+    }
+    async loadMessages() {
+        if (!this.conversationId) return;
+        try {
+            const url = this.api.getMessages.replace(
+                ":id",
+                this.conversationId
+            );
+            console.log("[BranchChat] loadMessages url:", url);
+            const response = await fetch(url);
+            const data = await response.json();
+            console.log("[BranchChat] loadMessages response:", data);
+            if (this.messageContainer) {
+                this.messageContainer.innerHTML = "";
+                if (data.messages && Array.isArray(data.messages)) {
+                    data.messages.forEach((message) => {
+                        this.appendMessage(message);
+                    });
+                    this.scrollToBottom();
+                }
+            }
+        } catch (error) {
+            console.error("[BranchChat] loadMessages error:", error);
+            this.showError("Không thể tải tin nhắn");
+        }
+    }
+    async sendMessage() {
+        if (!this.messageInput || !this.messageInput.value.trim()) {
+            console.warn(
+                "[BranchChat] sendMessage: Không có messageInput hoặc nội dung rỗng"
+            );
+            return;
+        }
+
+        if (!this.conversationId) {
+            console.error("[BranchChat] sendMessage: Không có conversationId");
+            this.showError("Không thể gửi tin nhắn: Chưa chọn cuộc trò chuyện");
+            return;
+        }
+
+        const message = this.messageInput.value.trim();
+        this.messageInput.value = "";
+        if (this.sendBtn) this.sendBtn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append("message", message);
+            formData.append("conversation_id", this.conversationId);
+
+            const url = this.api.send;
+            if (!url) {
+                this.showError("API gửi tin nhắn chưa được cấu hình");
+                return;
+            }
+
+            console.log("[BranchChat] sendMessage POST", url, {
+                conversation_id: this.conversationId,
+                message: message,
+            });
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+            console.log("[BranchChat] sendMessage response:", data);
+
+            if (data.success) {
+                this.appendMessage(data.data);
+                this.scrollToBottom();
+                if (this.attachmentPreview)
+                    this.attachmentPreview.innerHTML = "";
+                if (this.attachmentInput) this.attachmentInput.value = "";
+            } else {
+                throw new Error(data.message || "Gửi tin nhắn thất bại");
+            }
+        } catch (error) {
+            console.error("[BranchChat] sendMessage error:", error);
+            this.showError(error.message || "Không thể gửi tin nhắn");
+            this.messageInput.value = message;
+        } finally {
+            if (this.sendBtn) this.sendBtn.disabled = false;
+            if (this.messageInput) {
+                this.messageInput.focus();
+            }
+        }
+    }
+    async sendAttachment(type, file) {
+        console.log("[BranchChat] sendAttachment", type, file);
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("conversation_id", this.conversationId);
+        formData.append("message", ""); // Gửi message rỗng
+        if (type === "image") {
+            formData.append("image", file);
+        } else {
+            formData.append("file", file);
+        }
+        formData.append(
+            "_token",
+            document.querySelector('meta[name="csrf-token"]').content
+        );
+        try {
+            const url = this.api.send;
+            console.log("[BranchChat] sendAttachment POST", url, formData);
+            const response = await fetch(url, {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await response.json();
+            console.log("[BranchChat] sendAttachment response:", data);
+            if (data.success) {
+                if (
+                    String(this.conversationId) ===
+                    String(data.data.conversation_id)
+                ) {
+                    this.appendMessage(data.data);
+                    this.scrollToBottom();
+                }
+            } else {
+                this.showError(data.message || "Không thể gửi file");
+            }
+        } catch (e) {
+            console.error("[BranchChat] sendAttachment error:", e);
+            this.showError("Không thể gửi file");
+        }
+    }
+    async loadConversation(conversationId) {
+        console.log("[BranchChat] loadConversation", conversationId);
+        if (!conversationId) {
+            console.error("[BranchChat] loadConversation: Không có conversationId");
+            return;
+        }
+
+        this.conversationId = conversationId;
+        if (this.api && this.api.getMessages) {
+            this.api.getMessages = `/branch/chat/api/conversation/${conversationId}`;
+        }
+
+        try {
+            const url = `/branch/chat/api/conversation/${conversationId}`;
+            console.log("[BranchChat] loadConversation fetching", url);
+            const response = await fetch(url);
+            const data = await response.json();
+            console.log("[BranchChat] loadConversation response:", data);
+
+            if (data && data.success && data.conversation) {
+                const conv = data.conversation;
+                // Lưu lại customerId để xác định loại sender khi appendMessage
+                this.conversationCustomerId = conv.customer?.id;
+                
+                // Update UI elements
+                const elements = {
+                    "chat-header-name": conv.customer?.full_name || conv.customer?.name || "Khách hàng",
+                    "chat-header-email": conv.customer?.email || "",
+                    "chat-header-avatar": (conv.customer?.full_name || conv.customer?.name || "K").charAt(0).toUpperCase(),
+                    "chat-info-name": conv.customer?.full_name || conv.customer?.name || "Khách hàng",
+                    "chat-info-email": conv.customer?.email || "",
+                    "chat-info-avatar": (conv.customer?.full_name || conv.customer?.name || "K").charAt(0).toUpperCase(),
+                    "chat-info-status": conv.status_label || conv.status || "",
+                    "chat-info-branch": conv.branch?.name || ""
+                };
+
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = value;
+                    } else {
+                        console.warn(`[BranchChat] Element not found: ${id}`);
+                    }
+                });
+
+                // Load messages after conversation is loaded
+                await this.loadMessages();
+            } else {
+                console.error("[BranchChat] loadConversation: Invalid response", data);
+                this.showError("Không thể tải thông tin cuộc trò chuyện");
+            }
+        } catch (e) {
+            console.error("[BranchChat] loadConversation fetch error:", e);
+            this.showError("Không thể tải thông tin cuộc trò chuyện");
+        }
+    }
+    appendMessage(message) {
+        if (!this.messageContainer) return;
+        // Fallback xác định loại sender nếu không có sender_type
+        let senderType = message.sender_type;
+        if (!senderType) {
+            if (message.sender && message.sender.id == this.userId) {
+                senderType = "branch_staff";
+            } else if (
+                this.conversationCustomerId &&
+                message.sender &&
+                message.sender.id == this.conversationCustomerId
+            ) {
+                senderType = "customer";
+            } else {
+                senderType = "customer";
+            }
+        }
+        if (
+            senderType !== "branch_staff" &&
+            senderType !== "customer" &&
+            !message.is_system_message
+        )
+            return;
+        const isBranch = senderType === "branch_staff";
+        const senderName = isBranch
+            ? "Bạn"
+            : message.sender?.full_name || message.sender?.name || "Khách hàng";
+        const avatarLetter = senderName.charAt(0).toUpperCase();
+        let attachmentHtml = "";
+        if (message.attachment) {
+            if (message.attachment_type === "image") {
+                attachmentHtml = `<img src="/storage/${message.attachment}" class="mt-2 rounded-lg max-h-40 cursor-pointer" onclick="window.open('/storage/${message.attachment}','_blank')">`;
+            } else {
+                attachmentHtml = `<a href="/storage/${
+                    message.attachment
+                }" target="_blank" class="text-blue-500 underline">📎 ${message.attachment
+                    .split("/")
+                    .pop()}</a>`;
+            }
+        }
+        const timeString = this.formatTime(
+            message.created_at || message.sent_at
+        );
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `flex items-end gap-2 mb-2 ${
+            isBranch ? "justify-end" : "justify-start"
+        }`;
+        msgDiv.innerHTML = `
+            <div class="flex gap-2 max-w-[80%] ${
+                isBranch ? "flex-row-reverse" : "flex-row"
+            }">
+                <div class="w-8 h-8 ${
+                    isBranch ? "bg-blue-500" : "bg-orange-500"
+                } rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-white text-xs font-bold">${avatarLetter}</span>
+                </div>
+                <div class="flex flex-col ${
+                    isBranch ? "items-end" : "items-start"
+                }">
+                    <div class="rounded-2xl px-4 py-2 max-w-full shadow-sm ${
+                        isBranch
+                            ? "bg-orange-500 text-white rounded-br-md"
+                            : "bg-white text-gray-900 border border-gray-200 rounded-bl-md"
+                    }">
+                        <div>${this.escapeHtml(message.message) || ""}</div>
+                        ${attachmentHtml}
+                    </div>
+                    <span class="text-xs text-gray-500 mt-1 px-2">${timeString}</span>
+                </div>
+            </div>
+        `;
+        this.messageContainer.appendChild(msgDiv);
+        this.scrollToBottom();
+    }
+    showFilePreview(file) {
+        if (!this.attachmentPreview) return;
+        if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.attachmentPreview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 100px; max-height: 100px;"> <span>${file.name}</span>`;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            this.attachmentPreview.innerHTML = `<i class="fas fa-file"></i> <span>${file.name}</span>`;
+        }
+        this.attachmentPreview.style.display = "block";
+    }
+    scrollToBottom() {
+        if (this.messageContainer) {
+            setTimeout(() => {
+                this.messageContainer.scrollTop =
+                    this.messageContainer.scrollHeight;
+            }, 100);
+        }
+    }
+    showError(message) {
+        this.showNotification(message, "error");
+    }
+    showNotification(message, type = "success") {
+        const notification = document.createElement("div");
+        notification.className = `chat-notification ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
+        setTimeout(() => {
+            notification.style.transform = "translateX(100%)";
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+    formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    }
+    escapeHtml(unsafe) {
+        if (!unsafe) return "";
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+    destroy() {
+        // Unsubscribe pusher nếu cần
+    }
+}
+
+window.BranchChat = BranchChat;

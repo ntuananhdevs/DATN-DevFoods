@@ -25,15 +25,19 @@ class BranchChatController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $branchId = Auth::user()->branch_id;
-        $branch = Branch::find($branchId);
+        // Lấy branch mà user này là manager
+        $branch = Branch::where('manager_user_id', $user->id)->first();
+        if (!$branch) {
+            return abort(403, 'Bạn không phải quản lý của chi nhánh nào!');
+        }
+        $branchId = $branch->id;
 
         $conversations = Conversation::with(['customer', 'messages.sender'])
             ->whereNotNull('branch_id')
             ->where('branch_id', $branchId)
+            ->whereIn('status', ['distributed', 'active', 'resolved'])
             ->orderBy('updated_at', 'desc')
             ->get();
-
 
         return view('branch.chat', compact('conversations', 'branch', 'user'));
     }
@@ -41,7 +45,15 @@ class BranchChatController extends Controller
     public function apiGetConversation($id)
     {
         try {
-            $branchId = Auth::user()->branch_id;
+            $user = Auth::user();
+            $branch = Branch::where('manager_user_id', $user->id)->first();
+            if (!$branch) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không phải quản lý của chi nhánh nào!'
+                ], 403);
+            }
+            $branchId = $branch->id;
 
             $conversation = Conversation::with([
                 'customer',
@@ -49,7 +61,6 @@ class BranchChatController extends Controller
             ])->where('branch_id', $branchId)
                 ->findOrFail($id);
 
-            // Format lại response cho JS
             $messages = $conversation->messages->map(function ($message) {
                 return [
                     'id' => $message->id,
@@ -70,9 +81,42 @@ class BranchChatController extends Controller
 
             return response()->json([
                 'success' => true,
-                'messages' => $messages
+                'messages' => $messages,
+                'conversation' => [
+                    'id' => $conversation->id,
+                    'customer' => [
+                        'id' => $conversation->customer?->id,
+                        'name' => $conversation->customer?->name,
+                        'full_name' => $conversation->customer?->full_name,
+                        'email' => $conversation->customer?->email,
+                    ],
+                    'branch' => [
+                        'id' => $conversation->branch?->id,
+                        'name' => $conversation->branch?->name,
+                    ],
+                    'status' => $conversation->status,
+                    'status_label' => method_exists($conversation, 'getStatusOptions') ? ($conversation::getStatusOptions()[$conversation->status] ?? $conversation->status) : $conversation->status,
+                ]
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('BranchChatController: Conversation not found', [
+                'conversation_id' => $id,
+                'branch_id' => isset($branchId) ? $branchId : null,
+                'user_id' => Auth::id(),
+                'conversations_of_branch' => isset($branchId) ? Conversation::where('branch_id', $branchId)->pluck('id')->toArray() : [],
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy cuộc trò chuyện này thuộc chi nhánh của bạn!'
+            ], 404);
         } catch (\Exception $e) {
+            Log::error('BranchChatController: Error loading conversation', [
+                'conversation_id' => $id,
+                'branch_id' => isset($branchId) ? $branchId : null,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi tải chi tiết cuộc trò chuyện: ' . $e->getMessage()
@@ -89,16 +133,47 @@ class BranchChatController extends Controller
                 'attachment' => 'nullable|file|max:10240' // 10MB max
             ]);
 
-            $userId = Auth::id() ?? 1;
-            $branchId = Auth::user()->branch_id; // Lấy branch_id từ người dùng hiện tại
+            $user = Auth::user();
+            // Lấy branch mà user này là manager
+            $branch = Branch::where('manager_user_id', $user->id)->first();
+            if (!$branch) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không phải quản lý của chi nhánh nào!'
+                ], 403);
+            }
+            $branchId = $branch->id;
+
+            // Log thông tin để debug
+            Log::info('Branch send message attempt', [
+                'conversation_id' => $request->conversation_id,
+                'branch_id' => $branchId,
+                'user_id' => $user->id,
+                'user_branch_id' => $user->branch_id,
+                'manager_user_id' => $branch->manager_user_id
+            ]);
 
             // Lấy thông tin conversation trước để xác định receiver
             $conversation = Conversation::where('id', $request->conversation_id)
                 ->where('branch_id', $branchId)
-                ->firstOrFail();
+                ->first();
+
+            if (!$conversation) {
+                Log::error('Conversation not found or not belongs to branch', [
+                    'conversation_id' => $request->conversation_id,
+                    'branch_id' => $branchId,
+                    'user_id' => $user->id,
+                    'conversations_of_branch' => Conversation::where('branch_id', $branchId)->pluck('id')->toArray(),
+                    'all_conversations' => Conversation::where('id', $request->conversation_id)->first()
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy cuộc trò chuyện này thuộc chi nhánh của bạn!'
+                ], 404);
+            }
 
             // Gửi lại dữ liệu cho người dùng dựa trên customer_id
-            $customerId = $conversation->customer_id; // Lấy customer_id từ conversation
+            $customerId = $conversation->customer_id;
 
             $attachmentPath = null;
             $attachmentType = null;
@@ -118,8 +193,8 @@ class BranchChatController extends Controller
             // Tạo data cho message
             $messageData = [
                 'conversation_id' => $request->conversation_id,
-                'sender_id' => $userId,
-                'receiver_id' => $customerId, // Gửi lại cho người dùng
+                'sender_id' => $user->id,
+                'receiver_id' => $customerId,
                 'sender_type' => 'branch_staff',
                 'message' => $request->message,
                 'attachment' => $attachmentPath,
@@ -134,7 +209,7 @@ class BranchChatController extends Controller
             // Cập nhật trạng thái conversation
             if ($conversation->status === 'distributed') {
                 $conversation->update([
-                    'status' => 'active', // Chuyển sang active khi branch bắt đầu trả lời
+                    'status' => 'active',
                     'updated_at' => now()
                 ]);
             } else {
@@ -159,14 +234,18 @@ class BranchChatController extends Controller
                     'attachment_type' => $message->attachment_type,
                     'created_at' => $message->created_at,
                     'sender' => [
-                        'id' => $userId,
+                        'id' => $user->id,
                         'name' => 'Branch Staff'
                     ]
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Branch send message error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Branch send message error: ' . $e->getMessage(), [
+                'conversation_id' => $request->conversation_id ?? null,
+                'branch_id' => $branchId ?? null,
+                'user_id' => $user->id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi gửi tin nhắn: ' . $e->getMessage()

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Events\NewMessageEvent;
+use App\Events\Chat\NewMessage;
 use App\Http\Controllers\Controller;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
@@ -42,7 +42,7 @@ class ChatController extends Controller
             'sent_at' => now(),
         ]);
 
-        broadcast(new NewMessageEvent($message))->toOthers();
+        broadcast(new NewMessage($message))->toOthers();
 
         return response()->json(['message' => $message], 201);
     }

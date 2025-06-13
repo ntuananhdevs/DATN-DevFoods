@@ -512,7 +512,7 @@
     <div id="chat-container" class="chat-container" data-conversation-id="{{ $conversation->id }}"
         data-user-id="{{ auth()->id() }}" data-user-type="admin">
         <!-- Sidebar: Danh sách cuộc trò chuyện -->
-        <div class="chat-sidebar" style="width:25%">
+        <div class="chat-sidebar" style="width:26%">
             <div class="chat-sidebar-header">
                 <div class="relative mb-2">
                     <span class="absolute left-3 top-2.5 text-gray-400"></span>
@@ -562,24 +562,34 @@
                                     class="unread-badge ml-2 absolute right-2 bottom-2">{{ $conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() }}</span>
                             @endif
                         </div>
-                        <div class="chat-item-badges mt-5 flex flex-row gap-2 mt-1">
+                        <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
                             @if ($conv->status == 'new')
-                                <span class="badge badge-waiting">Chờ phản hồi</span>
+                                <span class="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                                    Chờ phản hồi
+                                </span>
                             @elseif ($conv->status == 'active' || $conv->status == 'distributed')
-                                <span class="badge badge-distributed">Đã phân phối</span>
+                                <span class="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                    Đã phân phối
+                                </span>
                             @elseif ($conv->status == 'closed')
-                                <span class="badge badge-high">Đã đóng</span>
+                                <span class="px-3 py-1 text-xs rounded-full bg-gray-200 text-gray-800">
+                                    Đã đóng
+                                </span>
                             @endif
+
                             @if ($conv->branch)
-                                <span class="badge badge-xs branch-badge ml-2">{{ $conv->branch->name }}</span>
+                                <span class="px-3 py-1 text-xs rounded-full bg-gray-800 text-white">
+                                    {{ $conv->branch->name }}
+                                </span>
                             @endif
                         </div>
+
                     </div>
                 @endforeach
             </div>
         </div>
         <!-- Main Chat -->
-        <div class="chat-main" style="width:50%">
+        <div class="chat-main" style="width:55%">
             <div class="chat-header">
                 <div class="chat-header-user">
                     <div class="chat-avatar" id="chat-avatar">
