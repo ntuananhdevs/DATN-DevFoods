@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Customer;
 
 use App\Models\Conversation;
 use App\Models\ChatMessage;
-use App\Events\MessageSent;
-use App\Events\NewMessage;
+
+use App\Events\Chat\NewMessage;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,14 +18,15 @@ class ChatController extends Controller
     public function sendMessage(Request $request)
     {
         try {
+            $userId = Auth::id();
             Log::info('Customer sending message', [
                 'conversation_id' => $request->conversation_id,
                 'message' => $request->message,
-                'user_id' => auth()->id()
+                'user_id' => $userId
             ]);
 
             $conversation = Conversation::where('id', $request->conversation_id)
-                ->where('customer_id', auth()->id())
+                ->where('customer_id', $userId)
                 ->first();
 
             if (!$conversation) {
@@ -40,14 +41,23 @@ class ChatController extends Controller
             // Nếu chưa phân phối thì receiver_id là admin (id=11), nếu đã phân phối thì là branch_id
             $receiverId = $conversation->branch_id ?? 11;
 
+            // Xử lý file đính kèm nếu có
+            $attachmentPath = null;
+            $attachmentType = null;
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
+                $attachmentPath = $file->store('chat_attachments', 'public');
+                $attachmentType = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'file';
+            }
+
             $messageData = [
                 'conversation_id' => $request->conversation_id,
-                'sender_id' => auth()->id(),
+                'sender_id' => $userId,
                 'receiver_id' => $receiverId,
                 'sender_type' => 'customer',
                 'message' => $request->message,
-                'attachment' => null,
-                'attachment_type' => null,
+                'attachment' => $attachmentPath,
+                'attachment_type' => $attachmentType,
                 'sent_at' => now(),
                 'status' => 'sent'
             ];
@@ -149,6 +159,15 @@ class ChatController extends Controller
 
     public function createConversation(Request $request)
     {
+        // Kiểm tra xem khách hàng đã có cuộc trò chuyện chưa
+        $existingConversation = Conversation::where('customer_id', auth()->id())->first();
+        if ($existingConversation) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã có một cuộc trò chuyện. Vui lòng sử dụng cuộc trò chuyện hiện tại.'
+            ], 422);
+        }
+
         $validator = Validator::make($request->all(), [
             'message' => 'required|string',
             'attachment' => 'nullable|file|max:10240', // 10MB max
@@ -169,33 +188,25 @@ class ChatController extends Controller
                 'is_distributed' => false,
             ]);
 
-            // Xử lý file đính kèm nếu có
-            $attachmentPath = null;
-            $attachmentType = null;
-            if ($request->hasFile('attachment')) {
-                $file = $request->file('attachment');
-                $attachmentPath = $file->store('chat_attachments', 'public');
-                $attachmentType = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'file';
-            }
-
-            // Tạo tin nhắn đầu tiên
-            $message = ChatMessage::create([
+            // Tạo tin nhắn đầu tiên từ admin
+            $adminId = 11; // ID admin
+            $adminMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
-                'sender_id' => $userId,
-                'receiver_id' => 11, // Super admin ID
-                'sender_type' => 'customer',
-                'receiver_type' => 'super_admin',
-                'message' => $request->message,
-                'attachment' => $attachmentPath,
-                'attachment_type' => $attachmentType,
+                'sender_id' => $adminId,
+                'receiver_id' => $userId,
+                'sender_type' => 'super_admin',
+                'receiver_type' => 'customer',
+                'message' => 'Xin chào! Tôi có thể giúp gì cho bạn hôm nay? 😊',
+                'attachment' => null,
+                'attachment_type' => null,
                 'sent_at' => now(),
                 'status' => 'sent'
             ]);
 
-            Log::info('New conversation created with first message', [
+            Log::info('New conversation created with first admin message', [
                 'conversation_id' => $conversation->id,
                 'customer_id' => $userId,
-                'message_id' => $message->id
+                'message_id' => $adminMessage->id
             ]);
 
             return response()->json([
@@ -203,7 +214,7 @@ class ChatController extends Controller
                 'message' => 'Cuộc trò chuyện đã được tạo thành công',
                 'data' => [
                     'conversation' => $conversation,
-                    'message' => $message
+                    'message' => $adminMessage
                 ]
             ], 201);
         } catch (\Exception $e) {

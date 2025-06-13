@@ -1,13 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Branch;
 
+use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\Branch;
 use App\Models\User;
-use App\Events\MessageSent;
-use App\Events\NewMessage;
+
+use App\Events\Chat\NewMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -23,14 +24,16 @@ class BranchChatController extends Controller
 
     public function index()
     {
+        $user = Auth::user();
         $branchId = Auth::user()->branch_id;
         $branch = Branch::find($branchId);
+
         $conversations = Conversation::with(['customer', 'messages.sender'])
             ->whereNotNull('branch_id')
             ->where('branch_id', $branchId)
             ->orderBy('updated_at', 'desc')
             ->get();
-        $user = Auth::user();
+
 
         return view('branch.chat', compact('conversations', 'branch', 'user'));
     }
@@ -38,45 +41,38 @@ class BranchChatController extends Controller
     public function apiGetConversation($id)
     {
         try {
-            $conversation = Conversation::with(['customer', 'messages.sender'])
+            $branchId = Auth::user()->branch_id;
+
+            $conversation = Conversation::with([
+                'customer',
+                'messages.sender'
+            ])->where('branch_id', $branchId)
                 ->findOrFail($id);
 
-            // Format the response
-            $formattedConversation = [
-                'id' => $conversation->id,
-                'status' => $conversation->status,
-                'subject' => $conversation->subject,
-                'priority' => $conversation->priority,
-                'updated_at' => $conversation->updated_at,
-                'customer' => $conversation->customer ? [
-                    'id' => $conversation->customer->id,
-                    'name' => $conversation->customer->name,
-                    'email' => $conversation->customer->email,
-                ] : null,
-                'messages' => $conversation->messages->map(function ($message) {
-                    return [
-                        'id' => $message->id,
-                        'sender_id' => $message->sender_id,
-                        'message' => $message->message,
-                        'attachment' => $message->attachment,
-                        'attachment_type' => $message->attachment_type,
-                        'created_at' => $message->created_at,
-                        'is_system_message' => $message->is_system_message ?? false,
-                        'sender' => $message->sender ? [
-                            'id' => $message->sender->id,
-                            'name' => $message->sender->name,
-                            'email' => $message->sender->email,
-                        ] : null
-                    ];
-                })
-            ];
+            // Format lại response cho JS
+            $messages = $conversation->messages->map(function ($message) {
+                return [
+                    'id' => $message->id,
+                    'sender_id' => $message->sender_id,
+                    'message' => $message->message,
+                    'attachment' => $message->attachment,
+                    'attachment_type' => $message->attachment_type,
+                    'created_at' => $message->created_at,
+                    'type' => $message->is_system_message ? 'system' : 'normal',
+                    'sender' => $message->sender ? [
+                        'id' => $message->sender->id,
+                        'name' => $message->sender->name,
+                        'full_name' => $message->sender->full_name ?? $message->sender->name,
+                        'email' => $message->sender->email,
+                    ] : null
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'conversation' => $formattedConversation
+                'messages' => $messages
             ]);
         } catch (\Exception $e) {
-            Log::error('API Get conversation error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi tải chi tiết cuộc trò chuyện: ' . $e->getMessage()

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 // Customer Controllers
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
@@ -123,6 +124,7 @@ Route::prefix('api')->group(function () {
     // Firebase Config
     Route::get('/firebase/config', [FirebaseConfigController::class, 'getConfig'])->name('api.firebase.config');
 });
+
 // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
 Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/', [HiringController::class, 'landing'])->name('landing');
@@ -133,7 +135,7 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
 
 Route::prefix('customer')->group(function () {
     Route::get('/chat', function () {
-        $conversations = \App\Models\Conversation::where('customer_id', auth()->id())
+        $conversations = \App\Models\Conversation::where('customer_id', Auth::id())
             ->with(['branch', 'messages.sender'])
             ->orderBy('updated_at', 'desc')
             ->get();
@@ -145,4 +147,12 @@ Route::prefix('customer')->group(function () {
     Route::get('/chat/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('customer.chat.messages');
     Route::post('/chat/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('customer.chat.typing');
+});
+
+// ===== API ROUTES FOR CUSTOMER CHAT REALTIME =====
+Route::prefix('api/customer/chat')->middleware('auth')->group(function () {
+    Route::post('/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('api.customer.chat.send');
+    Route::get('/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('api.customer.chat.messages');
+    Route::get('/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('api.customer.chat.conversations');
+    Route::post('/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('api.customer.chat.typing');
 });

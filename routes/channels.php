@@ -60,7 +60,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
 
 // Admin conversations channel
 Broadcast::channel('admin.conversations', function ($user) {
-    return $user->role === 'super_admin' ? [
+    return $user->role === 'sp_admin' ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,

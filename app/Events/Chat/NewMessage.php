@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Chat;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -49,4 +49,3 @@ class NewMessage implements ShouldBroadcast
         ];
     }
 }
- 

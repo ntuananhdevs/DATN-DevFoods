@@ -1,10428 +1,2151 @@
-/******/ (function (modules) {
-    // webpackBootstrap
-    /******/ // The module cache
-    /******/ var installedModules = {};
-    /******/
-    /******/ // The require function
-    /******/ function __webpack_require__(moduleId) {
-        /******/
-        /******/ // Check if module is in cache
-        /******/ if (installedModules[moduleId]) {
-            /******/ return installedModules[moduleId].exports;
-            /******/
+// Lắng nghe kênh chat theo conversation ID
+const conversationId = document.querySelector(
+    'meta[name="conversation-id"]'
+)?.content;
+if (conversationId) {
+    window.Echo.private(`chat.${conversationId}`).listen("MessageSent", (e) => {
+        console.log("New message received:", e);
+        // Xử lý tin nhắn mới ở đây
+    });
+}
+
+// Chat Realtime với Pusher
+class ChatRealtime {
+    constructor(options) {
+        if (!options || !options.conversationId || !options.userId) {
+            throw new Error(
+                "Missing required options: conversationId and userId"
+            );
         }
-        /******/ // Create a new module (and put it into the cache)
-        /******/ var module = (installedModules[moduleId] = {
-            /******/ i: moduleId,
-            /******/ l: false,
-            /******/ exports: {},
-            /******/
-        });
-        /******/
-        /******/ // Execute the module function
-        /******/ modules[moduleId].call(
-            module.exports,
-            module,
-            module.exports,
-            __webpack_require__
+
+        this.conversationId = options.conversationId;
+        this.userId = options.userId;
+        this.userType = options.userType || "customer";
+        this.api = options.api || {};
+        if (!this.api.send || !this.api.getMessages || !this.api.distribute) {
+            throw new Error("Thiếu endpoint API khi khởi tạo ChatCommon");
+        }
+        this.channel = null;
+        this.messageContainer = document.getElementById("chat-messages");
+        this.typingIndicator = null;
+        this.typingTimeout = null;
+        this.isTyping = false;
+        this.onlineUsers = new Set();
+
+        this.init();
+        this.loadMessages();
+    }
+
+    init() {
+        this.setupChannels();
+        this.setupEventListeners();
+        this.setupTypingIndicator();
+    }
+
+    setupChannels() {
+        if (!window.Echo) {
+            console.error("❌ Echo chưa được khởi tạo");
+            return;
+        }
+
+        // Subscribe to conversation channel
+        this.channel = window.Echo.private(`chat.${this.conversationId}`)
+            .listen("MessageSent", (e) => {
+                console.log("New message received:", e);
+                this.handleNewMessage(e);
+            })
+            .listen("UserTyping", (e) => {
+                console.log("User typing:", e);
+                this.handleTypingIndicator(e);
+            })
+            .listen("ConversationUpdated", (e) => {
+                console.log("Conversation updated:", e);
+                this.handleConversationUpdate(e);
+            });
+
+        // Subscribe to online users presence channel
+        window.Echo.join("online-users")
+            .here((users) => {
+                console.log("Users currently online:", users);
+                this.updateOnlineUsers(users);
+            })
+            .joining((user) => {
+                console.log("User joined:", user);
+                this.onlineUsers.add(user.id);
+                this.updateUserStatus(user.id, true);
+            })
+            .leaving((user) => {
+                console.log("User left:", user);
+                this.onlineUsers.delete(user.id);
+                this.updateUserStatus(user.id, false);
+            });
+    }
+
+    setupEventListeners() {
+        // Send message form
+        const sendForm = document.querySelector(".chat-input-container form");
+        if (sendForm) {
+            sendForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                this.sendMessage();
+            });
+        }
+
+        // File attachment
+
+        // Enter key to send
+        const messageInput = document.getElementById("message-input");
+        if (messageInput) {
+            messageInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                } else {
+                    this.handleTyping();
+                }
+            });
+
+            messageInput.addEventListener("input", () => {
+                this.handleTyping();
+            });
+
+            messageInput.addEventListener("blur", () => {
+                this.stopTyping();
+            });
+        }
+
+        // Distribution select
+        const distributeSelects = document.querySelectorAll(
+            ".distribution-select"
         );
-        /******/
-        /******/ // Flag the module as loaded
-        /******/ module.l = true;
-        /******/
-        /******/ // Return the exports of the module
-        /******/ return module.exports;
-        /******/
-    }
-    /******/
-    /******/
-    /******/ // expose the modules object (__webpack_modules__)
-    /******/ __webpack_require__.m = modules;
-    /******/
-    /******/ // expose the module cache
-    /******/ __webpack_require__.c = installedModules;
-    /******/
-    /******/ // define getter function for harmony exports
-    /******/ __webpack_require__.d = function (exports, name, getter) {
-        /******/ if (!__webpack_require__.o(exports, name)) {
-            /******/ Object.defineProperty(exports, name, {
-                enumerable: true,
-                get: getter,
+        distributeSelects.forEach((select) => {
+            select.addEventListener("change", (e) => {
+                const conversationId = e.target.dataset.conversationId;
+                const branchId = e.target.value;
+                if (conversationId && branchId) {
+                    this.distributeConversation(conversationId, branchId);
+                }
             });
-            /******/
-        }
-        /******/
-    };
-    /******/
-    /******/ // define __esModule on exports
-    /******/ __webpack_require__.r = function (exports) {
-        /******/ if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
-            /******/ Object.defineProperty(exports, Symbol.toStringTag, {
-                value: "Module",
-            });
-            /******/
-        }
-        /******/ Object.defineProperty(exports, "__esModule", { value: true });
-        /******/
-    };
-    /******/
-    /******/ // create a fake namespace object
-    /******/ // mode & 1: value is a module id, require it
-    /******/ // mode & 2: merge all properties of value into the ns
-    /******/ // mode & 4: return value when already ns object
-    /******/ // mode & 8|1: behave like require
-    /******/ __webpack_require__.t = function (value, mode) {
-        /******/ if (mode & 1) value = __webpack_require__(value);
-        /******/ if (mode & 8) return value;
-        /******/ if (
-            mode & 4 &&
-            typeof value === "object" &&
-            value &&
-            value.__esModule
-        )
-            return value;
-        /******/ var ns = Object.create(null);
-        /******/ __webpack_require__.r(ns);
-        /******/ Object.defineProperty(ns, "default", {
-            enumerable: true,
-            value: value,
         });
-        /******/ if (mode & 2 && typeof value != "string")
-            for (var key in value)
-                __webpack_require__.d(
-                    ns,
-                    key,
-                    function (key) {
-                        return value[key];
-                    }.bind(null, key)
-                );
-        /******/ return ns;
-        /******/
-    };
-    /******/
-    /******/ // getDefaultExport function for compatibility with non-harmony modules
-    /******/ __webpack_require__.n = function (module) {
-        /******/ var getter =
-            module && module.__esModule
-                ? /******/ function getDefault() {
-                      return module["default"];
-                  }
-                : /******/ function getModuleExports() {
-                      return module;
-                  };
-        /******/ __webpack_require__.d(getter, "a", getter);
-        /******/ return getter;
-        /******/
-    };
-    /******/
-    /******/ // Object.prototype.hasOwnProperty.call
-    /******/ __webpack_require__.o = function (object, property) {
-        return Object.prototype.hasOwnProperty.call(object, property);
-    };
-    /******/
-    /******/ // __webpack_public_path__
-    /******/ __webpack_require__.p = "/";
-    /******/
-    /******/
-    /******/ // Load entry module and return exports
-    /******/ return __webpack_require__((__webpack_require__.s = 0));
-    /******/
-})(
-    /************************************************************************/
-    /******/ {
-        /***/ "./node_modules/laravel-echo/dist/echo.js":
-            /*!************************************************!*\
-  !*** ./node_modules/laravel-echo/dist/echo.js ***!
-  \************************************************/
-            /*! exports provided: Channel, Connector, EventFormatter, default */
-            /***/ function (module, __webpack_exports__, __webpack_require__) {
-                "use strict";
-                __webpack_require__.r(__webpack_exports__);
-                /* harmony export (binding) */ __webpack_require__.d(
-                    __webpack_exports__,
-                    "Channel",
-                    function () {
-                        return l;
-                    }
-                );
-                /* harmony export (binding) */ __webpack_require__.d(
-                    __webpack_exports__,
-                    "Connector",
-                    function () {
-                        return i;
-                    }
-                );
-                /* harmony export (binding) */ __webpack_require__.d(
-                    __webpack_exports__,
-                    "EventFormatter",
-                    function () {
-                        return d;
-                    }
-                );
-                /* harmony export (binding) */ __webpack_require__.d(
-                    __webpack_exports__,
-                    "default",
-                    function () {
-                        return E;
-                    }
-                );
-                function ownKeys(e, r) {
-                    var t = Object.keys(e);
-                    if (Object.getOwnPropertySymbols) {
-                        var o = Object.getOwnPropertySymbols(e);
-                        r &&
-                            (o = o.filter(function (r) {
-                                return Object.getOwnPropertyDescriptor(
-                                    e,
-                                    r
-                                ).enumerable;
-                            })),
-                            t.push.apply(t, o);
-                    }
-                    return t;
-                }
-                function _objectSpread(e) {
-                    for (var r = 1; r < arguments.length; r++) {
-                        var t = null != arguments[r] ? arguments[r] : {};
-                        r % 2
-                            ? ownKeys(Object(t), !0).forEach(function (r) {
-                                  _defineProperty(e, r, t[r]);
-                              })
-                            : Object.getOwnPropertyDescriptors
-                            ? Object.defineProperties(
-                                  e,
-                                  Object.getOwnPropertyDescriptors(t)
-                              )
-                            : ownKeys(Object(t)).forEach(function (r) {
-                                  Object.defineProperty(
-                                      e,
-                                      r,
-                                      Object.getOwnPropertyDescriptor(t, r)
-                                  );
-                              });
-                    }
-                    return e;
-                }
-                function _defineProperty(e, r, t) {
-                    return (
-                        (r = _toPropertyKey(r)) in e
-                            ? Object.defineProperty(e, r, {
-                                  value: t,
-                                  enumerable: !0,
-                                  configurable: !0,
-                                  writable: !0,
-                              })
-                            : (e[r] = t),
-                        e
-                    );
-                }
-                function _toPropertyKey(t) {
-                    var i = _toPrimitive(t, "string");
-                    return "symbol" == typeof i ? i : i + "";
-                }
-                function _toPrimitive(t, r) {
-                    if ("object" != typeof t || !t) return t;
-                    var e = t[Symbol.toPrimitive];
-                    if (void 0 !== e) {
-                        var i = e.call(t, r || "default");
-                        if ("object" != typeof i) return i;
-                        throw new TypeError(
-                            "@@toPrimitive must return a primitive value."
-                        );
-                    }
-                    return ("string" === r ? String : Number)(t);
-                }
-                class l {
-                    /**
-                     * Listen for a whisper event on the channel instance.
-                     */
-                    listenForWhisper(e, t) {
-                        return this.listen(".client-" + e, t);
-                    }
-                    /**
-                     * Listen for an event on the channel instance.
-                     */
-                    notification(e) {
-                        return this.listen(
-                            ".Illuminate\\Notifications\\Events\\BroadcastNotificationCreated",
-                            e
-                        );
-                    }
-                    /**
-                     * Stop listening for a whisper event on the channel instance.
-                     */
-                    stopListeningForWhisper(e, t) {
-                        return this.stopListening(".client-" + e, t);
-                    }
-                }
-                class d {
-                    /**
-                     * Create a new class instance.
-                     */
-                    constructor(e) {
-                        this.namespace = e;
-                    }
-                    /**
-                     * Format the given event name.
-                     */
-                    format(e) {
-                        return [".", "\\"].includes(e.charAt(0))
-                            ? e.substring(1)
-                            : (this.namespace && (e = this.namespace + "." + e),
-                              e.replace(/\./g, "\\"));
-                    }
-                    /**
-                     * Set the event namespace.
-                     */
-                    setNamespace(e) {
-                        this.namespace = e;
-                    }
-                }
-                function w(n) {
-                    try {
-                        new n();
-                    } catch (e) {
-                        if (
-                            e instanceof Error &&
-                            e.message.includes("is not a constructor")
-                        )
-                            return !1;
-                    }
-                    return !0;
-                }
-                class u extends l {
-                    /**
-                     * Create a new class instance.
-                     */
-                    constructor(e, t, s) {
-                        super(),
-                            (this.name = t),
-                            (this.pusher = e),
-                            (this.options = s),
-                            (this.eventFormatter = new d(
-                                this.options.namespace
-                            )),
-                            this.subscribe();
-                    }
-                    /**
-                     * Subscribe to a Pusher channel.
-                     */
-                    subscribe() {
-                        this.subscription = this.pusher.subscribe(this.name);
-                    }
-                    /**
-                     * Unsubscribe from a Pusher channel.
-                     */
-                    unsubscribe() {
-                        this.pusher.unsubscribe(this.name);
-                    }
-                    /**
-                     * Listen for an event on the channel instance.
-                     */
-                    listen(e, t) {
-                        return this.on(this.eventFormatter.format(e), t), this;
-                    }
-                    /**
-                     * Listen for all events on the channel instance.
-                     */
-                    listenToAll(e) {
-                        return (
-                            this.subscription.bind_global((t, s) => {
-                                var _this$options$namespa;
-                                if (t.startsWith("pusher:")) return;
-                                let r = String(
-                                        (_this$options$namespa =
-                                            this.options.namespace) !== null &&
-                                            _this$options$namespa !== void 0
-                                            ? _this$options$namespa
-                                            : ""
-                                    ).replace(/\./g, "\\"),
-                                    a = t.startsWith(r)
-                                        ? t.substring(r.length + 1)
-                                        : "." + t;
-                                e(a, s);
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Stop listening for an event on the channel instance.
-                     */
-                    stopListening(e, t) {
-                        return (
-                            t
-                                ? this.subscription.unbind(
-                                      this.eventFormatter.format(e),
-                                      t
-                                  )
-                                : this.subscription.unbind(
-                                      this.eventFormatter.format(e)
-                                  ),
-                            this
-                        );
-                    }
-                    /**
-                     * Stop listening for all events on the channel instance.
-                     */
-                    stopListeningToAll(e) {
-                        return (
-                            e
-                                ? this.subscription.unbind_global(e)
-                                : this.subscription.unbind_global(),
-                            this
-                        );
-                    }
-                    /**
-                     * Register a callback to be called anytime a subscription succeeds.
-                     */
-                    subscribed(e) {
-                        return (
-                            this.on("pusher:subscription_succeeded", () => {
-                                e();
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Register a callback to be called anytime a subscription error occurs.
-                     */
-                    error(e) {
-                        return (
-                            this.on("pusher:subscription_error", (t) => {
-                                e(t);
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Bind a channel to an event.
-                     */
-                    on(e, t) {
-                        return this.subscription.bind(e, t), this;
-                    }
-                }
-                class f extends u {
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return (
-                            this.pusher.channels.channels[this.name].trigger(
-                                `client-${e}`,
-                                t
-                            ),
-                            this
-                        );
-                    }
-                }
-                class g extends u {
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return (
-                            this.pusher.channels.channels[this.name].trigger(
-                                `client-${e}`,
-                                t
-                            ),
-                            this
-                        );
-                    }
-                }
-                class y extends f {
-                    /**
-                     * Register a callback to be called anytime the member list changes.
-                     */
-                    here(e) {
-                        return (
-                            this.on("pusher:subscription_succeeded", (t) => {
-                                e(
-                                    Object.keys(t.members).map(
-                                        (s) => t.members[s]
-                                    )
-                                );
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Listen for someone joining the channel.
-                     */
-                    joining(e) {
-                        return (
-                            this.on("pusher:member_added", (t) => {
-                                e(t.info);
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return (
-                            this.pusher.channels.channels[this.name].trigger(
-                                `client-${e}`,
-                                t
-                            ),
-                            this
-                        );
-                    }
-                    /**
-                     * Listen for someone leaving the channel.
-                     */
-                    leaving(e) {
-                        return (
-                            this.on("pusher:member_removed", (t) => {
-                                e(t.info);
-                            }),
-                            this
-                        );
-                    }
-                }
-                class b extends l {
-                    /**
-                     * Create a new class instance.
-                     */
-                    constructor(e, t, s) {
-                        super(),
-                            (this.events = {}),
-                            (this.listeners = {}),
-                            (this.name = t),
-                            (this.socket = e),
-                            (this.options = s),
-                            (this.eventFormatter = new d(
-                                this.options.namespace
-                            )),
-                            this.subscribe();
-                    }
-                    /**
-                     * Subscribe to a Socket.io channel.
-                     */
-                    subscribe() {
-                        this.socket.emit("subscribe", {
-                            channel: this.name,
-                            auth: this.options.auth || {},
-                        });
-                    }
-                    /**
-                     * Unsubscribe from channel and ubind event callbacks.
-                     */
-                    unsubscribe() {
-                        this.unbind(),
-                            this.socket.emit("unsubscribe", {
-                                channel: this.name,
-                                auth: this.options.auth || {},
-                            });
-                    }
-                    /**
-                     * Listen for an event on the channel instance.
-                     */
-                    listen(e, t) {
-                        return this.on(this.eventFormatter.format(e), t), this;
-                    }
-                    /**
-                     * Stop listening for an event on the channel instance.
-                     */
-                    stopListening(e, t) {
-                        return (
-                            this.unbindEvent(this.eventFormatter.format(e), t),
-                            this
-                        );
-                    }
-                    /**
-                     * Register a callback to be called anytime a subscription succeeds.
-                     */
-                    subscribed(e) {
-                        return (
-                            this.on("connect", (t) => {
-                                e(t);
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Register a callback to be called anytime an error occurs.
-                     */
-                    error(e) {
-                        return this;
-                    }
-                    /**
-                     * Bind the channel's socket to an event and store the callback.
-                     */
-                    on(e, t) {
-                        return (
-                            (this.listeners[e] = this.listeners[e] || []),
-                            this.events[e] ||
-                                ((this.events[e] = (s, r) => {
-                                    this.name === s &&
-                                        this.listeners[e] &&
-                                        this.listeners[e].forEach((a) => a(r));
-                                }),
-                                this.socket.on(e, this.events[e])),
-                            this.listeners[e].push(t),
-                            this
-                        );
-                    }
-                    /**
-                     * Unbind the channel's socket from all stored event callbacks.
-                     */
-                    unbind() {
-                        Object.keys(this.events).forEach((e) => {
-                            this.unbindEvent(e);
-                        });
-                    }
-                    /**
-                     * Unbind the listeners for the given event.
-                     */
-                    unbindEvent(e, t) {
-                        (this.listeners[e] = this.listeners[e] || []),
-                            t &&
-                                (this.listeners[e] = this.listeners[e].filter(
-                                    (s) => s !== t
-                                )),
-                            (!t || this.listeners[e].length === 0) &&
-                                (this.events[e] &&
-                                    (this.socket.removeListener(
-                                        e,
-                                        this.events[e]
-                                    ),
-                                    delete this.events[e]),
-                                delete this.listeners[e]);
-                    }
-                }
-                class v extends b {
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return (
-                            this.socket.emit("client event", {
-                                channel: this.name,
-                                event: `client-${e}`,
-                                data: t,
-                            }),
-                            this
-                        );
-                    }
-                }
-                class m extends v {
-                    /**
-                     * Register a callback to be called anytime the member list changes.
-                     */
-                    here(e) {
-                        return (
-                            this.on("presence:subscribed", (t) => {
-                                e(t.map((s) => s.user_info));
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Listen for someone joining the channel.
-                     */
-                    joining(e) {
-                        return (
-                            this.on("presence:joining", (t) => e(t.user_info)),
-                            this
-                        );
-                    }
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return (
-                            this.socket.emit("client event", {
-                                channel: this.name,
-                                event: `client-${e}`,
-                                data: t,
-                            }),
-                            this
-                        );
-                    }
-                    /**
-                     * Listen for someone leaving the channel.
-                     */
-                    leaving(e) {
-                        return (
-                            this.on("presence:leaving", (t) => e(t.user_info)),
-                            this
-                        );
-                    }
-                }
-                class h extends l {
-                    /**
-                     * Subscribe to a channel.
-                     */
-                    subscribe() {}
-                    /**
-                     * Unsubscribe from a channel.
-                     */
-                    unsubscribe() {}
-                    /**
-                     * Listen for an event on the channel instance.
-                     */
-                    listen(e, t) {
-                        return this;
-                    }
-                    /**
-                     * Listen for all events on the channel instance.
-                     */
-                    listenToAll(e) {
-                        return this;
-                    }
-                    /**
-                     * Stop listening for an event on the channel instance.
-                     */
-                    stopListening(e, t) {
-                        return this;
-                    }
-                    /**
-                     * Register a callback to be called anytime a subscription succeeds.
-                     */
-                    subscribed(e) {
-                        return this;
-                    }
-                    /**
-                     * Register a callback to be called anytime an error occurs.
-                     */
-                    error(e) {
-                        return this;
-                    }
-                    /**
-                     * Bind a channel to an event.
-                     */
-                    on(e, t) {
-                        return this;
-                    }
-                }
-                class k extends h {
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return this;
-                    }
-                }
-                class _ extends h {
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return this;
-                    }
-                }
-                class C extends k {
-                    /**
-                     * Register a callback to be called anytime the member list changes.
-                     */
-                    here(e) {
-                        return this;
-                    }
-                    /**
-                     * Listen for someone joining the channel.
-                     */
-                    joining(e) {
-                        return this;
-                    }
-                    /**
-                     * Send a whisper event to other clients in the channel.
-                     */
-                    whisper(e, t) {
-                        return this;
-                    }
-                    /**
-                     * Listen for someone leaving the channel.
-                     */
-                    leaving(e) {
-                        return this;
-                    }
-                }
-                const c = class c {
-                    /**
-                     * Create a new class instance.
-                     */
-                    constructor(e) {
-                        this.setOptions(e), this.connect();
-                    }
-                    /**
-                     * Merge the custom options with the defaults.
-                     */
-                    setOptions(e) {
-                        this.options = _objectSpread(
-                            _objectSpread(
-                                _objectSpread({}, c._defaultOptions),
-                                e
-                            ),
-                            {},
-                            {
-                                broadcaster: e.broadcaster,
-                            }
-                        );
-                        let t = this.csrfToken();
-                        t &&
-                            ((this.options.auth.headers["X-CSRF-TOKEN"] = t),
-                            (this.options.userAuthentication.headers[
-                                "X-CSRF-TOKEN"
-                            ] = t)),
-                            (t = this.options.bearerToken),
-                            t &&
-                                ((this.options.auth.headers.Authorization =
-                                    "Bearer " + t),
-                                (this.options.userAuthentication.headers.Authorization =
-                                    "Bearer " + t));
-                    }
-                    /**
-                     * Extract the CSRF token from the page.
-                     */
-                    csrfToken() {
-                        var _ref;
-                        var e, t;
-                        return typeof window < "u" &&
-                            (e = window.Laravel) != null &&
-                            e.csrfToken
-                            ? window.Laravel.csrfToken
-                            : this.options.csrfToken
-                            ? this.options.csrfToken
-                            : typeof document < "u" &&
-                              typeof document.querySelector == "function"
-                            ? (_ref =
-                                  (t = document.querySelector(
-                                      'meta[name="csrf-token"]'
-                                  )) == null
-                                      ? void 0
-                                      : t.getAttribute("content")) !== null &&
-                              _ref !== void 0
-                                ? _ref
-                                : null
-                            : null;
-                    }
-                };
-                c._defaultOptions = {
-                    auth: {
-                        headers: {},
-                    },
-                    authEndpoint: "/broadcasting/auth",
-                    userAuthentication: {
-                        endpoint: "/broadcasting/user-auth",
-                        headers: {},
-                    },
-                    csrfToken: null,
-                    bearerToken: null,
-                    host: null,
-                    key: null,
-                    namespace: "App.Events",
-                };
-                let i = c;
-                class o extends i {
-                    constructor() {
-                        super(...arguments), (this.channels = {});
-                    }
-                    /**
-                     * Create a fresh Pusher connection.
-                     */
-                    connect() {
-                        if (typeof this.options.client < "u")
-                            this.pusher = this.options.client;
-                        else if (this.options.Pusher)
-                            this.pusher = new this.options.Pusher(
-                                this.options.key,
-                                this.options
-                            );
-                        else if (
-                            typeof window < "u" &&
-                            typeof window.Pusher < "u"
-                        )
-                            this.pusher = new window.Pusher(
-                                this.options.key,
-                                this.options
-                            );
-                        else
-                            throw new Error(
-                                "Pusher client not found. Should be globally available or passed via options.client"
-                            );
-                    }
-                    /**
-                     * Sign in the user via Pusher user authentication (https://pusher.com/docs/channels/using_channels/user-authentication/).
-                     */
-                    signin() {
-                        this.pusher.signin();
-                    }
-                    /**
-                     * Listen for an event on a channel instance.
-                     */
-                    listen(e, t, s) {
-                        return this.channel(e).listen(t, s);
-                    }
-                    /**
-                     * Get a channel instance by name.
-                     */
-                    channel(e) {
-                        return (
-                            this.channels[e] ||
-                                (this.channels[e] = new u(
-                                    this.pusher,
-                                    e,
-                                    this.options
-                                )),
-                            this.channels[e]
-                        );
-                    }
-                    /**
-                     * Get a private channel instance by name.
-                     */
-                    privateChannel(e) {
-                        return (
-                            this.channels["private-" + e] ||
-                                (this.channels["private-" + e] = new f(
-                                    this.pusher,
-                                    "private-" + e,
-                                    this.options
-                                )),
-                            this.channels["private-" + e]
-                        );
-                    }
-                    /**
-                     * Get a private encrypted channel instance by name.
-                     */
-                    encryptedPrivateChannel(e) {
-                        return (
-                            this.channels["private-encrypted-" + e] ||
-                                (this.channels["private-encrypted-" + e] =
-                                    new g(
-                                        this.pusher,
-                                        "private-encrypted-" + e,
-                                        this.options
-                                    )),
-                            this.channels["private-encrypted-" + e]
-                        );
-                    }
-                    /**
-                     * Get a presence channel instance by name.
-                     */
-                    presenceChannel(e) {
-                        return (
-                            this.channels["presence-" + e] ||
-                                (this.channels["presence-" + e] = new y(
-                                    this.pusher,
-                                    "presence-" + e,
-                                    this.options
-                                )),
-                            this.channels["presence-" + e]
-                        );
-                    }
-                    /**
-                     * Leave the given channel, as well as its private and presence variants.
-                     */
-                    leave(e) {
-                        [
-                            e,
-                            "private-" + e,
-                            "private-encrypted-" + e,
-                            "presence-" + e,
-                        ].forEach((s) => {
-                            this.leaveChannel(s);
-                        });
-                    }
-                    /**
-                     * Leave the given channel.
-                     */
-                    leaveChannel(e) {
-                        this.channels[e] &&
-                            (this.channels[e].unsubscribe(),
-                            delete this.channels[e]);
-                    }
-                    /**
-                     * Get the socket ID for the connection.
-                     */
-                    socketId() {
-                        return this.pusher.connection.socket_id;
-                    }
-                    /**
-                     * Disconnect Pusher connection.
-                     */
-                    disconnect() {
-                        this.pusher.disconnect();
-                    }
-                }
-                class I extends i {
-                    constructor() {
-                        super(...arguments), (this.channels = {});
-                    }
-                    /**
-                     * Create a fresh Socket.io connection.
-                     */
-                    connect() {
-                        var _this$options$host;
-                        let e = this.getSocketIO();
-                        (this.socket = e(
-                            (_this$options$host = this.options.host) !== null &&
-                                _this$options$host !== void 0
-                                ? _this$options$host
-                                : void 0,
-                            this.options
-                        )),
-                            this.socket.on("reconnect", () => {
-                                Object.values(this.channels).forEach((t) => {
-                                    t.subscribe();
-                                });
-                            });
-                    }
-                    /**
-                     * Get socket.io module from global scope or options.
-                     */
-                    getSocketIO() {
-                        if (typeof this.options.client < "u")
-                            return this.options.client;
-                        if (typeof window < "u" && typeof window.io < "u")
-                            return window.io;
-                        throw new Error(
-                            "Socket.io client not found. Should be globally available or passed via options.client"
-                        );
-                    }
-                    /**
-                     * Listen for an event on a channel instance.
-                     */
-                    listen(e, t, s) {
-                        return this.channel(e).listen(t, s);
-                    }
-                    /**
-                     * Get a channel instance by name.
-                     */
-                    channel(e) {
-                        return (
-                            this.channels[e] ||
-                                (this.channels[e] = new b(
-                                    this.socket,
-                                    e,
-                                    this.options
-                                )),
-                            this.channels[e]
-                        );
-                    }
-                    /**
-                     * Get a private channel instance by name.
-                     */
-                    privateChannel(e) {
-                        return (
-                            this.channels["private-" + e] ||
-                                (this.channels["private-" + e] = new v(
-                                    this.socket,
-                                    "private-" + e,
-                                    this.options
-                                )),
-                            this.channels["private-" + e]
-                        );
-                    }
-                    /**
-                     * Get a presence channel instance by name.
-                     */
-                    presenceChannel(e) {
-                        return (
-                            this.channels["presence-" + e] ||
-                                (this.channels["presence-" + e] = new m(
-                                    this.socket,
-                                    "presence-" + e,
-                                    this.options
-                                )),
-                            this.channels["presence-" + e]
-                        );
-                    }
-                    /**
-                     * Leave the given channel, as well as its private and presence variants.
-                     */
-                    leave(e) {
-                        [e, "private-" + e, "presence-" + e].forEach((s) => {
-                            this.leaveChannel(s);
-                        });
-                    }
-                    /**
-                     * Leave the given channel.
-                     */
-                    leaveChannel(e) {
-                        this.channels[e] &&
-                            (this.channels[e].unsubscribe(),
-                            delete this.channels[e]);
-                    }
-                    /**
-                     * Get the socket ID for the connection.
-                     */
-                    socketId() {
-                        return this.socket.id;
-                    }
-                    /**
-                     * Disconnect Socketio connection.
-                     */
-                    disconnect() {
-                        this.socket.disconnect();
-                    }
-                }
-                class p extends i {
-                    constructor() {
-                        super(...arguments), (this.channels = {});
-                    }
-                    /**
-                     * Create a fresh connection.
-                     */
-                    connect() {}
-                    /**
-                     * Listen for an event on a channel instance.
-                     */
-                    listen(e, t, s) {
-                        return new h();
-                    }
-                    /**
-                     * Get a channel instance by name.
-                     */
-                    channel(e) {
-                        return new h();
-                    }
-                    /**
-                     * Get a private channel instance by name.
-                     */
-                    privateChannel(e) {
-                        return new k();
-                    }
-                    /**
-                     * Get a private encrypted channel instance by name.
-                     */
-                    encryptedPrivateChannel(e) {
-                        return new _();
-                    }
-                    /**
-                     * Get a presence channel instance by name.
-                     */
-                    presenceChannel(e) {
-                        return new C();
-                    }
-                    /**
-                     * Leave the given channel, as well as its private and presence variants.
-                     */
-                    leave(e) {}
-                    /**
-                     * Leave the given channel.
-                     */
-                    leaveChannel(e) {}
-                    /**
-                     * Get the socket ID for the connection.
-                     */
-                    socketId() {
-                        return "fake-socket-id";
-                    }
-                    /**
-                     * Disconnect the connection.
-                     */
-                    disconnect() {}
-                }
-                class E {
-                    /**
-                     * Create a new class instance.
-                     */
-                    constructor(e) {
-                        (this.options = e),
-                            this.connect(),
-                            this.options.withoutInterceptors ||
-                                this.registerInterceptors();
-                    }
-                    /**
-                     * Get a channel instance by name.
-                     */
-                    channel(e) {
-                        return this.connector.channel(e);
-                    }
-                    /**
-                     * Create a new connection.
-                     */
-                    connect() {
-                        if (this.options.broadcaster === "reverb")
-                            this.connector = new o(
-                                _objectSpread(
-                                    _objectSpread({}, this.options),
-                                    {},
-                                    {
-                                        cluster: "",
-                                    }
-                                )
-                            );
-                        else if (this.options.broadcaster === "pusher")
-                            this.connector = new o(this.options);
-                        else if (this.options.broadcaster === "ably")
-                            this.connector = new o(
-                                _objectSpread(
-                                    _objectSpread({}, this.options),
-                                    {},
-                                    {
-                                        cluster: "",
-                                        broadcaster: "pusher",
-                                    }
-                                )
-                            );
-                        else if (this.options.broadcaster === "socket.io")
-                            this.connector = new I(this.options);
-                        else if (this.options.broadcaster === "null")
-                            this.connector = new p(this.options);
-                        else if (
-                            typeof this.options.broadcaster == "function" &&
-                            w(this.options.broadcaster)
-                        )
-                            this.connector = new this.options.broadcaster(
-                                this.options
-                            );
-                        else
-                            throw new Error(
-                                `Broadcaster ${typeof this.options
-                                    .broadcaster} ${String(
-                                    this.options.broadcaster
-                                )} is not supported.`
-                            );
-                    }
-                    /**
-                     * Disconnect from the Echo server.
-                     */
-                    disconnect() {
-                        this.connector.disconnect();
-                    }
-                    /**
-                     * Get a presence channel instance by name.
-                     */
-                    join(e) {
-                        return this.connector.presenceChannel(e);
-                    }
-                    /**
-                     * Leave the given channel, as well as its private and presence variants.
-                     */
-                    leave(e) {
-                        this.connector.leave(e);
-                    }
-                    /**
-                     * Leave the given channel.
-                     */
-                    leaveChannel(e) {
-                        this.connector.leaveChannel(e);
-                    }
-                    /**
-                     * Leave all channels.
-                     */
-                    leaveAllChannels() {
-                        for (const e in this.connector.channels)
-                            this.leaveChannel(e);
-                    }
-                    /**
-                     * Listen for an event on a channel instance.
-                     */
-                    listen(e, t, s) {
-                        return this.connector.listen(e, t, s);
-                    }
-                    /**
-                     * Get a private channel instance by name.
-                     */
-                    private(e) {
-                        return this.connector.privateChannel(e);
-                    }
-                    /**
-                     * Get a private encrypted channel instance by name.
-                     */
-                    encryptedPrivate(e) {
-                        if (
-                            this.connectorSupportsEncryptedPrivateChannels(
-                                this.connector
-                            )
-                        )
-                            return this.connector.encryptedPrivateChannel(e);
-                        throw new Error(
-                            `Broadcaster ${typeof this.options
-                                .broadcaster} ${String(
-                                this.options.broadcaster
-                            )} does not support encrypted private channels.`
-                        );
-                    }
-                    connectorSupportsEncryptedPrivateChannels(e) {
-                        return e instanceof o || e instanceof p;
-                    }
-                    /**
-                     * Get the Socket ID for the connection.
-                     */
-                    socketId() {
-                        return this.connector.socketId();
-                    }
-                    /**
-                     * Register 3rd party request interceptiors. These are used to automatically
-                     * send a connections socket id to a Laravel app with a X-Socket-Id header.
-                     */
-                    registerInterceptors() {
-                        typeof Vue < "u" &&
-                            Vue != null &&
-                            Vue.http &&
-                            this.registerVueRequestInterceptor(),
-                            typeof axios == "function" &&
-                                this.registerAxiosRequestInterceptor(),
-                            typeof jQuery == "function" &&
-                                this.registerjQueryAjaxSetup(),
-                            typeof Turbo == "object" &&
-                                this.registerTurboRequestInterceptor();
-                    }
-                    /**
-                     * Register a Vue HTTP interceptor to add the X-Socket-ID header.
-                     */
-                    registerVueRequestInterceptor() {
-                        Vue.http.interceptors.push((e, t) => {
-                            this.socketId() &&
-                                e.headers.set("X-Socket-ID", this.socketId()),
-                                t();
-                        });
-                    }
-                    /**
-                     * Register an Axios HTTP interceptor to add the X-Socket-ID header.
-                     */
-                    registerAxiosRequestInterceptor() {
-                        axios.interceptors.request.use(
-                            (e) => (
-                                this.socketId() &&
-                                    (e.headers["X-Socket-Id"] =
-                                        this.socketId()),
-                                e
-                            )
-                        );
-                    }
-                    /**
-                     * Register jQuery AjaxPrefilter to add the X-Socket-ID header.
-                     */
-                    registerjQueryAjaxSetup() {
-                        typeof jQuery.ajax < "u" &&
-                            jQuery.ajaxPrefilter((e, t, s) => {
-                                this.socketId() &&
-                                    s.setRequestHeader(
-                                        "X-Socket-Id",
-                                        this.socketId()
-                                    );
-                            });
-                    }
-                    /**
-                     * Register the Turbo Request interceptor to add the X-Socket-ID header.
-                     */
-                    registerTurboRequestInterceptor() {
-                        document.addEventListener(
-                            "turbo:before-fetch-request",
-                            (e) => {
-                                e.detail.fetchOptions.headers["X-Socket-Id"] =
-                                    this.socketId();
-                            }
-                        );
-                    }
-                }
 
-                /***/
-            },
-
-        /***/ "./node_modules/pusher-js/dist/web/pusher.js":
-            /*!***************************************************!*\
-  !*** ./node_modules/pusher-js/dist/web/pusher.js ***!
-  \***************************************************/
-            /*! no static exports found */
-            /***/ function (module, exports, __webpack_require__) {
-                /*!
-                 * Pusher JavaScript Library v8.4.0
-                 * https://pusher.com/
-                 *
-                 * Copyright 2020, Pusher
-                 * Released under the MIT licence.
-                 */
-
-                (function webpackUniversalModuleDefinition(root, factory) {
-                    if (true) module.exports = factory();
-                    else {
-                    }
-                })(window, function () {
-                    return /******/ (function (modules) {
-                        // webpackBootstrap
-                        /******/ // The module cache
-                        /******/
-                        var installedModules = {};
-                        /******/
-                        /******/ // The require function
-                        /******/
-                        function __webpack_require__(moduleId) {
-                            /******/
-                            /******/ // Check if module is in cache
-                            /******/ if (installedModules[moduleId]) {
-                                /******/ return installedModules[moduleId]
-                                    .exports;
-                                /******/
-                            }
-                            /******/ // Create a new module (and put it into the cache)
-                            /******/
-                            var module = (installedModules[moduleId] = {
-                                /******/ i: moduleId,
-                                /******/ l: false,
-                                /******/ exports: {},
-                                /******/
-                            });
-                            /******/
-                            /******/ // Execute the module function
-                            /******/
-                            modules[moduleId].call(
-                                module.exports,
-                                module,
-                                module.exports,
-                                __webpack_require__
-                            );
-                            /******/
-                            /******/ // Flag the module as loaded
-                            /******/
-                            module.l = true;
-                            /******/
-                            /******/ // Return the exports of the module
-                            /******/
-                            return module.exports;
-                            /******/
-                        }
-                        /******/
-                        /******/
-                        /******/ // expose the modules object (__webpack_modules__)
-                        /******/
-                        __webpack_require__.m = modules;
-                        /******/
-                        /******/ // expose the module cache
-                        /******/
-                        __webpack_require__.c = installedModules;
-                        /******/
-                        /******/ // define getter function for harmony exports
-                        /******/
-                        __webpack_require__.d = function (
-                            exports,
-                            name,
-                            getter
-                        ) {
-                            /******/ if (
-                                !__webpack_require__.o(exports, name)
-                            ) {
-                                /******/ Object.defineProperty(exports, name, {
-                                    enumerable: true,
-                                    get: getter,
-                                });
-                                /******/
-                            }
-                            /******/
-                        };
-                        /******/
-                        /******/ // define __esModule on exports
-                        /******/
-                        __webpack_require__.r = function (exports) {
-                            /******/ if (
-                                typeof Symbol !== "undefined" &&
-                                Symbol.toStringTag
-                            ) {
-                                /******/ Object.defineProperty(
-                                    exports,
-                                    Symbol.toStringTag,
-                                    {
-                                        value: "Module",
-                                    }
-                                );
-                                /******/
-                            }
-                            /******/
-                            Object.defineProperty(exports, "__esModule", {
-                                value: true,
-                            });
-                            /******/
-                        };
-                        /******/
-                        /******/ // create a fake namespace object
-                        /******/ // mode & 1: value is a module id, require it
-                        /******/ // mode & 2: merge all properties of value into the ns
-                        /******/ // mode & 4: return value when already ns object
-                        /******/ // mode & 8|1: behave like require
-                        /******/
-                        __webpack_require__.t = function (value, mode) {
-                            /******/ if (mode & 1)
-                                value = __webpack_require__(value);
-                            /******/
-                            if (mode & 8) return value;
-                            /******/
-                            if (
-                                mode & 4 &&
-                                typeof value === "object" &&
-                                value &&
-                                value.__esModule
-                            )
-                                return value;
-                            /******/
-                            var ns = Object.create(null);
-                            /******/
-                            __webpack_require__.r(ns);
-                            /******/
-                            Object.defineProperty(ns, "default", {
-                                enumerable: true,
-                                value: value,
-                            });
-                            /******/
-                            if (mode & 2 && typeof value != "string")
-                                for (var key in value)
-                                    __webpack_require__.d(
-                                        ns,
-                                        key,
-                                        function (key) {
-                                            return value[key];
-                                        }.bind(null, key)
-                                    );
-                            /******/
-                            return ns;
-                            /******/
-                        };
-                        /******/
-                        /******/ // getDefaultExport function for compatibility with non-harmony modules
-                        /******/
-                        __webpack_require__.n = function (module) {
-                            /******/ var getter =
-                                module && module.__esModule
-                                    ? /******/ function getDefault() {
-                                          return module["default"];
-                                      }
-                                    : /******/ function getModuleExports() {
-                                          return module;
-                                      };
-                            /******/
-                            __webpack_require__.d(getter, "a", getter);
-                            /******/
-                            return getter;
-                            /******/
-                        };
-                        /******/
-                        /******/ // Object.prototype.hasOwnProperty.call
-                        /******/
-                        __webpack_require__.o = function (object, property) {
-                            return Object.prototype.hasOwnProperty.call(
-                                object,
-                                property
-                            );
-                        };
-                        /******/
-                        /******/ // __webpack_public_path__
-                        /******/
-                        __webpack_require__.p = "";
-                        /******/
-                        /******/
-                        /******/ // Load entry module and return exports
-                        /******/
-                        return __webpack_require__((__webpack_require__.s = 2));
-                        /******/
-                    })(
-                        /************************************************************************/
-                        /******/ [
-                            /* 0 */
-                            /***/ function (
-                                module,
-                                exports,
-                                __webpack_require__
-                            ) {
-                                "use strict";
-
-                                // Copyright (C) 2016 Dmitry Chestnykh
-                                // MIT License. See LICENSE file for details.
-                                var __extends =
-                                    (this && this.__extends) ||
-                                    (function () {
-                                        var extendStatics = function (d, b) {
-                                            extendStatics =
-                                                Object.setPrototypeOf ||
-                                                ({
-                                                    __proto__: [],
-                                                } instanceof Array &&
-                                                    function (d, b) {
-                                                        d.__proto__ = b;
-                                                    }) ||
-                                                function (d, b) {
-                                                    for (var p in b)
-                                                        if (b.hasOwnProperty(p))
-                                                            d[p] = b[p];
-                                                };
-                                            return extendStatics(d, b);
-                                        };
-                                        return function (d, b) {
-                                            extendStatics(d, b);
-                                            function __() {
-                                                this.constructor = d;
-                                            }
-                                            d.prototype =
-                                                b === null
-                                                    ? Object.create(b)
-                                                    : ((__.prototype =
-                                                          b.prototype),
-                                                      new __());
-                                        };
-                                    })();
-                                Object.defineProperty(exports, "__esModule", {
-                                    value: true,
-                                });
-                                /**
-                                 * Package base64 implements Base64 encoding and decoding.
-                                 */
-                                // Invalid character used in decoding to indicate
-                                // that the character to decode is out of range of
-                                // alphabet and cannot be decoded.
-                                var INVALID_BYTE = 256;
-                                /**
-                                 * Implements standard Base64 encoding.
-                                 *
-                                 * Operates in constant time.
-                                 */
-                                var Coder = /** @class */ (function () {
-                                    // TODO(dchest): methods to encode chunk-by-chunk.
-                                    function Coder(_paddingCharacter) {
-                                        if (_paddingCharacter === void 0) {
-                                            _paddingCharacter = "=";
-                                        }
-                                        this._paddingCharacter =
-                                            _paddingCharacter;
-                                    }
-                                    Coder.prototype.encodedLength = function (
-                                        length
-                                    ) {
-                                        if (!this._paddingCharacter) {
-                                            return ((length * 8 + 5) / 6) | 0;
-                                        }
-                                        return (((length + 2) / 3) * 4) | 0;
-                                    };
-                                    Coder.prototype.encode = function (data) {
-                                        var out = "";
-                                        var i = 0;
-                                        for (; i < data.length - 2; i += 3) {
-                                            var c =
-                                                (data[i] << 16) |
-                                                (data[i + 1] << 8) |
-                                                data[i + 2];
-                                            out += this._encodeByte(
-                                                (c >>> (3 * 6)) & 63
-                                            );
-                                            out += this._encodeByte(
-                                                (c >>> (2 * 6)) & 63
-                                            );
-                                            out += this._encodeByte(
-                                                (c >>> (1 * 6)) & 63
-                                            );
-                                            out += this._encodeByte(
-                                                (c >>> (0 * 6)) & 63
-                                            );
-                                        }
-                                        var left = data.length - i;
-                                        if (left > 0) {
-                                            var c =
-                                                (data[i] << 16) |
-                                                (left === 2
-                                                    ? data[i + 1] << 8
-                                                    : 0);
-                                            out += this._encodeByte(
-                                                (c >>> (3 * 6)) & 63
-                                            );
-                                            out += this._encodeByte(
-                                                (c >>> (2 * 6)) & 63
-                                            );
-                                            if (left === 2) {
-                                                out += this._encodeByte(
-                                                    (c >>> (1 * 6)) & 63
-                                                );
-                                            } else {
-                                                out +=
-                                                    this._paddingCharacter ||
-                                                    "";
-                                            }
-                                            out += this._paddingCharacter || "";
-                                        }
-                                        return out;
-                                    };
-                                    Coder.prototype.maxDecodedLength =
-                                        function (length) {
-                                            if (!this._paddingCharacter) {
-                                                return (
-                                                    ((length * 6 + 7) / 8) | 0
-                                                );
-                                            }
-                                            return ((length / 4) * 3) | 0;
-                                        };
-                                    Coder.prototype.decodedLength = function (
-                                        s
-                                    ) {
-                                        return this.maxDecodedLength(
-                                            s.length - this._getPaddingLength(s)
-                                        );
-                                    };
-                                    Coder.prototype.decode = function (s) {
-                                        if (s.length === 0) {
-                                            return new Uint8Array(0);
-                                        }
-                                        var paddingLength =
-                                            this._getPaddingLength(s);
-                                        var length = s.length - paddingLength;
-                                        var out = new Uint8Array(
-                                            this.maxDecodedLength(length)
-                                        );
-                                        var op = 0;
-                                        var i = 0;
-                                        var haveBad = 0;
-                                        var v0 = 0,
-                                            v1 = 0,
-                                            v2 = 0,
-                                            v3 = 0;
-                                        for (; i < length - 4; i += 4) {
-                                            v0 = this._decodeChar(
-                                                s.charCodeAt(i + 0)
-                                            );
-                                            v1 = this._decodeChar(
-                                                s.charCodeAt(i + 1)
-                                            );
-                                            v2 = this._decodeChar(
-                                                s.charCodeAt(i + 2)
-                                            );
-                                            v3 = this._decodeChar(
-                                                s.charCodeAt(i + 3)
-                                            );
-                                            out[op++] = (v0 << 2) | (v1 >>> 4);
-                                            out[op++] = (v1 << 4) | (v2 >>> 2);
-                                            out[op++] = (v2 << 6) | v3;
-                                            haveBad |= v0 & INVALID_BYTE;
-                                            haveBad |= v1 & INVALID_BYTE;
-                                            haveBad |= v2 & INVALID_BYTE;
-                                            haveBad |= v3 & INVALID_BYTE;
-                                        }
-                                        if (i < length - 1) {
-                                            v0 = this._decodeChar(
-                                                s.charCodeAt(i)
-                                            );
-                                            v1 = this._decodeChar(
-                                                s.charCodeAt(i + 1)
-                                            );
-                                            out[op++] = (v0 << 2) | (v1 >>> 4);
-                                            haveBad |= v0 & INVALID_BYTE;
-                                            haveBad |= v1 & INVALID_BYTE;
-                                        }
-                                        if (i < length - 2) {
-                                            v2 = this._decodeChar(
-                                                s.charCodeAt(i + 2)
-                                            );
-                                            out[op++] = (v1 << 4) | (v2 >>> 2);
-                                            haveBad |= v2 & INVALID_BYTE;
-                                        }
-                                        if (i < length - 3) {
-                                            v3 = this._decodeChar(
-                                                s.charCodeAt(i + 3)
-                                            );
-                                            out[op++] = (v2 << 6) | v3;
-                                            haveBad |= v3 & INVALID_BYTE;
-                                        }
-                                        if (haveBad !== 0) {
-                                            throw new Error(
-                                                "Base64Coder: incorrect characters for decoding"
-                                            );
-                                        }
-                                        return out;
-                                    };
-                                    // Standard encoding have the following encoded/decoded ranges,
-                                    // which we need to convert between.
-                                    //
-                                    // ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789  +   /
-                                    // Index:   0 - 25                    26 - 51              52 - 61   62  63
-                                    // ASCII:  65 - 90                    97 - 122             48 - 57   43  47
-                                    //
-                                    // Encode 6 bits in b into a new character.
-                                    Coder.prototype._encodeByte = function (b) {
-                                        // Encoding uses constant time operations as follows:
-                                        //
-                                        // 1. Define comparison of A with B using (A - B) >>> 8:
-                                        //          if A > B, then result is positive integer
-                                        //          if A <= B, then result is 0
-                                        //
-                                        // 2. Define selection of C or 0 using bitwise AND: X & C:
-                                        //          if X == 0, then result is 0
-                                        //          if X != 0, then result is C
-                                        //
-                                        // 3. Start with the smallest comparison (b >= 0), which is always
-                                        //    true, so set the result to the starting ASCII value (65).
-                                        //
-                                        // 4. Continue comparing b to higher ASCII values, and selecting
-                                        //    zero if comparison isn't true, otherwise selecting a value
-                                        //    to add to result, which:
-                                        //
-                                        //          a) undoes the previous addition
-                                        //          b) provides new value to add
-                                        //
-                                        var result = b;
-                                        // b >= 0
-                                        result += 65;
-                                        // b > 25
-                                        result +=
-                                            ((25 - b) >>> 8) &
-                                            (0 - 65 - 26 + 97);
-                                        // b > 51
-                                        result +=
-                                            ((51 - b) >>> 8) &
-                                            (26 - 97 - 52 + 48);
-                                        // b > 61
-                                        result +=
-                                            ((61 - b) >>> 8) &
-                                            (52 - 48 - 62 + 43);
-                                        // b > 62
-                                        result +=
-                                            ((62 - b) >>> 8) &
-                                            (62 - 43 - 63 + 47);
-                                        return String.fromCharCode(result);
-                                    };
-                                    // Decode a character code into a byte.
-                                    // Must return 256 if character is out of alphabet range.
-                                    Coder.prototype._decodeChar = function (c) {
-                                        // Decoding works similar to encoding: using the same comparison
-                                        // function, but now it works on ranges: result is always incremented
-                                        // by value, but this value becomes zero if the range is not
-                                        // satisfied.
-                                        //
-                                        // Decoding starts with invalid value, 256, which is then
-                                        // subtracted when the range is satisfied. If none of the ranges
-                                        // apply, the function returns 256, which is then checked by
-                                        // the caller to throw error.
-                                        var result = INVALID_BYTE; // start with invalid character
-                                        // c == 43 (c > 42 and c < 44)
-                                        result +=
-                                            (((42 - c) & (c - 44)) >>> 8) &
-                                            (-INVALID_BYTE + c - 43 + 62);
-                                        // c == 47 (c > 46 and c < 48)
-                                        result +=
-                                            (((46 - c) & (c - 48)) >>> 8) &
-                                            (-INVALID_BYTE + c - 47 + 63);
-                                        // c > 47 and c < 58
-                                        result +=
-                                            (((47 - c) & (c - 58)) >>> 8) &
-                                            (-INVALID_BYTE + c - 48 + 52);
-                                        // c > 64 and c < 91
-                                        result +=
-                                            (((64 - c) & (c - 91)) >>> 8) &
-                                            (-INVALID_BYTE + c - 65 + 0);
-                                        // c > 96 and c < 123
-                                        result +=
-                                            (((96 - c) & (c - 123)) >>> 8) &
-                                            (-INVALID_BYTE + c - 97 + 26);
-                                        return result;
-                                    };
-                                    Coder.prototype._getPaddingLength =
-                                        function (s) {
-                                            var paddingLength = 0;
-                                            if (this._paddingCharacter) {
-                                                for (
-                                                    var i = s.length - 1;
-                                                    i >= 0;
-                                                    i--
-                                                ) {
-                                                    if (
-                                                        s[i] !==
-                                                        this._paddingCharacter
-                                                    ) {
-                                                        break;
-                                                    }
-                                                    paddingLength++;
-                                                }
-                                                if (
-                                                    s.length < 4 ||
-                                                    paddingLength > 2
-                                                ) {
-                                                    throw new Error(
-                                                        "Base64Coder: incorrect padding"
-                                                    );
-                                                }
-                                            }
-                                            return paddingLength;
-                                        };
-                                    return Coder;
-                                })();
-                                exports.Coder = Coder;
-                                var stdCoder = new Coder();
-                                function encode(data) {
-                                    return stdCoder.encode(data);
-                                }
-                                exports.encode = encode;
-                                function decode(s) {
-                                    return stdCoder.decode(s);
-                                }
-                                exports.decode = decode;
-                                /**
-                                 * Implements URL-safe Base64 encoding.
-                                 * (Same as Base64, but '+' is replaced with '-', and '/' with '_').
-                                 *
-                                 * Operates in constant time.
-                                 */
-                                var URLSafeCoder = /** @class */ (function (
-                                    _super
-                                ) {
-                                    __extends(URLSafeCoder, _super);
-                                    function URLSafeCoder() {
-                                        return (
-                                            (_super !== null &&
-                                                _super.apply(
-                                                    this,
-                                                    arguments
-                                                )) ||
-                                            this
-                                        );
-                                    }
-                                    // URL-safe encoding have the following encoded/decoded ranges:
-                                    //
-                                    // ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789  -   _
-                                    // Index:   0 - 25                    26 - 51              52 - 61   62  63
-                                    // ASCII:  65 - 90                    97 - 122             48 - 57   45  95
-                                    //
-                                    URLSafeCoder.prototype._encodeByte =
-                                        function (b) {
-                                            var result = b;
-                                            // b >= 0
-                                            result += 65;
-                                            // b > 25
-                                            result +=
-                                                ((25 - b) >>> 8) &
-                                                (0 - 65 - 26 + 97);
-                                            // b > 51
-                                            result +=
-                                                ((51 - b) >>> 8) &
-                                                (26 - 97 - 52 + 48);
-                                            // b > 61
-                                            result +=
-                                                ((61 - b) >>> 8) &
-                                                (52 - 48 - 62 + 45);
-                                            // b > 62
-                                            result +=
-                                                ((62 - b) >>> 8) &
-                                                (62 - 45 - 63 + 95);
-                                            return String.fromCharCode(result);
-                                        };
-                                    URLSafeCoder.prototype._decodeChar =
-                                        function (c) {
-                                            var result = INVALID_BYTE;
-                                            // c == 45 (c > 44 and c < 46)
-                                            result +=
-                                                (((44 - c) & (c - 46)) >>> 8) &
-                                                (-INVALID_BYTE + c - 45 + 62);
-                                            // c == 95 (c > 94 and c < 96)
-                                            result +=
-                                                (((94 - c) & (c - 96)) >>> 8) &
-                                                (-INVALID_BYTE + c - 95 + 63);
-                                            // c > 47 and c < 58
-                                            result +=
-                                                (((47 - c) & (c - 58)) >>> 8) &
-                                                (-INVALID_BYTE + c - 48 + 52);
-                                            // c > 64 and c < 91
-                                            result +=
-                                                (((64 - c) & (c - 91)) >>> 8) &
-                                                (-INVALID_BYTE + c - 65 + 0);
-                                            // c > 96 and c < 123
-                                            result +=
-                                                (((96 - c) & (c - 123)) >>> 8) &
-                                                (-INVALID_BYTE + c - 97 + 26);
-                                            return result;
-                                        };
-                                    return URLSafeCoder;
-                                })(Coder);
-                                exports.URLSafeCoder = URLSafeCoder;
-                                var urlSafeCoder = new URLSafeCoder();
-                                function encodeURLSafe(data) {
-                                    return urlSafeCoder.encode(data);
-                                }
-                                exports.encodeURLSafe = encodeURLSafe;
-                                function decodeURLSafe(s) {
-                                    return urlSafeCoder.decode(s);
-                                }
-                                exports.decodeURLSafe = decodeURLSafe;
-                                exports.encodedLength = function (length) {
-                                    return stdCoder.encodedLength(length);
-                                };
-                                exports.maxDecodedLength = function (length) {
-                                    return stdCoder.maxDecodedLength(length);
-                                };
-                                exports.decodedLength = function (s) {
-                                    return stdCoder.decodedLength(s);
-                                };
-
-                                /***/
-                            } /* 1 */,
-                            /***/ function (
-                                module,
-                                exports,
-                                __webpack_require__
-                            ) {
-                                "use strict";
-
-                                // Copyright (C) 2016 Dmitry Chestnykh
-                                // MIT License. See LICENSE file for details.
-                                Object.defineProperty(exports, "__esModule", {
-                                    value: true,
-                                });
-                                /**
-                                 * Package utf8 implements UTF-8 encoding and decoding.
-                                 */
-                                var INVALID_UTF16 = "utf8: invalid string";
-                                var INVALID_UTF8 =
-                                    "utf8: invalid source encoding";
-                                /**
-                                 * Encodes the given string into UTF-8 byte array.
-                                 * Throws if the source string has invalid UTF-16 encoding.
-                                 */
-                                function encode(s) {
-                                    // Calculate result length and allocate output array.
-                                    // encodedLength() also validates string and throws errors,
-                                    // so we don't need repeat validation here.
-                                    var arr = new Uint8Array(encodedLength(s));
-                                    var pos = 0;
-                                    for (var i = 0; i < s.length; i++) {
-                                        var c = s.charCodeAt(i);
-                                        if (c < 0x80) {
-                                            arr[pos++] = c;
-                                        } else if (c < 0x800) {
-                                            arr[pos++] = 0xc0 | (c >> 6);
-                                            arr[pos++] = 0x80 | (c & 0x3f);
-                                        } else if (c < 0xd800) {
-                                            arr[pos++] = 0xe0 | (c >> 12);
-                                            arr[pos++] =
-                                                0x80 | ((c >> 6) & 0x3f);
-                                            arr[pos++] = 0x80 | (c & 0x3f);
-                                        } else {
-                                            i++; // get one more character
-                                            c = (c & 0x3ff) << 10;
-                                            c |= s.charCodeAt(i) & 0x3ff;
-                                            c += 0x10000;
-                                            arr[pos++] = 0xf0 | (c >> 18);
-                                            arr[pos++] =
-                                                0x80 | ((c >> 12) & 0x3f);
-                                            arr[pos++] =
-                                                0x80 | ((c >> 6) & 0x3f);
-                                            arr[pos++] = 0x80 | (c & 0x3f);
-                                        }
-                                    }
-                                    return arr;
-                                }
-                                exports.encode = encode;
-                                /**
-                                 * Returns the number of bytes required to encode the given string into UTF-8.
-                                 * Throws if the source string has invalid UTF-16 encoding.
-                                 */
-                                function encodedLength(s) {
-                                    var result = 0;
-                                    for (var i = 0; i < s.length; i++) {
-                                        var c = s.charCodeAt(i);
-                                        if (c < 0x80) {
-                                            result += 1;
-                                        } else if (c < 0x800) {
-                                            result += 2;
-                                        } else if (c < 0xd800) {
-                                            result += 3;
-                                        } else if (c <= 0xdfff) {
-                                            if (i >= s.length - 1) {
-                                                throw new Error(INVALID_UTF16);
-                                            }
-                                            i++; // "eat" next character
-                                            result += 4;
-                                        } else {
-                                            throw new Error(INVALID_UTF16);
-                                        }
-                                    }
-                                    return result;
-                                }
-                                exports.encodedLength = encodedLength;
-                                /**
-                                 * Decodes the given byte array from UTF-8 into a string.
-                                 * Throws if encoding is invalid.
-                                 */
-                                function decode(arr) {
-                                    var chars = [];
-                                    for (var i = 0; i < arr.length; i++) {
-                                        var b = arr[i];
-                                        if (b & 0x80) {
-                                            var min = void 0;
-                                            if (b < 0xe0) {
-                                                // Need 1 more byte.
-                                                if (i >= arr.length) {
-                                                    throw new Error(
-                                                        INVALID_UTF8
-                                                    );
-                                                }
-                                                var n1 = arr[++i];
-                                                if ((n1 & 0xc0) !== 0x80) {
-                                                    throw new Error(
-                                                        INVALID_UTF8
-                                                    );
-                                                }
-                                                b =
-                                                    ((b & 0x1f) << 6) |
-                                                    (n1 & 0x3f);
-                                                min = 0x80;
-                                            } else if (b < 0xf0) {
-                                                // Need 2 more bytes.
-                                                if (i >= arr.length - 1) {
-                                                    throw new Error(
-                                                        INVALID_UTF8
-                                                    );
-                                                }
-                                                var n1 = arr[++i];
-                                                var n2 = arr[++i];
-                                                if (
-                                                    (n1 & 0xc0) !== 0x80 ||
-                                                    (n2 & 0xc0) !== 0x80
-                                                ) {
-                                                    throw new Error(
-                                                        INVALID_UTF8
-                                                    );
-                                                }
-                                                b =
-                                                    ((b & 0x0f) << 12) |
-                                                    ((n1 & 0x3f) << 6) |
-                                                    (n2 & 0x3f);
-                                                min = 0x800;
-                                            } else if (b < 0xf8) {
-                                                // Need 3 more bytes.
-                                                if (i >= arr.length - 2) {
-                                                    throw new Error(
-                                                        INVALID_UTF8
-                                                    );
-                                                }
-                                                var n1 = arr[++i];
-                                                var n2 = arr[++i];
-                                                var n3 = arr[++i];
-                                                if (
-                                                    (n1 & 0xc0) !== 0x80 ||
-                                                    (n2 & 0xc0) !== 0x80 ||
-                                                    (n3 & 0xc0) !== 0x80
-                                                ) {
-                                                    throw new Error(
-                                                        INVALID_UTF8
-                                                    );
-                                                }
-                                                b =
-                                                    ((b & 0x0f) << 18) |
-                                                    ((n1 & 0x3f) << 12) |
-                                                    ((n2 & 0x3f) << 6) |
-                                                    (n3 & 0x3f);
-                                                min = 0x10000;
-                                            } else {
-                                                throw new Error(INVALID_UTF8);
-                                            }
-                                            if (
-                                                b < min ||
-                                                (b >= 0xd800 && b <= 0xdfff)
-                                            ) {
-                                                throw new Error(INVALID_UTF8);
-                                            }
-                                            if (b >= 0x10000) {
-                                                // Surrogate pair.
-                                                if (b > 0x10ffff) {
-                                                    throw new Error(
-                                                        INVALID_UTF8
-                                                    );
-                                                }
-                                                b -= 0x10000;
-                                                chars.push(
-                                                    String.fromCharCode(
-                                                        0xd800 | (b >> 10)
-                                                    )
-                                                );
-                                                b = 0xdc00 | (b & 0x3ff);
-                                            }
-                                        }
-                                        chars.push(String.fromCharCode(b));
-                                    }
-                                    return chars.join("");
-                                }
-                                exports.decode = decode;
-
-                                /***/
-                            } /* 2 */,
-                            /***/ function (
-                                module,
-                                exports,
-                                __webpack_require__
-                            ) {
-                                // required so we don't have to do require('pusher').default etc.
-                                module.exports = __webpack_require__(3).default;
-
-                                /***/
-                            } /* 3 */,
-                            /***/ function (
-                                module,
-                                __webpack_exports__,
-                                __webpack_require__
-                            ) {
-                                "use strict";
-
-                                // ESM COMPAT FLAG
-                                __webpack_require__.r(__webpack_exports__);
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/dom/script_receiver_factory.ts
-                                class ScriptReceiverFactory {
-                                    constructor(prefix, name) {
-                                        this.lastId = 0;
-                                        this.prefix = prefix;
-                                        this.name = name;
-                                    }
-                                    create(callback) {
-                                        this.lastId++;
-                                        var number = this.lastId;
-                                        var id = this.prefix + number;
-                                        var name =
-                                            this.name + "[" + number + "]";
-                                        var called = false;
-                                        var callbackWrapper = function () {
-                                            if (!called) {
-                                                callback.apply(null, arguments);
-                                                called = true;
-                                            }
-                                        };
-                                        this[number] = callbackWrapper;
-                                        return {
-                                            number: number,
-                                            id: id,
-                                            name: name,
-                                            callback: callbackWrapper,
-                                        };
-                                    }
-                                    remove(receiver) {
-                                        delete this[receiver.number];
-                                    }
-                                }
-                                var ScriptReceivers = new ScriptReceiverFactory(
-                                    "_pusher_script_",
-                                    "Pusher.ScriptReceivers"
-                                );
-
-                                // CONCATENATED MODULE: ./src/core/defaults.ts
-                                var Defaults = {
-                                    VERSION: "8.4.0",
-                                    PROTOCOL: 7,
-                                    wsPort: 80,
-                                    wssPort: 443,
-                                    wsPath: "",
-                                    httpHost: "sockjs.pusher.com",
-                                    httpPort: 80,
-                                    httpsPort: 443,
-                                    httpPath: "/pusher",
-                                    stats_host: "stats.pusher.com",
-                                    authEndpoint: "/pusher/auth",
-                                    authTransport: "ajax",
-                                    activityTimeout: 120000,
-                                    pongTimeout: 30000,
-                                    unavailableTimeout: 10000,
-                                    userAuthentication: {
-                                        endpoint: "/pusher/user-auth",
-                                        transport: "ajax",
-                                    },
-                                    channelAuthorization: {
-                                        endpoint: "/pusher/auth",
-                                        transport: "ajax",
-                                    },
-                                    cdn_http: "http://js.pusher.com",
-                                    cdn_https: "https://js.pusher.com",
-                                    dependency_suffix: "",
-                                };
-                                /* harmony default export */
-                                var defaults = Defaults;
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/dom/dependency_loader.ts
-
-                                class dependency_loader_DependencyLoader {
-                                    constructor(options) {
-                                        this.options = options;
-                                        this.receivers =
-                                            options.receivers ||
-                                            ScriptReceivers;
-                                        this.loading = {};
-                                    }
-                                    load(name, options, callback) {
-                                        var self = this;
-                                        if (
-                                            self.loading[name] &&
-                                            self.loading[name].length > 0
-                                        ) {
-                                            self.loading[name].push(callback);
-                                        } else {
-                                            self.loading[name] = [callback];
-                                            var request =
-                                                runtime.createScriptRequest(
-                                                    self.getPath(name, options)
-                                                );
-                                            var receiver =
-                                                self.receivers.create(function (
-                                                    error
-                                                ) {
-                                                    self.receivers.remove(
-                                                        receiver
-                                                    );
-                                                    if (self.loading[name]) {
-                                                        var callbacks =
-                                                            self.loading[name];
-                                                        delete self.loading[
-                                                            name
-                                                        ];
-                                                        var successCallback =
-                                                            function (
-                                                                wasSuccessful
-                                                            ) {
-                                                                if (
-                                                                    !wasSuccessful
-                                                                ) {
-                                                                    request.cleanup();
-                                                                }
-                                                            };
-                                                        for (
-                                                            var i = 0;
-                                                            i <
-                                                            callbacks.length;
-                                                            i++
-                                                        ) {
-                                                            callbacks[i](
-                                                                error,
-                                                                successCallback
-                                                            );
-                                                        }
-                                                    }
-                                                });
-                                            request.send(receiver);
-                                        }
-                                    }
-                                    getRoot(options) {
-                                        var cdn;
-                                        var protocol =
-                                            runtime.getDocument().location
-                                                .protocol;
-                                        if (
-                                            (options && options.useTLS) ||
-                                            protocol === "https:"
-                                        ) {
-                                            cdn = this.options.cdn_https;
-                                        } else {
-                                            cdn = this.options.cdn_http;
-                                        }
-                                        return (
-                                            cdn.replace(/\/*$/, "") +
-                                            "/" +
-                                            this.options.version
-                                        );
-                                    }
-                                    getPath(name, options) {
-                                        return (
-                                            this.getRoot(options) +
-                                            "/" +
-                                            name +
-                                            this.options.suffix +
-                                            ".js"
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/dom/dependencies.ts
-
-                                var DependenciesReceivers =
-                                    new ScriptReceiverFactory(
-                                        "_pusher_dependencies",
-                                        "Pusher.DependenciesReceivers"
-                                    );
-                                var Dependencies =
-                                    new dependency_loader_DependencyLoader({
-                                        cdn_http: defaults.cdn_http,
-                                        cdn_https: defaults.cdn_https,
-                                        version: defaults.VERSION,
-                                        suffix: defaults.dependency_suffix,
-                                        receivers: DependenciesReceivers,
-                                    });
-
-                                // CONCATENATED MODULE: ./src/core/utils/url_store.ts
-                                const urlStore = {
-                                    baseUrl: "https://pusher.com",
-                                    urls: {
-                                        authenticationEndpoint: {
-                                            path: "/docs/channels/server_api/authenticating_users",
-                                        },
-                                        authorizationEndpoint: {
-                                            path: "/docs/channels/server_api/authorizing-users/",
-                                        },
-                                        javascriptQuickStart: {
-                                            path: "/docs/javascript_quick_start",
-                                        },
-                                        triggeringClientEvents: {
-                                            path: "/docs/client_api_guide/client_events#trigger-events",
-                                        },
-                                        encryptedChannelSupport: {
-                                            fullUrl:
-                                                "https://github.com/pusher/pusher-js/tree/cc491015371a4bde5743d1c87a0fbac0feb53195#encrypted-channel-support",
-                                        },
-                                    },
-                                };
-                                const buildLogSuffix = function (key) {
-                                    const urlPrefix = "See:";
-                                    const urlObj = urlStore.urls[key];
-                                    if (!urlObj) return "";
-                                    let url;
-                                    if (urlObj.fullUrl) {
-                                        url = urlObj.fullUrl;
-                                    } else if (urlObj.path) {
-                                        url = urlStore.baseUrl + urlObj.path;
-                                    }
-                                    if (!url) return "";
-                                    return `${urlPrefix} ${url}`;
-                                };
-                                /* harmony default export */
-                                var url_store = {
-                                    buildLogSuffix,
-                                };
-
-                                // CONCATENATED MODULE: ./src/core/auth/options.ts
-                                var AuthRequestType;
-                                (function (AuthRequestType) {
-                                    AuthRequestType["UserAuthentication"] =
-                                        "user-authentication";
-                                    AuthRequestType["ChannelAuthorization"] =
-                                        "channel-authorization";
-                                })(AuthRequestType || (AuthRequestType = {}));
-
-                                // CONCATENATED MODULE: ./src/core/errors.ts
-                                class BadEventName extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class BadChannelName extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class RequestTimedOut extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class TransportPriorityTooLow extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class TransportClosed extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class UnsupportedFeature extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class UnsupportedTransport extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class UnsupportedStrategy extends Error {
-                                    constructor(msg) {
-                                        super(msg);
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-                                class HTTPAuthError extends Error {
-                                    constructor(status, msg) {
-                                        super(msg);
-                                        this.status = status;
-                                        Object.setPrototypeOf(
-                                            this,
-                                            new.target.prototype
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/runtimes/isomorphic/auth/xhr_auth.ts
-
-                                const ajax = function (
-                                    context,
-                                    query,
-                                    authOptions,
-                                    authRequestType,
-                                    callback
-                                ) {
-                                    const xhr = runtime.createXHR();
-                                    xhr.open(
-                                        "POST",
-                                        authOptions.endpoint,
-                                        true
-                                    );
-                                    xhr.setRequestHeader(
-                                        "Content-Type",
-                                        "application/x-www-form-urlencoded"
-                                    );
-                                    for (var headerName in authOptions.headers) {
-                                        xhr.setRequestHeader(
-                                            headerName,
-                                            authOptions.headers[headerName]
-                                        );
-                                    }
-                                    if (authOptions.headersProvider != null) {
-                                        let dynamicHeaders =
-                                            authOptions.headersProvider();
-                                        for (var headerName in dynamicHeaders) {
-                                            xhr.setRequestHeader(
-                                                headerName,
-                                                dynamicHeaders[headerName]
-                                            );
-                                        }
-                                    }
-                                    xhr.onreadystatechange = function () {
-                                        if (xhr.readyState === 4) {
-                                            if (xhr.status === 200) {
-                                                let data;
-                                                let parsed = false;
-                                                try {
-                                                    data = JSON.parse(
-                                                        xhr.responseText
-                                                    );
-                                                    parsed = true;
-                                                } catch (e) {
-                                                    callback(
-                                                        new HTTPAuthError(
-                                                            200,
-                                                            `JSON returned from ${authRequestType.toString()} endpoint was invalid, yet status code was 200. Data was: ${
-                                                                xhr.responseText
-                                                            }`
-                                                        ),
-                                                        null
-                                                    );
-                                                }
-                                                if (parsed) {
-                                                    callback(null, data);
-                                                }
-                                            } else {
-                                                let suffix = "";
-                                                switch (authRequestType) {
-                                                    case AuthRequestType.UserAuthentication:
-                                                        suffix =
-                                                            url_store.buildLogSuffix(
-                                                                "authenticationEndpoint"
-                                                            );
-                                                        break;
-                                                    case AuthRequestType.ChannelAuthorization:
-                                                        suffix = `Clients must be authorized to join private or presence channels. ${url_store.buildLogSuffix(
-                                                            "authorizationEndpoint"
-                                                        )}`;
-                                                        break;
-                                                }
-                                                callback(
-                                                    new HTTPAuthError(
-                                                        xhr.status,
-                                                        `Unable to retrieve auth string from ${authRequestType.toString()} endpoint - ` +
-                                                            `received status: ${xhr.status} from ${authOptions.endpoint}. ${suffix}`
-                                                    ),
-                                                    null
-                                                );
-                                            }
-                                        }
-                                    };
-                                    xhr.send(query);
-                                    return xhr;
-                                };
-                                /* harmony default export */
-                                var xhr_auth = ajax;
-
-                                // CONCATENATED MODULE: ./src/core/base64.ts
-                                function encode(s) {
-                                    return btoa(utob(s));
-                                }
-                                var fromCharCode = String.fromCharCode;
-                                var b64chars =
-                                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-                                var b64tab = {};
-                                for (
-                                    var base64_i = 0, l = b64chars.length;
-                                    base64_i < l;
-                                    base64_i++
-                                ) {
-                                    b64tab[b64chars.charAt(base64_i)] =
-                                        base64_i;
-                                }
-                                var cb_utob = function (c) {
-                                    var cc = c.charCodeAt(0);
-                                    return cc < 0x80
-                                        ? c
-                                        : cc < 0x800
-                                        ? fromCharCode(0xc0 | (cc >>> 6)) +
-                                          fromCharCode(0x80 | (cc & 0x3f))
-                                        : fromCharCode(
-                                              0xe0 | ((cc >>> 12) & 0x0f)
-                                          ) +
-                                          fromCharCode(
-                                              0x80 | ((cc >>> 6) & 0x3f)
-                                          ) +
-                                          fromCharCode(0x80 | (cc & 0x3f));
-                                };
-                                var utob = function (u) {
-                                    return u.replace(/[^\x00-\x7F]/g, cb_utob);
-                                };
-                                var cb_encode = function (ccc) {
-                                    var padlen = [0, 2, 1][ccc.length % 3];
-                                    var ord =
-                                        (ccc.charCodeAt(0) << 16) |
-                                        ((ccc.length > 1
-                                            ? ccc.charCodeAt(1)
-                                            : 0) <<
-                                            8) |
-                                        (ccc.length > 2
-                                            ? ccc.charCodeAt(2)
-                                            : 0);
-                                    var chars = [
-                                        b64chars.charAt(ord >>> 18),
-                                        b64chars.charAt((ord >>> 12) & 63),
-                                        padlen >= 2
-                                            ? "="
-                                            : b64chars.charAt((ord >>> 6) & 63),
-                                        padlen >= 1
-                                            ? "="
-                                            : b64chars.charAt(ord & 63),
-                                    ];
-                                    return chars.join("");
-                                };
-                                var btoa =
-                                    window.btoa ||
-                                    function (b) {
-                                        return b.replace(
-                                            /[\s\S]{1,3}/g,
-                                            cb_encode
-                                        );
-                                    };
-
-                                // CONCATENATED MODULE: ./src/core/utils/timers/abstract_timer.ts
-                                class Timer {
-                                    constructor(set, clear, delay, callback) {
-                                        this.clear = clear;
-                                        this.timer = set(() => {
-                                            if (this.timer) {
-                                                this.timer = callback(
-                                                    this.timer
-                                                );
-                                            }
-                                        }, delay);
-                                    }
-                                    isRunning() {
-                                        return this.timer !== null;
-                                    }
-                                    ensureAborted() {
-                                        if (this.timer) {
-                                            this.clear(this.timer);
-                                            this.timer = null;
-                                        }
-                                    }
-                                }
-                                /* harmony default export */
-                                var abstract_timer = Timer;
-
-                                // CONCATENATED MODULE: ./src/core/utils/timers/index.ts
-
-                                function timers_clearTimeout(timer) {
-                                    window.clearTimeout(timer);
-                                }
-                                function timers_clearInterval(timer) {
-                                    window.clearInterval(timer);
-                                }
-                                class timers_OneOffTimer extends abstract_timer {
-                                    constructor(delay, callback) {
-                                        super(
-                                            setTimeout,
-                                            timers_clearTimeout,
-                                            delay,
-                                            function (timer) {
-                                                callback();
-                                                return null;
-                                            }
-                                        );
-                                    }
-                                }
-                                class timers_PeriodicTimer extends abstract_timer {
-                                    constructor(delay, callback) {
-                                        super(
-                                            setInterval,
-                                            timers_clearInterval,
-                                            delay,
-                                            function (timer) {
-                                                callback();
-                                                return timer;
-                                            }
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/util.ts
-
-                                var Util = {
-                                    now() {
-                                        if (Date.now) {
-                                            return Date.now();
-                                        } else {
-                                            return new Date().valueOf();
-                                        }
-                                    },
-                                    defer(callback) {
-                                        return new timers_OneOffTimer(
-                                            0,
-                                            callback
-                                        );
-                                    },
-                                    method(name) {
-                                        for (
-                                            var _len = arguments.length,
-                                                args = new Array(
-                                                    _len > 1 ? _len - 1 : 0
-                                                ),
-                                                _key = 1;
-                                            _key < _len;
-                                            _key++
-                                        ) {
-                                            args[_key - 1] = arguments[_key];
-                                        }
-                                        var boundArguments =
-                                            Array.prototype.slice.call(
-                                                arguments,
-                                                1
-                                            );
-                                        return function (object) {
-                                            return object[name].apply(
-                                                object,
-                                                boundArguments.concat(arguments)
-                                            );
-                                        };
-                                    },
-                                };
-                                /* harmony default export */
-                                var util = Util;
-
-                                // CONCATENATED MODULE: ./src/core/utils/collections.ts
-
-                                function extend(target) {
-                                    for (
-                                        var i = 0;
-                                        i <
-                                        (arguments.length <= 1
-                                            ? 0
-                                            : arguments.length - 1);
-                                        i++
-                                    ) {
-                                        var extensions =
-                                            i + 1 < 1 ||
-                                            arguments.length <= i + 1
-                                                ? undefined
-                                                : arguments[i + 1];
-                                        for (var property in extensions) {
-                                            if (
-                                                extensions[property] &&
-                                                extensions[property]
-                                                    .constructor &&
-                                                extensions[property]
-                                                    .constructor === Object
-                                            ) {
-                                                target[property] = extend(
-                                                    target[property] || {},
-                                                    extensions[property]
-                                                );
-                                            } else {
-                                                target[property] =
-                                                    extensions[property];
-                                            }
-                                        }
-                                    }
-                                    return target;
-                                }
-                                function stringify() {
-                                    var m = ["Pusher"];
-                                    for (var i = 0; i < arguments.length; i++) {
-                                        if (typeof arguments[i] === "string") {
-                                            m.push(arguments[i]);
-                                        } else {
-                                            m.push(
-                                                safeJSONStringify(arguments[i])
-                                            );
-                                        }
-                                    }
-                                    return m.join(" : ");
-                                }
-                                function arrayIndexOf(array, item) {
-                                    var nativeIndexOf = Array.prototype.indexOf;
-                                    if (array === null) {
-                                        return -1;
-                                    }
-                                    if (
-                                        nativeIndexOf &&
-                                        array.indexOf === nativeIndexOf
-                                    ) {
-                                        return array.indexOf(item);
-                                    }
-                                    for (
-                                        var i = 0, l = array.length;
-                                        i < l;
-                                        i++
-                                    ) {
-                                        if (array[i] === item) {
-                                            return i;
-                                        }
-                                    }
-                                    return -1;
-                                }
-                                function objectApply(object, f) {
-                                    for (var key in object) {
-                                        if (
-                                            Object.prototype.hasOwnProperty.call(
-                                                object,
-                                                key
-                                            )
-                                        ) {
-                                            f(object[key], key, object);
-                                        }
-                                    }
-                                }
-                                function keys(object) {
-                                    var keys = [];
-                                    objectApply(object, function (_, key) {
-                                        keys.push(key);
-                                    });
-                                    return keys;
-                                }
-                                function values(object) {
-                                    var values = [];
-                                    objectApply(object, function (value) {
-                                        values.push(value);
-                                    });
-                                    return values;
-                                }
-                                function apply(array, f, context) {
-                                    for (var i = 0; i < array.length; i++) {
-                                        f.call(
-                                            context || window,
-                                            array[i],
-                                            i,
-                                            array
-                                        );
-                                    }
-                                }
-                                function map(array, f) {
-                                    var result = [];
-                                    for (var i = 0; i < array.length; i++) {
-                                        result.push(
-                                            f(array[i], i, array, result)
-                                        );
-                                    }
-                                    return result;
-                                }
-                                function mapObject(object, f) {
-                                    var result = {};
-                                    objectApply(object, function (value, key) {
-                                        result[key] = f(value);
-                                    });
-                                    return result;
-                                }
-                                function filter(array, test) {
-                                    test =
-                                        test ||
-                                        function (value) {
-                                            return !!value;
-                                        };
-                                    var result = [];
-                                    for (var i = 0; i < array.length; i++) {
-                                        if (test(array[i], i, array, result)) {
-                                            result.push(array[i]);
-                                        }
-                                    }
-                                    return result;
-                                }
-                                function filterObject(object, test) {
-                                    var result = {};
-                                    objectApply(object, function (value, key) {
-                                        if (
-                                            (test &&
-                                                test(
-                                                    value,
-                                                    key,
-                                                    object,
-                                                    result
-                                                )) ||
-                                            Boolean(value)
-                                        ) {
-                                            result[key] = value;
-                                        }
-                                    });
-                                    return result;
-                                }
-                                function flatten(object) {
-                                    var result = [];
-                                    objectApply(object, function (value, key) {
-                                        result.push([key, value]);
-                                    });
-                                    return result;
-                                }
-                                function any(array, test) {
-                                    for (var i = 0; i < array.length; i++) {
-                                        if (test(array[i], i, array)) {
-                                            return true;
-                                        }
-                                    }
-                                    return false;
-                                }
-                                function collections_all(array, test) {
-                                    for (var i = 0; i < array.length; i++) {
-                                        if (!test(array[i], i, array)) {
-                                            return false;
-                                        }
-                                    }
-                                    return true;
-                                }
-                                function encodeParamsObject(data) {
-                                    return mapObject(data, function (value) {
-                                        if (typeof value === "object") {
-                                            value = safeJSONStringify(value);
-                                        }
-                                        return encodeURIComponent(
-                                            encode(value.toString())
-                                        );
-                                    });
-                                }
-                                function buildQueryString(data) {
-                                    var params = filterObject(
-                                        data,
-                                        function (value) {
-                                            return value !== undefined;
-                                        }
-                                    );
-                                    var query = map(
-                                        flatten(encodeParamsObject(params)),
-                                        util.method("join", "=")
-                                    ).join("&");
-                                    return query;
-                                }
-                                function decycleObject(object) {
-                                    var objects = [],
-                                        paths = [];
-                                    return (function derez(value, path) {
-                                        var i, name, nu;
-                                        switch (typeof value) {
-                                            case "object":
-                                                if (!value) {
-                                                    return null;
-                                                }
-                                                for (
-                                                    i = 0;
-                                                    i < objects.length;
-                                                    i += 1
-                                                ) {
-                                                    if (objects[i] === value) {
-                                                        return {
-                                                            $ref: paths[i],
-                                                        };
-                                                    }
-                                                }
-                                                objects.push(value);
-                                                paths.push(path);
-                                                if (
-                                                    Object.prototype.toString.apply(
-                                                        value
-                                                    ) === "[object Array]"
-                                                ) {
-                                                    nu = [];
-                                                    for (
-                                                        i = 0;
-                                                        i < value.length;
-                                                        i += 1
-                                                    ) {
-                                                        nu[i] = derez(
-                                                            value[i],
-                                                            path + "[" + i + "]"
-                                                        );
-                                                    }
-                                                } else {
-                                                    nu = {};
-                                                    for (name in value) {
-                                                        if (
-                                                            Object.prototype.hasOwnProperty.call(
-                                                                value,
-                                                                name
-                                                            )
-                                                        ) {
-                                                            nu[name] = derez(
-                                                                value[name],
-                                                                path +
-                                                                    "[" +
-                                                                    JSON.stringify(
-                                                                        name
-                                                                    ) +
-                                                                    "]"
-                                                            );
-                                                        }
-                                                    }
-                                                }
-                                                return nu;
-                                            case "number":
-                                            case "string":
-                                            case "boolean":
-                                                return value;
-                                        }
-                                    })(object, "$");
-                                }
-                                function safeJSONStringify(source) {
-                                    try {
-                                        return JSON.stringify(source);
-                                    } catch (e) {
-                                        return JSON.stringify(
-                                            decycleObject(source)
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/logger.ts
-
-                                class logger_Logger {
-                                    constructor() {
-                                        this.globalLog = (message) => {
-                                            if (
-                                                window.console &&
-                                                window.console.log
-                                            ) {
-                                                window.console.log(message);
-                                            }
-                                        };
-                                    }
-                                    debug() {
-                                        for (
-                                            var _len2 = arguments.length,
-                                                args = new Array(_len2),
-                                                _key2 = 0;
-                                            _key2 < _len2;
-                                            _key2++
-                                        ) {
-                                            args[_key2] = arguments[_key2];
-                                        }
-                                        this.log(this.globalLog, args);
-                                    }
-                                    warn() {
-                                        for (
-                                            var _len3 = arguments.length,
-                                                args = new Array(_len3),
-                                                _key3 = 0;
-                                            _key3 < _len3;
-                                            _key3++
-                                        ) {
-                                            args[_key3] = arguments[_key3];
-                                        }
-                                        this.log(this.globalLogWarn, args);
-                                    }
-                                    error() {
-                                        for (
-                                            var _len4 = arguments.length,
-                                                args = new Array(_len4),
-                                                _key4 = 0;
-                                            _key4 < _len4;
-                                            _key4++
-                                        ) {
-                                            args[_key4] = arguments[_key4];
-                                        }
-                                        this.log(this.globalLogError, args);
-                                    }
-                                    globalLogWarn(message) {
-                                        if (
-                                            window.console &&
-                                            window.console.warn
-                                        ) {
-                                            window.console.warn(message);
-                                        } else {
-                                            this.globalLog(message);
-                                        }
-                                    }
-                                    globalLogError(message) {
-                                        if (
-                                            window.console &&
-                                            window.console.error
-                                        ) {
-                                            window.console.error(message);
-                                        } else {
-                                            this.globalLogWarn(message);
-                                        }
-                                    }
-                                    log(defaultLoggingFunction) {
-                                        for (
-                                            var _len5 = arguments.length,
-                                                args = new Array(
-                                                    _len5 > 1 ? _len5 - 1 : 0
-                                                ),
-                                                _key5 = 1;
-                                            _key5 < _len5;
-                                            _key5++
-                                        ) {
-                                            args[_key5 - 1] = arguments[_key5];
-                                        }
-                                        var message = stringify.apply(
-                                            this,
-                                            arguments
-                                        );
-                                        if (core_pusher.log) {
-                                            core_pusher.log(message);
-                                        } else if (core_pusher.logToConsole) {
-                                            const log =
-                                                defaultLoggingFunction.bind(
-                                                    this
-                                                );
-                                            log(message);
-                                        }
-                                    }
-                                }
-                                /* harmony default export */
-                                var logger = new logger_Logger();
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/auth/jsonp_auth.ts
-
-                                var jsonp = function (
-                                    context,
-                                    query,
-                                    authOptions,
-                                    authRequestType,
-                                    callback
-                                ) {
-                                    if (
-                                        authOptions.headers !== undefined ||
-                                        authOptions.headersProvider != null
-                                    ) {
-                                        logger.warn(
-                                            `To send headers with the ${authRequestType.toString()} request, you must use AJAX, rather than JSONP.`
-                                        );
-                                    }
-                                    var callbackName =
-                                        context.nextAuthCallbackID.toString();
-                                    context.nextAuthCallbackID++;
-                                    var document = context.getDocument();
-                                    var script =
-                                        document.createElement("script");
-                                    context.auth_callbacks[callbackName] =
-                                        function (data) {
-                                            callback(null, data);
-                                        };
-                                    var callback_name =
-                                        "Pusher.auth_callbacks['" +
-                                        callbackName +
-                                        "']";
-                                    script.src =
-                                        authOptions.endpoint +
-                                        "?callback=" +
-                                        encodeURIComponent(callback_name) +
-                                        "&" +
-                                        query;
-                                    var head =
-                                        document.getElementsByTagName(
-                                            "head"
-                                        )[0] || document.documentElement;
-                                    head.insertBefore(script, head.firstChild);
-                                };
-                                /* harmony default export */
-                                var jsonp_auth = jsonp;
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/dom/script_request.ts
-                                class ScriptRequest {
-                                    constructor(src) {
-                                        this.src = src;
-                                    }
-                                    send(receiver) {
-                                        var self = this;
-                                        var errorString =
-                                            "Error loading " + self.src;
-                                        self.script =
-                                            document.createElement("script");
-                                        self.script.id = receiver.id;
-                                        self.script.src = self.src;
-                                        self.script.type = "text/javascript";
-                                        self.script.charset = "UTF-8";
-                                        if (self.script.addEventListener) {
-                                            self.script.onerror = function () {
-                                                receiver.callback(errorString);
-                                            };
-                                            self.script.onload = function () {
-                                                receiver.callback(null);
-                                            };
-                                        } else {
-                                            self.script.onreadystatechange =
-                                                function () {
-                                                    if (
-                                                        self.script
-                                                            .readyState ===
-                                                            "loaded" ||
-                                                        self.script
-                                                            .readyState ===
-                                                            "complete"
-                                                    ) {
-                                                        receiver.callback(null);
-                                                    }
-                                                };
-                                        }
-                                        if (
-                                            self.script.async === undefined &&
-                                            document.attachEvent &&
-                                            /opera/i.test(navigator.userAgent)
-                                        ) {
-                                            self.errorScript =
-                                                document.createElement(
-                                                    "script"
-                                                );
-                                            self.errorScript.id =
-                                                receiver.id + "_error";
-                                            self.errorScript.text =
-                                                receiver.name +
-                                                "('" +
-                                                errorString +
-                                                "');";
-                                            self.script.async =
-                                                self.errorScript.async = false;
-                                        } else {
-                                            self.script.async = true;
-                                        }
-                                        var head =
-                                            document.getElementsByTagName(
-                                                "head"
-                                            )[0];
-                                        head.insertBefore(
-                                            self.script,
-                                            head.firstChild
-                                        );
-                                        if (self.errorScript) {
-                                            head.insertBefore(
-                                                self.errorScript,
-                                                self.script.nextSibling
-                                            );
-                                        }
-                                    }
-                                    cleanup() {
-                                        if (this.script) {
-                                            this.script.onload =
-                                                this.script.onerror = null;
-                                            this.script.onreadystatechange =
-                                                null;
-                                        }
-                                        if (
-                                            this.script &&
-                                            this.script.parentNode
-                                        ) {
-                                            this.script.parentNode.removeChild(
-                                                this.script
-                                            );
-                                        }
-                                        if (
-                                            this.errorScript &&
-                                            this.errorScript.parentNode
-                                        ) {
-                                            this.errorScript.parentNode.removeChild(
-                                                this.errorScript
-                                            );
-                                        }
-                                        this.script = null;
-                                        this.errorScript = null;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/dom/jsonp_request.ts
-
-                                class jsonp_request_JSONPRequest {
-                                    constructor(url, data) {
-                                        this.url = url;
-                                        this.data = data;
-                                    }
-                                    send(receiver) {
-                                        if (this.request) {
-                                            return;
-                                        }
-                                        var query = buildQueryString(this.data);
-                                        var url =
-                                            this.url +
-                                            "/" +
-                                            receiver.number +
-                                            "?" +
-                                            query;
-                                        this.request =
-                                            runtime.createScriptRequest(url);
-                                        this.request.send(receiver);
-                                    }
-                                    cleanup() {
-                                        if (this.request) {
-                                            this.request.cleanup();
-                                        }
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/timeline/jsonp_timeline.ts
-
-                                var getAgent = function (sender, useTLS) {
-                                    return function (data, callback) {
-                                        var scheme =
-                                            "http" +
-                                            (useTLS ? "s" : "") +
-                                            "://";
-                                        var url =
-                                            scheme +
-                                            (sender.host ||
-                                                sender.options.host) +
-                                            sender.options.path;
-                                        var request =
-                                            runtime.createJSONPRequest(
-                                                url,
-                                                data
-                                            );
-                                        var receiver =
-                                            runtime.ScriptReceivers.create(
-                                                function (error, result) {
-                                                    ScriptReceivers.remove(
-                                                        receiver
-                                                    );
-                                                    request.cleanup();
-                                                    if (result && result.host) {
-                                                        sender.host =
-                                                            result.host;
-                                                    }
-                                                    if (callback) {
-                                                        callback(error, result);
-                                                    }
-                                                }
-                                            );
-                                        request.send(receiver);
-                                    };
-                                };
-                                var jsonp_timeline_jsonp = {
-                                    name: "jsonp",
-                                    getAgent,
-                                };
-                                /* harmony default export */
-                                var jsonp_timeline = jsonp_timeline_jsonp;
-
-                                // CONCATENATED MODULE: ./src/core/transports/url_schemes.ts
-
-                                function getGenericURL(
-                                    baseScheme,
-                                    params,
-                                    path
-                                ) {
-                                    var scheme =
-                                        baseScheme + (params.useTLS ? "s" : "");
-                                    var host = params.useTLS
-                                        ? params.hostTLS
-                                        : params.hostNonTLS;
-                                    return scheme + "://" + host + path;
-                                }
-                                function getGenericPath(key, queryString) {
-                                    var path = "/app/" + key;
-                                    var query =
-                                        "?protocol=" +
-                                        defaults.PROTOCOL +
-                                        "&client=js" +
-                                        "&version=" +
-                                        defaults.VERSION +
-                                        (queryString ? "&" + queryString : "");
-                                    return path + query;
-                                }
-                                var ws = {
-                                    getInitial: function (key, params) {
-                                        var path =
-                                            (params.httpPath || "") +
-                                            getGenericPath(key, "flash=false");
-                                        return getGenericURL(
-                                            "ws",
-                                            params,
-                                            path
-                                        );
-                                    },
-                                };
-                                var http = {
-                                    getInitial: function (key, params) {
-                                        var path =
-                                            (params.httpPath || "/pusher") +
-                                            getGenericPath(key);
-                                        return getGenericURL(
-                                            "http",
-                                            params,
-                                            path
-                                        );
-                                    },
-                                };
-                                var sockjs = {
-                                    getInitial: function (key, params) {
-                                        return getGenericURL(
-                                            "http",
-                                            params,
-                                            params.httpPath || "/pusher"
-                                        );
-                                    },
-                                    getPath: function (key, params) {
-                                        return getGenericPath(key);
-                                    },
-                                };
-
-                                // CONCATENATED MODULE: ./src/core/events/callback_registry.ts
-
-                                class callback_registry_CallbackRegistry {
-                                    constructor() {
-                                        this._callbacks = {};
-                                    }
-                                    get(name) {
-                                        return this._callbacks[prefix(name)];
-                                    }
-                                    add(name, callback, context) {
-                                        var prefixedEventName = prefix(name);
-                                        this._callbacks[prefixedEventName] =
-                                            this._callbacks[
-                                                prefixedEventName
-                                            ] || [];
-                                        this._callbacks[prefixedEventName].push(
-                                            {
-                                                fn: callback,
-                                                context: context,
-                                            }
-                                        );
-                                    }
-                                    remove(name, callback, context) {
-                                        if (!name && !callback && !context) {
-                                            this._callbacks = {};
-                                            return;
-                                        }
-                                        var names = name
-                                            ? [prefix(name)]
-                                            : keys(this._callbacks);
-                                        if (callback || context) {
-                                            this.removeCallback(
-                                                names,
-                                                callback,
-                                                context
-                                            );
-                                        } else {
-                                            this.removeAllCallbacks(names);
-                                        }
-                                    }
-                                    removeCallback(names, callback, context) {
-                                        apply(
-                                            names,
-                                            function (name) {
-                                                this._callbacks[name] = filter(
-                                                    this._callbacks[name] || [],
-                                                    function (binding) {
-                                                        return (
-                                                            (callback &&
-                                                                callback !==
-                                                                    binding.fn) ||
-                                                            (context &&
-                                                                context !==
-                                                                    binding.context)
-                                                        );
-                                                    }
-                                                );
-                                                if (
-                                                    this._callbacks[name]
-                                                        .length === 0
-                                                ) {
-                                                    delete this._callbacks[
-                                                        name
-                                                    ];
-                                                }
-                                            },
-                                            this
-                                        );
-                                    }
-                                    removeAllCallbacks(names) {
-                                        apply(
-                                            names,
-                                            function (name) {
-                                                delete this._callbacks[name];
-                                            },
-                                            this
-                                        );
-                                    }
-                                }
-                                function prefix(name) {
-                                    return "_" + name;
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/events/dispatcher.ts
-
-                                class dispatcher_Dispatcher {
-                                    constructor(failThrough) {
-                                        this.callbacks =
-                                            new callback_registry_CallbackRegistry();
-                                        this.global_callbacks = [];
-                                        this.failThrough = failThrough;
-                                    }
-                                    bind(eventName, callback, context) {
-                                        this.callbacks.add(
-                                            eventName,
-                                            callback,
-                                            context
-                                        );
-                                        return this;
-                                    }
-                                    bind_global(callback) {
-                                        this.global_callbacks.push(callback);
-                                        return this;
-                                    }
-                                    unbind(eventName, callback, context) {
-                                        this.callbacks.remove(
-                                            eventName,
-                                            callback,
-                                            context
-                                        );
-                                        return this;
-                                    }
-                                    unbind_global(callback) {
-                                        if (!callback) {
-                                            this.global_callbacks = [];
-                                            return this;
-                                        }
-                                        this.global_callbacks = filter(
-                                            this.global_callbacks || [],
-                                            (c) => c !== callback
-                                        );
-                                        return this;
-                                    }
-                                    unbind_all() {
-                                        this.unbind();
-                                        this.unbind_global();
-                                        return this;
-                                    }
-                                    emit(eventName, data, metadata) {
-                                        for (
-                                            var i = 0;
-                                            i < this.global_callbacks.length;
-                                            i++
-                                        ) {
-                                            this.global_callbacks[i](
-                                                eventName,
-                                                data
-                                            );
-                                        }
-                                        var callbacks =
-                                            this.callbacks.get(eventName);
-                                        var args = [];
-                                        if (metadata) {
-                                            args.push(data, metadata);
-                                        } else if (data) {
-                                            args.push(data);
-                                        }
-                                        if (callbacks && callbacks.length > 0) {
-                                            for (
-                                                var i = 0;
-                                                i < callbacks.length;
-                                                i++
-                                            ) {
-                                                callbacks[i].fn.apply(
-                                                    callbacks[i].context ||
-                                                        window,
-                                                    args
-                                                );
-                                            }
-                                        } else if (this.failThrough) {
-                                            this.failThrough(eventName, data);
-                                        }
-                                        return this;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/transports/transport_connection.ts
-
-                                class transport_connection_TransportConnection extends dispatcher_Dispatcher {
-                                    constructor(
-                                        hooks,
-                                        name,
-                                        priority,
-                                        key,
-                                        options
-                                    ) {
-                                        super();
-                                        this.initialize =
-                                            runtime.transportConnectionInitializer;
-                                        this.hooks = hooks;
-                                        this.name = name;
-                                        this.priority = priority;
-                                        this.key = key;
-                                        this.options = options;
-                                        this.state = "new";
-                                        this.timeline = options.timeline;
-                                        this.activityTimeout =
-                                            options.activityTimeout;
-                                        this.id =
-                                            this.timeline.generateUniqueID();
-                                    }
-                                    handlesActivityChecks() {
-                                        return Boolean(
-                                            this.hooks.handlesActivityChecks
-                                        );
-                                    }
-                                    supportsPing() {
-                                        return Boolean(this.hooks.supportsPing);
-                                    }
-                                    connect() {
-                                        if (
-                                            this.socket ||
-                                            this.state !== "initialized"
-                                        ) {
-                                            return false;
-                                        }
-                                        var url = this.hooks.urls.getInitial(
-                                            this.key,
-                                            this.options
-                                        );
-                                        try {
-                                            this.socket = this.hooks.getSocket(
-                                                url,
-                                                this.options
-                                            );
-                                        } catch (e) {
-                                            util.defer(() => {
-                                                this.onError(e);
-                                                this.changeState("closed");
-                                            });
-                                            return false;
-                                        }
-                                        this.bindListeners();
-                                        logger.debug("Connecting", {
-                                            transport: this.name,
-                                            url,
-                                        });
-                                        this.changeState("connecting");
-                                        return true;
-                                    }
-                                    close() {
-                                        if (this.socket) {
-                                            this.socket.close();
-                                            return true;
-                                        } else {
-                                            return false;
-                                        }
-                                    }
-                                    send(data) {
-                                        if (this.state === "open") {
-                                            util.defer(() => {
-                                                if (this.socket) {
-                                                    this.socket.send(data);
-                                                }
-                                            });
-                                            return true;
-                                        } else {
-                                            return false;
-                                        }
-                                    }
-                                    ping() {
-                                        if (
-                                            this.state === "open" &&
-                                            this.supportsPing()
-                                        ) {
-                                            this.socket.ping();
-                                        }
-                                    }
-                                    onOpen() {
-                                        if (this.hooks.beforeOpen) {
-                                            this.hooks.beforeOpen(
-                                                this.socket,
-                                                this.hooks.urls.getPath(
-                                                    this.key,
-                                                    this.options
-                                                )
-                                            );
-                                        }
-                                        this.changeState("open");
-                                        this.socket.onopen = undefined;
-                                    }
-                                    onError(error) {
-                                        this.emit("error", {
-                                            type: "WebSocketError",
-                                            error: error,
-                                        });
-                                        this.timeline.error(
-                                            this.buildTimelineMessage({
-                                                error: error.toString(),
-                                            })
-                                        );
-                                    }
-                                    onClose(closeEvent) {
-                                        if (closeEvent) {
-                                            this.changeState("closed", {
-                                                code: closeEvent.code,
-                                                reason: closeEvent.reason,
-                                                wasClean: closeEvent.wasClean,
-                                            });
-                                        } else {
-                                            this.changeState("closed");
-                                        }
-                                        this.unbindListeners();
-                                        this.socket = undefined;
-                                    }
-                                    onMessage(message) {
-                                        this.emit("message", message);
-                                    }
-                                    onActivity() {
-                                        this.emit("activity");
-                                    }
-                                    bindListeners() {
-                                        this.socket.onopen = () => {
-                                            this.onOpen();
-                                        };
-                                        this.socket.onerror = (error) => {
-                                            this.onError(error);
-                                        };
-                                        this.socket.onclose = (closeEvent) => {
-                                            this.onClose(closeEvent);
-                                        };
-                                        this.socket.onmessage = (message) => {
-                                            this.onMessage(message);
-                                        };
-                                        if (this.supportsPing()) {
-                                            this.socket.onactivity = () => {
-                                                this.onActivity();
-                                            };
-                                        }
-                                    }
-                                    unbindListeners() {
-                                        if (this.socket) {
-                                            this.socket.onopen = undefined;
-                                            this.socket.onerror = undefined;
-                                            this.socket.onclose = undefined;
-                                            this.socket.onmessage = undefined;
-                                            if (this.supportsPing()) {
-                                                this.socket.onactivity =
-                                                    undefined;
-                                            }
-                                        }
-                                    }
-                                    changeState(state, params) {
-                                        this.state = state;
-                                        this.timeline.info(
-                                            this.buildTimelineMessage({
-                                                state: state,
-                                                params: params,
-                                            })
-                                        );
-                                        this.emit(state, params);
-                                    }
-                                    buildTimelineMessage(message) {
-                                        return extend(
-                                            {
-                                                cid: this.id,
-                                            },
-                                            message
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/transports/transport.ts
-
-                                class transport_Transport {
-                                    constructor(hooks) {
-                                        this.hooks = hooks;
-                                    }
-                                    isSupported(environment) {
-                                        return this.hooks.isSupported(
-                                            environment
-                                        );
-                                    }
-                                    createConnection(
-                                        name,
-                                        priority,
-                                        key,
-                                        options
-                                    ) {
-                                        return new transport_connection_TransportConnection(
-                                            this.hooks,
-                                            name,
-                                            priority,
-                                            key,
-                                            options
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/runtimes/isomorphic/transports/transports.ts
-
-                                var WSTransport = new transport_Transport({
-                                    urls: ws,
-                                    handlesActivityChecks: false,
-                                    supportsPing: false,
-                                    isInitialized: function () {
-                                        return Boolean(
-                                            runtime.getWebSocketAPI()
-                                        );
-                                    },
-                                    isSupported: function () {
-                                        return Boolean(
-                                            runtime.getWebSocketAPI()
-                                        );
-                                    },
-                                    getSocket: function (url) {
-                                        return runtime.createWebSocket(url);
-                                    },
-                                });
-                                var httpConfiguration = {
-                                    urls: http,
-                                    handlesActivityChecks: false,
-                                    supportsPing: true,
-                                    isInitialized: function () {
-                                        return true;
-                                    },
-                                };
-                                var streamingConfiguration = extend(
-                                    {
-                                        getSocket: function (url) {
-                                            return runtime.HTTPFactory.createStreamingSocket(
-                                                url
-                                            );
-                                        },
-                                    },
-                                    httpConfiguration
-                                );
-                                var pollingConfiguration = extend(
-                                    {
-                                        getSocket: function (url) {
-                                            return runtime.HTTPFactory.createPollingSocket(
-                                                url
-                                            );
-                                        },
-                                    },
-                                    httpConfiguration
-                                );
-                                var xhrConfiguration = {
-                                    isSupported: function () {
-                                        return runtime.isXHRSupported();
-                                    },
-                                };
-                                var XHRStreamingTransport =
-                                    new transport_Transport(
-                                        extend(
-                                            {},
-                                            streamingConfiguration,
-                                            xhrConfiguration
-                                        )
-                                    );
-                                var XHRPollingTransport =
-                                    new transport_Transport(
-                                        extend(
-                                            {},
-                                            pollingConfiguration,
-                                            xhrConfiguration
-                                        )
-                                    );
-                                var Transports = {
-                                    ws: WSTransport,
-                                    xhr_streaming: XHRStreamingTransport,
-                                    xhr_polling: XHRPollingTransport,
-                                };
-                                /* harmony default export */
-                                var transports = Transports;
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/transports/transports.ts
-
-                                var SockJSTransport = new transport_Transport({
-                                    file: "sockjs",
-                                    urls: sockjs,
-                                    handlesActivityChecks: true,
-                                    supportsPing: false,
-                                    isSupported: function () {
-                                        return true;
-                                    },
-                                    isInitialized: function () {
-                                        return window.SockJS !== undefined;
-                                    },
-                                    getSocket: function (url, options) {
-                                        return new window.SockJS(url, null, {
-                                            js_path: Dependencies.getPath(
-                                                "sockjs",
-                                                {
-                                                    useTLS: options.useTLS,
-                                                }
-                                            ),
-                                            ignore_null_origin:
-                                                options.ignoreNullOrigin,
-                                        });
-                                    },
-                                    beforeOpen: function (socket, path) {
-                                        socket.send(
-                                            JSON.stringify({
-                                                path: path,
-                                            })
-                                        );
-                                    },
-                                });
-                                var xdrConfiguration = {
-                                    isSupported: function (environment) {
-                                        var yes = runtime.isXDRSupported(
-                                            environment.useTLS
-                                        );
-                                        return yes;
-                                    },
-                                };
-                                var XDRStreamingTransport =
-                                    new transport_Transport(
-                                        extend(
-                                            {},
-                                            streamingConfiguration,
-                                            xdrConfiguration
-                                        )
-                                    );
-                                var XDRPollingTransport =
-                                    new transport_Transport(
-                                        extend(
-                                            {},
-                                            pollingConfiguration,
-                                            xdrConfiguration
-                                        )
-                                    );
-                                transports.xdr_streaming =
-                                    XDRStreamingTransport;
-                                transports.xdr_polling = XDRPollingTransport;
-                                transports.sockjs = SockJSTransport;
-                                /* harmony default export */
-                                var transports_transports = transports;
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/net_info.ts
-
-                                class net_info_NetInfo extends dispatcher_Dispatcher {
-                                    constructor() {
-                                        super();
-                                        var self = this;
-                                        if (
-                                            window.addEventListener !==
-                                            undefined
-                                        ) {
-                                            window.addEventListener(
-                                                "online",
-                                                function () {
-                                                    self.emit("online");
-                                                },
-                                                false
-                                            );
-                                            window.addEventListener(
-                                                "offline",
-                                                function () {
-                                                    self.emit("offline");
-                                                },
-                                                false
-                                            );
-                                        }
-                                    }
-                                    isOnline() {
-                                        if (
-                                            window.navigator.onLine ===
-                                            undefined
-                                        ) {
-                                            return true;
-                                        } else {
-                                            return window.navigator.onLine;
-                                        }
-                                    }
-                                }
-                                var net_info_Network = new net_info_NetInfo();
-
-                                // CONCATENATED MODULE: ./src/core/transports/assistant_to_the_transport_manager.ts
-
-                                class assistant_to_the_transport_manager_AssistantToTheTransportManager {
-                                    constructor(manager, transport, options) {
-                                        this.manager = manager;
-                                        this.transport = transport;
-                                        this.minPingDelay =
-                                            options.minPingDelay;
-                                        this.maxPingDelay =
-                                            options.maxPingDelay;
-                                        this.pingDelay = undefined;
-                                    }
-                                    createConnection(
-                                        name,
-                                        priority,
-                                        key,
-                                        options
-                                    ) {
-                                        options = extend({}, options, {
-                                            activityTimeout: this.pingDelay,
-                                        });
-                                        var connection =
-                                            this.transport.createConnection(
-                                                name,
-                                                priority,
-                                                key,
-                                                options
-                                            );
-                                        var openTimestamp = null;
-                                        var onOpen = function () {
-                                            connection.unbind("open", onOpen);
-                                            connection.bind("closed", onClosed);
-                                            openTimestamp = util.now();
-                                        };
-                                        var onClosed = (closeEvent) => {
-                                            connection.unbind(
-                                                "closed",
-                                                onClosed
-                                            );
-                                            if (
-                                                closeEvent.code === 1002 ||
-                                                closeEvent.code === 1003
-                                            ) {
-                                                this.manager.reportDeath();
-                                            } else if (
-                                                !closeEvent.wasClean &&
-                                                openTimestamp
-                                            ) {
-                                                var lifespan =
-                                                    util.now() - openTimestamp;
-                                                if (
-                                                    lifespan <
-                                                    2 * this.maxPingDelay
-                                                ) {
-                                                    this.manager.reportDeath();
-                                                    this.pingDelay = Math.max(
-                                                        lifespan / 2,
-                                                        this.minPingDelay
-                                                    );
-                                                }
-                                            }
-                                        };
-                                        connection.bind("open", onOpen);
-                                        return connection;
-                                    }
-                                    isSupported(environment) {
-                                        return (
-                                            this.manager.isAlive() &&
-                                            this.transport.isSupported(
-                                                environment
-                                            )
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/connection/protocol/protocol.ts
-                                const Protocol = {
-                                    decodeMessage: function (messageEvent) {
-                                        try {
-                                            var messageData = JSON.parse(
-                                                messageEvent.data
-                                            );
-                                            var pusherEventData =
-                                                messageData.data;
-                                            if (
-                                                typeof pusherEventData ===
-                                                "string"
-                                            ) {
-                                                try {
-                                                    pusherEventData =
-                                                        JSON.parse(
-                                                            messageData.data
-                                                        );
-                                                } catch (e) {}
-                                            }
-                                            var pusherEvent = {
-                                                event: messageData.event,
-                                                channel: messageData.channel,
-                                                data: pusherEventData,
-                                            };
-                                            if (messageData.user_id) {
-                                                pusherEvent.user_id =
-                                                    messageData.user_id;
-                                            }
-                                            return pusherEvent;
-                                        } catch (e) {
-                                            throw {
-                                                type: "MessageParseError",
-                                                error: e,
-                                                data: messageEvent.data,
-                                            };
-                                        }
-                                    },
-                                    encodeMessage: function (event) {
-                                        return JSON.stringify(event);
-                                    },
-                                    processHandshake: function (messageEvent) {
-                                        var message =
-                                            Protocol.decodeMessage(
-                                                messageEvent
-                                            );
-                                        if (
-                                            message.event ===
-                                            "pusher:connection_established"
-                                        ) {
-                                            if (
-                                                !message.data.activity_timeout
-                                            ) {
-                                                throw "No activity timeout specified in handshake";
-                                            }
-                                            return {
-                                                action: "connected",
-                                                id: message.data.socket_id,
-                                                activityTimeout:
-                                                    message.data
-                                                        .activity_timeout *
-                                                    1000,
-                                            };
-                                        } else if (
-                                            message.event === "pusher:error"
-                                        ) {
-                                            return {
-                                                action: this.getCloseAction(
-                                                    message.data
-                                                ),
-                                                error: this.getCloseError(
-                                                    message.data
-                                                ),
-                                            };
-                                        } else {
-                                            throw "Invalid handshake";
-                                        }
-                                    },
-                                    getCloseAction: function (closeEvent) {
-                                        if (closeEvent.code < 4000) {
-                                            if (
-                                                closeEvent.code >= 1002 &&
-                                                closeEvent.code <= 1004
-                                            ) {
-                                                return "backoff";
-                                            } else {
-                                                return null;
-                                            }
-                                        } else if (closeEvent.code === 4000) {
-                                            return "tls_only";
-                                        } else if (closeEvent.code < 4100) {
-                                            return "refused";
-                                        } else if (closeEvent.code < 4200) {
-                                            return "backoff";
-                                        } else if (closeEvent.code < 4300) {
-                                            return "retry";
-                                        } else {
-                                            return "refused";
-                                        }
-                                    },
-                                    getCloseError: function (closeEvent) {
-                                        if (
-                                            closeEvent.code !== 1000 &&
-                                            closeEvent.code !== 1001
-                                        ) {
-                                            return {
-                                                type: "PusherError",
-                                                data: {
-                                                    code: closeEvent.code,
-                                                    message:
-                                                        closeEvent.reason ||
-                                                        closeEvent.message,
-                                                },
-                                            };
-                                        } else {
-                                            return null;
-                                        }
-                                    },
-                                };
-                                /* harmony default export */
-                                var protocol_protocol = Protocol;
-
-                                // CONCATENATED MODULE: ./src/core/connection/connection.ts
-
-                                class connection_Connection extends dispatcher_Dispatcher {
-                                    constructor(id, transport) {
-                                        super();
-                                        this.id = id;
-                                        this.transport = transport;
-                                        this.activityTimeout =
-                                            transport.activityTimeout;
-                                        this.bindListeners();
-                                    }
-                                    handlesActivityChecks() {
-                                        return this.transport.handlesActivityChecks();
-                                    }
-                                    send(data) {
-                                        return this.transport.send(data);
-                                    }
-                                    send_event(name, data, channel) {
-                                        var event = {
-                                            event: name,
-                                            data: data,
-                                        };
-                                        if (channel) {
-                                            event.channel = channel;
-                                        }
-                                        logger.debug("Event sent", event);
-                                        return this.send(
-                                            protocol_protocol.encodeMessage(
-                                                event
-                                            )
-                                        );
-                                    }
-                                    ping() {
-                                        if (this.transport.supportsPing()) {
-                                            this.transport.ping();
-                                        } else {
-                                            this.send_event("pusher:ping", {});
-                                        }
-                                    }
-                                    close() {
-                                        this.transport.close();
-                                    }
-                                    bindListeners() {
-                                        var listeners = {
-                                            message: (messageEvent) => {
-                                                var pusherEvent;
-                                                try {
-                                                    pusherEvent =
-                                                        protocol_protocol.decodeMessage(
-                                                            messageEvent
-                                                        );
-                                                } catch (e) {
-                                                    this.emit("error", {
-                                                        type: "MessageParseError",
-                                                        error: e,
-                                                        data: messageEvent.data,
-                                                    });
-                                                }
-                                                if (pusherEvent !== undefined) {
-                                                    logger.debug(
-                                                        "Event recd",
-                                                        pusherEvent
-                                                    );
-                                                    switch (pusherEvent.event) {
-                                                        case "pusher:error":
-                                                            this.emit("error", {
-                                                                type: "PusherError",
-                                                                data: pusherEvent.data,
-                                                            });
-                                                            break;
-                                                        case "pusher:ping":
-                                                            this.emit("ping");
-                                                            break;
-                                                        case "pusher:pong":
-                                                            this.emit("pong");
-                                                            break;
-                                                    }
-                                                    this.emit(
-                                                        "message",
-                                                        pusherEvent
-                                                    );
-                                                }
-                                            },
-                                            activity: () => {
-                                                this.emit("activity");
-                                            },
-                                            error: (error) => {
-                                                this.emit("error", error);
-                                            },
-                                            closed: (closeEvent) => {
-                                                unbindListeners();
-                                                if (
-                                                    closeEvent &&
-                                                    closeEvent.code
-                                                ) {
-                                                    this.handleCloseEvent(
-                                                        closeEvent
-                                                    );
-                                                }
-                                                this.transport = null;
-                                                this.emit("closed");
-                                            },
-                                        };
-                                        var unbindListeners = () => {
-                                            objectApply(
-                                                listeners,
-                                                (listener, event) => {
-                                                    this.transport.unbind(
-                                                        event,
-                                                        listener
-                                                    );
-                                                }
-                                            );
-                                        };
-                                        objectApply(
-                                            listeners,
-                                            (listener, event) => {
-                                                this.transport.bind(
-                                                    event,
-                                                    listener
-                                                );
-                                            }
-                                        );
-                                    }
-                                    handleCloseEvent(closeEvent) {
-                                        var action =
-                                            protocol_protocol.getCloseAction(
-                                                closeEvent
-                                            );
-                                        var error =
-                                            protocol_protocol.getCloseError(
-                                                closeEvent
-                                            );
-                                        if (error) {
-                                            this.emit("error", error);
-                                        }
-                                        if (action) {
-                                            this.emit(action, {
-                                                action: action,
-                                                error: error,
-                                            });
-                                        }
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/connection/handshake/index.ts
-
-                                class handshake_Handshake {
-                                    constructor(transport, callback) {
-                                        this.transport = transport;
-                                        this.callback = callback;
-                                        this.bindListeners();
-                                    }
-                                    close() {
-                                        this.unbindListeners();
-                                        this.transport.close();
-                                    }
-                                    bindListeners() {
-                                        this.onMessage = (m) => {
-                                            this.unbindListeners();
-                                            var result;
-                                            try {
-                                                result =
-                                                    protocol_protocol.processHandshake(
-                                                        m
-                                                    );
-                                            } catch (e) {
-                                                this.finish("error", {
-                                                    error: e,
-                                                });
-                                                this.transport.close();
-                                                return;
-                                            }
-                                            if (result.action === "connected") {
-                                                this.finish("connected", {
-                                                    connection:
-                                                        new connection_Connection(
-                                                            result.id,
-                                                            this.transport
-                                                        ),
-                                                    activityTimeout:
-                                                        result.activityTimeout,
-                                                });
-                                            } else {
-                                                this.finish(result.action, {
-                                                    error: result.error,
-                                                });
-                                                this.transport.close();
-                                            }
-                                        };
-                                        this.onClosed = (closeEvent) => {
-                                            this.unbindListeners();
-                                            var action =
-                                                protocol_protocol.getCloseAction(
-                                                    closeEvent
-                                                ) || "backoff";
-                                            var error =
-                                                protocol_protocol.getCloseError(
-                                                    closeEvent
-                                                );
-                                            this.finish(action, {
-                                                error: error,
-                                            });
-                                        };
-                                        this.transport.bind(
-                                            "message",
-                                            this.onMessage
-                                        );
-                                        this.transport.bind(
-                                            "closed",
-                                            this.onClosed
-                                        );
-                                    }
-                                    unbindListeners() {
-                                        this.transport.unbind(
-                                            "message",
-                                            this.onMessage
-                                        );
-                                        this.transport.unbind(
-                                            "closed",
-                                            this.onClosed
-                                        );
-                                    }
-                                    finish(action, params) {
-                                        this.callback(
-                                            extend(
-                                                {
-                                                    transport: this.transport,
-                                                    action: action,
-                                                },
-                                                params
-                                            )
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/timeline/timeline_sender.ts
-
-                                class timeline_sender_TimelineSender {
-                                    constructor(timeline, options) {
-                                        this.timeline = timeline;
-                                        this.options = options || {};
-                                    }
-                                    send(useTLS, callback) {
-                                        if (this.timeline.isEmpty()) {
-                                            return;
-                                        }
-                                        this.timeline.send(
-                                            runtime.TimelineTransport.getAgent(
-                                                this,
-                                                useTLS
-                                            ),
-                                            callback
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/channels/channel.ts
-
-                                class channel_Channel extends dispatcher_Dispatcher {
-                                    constructor(name, pusher) {
-                                        super(function (event, data) {
-                                            logger.debug(
-                                                "No callbacks on " +
-                                                    name +
-                                                    " for " +
-                                                    event
-                                            );
-                                        });
-                                        this.name = name;
-                                        this.pusher = pusher;
-                                        this.subscribed = false;
-                                        this.subscriptionPending = false;
-                                        this.subscriptionCancelled = false;
-                                    }
-                                    authorize(socketId, callback) {
-                                        return callback(null, {
-                                            auth: "",
-                                        });
-                                    }
-                                    trigger(event, data) {
-                                        if (event.indexOf("client-") !== 0) {
-                                            throw new BadEventName(
-                                                "Event '" +
-                                                    event +
-                                                    "' does not start with 'client-'"
-                                            );
-                                        }
-                                        if (!this.subscribed) {
-                                            var suffix =
-                                                url_store.buildLogSuffix(
-                                                    "triggeringClientEvents"
-                                                );
-                                            logger.warn(
-                                                `Client event triggered before channel 'subscription_succeeded' event . ${suffix}`
-                                            );
-                                        }
-                                        return this.pusher.send_event(
-                                            event,
-                                            data,
-                                            this.name
-                                        );
-                                    }
-                                    disconnect() {
-                                        this.subscribed = false;
-                                        this.subscriptionPending = false;
-                                    }
-                                    handleEvent(event) {
-                                        var eventName = event.event;
-                                        var data = event.data;
-                                        if (
-                                            eventName ===
-                                            "pusher_internal:subscription_succeeded"
-                                        ) {
-                                            this.handleSubscriptionSucceededEvent(
-                                                event
-                                            );
-                                        } else if (
-                                            eventName ===
-                                            "pusher_internal:subscription_count"
-                                        ) {
-                                            this.handleSubscriptionCountEvent(
-                                                event
-                                            );
-                                        } else if (
-                                            eventName.indexOf(
-                                                "pusher_internal:"
-                                            ) !== 0
-                                        ) {
-                                            var metadata = {};
-                                            this.emit(
-                                                eventName,
-                                                data,
-                                                metadata
-                                            );
-                                        }
-                                    }
-                                    handleSubscriptionSucceededEvent(event) {
-                                        this.subscriptionPending = false;
-                                        this.subscribed = true;
-                                        if (this.subscriptionCancelled) {
-                                            this.pusher.unsubscribe(this.name);
-                                        } else {
-                                            this.emit(
-                                                "pusher:subscription_succeeded",
-                                                event.data
-                                            );
-                                        }
-                                    }
-                                    handleSubscriptionCountEvent(event) {
-                                        if (event.data.subscription_count) {
-                                            this.subscriptionCount =
-                                                event.data.subscription_count;
-                                        }
-                                        this.emit(
-                                            "pusher:subscription_count",
-                                            event.data
-                                        );
-                                    }
-                                    subscribe() {
-                                        if (this.subscribed) {
-                                            return;
-                                        }
-                                        this.subscriptionPending = true;
-                                        this.subscriptionCancelled = false;
-                                        this.authorize(
-                                            this.pusher.connection.socket_id,
-                                            (error, data) => {
-                                                if (error) {
-                                                    this.subscriptionPending = false;
-                                                    logger.error(
-                                                        error.toString()
-                                                    );
-                                                    this.emit(
-                                                        "pusher:subscription_error",
-                                                        Object.assign(
-                                                            {},
-                                                            {
-                                                                type: "AuthError",
-                                                                error: error.message,
-                                                            },
-                                                            error instanceof
-                                                                HTTPAuthError
-                                                                ? {
-                                                                      status: error.status,
-                                                                  }
-                                                                : {}
-                                                        )
-                                                    );
-                                                } else {
-                                                    this.pusher.send_event(
-                                                        "pusher:subscribe",
-                                                        {
-                                                            auth: data.auth,
-                                                            channel_data:
-                                                                data.channel_data,
-                                                            channel: this.name,
-                                                        }
-                                                    );
-                                                }
-                                            }
-                                        );
-                                    }
-                                    unsubscribe() {
-                                        this.subscribed = false;
-                                        this.pusher.send_event(
-                                            "pusher:unsubscribe",
-                                            {
-                                                channel: this.name,
-                                            }
-                                        );
-                                    }
-                                    cancelSubscription() {
-                                        this.subscriptionCancelled = true;
-                                    }
-                                    reinstateSubscription() {
-                                        this.subscriptionCancelled = false;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/channels/private_channel.ts
-
-                                class private_channel_PrivateChannel extends channel_Channel {
-                                    authorize(socketId, callback) {
-                                        return this.pusher.config.channelAuthorizer(
-                                            {
-                                                channelName: this.name,
-                                                socketId: socketId,
-                                            },
-                                            callback
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/channels/members.ts
-
-                                class members_Members {
-                                    constructor() {
-                                        this.reset();
-                                    }
-                                    get(id) {
-                                        if (
-                                            Object.prototype.hasOwnProperty.call(
-                                                this.members,
-                                                id
-                                            )
-                                        ) {
-                                            return {
-                                                id: id,
-                                                info: this.members[id],
-                                            };
-                                        } else {
-                                            return null;
-                                        }
-                                    }
-                                    each(callback) {
-                                        objectApply(
-                                            this.members,
-                                            (member, id) => {
-                                                callback(this.get(id));
-                                            }
-                                        );
-                                    }
-                                    setMyID(id) {
-                                        this.myID = id;
-                                    }
-                                    onSubscription(subscriptionData) {
-                                        this.members =
-                                            subscriptionData.presence.hash;
-                                        this.count =
-                                            subscriptionData.presence.count;
-                                        this.me = this.get(this.myID);
-                                    }
-                                    addMember(memberData) {
-                                        if (
-                                            this.get(memberData.user_id) ===
-                                            null
-                                        ) {
-                                            this.count++;
-                                        }
-                                        this.members[memberData.user_id] =
-                                            memberData.user_info;
-                                        return this.get(memberData.user_id);
-                                    }
-                                    removeMember(memberData) {
-                                        var member = this.get(
-                                            memberData.user_id
-                                        );
-                                        if (member) {
-                                            delete this.members[
-                                                memberData.user_id
-                                            ];
-                                            this.count--;
-                                        }
-                                        return member;
-                                    }
-                                    reset() {
-                                        this.members = {};
-                                        this.count = 0;
-                                        this.myID = null;
-                                        this.me = null;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/channels/presence_channel.ts
-                                var __awaiter =
-                                    (undefined && undefined.__awaiter) ||
-                                    function (
-                                        thisArg,
-                                        _arguments,
-                                        P,
-                                        generator
-                                    ) {
-                                        function adopt(value) {
-                                            return value instanceof P
-                                                ? value
-                                                : new P(function (resolve) {
-                                                      resolve(value);
-                                                  });
-                                        }
-                                        return new (P || (P = Promise))(
-                                            function (resolve, reject) {
-                                                function fulfilled(value) {
-                                                    try {
-                                                        step(
-                                                            generator.next(
-                                                                value
-                                                            )
-                                                        );
-                                                    } catch (e) {
-                                                        reject(e);
-                                                    }
-                                                }
-                                                function rejected(value) {
-                                                    try {
-                                                        step(
-                                                            generator["throw"](
-                                                                value
-                                                            )
-                                                        );
-                                                    } catch (e) {
-                                                        reject(e);
-                                                    }
-                                                }
-                                                function step(result) {
-                                                    result.done
-                                                        ? resolve(result.value)
-                                                        : adopt(
-                                                              result.value
-                                                          ).then(
-                                                              fulfilled,
-                                                              rejected
-                                                          );
-                                                }
-                                                step(
-                                                    (generator =
-                                                        generator.apply(
-                                                            thisArg,
-                                                            _arguments || []
-                                                        )).next()
-                                                );
-                                            }
-                                        );
-                                    };
-                                class presence_channel_PresenceChannel extends private_channel_PrivateChannel {
-                                    constructor(name, pusher) {
-                                        super(name, pusher);
-                                        this.members = new members_Members();
-                                    }
-                                    authorize(socketId, callback) {
-                                        super.authorize(
-                                            socketId,
-                                            (error, authData) =>
-                                                __awaiter(
-                                                    this,
-                                                    void 0,
-                                                    void 0,
-                                                    function* () {
-                                                        if (!error) {
-                                                            authData = authData;
-                                                            if (
-                                                                authData.channel_data !=
-                                                                null
-                                                            ) {
-                                                                var channelData =
-                                                                    JSON.parse(
-                                                                        authData.channel_data
-                                                                    );
-                                                                this.members.setMyID(
-                                                                    channelData.user_id
-                                                                );
-                                                            } else {
-                                                                yield this
-                                                                    .pusher.user
-                                                                    .signinDonePromise;
-                                                                if (
-                                                                    this.pusher
-                                                                        .user
-                                                                        .user_data !=
-                                                                    null
-                                                                ) {
-                                                                    this.members.setMyID(
-                                                                        this
-                                                                            .pusher
-                                                                            .user
-                                                                            .user_data
-                                                                            .id
-                                                                    );
-                                                                } else {
-                                                                    let suffix =
-                                                                        url_store.buildLogSuffix(
-                                                                            "authorizationEndpoint"
-                                                                        );
-                                                                    logger.error(
-                                                                        `Invalid auth response for channel '${this.name}', ` +
-                                                                            `expected 'channel_data' field. ${suffix}, ` +
-                                                                            `or the user should be signed in.`
-                                                                    );
-                                                                    callback(
-                                                                        "Invalid auth response"
-                                                                    );
-                                                                    return;
-                                                                }
-                                                            }
-                                                        }
-                                                        callback(
-                                                            error,
-                                                            authData
-                                                        );
-                                                    }
-                                                )
-                                        );
-                                    }
-                                    handleEvent(event) {
-                                        var eventName = event.event;
-                                        if (
-                                            eventName.indexOf(
-                                                "pusher_internal:"
-                                            ) === 0
-                                        ) {
-                                            this.handleInternalEvent(event);
-                                        } else {
-                                            var data = event.data;
-                                            var metadata = {};
-                                            if (event.user_id) {
-                                                metadata.user_id =
-                                                    event.user_id;
-                                            }
-                                            this.emit(
-                                                eventName,
-                                                data,
-                                                metadata
-                                            );
-                                        }
-                                    }
-                                    handleInternalEvent(event) {
-                                        var eventName = event.event;
-                                        var data = event.data;
-                                        switch (eventName) {
-                                            case "pusher_internal:subscription_succeeded":
-                                                this.handleSubscriptionSucceededEvent(
-                                                    event
-                                                );
-                                                break;
-                                            case "pusher_internal:subscription_count":
-                                                this.handleSubscriptionCountEvent(
-                                                    event
-                                                );
-                                                break;
-                                            case "pusher_internal:member_added":
-                                                var addedMember =
-                                                    this.members.addMember(
-                                                        data
-                                                    );
-                                                this.emit(
-                                                    "pusher:member_added",
-                                                    addedMember
-                                                );
-                                                break;
-                                            case "pusher_internal:member_removed":
-                                                var removedMember =
-                                                    this.members.removeMember(
-                                                        data
-                                                    );
-                                                if (removedMember) {
-                                                    this.emit(
-                                                        "pusher:member_removed",
-                                                        removedMember
-                                                    );
-                                                }
-                                                break;
-                                        }
-                                    }
-                                    handleSubscriptionSucceededEvent(event) {
-                                        this.subscriptionPending = false;
-                                        this.subscribed = true;
-                                        if (this.subscriptionCancelled) {
-                                            this.pusher.unsubscribe(this.name);
-                                        } else {
-                                            this.members.onSubscription(
-                                                event.data
-                                            );
-                                            this.emit(
-                                                "pusher:subscription_succeeded",
-                                                this.members
-                                            );
-                                        }
-                                    }
-                                    disconnect() {
-                                        this.members.reset();
-                                        super.disconnect();
-                                    }
-                                }
-
-                                // EXTERNAL MODULE: ./node_modules/@stablelib/utf8/lib/utf8.js
-                                var utf8 = __webpack_require__(1);
-
-                                // EXTERNAL MODULE: ./node_modules/@stablelib/base64/lib/base64.js
-                                var base64 = __webpack_require__(0);
-
-                                // CONCATENATED MODULE: ./src/core/channels/encrypted_channel.ts
-
-                                class encrypted_channel_EncryptedChannel extends private_channel_PrivateChannel {
-                                    constructor(name, pusher, nacl) {
-                                        super(name, pusher);
-                                        this.key = null;
-                                        this.nacl = nacl;
-                                    }
-                                    authorize(socketId, callback) {
-                                        super.authorize(
-                                            socketId,
-                                            (error, authData) => {
-                                                if (error) {
-                                                    callback(error, authData);
-                                                    return;
-                                                }
-                                                let sharedSecret =
-                                                    authData["shared_secret"];
-                                                if (!sharedSecret) {
-                                                    callback(
-                                                        new Error(
-                                                            `No shared_secret key in auth payload for encrypted channel: ${this.name}`
-                                                        ),
-                                                        null
-                                                    );
-                                                    return;
-                                                }
-                                                this.key = Object(
-                                                    base64["decode"]
-                                                )(sharedSecret);
-                                                delete authData[
-                                                    "shared_secret"
-                                                ];
-                                                callback(null, authData);
-                                            }
-                                        );
-                                    }
-                                    trigger(event, data) {
-                                        throw new UnsupportedFeature(
-                                            "Client events are not currently supported for encrypted channels"
-                                        );
-                                    }
-                                    handleEvent(event) {
-                                        var eventName = event.event;
-                                        var data = event.data;
-                                        if (
-                                            eventName.indexOf(
-                                                "pusher_internal:"
-                                            ) === 0 ||
-                                            eventName.indexOf("pusher:") === 0
-                                        ) {
-                                            super.handleEvent(event);
-                                            return;
-                                        }
-                                        this.handleEncryptedEvent(
-                                            eventName,
-                                            data
-                                        );
-                                    }
-                                    handleEncryptedEvent(event, data) {
-                                        if (!this.key) {
-                                            logger.debug(
-                                                "Received encrypted event before key has been retrieved from the authEndpoint"
-                                            );
-                                            return;
-                                        }
-                                        if (!data.ciphertext || !data.nonce) {
-                                            logger.error(
-                                                "Unexpected format for encrypted event, expected object with `ciphertext` and `nonce` fields, got: " +
-                                                    data
-                                            );
-                                            return;
-                                        }
-                                        let cipherText = Object(
-                                            base64["decode"]
-                                        )(data.ciphertext);
-                                        if (
-                                            cipherText.length <
-                                            this.nacl.secretbox.overheadLength
-                                        ) {
-                                            logger.error(
-                                                `Expected encrypted event ciphertext length to be ${this.nacl.secretbox.overheadLength}, got: ${cipherText.length}`
-                                            );
-                                            return;
-                                        }
-                                        let nonce = Object(base64["decode"])(
-                                            data.nonce
-                                        );
-                                        if (
-                                            nonce.length <
-                                            this.nacl.secretbox.nonceLength
-                                        ) {
-                                            logger.error(
-                                                `Expected encrypted event nonce length to be ${this.nacl.secretbox.nonceLength}, got: ${nonce.length}`
-                                            );
-                                            return;
-                                        }
-                                        let bytes = this.nacl.secretbox.open(
-                                            cipherText,
-                                            nonce,
-                                            this.key
-                                        );
-                                        if (bytes === null) {
-                                            logger.debug(
-                                                "Failed to decrypt an event, probably because it was encrypted with a different key. Fetching a new key from the authEndpoint..."
-                                            );
-                                            this.authorize(
-                                                this.pusher.connection
-                                                    .socket_id,
-                                                (error, authData) => {
-                                                    if (error) {
-                                                        logger.error(
-                                                            `Failed to make a request to the authEndpoint: ${authData}. Unable to fetch new key, so dropping encrypted event`
-                                                        );
-                                                        return;
-                                                    }
-                                                    bytes =
-                                                        this.nacl.secretbox.open(
-                                                            cipherText,
-                                                            nonce,
-                                                            this.key
-                                                        );
-                                                    if (bytes === null) {
-                                                        logger.error(
-                                                            `Failed to decrypt event with new key. Dropping encrypted event`
-                                                        );
-                                                        return;
-                                                    }
-                                                    this.emit(
-                                                        event,
-                                                        this.getDataToEmit(
-                                                            bytes
-                                                        )
-                                                    );
-                                                    return;
-                                                }
-                                            );
-                                            return;
-                                        }
-                                        this.emit(
-                                            event,
-                                            this.getDataToEmit(bytes)
-                                        );
-                                    }
-                                    getDataToEmit(bytes) {
-                                        let raw = Object(utf8["decode"])(bytes);
-                                        try {
-                                            return JSON.parse(raw);
-                                        } catch (_a) {
-                                            return raw;
-                                        }
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/connection/connection_manager.ts
-
-                                class connection_manager_ConnectionManager extends dispatcher_Dispatcher {
-                                    constructor(key, options) {
-                                        super();
-                                        this.state = "initialized";
-                                        this.connection = null;
-                                        this.key = key;
-                                        this.options = options;
-                                        this.timeline = this.options.timeline;
-                                        this.usingTLS = this.options.useTLS;
-                                        this.errorCallbacks =
-                                            this.buildErrorCallbacks();
-                                        this.connectionCallbacks =
-                                            this.buildConnectionCallbacks(
-                                                this.errorCallbacks
-                                            );
-                                        this.handshakeCallbacks =
-                                            this.buildHandshakeCallbacks(
-                                                this.errorCallbacks
-                                            );
-                                        var Network = runtime.getNetwork();
-                                        Network.bind("online", () => {
-                                            this.timeline.info({
-                                                netinfo: "online",
-                                            });
-                                            if (
-                                                this.state === "connecting" ||
-                                                this.state === "unavailable"
-                                            ) {
-                                                this.retryIn(0);
-                                            }
-                                        });
-                                        Network.bind("offline", () => {
-                                            this.timeline.info({
-                                                netinfo: "offline",
-                                            });
-                                            if (this.connection) {
-                                                this.sendActivityCheck();
-                                            }
-                                        });
-                                        this.updateStrategy();
-                                    }
-                                    connect() {
-                                        if (this.connection || this.runner) {
-                                            return;
-                                        }
-                                        if (!this.strategy.isSupported()) {
-                                            this.updateState("failed");
-                                            return;
-                                        }
-                                        this.updateState("connecting");
-                                        this.startConnecting();
-                                        this.setUnavailableTimer();
-                                    }
-                                    send(data) {
-                                        if (this.connection) {
-                                            return this.connection.send(data);
-                                        } else {
-                                            return false;
-                                        }
-                                    }
-                                    send_event(name, data, channel) {
-                                        if (this.connection) {
-                                            return this.connection.send_event(
-                                                name,
-                                                data,
-                                                channel
-                                            );
-                                        } else {
-                                            return false;
-                                        }
-                                    }
-                                    disconnect() {
-                                        this.disconnectInternally();
-                                        this.updateState("disconnected");
-                                    }
-                                    isUsingTLS() {
-                                        return this.usingTLS;
-                                    }
-                                    startConnecting() {
-                                        var callback = (error, handshake) => {
-                                            if (error) {
-                                                this.runner =
-                                                    this.strategy.connect(
-                                                        0,
-                                                        callback
-                                                    );
-                                            } else {
-                                                if (
-                                                    handshake.action === "error"
-                                                ) {
-                                                    this.emit("error", {
-                                                        type: "HandshakeError",
-                                                        error: handshake.error,
-                                                    });
-                                                    this.timeline.error({
-                                                        handshakeError:
-                                                            handshake.error,
-                                                    });
-                                                } else {
-                                                    this.abortConnecting();
-                                                    this.handshakeCallbacks[
-                                                        handshake.action
-                                                    ](handshake);
-                                                }
-                                            }
-                                        };
-                                        this.runner = this.strategy.connect(
-                                            0,
-                                            callback
-                                        );
-                                    }
-                                    abortConnecting() {
-                                        if (this.runner) {
-                                            this.runner.abort();
-                                            this.runner = null;
-                                        }
-                                    }
-                                    disconnectInternally() {
-                                        this.abortConnecting();
-                                        this.clearRetryTimer();
-                                        this.clearUnavailableTimer();
-                                        if (this.connection) {
-                                            var connection =
-                                                this.abandonConnection();
-                                            connection.close();
-                                        }
-                                    }
-                                    updateStrategy() {
-                                        this.strategy =
-                                            this.options.getStrategy({
-                                                key: this.key,
-                                                timeline: this.timeline,
-                                                useTLS: this.usingTLS,
-                                            });
-                                    }
-                                    retryIn(delay) {
-                                        this.timeline.info({
-                                            action: "retry",
-                                            delay: delay,
-                                        });
-                                        if (delay > 0) {
-                                            this.emit(
-                                                "connecting_in",
-                                                Math.round(delay / 1000)
-                                            );
-                                        }
-                                        this.retryTimer =
-                                            new timers_OneOffTimer(
-                                                delay || 0,
-                                                () => {
-                                                    this.disconnectInternally();
-                                                    this.connect();
-                                                }
-                                            );
-                                    }
-                                    clearRetryTimer() {
-                                        if (this.retryTimer) {
-                                            this.retryTimer.ensureAborted();
-                                            this.retryTimer = null;
-                                        }
-                                    }
-                                    setUnavailableTimer() {
-                                        this.unavailableTimer =
-                                            new timers_OneOffTimer(
-                                                this.options.unavailableTimeout,
-                                                () => {
-                                                    this.updateState(
-                                                        "unavailable"
-                                                    );
-                                                }
-                                            );
-                                    }
-                                    clearUnavailableTimer() {
-                                        if (this.unavailableTimer) {
-                                            this.unavailableTimer.ensureAborted();
-                                        }
-                                    }
-                                    sendActivityCheck() {
-                                        this.stopActivityCheck();
-                                        this.connection.ping();
-                                        this.activityTimer =
-                                            new timers_OneOffTimer(
-                                                this.options.pongTimeout,
-                                                () => {
-                                                    this.timeline.error({
-                                                        pong_timed_out:
-                                                            this.options
-                                                                .pongTimeout,
-                                                    });
-                                                    this.retryIn(0);
-                                                }
-                                            );
-                                    }
-                                    resetActivityCheck() {
-                                        this.stopActivityCheck();
-                                        if (
-                                            this.connection &&
-                                            !this.connection.handlesActivityChecks()
-                                        ) {
-                                            this.activityTimer =
-                                                new timers_OneOffTimer(
-                                                    this.activityTimeout,
-                                                    () => {
-                                                        this.sendActivityCheck();
-                                                    }
-                                                );
-                                        }
-                                    }
-                                    stopActivityCheck() {
-                                        if (this.activityTimer) {
-                                            this.activityTimer.ensureAborted();
-                                        }
-                                    }
-                                    buildConnectionCallbacks(errorCallbacks) {
-                                        return extend({}, errorCallbacks, {
-                                            message: (message) => {
-                                                this.resetActivityCheck();
-                                                this.emit("message", message);
-                                            },
-                                            ping: () => {
-                                                this.send_event(
-                                                    "pusher:pong",
-                                                    {}
-                                                );
-                                            },
-                                            activity: () => {
-                                                this.resetActivityCheck();
-                                            },
-                                            error: (error) => {
-                                                this.emit("error", error);
-                                            },
-                                            closed: () => {
-                                                this.abandonConnection();
-                                                if (this.shouldRetry()) {
-                                                    this.retryIn(1000);
-                                                }
-                                            },
-                                        });
-                                    }
-                                    buildHandshakeCallbacks(errorCallbacks) {
-                                        return extend({}, errorCallbacks, {
-                                            connected: (handshake) => {
-                                                this.activityTimeout = Math.min(
-                                                    this.options
-                                                        .activityTimeout,
-                                                    handshake.activityTimeout,
-                                                    handshake.connection
-                                                        .activityTimeout ||
-                                                        Infinity
-                                                );
-                                                this.clearUnavailableTimer();
-                                                this.setConnection(
-                                                    handshake.connection
-                                                );
-                                                this.socket_id =
-                                                    this.connection.id;
-                                                this.updateState("connected", {
-                                                    socket_id: this.socket_id,
-                                                });
-                                            },
-                                        });
-                                    }
-                                    buildErrorCallbacks() {
-                                        let withErrorEmitted = (callback) => {
-                                            return (result) => {
-                                                if (result.error) {
-                                                    this.emit("error", {
-                                                        type: "WebSocketError",
-                                                        error: result.error,
-                                                    });
-                                                }
-                                                callback(result);
-                                            };
-                                        };
-                                        return {
-                                            tls_only: withErrorEmitted(() => {
-                                                this.usingTLS = true;
-                                                this.updateStrategy();
-                                                this.retryIn(0);
-                                            }),
-                                            refused: withErrorEmitted(() => {
-                                                this.disconnect();
-                                            }),
-                                            backoff: withErrorEmitted(() => {
-                                                this.retryIn(1000);
-                                            }),
-                                            retry: withErrorEmitted(() => {
-                                                this.retryIn(0);
-                                            }),
-                                        };
-                                    }
-                                    setConnection(connection) {
-                                        this.connection = connection;
-                                        for (var event in this
-                                            .connectionCallbacks) {
-                                            this.connection.bind(
-                                                event,
-                                                this.connectionCallbacks[event]
-                                            );
-                                        }
-                                        this.resetActivityCheck();
-                                    }
-                                    abandonConnection() {
-                                        if (!this.connection) {
-                                            return;
-                                        }
-                                        this.stopActivityCheck();
-                                        for (var event in this
-                                            .connectionCallbacks) {
-                                            this.connection.unbind(
-                                                event,
-                                                this.connectionCallbacks[event]
-                                            );
-                                        }
-                                        var connection = this.connection;
-                                        this.connection = null;
-                                        return connection;
-                                    }
-                                    updateState(newState, data) {
-                                        var previousState = this.state;
-                                        this.state = newState;
-                                        if (previousState !== newState) {
-                                            var newStateDescription = newState;
-                                            if (
-                                                newStateDescription ===
-                                                "connected"
-                                            ) {
-                                                newStateDescription +=
-                                                    " with new socket ID " +
-                                                    data.socket_id;
-                                            }
-                                            logger.debug(
-                                                "State changed",
-                                                previousState +
-                                                    " -> " +
-                                                    newStateDescription
-                                            );
-                                            this.timeline.info({
-                                                state: newState,
-                                                params: data,
-                                            });
-                                            this.emit("state_change", {
-                                                previous: previousState,
-                                                current: newState,
-                                            });
-                                            this.emit(newState, data);
-                                        }
-                                    }
-                                    shouldRetry() {
-                                        return (
-                                            this.state === "connecting" ||
-                                            this.state === "connected"
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/channels/channels.ts
-
-                                class channels_Channels {
-                                    constructor() {
-                                        this.channels = {};
-                                    }
-                                    add(name, pusher) {
-                                        if (!this.channels[name]) {
-                                            this.channels[name] = createChannel(
-                                                name,
-                                                pusher
-                                            );
-                                        }
-                                        return this.channels[name];
-                                    }
-                                    all() {
-                                        return values(this.channels);
-                                    }
-                                    find(name) {
-                                        return this.channels[name];
-                                    }
-                                    remove(name) {
-                                        var channel = this.channels[name];
-                                        delete this.channels[name];
-                                        return channel;
-                                    }
-                                    disconnect() {
-                                        objectApply(
-                                            this.channels,
-                                            function (channel) {
-                                                channel.disconnect();
-                                            }
-                                        );
-                                    }
-                                }
-                                function createChannel(name, pusher) {
-                                    if (
-                                        name.indexOf("private-encrypted-") === 0
-                                    ) {
-                                        if (pusher.config.nacl) {
-                                            return factory.createEncryptedChannel(
-                                                name,
-                                                pusher,
-                                                pusher.config.nacl
-                                            );
-                                        }
-                                        let errMsg =
-                                            "Tried to subscribe to a private-encrypted- channel but no nacl implementation available";
-                                        let suffix = url_store.buildLogSuffix(
-                                            "encryptedChannelSupport"
-                                        );
-                                        throw new UnsupportedFeature(
-                                            `${errMsg}. ${suffix}`
-                                        );
-                                    } else if (name.indexOf("private-") === 0) {
-                                        return factory.createPrivateChannel(
-                                            name,
-                                            pusher
-                                        );
-                                    } else if (
-                                        name.indexOf("presence-") === 0
-                                    ) {
-                                        return factory.createPresenceChannel(
-                                            name,
-                                            pusher
-                                        );
-                                    } else if (name.indexOf("#") === 0) {
-                                        throw new BadChannelName(
-                                            'Cannot create a channel with name "' +
-                                                name +
-                                                '".'
-                                        );
-                                    } else {
-                                        return factory.createChannel(
-                                            name,
-                                            pusher
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/utils/factory.ts
-
-                                var Factory = {
-                                    createChannels() {
-                                        return new channels_Channels();
-                                    },
-                                    createConnectionManager(key, options) {
-                                        return new connection_manager_ConnectionManager(
-                                            key,
-                                            options
-                                        );
-                                    },
-                                    createChannel(name, pusher) {
-                                        return new channel_Channel(
-                                            name,
-                                            pusher
-                                        );
-                                    },
-                                    createPrivateChannel(name, pusher) {
-                                        return new private_channel_PrivateChannel(
-                                            name,
-                                            pusher
-                                        );
-                                    },
-                                    createPresenceChannel(name, pusher) {
-                                        return new presence_channel_PresenceChannel(
-                                            name,
-                                            pusher
-                                        );
-                                    },
-                                    createEncryptedChannel(name, pusher, nacl) {
-                                        return new encrypted_channel_EncryptedChannel(
-                                            name,
-                                            pusher,
-                                            nacl
-                                        );
-                                    },
-                                    createTimelineSender(timeline, options) {
-                                        return new timeline_sender_TimelineSender(
-                                            timeline,
-                                            options
-                                        );
-                                    },
-                                    createHandshake(transport, callback) {
-                                        return new handshake_Handshake(
-                                            transport,
-                                            callback
-                                        );
-                                    },
-                                    createAssistantToTheTransportManager(
-                                        manager,
-                                        transport,
-                                        options
-                                    ) {
-                                        return new assistant_to_the_transport_manager_AssistantToTheTransportManager(
-                                            manager,
-                                            transport,
-                                            options
-                                        );
-                                    },
-                                };
-                                /* harmony default export */
-                                var factory = Factory;
-
-                                // CONCATENATED MODULE: ./src/core/transports/transport_manager.ts
-
-                                class transport_manager_TransportManager {
-                                    constructor(options) {
-                                        this.options = options || {};
-                                        this.livesLeft =
-                                            this.options.lives || Infinity;
-                                    }
-                                    getAssistant(transport) {
-                                        return factory.createAssistantToTheTransportManager(
-                                            this,
-                                            transport,
-                                            {
-                                                minPingDelay:
-                                                    this.options.minPingDelay,
-                                                maxPingDelay:
-                                                    this.options.maxPingDelay,
-                                            }
-                                        );
-                                    }
-                                    isAlive() {
-                                        return this.livesLeft > 0;
-                                    }
-                                    reportDeath() {
-                                        this.livesLeft -= 1;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/sequential_strategy.ts
-
-                                class sequential_strategy_SequentialStrategy {
-                                    constructor(strategies, options) {
-                                        this.strategies = strategies;
-                                        this.loop = Boolean(options.loop);
-                                        this.failFast = Boolean(
-                                            options.failFast
-                                        );
-                                        this.timeout = options.timeout;
-                                        this.timeoutLimit =
-                                            options.timeoutLimit;
-                                    }
-                                    isSupported() {
-                                        return any(
-                                            this.strategies,
-                                            util.method("isSupported")
-                                        );
-                                    }
-                                    connect(minPriority, callback) {
-                                        var strategies = this.strategies;
-                                        var current = 0;
-                                        var timeout = this.timeout;
-                                        var runner = null;
-                                        var tryNextStrategy = (
-                                            error,
-                                            handshake
-                                        ) => {
-                                            if (handshake) {
-                                                callback(null, handshake);
-                                            } else {
-                                                current = current + 1;
-                                                if (this.loop) {
-                                                    current =
-                                                        current %
-                                                        strategies.length;
-                                                }
-                                                if (
-                                                    current < strategies.length
-                                                ) {
-                                                    if (timeout) {
-                                                        timeout = timeout * 2;
-                                                        if (this.timeoutLimit) {
-                                                            timeout = Math.min(
-                                                                timeout,
-                                                                this
-                                                                    .timeoutLimit
-                                                            );
-                                                        }
-                                                    }
-                                                    runner = this.tryStrategy(
-                                                        strategies[current],
-                                                        minPriority,
-                                                        {
-                                                            timeout,
-                                                            failFast:
-                                                                this.failFast,
-                                                        },
-                                                        tryNextStrategy
-                                                    );
-                                                } else {
-                                                    callback(true);
-                                                }
-                                            }
-                                        };
-                                        runner = this.tryStrategy(
-                                            strategies[current],
-                                            minPriority,
-                                            {
-                                                timeout: timeout,
-                                                failFast: this.failFast,
-                                            },
-                                            tryNextStrategy
-                                        );
-                                        return {
-                                            abort: function () {
-                                                runner.abort();
-                                            },
-                                            forceMinPriority: function (p) {
-                                                minPriority = p;
-                                                if (runner) {
-                                                    runner.forceMinPriority(p);
-                                                }
-                                            },
-                                        };
-                                    }
-                                    tryStrategy(
-                                        strategy,
-                                        minPriority,
-                                        options,
-                                        callback
-                                    ) {
-                                        var timer = null;
-                                        var runner = null;
-                                        if (options.timeout > 0) {
-                                            timer = new timers_OneOffTimer(
-                                                options.timeout,
-                                                function () {
-                                                    runner.abort();
-                                                    callback(true);
-                                                }
-                                            );
-                                        }
-                                        runner = strategy.connect(
-                                            minPriority,
-                                            function (error, handshake) {
-                                                if (
-                                                    error &&
-                                                    timer &&
-                                                    timer.isRunning() &&
-                                                    !options.failFast
-                                                ) {
-                                                    return;
-                                                }
-                                                if (timer) {
-                                                    timer.ensureAborted();
-                                                }
-                                                callback(error, handshake);
-                                            }
-                                        );
-                                        return {
-                                            abort: function () {
-                                                if (timer) {
-                                                    timer.ensureAborted();
-                                                }
-                                                runner.abort();
-                                            },
-                                            forceMinPriority: function (p) {
-                                                runner.forceMinPriority(p);
-                                            },
-                                        };
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/best_connected_ever_strategy.ts
-
-                                class best_connected_ever_strategy_BestConnectedEverStrategy {
-                                    constructor(strategies) {
-                                        this.strategies = strategies;
-                                    }
-                                    isSupported() {
-                                        return any(
-                                            this.strategies,
-                                            util.method("isSupported")
-                                        );
-                                    }
-                                    connect(minPriority, callback) {
-                                        return connect(
-                                            this.strategies,
-                                            minPriority,
-                                            function (i, runners) {
-                                                return function (
-                                                    error,
-                                                    handshake
-                                                ) {
-                                                    runners[i].error = error;
-                                                    if (error) {
-                                                        if (
-                                                            allRunnersFailed(
-                                                                runners
-                                                            )
-                                                        ) {
-                                                            callback(true);
-                                                        }
-                                                        return;
-                                                    }
-                                                    apply(
-                                                        runners,
-                                                        function (runner) {
-                                                            runner.forceMinPriority(
-                                                                handshake
-                                                                    .transport
-                                                                    .priority
-                                                            );
-                                                        }
-                                                    );
-                                                    callback(null, handshake);
-                                                };
-                                            }
-                                        );
-                                    }
-                                }
-                                function connect(
-                                    strategies,
-                                    minPriority,
-                                    callbackBuilder
-                                ) {
-                                    var runners = map(
-                                        strategies,
-                                        function (strategy, i, _, rs) {
-                                            return strategy.connect(
-                                                minPriority,
-                                                callbackBuilder(i, rs)
-                                            );
-                                        }
-                                    );
-                                    return {
-                                        abort: function () {
-                                            apply(runners, abortRunner);
-                                        },
-                                        forceMinPriority: function (p) {
-                                            apply(runners, function (runner) {
-                                                runner.forceMinPriority(p);
-                                            });
-                                        },
-                                    };
-                                }
-                                function allRunnersFailed(runners) {
-                                    return collections_all(
-                                        runners,
-                                        function (runner) {
-                                            return Boolean(runner.error);
-                                        }
-                                    );
-                                }
-                                function abortRunner(runner) {
-                                    if (!runner.error && !runner.aborted) {
-                                        runner.abort();
-                                        runner.aborted = true;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/websocket_prioritized_cached_strategy.ts
-
-                                class websocket_prioritized_cached_strategy_WebSocketPrioritizedCachedStrategy {
-                                    constructor(strategy, transports, options) {
-                                        this.strategy = strategy;
-                                        this.transports = transports;
-                                        this.ttl = options.ttl || 1800 * 1000;
-                                        this.usingTLS = options.useTLS;
-                                        this.timeline = options.timeline;
-                                    }
-                                    isSupported() {
-                                        return this.strategy.isSupported();
-                                    }
-                                    connect(minPriority, callback) {
-                                        var usingTLS = this.usingTLS;
-                                        var info =
-                                            fetchTransportCache(usingTLS);
-                                        var cacheSkipCount =
-                                            info && info.cacheSkipCount
-                                                ? info.cacheSkipCount
-                                                : 0;
-                                        var strategies = [this.strategy];
-                                        if (
-                                            info &&
-                                            info.timestamp + this.ttl >=
-                                                util.now()
-                                        ) {
-                                            var transport =
-                                                this.transports[info.transport];
-                                            if (transport) {
-                                                if (
-                                                    ["ws", "wss"].includes(
-                                                        info.transport
-                                                    ) ||
-                                                    cacheSkipCount > 3
-                                                ) {
-                                                    this.timeline.info({
-                                                        cached: true,
-                                                        transport:
-                                                            info.transport,
-                                                        latency: info.latency,
-                                                    });
-                                                    strategies.push(
-                                                        new sequential_strategy_SequentialStrategy(
-                                                            [transport],
-                                                            {
-                                                                timeout:
-                                                                    info.latency *
-                                                                        2 +
-                                                                    1000,
-                                                                failFast: true,
-                                                            }
-                                                        )
-                                                    );
-                                                } else {
-                                                    cacheSkipCount++;
-                                                }
-                                            }
-                                        }
-                                        var startTimestamp = util.now();
-                                        var runner = strategies
-                                            .pop()
-                                            .connect(
-                                                minPriority,
-                                                function cb(error, handshake) {
-                                                    if (error) {
-                                                        flushTransportCache(
-                                                            usingTLS
-                                                        );
-                                                        if (
-                                                            strategies.length >
-                                                            0
-                                                        ) {
-                                                            startTimestamp =
-                                                                util.now();
-                                                            runner = strategies
-                                                                .pop()
-                                                                .connect(
-                                                                    minPriority,
-                                                                    cb
-                                                                );
-                                                        } else {
-                                                            callback(error);
-                                                        }
-                                                    } else {
-                                                        storeTransportCache(
-                                                            usingTLS,
-                                                            handshake.transport
-                                                                .name,
-                                                            util.now() -
-                                                                startTimestamp,
-                                                            cacheSkipCount
-                                                        );
-                                                        callback(
-                                                            null,
-                                                            handshake
-                                                        );
-                                                    }
-                                                }
-                                            );
-                                        return {
-                                            abort: function () {
-                                                runner.abort();
-                                            },
-                                            forceMinPriority: function (p) {
-                                                minPriority = p;
-                                                if (runner) {
-                                                    runner.forceMinPriority(p);
-                                                }
-                                            },
-                                        };
-                                    }
-                                }
-                                function getTransportCacheKey(usingTLS) {
-                                    return (
-                                        "pusherTransport" +
-                                        (usingTLS ? "TLS" : "NonTLS")
-                                    );
-                                }
-                                function fetchTransportCache(usingTLS) {
-                                    var storage = runtime.getLocalStorage();
-                                    if (storage) {
-                                        try {
-                                            var serializedCache =
-                                                storage[
-                                                    getTransportCacheKey(
-                                                        usingTLS
-                                                    )
-                                                ];
-                                            if (serializedCache) {
-                                                return JSON.parse(
-                                                    serializedCache
-                                                );
-                                            }
-                                        } catch (e) {
-                                            flushTransportCache(usingTLS);
-                                        }
-                                    }
-                                    return null;
-                                }
-                                function storeTransportCache(
-                                    usingTLS,
-                                    transport,
-                                    latency,
-                                    cacheSkipCount
-                                ) {
-                                    var storage = runtime.getLocalStorage();
-                                    if (storage) {
-                                        try {
-                                            storage[
-                                                getTransportCacheKey(usingTLS)
-                                            ] = safeJSONStringify({
-                                                timestamp: util.now(),
-                                                transport: transport,
-                                                latency: latency,
-                                                cacheSkipCount: cacheSkipCount,
-                                            });
-                                        } catch (e) {}
-                                    }
-                                }
-                                function flushTransportCache(usingTLS) {
-                                    var storage = runtime.getLocalStorage();
-                                    if (storage) {
-                                        try {
-                                            delete storage[
-                                                getTransportCacheKey(usingTLS)
-                                            ];
-                                        } catch (e) {}
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/delayed_strategy.ts
-
-                                class delayed_strategy_DelayedStrategy {
-                                    constructor(strategy, _ref) {
-                                        let { delay: number } = _ref;
-                                        this.strategy = strategy;
-                                        this.options = {
-                                            delay: number,
-                                        };
-                                    }
-                                    isSupported() {
-                                        return this.strategy.isSupported();
-                                    }
-                                    connect(minPriority, callback) {
-                                        var strategy = this.strategy;
-                                        var runner;
-                                        var timer = new timers_OneOffTimer(
-                                            this.options.delay,
-                                            function () {
-                                                runner = strategy.connect(
-                                                    minPriority,
-                                                    callback
-                                                );
-                                            }
-                                        );
-                                        return {
-                                            abort: function () {
-                                                timer.ensureAborted();
-                                                if (runner) {
-                                                    runner.abort();
-                                                }
-                                            },
-                                            forceMinPriority: function (p) {
-                                                minPriority = p;
-                                                if (runner) {
-                                                    runner.forceMinPriority(p);
-                                                }
-                                            },
-                                        };
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/if_strategy.ts
-                                class IfStrategy {
-                                    constructor(test, trueBranch, falseBranch) {
-                                        this.test = test;
-                                        this.trueBranch = trueBranch;
-                                        this.falseBranch = falseBranch;
-                                    }
-                                    isSupported() {
-                                        var branch = this.test()
-                                            ? this.trueBranch
-                                            : this.falseBranch;
-                                        return branch.isSupported();
-                                    }
-                                    connect(minPriority, callback) {
-                                        var branch = this.test()
-                                            ? this.trueBranch
-                                            : this.falseBranch;
-                                        return branch.connect(
-                                            minPriority,
-                                            callback
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/first_connected_strategy.ts
-                                class FirstConnectedStrategy {
-                                    constructor(strategy) {
-                                        this.strategy = strategy;
-                                    }
-                                    isSupported() {
-                                        return this.strategy.isSupported();
-                                    }
-                                    connect(minPriority, callback) {
-                                        var runner = this.strategy.connect(
-                                            minPriority,
-                                            function (error, handshake) {
-                                                if (handshake) {
-                                                    runner.abort();
-                                                }
-                                                callback(error, handshake);
-                                            }
-                                        );
-                                        return runner;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/default_strategy.ts
-
-                                function testSupportsStrategy(strategy) {
-                                    return function () {
-                                        return strategy.isSupported();
-                                    };
-                                }
-                                var getDefaultStrategy = function (
-                                    config,
-                                    baseOptions,
-                                    defineTransport
-                                ) {
-                                    var definedTransports = {};
-                                    function defineTransportStrategy(
-                                        name,
-                                        type,
-                                        priority,
-                                        options,
-                                        manager
-                                    ) {
-                                        var transport = defineTransport(
-                                            config,
-                                            name,
-                                            type,
-                                            priority,
-                                            options,
-                                            manager
-                                        );
-                                        definedTransports[name] = transport;
-                                        return transport;
-                                    }
-                                    var ws_options = Object.assign(
-                                        {},
-                                        baseOptions,
-                                        {
-                                            hostNonTLS:
-                                                config.wsHost +
-                                                ":" +
-                                                config.wsPort,
-                                            hostTLS:
-                                                config.wsHost +
-                                                ":" +
-                                                config.wssPort,
-                                            httpPath: config.wsPath,
-                                        }
-                                    );
-                                    var wss_options = Object.assign(
-                                        {},
-                                        ws_options,
-                                        {
-                                            useTLS: true,
-                                        }
-                                    );
-                                    var sockjs_options = Object.assign(
-                                        {},
-                                        baseOptions,
-                                        {
-                                            hostNonTLS:
-                                                config.httpHost +
-                                                ":" +
-                                                config.httpPort,
-                                            hostTLS:
-                                                config.httpHost +
-                                                ":" +
-                                                config.httpsPort,
-                                            httpPath: config.httpPath,
-                                        }
-                                    );
-                                    var timeouts = {
-                                        loop: true,
-                                        timeout: 15000,
-                                        timeoutLimit: 60000,
-                                    };
-                                    var ws_manager =
-                                        new transport_manager_TransportManager({
-                                            minPingDelay: 10000,
-                                            maxPingDelay:
-                                                config.activityTimeout,
-                                        });
-                                    var streaming_manager =
-                                        new transport_manager_TransportManager({
-                                            lives: 2,
-                                            minPingDelay: 10000,
-                                            maxPingDelay:
-                                                config.activityTimeout,
-                                        });
-                                    var ws_transport = defineTransportStrategy(
-                                        "ws",
-                                        "ws",
-                                        3,
-                                        ws_options,
-                                        ws_manager
-                                    );
-                                    var wss_transport = defineTransportStrategy(
-                                        "wss",
-                                        "ws",
-                                        3,
-                                        wss_options,
-                                        ws_manager
-                                    );
-                                    var sockjs_transport =
-                                        defineTransportStrategy(
-                                            "sockjs",
-                                            "sockjs",
-                                            1,
-                                            sockjs_options
-                                        );
-                                    var xhr_streaming_transport =
-                                        defineTransportStrategy(
-                                            "xhr_streaming",
-                                            "xhr_streaming",
-                                            1,
-                                            sockjs_options,
-                                            streaming_manager
-                                        );
-                                    var xdr_streaming_transport =
-                                        defineTransportStrategy(
-                                            "xdr_streaming",
-                                            "xdr_streaming",
-                                            1,
-                                            sockjs_options,
-                                            streaming_manager
-                                        );
-                                    var xhr_polling_transport =
-                                        defineTransportStrategy(
-                                            "xhr_polling",
-                                            "xhr_polling",
-                                            1,
-                                            sockjs_options
-                                        );
-                                    var xdr_polling_transport =
-                                        defineTransportStrategy(
-                                            "xdr_polling",
-                                            "xdr_polling",
-                                            1,
-                                            sockjs_options
-                                        );
-                                    var ws_loop =
-                                        new sequential_strategy_SequentialStrategy(
-                                            [ws_transport],
-                                            timeouts
-                                        );
-                                    var wss_loop =
-                                        new sequential_strategy_SequentialStrategy(
-                                            [wss_transport],
-                                            timeouts
-                                        );
-                                    var sockjs_loop =
-                                        new sequential_strategy_SequentialStrategy(
-                                            [sockjs_transport],
-                                            timeouts
-                                        );
-                                    var streaming_loop =
-                                        new sequential_strategy_SequentialStrategy(
-                                            [
-                                                new IfStrategy(
-                                                    testSupportsStrategy(
-                                                        xhr_streaming_transport
-                                                    ),
-                                                    xhr_streaming_transport,
-                                                    xdr_streaming_transport
-                                                ),
-                                            ],
-                                            timeouts
-                                        );
-                                    var polling_loop =
-                                        new sequential_strategy_SequentialStrategy(
-                                            [
-                                                new IfStrategy(
-                                                    testSupportsStrategy(
-                                                        xhr_polling_transport
-                                                    ),
-                                                    xhr_polling_transport,
-                                                    xdr_polling_transport
-                                                ),
-                                            ],
-                                            timeouts
-                                        );
-                                    var http_loop =
-                                        new sequential_strategy_SequentialStrategy(
-                                            [
-                                                new IfStrategy(
-                                                    testSupportsStrategy(
-                                                        streaming_loop
-                                                    ),
-                                                    new best_connected_ever_strategy_BestConnectedEverStrategy(
-                                                        [
-                                                            streaming_loop,
-                                                            new delayed_strategy_DelayedStrategy(
-                                                                polling_loop,
-                                                                {
-                                                                    delay: 4000,
-                                                                }
-                                                            ),
-                                                        ]
-                                                    ),
-                                                    polling_loop
-                                                ),
-                                            ],
-                                            timeouts
-                                        );
-                                    var http_fallback_loop = new IfStrategy(
-                                        testSupportsStrategy(http_loop),
-                                        http_loop,
-                                        sockjs_loop
-                                    );
-                                    var wsStrategy;
-                                    if (baseOptions.useTLS) {
-                                        wsStrategy =
-                                            new best_connected_ever_strategy_BestConnectedEverStrategy(
-                                                [
-                                                    ws_loop,
-                                                    new delayed_strategy_DelayedStrategy(
-                                                        http_fallback_loop,
-                                                        {
-                                                            delay: 2000,
-                                                        }
-                                                    ),
-                                                ]
-                                            );
-                                    } else {
-                                        wsStrategy =
-                                            new best_connected_ever_strategy_BestConnectedEverStrategy(
-                                                [
-                                                    ws_loop,
-                                                    new delayed_strategy_DelayedStrategy(
-                                                        wss_loop,
-                                                        {
-                                                            delay: 2000,
-                                                        }
-                                                    ),
-                                                    new delayed_strategy_DelayedStrategy(
-                                                        http_fallback_loop,
-                                                        {
-                                                            delay: 5000,
-                                                        }
-                                                    ),
-                                                ]
-                                            );
-                                    }
-                                    return new websocket_prioritized_cached_strategy_WebSocketPrioritizedCachedStrategy(
-                                        new FirstConnectedStrategy(
-                                            new IfStrategy(
-                                                testSupportsStrategy(
-                                                    ws_transport
-                                                ),
-                                                wsStrategy,
-                                                http_fallback_loop
-                                            )
-                                        ),
-                                        definedTransports,
-                                        {
-                                            ttl: 1800000,
-                                            timeline: baseOptions.timeline,
-                                            useTLS: baseOptions.useTLS,
-                                        }
-                                    );
-                                };
-                                /* harmony default export */
-                                var default_strategy = getDefaultStrategy;
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/transports/transport_connection_initializer.ts
-
-                                /* harmony default export */
-                                var transport_connection_initializer =
-                                    function () {
-                                        var self = this;
-                                        self.timeline.info(
-                                            self.buildTimelineMessage({
-                                                transport:
-                                                    self.name +
-                                                    (self.options.useTLS
-                                                        ? "s"
-                                                        : ""),
-                                            })
-                                        );
-                                        if (self.hooks.isInitialized()) {
-                                            self.changeState("initialized");
-                                        } else if (self.hooks.file) {
-                                            self.changeState("initializing");
-                                            Dependencies.load(
-                                                self.hooks.file,
-                                                {
-                                                    useTLS: self.options.useTLS,
-                                                },
-                                                function (error, callback) {
-                                                    if (
-                                                        self.hooks.isInitialized()
-                                                    ) {
-                                                        self.changeState(
-                                                            "initialized"
-                                                        );
-                                                        callback(true);
-                                                    } else {
-                                                        if (error) {
-                                                            self.onError(error);
-                                                        }
-                                                        self.onClose();
-                                                        callback(false);
-                                                    }
-                                                }
-                                            );
-                                        } else {
-                                            self.onClose();
-                                        }
-                                    };
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/http/http_xdomain_request.ts
-
-                                var http_xdomain_request_hooks = {
-                                    getRequest: function (socket) {
-                                        var xdr = new window.XDomainRequest();
-                                        xdr.ontimeout = function () {
-                                            socket.emit(
-                                                "error",
-                                                new RequestTimedOut()
-                                            );
-                                            socket.close();
-                                        };
-                                        xdr.onerror = function (e) {
-                                            socket.emit("error", e);
-                                            socket.close();
-                                        };
-                                        xdr.onprogress = function () {
-                                            if (
-                                                xdr.responseText &&
-                                                xdr.responseText.length > 0
-                                            ) {
-                                                socket.onChunk(
-                                                    200,
-                                                    xdr.responseText
-                                                );
-                                            }
-                                        };
-                                        xdr.onload = function () {
-                                            if (
-                                                xdr.responseText &&
-                                                xdr.responseText.length > 0
-                                            ) {
-                                                socket.onChunk(
-                                                    200,
-                                                    xdr.responseText
-                                                );
-                                            }
-                                            socket.emit("finished", 200);
-                                            socket.close();
-                                        };
-                                        return xdr;
-                                    },
-                                    abortRequest: function (xdr) {
-                                        xdr.ontimeout =
-                                            xdr.onerror =
-                                            xdr.onprogress =
-                                            xdr.onload =
-                                                null;
-                                        xdr.abort();
-                                    },
-                                };
-                                /* harmony default export */
-                                var http_xdomain_request =
-                                    http_xdomain_request_hooks;
-
-                                // CONCATENATED MODULE: ./src/core/http/http_request.ts
-
-                                const MAX_BUFFER_LENGTH = 256 * 1024;
-                                class http_request_HTTPRequest extends dispatcher_Dispatcher {
-                                    constructor(hooks, method, url) {
-                                        super();
-                                        this.hooks = hooks;
-                                        this.method = method;
-                                        this.url = url;
-                                    }
-                                    start(payload) {
-                                        this.position = 0;
-                                        this.xhr = this.hooks.getRequest(this);
-                                        this.unloader = () => {
-                                            this.close();
-                                        };
-                                        runtime.addUnloadListener(
-                                            this.unloader
-                                        );
-                                        this.xhr.open(
-                                            this.method,
-                                            this.url,
-                                            true
-                                        );
-                                        if (this.xhr.setRequestHeader) {
-                                            this.xhr.setRequestHeader(
-                                                "Content-Type",
-                                                "application/json"
-                                            );
-                                        }
-                                        this.xhr.send(payload);
-                                    }
-                                    close() {
-                                        if (this.unloader) {
-                                            runtime.removeUnloadListener(
-                                                this.unloader
-                                            );
-                                            this.unloader = null;
-                                        }
-                                        if (this.xhr) {
-                                            this.hooks.abortRequest(this.xhr);
-                                            this.xhr = null;
-                                        }
-                                    }
-                                    onChunk(status, data) {
-                                        while (true) {
-                                            var chunk =
-                                                this.advanceBuffer(data);
-                                            if (chunk) {
-                                                this.emit("chunk", {
-                                                    status: status,
-                                                    data: chunk,
-                                                });
-                                            } else {
-                                                break;
-                                            }
-                                        }
-                                        if (this.isBufferTooLong(data)) {
-                                            this.emit("buffer_too_long");
-                                        }
-                                    }
-                                    advanceBuffer(buffer) {
-                                        var unreadData = buffer.slice(
-                                            this.position
-                                        );
-                                        var endOfLinePosition =
-                                            unreadData.indexOf("\n");
-                                        if (endOfLinePosition !== -1) {
-                                            this.position +=
-                                                endOfLinePosition + 1;
-                                            return unreadData.slice(
-                                                0,
-                                                endOfLinePosition
-                                            );
-                                        } else {
-                                            return null;
-                                        }
-                                    }
-                                    isBufferTooLong(buffer) {
-                                        return (
-                                            this.position === buffer.length &&
-                                            buffer.length > MAX_BUFFER_LENGTH
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/http/state.ts
-                                var State;
-                                (function (State) {
-                                    State[(State["CONNECTING"] = 0)] =
-                                        "CONNECTING";
-                                    State[(State["OPEN"] = 1)] = "OPEN";
-                                    State[(State["CLOSED"] = 3)] = "CLOSED";
-                                })(State || (State = {}));
-                                /* harmony default export */
-                                var state = State;
-
-                                // CONCATENATED MODULE: ./src/core/http/http_socket.ts
-
-                                var autoIncrement = 1;
-                                class http_socket_HTTPSocket {
-                                    constructor(hooks, url) {
-                                        this.hooks = hooks;
-                                        this.session =
-                                            randomNumber(1000) +
-                                            "/" +
-                                            randomString(8);
-                                        this.location = getLocation(url);
-                                        this.readyState = state.CONNECTING;
-                                        this.openStream();
-                                    }
-                                    send(payload) {
-                                        return this.sendRaw(
-                                            JSON.stringify([payload])
-                                        );
-                                    }
-                                    ping() {
-                                        this.hooks.sendHeartbeat(this);
-                                    }
-                                    close(code, reason) {
-                                        this.onClose(code, reason, true);
-                                    }
-                                    sendRaw(payload) {
-                                        if (this.readyState === state.OPEN) {
-                                            try {
-                                                runtime
-                                                    .createSocketRequest(
-                                                        "POST",
-                                                        getUniqueURL(
-                                                            getSendURL(
-                                                                this.location,
-                                                                this.session
-                                                            )
-                                                        )
-                                                    )
-                                                    .start(payload);
-                                                return true;
-                                            } catch (e) {
-                                                return false;
-                                            }
-                                        } else {
-                                            return false;
-                                        }
-                                    }
-                                    reconnect() {
-                                        this.closeStream();
-                                        this.openStream();
-                                    }
-                                    onClose(code, reason, wasClean) {
-                                        this.closeStream();
-                                        this.readyState = state.CLOSED;
-                                        if (this.onclose) {
-                                            this.onclose({
-                                                code: code,
-                                                reason: reason,
-                                                wasClean: wasClean,
-                                            });
-                                        }
-                                    }
-                                    onChunk(chunk) {
-                                        if (chunk.status !== 200) {
-                                            return;
-                                        }
-                                        if (this.readyState === state.OPEN) {
-                                            this.onActivity();
-                                        }
-                                        var payload;
-                                        var type = chunk.data.slice(0, 1);
-                                        switch (type) {
-                                            case "o":
-                                                payload = JSON.parse(
-                                                    chunk.data.slice(1) || "{}"
-                                                );
-                                                this.onOpen(payload);
-                                                break;
-                                            case "a":
-                                                payload = JSON.parse(
-                                                    chunk.data.slice(1) || "[]"
-                                                );
-                                                for (
-                                                    var i = 0;
-                                                    i < payload.length;
-                                                    i++
-                                                ) {
-                                                    this.onEvent(payload[i]);
-                                                }
-                                                break;
-                                            case "m":
-                                                payload = JSON.parse(
-                                                    chunk.data.slice(1) ||
-                                                        "null"
-                                                );
-                                                this.onEvent(payload);
-                                                break;
-                                            case "h":
-                                                this.hooks.onHeartbeat(this);
-                                                break;
-                                            case "c":
-                                                payload = JSON.parse(
-                                                    chunk.data.slice(1) || "[]"
-                                                );
-                                                this.onClose(
-                                                    payload[0],
-                                                    payload[1],
-                                                    true
-                                                );
-                                                break;
-                                        }
-                                    }
-                                    onOpen(options) {
-                                        if (
-                                            this.readyState === state.CONNECTING
-                                        ) {
-                                            if (options && options.hostname) {
-                                                this.location.base =
-                                                    replaceHost(
-                                                        this.location.base,
-                                                        options.hostname
-                                                    );
-                                            }
-                                            this.readyState = state.OPEN;
-                                            if (this.onopen) {
-                                                this.onopen();
-                                            }
-                                        } else {
-                                            this.onClose(
-                                                1006,
-                                                "Server lost session",
-                                                true
-                                            );
-                                        }
-                                    }
-                                    onEvent(event) {
-                                        if (
-                                            this.readyState === state.OPEN &&
-                                            this.onmessage
-                                        ) {
-                                            this.onmessage({
-                                                data: event,
-                                            });
-                                        }
-                                    }
-                                    onActivity() {
-                                        if (this.onactivity) {
-                                            this.onactivity();
-                                        }
-                                    }
-                                    onError(error) {
-                                        if (this.onerror) {
-                                            this.onerror(error);
-                                        }
-                                    }
-                                    openStream() {
-                                        this.stream =
-                                            runtime.createSocketRequest(
-                                                "POST",
-                                                getUniqueURL(
-                                                    this.hooks.getReceiveURL(
-                                                        this.location,
-                                                        this.session
-                                                    )
-                                                )
-                                            );
-                                        this.stream.bind("chunk", (chunk) => {
-                                            this.onChunk(chunk);
-                                        });
-                                        this.stream.bind(
-                                            "finished",
-                                            (status) => {
-                                                this.hooks.onFinished(
-                                                    this,
-                                                    status
-                                                );
-                                            }
-                                        );
-                                        this.stream.bind(
-                                            "buffer_too_long",
-                                            () => {
-                                                this.reconnect();
-                                            }
-                                        );
-                                        try {
-                                            this.stream.start();
-                                        } catch (error) {
-                                            util.defer(() => {
-                                                this.onError(error);
-                                                this.onClose(
-                                                    1006,
-                                                    "Could not start streaming",
-                                                    false
-                                                );
-                                            });
-                                        }
-                                    }
-                                    closeStream() {
-                                        if (this.stream) {
-                                            this.stream.unbind_all();
-                                            this.stream.close();
-                                            this.stream = null;
-                                        }
-                                    }
-                                }
-                                function getLocation(url) {
-                                    var parts = /([^\?]*)\/*(\??.*)/.exec(url);
-                                    return {
-                                        base: parts[1],
-                                        queryString: parts[2],
-                                    };
-                                }
-                                function getSendURL(url, session) {
-                                    return (
-                                        url.base + "/" + session + "/xhr_send"
-                                    );
-                                }
-                                function getUniqueURL(url) {
-                                    var separator =
-                                        url.indexOf("?") === -1 ? "?" : "&";
-                                    return (
-                                        url +
-                                        separator +
-                                        "t=" +
-                                        +new Date() +
-                                        "&n=" +
-                                        autoIncrement++
-                                    );
-                                }
-                                function replaceHost(url, hostname) {
-                                    var urlParts =
-                                        /(https?:\/\/)([^\/:]+)((\/|:)?.*)/.exec(
-                                            url
-                                        );
-                                    return urlParts[1] + hostname + urlParts[3];
-                                }
-                                function randomNumber(max) {
-                                    return runtime.randomInt(max);
-                                }
-                                function randomString(length) {
-                                    var result = [];
-                                    for (var i = 0; i < length; i++) {
-                                        result.push(
-                                            randomNumber(32).toString(32)
-                                        );
-                                    }
-                                    return result.join("");
-                                }
-                                /* harmony default export */
-                                var http_socket = http_socket_HTTPSocket;
-
-                                // CONCATENATED MODULE: ./src/core/http/http_streaming_socket.ts
-                                var http_streaming_socket_hooks = {
-                                    getReceiveURL: function (url, session) {
-                                        return (
-                                            url.base +
-                                            "/" +
-                                            session +
-                                            "/xhr_streaming" +
-                                            url.queryString
-                                        );
-                                    },
-                                    onHeartbeat: function (socket) {
-                                        socket.sendRaw("[]");
-                                    },
-                                    sendHeartbeat: function (socket) {
-                                        socket.sendRaw("[]");
-                                    },
-                                    onFinished: function (socket, status) {
-                                        socket.onClose(
-                                            1006,
-                                            "Connection interrupted (" +
-                                                status +
-                                                ")",
-                                            false
-                                        );
-                                    },
-                                };
-                                /* harmony default export */
-                                var http_streaming_socket =
-                                    http_streaming_socket_hooks;
-
-                                // CONCATENATED MODULE: ./src/core/http/http_polling_socket.ts
-                                var http_polling_socket_hooks = {
-                                    getReceiveURL: function (url, session) {
-                                        return (
-                                            url.base +
-                                            "/" +
-                                            session +
-                                            "/xhr" +
-                                            url.queryString
-                                        );
-                                    },
-                                    onHeartbeat: function () {},
-                                    sendHeartbeat: function (socket) {
-                                        socket.sendRaw("[]");
-                                    },
-                                    onFinished: function (socket, status) {
-                                        if (status === 200) {
-                                            socket.reconnect();
-                                        } else {
-                                            socket.onClose(
-                                                1006,
-                                                "Connection interrupted (" +
-                                                    status +
-                                                    ")",
-                                                false
-                                            );
-                                        }
-                                    },
-                                };
-                                /* harmony default export */
-                                var http_polling_socket =
-                                    http_polling_socket_hooks;
-
-                                // CONCATENATED MODULE: ./src/runtimes/isomorphic/http/http_xhr_request.ts
-
-                                var http_xhr_request_hooks = {
-                                    getRequest: function (socket) {
-                                        var Constructor = runtime.getXHRAPI();
-                                        var xhr = new Constructor();
-                                        xhr.onreadystatechange =
-                                            xhr.onprogress = function () {
-                                                switch (xhr.readyState) {
-                                                    case 3:
-                                                        if (
-                                                            xhr.responseText &&
-                                                            xhr.responseText
-                                                                .length > 0
-                                                        ) {
-                                                            socket.onChunk(
-                                                                xhr.status,
-                                                                xhr.responseText
-                                                            );
-                                                        }
-                                                        break;
-                                                    case 4:
-                                                        if (
-                                                            xhr.responseText &&
-                                                            xhr.responseText
-                                                                .length > 0
-                                                        ) {
-                                                            socket.onChunk(
-                                                                xhr.status,
-                                                                xhr.responseText
-                                                            );
-                                                        }
-                                                        socket.emit(
-                                                            "finished",
-                                                            xhr.status
-                                                        );
-                                                        socket.close();
-                                                        break;
-                                                }
-                                            };
-                                        return xhr;
-                                    },
-                                    abortRequest: function (xhr) {
-                                        xhr.onreadystatechange = null;
-                                        xhr.abort();
-                                    },
-                                };
-                                /* harmony default export */
-                                var http_xhr_request = http_xhr_request_hooks;
-
-                                // CONCATENATED MODULE: ./src/runtimes/isomorphic/http/http.ts
-
-                                var HTTP = {
-                                    createStreamingSocket(url) {
-                                        return this.createSocket(
-                                            http_streaming_socket,
-                                            url
-                                        );
-                                    },
-                                    createPollingSocket(url) {
-                                        return this.createSocket(
-                                            http_polling_socket,
-                                            url
-                                        );
-                                    },
-                                    createSocket(hooks, url) {
-                                        return new http_socket(hooks, url);
-                                    },
-                                    createXHR(method, url) {
-                                        return this.createRequest(
-                                            http_xhr_request,
-                                            method,
-                                            url
-                                        );
-                                    },
-                                    createRequest(hooks, method, url) {
-                                        return new http_request_HTTPRequest(
-                                            hooks,
-                                            method,
-                                            url
-                                        );
-                                    },
-                                };
-                                /* harmony default export */
-                                var http_http = HTTP;
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/http/http.ts
-
-                                http_http.createXDR = function (method, url) {
-                                    return this.createRequest(
-                                        http_xdomain_request,
-                                        method,
-                                        url
-                                    );
-                                };
-                                /* harmony default export */
-                                var web_http_http = http_http;
-
-                                // CONCATENATED MODULE: ./src/runtimes/web/runtime.ts
-
-                                var Runtime = {
-                                    nextAuthCallbackID: 1,
-                                    auth_callbacks: {},
-                                    ScriptReceivers: ScriptReceivers,
-                                    DependenciesReceivers:
-                                        DependenciesReceivers,
-                                    getDefaultStrategy: default_strategy,
-                                    Transports: transports_transports,
-                                    transportConnectionInitializer:
-                                        transport_connection_initializer,
-                                    HTTPFactory: web_http_http,
-                                    TimelineTransport: jsonp_timeline,
-                                    getXHRAPI() {
-                                        return window.XMLHttpRequest;
-                                    },
-                                    getWebSocketAPI() {
-                                        return (
-                                            window.WebSocket ||
-                                            window.MozWebSocket
-                                        );
-                                    },
-                                    setup(PusherClass) {
-                                        window.Pusher = PusherClass;
-                                        var initializeOnDocumentBody = () => {
-                                            this.onDocumentBody(
-                                                PusherClass.ready
-                                            );
-                                        };
-                                        if (!window.JSON) {
-                                            Dependencies.load(
-                                                "json2",
-                                                {},
-                                                initializeOnDocumentBody
-                                            );
-                                        } else {
-                                            initializeOnDocumentBody();
-                                        }
-                                    },
-                                    getDocument() {
-                                        return document;
-                                    },
-                                    getProtocol() {
-                                        return this.getDocument().location
-                                            .protocol;
-                                    },
-                                    getAuthorizers() {
-                                        return {
-                                            ajax: xhr_auth,
-                                            jsonp: jsonp_auth,
-                                        };
-                                    },
-                                    onDocumentBody(callback) {
-                                        if (document.body) {
-                                            callback();
-                                        } else {
-                                            setTimeout(() => {
-                                                this.onDocumentBody(callback);
-                                            }, 0);
-                                        }
-                                    },
-                                    createJSONPRequest(url, data) {
-                                        return new jsonp_request_JSONPRequest(
-                                            url,
-                                            data
-                                        );
-                                    },
-                                    createScriptRequest(src) {
-                                        return new ScriptRequest(src);
-                                    },
-                                    getLocalStorage() {
-                                        try {
-                                            return window.localStorage;
-                                        } catch (e) {
-                                            return undefined;
-                                        }
-                                    },
-                                    createXHR() {
-                                        if (this.getXHRAPI()) {
-                                            return this.createXMLHttpRequest();
-                                        } else {
-                                            return this.createMicrosoftXHR();
-                                        }
-                                    },
-                                    createXMLHttpRequest() {
-                                        var Constructor = this.getXHRAPI();
-                                        return new Constructor();
-                                    },
-                                    createMicrosoftXHR() {
-                                        return new ActiveXObject(
-                                            "Microsoft.XMLHTTP"
-                                        );
-                                    },
-                                    getNetwork() {
-                                        return net_info_Network;
-                                    },
-                                    createWebSocket(url) {
-                                        var Constructor =
-                                            this.getWebSocketAPI();
-                                        return new Constructor(url);
-                                    },
-                                    createSocketRequest(method, url) {
-                                        if (this.isXHRSupported()) {
-                                            return this.HTTPFactory.createXHR(
-                                                method,
-                                                url
-                                            );
-                                        } else if (
-                                            this.isXDRSupported(
-                                                url.indexOf("https:") === 0
-                                            )
-                                        ) {
-                                            return this.HTTPFactory.createXDR(
-                                                method,
-                                                url
-                                            );
-                                        } else {
-                                            throw "Cross-origin HTTP requests are not supported";
-                                        }
-                                    },
-                                    isXHRSupported() {
-                                        var Constructor = this.getXHRAPI();
-                                        return (
-                                            Boolean(Constructor) &&
-                                            new Constructor()
-                                                .withCredentials !== undefined
-                                        );
-                                    },
-                                    isXDRSupported(useTLS) {
-                                        var protocol = useTLS
-                                            ? "https:"
-                                            : "http:";
-                                        var documentProtocol =
-                                            this.getProtocol();
-                                        return (
-                                            Boolean(window["XDomainRequest"]) &&
-                                            documentProtocol === protocol
-                                        );
-                                    },
-                                    addUnloadListener(listener) {
-                                        if (
-                                            window.addEventListener !==
-                                            undefined
-                                        ) {
-                                            window.addEventListener(
-                                                "unload",
-                                                listener,
-                                                false
-                                            );
-                                        } else if (
-                                            window.attachEvent !== undefined
-                                        ) {
-                                            window.attachEvent(
-                                                "onunload",
-                                                listener
-                                            );
-                                        }
-                                    },
-                                    removeUnloadListener(listener) {
-                                        if (
-                                            window.addEventListener !==
-                                            undefined
-                                        ) {
-                                            window.removeEventListener(
-                                                "unload",
-                                                listener,
-                                                false
-                                            );
-                                        } else if (
-                                            window.detachEvent !== undefined
-                                        ) {
-                                            window.detachEvent(
-                                                "onunload",
-                                                listener
-                                            );
-                                        }
-                                    },
-                                    randomInt(max) {
-                                        const random = function () {
-                                            const crypto =
-                                                window.crypto ||
-                                                window["msCrypto"];
-                                            const random =
-                                                crypto.getRandomValues(
-                                                    new Uint32Array(1)
-                                                )[0];
-                                            return random / Math.pow(2, 32);
-                                        };
-                                        return Math.floor(random() * max);
-                                    },
-                                };
-                                /* harmony default export */
-                                var runtime = Runtime;
-
-                                // CONCATENATED MODULE: ./src/core/timeline/level.ts
-                                var TimelineLevel;
-                                (function (TimelineLevel) {
-                                    TimelineLevel[
-                                        (TimelineLevel["ERROR"] = 3)
-                                    ] = "ERROR";
-                                    TimelineLevel[(TimelineLevel["INFO"] = 6)] =
-                                        "INFO";
-                                    TimelineLevel[
-                                        (TimelineLevel["DEBUG"] = 7)
-                                    ] = "DEBUG";
-                                })(TimelineLevel || (TimelineLevel = {}));
-                                /* harmony default export */
-                                var timeline_level = TimelineLevel;
-
-                                // CONCATENATED MODULE: ./src/core/timeline/timeline.ts
-
-                                class timeline_Timeline {
-                                    constructor(key, session, options) {
-                                        this.key = key;
-                                        this.session = session;
-                                        this.events = [];
-                                        this.options = options || {};
-                                        this.sent = 0;
-                                        this.uniqueID = 0;
-                                    }
-                                    log(level, event) {
-                                        if (level <= this.options.level) {
-                                            this.events.push(
-                                                extend({}, event, {
-                                                    timestamp: util.now(),
-                                                })
-                                            );
-                                            if (
-                                                this.options.limit &&
-                                                this.events.length >
-                                                    this.options.limit
-                                            ) {
-                                                this.events.shift();
-                                            }
-                                        }
-                                    }
-                                    error(event) {
-                                        this.log(timeline_level.ERROR, event);
-                                    }
-                                    info(event) {
-                                        this.log(timeline_level.INFO, event);
-                                    }
-                                    debug(event) {
-                                        this.log(timeline_level.DEBUG, event);
-                                    }
-                                    isEmpty() {
-                                        return this.events.length === 0;
-                                    }
-                                    send(sendfn, callback) {
-                                        var data = extend(
-                                            {
-                                                session: this.session,
-                                                bundle: this.sent + 1,
-                                                key: this.key,
-                                                lib: "js",
-                                                version: this.options.version,
-                                                cluster: this.options.cluster,
-                                                features: this.options.features,
-                                                timeline: this.events,
-                                            },
-                                            this.options.params
-                                        );
-                                        this.events = [];
-                                        sendfn(data, (error, result) => {
-                                            if (!error) {
-                                                this.sent++;
-                                            }
-                                            if (callback) {
-                                                callback(error, result);
-                                            }
-                                        });
-                                        return true;
-                                    }
-                                    generateUniqueID() {
-                                        this.uniqueID++;
-                                        return this.uniqueID;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/transport_strategy.ts
-
-                                class transport_strategy_TransportStrategy {
-                                    constructor(
-                                        name,
-                                        priority,
-                                        transport,
-                                        options
-                                    ) {
-                                        this.name = name;
-                                        this.priority = priority;
-                                        this.transport = transport;
-                                        this.options = options || {};
-                                    }
-                                    isSupported() {
-                                        return this.transport.isSupported({
-                                            useTLS: this.options.useTLS,
-                                        });
-                                    }
-                                    connect(minPriority, callback) {
-                                        if (!this.isSupported()) {
-                                            return failAttempt(
-                                                new UnsupportedStrategy(),
-                                                callback
-                                            );
-                                        } else if (
-                                            this.priority < minPriority
-                                        ) {
-                                            return failAttempt(
-                                                new TransportPriorityTooLow(),
-                                                callback
-                                            );
-                                        }
-                                        var connected = false;
-                                        var transport =
-                                            this.transport.createConnection(
-                                                this.name,
-                                                this.priority,
-                                                this.options.key,
-                                                this.options
-                                            );
-                                        var handshake = null;
-                                        var onInitialized = function () {
-                                            transport.unbind(
-                                                "initialized",
-                                                onInitialized
-                                            );
-                                            transport.connect();
-                                        };
-                                        var onOpen = function () {
-                                            handshake = factory.createHandshake(
-                                                transport,
-                                                function (result) {
-                                                    connected = true;
-                                                    unbindListeners();
-                                                    callback(null, result);
-                                                }
-                                            );
-                                        };
-                                        var onError = function (error) {
-                                            unbindListeners();
-                                            callback(error);
-                                        };
-                                        var onClosed = function () {
-                                            unbindListeners();
-                                            var serializedTransport;
-                                            serializedTransport =
-                                                safeJSONStringify(transport);
-                                            callback(
-                                                new TransportClosed(
-                                                    serializedTransport
-                                                )
-                                            );
-                                        };
-                                        var unbindListeners = function () {
-                                            transport.unbind(
-                                                "initialized",
-                                                onInitialized
-                                            );
-                                            transport.unbind("open", onOpen);
-                                            transport.unbind("error", onError);
-                                            transport.unbind(
-                                                "closed",
-                                                onClosed
-                                            );
-                                        };
-                                        transport.bind(
-                                            "initialized",
-                                            onInitialized
-                                        );
-                                        transport.bind("open", onOpen);
-                                        transport.bind("error", onError);
-                                        transport.bind("closed", onClosed);
-                                        transport.initialize();
-                                        return {
-                                            abort: () => {
-                                                if (connected) {
-                                                    return;
-                                                }
-                                                unbindListeners();
-                                                if (handshake) {
-                                                    handshake.close();
-                                                } else {
-                                                    transport.close();
-                                                }
-                                            },
-                                            forceMinPriority: (p) => {
-                                                if (connected) {
-                                                    return;
-                                                }
-                                                if (this.priority < p) {
-                                                    if (handshake) {
-                                                        handshake.close();
-                                                    } else {
-                                                        transport.close();
-                                                    }
-                                                }
-                                            },
-                                        };
-                                    }
-                                }
-                                function failAttempt(error, callback) {
-                                    util.defer(function () {
-                                        callback(error);
-                                    });
-                                    return {
-                                        abort: function () {},
-                                        forceMinPriority: function () {},
-                                    };
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/strategies/strategy_builder.ts
-
-                                const {
-                                    Transports: strategy_builder_Transports,
-                                } = runtime;
-                                var strategy_builder_defineTransport =
-                                    function (
-                                        config,
-                                        name,
-                                        type,
-                                        priority,
-                                        options,
-                                        manager
-                                    ) {
-                                        var transportClass =
-                                            strategy_builder_Transports[type];
-                                        if (!transportClass) {
-                                            throw new UnsupportedTransport(
-                                                type
-                                            );
-                                        }
-                                        var enabled =
-                                            (!config.enabledTransports ||
-                                                arrayIndexOf(
-                                                    config.enabledTransports,
-                                                    name
-                                                ) !== -1) &&
-                                            (!config.disabledTransports ||
-                                                arrayIndexOf(
-                                                    config.disabledTransports,
-                                                    name
-                                                ) === -1);
-                                        var transport;
-                                        if (enabled) {
-                                            options = Object.assign(
-                                                {
-                                                    ignoreNullOrigin:
-                                                        config.ignoreNullOrigin,
-                                                },
-                                                options
-                                            );
-                                            transport =
-                                                new transport_strategy_TransportStrategy(
-                                                    name,
-                                                    priority,
-                                                    manager
-                                                        ? manager.getAssistant(
-                                                              transportClass
-                                                          )
-                                                        : transportClass,
-                                                    options
-                                                );
-                                        } else {
-                                            transport =
-                                                strategy_builder_UnsupportedStrategy;
-                                        }
-                                        return transport;
-                                    };
-                                var strategy_builder_UnsupportedStrategy = {
-                                    isSupported: function () {
-                                        return false;
-                                    },
-                                    connect: function (_, callback) {
-                                        var deferred = util.defer(function () {
-                                            callback(new UnsupportedStrategy());
-                                        });
-                                        return {
-                                            abort: function () {
-                                                deferred.ensureAborted();
-                                            },
-                                            forceMinPriority: function () {},
-                                        };
-                                    },
-                                };
-
-                                // CONCATENATED MODULE: ./src/core/options.ts
-
-                                function validateOptions(options) {
-                                    if (options == null) {
-                                        throw "You must pass an options object";
-                                    }
-                                    if (options.cluster == null) {
-                                        throw "Options object must provide a cluster";
-                                    }
-                                    if ("disableStats" in options) {
-                                        logger.warn(
-                                            "The disableStats option is deprecated in favor of enableStats"
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/auth/user_authenticator.ts
-
-                                const composeChannelQuery = (
-                                    params,
-                                    authOptions
-                                ) => {
-                                    var query =
-                                        "socket_id=" +
-                                        encodeURIComponent(params.socketId);
-                                    for (var key in authOptions.params) {
-                                        query +=
-                                            "&" +
-                                            encodeURIComponent(key) +
-                                            "=" +
-                                            encodeURIComponent(
-                                                authOptions.params[key]
-                                            );
-                                    }
-                                    if (authOptions.paramsProvider != null) {
-                                        let dynamicParams =
-                                            authOptions.paramsProvider();
-                                        for (var key in dynamicParams) {
-                                            query +=
-                                                "&" +
-                                                encodeURIComponent(key) +
-                                                "=" +
-                                                encodeURIComponent(
-                                                    dynamicParams[key]
-                                                );
-                                        }
-                                    }
-                                    return query;
-                                };
-                                const UserAuthenticator = (authOptions) => {
-                                    if (
-                                        typeof runtime.getAuthorizers()[
-                                            authOptions.transport
-                                        ] === "undefined"
-                                    ) {
-                                        throw `'${authOptions.transport}' is not a recognized auth transport`;
-                                    }
-                                    return (params, callback) => {
-                                        const query = composeChannelQuery(
-                                            params,
-                                            authOptions
-                                        );
-                                        runtime
-                                            .getAuthorizers()
-                                            [authOptions.transport](
-                                                runtime,
-                                                query,
-                                                authOptions,
-                                                AuthRequestType.UserAuthentication,
-                                                callback
-                                            );
-                                    };
-                                };
-                                /* harmony default export */
-                                var user_authenticator = UserAuthenticator;
-
-                                // CONCATENATED MODULE: ./src/core/auth/channel_authorizer.ts
-
-                                const channel_authorizer_composeChannelQuery = (
-                                    params,
-                                    authOptions
-                                ) => {
-                                    var query =
-                                        "socket_id=" +
-                                        encodeURIComponent(params.socketId);
-                                    query +=
-                                        "&channel_name=" +
-                                        encodeURIComponent(params.channelName);
-                                    for (var key in authOptions.params) {
-                                        query +=
-                                            "&" +
-                                            encodeURIComponent(key) +
-                                            "=" +
-                                            encodeURIComponent(
-                                                authOptions.params[key]
-                                            );
-                                    }
-                                    if (authOptions.paramsProvider != null) {
-                                        let dynamicParams =
-                                            authOptions.paramsProvider();
-                                        for (var key in dynamicParams) {
-                                            query +=
-                                                "&" +
-                                                encodeURIComponent(key) +
-                                                "=" +
-                                                encodeURIComponent(
-                                                    dynamicParams[key]
-                                                );
-                                        }
-                                    }
-                                    return query;
-                                };
-                                const ChannelAuthorizer = (authOptions) => {
-                                    if (
-                                        typeof runtime.getAuthorizers()[
-                                            authOptions.transport
-                                        ] === "undefined"
-                                    ) {
-                                        throw `'${authOptions.transport}' is not a recognized auth transport`;
-                                    }
-                                    return (params, callback) => {
-                                        const query =
-                                            channel_authorizer_composeChannelQuery(
-                                                params,
-                                                authOptions
-                                            );
-                                        runtime
-                                            .getAuthorizers()
-                                            [authOptions.transport](
-                                                runtime,
-                                                query,
-                                                authOptions,
-                                                AuthRequestType.ChannelAuthorization,
-                                                callback
-                                            );
-                                    };
-                                };
-                                /* harmony default export */
-                                var channel_authorizer = ChannelAuthorizer;
-
-                                // CONCATENATED MODULE: ./src/core/auth/deprecated_channel_authorizer.ts
-                                const ChannelAuthorizerProxy = (
-                                    pusher,
-                                    authOptions,
-                                    channelAuthorizerGenerator
-                                ) => {
-                                    const deprecatedAuthorizerOptions = {
-                                        authTransport: authOptions.transport,
-                                        authEndpoint: authOptions.endpoint,
-                                        auth: {
-                                            params: authOptions.params,
-                                            headers: authOptions.headers,
-                                        },
-                                    };
-                                    return (params, callback) => {
-                                        const channel = pusher.channel(
-                                            params.channelName
-                                        );
-                                        const channelAuthorizer =
-                                            channelAuthorizerGenerator(
-                                                channel,
-                                                deprecatedAuthorizerOptions
-                                            );
-                                        channelAuthorizer.authorize(
-                                            params.socketId,
-                                            callback
-                                        );
-                                    };
-                                };
-
-                                // CONCATENATED MODULE: ./src/core/config.ts
-
-                                function getConfig(opts, pusher) {
-                                    let config = {
-                                        activityTimeout:
-                                            opts.activityTimeout ||
-                                            defaults.activityTimeout,
-                                        cluster: opts.cluster,
-                                        httpPath:
-                                            opts.httpPath || defaults.httpPath,
-                                        httpPort:
-                                            opts.httpPort || defaults.httpPort,
-                                        httpsPort:
-                                            opts.httpsPort ||
-                                            defaults.httpsPort,
-                                        pongTimeout:
-                                            opts.pongTimeout ||
-                                            defaults.pongTimeout,
-                                        statsHost:
-                                            opts.statsHost ||
-                                            defaults.stats_host,
-                                        unavailableTimeout:
-                                            opts.unavailableTimeout ||
-                                            defaults.unavailableTimeout,
-                                        wsPath: opts.wsPath || defaults.wsPath,
-                                        wsPort: opts.wsPort || defaults.wsPort,
-                                        wssPort:
-                                            opts.wssPort || defaults.wssPort,
-                                        enableStats: getEnableStatsConfig(opts),
-                                        httpHost: getHttpHost(opts),
-                                        useTLS: shouldUseTLS(opts),
-                                        wsHost: getWebsocketHost(opts),
-                                        userAuthenticator:
-                                            buildUserAuthenticator(opts),
-                                        channelAuthorizer:
-                                            buildChannelAuthorizer(
-                                                opts,
-                                                pusher
-                                            ),
-                                    };
-                                    if ("disabledTransports" in opts)
-                                        config.disabledTransports =
-                                            opts.disabledTransports;
-                                    if ("enabledTransports" in opts)
-                                        config.enabledTransports =
-                                            opts.enabledTransports;
-                                    if ("ignoreNullOrigin" in opts)
-                                        config.ignoreNullOrigin =
-                                            opts.ignoreNullOrigin;
-                                    if ("timelineParams" in opts)
-                                        config.timelineParams =
-                                            opts.timelineParams;
-                                    if ("nacl" in opts) {
-                                        config.nacl = opts.nacl;
-                                    }
-                                    return config;
-                                }
-                                function getHttpHost(opts) {
-                                    if (opts.httpHost) {
-                                        return opts.httpHost;
-                                    }
-                                    if (opts.cluster) {
-                                        return `sockjs-${opts.cluster}.pusher.com`;
-                                    }
-                                    return defaults.httpHost;
-                                }
-                                function getWebsocketHost(opts) {
-                                    if (opts.wsHost) {
-                                        return opts.wsHost;
-                                    }
-                                    return getWebsocketHostFromCluster(
-                                        opts.cluster
-                                    );
-                                }
-                                function getWebsocketHostFromCluster(cluster) {
-                                    return `ws-${cluster}.pusher.com`;
-                                }
-                                function shouldUseTLS(opts) {
-                                    if (runtime.getProtocol() === "https:") {
-                                        return true;
-                                    } else if (opts.forceTLS === false) {
-                                        return false;
-                                    }
-                                    return true;
-                                }
-                                function getEnableStatsConfig(opts) {
-                                    if ("enableStats" in opts) {
-                                        return opts.enableStats;
-                                    }
-                                    if ("disableStats" in opts) {
-                                        return !opts.disableStats;
-                                    }
-                                    return false;
-                                }
-                                function buildUserAuthenticator(opts) {
-                                    const userAuthentication = Object.assign(
-                                        Object.assign(
-                                            {},
-                                            defaults.userAuthentication
-                                        ),
-                                        opts.userAuthentication
-                                    );
-                                    if (
-                                        "customHandler" in userAuthentication &&
-                                        userAuthentication["customHandler"] !=
-                                            null
-                                    ) {
-                                        return userAuthentication[
-                                            "customHandler"
-                                        ];
-                                    }
-                                    return user_authenticator(
-                                        userAuthentication
-                                    );
-                                }
-                                function buildChannelAuth(opts, pusher) {
-                                    let channelAuthorization;
-                                    if ("channelAuthorization" in opts) {
-                                        channelAuthorization = Object.assign(
-                                            Object.assign(
-                                                {},
-                                                defaults.channelAuthorization
-                                            ),
-                                            opts.channelAuthorization
-                                        );
-                                    } else {
-                                        channelAuthorization = {
-                                            transport:
-                                                opts.authTransport ||
-                                                defaults.authTransport,
-                                            endpoint:
-                                                opts.authEndpoint ||
-                                                defaults.authEndpoint,
-                                        };
-                                        if ("auth" in opts) {
-                                            if ("params" in opts.auth)
-                                                channelAuthorization.params =
-                                                    opts.auth.params;
-                                            if ("headers" in opts.auth)
-                                                channelAuthorization.headers =
-                                                    opts.auth.headers;
-                                        }
-                                        if ("authorizer" in opts)
-                                            channelAuthorization.customHandler =
-                                                ChannelAuthorizerProxy(
-                                                    pusher,
-                                                    channelAuthorization,
-                                                    opts.authorizer
-                                                );
-                                    }
-                                    return channelAuthorization;
-                                }
-                                function buildChannelAuthorizer(opts, pusher) {
-                                    const channelAuthorization =
-                                        buildChannelAuth(opts, pusher);
-                                    if (
-                                        "customHandler" in
-                                            channelAuthorization &&
-                                        channelAuthorization["customHandler"] !=
-                                            null
-                                    ) {
-                                        return channelAuthorization[
-                                            "customHandler"
-                                        ];
-                                    }
-                                    return channel_authorizer(
-                                        channelAuthorization
-                                    );
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/watchlist.ts
-
-                                class watchlist_WatchlistFacade extends dispatcher_Dispatcher {
-                                    constructor(pusher) {
-                                        super(function (eventName, data) {
-                                            logger.debug(
-                                                `No callbacks on watchlist events for ${eventName}`
-                                            );
-                                        });
-                                        this.pusher = pusher;
-                                        this.bindWatchlistInternalEvent();
-                                    }
-                                    handleEvent(pusherEvent) {
-                                        pusherEvent.data.events.forEach(
-                                            (watchlistEvent) => {
-                                                this.emit(
-                                                    watchlistEvent.name,
-                                                    watchlistEvent
-                                                );
-                                            }
-                                        );
-                                    }
-                                    bindWatchlistInternalEvent() {
-                                        this.pusher.connection.bind(
-                                            "message",
-                                            (pusherEvent) => {
-                                                var eventName =
-                                                    pusherEvent.event;
-                                                if (
-                                                    eventName ===
-                                                    "pusher_internal:watchlist_events"
-                                                ) {
-                                                    this.handleEvent(
-                                                        pusherEvent
-                                                    );
-                                                }
-                                            }
-                                        );
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/utils/flat_promise.ts
-                                function flatPromise() {
-                                    let resolve, reject;
-                                    const promise = new Promise((res, rej) => {
-                                        resolve = res;
-                                        reject = rej;
-                                    });
-                                    return {
-                                        promise,
-                                        resolve,
-                                        reject,
-                                    };
-                                }
-                                /* harmony default export */
-                                var flat_promise = flatPromise;
-
-                                // CONCATENATED MODULE: ./src/core/user.ts
-
-                                class user_UserFacade extends dispatcher_Dispatcher {
-                                    constructor(pusher) {
-                                        super(function (eventName, data) {
-                                            logger.debug(
-                                                "No callbacks on user for " +
-                                                    eventName
-                                            );
-                                        });
-                                        this.signin_requested = false;
-                                        this.user_data = null;
-                                        this.serverToUserChannel = null;
-                                        this.signinDonePromise = null;
-                                        this._signinDoneResolve = null;
-                                        this._onAuthorize = (err, authData) => {
-                                            if (err) {
-                                                logger.warn(
-                                                    `Error during signin: ${err}`
-                                                );
-                                                this._cleanup();
-                                                return;
-                                            }
-                                            this.pusher.send_event(
-                                                "pusher:signin",
-                                                {
-                                                    auth: authData.auth,
-                                                    user_data:
-                                                        authData.user_data,
-                                                }
-                                            );
-                                        };
-                                        this.pusher = pusher;
-                                        this.pusher.connection.bind(
-                                            "state_change",
-                                            (_ref2) => {
-                                                let { previous, current } =
-                                                    _ref2;
-                                                if (
-                                                    previous !== "connected" &&
-                                                    current === "connected"
-                                                ) {
-                                                    this._signin();
-                                                }
-                                                if (
-                                                    previous === "connected" &&
-                                                    current !== "connected"
-                                                ) {
-                                                    this._cleanup();
-                                                    this._newSigninPromiseIfNeeded();
-                                                }
-                                            }
-                                        );
-                                        this.watchlist =
-                                            new watchlist_WatchlistFacade(
-                                                pusher
-                                            );
-                                        this.pusher.connection.bind(
-                                            "message",
-                                            (event) => {
-                                                var eventName = event.event;
-                                                if (
-                                                    eventName ===
-                                                    "pusher:signin_success"
-                                                ) {
-                                                    this._onSigninSuccess(
-                                                        event.data
-                                                    );
-                                                }
-                                                if (
-                                                    this.serverToUserChannel &&
-                                                    this.serverToUserChannel
-                                                        .name === event.channel
-                                                ) {
-                                                    this.serverToUserChannel.handleEvent(
-                                                        event
-                                                    );
-                                                }
-                                            }
-                                        );
-                                    }
-                                    signin() {
-                                        if (this.signin_requested) {
-                                            return;
-                                        }
-                                        this.signin_requested = true;
-                                        this._signin();
-                                    }
-                                    _signin() {
-                                        if (!this.signin_requested) {
-                                            return;
-                                        }
-                                        this._newSigninPromiseIfNeeded();
-                                        if (
-                                            this.pusher.connection.state !==
-                                            "connected"
-                                        ) {
-                                            return;
-                                        }
-                                        this.pusher.config.userAuthenticator(
-                                            {
-                                                socketId:
-                                                    this.pusher.connection
-                                                        .socket_id,
-                                            },
-                                            this._onAuthorize
-                                        );
-                                    }
-                                    _onSigninSuccess(data) {
-                                        try {
-                                            this.user_data = JSON.parse(
-                                                data.user_data
-                                            );
-                                        } catch (e) {
-                                            logger.error(
-                                                `Failed parsing user data after signin: ${data.user_data}`
-                                            );
-                                            this._cleanup();
-                                            return;
-                                        }
-                                        if (
-                                            typeof this.user_data.id !==
-                                                "string" ||
-                                            this.user_data.id === ""
-                                        ) {
-                                            logger.error(
-                                                `user_data doesn't contain an id. user_data: ${this.user_data}`
-                                            );
-                                            this._cleanup();
-                                            return;
-                                        }
-                                        this._signinDoneResolve();
-                                        this._subscribeChannels();
-                                    }
-                                    _subscribeChannels() {
-                                        const ensure_subscribed = (channel) => {
-                                            if (
-                                                channel.subscriptionPending &&
-                                                channel.subscriptionCancelled
-                                            ) {
-                                                channel.reinstateSubscription();
-                                            } else if (
-                                                !channel.subscriptionPending &&
-                                                this.pusher.connection.state ===
-                                                    "connected"
-                                            ) {
-                                                channel.subscribe();
-                                            }
-                                        };
-                                        this.serverToUserChannel =
-                                            new channel_Channel(
-                                                `#server-to-user-${this.user_data.id}`,
-                                                this.pusher
-                                            );
-                                        this.serverToUserChannel.bind_global(
-                                            (eventName, data) => {
-                                                if (
-                                                    eventName.indexOf(
-                                                        "pusher_internal:"
-                                                    ) === 0 ||
-                                                    eventName.indexOf(
-                                                        "pusher:"
-                                                    ) === 0
-                                                ) {
-                                                    return;
-                                                }
-                                                this.emit(eventName, data);
-                                            }
-                                        );
-                                        ensure_subscribed(
-                                            this.serverToUserChannel
-                                        );
-                                    }
-                                    _cleanup() {
-                                        this.user_data = null;
-                                        if (this.serverToUserChannel) {
-                                            this.serverToUserChannel.unbind_all();
-                                            this.serverToUserChannel.disconnect();
-                                            this.serverToUserChannel = null;
-                                        }
-                                        if (this.signin_requested) {
-                                            this._signinDoneResolve();
-                                        }
-                                    }
-                                    _newSigninPromiseIfNeeded() {
-                                        if (!this.signin_requested) {
-                                            return;
-                                        }
-                                        if (
-                                            this.signinDonePromise &&
-                                            !this.signinDonePromise.done
-                                        ) {
-                                            return;
-                                        }
-                                        const {
-                                            promise,
-                                            resolve,
-                                            reject: _,
-                                        } = flat_promise();
-                                        promise.done = false;
-                                        const setDone = () => {
-                                            promise.done = true;
-                                        };
-                                        promise.then(setDone).catch(setDone);
-                                        this.signinDonePromise = promise;
-                                        this._signinDoneResolve = resolve;
-                                    }
-                                }
-
-                                // CONCATENATED MODULE: ./src/core/pusher.ts
-
-                                class pusher_Pusher {
-                                    static ready() {
-                                        pusher_Pusher.isReady = true;
-                                        for (
-                                            var i = 0,
-                                                l =
-                                                    pusher_Pusher.instances
-                                                        .length;
-                                            i < l;
-                                            i++
-                                        ) {
-                                            pusher_Pusher.instances[
-                                                i
-                                            ].connect();
-                                        }
-                                    }
-                                    static getClientFeatures() {
-                                        return keys(
-                                            filterObject(
-                                                {
-                                                    ws: runtime.Transports.ws,
-                                                },
-                                                function (t) {
-                                                    return t.isSupported({});
-                                                }
-                                            )
-                                        );
-                                    }
-                                    constructor(app_key, options) {
-                                        checkAppKey(app_key);
-                                        validateOptions(options);
-                                        this.key = app_key;
-                                        this.config = getConfig(options, this);
-                                        this.channels =
-                                            factory.createChannels();
-                                        this.global_emitter =
-                                            new dispatcher_Dispatcher();
-                                        this.sessionID =
-                                            runtime.randomInt(1000000000);
-                                        this.timeline = new timeline_Timeline(
-                                            this.key,
-                                            this.sessionID,
-                                            {
-                                                cluster: this.config.cluster,
-                                                features:
-                                                    pusher_Pusher.getClientFeatures(),
-                                                params:
-                                                    this.config
-                                                        .timelineParams || {},
-                                                limit: 50,
-                                                level: timeline_level.INFO,
-                                                version: defaults.VERSION,
-                                            }
-                                        );
-                                        if (this.config.enableStats) {
-                                            this.timelineSender =
-                                                factory.createTimelineSender(
-                                                    this.timeline,
-                                                    {
-                                                        host: this.config
-                                                            .statsHost,
-                                                        path:
-                                                            "/timeline/v2/" +
-                                                            runtime
-                                                                .TimelineTransport
-                                                                .name,
-                                                    }
-                                                );
-                                        }
-                                        var getStrategy = (options) => {
-                                            return runtime.getDefaultStrategy(
-                                                this.config,
-                                                options,
-                                                strategy_builder_defineTransport
-                                            );
-                                        };
-                                        this.connection =
-                                            factory.createConnectionManager(
-                                                this.key,
-                                                {
-                                                    getStrategy: getStrategy,
-                                                    timeline: this.timeline,
-                                                    activityTimeout:
-                                                        this.config
-                                                            .activityTimeout,
-                                                    pongTimeout:
-                                                        this.config.pongTimeout,
-                                                    unavailableTimeout:
-                                                        this.config
-                                                            .unavailableTimeout,
-                                                    useTLS: Boolean(
-                                                        this.config.useTLS
-                                                    ),
-                                                }
-                                            );
-                                        this.connection.bind(
-                                            "connected",
-                                            () => {
-                                                this.subscribeAll();
-                                                if (this.timelineSender) {
-                                                    this.timelineSender.send(
-                                                        this.connection.isUsingTLS()
-                                                    );
-                                                }
-                                            }
-                                        );
-                                        this.connection.bind(
-                                            "message",
-                                            (event) => {
-                                                var eventName = event.event;
-                                                var internal =
-                                                    eventName.indexOf(
-                                                        "pusher_internal:"
-                                                    ) === 0;
-                                                if (event.channel) {
-                                                    var channel = this.channel(
-                                                        event.channel
-                                                    );
-                                                    if (channel) {
-                                                        channel.handleEvent(
-                                                            event
-                                                        );
-                                                    }
-                                                }
-                                                if (!internal) {
-                                                    this.global_emitter.emit(
-                                                        event.event,
-                                                        event.data
-                                                    );
-                                                }
-                                            }
-                                        );
-                                        this.connection.bind(
-                                            "connecting",
-                                            () => {
-                                                this.channels.disconnect();
-                                            }
-                                        );
-                                        this.connection.bind(
-                                            "disconnected",
-                                            () => {
-                                                this.channels.disconnect();
-                                            }
-                                        );
-                                        this.connection.bind("error", (err) => {
-                                            logger.warn(err);
-                                        });
-                                        pusher_Pusher.instances.push(this);
-                                        this.timeline.info({
-                                            instances:
-                                                pusher_Pusher.instances.length,
-                                        });
-                                        this.user = new user_UserFacade(this);
-                                        if (pusher_Pusher.isReady) {
-                                            this.connect();
-                                        }
-                                    }
-                                    channel(name) {
-                                        return this.channels.find(name);
-                                    }
-                                    allChannels() {
-                                        return this.channels.all();
-                                    }
-                                    connect() {
-                                        this.connection.connect();
-                                        if (this.timelineSender) {
-                                            if (!this.timelineSenderTimer) {
-                                                var usingTLS =
-                                                    this.connection.isUsingTLS();
-                                                var timelineSender =
-                                                    this.timelineSender;
-                                                this.timelineSenderTimer =
-                                                    new timers_PeriodicTimer(
-                                                        60000,
-                                                        function () {
-                                                            timelineSender.send(
-                                                                usingTLS
-                                                            );
-                                                        }
-                                                    );
-                                            }
-                                        }
-                                    }
-                                    disconnect() {
-                                        this.connection.disconnect();
-                                        if (this.timelineSenderTimer) {
-                                            this.timelineSenderTimer.ensureAborted();
-                                            this.timelineSenderTimer = null;
-                                        }
-                                    }
-                                    bind(event_name, callback, context) {
-                                        this.global_emitter.bind(
-                                            event_name,
-                                            callback,
-                                            context
-                                        );
-                                        return this;
-                                    }
-                                    unbind(event_name, callback, context) {
-                                        this.global_emitter.unbind(
-                                            event_name,
-                                            callback,
-                                            context
-                                        );
-                                        return this;
-                                    }
-                                    bind_global(callback) {
-                                        this.global_emitter.bind_global(
-                                            callback
-                                        );
-                                        return this;
-                                    }
-                                    unbind_global(callback) {
-                                        this.global_emitter.unbind_global(
-                                            callback
-                                        );
-                                        return this;
-                                    }
-                                    unbind_all(callback) {
-                                        this.global_emitter.unbind_all();
-                                        return this;
-                                    }
-                                    subscribeAll() {
-                                        var channelName;
-                                        for (channelName in this.channels
-                                            .channels) {
-                                            if (
-                                                this.channels.channels.hasOwnProperty(
-                                                    channelName
-                                                )
-                                            ) {
-                                                this.subscribe(channelName);
-                                            }
-                                        }
-                                    }
-                                    subscribe(channel_name) {
-                                        var channel = this.channels.add(
-                                            channel_name,
-                                            this
-                                        );
-                                        if (
-                                            channel.subscriptionPending &&
-                                            channel.subscriptionCancelled
-                                        ) {
-                                            channel.reinstateSubscription();
-                                        } else if (
-                                            !channel.subscriptionPending &&
-                                            this.connection.state ===
-                                                "connected"
-                                        ) {
-                                            channel.subscribe();
-                                        }
-                                        return channel;
-                                    }
-                                    unsubscribe(channel_name) {
-                                        var channel =
-                                            this.channels.find(channel_name);
-                                        if (
-                                            channel &&
-                                            channel.subscriptionPending
-                                        ) {
-                                            channel.cancelSubscription();
-                                        } else {
-                                            channel =
-                                                this.channels.remove(
-                                                    channel_name
-                                                );
-                                            if (channel && channel.subscribed) {
-                                                channel.unsubscribe();
-                                            }
-                                        }
-                                    }
-                                    send_event(event_name, data, channel) {
-                                        return this.connection.send_event(
-                                            event_name,
-                                            data,
-                                            channel
-                                        );
-                                    }
-                                    shouldUseTLS() {
-                                        return this.config.useTLS;
-                                    }
-                                    signin() {
-                                        this.user.signin();
-                                    }
-                                }
-                                pusher_Pusher.instances = [];
-                                pusher_Pusher.isReady = false;
-                                pusher_Pusher.logToConsole = false;
-                                pusher_Pusher.Runtime = runtime;
-                                pusher_Pusher.ScriptReceivers =
-                                    runtime.ScriptReceivers;
-                                pusher_Pusher.DependenciesReceivers =
-                                    runtime.DependenciesReceivers;
-                                pusher_Pusher.auth_callbacks =
-                                    runtime.auth_callbacks;
-                                /* harmony default export */
-                                var core_pusher = (__webpack_exports__[
-                                    "default"
-                                ] = pusher_Pusher);
-                                function checkAppKey(key) {
-                                    if (key === null || key === undefined) {
-                                        throw "You must pass your app key when you instantiate Pusher.";
-                                    }
-                                }
-                                runtime.setup(pusher_Pusher);
-
-                                /***/
-                            },
-                            /******/
-                        ]
-                    );
-                });
-
-                /***/
-            },
-
-        /***/ "./resources/js/chat-realtime.js":
-            /*!***************************************!*\
-  !*** ./resources/js/chat-realtime.js ***!
-  \***************************************/
-            /*! no exports provided */
-            /***/ function (module, __webpack_exports__, __webpack_require__) {
-                "use strict";
-                __webpack_require__.r(__webpack_exports__);
-                /* harmony import */ var laravel_echo__WEBPACK_IMPORTED_MODULE_0__ =
-                    __webpack_require__(
-                        /*! laravel-echo */ "./node_modules/laravel-echo/dist/echo.js"
-                    );
-                /* harmony import */ var pusher_js__WEBPACK_IMPORTED_MODULE_1__ =
-                    __webpack_require__(
-                        /*! pusher-js */ "./node_modules/pusher-js/dist/web/pusher.js"
-                    );
-                /* harmony import */ var pusher_js__WEBPACK_IMPORTED_MODULE_1___default =
-                    /*#__PURE__*/ __webpack_require__.n(
-                        pusher_js__WEBPACK_IMPORTED_MODULE_1__
-                    );
-                function _typeof(o) {
-                    "@babel/helpers - typeof";
-                    return (
-                        (_typeof =
-                            "function" == typeof Symbol &&
-                            "symbol" == typeof Symbol.iterator
-                                ? function (o) {
-                                      return typeof o;
-                                  }
-                                : function (o) {
-                                      return o &&
-                                          "function" == typeof Symbol &&
-                                          o.constructor === Symbol &&
-                                          o !== Symbol.prototype
-                                          ? "symbol"
-                                          : typeof o;
-                                  }),
-                        _typeof(o)
-                    );
-                }
-                function _regeneratorRuntime() {
-                    "use strict";
-                    /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */ _regeneratorRuntime =
-                        function _regeneratorRuntime() {
-                            return e;
-                        };
-                    var t,
-                        e = {},
-                        r = Object.prototype,
-                        n = r.hasOwnProperty,
-                        o =
-                            Object.defineProperty ||
-                            function (t, e, r) {
-                                t[e] = r.value;
-                            },
-                        i = "function" == typeof Symbol ? Symbol : {},
-                        a = i.iterator || "@@iterator",
-                        c = i.asyncIterator || "@@asyncIterator",
-                        u = i.toStringTag || "@@toStringTag";
-                    function define(t, e, r) {
-                        return (
-                            Object.defineProperty(t, e, {
-                                value: r,
-                                enumerable: !0,
-                                configurable: !0,
-                                writable: !0,
-                            }),
-                            t[e]
-                        );
-                    }
-                    try {
-                        define({}, "");
-                    } catch (t) {
-                        define = function define(t, e, r) {
-                            return (t[e] = r);
-                        };
-                    }
-                    function wrap(t, e, r, n) {
-                        var i =
-                                e && e.prototype instanceof Generator
-                                    ? e
-                                    : Generator,
-                            a = Object.create(i.prototype),
-                            c = new Context(n || []);
-                        return (
-                            o(a, "_invoke", {
-                                value: makeInvokeMethod(t, r, c),
-                            }),
-                            a
-                        );
-                    }
-                    function tryCatch(t, e, r) {
-                        try {
-                            return { type: "normal", arg: t.call(e, r) };
-                        } catch (t) {
-                            return { type: "throw", arg: t };
-                        }
-                    }
-                    e.wrap = wrap;
-                    var h = "suspendedStart",
-                        l = "suspendedYield",
-                        f = "executing",
-                        s = "completed",
-                        y = {};
-                    function Generator() {}
-                    function GeneratorFunction() {}
-                    function GeneratorFunctionPrototype() {}
-                    var p = {};
-                    define(p, a, function () {
-                        return this;
-                    });
-                    var d = Object.getPrototypeOf,
-                        v = d && d(d(values([])));
-                    v && v !== r && n.call(v, a) && (p = v);
-                    var g =
-                        (GeneratorFunctionPrototype.prototype =
-                        Generator.prototype =
-                            Object.create(p));
-                    function defineIteratorMethods(t) {
-                        ["next", "throw", "return"].forEach(function (e) {
-                            define(t, e, function (t) {
-                                return this._invoke(e, t);
-                            });
-                        });
-                    }
-                    function AsyncIterator(t, e) {
-                        function invoke(r, o, i, a) {
-                            var c = tryCatch(t[r], t, o);
-                            if ("throw" !== c.type) {
-                                var u = c.arg,
-                                    h = u.value;
-                                return h &&
-                                    "object" == _typeof(h) &&
-                                    n.call(h, "__await")
-                                    ? e.resolve(h.__await).then(
-                                          function (t) {
-                                              invoke("next", t, i, a);
-                                          },
-                                          function (t) {
-                                              invoke("throw", t, i, a);
-                                          }
-                                      )
-                                    : e.resolve(h).then(
-                                          function (t) {
-                                              (u.value = t), i(u);
-                                          },
-                                          function (t) {
-                                              return invoke("throw", t, i, a);
-                                          }
-                                      );
-                            }
-                            a(c.arg);
-                        }
-                        var r;
-                        o(this, "_invoke", {
-                            value: function value(t, n) {
-                                function callInvokeWithMethodAndArg() {
-                                    return new e(function (e, r) {
-                                        invoke(t, n, e, r);
-                                    });
-                                }
-                                return (r = r
-                                    ? r.then(
-                                          callInvokeWithMethodAndArg,
-                                          callInvokeWithMethodAndArg
-                                      )
-                                    : callInvokeWithMethodAndArg());
-                            },
-                        });
-                    }
-                    function makeInvokeMethod(e, r, n) {
-                        var o = h;
-                        return function (i, a) {
-                            if (o === f)
-                                throw Error("Generator is already running");
-                            if (o === s) {
-                                if ("throw" === i) throw a;
-                                return { value: t, done: !0 };
-                            }
-                            for (n.method = i, n.arg = a; ; ) {
-                                var c = n.delegate;
-                                if (c) {
-                                    var u = maybeInvokeDelegate(c, n);
-                                    if (u) {
-                                        if (u === y) continue;
-                                        return u;
-                                    }
-                                }
-                                if ("next" === n.method)
-                                    n.sent = n._sent = n.arg;
-                                else if ("throw" === n.method) {
-                                    if (o === h) throw ((o = s), n.arg);
-                                    n.dispatchException(n.arg);
-                                } else
-                                    "return" === n.method &&
-                                        n.abrupt("return", n.arg);
-                                o = f;
-                                var p = tryCatch(e, r, n);
-                                if ("normal" === p.type) {
-                                    if (((o = n.done ? s : l), p.arg === y))
-                                        continue;
-                                    return { value: p.arg, done: n.done };
-                                }
-                                "throw" === p.type &&
-                                    ((o = s),
-                                    (n.method = "throw"),
-                                    (n.arg = p.arg));
-                            }
-                        };
-                    }
-                    function maybeInvokeDelegate(e, r) {
-                        var n = r.method,
-                            o = e.iterator[n];
-                        if (o === t)
-                            return (
-                                (r.delegate = null),
-                                ("throw" === n &&
-                                    e.iterator["return"] &&
-                                    ((r.method = "return"),
-                                    (r.arg = t),
-                                    maybeInvokeDelegate(e, r),
-                                    "throw" === r.method)) ||
-                                    ("return" !== n &&
-                                        ((r.method = "throw"),
-                                        (r.arg = new TypeError(
-                                            "The iterator does not provide a '" +
-                                                n +
-                                                "' method"
-                                        )))),
-                                y
-                            );
-                        var i = tryCatch(o, e.iterator, r.arg);
-                        if ("throw" === i.type)
-                            return (
-                                (r.method = "throw"),
-                                (r.arg = i.arg),
-                                (r.delegate = null),
-                                y
-                            );
-                        var a = i.arg;
-                        return a
-                            ? a.done
-                                ? ((r[e.resultName] = a.value),
-                                  (r.next = e.nextLoc),
-                                  "return" !== r.method &&
-                                      ((r.method = "next"), (r.arg = t)),
-                                  (r.delegate = null),
-                                  y)
-                                : a
-                            : ((r.method = "throw"),
-                              (r.arg = new TypeError(
-                                  "iterator result is not an object"
-                              )),
-                              (r.delegate = null),
-                              y);
-                    }
-                    function pushTryEntry(t) {
-                        var e = { tryLoc: t[0] };
-                        1 in t && (e.catchLoc = t[1]),
-                            2 in t &&
-                                ((e.finallyLoc = t[2]), (e.afterLoc = t[3])),
-                            this.tryEntries.push(e);
-                    }
-                    function resetTryEntry(t) {
-                        var e = t.completion || {};
-                        (e.type = "normal"), delete e.arg, (t.completion = e);
-                    }
-                    function Context(t) {
-                        (this.tryEntries = [{ tryLoc: "root" }]),
-                            t.forEach(pushTryEntry, this),
-                            this.reset(!0);
-                    }
-                    function values(e) {
-                        if (e || "" === e) {
-                            var r = e[a];
-                            if (r) return r.call(e);
-                            if ("function" == typeof e.next) return e;
-                            if (!isNaN(e.length)) {
-                                var o = -1,
-                                    i = function next() {
-                                        for (; ++o < e.length; )
-                                            if (n.call(e, o))
-                                                return (
-                                                    (next.value = e[o]),
-                                                    (next.done = !1),
-                                                    next
-                                                );
-                                        return (
-                                            (next.value = t),
-                                            (next.done = !0),
-                                            next
-                                        );
-                                    };
-                                return (i.next = i);
-                            }
-                        }
-                        throw new TypeError(_typeof(e) + " is not iterable");
-                    }
-                    return (
-                        (GeneratorFunction.prototype =
-                            GeneratorFunctionPrototype),
-                        o(g, "constructor", {
-                            value: GeneratorFunctionPrototype,
-                            configurable: !0,
-                        }),
-                        o(GeneratorFunctionPrototype, "constructor", {
-                            value: GeneratorFunction,
-                            configurable: !0,
-                        }),
-                        (GeneratorFunction.displayName = define(
-                            GeneratorFunctionPrototype,
-                            u,
-                            "GeneratorFunction"
-                        )),
-                        (e.isGeneratorFunction = function (t) {
-                            var e = "function" == typeof t && t.constructor;
-                            return (
-                                !!e &&
-                                (e === GeneratorFunction ||
-                                    "GeneratorFunction" ===
-                                        (e.displayName || e.name))
-                            );
-                        }),
-                        (e.mark = function (t) {
-                            return (
-                                Object.setPrototypeOf
-                                    ? Object.setPrototypeOf(
-                                          t,
-                                          GeneratorFunctionPrototype
-                                      )
-                                    : ((t.__proto__ =
-                                          GeneratorFunctionPrototype),
-                                      define(t, u, "GeneratorFunction")),
-                                (t.prototype = Object.create(g)),
-                                t
-                            );
-                        }),
-                        (e.awrap = function (t) {
-                            return { __await: t };
-                        }),
-                        defineIteratorMethods(AsyncIterator.prototype),
-                        define(AsyncIterator.prototype, c, function () {
-                            return this;
-                        }),
-                        (e.AsyncIterator = AsyncIterator),
-                        (e.async = function (t, r, n, o, i) {
-                            void 0 === i && (i = Promise);
-                            var a = new AsyncIterator(wrap(t, r, n, o), i);
-                            return e.isGeneratorFunction(r)
-                                ? a
-                                : a.next().then(function (t) {
-                                      return t.done ? t.value : a.next();
-                                  });
-                        }),
-                        defineIteratorMethods(g),
-                        define(g, u, "Generator"),
-                        define(g, a, function () {
-                            return this;
-                        }),
-                        define(g, "toString", function () {
-                            return "[object Generator]";
-                        }),
-                        (e.keys = function (t) {
-                            var e = Object(t),
-                                r = [];
-                            for (var n in e) r.push(n);
-                            return (
-                                r.reverse(),
-                                function next() {
-                                    for (; r.length; ) {
-                                        var t = r.pop();
-                                        if (t in e)
-                                            return (
-                                                (next.value = t),
-                                                (next.done = !1),
-                                                next
-                                            );
-                                    }
-                                    return (next.done = !0), next;
-                                }
-                            );
-                        }),
-                        (e.values = values),
-                        (Context.prototype = {
-                            constructor: Context,
-                            reset: function reset(e) {
-                                if (
-                                    ((this.prev = 0),
-                                    (this.next = 0),
-                                    (this.sent = this._sent = t),
-                                    (this.done = !1),
-                                    (this.delegate = null),
-                                    (this.method = "next"),
-                                    (this.arg = t),
-                                    this.tryEntries.forEach(resetTryEntry),
-                                    !e)
-                                )
-                                    for (var r in this)
-                                        "t" === r.charAt(0) &&
-                                            n.call(this, r) &&
-                                            !isNaN(+r.slice(1)) &&
-                                            (this[r] = t);
-                            },
-                            stop: function stop() {
-                                this.done = !0;
-                                var t = this.tryEntries[0].completion;
-                                if ("throw" === t.type) throw t.arg;
-                                return this.rval;
-                            },
-                            dispatchException: function dispatchException(e) {
-                                if (this.done) throw e;
-                                var r = this;
-                                function handle(n, o) {
-                                    return (
-                                        (a.type = "throw"),
-                                        (a.arg = e),
-                                        (r.next = n),
-                                        o && ((r.method = "next"), (r.arg = t)),
-                                        !!o
-                                    );
-                                }
-                                for (
-                                    var o = this.tryEntries.length - 1;
-                                    o >= 0;
-                                    --o
-                                ) {
-                                    var i = this.tryEntries[o],
-                                        a = i.completion;
-                                    if ("root" === i.tryLoc)
-                                        return handle("end");
-                                    if (i.tryLoc <= this.prev) {
-                                        var c = n.call(i, "catchLoc"),
-                                            u = n.call(i, "finallyLoc");
-                                        if (c && u) {
-                                            if (this.prev < i.catchLoc)
-                                                return handle(i.catchLoc, !0);
-                                            if (this.prev < i.finallyLoc)
-                                                return handle(i.finallyLoc);
-                                        } else if (c) {
-                                            if (this.prev < i.catchLoc)
-                                                return handle(i.catchLoc, !0);
-                                        } else {
-                                            if (!u)
-                                                throw Error(
-                                                    "try statement without catch or finally"
-                                                );
-                                            if (this.prev < i.finallyLoc)
-                                                return handle(i.finallyLoc);
-                                        }
-                                    }
-                                }
-                            },
-                            abrupt: function abrupt(t, e) {
-                                for (
-                                    var r = this.tryEntries.length - 1;
-                                    r >= 0;
-                                    --r
-                                ) {
-                                    var o = this.tryEntries[r];
-                                    if (
-                                        o.tryLoc <= this.prev &&
-                                        n.call(o, "finallyLoc") &&
-                                        this.prev < o.finallyLoc
-                                    ) {
-                                        var i = o;
-                                        break;
-                                    }
-                                }
-                                i &&
-                                    ("break" === t || "continue" === t) &&
-                                    i.tryLoc <= e &&
-                                    e <= i.finallyLoc &&
-                                    (i = null);
-                                var a = i ? i.completion : {};
-                                return (
-                                    (a.type = t),
-                                    (a.arg = e),
-                                    i
-                                        ? ((this.method = "next"),
-                                          (this.next = i.finallyLoc),
-                                          y)
-                                        : this.complete(a)
-                                );
-                            },
-                            complete: function complete(t, e) {
-                                if ("throw" === t.type) throw t.arg;
-                                return (
-                                    "break" === t.type || "continue" === t.type
-                                        ? (this.next = t.arg)
-                                        : "return" === t.type
-                                        ? ((this.rval = this.arg = t.arg),
-                                          (this.method = "return"),
-                                          (this.next = "end"))
-                                        : "normal" === t.type &&
-                                          e &&
-                                          (this.next = e),
-                                    y
-                                );
-                            },
-                            finish: function finish(t) {
-                                for (
-                                    var e = this.tryEntries.length - 1;
-                                    e >= 0;
-                                    --e
-                                ) {
-                                    var r = this.tryEntries[e];
-                                    if (r.finallyLoc === t)
-                                        return (
-                                            this.complete(
-                                                r.completion,
-                                                r.afterLoc
-                                            ),
-                                            resetTryEntry(r),
-                                            y
-                                        );
-                                }
-                            },
-                            catch: function _catch(t) {
-                                for (
-                                    var e = this.tryEntries.length - 1;
-                                    e >= 0;
-                                    --e
-                                ) {
-                                    var r = this.tryEntries[e];
-                                    if (r.tryLoc === t) {
-                                        var n = r.completion;
-                                        if ("throw" === n.type) {
-                                            var o = n.arg;
-                                            resetTryEntry(r);
-                                        }
-                                        return o;
-                                    }
-                                }
-                                throw Error("illegal catch attempt");
-                            },
-                            delegateYield: function delegateYield(e, r, n) {
-                                return (
-                                    (this.delegate = {
-                                        iterator: values(e),
-                                        resultName: r,
-                                        nextLoc: n,
-                                    }),
-                                    "next" === this.method && (this.arg = t),
-                                    y
-                                );
-                            },
-                        }),
-                        e
-                    );
-                }
-                function asyncGeneratorStep(n, t, e, r, o, a, c) {
-                    try {
-                        var i = n[a](c),
-                            u = i.value;
-                    } catch (n) {
-                        return void e(n);
-                    }
-                    i.done ? t(u) : Promise.resolve(u).then(r, o);
-                }
-                function _asyncToGenerator(n) {
-                    return function () {
-                        var t = this,
-                            e = arguments;
-                        return new Promise(function (r, o) {
-                            var a = n.apply(t, e);
-                            function _next(n) {
-                                asyncGeneratorStep(
-                                    a,
-                                    r,
-                                    o,
-                                    _next,
-                                    _throw,
-                                    "next",
-                                    n
-                                );
-                            }
-                            function _throw(n) {
-                                asyncGeneratorStep(
-                                    a,
-                                    r,
-                                    o,
-                                    _next,
-                                    _throw,
-                                    "throw",
-                                    n
-                                );
-                            }
-                            _next(void 0);
-                        });
-                    };
-                }
-                function _classCallCheck(a, n) {
-                    if (!(a instanceof n))
-                        throw new TypeError(
-                            "Cannot call a class as a function"
-                        );
-                }
-                function _defineProperties(e, r) {
-                    for (var t = 0; t < r.length; t++) {
-                        var o = r[t];
-                        (o.enumerable = o.enumerable || !1),
-                            (o.configurable = !0),
-                            "value" in o && (o.writable = !0),
-                            Object.defineProperty(e, _toPropertyKey(o.key), o);
-                    }
-                }
-                function _createClass(e, r, t) {
-                    return (
-                        r && _defineProperties(e.prototype, r),
-                        t && _defineProperties(e, t),
-                        Object.defineProperty(e, "prototype", { writable: !1 }),
-                        e
-                    );
-                }
-                function _toPropertyKey(t) {
-                    var i = _toPrimitive(t, "string");
-                    return "symbol" == _typeof(i) ? i : i + "";
-                }
-                function _toPrimitive(t, r) {
-                    if ("object" != _typeof(t) || !t) return t;
-                    var e = t[Symbol.toPrimitive];
-                    if (void 0 !== e) {
-                        var i = e.call(t, r || "default");
-                        if ("object" != _typeof(i)) return i;
-                        throw new TypeError(
-                            "@@toPrimitive must return a primitive value."
-                        );
-                    }
-                    return ("string" === r ? String : Number)(t);
-                }
-                var _document$querySelect;
-                // Chat Realtime với Pusher
-
-                window.Pusher =
-                    pusher_js__WEBPACK_IMPORTED_MODULE_1___default.a;
-
-                // Khởi tạo Laravel Echo
-                window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__[
-                    "default"
-                ]({
-                    broadcaster: "pusher",
-                    key: "6ef607214efab0d72419",
-                    cluster: "ap1",
-                    forceTLS: true,
-                    authEndpoint: "/broadcasting/auth",
-                    auth: {
-                        headers: {
-                            "X-CSRF-TOKEN": document
-                                .querySelector('meta[name="csrf-token"]')
-                                .getAttribute("content"),
-                        },
-                    },
-                });
-
-                // Lắng nghe kênh chat theo conversation ID
-                var conversationId =
-                    (_document$querySelect = document.querySelector(
-                        'meta[name="conversation-id"]'
-                    )) === null || _document$querySelect === void 0
-                        ? void 0
-                        : _document$querySelect.content;
-                if (conversationId) {
-                    window.Echo["private"](
-                        "chat.".concat(conversationId)
-                    ).listen("MessageSent", function (e) {
-                        console.log("New message received:", e);
-                        // Xử lý tin nhắn mới ở đây
-                    });
-                }
-                var ChatRealtime = /*#__PURE__*/ (function () {
-                    function ChatRealtime(conversationId, userId) {
-                        _classCallCheck(this, ChatRealtime);
-                        var userType =
-                            arguments.length > 2 && arguments[2] !== undefined
-                                ? arguments[2]
-                                : "customer";
-                        this.conversationId = conversationId;
-                        this.userId = userId;
-                        this.userType = userType;
-                        this.channel = null;
-                        this.messageContainer =
-                            document.getElementById("chat-messages");
-                        this.typingIndicator = null;
-                        this.typingTimeout = null;
-                        this.isTyping = false;
-                        this.onlineUsers = new Set();
-                        this.init();
-                        this.loadMessages();
-                    }
-                    return _createClass(ChatRealtime, [
-                        {
-                            key: "init",
-                            value: function init() {
-                                this.setupChannels();
-                                this.setupEventListeners();
-                                this.setupTypingIndicator();
-                            },
-                        },
-                        {
-                            key: "setupChannels",
-                            value: function setupChannels() {
-                                var _this = this;
-                                // Subscribe to conversation channel
-                                this.channel = window.Echo["private"](
-                                    "chat.".concat(this.conversationId)
-                                )
-                                    .listen(".message.sent", function (e) {
-                                        console.log("New message received:", e);
-                                        _this.handleNewMessage(e);
-                                    })
-                                    .listen(".user.typing", function (e) {
-                                        console.log("User typing:", e);
-                                        _this.handleTypingIndicator(e);
-                                    })
-                                    .listen(
-                                        ".conversation.updated",
-                                        function (e) {
-                                            console.log(
-                                                "Conversation updated:",
-                                                e
-                                            );
-                                            _this.handleConversationUpdate(e);
-                                        }
-                                    )
-                                    .error(function (error) {
-                                        console.error("Channel error:", error);
-                                    });
-
-                                // Subscribe to online users presence channel
-                                window.Echo.join("online-users")
-                                    .here(function (users) {
-                                        console.log(
-                                            "Users currently online:",
-                                            users
-                                        );
-                                        _this.updateOnlineUsers(users);
-                                    })
-                                    .joining(function (user) {
-                                        console.log("User joined:", user);
-                                        _this.onlineUsers.add(user.id);
-                                        _this.updateUserStatus(user.id, true);
-                                    })
-                                    .leaving(function (user) {
-                                        console.log("User left:", user);
-                                        _this.onlineUsers["delete"](user.id);
-                                        _this.updateUserStatus(user.id, false);
-                                    });
-                            },
-                        },
-                        {
-                            key: "setupEventListeners",
-                            value: function setupEventListeners() {
-                                var _this2 = this;
-                                // Send message form
-                                var sendForm =
-                                    document.getElementById(
-                                        "send-message-form"
-                                    ) || document.getElementById("chat-form");
-                                if (sendForm) {
-                                    sendForm.addEventListener(
-                                        "submit",
-                                        function (e) {
-                                            e.preventDefault();
-                                            var conversationId =
-                                                window.selectedConversationId;
-                                            _this2.sendMessage();
-                                        }
-                                    );
-                                }
-
-                                // File attachment
-                                var fileInput =
-                                    document.getElementById("attachment");
-                                if (fileInput) {
-                                    fileInput.addEventListener(
-                                        "change",
-                                        function (e) {
-                                            _this2.handleFileSelect(e);
-                                        }
-                                    );
-                                }
-
-                                // Enter key to send
-                                var messageInput =
-                                    document.getElementById("message-input") ||
-                                    document.getElementById("message");
-                                if (messageInput) {
-                                    messageInput.addEventListener(
-                                        "keypress",
-                                        function (e) {
-                                            if (
-                                                e.key === "Enter" &&
-                                                !e.shiftKey
-                                            ) {
-                                                e.preventDefault();
-                                                var _conversationId =
-                                                    window.selectedConversationId;
-                                                _this2.sendMessage();
-                                            } else {
-                                                _this2.handleTyping();
-                                            }
-                                        }
-                                    );
-                                    messageInput.addEventListener(
-                                        "input",
-                                        function () {
-                                            _this2.handleTyping();
-                                        }
-                                    );
-                                    messageInput.addEventListener(
-                                        "blur",
-                                        function () {
-                                            _this2.stopTyping();
-                                        }
-                                    );
-                                }
-                            },
-                        },
-                        {
-                            key: "setupTypingIndicator",
-                            value: function setupTypingIndicator() {
-                                this.typingIndicator =
-                                    document.createElement("div");
-                                this.typingIndicator.className =
-                                    "typing-indicator";
-                                this.typingIndicator.style.display = "none";
-                                this.typingIndicator.innerHTML =
-                                    '\n            <div class="typing-bubble">\n                <span></span>\n                <span></span>\n                <span></span>\n            </div>\n            <div class="typing-text">\u0111ang nh\u1EADp...</div>\n        ';
-                                if (this.messageContainer) {
-                                    this.messageContainer.appendChild(
-                                        this.typingIndicator
-                                    );
-                                }
-                            },
-                        },
-                        {
-                            key: "sendMessage",
-                            value: (function () {
-                                var _sendMessage = _asyncToGenerator(
-                                    /*#__PURE__*/ _regeneratorRuntime().mark(
-                                        function _callee() {
-                                            var messageInput,
-                                                fileInput,
-                                                message,
-                                                formData,
-                                                endpoint,
-                                                response,
-                                                result;
-                                            return _regeneratorRuntime().wrap(
-                                                function _callee$(_context) {
-                                                    while (1)
-                                                        switch (
-                                                            (_context.prev =
-                                                                _context.next)
-                                                        ) {
-                                                            case 0:
-                                                                messageInput =
-                                                                    document.getElementById(
-                                                                        "message-input"
-                                                                    ) ||
-                                                                    document.getElementById(
-                                                                        "message"
-                                                                    );
-                                                                fileInput =
-                                                                    document.getElementById(
-                                                                        "attachment"
-                                                                    );
-                                                                message =
-                                                                    messageInput ===
-                                                                        null ||
-                                                                    messageInput ===
-                                                                        void 0
-                                                                        ? void 0
-                                                                        : messageInput.value.trim();
-                                                                if (
-                                                                    !(
-                                                                        !message &&
-                                                                        !(
-                                                                            fileInput !==
-                                                                                null &&
-                                                                            fileInput !==
-                                                                                void 0 &&
-                                                                            fileInput
-                                                                                .files
-                                                                                .length
-                                                                        )
-                                                                    )
-                                                                ) {
-                                                                    _context.next = 5;
-                                                                    break;
-                                                                }
-                                                                return _context.abrupt(
-                                                                    "return"
-                                                                );
-                                                            case 5:
-                                                                formData =
-                                                                    new FormData();
-                                                                formData.append(
-                                                                    "conversation_id",
-                                                                    this
-                                                                        .conversationId
-                                                                );
-                                                                formData.append(
-                                                                    "message",
-                                                                    message ||
-                                                                        ""
-                                                                );
-                                                                if (
-                                                                    fileInput !==
-                                                                        null &&
-                                                                    fileInput !==
-                                                                        void 0 &&
-                                                                    fileInput
-                                                                        .files
-                                                                        .length
-                                                                ) {
-                                                                    formData.append(
-                                                                        "attachment",
-                                                                        fileInput
-                                                                            .files[0]
-                                                                    );
-                                                                }
-
-                                                                // Add CSRF token
-                                                                formData.append(
-                                                                    "_token",
-                                                                    document
-                                                                        .querySelector(
-                                                                            'meta[name="csrf-token"]'
-                                                                        )
-                                                                        .getAttribute(
-                                                                            "content"
-                                                                        )
-                                                                );
-                                                                _context.prev = 10;
-                                                                // Stop typing indicator
-                                                                this.stopTyping();
-
-                                                                // Show sending indicator
-                                                                this.showSendingIndicator();
-
-                                                                // Determine endpoint based on user type
-                                                                endpoint =
-                                                                    "/api/customer/send-message";
-                                                                if (
-                                                                    this
-                                                                        .userType ===
-                                                                    "admin"
-                                                                ) {
-                                                                    endpoint =
-                                                                        "/admin/chat/send-message";
-                                                                } else if (
-                                                                    this
-                                                                        .userType ===
-                                                                    "branch"
-                                                                ) {
-                                                                    endpoint =
-                                                                        "/branch/chat/send-message";
-                                                                }
-                                                                _context.next = 17;
-                                                                return fetch(
-                                                                    endpoint,
-                                                                    {
-                                                                        method: "POST",
-                                                                        body: formData,
-                                                                        headers:
-                                                                            {
-                                                                                "X-Requested-With":
-                                                                                    "XMLHttpRequest",
-                                                                            },
-                                                                    }
-                                                                );
-                                                            case 17:
-                                                                response =
-                                                                    _context.sent;
-                                                                _context.next = 20;
-                                                                return response.json();
-                                                            case 20:
-                                                                result =
-                                                                    _context.sent;
-                                                                if (
-                                                                    !result.success
-                                                                ) {
-                                                                    _context.next = 30;
-                                                                    break;
-                                                                }
-                                                                // Clear form
-                                                                if (
-                                                                    messageInput
-                                                                )
-                                                                    messageInput.value =
-                                                                        "";
-                                                                if (fileInput)
-                                                                    fileInput.value =
-                                                                        "";
-                                                                this.hideSendingIndicator();
-
-                                                                // Message will be displayed via Pusher broadcast
-                                                                console.log(
-                                                                    "Message sent successfully"
-                                                                );
-
-                                                                // Show success notification
-                                                                this.showNotification(
-                                                                    "Tin nhắn đã được gửi",
-                                                                    "success"
-                                                                );
-
-                                                                // Update selected conversation
-                                                                window.selectedConversationId =
-                                                                    this.conversationId;
-                                                                _context.next = 31;
-                                                                break;
-                                                            case 30:
-                                                                throw new Error(
-                                                                    result.message ||
-                                                                        "Failed to send message"
-                                                                );
-                                                            case 31:
-                                                                _context.next = 38;
-                                                                break;
-                                                            case 33:
-                                                                _context.prev = 33;
-                                                                _context.t0 =
-                                                                    _context[
-                                                                        "catch"
-                                                                    ](10);
-                                                                console.error(
-                                                                    "Error sending message:",
-                                                                    _context.t0
-                                                                );
-                                                                this.hideSendingIndicator();
-                                                                this.showError(
-                                                                    "Không thể gửi tin nhắn. Vui lòng thử lại."
-                                                                );
-                                                            case 38:
-                                                            case "end":
-                                                                return _context.stop();
-                                                        }
-                                                },
-                                                _callee,
-                                                this,
-                                                [[10, 33]]
-                                            );
-                                        }
-                                    )
-                                );
-                                function sendMessage() {
-                                    return _sendMessage.apply(this, arguments);
-                                }
-                                return sendMessage;
-                            })(),
-                        },
-                        {
-                            key: "handleNewMessage",
-                            value: function handleNewMessage(messageData) {
-                                var _messageData$sender;
-                                // Don't display own messages (they're already displayed)
-                                if (messageData.sender_id == this.userId) {
-                                    return;
-                                }
-                                this.displayMessage(messageData);
-                                this.scrollToBottom();
-                                this.playNotificationSound();
-                                this.showNotification(
-                                    "Tin nh\u1EAFn m\u1EDBi t\u1EEB ".concat(
-                                        ((_messageData$sender =
-                                            messageData.sender) === null ||
-                                        _messageData$sender === void 0
-                                            ? void 0
-                                            : _messageData$sender.name) ||
-                                            "Người dùng"
-                                    ),
-                                    "info"
-                                );
-                            },
-                        },
-                        {
-                            key: "handleTypingIndicator",
-                            value: function handleTypingIndicator(data) {
-                                if (data.user_id == this.userId) {
-                                    return; // Don't show typing indicator for own typing
-                                }
-                                if (data.is_typing) {
-                                    this.showTypingIndicator(data.user_name);
-                                } else {
-                                    this.hideTypingIndicator();
-                                }
-                            },
-                        },
-                        {
-                            key: "handleConversationUpdate",
-                            value: function handleConversationUpdate(data) {
-                                console.log("Conversation updated:", data);
-
-                                // Update conversation status in UI
-                                this.updateConversationStatus(data.status);
-
-                                // Show notification about status change
-                                var statusMessages = {
-                                    distributed:
-                                        "Cuộc trò chuyện đã được phân phối",
-                                    active: "Cuộc trò chuyện đã được kích hoạt",
-                                    resolved:
-                                        "Cuộc trò chuyện đã được giải quyết",
-                                    closed: "Cuộc trò chuyện đã được đóng",
-                                };
-                                if (statusMessages[data.status]) {
-                                    this.showNotification(
-                                        statusMessages[data.status],
-                                        "info"
-                                    );
-                                }
-                            },
-                        },
-                        {
-                            key: "handleTyping",
-                            value: function handleTyping() {
-                                var _this3 = this;
-                                if (!this.isTyping) {
-                                    this.isTyping = true;
-                                    this.sendTypingIndicator(true);
-                                }
-
-                                // Clear existing timeout
-                                if (this.typingTimeout) {
-                                    clearTimeout(this.typingTimeout);
-                                }
-
-                                // Set new timeout to stop typing after 3 seconds
-                                this.typingTimeout = setTimeout(function () {
-                                    _this3.stopTyping();
-                                }, 3000);
-                            },
-                        },
-                        {
-                            key: "stopTyping",
-                            value: function stopTyping() {
-                                if (this.isTyping) {
-                                    this.isTyping = false;
-                                    this.sendTypingIndicator(false);
-                                }
-                                if (this.typingTimeout) {
-                                    clearTimeout(this.typingTimeout);
-                                    this.typingTimeout = null;
-                                }
-                            },
-                        },
-                        {
-                            key: "sendTypingIndicator",
-                            value: (function () {
-                                var _sendTypingIndicator = _asyncToGenerator(
-                                    /*#__PURE__*/ _regeneratorRuntime().mark(
-                                        function _callee2(isTyping) {
-                                            var endpoint;
-                                            return _regeneratorRuntime().wrap(
-                                                function _callee2$(_context2) {
-                                                    while (1)
-                                                        switch (
-                                                            (_context2.prev =
-                                                                _context2.next)
-                                                        ) {
-                                                            case 0:
-                                                                _context2.prev = 0;
-                                                                endpoint =
-                                                                    "/api/customer/typing";
-                                                                if (
-                                                                    this
-                                                                        .userType ===
-                                                                    "admin"
-                                                                ) {
-                                                                    endpoint =
-                                                                        "/admin/chat/typing";
-                                                                } else if (
-                                                                    this
-                                                                        .userType ===
-                                                                    "branch"
-                                                                ) {
-                                                                    endpoint =
-                                                                        "/branch/chat/typing";
-                                                                }
-                                                                _context2.next = 5;
-                                                                return fetch(
-                                                                    endpoint,
-                                                                    {
-                                                                        method: "POST",
-                                                                        headers:
-                                                                            {
-                                                                                "Content-Type":
-                                                                                    "application/json",
-                                                                                "X-CSRF-TOKEN":
-                                                                                    document
-                                                                                        .querySelector(
-                                                                                            'meta[name="csrf-token"]'
-                                                                                        )
-                                                                                        .getAttribute(
-                                                                                            "content"
-                                                                                        ),
-                                                                                "X-Requested-With":
-                                                                                    "XMLHttpRequest",
-                                                                            },
-                                                                        body: JSON.stringify(
-                                                                            {
-                                                                                conversation_id:
-                                                                                    this
-                                                                                        .conversationId,
-                                                                                is_typing:
-                                                                                    isTyping,
-                                                                            }
-                                                                        ),
-                                                                    }
-                                                                );
-                                                            case 5:
-                                                                _context2.next = 10;
-                                                                break;
-                                                            case 7:
-                                                                _context2.prev = 7;
-                                                                _context2.t0 =
-                                                                    _context2[
-                                                                        "catch"
-                                                                    ](0);
-                                                                console.error(
-                                                                    "Error sending typing indicator:",
-                                                                    _context2.t0
-                                                                );
-                                                            case 10:
-                                                            case "end":
-                                                                return _context2.stop();
-                                                        }
-                                                },
-                                                _callee2,
-                                                this,
-                                                [[0, 7]]
-                                            );
-                                        }
-                                    )
-                                );
-                                function sendTypingIndicator(_x) {
-                                    return _sendTypingIndicator.apply(
-                                        this,
-                                        arguments
-                                    );
-                                }
-                                return sendTypingIndicator;
-                            })(),
-                        },
-                        {
-                            key: "showTypingIndicator",
-                            value: function showTypingIndicator(userName) {
-                                if (this.typingIndicator) {
-                                    this.typingIndicator.querySelector(
-                                        ".typing-text"
-                                    ).textContent = "".concat(
-                                        userName,
-                                        " \u0111ang nh\u1EADp..."
-                                    );
-                                    this.typingIndicator.style.display = "flex";
-                                    this.scrollToBottom();
-                                }
-                            },
-                        },
-                        {
-                            key: "hideTypingIndicator",
-                            value: function hideTypingIndicator() {
-                                if (this.typingIndicator) {
-                                    this.typingIndicator.style.display = "none";
-                                }
-                            },
-                        },
-                        {
-                            key: "displayMessage",
-                            value: function displayMessage(message) {
-                                var _message$sender;
-                                if (!this.messageContainer) return;
-
-                                // Xử lý tin nhắn hệ thống
-                                if (message.type === "system") {
-                                    var systemMessage =
-                                        document.createElement("div");
-                                    systemMessage.className = "message-system";
-                                    systemMessage.innerHTML =
-                                        '\n                <div class="system-message">\n                    '
-                                            .concat(
-                                                this.escapeHtml(
-                                                    message.message
-                                                ),
-                                                '\n                </div>\n                <span class="message-time">'
-                                            )
-                                            .concat(
-                                                new Date(
-                                                    message.created_at
-                                                ).toLocaleTimeString([], {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                }),
-                                                "</span>\n            "
-                                            );
-                                    this.messageContainer.appendChild(
-                                        systemMessage
-                                    );
-                                    return;
-                                }
-                                var userMeta = document.querySelector(
-                                    'meta[name="user-id"]'
-                                );
-                                var currentUserId = userMeta
-                                    ? userMeta.getAttribute("content")
-                                    : null;
-                                var isAdmin =
-                                    String(message.sender_id) ===
-                                    String(currentUserId);
-                                var senderName = isAdmin
-                                    ? "Admin"
-                                    : ((_message$sender = message.sender) ===
-                                          null || _message$sender === void 0
-                                          ? void 0
-                                          : _message$sender.name) ||
-                                      "Khách hàng";
-                                var firstLetter = senderName
-                                    .charAt(0)
-                                    .toUpperCase();
-
-                                // Check if we should create a new message group
-                                var lastGroup =
-                                    this.messageContainer.lastElementChild;
-                                var createNewGroup = true;
-                                if (
-                                    lastGroup &&
-                                    lastGroup.classList.contains(
-                                        "message-group"
-                                    )
-                                ) {
-                                    var lastSenderName =
-                                        lastGroup.querySelector(
-                                            ".message-sender-name"
-                                        );
-                                    if (
-                                        lastSenderName &&
-                                        lastSenderName.textContent ===
-                                            senderName
-                                    ) {
-                                        createNewGroup = false;
-                                    }
-                                }
-                                if (createNewGroup) {
-                                    // Create new message group
-                                    var messageGroup =
-                                        document.createElement("div");
-                                    messageGroup.className = "message-group";
-                                    messageGroup.innerHTML =
-                                        '\n                <div class="message-sender">\n                    <div class="chat-avatar" style="'
-                                            .concat(
-                                                isAdmin
-                                                    ? "background-color: #3b82f6; color: white;"
-                                                    : "",
-                                                '">\n                        '
-                                            )
-                                            .concat(
-                                                firstLetter,
-                                                '\n                    </div>\n                    <span class="message-sender-name">'
-                                            )
-                                            .concat(
-                                                this.escapeHtml(senderName),
-                                                "</span>\n                    "
-                                            )
-                                            .concat(
-                                                !isAdmin
-                                                    ? '<span class="message-sender-type">Khách hàng</span>'
-                                                    : "",
-                                                "\n                </div>\n            "
-                                            );
-                                    this.messageContainer.appendChild(
-                                        messageGroup
-                                    );
-                                    lastGroup = messageGroup;
-                                }
-
-                                // Add message to group
-                                var messageContainer =
-                                    document.createElement("div");
-                                messageContainer.style.display = "flex";
-                                messageContainer.style.marginBottom = "8px";
-                                messageContainer.innerHTML =
-                                    '\n            <div class="message-bubble '
-                                        .concat(
-                                            isAdmin
-                                                ? "message-admin"
-                                                : "message-customer",
-                                            '">\n                '
-                                        )
-                                        .concat(
-                                            this.escapeHtml(message.message),
-                                            '\n            </div>\n            <span class="message-time">'
-                                        )
-                                        .concat(
-                                            new Date(
-                                                message.created_at
-                                            ).toLocaleTimeString([], {
-                                                hour: "2-digit",
-                                                minute: "2-digit",
-                                            }),
-                                            "</span>\n        "
-                                        );
-                                lastGroup.appendChild(messageContainer);
-                            },
-                        },
-                        {
-                            key: "updateOnlineUsers",
-                            value: function updateOnlineUsers(users) {
-                                var _this4 = this;
-                                this.onlineUsers.clear();
-                                users.forEach(function (user) {
-                                    _this4.onlineUsers.add(user.id);
-                                });
-
-                                // Update UI to show online status
-                                this.updateAllUserStatuses();
-                            },
-                        },
-                        {
-                            key: "updateUserStatus",
-                            value: function updateUserStatus(userId, isOnline) {
-                                // Update user status indicators in the UI
-                                var userElements = document.querySelectorAll(
-                                    '[data-user-id="'.concat(userId, '"]')
-                                );
-                                userElements.forEach(function (element) {
-                                    var statusIndicator =
-                                        element.querySelector(
-                                            ".status-indicator"
-                                        );
-                                    if (statusIndicator) {
-                                        statusIndicator.className =
-                                            "status-indicator ".concat(
-                                                isOnline ? "online" : "offline"
-                                            );
-                                    }
-                                });
-                            },
-                        },
-                        {
-                            key: "updateAllUserStatuses",
-                            value: function updateAllUserStatuses() {
-                                var _this5 = this;
-                                // Update all user status indicators
-                                document
-                                    .querySelectorAll("[data-user-id]")
-                                    .forEach(function (element) {
-                                        var userId = Number.parseInt(
-                                            element.getAttribute("data-user-id")
-                                        );
-                                        var isOnline =
-                                            _this5.onlineUsers.has(userId);
-                                        _this5.updateUserStatus(
-                                            userId,
-                                            isOnline
-                                        );
-                                    });
-                            },
-                        },
-                        {
-                            key: "updateConversationStatus",
-                            value: function updateConversationStatus(status) {
-                                var _this6 = this;
-                                // Update status badges in the UI
-                                var statusBadges =
-                                    document.querySelectorAll(".status-badge");
-                                statusBadges.forEach(function (badge) {
-                                    badge.className =
-                                        "status-badge status-".concat(status);
-                                    badge.textContent =
-                                        _this6.getStatusText(status);
-                                });
-                            },
-                        },
-                        {
-                            key: "getStatusText",
-                            value: function getStatusText(status) {
-                                var statusTexts = {
-                                    new: "Mới",
-                                    distributed: "Đã phân phối",
-                                    active: "Đang xử lý",
-                                    resolved: "Đã giải quyết",
-                                    closed: "Đã đóng",
-                                };
-                                return statusTexts[status] || status;
-                            },
-                        },
-                        {
-                            key: "handleFileSelect",
-                            value: function handleFileSelect(event) {
-                                var file = event.target.files[0];
-                                if (file) {
-                                    var fileSize = file.size / 1024 / 1024; // MB
-                                    if (fileSize > 10) {
-                                        this.showError(
-                                            "File quá lớn. Vui lòng chọn file nhỏ hơn 10MB."
-                                        );
-                                        event.target.value = "";
-                                        return;
-                                    }
-
-                                    // Show file preview
-                                    this.showFilePreview(file);
-                                }
-                            },
-                        },
-                        {
-                            key: "showFilePreview",
-                            value: function showFilePreview(file) {
-                                var preview =
-                                    document.getElementById("file-preview") ||
-                                    document.getElementById(
-                                        "attachment-preview"
-                                    );
-                                if (preview) {
-                                    if (file.type.startsWith("image/")) {
-                                        var reader = new FileReader();
-                                        reader.onload = function (e) {
-                                            preview.innerHTML =
-                                                '\n                        <div class="file-preview-item">\n                            <img src="'
-                                                    .concat(
-                                                        e.target.result,
-                                                        '" alt="Preview" style="max-width: 100px; max-height: 100px;">\n                            <span>'
-                                                    )
-                                                    .concat(
-                                                        file.name,
-                                                        "</span>\n                            <button type=\"button\" onclick=\"this.parentElement.parentElement.innerHTML=''; document.getElementById('attachment').value='';\">\u2715</button>\n                        </div>\n                    "
-                                                    );
-                                        };
-                                        reader.readAsDataURL(file);
-                                    } else {
-                                        preview.innerHTML =
-                                            '\n                    <div class="file-preview-item">\n                        <i class="fas fa-file"></i>\n                        <span>'.concat(
-                                                file.name,
-                                                "</span>\n                        <button type=\"button\" onclick=\"this.parentElement.parentElement.innerHTML=''; document.getElementById('attachment').value='';\">\u2715</button>\n                    </div>\n                "
-                                            );
-                                    }
-                                    preview.style.display = "block";
-                                }
-                            },
-                        },
-                        {
-                            key: "showSendingIndicator",
-                            value: function showSendingIndicator() {
-                                var indicator =
-                                    document.getElementById(
-                                        "sending-indicator"
-                                    );
-                                if (indicator) {
-                                    indicator.style.display = "block";
-                                }
-
-                                // Disable send button
-                                var sendBtn =
-                                    document.getElementById("send-btn");
-                                if (sendBtn) {
-                                    sendBtn.disabled = true;
-                                    sendBtn.innerHTML =
-                                        '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
-                                }
-                            },
-                        },
-                        {
-                            key: "hideSendingIndicator",
-                            value: function hideSendingIndicator() {
-                                var indicator =
-                                    document.getElementById(
-                                        "sending-indicator"
-                                    );
-                                if (indicator) {
-                                    indicator.style.display = "none";
-                                }
-
-                                // Re-enable send button
-                                var sendBtn =
-                                    document.getElementById("send-btn");
-                                if (sendBtn) {
-                                    sendBtn.disabled = false;
-                                    sendBtn.innerHTML =
-                                        '<i class="fas fa-paper-plane"></i> Gửi';
-                                }
-                            },
-                        },
-                        {
-                            key: "showError",
-                            value: function showError(message) {
-                                this.showNotification(message, "error");
-                            },
-                        },
-                        {
-                            key: "showNotification",
-                            value: function showNotification(message) {
-                                var type =
-                                    arguments.length > 1 &&
-                                    arguments[1] !== undefined
-                                        ? arguments[1]
-                                        : "success";
-                                // Remove existing notifications
-                                document
-                                    .querySelectorAll(".chat-notification")
-                                    .forEach(function (n) {
-                                        return n.remove();
-                                    });
-                                var notification =
-                                    document.createElement("div");
-                                notification.className =
-                                    "chat-notification ".concat(type);
-                                notification.style.cssText =
-                                    "\n            position: fixed;\n            top: 20px;\n            right: 20px;\n            padding: 12px 20px;\n            border-radius: 8px;\n            color: white;\n            font-weight: 500;\n            z-index: 1000;\n            transform: translateX(100%);\n            transition: transform 0.3s ease;\n            max-width: 300px;\n        ";
-
-                                // Set background color based on type
-                                switch (type) {
-                                    case "success":
-                                        notification.style.backgroundColor =
-                                            "#10b981";
-                                        break;
-                                    case "error":
-                                        notification.style.backgroundColor =
-                                            "#ef4444";
-                                        break;
-                                    case "warning":
-                                        notification.style.backgroundColor =
-                                            "#f59e0b";
-                                        break;
-                                    case "info":
-                                        notification.style.backgroundColor =
-                                            "#3b82f6";
-                                        break;
-                                    default:
-                                        notification.style.backgroundColor =
-                                            "#6b7280";
-                                }
-                                notification.textContent = message;
-                                document.body.appendChild(notification);
-
-                                // Show notification
-                                setTimeout(function () {
-                                    return (notification.style.transform =
-                                        "translateX(0)");
-                                }, 100);
-
-                                // Hide notification after 3 seconds
-                                setTimeout(function () {
-                                    notification.style.transform =
-                                        "translateX(100%)";
-                                    setTimeout(function () {
-                                        return notification.remove();
-                                    }, 300);
-                                }, 3000);
-                            },
-                        },
-                        {
-                            key: "scrollToBottom",
-                            value: function scrollToBottom() {
-                                var _this7 = this;
-                                if (this.messageContainer) {
-                                    setTimeout(function () {
-                                        _this7.messageContainer.scrollTop =
-                                            _this7.messageContainer.scrollHeight;
-                                    }, 100);
-                                }
-                            },
-                        },
-                        {
-                            key: "playNotificationSound",
-                            value: function playNotificationSound() {
-                                // Create audio element for notification
-                                try {
-                                    var audio = new Audio(
-                                        "/sounds/notification.mp3"
-                                    );
-                                    audio.volume = 0.3;
-                                    audio.play()["catch"](function (e) {
-                                        return console.log(
-                                            "Could not play notification sound"
-                                        );
-                                    });
-                                } catch (e) {
-                                    console.log(
-                                        "Notification sound not available"
-                                    );
-                                }
-                            },
-                        },
-                        {
-                            key: "formatTime",
-                            value: function formatTime(timestamp) {
-                                var date = new Date(timestamp);
-                                return date.toLocaleTimeString("vi-VN", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                });
-                            },
-                        },
-                        {
-                            key: "escapeHtml",
-                            value: function escapeHtml(text) {
-                                var div = document.createElement("div");
-                                div.textContent = text;
-                                return div.innerHTML;
-                            },
-
-                            // Cleanup method
-                        },
-                        {
-                            key: "destroy",
-                            value: function destroy() {
-                                if (this.channel) {
-                                    window.Echo.leave(
-                                        "chat.".concat(this.conversationId)
-                                    );
-                                }
-                                if (this.typingTimeout) {
-                                    clearTimeout(this.typingTimeout);
-                                }
-
-                                // Leave online users channel
-                                window.Echo.leave("online-users");
-                            },
-                        },
-                        {
-                            key: "loadMessages",
-                            value: (function () {
-                                var _loadMessages = _asyncToGenerator(
-                                    /*#__PURE__*/ _regeneratorRuntime().mark(
-                                        function _callee3() {
-                                            var _this8 = this;
-                                            var endpoint, response, result;
-                                            return _regeneratorRuntime().wrap(
-                                                function _callee3$(_context3) {
-                                                    while (1)
-                                                        switch (
-                                                            (_context3.prev =
-                                                                _context3.next)
-                                                        ) {
-                                                            case 0:
-                                                                _context3.prev = 0;
-                                                                console.log(
-                                                                    "Bắt đầu tải tin nhắn..."
-                                                                );
-                                                                console.log(
-                                                                    "Conversation ID:",
-                                                                    this
-                                                                        .conversationId
-                                                                );
-                                                                console.log(
-                                                                    "User Type:",
-                                                                    this
-                                                                        .userType
-                                                                );
-
-                                                                // Determine endpoint based on user type
-                                                                endpoint =
-                                                                    "/api/chat/messages/".concat(
-                                                                        this
-                                                                            .conversationId
-                                                                    );
-                                                                if (
-                                                                    this
-                                                                        .userType ===
-                                                                    "admin"
-                                                                ) {
-                                                                    endpoint =
-                                                                        "/admin/chat/messages/".concat(
-                                                                            this
-                                                                                .conversationId
-                                                                        );
-                                                                } else if (
-                                                                    this
-                                                                        .userType ===
-                                                                    "branch"
-                                                                ) {
-                                                                    endpoint =
-                                                                        "/branch/chat/messages/".concat(
-                                                                            this
-                                                                                .conversationId
-                                                                        );
-                                                                }
-                                                                console.log(
-                                                                    "Endpoint:",
-                                                                    endpoint
-                                                                );
-                                                                _context3.next = 9;
-                                                                return fetch(
-                                                                    endpoint,
-                                                                    {
-                                                                        method: "GET",
-                                                                        headers:
-                                                                            {
-                                                                                "X-Requested-With":
-                                                                                    "XMLHttpRequest",
-                                                                                "X-CSRF-TOKEN":
-                                                                                    document
-                                                                                        .querySelector(
-                                                                                            'meta[name="csrf-token"]'
-                                                                                        )
-                                                                                        .getAttribute(
-                                                                                            "content"
-                                                                                        ),
-                                                                            },
-                                                                    }
-                                                                );
-                                                            case 9:
-                                                                response =
-                                                                    _context3.sent;
-                                                                console.log(
-                                                                    "Response status:",
-                                                                    response.status
-                                                                );
-                                                                _context3.next = 13;
-                                                                return response.json();
-                                                            case 13:
-                                                                result =
-                                                                    _context3.sent;
-                                                                console.log(
-                                                                    "Response data:",
-                                                                    result
-                                                                );
-                                                                if (
-                                                                    result.success
-                                                                ) {
-                                                                    console.log(
-                                                                        "Số tin nhắn nhận được:",
-                                                                        result
-                                                                            .messages
-                                                                            .length
-                                                                    );
-                                                                    // Clear existing messages
-                                                                    if (
-                                                                        this
-                                                                            .messageContainer
-                                                                    ) {
-                                                                        this.messageContainer.innerHTML =
-                                                                            "";
-                                                                    }
-
-                                                                    // Display messages
-                                                                    result.messages.forEach(
-                                                                        function (
-                                                                            message
-                                                                        ) {
-                                                                            _this8.displayMessage(
-                                                                                message
-                                                                            );
-                                                                        }
-                                                                    );
-
-                                                                    // Scroll to bottom
-                                                                    this.scrollToBottom();
-                                                                } else {
-                                                                    console.error(
-                                                                        "Lỗi từ server:",
-                                                                        result.message
-                                                                    );
-                                                                    this.showError(
-                                                                        "Không thể tải tin nhắn: " +
-                                                                            (result.message ||
-                                                                                "Lỗi không xác định")
-                                                                    );
-                                                                }
-                                                                _context3.next = 23;
-                                                                break;
-                                                            case 18:
-                                                                _context3.prev = 18;
-                                                                _context3.t0 =
-                                                                    _context3[
-                                                                        "catch"
-                                                                    ](0);
-                                                                console.error(
-                                                                    "Chi tiết lỗi:",
-                                                                    _context3.t0
-                                                                );
-                                                                console.error(
-                                                                    "Stack trace:",
-                                                                    _context3.t0
-                                                                        .stack
-                                                                );
-                                                                this.showError(
-                                                                    "Lỗi khi tải tin nhắn: " +
-                                                                        _context3
-                                                                            .t0
-                                                                            .message
-                                                                );
-                                                            case 23:
-                                                            case "end":
-                                                                return _context3.stop();
-                                                        }
-                                                },
-                                                _callee3,
-                                                this,
-                                                [[0, 18]]
-                                            );
-                                        }
-                                    )
-                                );
-                                function loadMessages() {
-                                    return _loadMessages.apply(this, arguments);
-                                }
-                                return loadMessages;
-                            })(),
-                        },
-                    ]);
-                })(); // Export for global use
-                window.ChatRealtime = ChatRealtime;
-
-                // Auto-initialize if conversation data is available
-                document.addEventListener("DOMContentLoaded", function () {
-                    var chatContainer =
-                        document.getElementById("chat-container");
-                    if (chatContainer) {
-                        var _conversationId2 =
-                            chatContainer.dataset.conversationId;
-                        var _userId = chatContainer.dataset.userId;
-                        var _userType =
-                            chatContainer.dataset.userType || "customer";
-                        if (_conversationId2 && _userId) {
-                            window.chatInstance = new ChatRealtime(
-                                _conversationId2,
-                                _userId,
-                                _userType
-                            );
-                        }
+        // Lọc trạng thái
+        const statusFilter = document.getElementById("chat-status-filter");
+        if (statusFilter) {
+            statusFilter.addEventListener("change", (e) => {
+                const value = e.target.value;
+                document.querySelectorAll(".chat-item").forEach((item) => {
+                    if (value === "all" || item.dataset.status === value) {
+                        item.style.display = "";
+                    } else {
+                        item.style.display = "none";
                     }
                 });
-                var chatContainer = document.getElementById("chat-container");
-                var conversationId = chatContainer
-                    ? chatContainer.getAttribute("data-conversation-id")
-                    : null;
-                var userId = chatContainer
-                    ? chatContainer.getAttribute("data-user-id")
-                    : null;
-                var userType = chatContainer
-                    ? chatContainer.getAttribute("data-user-type")
-                    : "customer";
+            });
+        }
 
-                if (conversationId && userId) {
-                    window.adminChat = new ChatRealtime(
-                        conversationId,
-                        userId,
-                        userType
-                    );
-                }
-                function appendMessageToChat(message) {
-                    var chatMessages = document.querySelector(".chat-messages");
-                    if (!chatMessages) return;
-                    var isAdmin =
-                        String(message.sender_id) === String(currentUserId);
-                    var html = '\n        <div class="message-group '
-                        .concat(
-                            isAdmin
-                                ? "message-group-admin"
-                                : "message-group-customer",
-                            '">\n            <div class="message-sender">\n                <div class="chat-avatar" style="'
-                        )
-                        .concat(
-                            isAdmin
-                                ? "background-color: #3b82f6; color: white;"
-                                : "",
-                            '">\n                    '
-                        )
-                        .concat(
-                            message.sender &&
-                                (message.sender.full_name ||
-                                    message.sender.name)
-                                ? (
-                                      message.sender.full_name ||
-                                      message.sender.name
-                                  )
-                                      .charAt(0)
-                                      .toUpperCase()
-                                : "A",
-                            '\n                </div>\n                <span class="message-sender-name">'
-                        )
-                        .concat(
-                            message.sender &&
-                                (message.sender.full_name ||
-                                    message.sender.name)
-                                ? message.sender.full_name ||
-                                      message.sender.name
-                                : "Khách hàng",
-                            "</span>\n                "
-                        )
-                        .concat(
-                            !isAdmin
-                                ? '<span class="message-sender-type">Khách hàng</span>'
-                                : "",
-                            '\n            </div>\n            <div class="message-content">\n                <div class="message-bubble '
-                        )
-                        .concat(
-                            isAdmin ? "message-admin" : "message-customer",
-                            '">\n                    '
-                        )
-                        .concat(message.message || "", "\n                    ")
-                        .concat(
-                            message.attachment
-                                ? '<br><a href="/storage/'.concat(
-                                      message.attachment,
-                                      '" target="_blank">\uD83D\uDCCE File \u0111\xEDnh k\xE8m</a>'
-                                  )
-                                : "",
-                            '\n                </div>\n                <span class="message-time">'
-                        )
-                        .concat(
-                            formatTime(message.sent_at || message.created_at),
-                            "</span>\n            </div>\n        </div>\n    "
-                        );
-                    chatMessages.insertAdjacentHTML("beforeend", html);
-                }
-                function updateSidebarPreview(message) {
-                    var convItem = document.querySelector(
-                        "[data-conversation-id='".concat(
-                            message.conversation_id,
-                            "']"
-                        )
-                    );
-                    if (convItem) {
-                        // Cập nhật preview
-                        var preview = convItem.querySelector(
-                            ".chat-item-preview, .message-preview, .text-truncate"
-                        );
-                        if (preview) preview.textContent = message.message;
-                        // Cập nhật thời gian
-                        var time = convItem.querySelector(
-                            ".chat-item-time, .time, .text-muted.small"
-                        );
-                        if (time)
-                            time.textContent = formatTime(
-                                message.sent_at || message.created_at
-                            );
-                        // Badge số chưa đọc
-                        if (
-                            String(window.selectedConversationId) !==
-                            String(message.conversation_id)
-                        ) {
-                            var badge = convItem.querySelector(
-                                ".unread-badge, .badge.bg-danger"
-                            );
-                            if (badge) {
-                                badge.textContent =
-                                    parseInt(badge.textContent || 0) + 1;
-                                badge.style.display = "inline-block";
-                            }
-                        }
-                        // Đưa lên đầu danh sách
-                        if (convItem.parentNode.firstChild !== convItem) {
-                            convItem.parentNode.insertBefore(
-                                convItem,
-                                convItem.parentNode.firstChild
-                            );
-                        }
+        // Tìm kiếm
+        const searchInput = document.getElementById("chat-search");
+        if (searchInput) {
+            searchInput.addEventListener("input", (e) => {
+                const q = e.target.value.toLowerCase();
+                document.querySelectorAll(".chat-item").forEach((item) => {
+                    const name = item.dataset.customerName?.toLowerCase() || "";
+                    const email =
+                        item.dataset.customerEmail?.toLowerCase() || "";
+                    if (name.includes(q) || email.includes(q)) {
+                        item.style.display = "";
+                    } else {
+                        item.style.display = "none";
                     }
+                });
+            });
+        }
+
+        // Phân công chi nhánh chỉ ở cột info
+        const branchSelect = document.getElementById("distribution-select");
+        if (branchSelect) {
+            branchSelect.addEventListener("change", (e) => {
+                const branchId = e.target.value;
+                const conversationId = e.target.dataset.conversationId;
+                if (branchId && conversationId) {
+                    this.distributeConversation(conversationId, branchId);
                 }
-                function formatTime(timeStr) {
-                    var d = new Date(timeStr);
-                    return (
-                        d.getHours().toString().padStart(2, "0") +
-                        ":" +
-                        d.getMinutes().toString().padStart(2, "0")
-                    );
+            });
+        }
+
+        // Nút refresh danh sách chat
+        const refreshBtn = document.getElementById("refresh-chat-list");
+        if (refreshBtn) {
+            refreshBtn.addEventListener("click", () => {
+                location.reload(); // Nếu có API thì thay bằng AJAX lấy lại danh sách
+            });
+        }
+
+        // Nút gửi ảnh
+        const attachImageBtn = document.getElementById("attachImageBtn");
+        const imageInput = document.getElementById("imageInput");
+        if (attachImageBtn && imageInput) {
+            attachImageBtn.addEventListener("click", () => imageInput.click());
+            imageInput.addEventListener("change", (e) => {
+                if (e.target.files.length) {
+                    this.sendAttachment("image", e.target.files[0]);
                 }
+            });
+        }
 
-                // Lắng nghe tất cả các conversation mà user có thể thấy (giả sử bạn có biến conversationsList là mảng id)
-                if (
-                    window.conversationsList &&
-                    Array.isArray(window.conversationsList)
-                ) {
-                    window.conversationsList.forEach(function (convId) {
-                        var channel = pusher.subscribe("chat." + convId);
-                        channel.bind("new-message", function (data) {
-                            if (
-                                String(window.selectedConversationId) ===
-                                String(data.message.conversation_id)
-                            ) {
-                                appendMessageToChat(data.message);
-                                if (typeof scrollToBottom === "function")
-                                    scrollToBottom();
-                            }
-                            updateSidebarPreview(data.message);
-                        });
-                    });
+        // Nút gửi file
+        const attachFileBtn = document.getElementById("attachFileBtn");
+        const fileInput = document.getElementById("fileInput");
+        if (attachFileBtn && fileInput) {
+            attachFileBtn.addEventListener("click", () => fileInput.click());
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length) {
+                    this.sendAttachment("file", e.target.files[0]);
                 }
-                // Khi click vào một cuộc trò chuyện, hãy set window.selectedConversationId = conversationId;
-
-                // Ví dụ: lấy từ cuộc trò chuyện đầu tiên đang active
-                var firstActive = document.querySelector(
-                    ".chat-item.active, .conversation-item.active"
-                );
-                if (firstActive) {
-                    window.selectedConversationId = firstActive.getAttribute(
-                        "data-conversation-id"
-                    );
-                }
-                var pusher =
-                    new pusher_js__WEBPACK_IMPORTED_MODULE_1___default.a(
-                        "6ef607214efab0d72419",
-                        {
-                            cluster: "ap1",
-                            encrypted: true,
-                        }
-                    );
-
-                /***/
-            },
-
-        /***/ 0:
-            /*!*********************************************!*\
-  !*** multi ./resources/js/chat-realtime.js ***!
-  \*********************************************/
-            /*! no static exports found */
-            /***/ function (module, exports, __webpack_require__) {
-                module.exports = __webpack_require__(
-                    /*! D:\KY_3\WEB2014\www\DATN-DevFoods-main\resources\js\chat-realtime.js */ "./resources/js/chat-realtime.js"
-                );
-
-                /***/
-            },
-
-        /******/
+            });
+        }
     }
+
+    setupTypingIndicator() {
+        this.typingIndicator = document.createElement("div");
+        this.typingIndicator.className = "typing-indicator";
+        this.typingIndicator.style.display = "none";
+        this.typingIndicator.innerHTML = `
+            <div class="typing-bubble">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="typing-text">đang nhập...</div>
+        `;
+
+        if (this.messageContainer) {
+            this.messageContainer.appendChild(this.typingIndicator);
+        }
+    }
+
+    async sendMessage() {
+        if (!this.messageInput || !this.messageInput.value.trim()) return;
+        const message = this.messageInput.value.trim();
+        this.messageInput.value = "";
+        if (this.sendBtn) this.sendBtn.disabled = true;
+        try {
+            const formData = new FormData();
+            formData.append("message", message);
+            formData.append("conversation_id", this.conversationId);
+            const url = this.api.send;
+            if (!url) {
+                this.showError("API gửi tin nhắn chưa được cấu hình");
+                return;
+            }
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: formData,
+            });
+            const data = await response.json();
+            if (data.success) {
+                // Hiển thị tin nhắn vừa gửi ngay lập tức
+                this.appendMessage({
+                    ...data.message,
+                    sender_id: this.userId,
+                    sender: { full_name: "Admin", name: "Admin" },
+                    created_at: new Date().toISOString(),
+                    message: message,
+                });
+                // Cập nhật preview sidebar
+                if (typeof updateSidebarPreview === "function") {
+                    updateSidebarPreview({
+                        ...data.message,
+                        message: message,
+                        created_at: new Date().toISOString(),
+                        conversation_id: this.conversationId,
+                    });
+                }
+                this.scrollToBottom();
+            } else {
+                throw new Error(data.message || "Gửi tin nhắn thất bại");
+            }
+        } catch (error) {
+            this.showError("Không thể gửi tin nhắn");
+            this.messageInput.value = message;
+        } finally {
+            if (this.sendBtn) this.sendBtn.disabled = false;
+            if (this.messageInput) {
+                this.messageInput.focus();
+                this.messageInput.style.height = "auto";
+            }
+        }
+    }
+
+    async distributeConversation(conversationId, branchId) {
+        // Hiển thị nút xác nhận trước khi phân công
+        if (
+            !window.confirm(
+                "Bạn có chắc chắn muốn phân công cuộc trò chuyện này cho chi nhánh đã chọn?"
+            )
+        ) {
+            return;
+        }
+        fetch(this.api.distribute, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": document.querySelector(
+                    'meta[name="csrf-token"]'
+                ).content,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: JSON.stringify({
+                conversation_id: conversationId,
+                branch_id: branchId,
+            }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    this.showNotification(
+                        "Đã phân phối cuộc trò chuyện thành công",
+                        "success"
+                    );
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                } else {
+                    this.showError(
+                        data.message || "Không thể phân phối cuộc trò chuyện"
+                    );
+                }
+            })
+            .catch((error) => {
+                this.showError(
+                    "Không thể phân phối cuộc trò chuyện. Vui lòng thử lại."
+                );
+            });
+    }
+
+    handleNewMessage(messageData) {
+        // Don't display own messages (they're already displayed)
+        if (messageData.sender_id == this.userId) {
+            return;
+        }
+
+        this.displayMessage(messageData);
+        this.scrollToBottom();
+        this.playNotificationSound();
+        this.showNotification(
+            `Tin nhắn mới từ ${messageData.sender?.name || "Người dùng"}`,
+            "info"
+        );
+    }
+
+    handleTypingIndicator(data) {
+        if (data.user_id == this.userId) {
+            return; // Don't show typing indicator for own typing
+        }
+
+        if (data.is_typing) {
+            this.showTypingIndicator(data.user_name);
+        } else {
+            this.hideTypingIndicator();
+        }
+    }
+
+    handleConversationUpdate(data) {
+        console.log("Conversation updated:", data);
+
+        // Update conversation status in UI
+        this.updateConversationStatus(data.status);
+
+        // Show notification about status change
+        const statusMessages = {
+            distributed: "Cuộc trò chuyện đã được phân phối",
+            active: "Cuộc trò chuyện đã được kích hoạt",
+            resolved: "Cuộc trò chuyện đã được giải quyết",
+            closed: "Cuộc trò chuyện đã được đóng",
+        };
+
+        if (statusMessages[data.status]) {
+            this.showNotification(statusMessages[data.status], "info");
+        }
+    }
+
+    handleTyping() {
+        if (!this.isTyping) {
+            this.isTyping = true;
+            this.sendTypingIndicator(true);
+        }
+
+        // Clear existing timeout
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+
+        // Set new timeout to stop typing after 3 seconds
+        this.typingTimeout = setTimeout(() => {
+            this.stopTyping();
+        }, 3000);
+    }
+
+    stopTyping() {
+        if (this.isTyping) {
+            this.isTyping = false;
+            this.sendTypingIndicator(false);
+        }
+
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+            this.typingTimeout = null;
+        }
+    }
+
+    async sendTypingIndicator(isTyping) {
+        try {
+            let endpoint = "/api/customer/typing";
+            if (this.userType === "admin") {
+                endpoint = "/admin/chat/typing";
+            } else if (this.userType === "branch") {
+                endpoint = "/branch/chat/typing";
+            }
+
+            await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content"),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                    conversation_id: this.conversationId,
+                    is_typing: isTyping,
+                }),
+            });
+        } catch (error) {
+            console.error("Error sending typing indicator:", error);
+        }
+    }
+
+    showTypingIndicator(userName) {
+        if (this.typingIndicator) {
+            this.typingIndicator.querySelector(
+                ".typing-text"
+            ).textContent = `${userName} đang nhập...`;
+            this.typingIndicator.style.display = "flex";
+            this.scrollToBottom();
+        }
+    }
+
+    hideTypingIndicator() {
+        if (this.typingIndicator) {
+            this.typingIndicator.style.display = "none";
+        }
+    }
+
+    displayMessage(message) {
+        if (!this.messageContainer) return;
+
+        // Xử lý tin nhắn hệ thống
+        if (message.type === "system") {
+            const systemMessage = document.createElement("div");
+            systemMessage.className = "message-system";
+            systemMessage.innerHTML = `
+                <div class="system-message">
+                    ${this.escapeHtml(message.message)}
+                </div>
+                <span class="message-time">${new Date(
+                    message.created_at
+                ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                })}</span>
+            `;
+            this.messageContainer.appendChild(systemMessage);
+            return;
+        }
+
+        const currentUserId = document
+            .querySelector('meta[name="user-id"]')
+            .getAttribute("content");
+        const isAdmin = String(message.sender_id) === String(currentUserId);
+        const senderName = isAdmin
+            ? "Admin"
+            : message.sender?.name || "Khách hàng";
+        const firstLetter = senderName.charAt(0).toUpperCase();
+
+        // Check if we should create a new message group
+        let lastGroup = this.messageContainer.lastElementChild;
+        let createNewGroup = true;
+
+        if (lastGroup && lastGroup.classList.contains("message-group")) {
+            const lastSenderName = lastGroup.querySelector(
+                ".message-sender-name"
+            );
+            if (lastSenderName && lastSenderName.textContent === senderName) {
+                createNewGroup = false;
+            }
+        }
+
+        if (createNewGroup) {
+            // Create new message group
+            const messageGroup = document.createElement("div");
+            messageGroup.className = "message-group";
+
+            messageGroup.innerHTML = `
+                <div class="message-sender">
+                    <div class="chat-avatar" style="${
+                        isAdmin
+                            ? "background-color: #3b82f6; color: white;"
+                            : ""
+                    }">
+                        ${firstLetter}
+                    </div>
+                    <span class="message-sender-name">${this.escapeHtml(
+                        senderName
+                    )}</span>
+                    ${
+                        !isAdmin
+                            ? '<span class="message-sender-type">Khách hàng</span>'
+                            : ""
+                    }
+                </div>
+            `;
+
+            this.messageContainer.appendChild(messageGroup);
+            lastGroup = messageGroup;
+        }
+
+        // Add message to group
+        const messageContainer = document.createElement("div");
+        messageContainer.style.display = "flex";
+        messageContainer.style.marginBottom = "8px";
+
+        messageContainer.innerHTML = `
+            <div class="message-bubble ${
+                isAdmin ? "message-admin" : "message-customer"
+            }">
+                ${this.escapeHtml(message.message)}
+            </div>
+            <span class="message-time">${new Date(
+                message.created_at
+            ).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            })}</span>
+        `;
+
+        lastGroup.appendChild(messageContainer);
+    }
+
+    updateOnlineUsers(users) {
+        this.onlineUsers.clear();
+        users.forEach((user) => {
+            this.onlineUsers.add(user.id);
+        });
+
+        // Update UI to show online status
+        this.updateAllUserStatuses();
+    }
+
+    updateUserStatus(userId, isOnline) {
+        // Update user status indicators in the UI
+        const userElements = document.querySelectorAll(
+            `[data-user-id="${userId}"]`
+        );
+        userElements.forEach((element) => {
+            const statusIndicator = element.querySelector(".status-indicator");
+            if (statusIndicator) {
+                statusIndicator.className = `status-indicator ${
+                    isOnline ? "online" : "offline"
+                }`;
+            }
+        });
+    }
+
+    updateAllUserStatuses() {
+        // Update all user status indicators
+        document.querySelectorAll("[data-user-id]").forEach((element) => {
+            const userId = Number.parseInt(
+                element.getAttribute("data-user-id")
+            );
+            const isOnline = this.onlineUsers.has(userId);
+            this.updateUserStatus(userId, isOnline);
+        });
+    }
+
+    updateConversationStatus(status) {
+        // Update status badges in the UI
+        const statusBadges = document.querySelectorAll(".status-badge");
+        statusBadges.forEach((badge) => {
+            badge.className = `status-badge status-${status}`;
+            badge.textContent = this.getStatusText(status);
+        });
+    }
+
+    getStatusText(status) {
+        const statusTexts = {
+            new: "Mới",
+            distributed: "Đã phân phối",
+            active: "Đang xử lý",
+            resolved: "Đã giải quyết",
+            closed: "Đã đóng",
+        };
+        return statusTexts[status] || status;
+    }
+
+    handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const fileSize = file.size / 1024 / 1024; // MB
+            if (fileSize > 10) {
+                this.showError(
+                    "File quá lớn. Vui lòng chọn file nhỏ hơn 10MB."
+                );
+                event.target.value = "";
+                return;
+            }
+
+            // Show file preview
+            this.showFilePreview(file);
+        }
+    }
+
+    showFilePreview(file) {
+        const preview =
+            document.getElementById("file-preview") ||
+            document.getElementById("attachment-preview");
+        if (preview) {
+            if (file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.innerHTML = `
+                        <div class="file-preview-item">
+                            <img src="${e.target.result}" alt="Preview" style="max-width: 100px; max-height: 100px;">
+                            <span>${file.name}</span>
+                            <button type="button" onclick="this.parentElement.parentElement.innerHTML=''; document.getElementById('fileInput').value='';">✕</button>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = `
+                    <div class="file-preview-item">
+                        <i class="fas fa-file"></i>
+                        <span>${file.name}</span>
+                        <button type="button" onclick="this.parentElement.parentElement.innerHTML=''; document.getElementById('fileInput').value='';">✕</button>
+                    </div>
+                `;
+            }
+            preview.style.display = "block";
+        }
+    }
+
+    showSendingIndicator() {
+        const indicator = document.getElementById("sending-indicator");
+        if (indicator) {
+            indicator.style.display = "block";
+        }
+
+        // Disable send button
+        const sendBtn = document.getElementById("send-btn");
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.innerHTML =
+                '<i class="fas fa-spinner fa-spin"></i> Đang gửi...';
+        }
+    }
+
+    hideSendingIndicator() {
+        const indicator = document.getElementById("sending-indicator");
+        if (indicator) {
+            indicator.style.display = "none";
+        }
+
+        // Re-enable send button
+        const sendBtn = document.getElementById("send-btn");
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi';
+        }
+    }
+
+    showError(message) {
+        this.showNotification(message, "error");
+    }
+
+    showNotification(message, type = "success") {
+        // Remove existing notifications
+        document
+            .querySelectorAll(".chat-notification")
+            .forEach((n) => n.remove());
+
+        const notification = document.createElement("div");
+        notification.className = `chat-notification ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        `;
+
+        // Set background color based on type
+        switch (type) {
+            case "success":
+                notification.style.backgroundColor = "#10b981";
+                break;
+            case "error":
+                notification.style.backgroundColor = "#ef4444";
+                break;
+            case "warning":
+                notification.style.backgroundColor = "#f59e0b";
+                break;
+            case "info":
+                notification.style.backgroundColor = "#3b82f6";
+                break;
+            default:
+                notification.style.backgroundColor = "#6b7280";
+        }
+
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Show notification
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
+
+        // Hide notification after 3 seconds
+        setTimeout(() => {
+            notification.style.transform = "translateX(100%)";
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    scrollToBottom() {
+        if (this.messageContainer) {
+            setTimeout(() => {
+                this.messageContainer.scrollTop =
+                    this.messageContainer.scrollHeight;
+            }, 100);
+        }
+    }
+
+    playNotificationSound() {
+        // Create audio element for notification
+        try {
+            const audio = new Audio("/sounds/notification.mp3");
+            audio.volume = 0.3;
+            audio
+                .play()
+                .catch((e) => console.log("Could not play notification sound"));
+        } catch (e) {
+            console.log("Notification sound not available");
+        }
+    }
+
+    formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    }
+
+    escapeHtml(unsafe) {
+        if (!unsafe) return "";
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Cleanup method
+    destroy() {
+        if (this.channel) {
+            this.channel.stopListening("MessageSent");
+            this.channel.stopListening("UserTyping");
+            this.channel.stopListening("ConversationUpdated");
+        }
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+        // Leave online users channel
+        window.Echo.leave("online-users");
+    }
+
+    async loadMessages() {
+        if (!this.conversationId) return;
+
+        try {
+            console.log("📥 Đang tải tin nhắn...");
+            const url = this.api.getMessages.replace(
+                ":id",
+                this.conversationId
+            );
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (this.messageContainer) {
+                this.messageContainer.innerHTML = "";
+                if (data.messages && Array.isArray(data.messages)) {
+                    // Sắp xếp tin nhắn theo thời gian
+                    data.messages.sort(
+                        (a, b) =>
+                            new Date(a.created_at) - new Date(b.created_at)
+                    );
+                    data.messages.forEach((message) => {
+                        this.appendMessage(message);
+                    });
+                    this.scrollToBottom();
+                }
+            }
+        } catch (error) {
+            console.error("❌ Lỗi khi tải tin nhắn:", error);
+            this.showError("Không thể tải tin nhắn");
+        }
+    }
+
+    appendMessage(message) {
+        if (!this.messageContainer) return;
+        const isAdmin = String(message.sender_id) === String(this.userId);
+        const senderName =
+            message.sender && (message.sender.full_name || message.sender.name)
+                ? message.sender.full_name || message.sender.name
+                : isAdmin
+                ? "Admin"
+                : "Khách hàng";
+        const avatarLetter = senderName.charAt(0).toUpperCase();
+        let attachmentHtml = "";
+        if (message.attachment) {
+            if (message.attachment_type === "image") {
+                attachmentHtml = `<img src="/storage/${message.attachment}" class="mt-2 rounded-lg max-h-40 cursor-pointer" onclick="window.open('/storage/${message.attachment}','_blank')">`;
+            } else {
+                attachmentHtml = `<a href="/storage/${
+                    message.attachment
+                }" target="_blank" class="text-blue-500 underline">📎 ${message.attachment
+                    .split("/")
+                    .pop()}</a>`;
+            }
+        }
+        const timeString = this.formatTime(
+            message.created_at || message.sent_at
+        );
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `flex items-end gap-2 mb-2 ${
+            isAdmin ? "justify-end" : "justify-start"
+        }`;
+        msgDiv.innerHTML = `
+            <div class="flex gap-2 max-w-[80%] ${
+                isAdmin ? "flex-row-reverse" : "flex-row"
+            }">
+                <div class="w-8 h-8 ${
+                    isAdmin ? "bg-blue-500" : "bg-orange-500"
+                } rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-white text-xs font-bold">${avatarLetter}</span>
+                </div>
+                <div class="flex flex-col ${
+                    isAdmin ? "items-end" : "items-start"
+                }">
+                    <div class="rounded-2xl px-4 py-2 max-w-full shadow-sm ${
+                        isAdmin
+                            ? "bg-orange-500 text-white rounded-br-md"
+                            : "bg-white text-gray-900 border border-gray-200 rounded-bl-md"
+                    }">
+                        <div>${this.escapeHtml(message.message) || ""}</div>
+                        ${attachmentHtml}
+                    </div>
+                    <span class="text-xs text-gray-500 mt-1 px-2">${timeString}</span>
+                </div>
+            </div>
+        `;
+        this.messageContainer.appendChild(msgDiv);
+        this.scrollToBottom();
+    }
+
+    // Thêm hàm để hiển thị phân công chi nhánh
+    showDistributionSection(conversationId) {
+        const distributionSection = document.getElementById(
+            `distribution-${conversationId}`
+        );
+        if (distributionSection) {
+            distributionSection.classList.add("active");
+        }
+    }
+
+    async sendAttachment(type, file) {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("conversation_id", this.conversationId);
+        formData.append("message", ""); // Gửi message rỗng
+        if (type === "image") {
+            formData.append("image", file);
+        } else {
+            formData.append("file", file);
+        }
+        formData.append(
+            "_token",
+            document.querySelector('meta[name="csrf-token"]').content
+        );
+        try {
+            const url = this.api.send;
+            const response = await fetch(url, {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (
+                    String(this.conversationId) ===
+                    String(data.data.conversation_id)
+                ) {
+                    this.appendMessage(data.data);
+                    this.scrollToBottom();
+                }
+                if (typeof updateSidebarPreview === "function") {
+                    updateSidebarPreview({
+                        ...data.data,
+                        conversation_id: this.conversationId,
+                    });
+                }
+            } else {
+                this.showError(data.message || "Không thể gửi file");
+            }
+        } catch (e) {
+            this.showError("Không thể gửi file");
+        }
+    }
+
+    setupPusherChannels() {
+        if (this._pusherChannel) {
+            this._pusherChannel.unbind_all();
+            this.pusher.unsubscribe(`chat.${this.conversationId}`);
+        }
+        this._pusherChannel = this.pusher.subscribe(
+            `chat.${this.conversationId}`
+        );
+        this._pusherChannel.bind("new-message", (data) => {
+            // Chỉ appendMessage nếu conversationId hiện tại trùng với conversation_id của tin nhắn
+            if (
+                data.message &&
+                String(data.message.sender_id) !== String(this.userId) &&
+                String(this.conversationId) ===
+                    String(data.message.conversation_id)
+            ) {
+                const lastMsg = this.messageContainer.lastElementChild;
+                let isDuplicate = false;
+                if (lastMsg && data.message.id) {
+                    isDuplicate =
+                        lastMsg.dataset &&
+                        lastMsg.dataset.messageId == data.message.id;
+                }
+                if (!isDuplicate) {
+                    this.appendMessage(data.message);
+                    this.scrollToBottom();
+                }
+            }
+            // Luôn update preview sidebar cho đúng conversation
+            if (typeof updateSidebarPreview === "function") {
+                updateSidebarPreview({
+                    ...data.message,
+                    conversation_id: data.message.conversation_id,
+                    branch: data.message.branch || null,
+                    status: data.message.status || null,
+                });
+            }
+        });
+        this._pusherChannel.bind("conversation-updated", (data) => {
+            this.updateConversationStatus(data.status);
+        });
+    }
+
+    switchConversation(conversationId, chatItem) {
+        document.querySelectorAll(".chat-item").forEach((item) => {
+            item.classList.remove("active");
+        });
+        chatItem.classList.add("active");
+        this.conversationId = conversationId;
+        if (this.chatContainer) {
+            this.chatContainer.dataset.conversationId = conversationId;
+        }
+        // Lấy thông tin customer từ chatItem
+        const customerName = chatItem.dataset.customerName;
+        const customerEmail = chatItem.dataset.customerEmail;
+        const branchName = chatItem.dataset.branchName;
+        // Cập nhật avatar, tên, email, branch ở customer info
+        const firstLetter = customerName.charAt(0).toUpperCase();
+        const avatar = document.getElementById("chat-avatar");
+        const name = document.getElementById("chat-customer-name");
+        const email = document.getElementById("chat-customer-email");
+        const infoAvatar = document.getElementById("customer-info-avatar");
+        const infoName = document.getElementById("customer-info-name");
+        const infoEmail = document.getElementById("customer-info-email");
+        const infoBranch = document.getElementById(
+            "customer-info-branch-badge"
+        );
+        if (avatar) avatar.textContent = firstLetter;
+        if (name) name.textContent = customerName;
+        if (email) email.textContent = customerEmail;
+        if (infoAvatar) infoAvatar.textContent = firstLetter;
+        if (infoName) infoName.textContent = customerName;
+        if (infoEmail) infoEmail.textContent = customerEmail;
+        if (infoBranch) {
+            if (branchName) {
+                infoBranch.textContent = branchName;
+                infoBranch.style.display = "";
+            } else {
+                infoBranch.style.display = "none";
+            }
+        }
+        // Trạng thái
+        const status = chatItem.dataset.status;
+        const statusBadge = document.querySelector(".status-badge");
+        if (statusBadge) {
+            statusBadge.textContent =
+                status === "distributed" || status === "active"
+                    ? "Đã phân phối"
+                    : status === "new"
+                    ? "Chờ xử lý"
+                    : status === "closed"
+                    ? "Đã đóng"
+                    : status;
+            statusBadge.className = `badge status-badge status-${status}`;
+        }
+        // Cập nhật branch badge ở chat-main header
+        const mainBranchBadge = document.getElementById("main-branch-badge");
+        if (mainBranchBadge) {
+            if (branchName) {
+                mainBranchBadge.textContent = branchName;
+                mainBranchBadge.style.display = "";
+            } else {
+                mainBranchBadge.style.display = "none";
+            }
+        }
+        this.loadMessages();
+        this.setupPusherChannels();
+    }
+
+    async confirmDistribution(conversationId, branchId) {
+        try {
+            const response = await fetch(this.api.distribute, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    branch_id: branchId,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.showNotification(
+                    "Đã phân phối cuộc trò chuyện thành công"
+                );
+                // Cập nhật UI branch badge, status, branch_id
+                const chatItem = document.querySelector(
+                    `.chat-item[data-conversation-id="${conversationId}"]`
+                );
+                if (chatItem) {
+                    chatItem.classList.add("distributed");
+                    chatItem.dataset.status = "distributed";
+                    chatItem.dataset.branchName = data.branch.name;
+                    chatItem.dataset.branchId = data.branch.id;
+                    // Cập nhật badges
+                    const badges = chatItem.querySelector(".chat-item-badges");
+                    if (badges) {
+                        badges.innerHTML = `
+                            <span class="badge badge-distributed">Đã phân phối</span>
+                            <span class="badge badge-xs branch-badge ml-2">${data.branch.name}</span>
+                        `;
+                    }
+                }
+                // Cập nhật branch badge ở chat-main header
+                const mainBranchBadge =
+                    document.getElementById("main-branch-badge");
+                if (mainBranchBadge) {
+                    mainBranchBadge.textContent = data.branch.name;
+                    mainBranchBadge.style.display = "";
+                }
+                // Cập nhật branch badge ở customer info
+                const infoBranchBadge = document.getElementById(
+                    "customer-info-branch-badge"
+                );
+                if (infoBranchBadge) {
+                    infoBranchBadge.textContent = data.branch.name;
+                    infoBranchBadge.style.display = "";
+                }
+                // Ẩn select phân phối
+                const select = document.getElementById("distribution-select");
+                if (select) {
+                    select.style.display = "none";
+                }
+            } else {
+                throw new Error(data.message || "Phân công thất bại");
+            }
+        } catch (error) {
+            console.error("❌ Lỗi khi phân công:", error);
+            this.showError("Không thể phân công cuộc trò chuyện");
+        }
+    }
+}
+
+// Export cho global use
+window.ChatRealtime = ChatRealtime;
+
+// Auto-initialize if conversation data is available
+document.addEventListener("DOMContentLoaded", function () {
+    const conversationId = document.querySelector(
+        'meta[name="conversation-id"]'
+    )?.content;
+    const userId = document.querySelector('meta[name="user-id"]')?.content;
+    const userType = document.querySelector('meta[name="user-type"]')?.content;
+
+    if (conversationId && userId) {
+        window.chatInstance = new ChatRealtime({
+            conversationId,
+            userId,
+            userType,
+            api: {
+                send: document.querySelector('meta[name="api-send"]')?.content,
+                getMessages: document.querySelector('meta[name="api-messages"]')
+                    ?.content,
+                distribute: document.querySelector(
+                    'meta[name="api-distribute"]'
+                )?.content,
+            },
+        });
+    }
+});
+
+function appendMessageToChat(message) {
+    const chatMessages = document.querySelector(".chat-messages");
+    if (!chatMessages) return;
+    const isAdmin = String(message.sender_id) === String(currentUserId);
+    let html = `
+        <div class="message-group ${
+            isAdmin ? "message-group-admin" : "message-group-customer"
+        }">
+            <div class="message-sender">
+                <div class="chat-avatar" style="${
+                    isAdmin ? "background-color: #3b82f6; color: white;" : ""
+                }">
+                    ${
+                        message.sender &&
+                        (message.sender.full_name || message.sender.name)
+                            ? (message.sender.full_name || message.sender.name)
+                                  .charAt(0)
+                                  .toUpperCase()
+                            : "A"
+                    }
+                </div>
+                <span class="message-sender-name">${
+                    message.sender &&
+                    (message.sender.full_name || message.sender.name)
+                        ? message.sender.full_name || message.sender.name
+                        : "Khách hàng"
+                }</span>
+                ${
+                    !isAdmin
+                        ? '<span class="message-sender-type">Khách hàng</span>'
+                        : ""
+                }
+            </div>
+            <div class="message-content">
+                <div class="message-bubble ${
+                    isAdmin ? "message-admin" : "message-customer"
+                }">
+                    ${message.message || ""}
+                    ${
+                        message.attachment
+                            ? `<br><a href="/storage/${message.attachment}" target="_blank">📎 File đính kèm</a>`
+                            : ""
+                    }
+                </div>
+                <span class="message-time">${formatTime(
+                    message.sent_at || message.created_at
+                )}</span>
+            </div>
+        </div>
+    `;
+    chatMessages.insertAdjacentHTML("beforeend", html);
+}
+
+function updateSidebarPreview(message) {
+    const convItem = document.querySelector(
+        `[data-conversation-id='${message.conversation_id}']`
+    );
+    if (convItem) {
+        // Cập nhật preview tin nhắn
+        const preview = convItem.querySelector(".chat-item-preview");
+        if (preview) {
+            if (message.attachment_type === "image") {
+                preview.textContent = "📷 Ảnh";
+            } else if (message.attachment_type === "file") {
+                preview.textContent = "📎 File đính kèm";
+            } else {
+                preview.textContent = message.message || "";
+            }
+        }
+
+        // Cập nhật thời gian
+        const time = convItem.querySelector(".chat-item-time");
+        if (time) {
+            time.textContent = formatTime(
+                message.sent_at || message.created_at
+            );
+        }
+
+        // Cập nhật badge số tin nhắn chưa đọc
+        if (
+            String(window.selectedConversationId) !==
+            String(message.conversation_id)
+        ) {
+            let badge = convItem.querySelector(".unread-badge");
+            if (!badge) {
+                badge = document.createElement("span");
+                badge.className = "unread-badge ml-2 absolute right-2 bottom-2";
+                convItem.appendChild(badge);
+            }
+            badge.textContent = parseInt(badge.textContent || 0) + 1;
+            badge.style.display = "flex";
+        }
+
+        // Đưa lên đầu danh sách
+        if (convItem.parentNode.firstChild !== convItem) {
+            convItem.parentNode.insertBefore(
+                convItem,
+                convItem.parentNode.firstChild
+            );
+        }
+
+        // Cập nhật badge branch nếu có
+        if (message.branch) {
+            const badges = convItem.querySelector(".chat-item-badges");
+            if (badges) {
+                const branchBadge = badges.querySelector(".branch-badge");
+                if (branchBadge) {
+                    branchBadge.textContent = message.branch.name;
+                } else {
+                    badges.innerHTML += `<span class="badge badge-xs branch-badge ml-2">${message.branch.name}</span>`;
+                }
+            }
+        }
+    }
+}
+
+function formatTime(timeStr) {
+    const d = new Date(timeStr);
+    return (
+        d.getHours().toString().padStart(2, "0") +
+        ":" +
+        d.getMinutes().toString().padStart(2, "0")
+    );
+}
+
+// Lắng nghe tất cả các conversation mà user có thể thấy (giả sử bạn có biến conversationsList là mảng id)
+if (window.conversationsList && Array.isArray(window.conversationsList)) {
+    window.conversationsList.forEach(function (convId) {
+        const channel = pusher.subscribe("chat." + convId);
+        channel.bind("new-message", function (data) {
+            if (
+                String(window.selectedConversationId) ===
+                String(data.message.conversation_id)
+            ) {
+                appendMessageToChat(data.message);
+                if (typeof scrollToBottom === "function") scrollToBottom();
+            }
+            updateSidebarPreview(data.message);
+        });
+    });
+}
+// Khi click vào một cuộc trò chuyện, hãy set window.selectedConversationId = conversationId;
+
+// Ví dụ: lấy từ cuộc trò chuyện đầu tiên đang active
+const firstActive = document.querySelector(
+    ".chat-item.active, .conversation-item.active"
 );
+if (firstActive) {
+    window.selectedConversationId = firstActive.getAttribute(
+        "data-conversation-id"
+    );
+}
+
+const pusher = new Pusher("6ef607214efab0d72419", {
+    cluster: "ap1",
+    encrypted: true,
+});
+
+// Khởi tạo biến global cho chat admin
+let adminChatInstance = null;
+
+// Class ChatCommon cho admin chat
+class ChatCommon {
+    constructor(options) {
+        if (!options || !options.conversationId || !options.userId) {
+            console.error(
+                "Thiếu thông tin cần thiết: conversationId và userId"
+            );
+            return;
+        }
+
+        this.conversationId = options.conversationId;
+        this.userId = options.userId;
+        this.userType = options.userType || "admin";
+        this.api = options.api || {};
+
+        // Khởi tạo các DOM elements
+        this.messageContainer = document.getElementById("chat-messages");
+        this.messageInput = document.getElementById("message-input");
+        this.sendBtn = document.getElementById("sendBtn");
+        this.attachFileBtn = document.getElementById("attachFileBtn");
+        this.fileInput = document.getElementById("fileInput");
+        this.chatContainer = document.getElementById("chat-container");
+
+        // Khởi tạo Pusher
+        this.pusher = new Pusher("6ef607214efab0d72419", {
+            cluster: "ap1",
+            encrypted: true,
+        });
+
+        this.init();
+    }
+
+    init() {
+        console.log("🚀 Khởi tạo Chat Admin...");
+        this.setupEventListeners();
+        this.setupPusherChannels();
+        if (this.conversationId) {
+            this.loadMessages();
+        }
+    }
+
+    setupEventListeners() {
+        console.log("🔧 Thiết lập event listeners...");
+
+        // Xử lý input tin nhắn
+        if (this.messageInput) {
+            this.messageInput.addEventListener("input", () => {
+                if (this.sendBtn) {
+                    this.sendBtn.disabled = !this.messageInput.value.trim();
+                }
+            });
+
+            this.messageInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        }
+
+        // Xử lý nút gửi tin nhắn
+        if (this.sendBtn) {
+            this.sendBtn.addEventListener("click", () => {
+                this.sendMessage();
+            });
+        }
+
+        // Xử lý đính kèm file
+        if (this.attachFileBtn && this.fileInput) {
+            this.attachFileBtn.addEventListener("click", () => {
+                this.fileInput.click();
+            });
+
+            this.fileInput.addEventListener("change", (e) => {
+                this.handleFileSelect(e);
+            });
+        }
+
+        // Xử lý click vào cuộc trò chuyện
+        document.querySelectorAll(".chat-item").forEach((item) => {
+            item.addEventListener("click", () => {
+                const conversationId = item.dataset.conversationId;
+                if (conversationId) {
+                    this.switchConversation(conversationId, item);
+                }
+            });
+        });
+
+        // Xử lý phân công chat
+        document.querySelectorAll(".distribution-select").forEach((select) => {
+            select.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const conversationId = select.dataset.conversationId;
+                this.showDistributionSection(conversationId);
+            });
+
+            select.addEventListener("change", (e) => {
+                const conversationId = e.target.dataset.conversationId;
+                const branchId = e.target.value;
+                if (conversationId && branchId) {
+                    this.distributeConversation(conversationId, branchId);
+                }
+            });
+        });
+
+        // Lọc trạng thái
+        const statusFilter = document.getElementById("chat-status-filter");
+        if (statusFilter) {
+            statusFilter.addEventListener("change", (e) => {
+                const value = e.target.value;
+                document.querySelectorAll(".chat-item").forEach((item) => {
+                    if (value === "all" || item.dataset.status === value) {
+                        item.style.display = "";
+                    } else {
+                        item.style.display = "none";
+                    }
+                });
+            });
+        }
+
+        // Tìm kiếm
+        const searchInput = document.getElementById("chat-search");
+        if (searchInput) {
+            searchInput.addEventListener("input", (e) => {
+                const q = e.target.value.toLowerCase();
+                document.querySelectorAll(".chat-item").forEach((item) => {
+                    const name = item.dataset.customerName?.toLowerCase() || "";
+                    const email =
+                        item.dataset.customerEmail?.toLowerCase() || "";
+                    if (name.includes(q) || email.includes(q)) {
+                        item.style.display = "";
+                    } else {
+                        item.style.display = "none";
+                    }
+                });
+            });
+        }
+
+        // Nút refresh danh sách chat
+        const refreshBtn = document.getElementById("refresh-chat-list");
+        if (refreshBtn) {
+            refreshBtn.addEventListener("click", () => {
+                location.reload(); // Nếu có API thì thay bằng AJAX lấy lại danh sách
+            });
+        }
+
+        // Nút gửi ảnh
+        const attachImageBtn = document.getElementById("attachImageBtn");
+        const imageInput = document.getElementById("imageInput");
+        if (attachImageBtn && imageInput) {
+            attachImageBtn.addEventListener("click", () => imageInput.click());
+            imageInput.addEventListener("change", (e) => {
+                if (e.target.files.length) {
+                    this.sendAttachment("image", e.target.files[0]);
+                }
+            });
+        }
+
+        // Nút gửi file
+        const attachFileBtn = document.getElementById("attachFileBtn");
+        const fileInput = document.getElementById("fileInput");
+        if (attachFileBtn && fileInput) {
+            attachFileBtn.addEventListener("click", () => fileInput.click());
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length) {
+                    this.sendAttachment("file", e.target.files[0]);
+                }
+            });
+        }
+    }
+
+    setupPusherChannels() {
+        console.log("📡 Thiết lập kênh Pusher...");
+
+        // Lắng nghe kênh chat
+        const channel = this.pusher.subscribe(`chat.${this.conversationId}`);
+
+        channel.bind("new-message", (data) => {
+            console.log("📨 Tin nhắn mới:", data);
+            if (data.message) {
+                // Chỉ appendMessage nếu message chưa có trong DOM (dựa vào id hoặc created_at)
+                if (data.message.sender_id !== this.userId) {
+                    this.appendMessage(data.message);
+                    this.scrollToBottom();
+                }
+            }
+        });
+
+        channel.bind("conversation-updated", (data) => {
+            console.log("🔄 Cập nhật cuộc trò chuyện:", data);
+            this.updateConversationStatus(data.status);
+        });
+    }
+
+    async loadMessages() {
+        if (!this.conversationId) return;
+
+        try {
+            console.log("📥 Đang tải tin nhắn...");
+            const url = this.api.getMessages.replace(
+                ":id",
+                this.conversationId
+            );
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (this.messageContainer) {
+                this.messageContainer.innerHTML = "";
+                if (data.messages && Array.isArray(data.messages)) {
+                    // Sắp xếp tin nhắn theo thời gian
+                    data.messages.sort(
+                        (a, b) =>
+                            new Date(a.created_at) - new Date(b.created_at)
+                    );
+                    data.messages.forEach((message) => {
+                        this.appendMessage(message);
+                    });
+                    this.scrollToBottom();
+                }
+            }
+        } catch (error) {
+            console.error("❌ Lỗi khi tải tin nhắn:", error);
+            this.showError("Không thể tải tin nhắn");
+        }
+    }
+
+    async sendMessage() {
+        if (!this.messageInput || !this.messageInput.value.trim()) return;
+        const message = this.messageInput.value.trim();
+        this.messageInput.value = "";
+        if (this.sendBtn) this.sendBtn.disabled = true;
+        try {
+            const formData = new FormData();
+            formData.append("message", message);
+            formData.append("conversation_id", this.conversationId);
+            const url = this.api.send;
+            if (!url) {
+                this.showError("API gửi tin nhắn chưa được cấu hình");
+                return;
+            }
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: formData,
+            });
+            const data = await response.json();
+            if (data.success) {
+                // Hiển thị tin nhắn vừa gửi ngay lập tức
+                this.appendMessage({
+                    ...data.message,
+                    sender_id: this.userId,
+                    sender: { full_name: "Admin", name: "Admin" },
+                    created_at: new Date().toISOString(),
+                    message: message,
+                });
+                // Cập nhật preview sidebar
+                if (typeof updateSidebarPreview === "function") {
+                    updateSidebarPreview({
+                        ...data.message,
+                        message: message,
+                        created_at: new Date().toISOString(),
+                        conversation_id: this.conversationId,
+                    });
+                }
+                this.scrollToBottom();
+            } else {
+                throw new Error(data.message || "Gửi tin nhắn thất bại");
+            }
+        } catch (error) {
+            this.showError("Không thể gửi tin nhắn");
+            this.messageInput.value = message;
+        } finally {
+            if (this.sendBtn) this.sendBtn.disabled = false;
+            if (this.messageInput) {
+                this.messageInput.focus();
+                this.messageInput.style.height = "auto";
+            }
+        }
+    }
+
+    showDistributionSection(conversationId) {
+        const distributionSection = document.getElementById(
+            `distribution-${conversationId}`
+        );
+        if (distributionSection) {
+            distributionSection.classList.add("active");
+        }
+    }
+
+    showDistributionConfirm(conversationId, branchId) {
+        const confirmSection = document.createElement("div");
+        confirmSection.id = `distribution-confirm-${conversationId}`;
+        confirmSection.className = "distribution-confirm-section";
+        confirmSection.innerHTML = `
+            <div class="distribution-confirm-content">
+                <h4>Xác nhận phân công</h4>
+                <p>Bạn có chắc chắn muốn phân công cuộc trò chuyện này cho chi nhánh đã chọn?</p>
+                <div class="distribution-confirm-actions">
+                    <button class="distribution-btn confirm" onclick="window.adminChat.confirmDistribution(${conversationId}, ${branchId})">
+                        Xác nhận
+                    </button>
+                    <button class="distribution-btn cancel" onclick="window.adminChat.cancelDistribution(${conversationId})">
+                        Hủy
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(confirmSection);
+    }
+
+    async confirmDistribution(conversationId, branchId) {
+        try {
+            const response = await fetch(this.api.distribute, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    branch_id: branchId,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.showNotification(
+                    "Đã phân phối cuộc trò chuyện thành công"
+                );
+                // Cập nhật UI branch badge, status, branch_id
+                const chatItem = document.querySelector(
+                    `.chat-item[data-conversation-id="${conversationId}"]`
+                );
+                if (chatItem) {
+                    chatItem.classList.add("distributed");
+                    chatItem.dataset.status = "distributed";
+                    chatItem.dataset.branchName = data.branch.name;
+                    chatItem.dataset.branchId = data.branch.id;
+                    // Cập nhật badges
+                    const badges = chatItem.querySelector(".chat-item-badges");
+                    if (badges) {
+                        badges.innerHTML = `
+                            <span class="badge badge-distributed">Đã phân phối</span>
+                            <span class="badge badge-xs branch-badge ml-2">${data.branch.name}</span>
+                        `;
+                    }
+                }
+                // Cập nhật branch badge ở chat-main header
+                const mainBranchBadge =
+                    document.getElementById("main-branch-badge");
+                if (mainBranchBadge) {
+                    mainBranchBadge.textContent = data.branch.name;
+                    mainBranchBadge.style.display = "";
+                }
+                // Cập nhật branch badge ở customer info
+                const infoBranchBadge = document.getElementById(
+                    "customer-info-branch-badge"
+                );
+                if (infoBranchBadge) {
+                    infoBranchBadge.textContent = data.branch.name;
+                    infoBranchBadge.style.display = "";
+                }
+                // Ẩn select phân phối
+                const select = document.getElementById("distribution-select");
+                if (select) {
+                    select.style.display = "none";
+                }
+            } else {
+                throw new Error(data.message || "Phân công thất bại");
+            }
+        } catch (error) {
+            console.error("❌ Lỗi khi phân công:", error);
+            this.showError("Không thể phân công cuộc trò chuyện");
+        }
+    }
+
+    cancelDistribution(conversationId) {
+        this.hideDistributionConfirm(conversationId);
+        const select = document.querySelector(
+            `.distribution-select[data-conversation-id="${conversationId}"]`
+        );
+        if (select) {
+            select.value = "";
+        }
+    }
+
+    hideDistributionConfirm(conversationId) {
+        const confirmSection = document.getElementById(
+            `distribution-confirm-${conversationId}`
+        );
+        if (confirmSection) {
+            confirmSection.remove();
+        }
+    }
+
+    updateConversationUI(conversationId, status) {
+        const chatItem = document.querySelector(
+            `.chat-item[data-conversation-id="${conversationId}"]`
+        );
+        if (chatItem) {
+            chatItem.dataset.status = status;
+            const badges = chatItem.querySelector(".chat-item-badges");
+            if (badges) {
+                let badgeHtml = "";
+                switch (status) {
+                    case "new":
+                        badgeHtml =
+                            '<span class="badge badge-waiting">Chờ phản hồi</span>';
+                        break;
+                    case "distributed":
+                        badgeHtml =
+                            '<span class="badge badge-distributed">Đã phân phối</span>';
+                        break;
+                    case "closed":
+                        badgeHtml =
+                            '<span class="badge badge-waiting">Đã đóng</span>';
+                        break;
+                    default:
+                        badgeHtml =
+                            '<span class="badge badge-waiting">Đang xử lý</span>';
+                }
+                badges.innerHTML = badgeHtml;
+            }
+        }
+    }
+
+    switchConversation(conversationId, chatItem) {
+        console.log("🔄 Chuyển cuộc trò chuyện:", conversationId);
+
+        // Cập nhật trạng thái active
+        document.querySelectorAll(".chat-item").forEach((item) => {
+            item.classList.remove("active");
+        });
+        chatItem.classList.add("active");
+
+        // Cập nhật conversation ID
+        this.conversationId = conversationId;
+        if (this.chatContainer) {
+            this.chatContainer.dataset.conversationId = conversationId;
+        }
+
+        // Cập nhật thông tin header
+        const customerName = chatItem.dataset.customerName;
+        const customerEmail = chatItem.dataset.customerEmail;
+        const branchName = chatItem.dataset.branchName;
+        const firstLetter = customerName.charAt(0).toUpperCase();
+
+        const avatar = document.getElementById("chat-avatar");
+        const name = document.getElementById("chat-customer-name");
+        const email = document.getElementById("chat-customer-email");
+        const infoAvatar = document.getElementById("customer-info-avatar");
+        const infoName = document.getElementById("customer-info-name");
+        const infoEmail = document.getElementById("customer-info-email");
+        const infoBranch = document.getElementById(
+            "customer-info-branch-badge"
+        );
+        if (avatar) avatar.textContent = firstLetter;
+        if (name) name.textContent = customerName;
+        if (email) email.textContent = customerEmail;
+        if (infoAvatar) infoAvatar.textContent = firstLetter;
+        if (infoName) infoName.textContent = customerName;
+        if (infoEmail) infoEmail.textContent = customerEmail;
+        if (infoBranch) {
+            if (branchName) {
+                infoBranch.textContent = branchName;
+                infoBranch.style.display = "";
+            } else {
+                infoBranch.style.display = "none";
+            }
+        }
+        // Trạng thái
+        const status = chatItem.dataset.status;
+        const statusBadge = document.querySelector(".status-badge");
+        if (statusBadge) {
+            statusBadge.textContent =
+                status === "distributed" || status === "active"
+                    ? "Đã phân phối"
+                    : status === "new"
+                    ? "Chờ xử lý"
+                    : status === "closed"
+                    ? "Đã đóng"
+                    : status;
+            statusBadge.className = `badge status-badge status-${status}`;
+        }
+        // Cập nhật branch badge ở chat-main header
+        const mainBranchBadge = document.getElementById("main-branch-badge");
+        if (mainBranchBadge) {
+            if (branchName) {
+                mainBranchBadge.textContent = branchName;
+                mainBranchBadge.style.display = "";
+            } else {
+                mainBranchBadge.style.display = "none";
+            }
+        }
+        this.loadMessages();
+        this.setupPusherChannels();
+    }
+
+    appendMessage(message) {
+        if (!this.messageContainer) return;
+        const isAdmin = String(message.sender_id) === String(this.userId);
+        const senderName =
+            message.sender && (message.sender.full_name || message.sender.name)
+                ? message.sender.full_name || message.sender.name
+                : isAdmin
+                ? "Admin"
+                : "Khách hàng";
+        const avatarLetter = senderName.charAt(0).toUpperCase();
+        let attachmentHtml = "";
+        if (message.attachment) {
+            if (message.attachment_type === "image") {
+                attachmentHtml = `<img src="/storage/${message.attachment}" class="mt-2 rounded-lg max-h-40 cursor-pointer" onclick="window.open('/storage/${message.attachment}','_blank')">`;
+            } else {
+                attachmentHtml = `<a href="/storage/${
+                    message.attachment
+                }" target="_blank" class="text-blue-500 underline">📎 ${message.attachment
+                    .split("/")
+                    .pop()}</a>`;
+            }
+        }
+        const timeString = this.formatTime(
+            message.created_at || message.sent_at
+        );
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `flex items-end gap-2 mb-2 ${
+            isAdmin ? "justify-end" : "justify-start"
+        }`;
+        msgDiv.innerHTML = `
+            <div class="flex gap-2 max-w-[80%] ${
+                isAdmin ? "flex-row-reverse" : "flex-row"
+            }">
+                <div class="w-8 h-8 ${
+                    isAdmin ? "bg-blue-500" : "bg-orange-500"
+                } rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-white text-xs font-bold">${avatarLetter}</span>
+                </div>
+                <div class="flex flex-col ${
+                    isAdmin ? "items-end" : "items-start"
+                }">
+                    <div class="rounded-2xl px-4 py-2 max-w-full shadow-sm ${
+                        isAdmin
+                            ? "bg-orange-500 text-white rounded-br-md"
+                            : "bg-white text-gray-900 border border-gray-200 rounded-bl-md"
+                    }">
+                        <div>${this.escapeHtml(message.message) || ""}</div>
+                        ${attachmentHtml}
+                    </div>
+                    <span class="text-xs text-gray-500 mt-1 px-2">${timeString}</span>
+                </div>
+            </div>
+        `;
+        this.messageContainer.appendChild(msgDiv);
+        this.scrollToBottom();
+    }
+
+    handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const fileSize = file.size / 1024 / 1024; // MB
+            if (fileSize > 10) {
+                this.showError(
+                    "File quá lớn. Vui lòng chọn file nhỏ hơn 10MB."
+                );
+                event.target.value = "";
+                return;
+            }
+
+            // Show file preview
+            this.showFilePreview(file);
+        }
+    }
+
+    showFilePreview(file) {
+        const preview =
+            document.getElementById("file-preview") ||
+            document.getElementById("attachment-preview");
+        if (preview) {
+            if (file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.innerHTML = `
+                        <div class="file-preview-item">
+                            <img src="${e.target.result}" alt="Preview" style="max-width: 100px; max-height: 100px;">
+                            <span>${file.name}</span>
+                            <button type="button" onclick="this.parentElement.parentElement.innerHTML=''; document.getElementById('fileInput').value='';">✕</button>
+                        </div>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = `
+                    <div class="file-preview-item">
+                        <i class="fas fa-file"></i>
+                        <span>${file.name}</span>
+                        <button type="button" onclick="this.parentElement.parentElement.innerHTML=''; document.getElementById('fileInput').value='';">✕</button>
+                    </div>
+                `;
+            }
+            preview.style.display = "block";
+        }
+    }
+
+    scrollToBottom() {
+        if (this.messageContainer) {
+            setTimeout(() => {
+                this.messageContainer.scrollTop =
+                    this.messageContainer.scrollHeight;
+            }, 100);
+        }
+    }
+
+    showError(message) {
+        this.showNotification(message, "error");
+    }
+
+    showNotification(message, type = "success") {
+        const notification = document.createElement("div");
+        notification.className = `chat-notification ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        `;
+
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => (notification.style.transform = "translateX(0)"), 100);
+        setTimeout(() => {
+            notification.style.transform = "translateX(100%)";
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    formatTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    }
+
+    escapeHtml(unsafe) {
+        if (!unsafe) return "";
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    async sendAttachment(type, file) {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("conversation_id", this.conversationId);
+        formData.append("message", ""); // Gửi message rỗng
+        if (type === "image") {
+            formData.append("image", file);
+        } else {
+            formData.append("file", file);
+        }
+        formData.append(
+            "_token",
+            document.querySelector('meta[name="csrf-token"]').content
+        );
+
+        try {
+            const url = this.api.send;
+            const response = await fetch(url, {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await response.json();
+            if (data.success) {
+                if (
+                    String(this.conversationId) ===
+                    String(data.data.conversation_id)
+                ) {
+                    this.appendMessage(data.data);
+                    this.scrollToBottom();
+                }
+                if (typeof updateSidebarPreview === "function") {
+                    updateSidebarPreview({
+                        ...data.data,
+                        conversation_id: this.conversationId,
+                    });
+                }
+            } else {
+                this.showError(data.message || "Không thể gửi file");
+            }
+        } catch (e) {
+            this.showError("Không thể gửi file");
+        }
+    }
+
+    distributeConversation(conversationId, branchId) {
+        const select = document.querySelector(
+            `.distribution-select[data-conversation-id="${conversationId}"]`
+        );
+        if (!select) return;
+
+        const branchName = select.options[select.selectedIndex].text;
+        createDistributionModal(conversationId, branchId, branchName, this);
+    }
+
+    async confirmDistribution(conversationId, branchId) {
+        try {
+            const response = await fetch(this.api.distribute, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    branch_id: branchId,
+                }),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                this.showNotification(
+                    "Đã phân phối cuộc trò chuyện thành công"
+                );
+
+                // Cập nhật UI
+                const chatItem = document.querySelector(
+                    `.chat-item[data-conversation-id="${conversationId}"]`
+                );
+                if (chatItem) {
+                    chatItem.classList.add("distributed");
+                    chatItem.dataset.status = "distributed";
+                    chatItem.dataset.branchName = data.branch.name;
+
+                    // Cập nhật badges
+                    const badges = chatItem.querySelector(".chat-item-badges");
+                    if (badges) {
+                        badges.innerHTML = `
+                            <span class="badge badge-distributed">Đã phân phối</span>
+                            <span class="badge badge-xs branch-badge ml-2">${data.branch.name}</span>
+                        `;
+                    }
+
+                    // Cập nhật branch badge ở chat-main header
+                    const mainBranchBadge =
+                        document.getElementById("main-branch-badge");
+                    if (mainBranchBadge) {
+                        mainBranchBadge.textContent = data.branch.name;
+                        mainBranchBadge.style.display = "";
+                    }
+
+                    // Cập nhật branch badge ở customer info
+                    const infoBranchBadge = document.getElementById(
+                        "customer-info-branch-badge"
+                    );
+                    if (infoBranchBadge) {
+                        infoBranchBadge.textContent = data.branch.name;
+                        infoBranchBadge.style.display = "";
+                    }
+                }
+
+                // Reload sau 1 giây
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                throw new Error(data.message || "Phân công thất bại");
+            }
+        } catch (error) {
+            console.error("❌ Lỗi khi phân công:", error);
+            this.showError("Không thể phân công cuộc trò chuyện");
+        }
+    }
+}
+
+// Export cho global use
+window.ChatCommon = ChatCommon;
+
+// Khởi tạo chat admin khi trang đã load
+document.addEventListener("DOMContentLoaded", function () {
+    const chatContainer = document.getElementById("chat-container");
+    if (chatContainer) {
+        adminChatInstance = new ChatCommon({
+            conversationId: chatContainer.dataset.conversationId,
+            userId: chatContainer.dataset.userId,
+            userType: chatContainer.dataset.userType,
+            api: {
+                send: "/admin/chat/send",
+                getMessages: "/admin/chat/messages/:id",
+                distribute: "/admin/chat/distribute",
+            },
+        });
+    }
+});
+
+// Thêm CSS cho section xác nhận phân công
+
+// Thêm hàm tạo modal xác nhận phân phối
+function createDistributionModal(
+    conversationId,
+    branchId,
+    branchName,
+    instance
+) {
+    const modal = document.createElement("div");
+    modal.id = "distribution-modal";
+    modal.className =
+        "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Xác nhận phân phối</h3>
+            <p class="mb-4">Bạn có chắc chắn muốn phân phối cuộc trò chuyện này cho chi nhánh <strong>${branchName}</strong>?</p>
+            <div class="flex justify-end gap-2">
+                <button id="cancel-distribution" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Hủy</button>
+                <button id="confirm-distribution" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Xác nhận</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Xử lý sự kiện
+    document.getElementById("cancel-distribution").onclick = () => {
+        modal.remove();
+    };
+    document.getElementById("confirm-distribution").onclick = () => {
+        if (instance && typeof instance.confirmDistribution === "function") {
+            instance.confirmDistribution(conversationId, branchId);
+        }
+        modal.remove();
+    };
+}

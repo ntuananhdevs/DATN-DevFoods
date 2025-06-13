@@ -1,7 +1,6 @@
 @extends('layouts.admin.contentLayoutMaster')
 
-@section('title', 'Chat Chi nhánh - ')
-
+@section('title', 'Chat Chi nhánh - ' . ($branch->name ?? 'Không rõ'))
 
 @section('content')
     <style>
@@ -35,14 +34,6 @@
             background-color: var(--bg-light);
             color: var(--text-primary);
             line-height: 1.6;
-        }
-
-        /* Cải thiện giao diện cho tên chi nhánh */
-        .branch-name h4 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #3b82f6;
-            margin-top: 0.5rem;
         }
 
         .branch-chat-container {
@@ -880,327 +871,388 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <div id="chat-container" data-conversation-id="{{ $conversations->first()->id ?? '' }}" data-user-id="{{ $user->id }}"
-        data-user-type="branch">
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="branch-chat-container">
-            <!-- Enhanced Branch Header -->
-            <div class="branch-header">
-                <div class="header-content">
-                    <div class="user-info">
-                        <div class="user-avatar">
-                            {{ strtoupper(substr($user->full_name, 0, 1)) }}
-                        </div>
-                        <div class="user-details">
-                            <h3>{{ $user->full_name }}</h3>
-                            <div class="role-badge">{{ ucfirst(str_replace('_', ' ', $user->role)) }}</div>
-                        </div>
+    <div class="branch-chat-container">
+        <!-- Enhanced Branch Header -->
+        <div class="branch-header">
+
+            <div class="header-content">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ strtoupper(substr($user->name, 0, 1)) }}
                     </div>
-                    <div class="status-info">
-                        <div class="status-dot"></div>
-                        <div class="status-text">
-                            <strong>Online</strong> • {{ now()->format('H:i') }}
-                        </div>
+                    <div class="user-details">
+                        <h3>{{ $user->full_name }}</h3>
+                        <div class="role-badge">{{ ucfirst(str_replace('_', ' ', $user->user_name)) }}</div>
                     </div>
                 </div>
-                {{-- <div class="branch-name">
-                    <h4>{{ $branch->name }}</h4> <!-- Hiển thị tên chi nhánh -->
-                </div> --}}
-            </div>
-
-            <!-- Enhanced Stats Cards -->
-            <div class="stats-container">
-                <div class="stat-card new" onclick="filterConversations('distributed')">
-                    <div class="stat-header">
-                        <div class="stat-icon">
-                            <i class="fas fa-inbox"></i>
-                        </div>
-                    </div>
-                    <div class="stat-number">{{ $conversations->where('status', 'distributed')->count() }}</div>
-                    <div class="stat-label">Mới nhận</div>
-                    <div class="stat-trend">
-                        +{{ $conversations->where('status', 'distributed')->where('created_at', '>=', now()->subDay())->count() }}
-                        hôm nay</div>
-                </div>
-
-                <div class="stat-card active" onclick="filterConversations('active')">
-                    <div class="stat-header">
-                        <div class="stat-icon">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                    </div>
-                    <div class="stat-number">{{ $conversations->whereIn('status', ['active', 'open'])->count() }}</div>
-                    <div class="stat-label">Đang xử lý</div>
-                    <div class="stat-trend">
-                        {{ $conversations->whereIn('status', ['active', 'open'])->where('updated_at', '>=', now()->subHour())->count() }}
-                        hoạt động gần đây</div>
-                </div>
-
-                <div class="stat-card priority" onclick="filterConversations('priority')">
-                    <div class="stat-header">
-                        <div class="stat-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                    </div>
-                    <div class="stat-number">
-                        {{ $conversations->whereIn('priority', ['high', 'urgent'])->count() }}
-                    </div>
-                    <div class="stat-label">Ưu tiên cao</div>
-                    <div class="stat-trend">Cần xử lý ngay</div>
-                </div>
-
-                <div class="stat-card total" onclick="filterConversations('all')">
-                    <div class="stat-header">
-                        <div class="stat-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                    </div>
-                    <div class="stat-number">{{ $conversations->count() }}</div>
-                    <div class="stat-label">Tổng cộng</div>
-                    <div class="stat-trend">{{ $conversations->where('status', 'resolved')->count() }} đã giải quyết</div>
-                </div>
-            </div>
-
-            <!-- Enhanced Chat Interface -->
-            <div class="chat-interface">
-                <!-- Enhanced Sidebar -->
-                <div class="chat-sidebar">
-                    <div class="chat-sidebar-header">
-                        <h3>Danh sách cuộc trò chuyện</h3>
-                        <div class="search-container">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="search-conversations" placeholder="Tìm kiếm khách hàng...">
-                        </div>
-                    </div>
-                    <div class="conversations-list" id="conversations-list">
-                        @forelse($conversations as $conversation)
-                            @php
-                                $unreadCount = $conversation->messages
-                                    ->where('is_read', false)
-                                    ->where('sender_id', '!=', $user->id)
-                                    ->count();
-                                $customer = $conversation->customer;
-                                $lastMessage = $conversation->messages->last();
-                            @endphp
-                            <div class="conversation-item {{ $loop->first ? 'active' : '' }}"
-                                data-conversation-id="{{ $conversation->id }}" data-status="{{ $conversation->status }}"
-                                data-priority="{{ $conversation->priority ?? 'normal' }}"
-                                data-customer-name="{{ $customer->name ?? 'Khách hàng' }}">
-
-                                <div class="conversation-header">
-                                    <div class="customer-name">
-                                        {{ $customer->name ?? 'Khách hàng' }}
-                                    </div>
-                                    <div class="time">{{ $conversation->updated_at->format('H:i') }}</div>
-                                </div>
-
-                                <div class="message-preview">
-                                    @if ($lastMessage)
-                                        @if ($lastMessage->message)
-                                            {{ Str::limit($lastMessage->message, 45) }}
-                                        @elseif ($lastMessage->attachment)
-                                            📎
-                                            {{ $lastMessage->attachment_type === 'image' ? 'Hình ảnh' : 'Tệp đính kèm' }}
-                                        @else
-                                            Tin nhắn mới
-                                        @endif
-                                    @else
-                                        💬 Cuộc trò chuyện mới
-                                    @endif
-                                </div>
-
-                                <div class="conversation-meta">
-                                    <span class="status-badge {{ $conversation->status }}">
-                                        @switch($conversation->status)
-                                            @case('distributed')
-                                                📥 Mới nhận
-                                            @break
-
-                                            @case('active')
-                                            @case('open')
-                                                🟢 Đang xử lý
-                                            @break
-
-                                            @case('resolved')
-                                                ✅ Đã giải quyết
-                                            @break
-
-                                            @case('closed')
-                                                🔒 Đã đóng
-                                            @break
-
-                                            @default
-                                                📋 Chờ xử lý
-                                        @endswitch
-                                    </span>
-
-                                    @if ($unreadCount > 0)
-                                        <div class="unread-badge">{{ $unreadCount }}</div>
-                                    @endif
-                                </div>
-                            </div>
-                            @empty
-                                <div class="empty-state">
-                                    <i class="fas fa-inbox"></i>
-                                    <h5>Không có cuộc trò chuyện</h5>
-                                    <p>Chưa có cuộc trò chuyện nào được phân phối cho chi nhánh này</p>
-                                </div>
-                            @endforelse
-                        </div>
-                    </div>
-
-                    <!-- Enhanced Main Chat Area -->
-                    <div class="chat-main">
-                        @if ($conversations->count() > 0)
-                            @php $firstConversation = $conversations->first(); @endphp
-                            <!-- Enhanced Chat Header -->
-                            <div class="chat-header">
-                                <div class="customer-info">
-                                    <div class="customer-avatar">
-                                        {{ strtoupper(substr($firstConversation->customer->name ?? 'K', 0, 1)) }}
-                                    </div>
-                                    <div class="customer-details">
-                                        <h2>{{ $firstConversation->customer->name ?? 'Khách hàng' }}</h2>
-                                        <div class="email">{{ $firstConversation->customer->email ?? 'Chưa có email' }}</div>
-                                    </div>
-                                </div>
-                                <div class="chat-actions">
-                                    <div class="dropdown">
-                                        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                                            aria-expanded="false">
-                                            <i class="fas fa-cog me-2"></i>Hành động
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item" href="#" onclick="updateStatus('active')">
-                                                    <i class="fas fa-play me-2 text-success"></i>Kích hoạt cuộc trò chuyện
-                                                </a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="updateStatus('resolved')">
-                                                    <i class="fas fa-check me-2 text-warning"></i>Đánh dấu đã giải quyết
-                                                </a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="updateStatus('closed')">
-                                                    <i class="fas fa-times me-2 text-danger"></i>Đóng cuộc trò chuyện
-                                                </a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Enhanced Chat Messages -->
-                            <div class="chat-messages" id="chat-messages">
-                                @if ($firstConversation && $firstConversation->messages->count() > 0)
-                                    @foreach ($firstConversation->messages as $message)
-                                        @php
-                                            $isSent = $message->sender_id === $user->id;
-                                            $sender = $message->sender;
-                                            $isSystem = $message->is_system_message ?? false;
-                                        @endphp
-
-                                        @if ($isSystem)
-                                            <div class="system-message">
-                                                <i class="fas fa-info-circle me-2"></i>{{ $message->message }}
-                                            </div>
-                                        @else
-                                            <div class="message {{ $isSent ? 'sent' : 'received' }}">
-                                                <div class="message-info">
-                                                    <strong>{{ $isSent ? 'Bạn' : $sender->name ?? 'Khách hàng' }}</strong> •
-                                                    {{ $message->created_at->format('H:i') }}
-                                                    @if ($isSent)
-                                                        <i class="fas fa-check-double ms-1 text-primary"></i>
-                                                    @endif
-                                                </div>
-
-                                                <div class="message-bubble">
-                                                    @if ($message->message)
-                                                        <div>{!! nl2br(e($message->message)) !!}</div>
-                                                    @endif
-
-                                                    @if ($message->attachment)
-                                                        <div class="attachment-preview">
-                                                            @if ($message->attachment_type === 'image')
-                                                                <img src="{{ asset('storage/' . $message->attachment) }}"
-                                                                    alt="attachment" class="img-fluid rounded">
-                                                            @else
-                                                                <div class="d-flex align-items-center gap-2">
-                                                                    <i class="fas fa-file text-primary"></i>
-                                                                    <a href="{{ asset('storage/' . $message->attachment) }}"
-                                                                        class="text-decoration-none" target="_blank">
-                                                                        📎 {{ basename($message->attachment) }}
-                                                                    </a>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                    @endif
-                                                </div>
-
-
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                @else
-                                    <div class="empty-state">
-                                        <i class="fas fa-comment-dots"></i>
-                                        <h5>Chưa có tin nhắn</h5>
-                                        <p>Hãy bắt đầu cuộc trò chuyện với khách hàng để hỗ trợ họ tốt nhất</p>
-                                    </div>
-                                @endif
-                            </div>
-
-                            <!-- Enhanced Chat Input -->
-                            <div class="chat-input">
-                                <form id="chat-form">
-                                    <div class="input-group">
-                                        <textarea id="message" placeholder="Nhập tin nhắn của bạn..." rows="1"></textarea>
-                                        <div class="actions">
-                                            <button type="button" class="btn-icon" id="image-btn" title="Chọn ảnh">
-                                                <i class="fas fa-image"></i>
-                                            </button>
-                                            <button type="button" class="btn-icon" id="file-btn" title="Chọn tệp">
-                                                <i class="fas fa-paperclip"></i>
-                                            </button>
-                                            <button type="submit" class="btn-icon btn-send" id="send-btn"
-                                                title="Gửi tin nhắn">
-                                                <i class="fas fa-paper-plane"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                                <input type="file" id="image" class="d-none" accept="image/*">
-                                <input type="file" id="file" class="d-none"
-                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
-                                <div id="attachment-preview"></div>
-                            </div>
-                        @else
-                            <div class="empty-state">
-                                <i class="fas fa-comments"></i>
-                                <h5>Chưa có cuộc trò chuyện</h5>
-                                <p>Chưa có cuộc trò chuyện nào được phân phối cho chi nhánh này. Hãy chờ admin phân phối hoặc
-                                    liên
-                                    hệ để được hỗ trợ.</p>
-                            </div>
-                        @endif
+                <div class="status-info">
+                    <div class="status-dot"></div>
+                    <div class="status-text">
+                        <strong>Online</strong> • {{ now()->format('H:i') }}
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Enhanced Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card new" onclick="filterConversations('distributed')">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ $conversations->where('status', 'distributed')->count() }}</div>
+                <div class="stat-label">Mới nhận</div>
+                <div class="stat-trend">
+                    +{{ $conversations->where('status', 'distributed')->where('created_at', '>=', now()->subDay())->count() }}
+                    hôm nay</div>
+            </div>
+
+            <div class="stat-card active" onclick="filterConversations('active')">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ $conversations->whereIn('status', ['active', 'open'])->count() }}</div>
+                <div class="stat-label">Đang xử lý</div>
+                <div class="stat-trend">
+                    {{ $conversations->whereIn('status', ['active', 'open'])->where('updated_at', '>=', now()->subHour())->count() }}
+                    hoạt động gần đây</div>
+            </div>
+
+            <div class="stat-card priority" onclick="filterConversations('priority')">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="stat-number">
+                    {{ $conversations->whereIn('priority', ['high', 'urgent'])->count() }}
+                </div>
+                <div class="stat-label">Ưu tiên cao</div>
+                <div class="stat-trend">Cần xử lý ngay</div>
+            </div>
+
+            <div class="stat-card total" onclick="filterConversations('all')">
+                <div class="stat-header">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="stat-number">{{ $conversations->count() }}</div>
+                <div class="stat-label">Tổng cộng</div>
+                <div class="stat-trend">{{ $conversations->where('status', 'resolved')->count() }} đã giải quyết</div>
+            </div>
+        </div>
+
+        <!-- Enhanced Chat Interface -->
+        <div class="chat-interface">
+            <!-- Enhanced Sidebar -->
+            <div class="chat-sidebar">
+                <div class="chat-sidebar-header">
+                    <h3>📋 Danh sách cuộc trò chuyện</h3>
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-conversations" placeholder="Tìm kiếm khách hàng...">
+                    </div>
+                </div>
+                <div class="conversations-list" id="conversations-list">
+                    @forelse($conversations as $conversation)
+                        @php
+                            $unreadCount = $conversation->messages
+                                ->where('is_read', false)
+                                ->where('sender_id', '!=', $user->id)
+                                ->count();
+                            $customer = $conversation->customer;
+                            $lastMessage = $conversation->messages->last();
+                        @endphp
+                        <div class="conversation-item {{ $loop->first ? 'active' : '' }}"
+                            data-conversation-id="{{ $conversation->id }}" data-status="{{ $conversation->status }}"
+                            data-priority="{{ $conversation->priority ?? 'normal' }}"
+                            data-customer-name="{{ $customer->name ?? 'Khách hàng' }}">
+
+                            <div class="conversation-header">
+                                <div class="customer-name">
+                                    {{ $customer->name ?? 'Khách hàng' }}
+                                </div>
+                                <div class="time">{{ $conversation->updated_at->format('H:i') }}</div>
+                            </div>
+
+                            <div class="message-preview">
+                                @if ($lastMessage)
+                                    @if ($lastMessage->message)
+                                        {{ Str::limit($lastMessage->message, 45) }}
+                                    @elseif ($lastMessage->attachment)
+                                        📎 {{ $lastMessage->attachment_type === 'image' ? 'Hình ảnh' : 'Tệp đính kèm' }}
+                                    @else
+                                        Tin nhắn mới
+                                    @endif
+                                @else
+                                    💬 Cuộc trò chuyện mới
+                                @endif
+                            </div>
+
+                            <div class="conversation-meta">
+                                <span class="status-badge {{ $conversation->status }}">
+                                    @switch($conversation->status)
+                                        @case('distributed')
+                                            📥 Mới nhận
+                                        @break
+
+                                        @case('active')
+                                        @case('open')
+                                            🟢 Đang xử lý
+                                        @break
+
+                                        @case('resolved')
+                                            ✅ Đã giải quyết
+                                        @break
+
+                                        @case('closed')
+                                            🔒 Đã đóng
+                                        @break
+
+                                        @default
+                                            📋 Chờ xử lý
+                                    @endswitch
+                                </span>
+
+                                @if ($unreadCount > 0)
+                                    <div class="unread-badge">{{ $unreadCount }}</div>
+                                @endif
+                            </div>
+                        </div>
+                        @empty
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <h5>Không có cuộc trò chuyện</h5>
+                                <p>Chưa có cuộc trò chuyện nào được phân phối cho chi nhánh này</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <!-- Enhanced Main Chat Area -->
+                <div class="chat-main">
+                    @if ($conversations->count() > 0)
+                        @php $firstConversation = $conversations->first(); @endphp
+                        <!-- Enhanced Chat Header -->
+                        <div class="chat-header">
+                            <div class="customer-info">
+                                <div class="customer-avatar">
+                                    {{ strtoupper(substr($firstConversation->customer->name ?? 'K', 0, 1)) }}
+                                </div>
+                                <div class="customer-details">
+                                    <h2>{{ $firstConversation->customer->name ?? 'Khách hàng' }}</h2>
+                                    <div class="email">{{ $firstConversation->customer->email ?? 'Chưa có email' }}</div>
+                                </div>
+                            </div>
+                            <div class="chat-actions">
+                                <div class="dropdown">
+                                    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <i class="fas fa-cog me-2"></i>Hành động
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="#" onclick="updateStatus('active')">
+                                                <i class="fas fa-play me-2 text-success"></i>Kích hoạt cuộc trò chuyện
+                                            </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="updateStatus('resolved')">
+                                                <i class="fas fa-check me-2 text-warning"></i>Đánh dấu đã giải quyết
+                                            </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="updateStatus('closed')">
+                                                <i class="fas fa-times me-2 text-danger"></i>Đóng cuộc trò chuyện
+                                            </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Chat Messages -->
+                        <div class="chat-messages" id="chat-messages">
+                            @if ($firstConversation && $firstConversation->messages->count() > 0)
+                                @foreach ($firstConversation->messages as $message)
+                                    @php
+                                        $isSent = $message->sender_id === $user->id;
+                                        $sender = $message->sender;
+                                        $isSystem = $message->is_system_message ?? false;
+                                    @endphp
+
+                                    @if ($isSystem)
+                                        <div class="system-message">
+                                            <i class="fas fa-info-circle me-2"></i>{{ $message->message }}
+                                        </div>
+                                    @else
+                                        <div class="message {{ $isSent ? 'sent' : 'received' }}">
+                                            <div class="message-info">
+                                                <strong>{{ $isSent ? 'Bạn' : $sender->name ?? 'Khách hàng' }}</strong> •
+                                                {{ $message->created_at->format('H:i') }}
+                                                @if ($isSent)
+                                                    <i class="fas fa-check-double ms-1 text-primary"></i>
+                                                @endif
+                                            </div>
+
+                                            <div class="message-bubble">
+                                                @if ($message->message)
+                                                    <div>{!! nl2br(e($message->message)) !!}</div>
+                                                @endif
+
+                                                @if ($message->attachment)
+                                                    <div class="attachment-preview">
+                                                        @if ($message->attachment_type === 'image')
+                                                            <img src="{{ asset('storage/' . $message->attachment) }}"
+                                                                alt="attachment" class="img-fluid rounded">
+                                                        @else
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <i class="fas fa-file text-primary"></i>
+                                                                <a href="{{ asset('storage/' . $message->attachment) }}"
+                                                                    class="text-decoration-none" target="_blank">
+                                                                    📎 {{ basename($message->attachment) }}
+                                                                </a>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endif
+                                            </div>
+
+
+                                        </div>
+                                    @endif
+                                @endforeach
+                            @else
+                                <div class="empty-state">
+                                    <i class="fas fa-comment-dots"></i>
+                                    <h5>Chưa có tin nhắn</h5>
+                                    <p>Hãy bắt đầu cuộc trò chuyện với khách hàng để hỗ trợ họ tốt nhất</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Enhanced Chat Input -->
+                        <div class="chat-input">
+                            <form id="chat-form">
+                                <div class="input-group">
+                                    <textarea id="message" placeholder="Nhập tin nhắn của bạn..." rows="1"></textarea>
+                                    <div class="actions">
+                                        <button type="button" class="btn-icon" id="attachment-btn" title="Đính kèm tệp">
+                                            <i class="fas fa-paperclip"></i>
+                                        </button>
+                                        <button type="submit" class="btn-icon btn-send" id="send-btn"
+                                            title="Gửi tin nhắn">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <input type="file" id="attachment" class="d-none"
+                                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
+                            <div id="attachment-preview"></div>
+                        </div>
+                    @else
+                        <div class="empty-state">
+                            <i class="fas fa-comments"></i>
+                            <h5>Chưa có cuộc trò chuyện</h5>
+                            <p>Chưa có cuộc trò chuyện nào được phân phối cho chi nhánh này. Hãy chờ admin phân phối hoặc liên
+                                hệ để được hỗ trợ.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- 
+    <!-- COMMENTED OUT: Assign Staff Modal -->
+    <!-- 
+    @if ($user->role === 'branch_manager')
+        <div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-user-plus me-2"></i>Phân công nhân viên
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="assign-form">
+                            <div class="mb-3">
+                                <label for="staff-select" class="form-label">Chọn nhân viên</label>
+                                <select class="form-select" id="staff-select">
+                                    <option value="">Chọn nhân viên...</option>
+                                    @foreach (\App\Models\User::where('branch_id', $user->branch_id)->where('role', 'branch_staff')->get() as $staff)
+                                        <option value="{{ $staff->id }}">{{ $staff->name }} - {{ $staff->email }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="assign-note" class="form-label">Ghi chú (tùy chọn)</label>
+                                <textarea class="form-control" id="assign-note" rows="3" 
+                                    placeholder="Thêm ghi chú về việc phân công..."></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Hủy
+                        </button>
+                        <button type="button" class="btn btn-primary" id="assign-btn">
+                            <i class="fas fa-check me-2"></i>Phân công
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+    -->
+    --}}
+
         <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-        <script src="{{ asset('js/echo.js') }}"></script>
-        <script src="{{ asset('js/chat-common.js') }}" defer></script>
+        <script src="{{ asset('js/chat-realtime.js') }}"></script>
+
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                var chatContainer = document.getElementById('chat-container');
-                if (!chatContainer) return;
-                var chat = new ChatCommon({
-                    conversationId: chatContainer.getAttribute('data-conversation-id'),
-                    userId: chatContainer.getAttribute('data-user-id'),
-                    userType: chatContainer.getAttribute('data-user-type'),
-                    api: {
-                        send: '{{ route('branch.chat.send') }}',
-                        getMessages: '/branch/chat/api/conversation/' + chatContainer.getAttribute(
-                            'data-conversation-id'),
-                        typing: '{{ route('branch.chat.typing', [], false) }}'
-                    }
+                // Lấy userId và conversationId từ backend
+                const currentUserId = {{ $user->id }};
+                let selectedConversationId = {{ $conversations->first()->id ?? 'null' }};
+                let chatInstance = null;
+
+                // Khởi tạo chat lần đầu
+                if (selectedConversationId) {
+                    chatInstance = new ChatRealtime({
+                        conversationId: selectedConversationId,
+                        userId: currentUserId,
+                        userType: 'branch',
+                        api: {
+                            send: '{{ route('branch.chat.send') }}',
+                            getMessages: `/api/conversations/${selectedConversationId}/messages`,
+
+                        }
+                    });
+                }
+
+                // Khi click vào conversation ở sidebar
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const conversationId = this.dataset.conversationId;
+                        if (conversationId && conversationId != selectedConversationId) {
+                            selectedConversationId = conversationId;
+                            if (chatInstance) chatInstance.destroy();
+                            chatInstance = new ChatRealtime({
+                                conversationId: conversationId,
+                                userId: currentUserId,
+                                userType: 'branch',
+                                api: {
+                                    send: '{{ route('branch.chat.send') }}',
+                                    getMessages: `/api/conversations/${conversationId}/messages`,
+
+                                }
+                            });
+                        }
+                    });
                 });
             });
         </script>
+        </div>
     @endsection

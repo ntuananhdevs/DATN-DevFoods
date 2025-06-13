@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Chat;
 
 use App\Models\Conversation;
 use Illuminate\Broadcasting\Channel;

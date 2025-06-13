@@ -1,6 +1,6 @@
 @extends('layouts.admin.contentLayoutMaster')
 
-@section('title', 'Super Admin Dashboard')
+@section('title', 'Quản Lý Chat')
 
 @section('content')
     <style>
@@ -15,6 +15,7 @@
             --badge-waiting: #fef3c7;
             --badge-waiting-text: #92400e;
             --badge-high: #fee2e2;
+            --badge-xs: #991b1b;
             --badge-high-text: #991b1b;
             --badge-distributed: #dbeafe;
             --badge-distributed-text: #1e40af;
@@ -508,222 +509,178 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <div id="chat-container" data-conversation-id="{{ $selectedConversation->id ?? '' }}" data-user-id="{{ auth()->id() }}"
-        data-user-type="admin">
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-container">
-            <!-- Chat Sidebar -->
-
-            <div class="chat-sidebar">
-
-                <div class="chat-sidebar-header">
-                    <h2>Super Admin Dashboard</h2>
-                    <p>Quản lý và phân phối chat</p>
+    <div id="chat-container" class="chat-container" data-conversation-id="{{ $conversation->id }}"
+        data-user-id="{{ auth()->id() }}" data-user-type="admin">
+        <!-- Sidebar: Danh sách cuộc trò chuyện -->
+        <div class="chat-sidebar" style="width:25%">
+            <div class="chat-sidebar-header">
+                <div class="relative mb-2">
+                    <span class="absolute left-3 top-2.5 text-gray-400"></span>
+                    <input id="chat-search" type="text" class="form-control w-100 w-full" style="width:100%"
+                        placeholder="Tìm kiếm cuộc trò chuyện...">
                 </div>
-
-                <div class="chat-list">
-                    @forelse($conversations as $conversation)
-                        @php
-                            $unreadCount = $conversation->messages->where('is_read', false)->count();
-                            $firstLetter = strtoupper(
-                                substr(
-                                    $conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'),
-                                    0,
-                                    1,
-                                ),
-                            );
-                        @endphp
-                        <div class="chat-item {{ $loop->first ? 'active' : '' }}"
-                            data-conversation-id="{{ $conversation->id }}"
-                            data-customer-name="{{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}"
-                            data-customer-email="{{ $conversation->customer->email ?? 'test@customer.com' }}"
-                            data-status="{{ $conversation->status }}">
-                            @if ($unreadCount > 0)
-                                <div class="unread-badge">{{ $unreadCount }}</div>
-                            @endif
-                            <div class="chat-item-header">
-                                <h3 class="chat-item-name">
-                                    {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}
-                                </h3>
-                                <span class="chat-item-time">{{ $conversation->updated_at->format('H:i') }}</span>
-                            </div>
-                            <p class="chat-item-email">{{ $conversation->customer->email ?? 'test@customer.com' }}</p>
-                            <p class="chat-item-preview">
-                                @if ($conversation->messages->last())
-                                    {{ Str::limit($conversation->messages->last()->content ?? ($conversation->messages->last()->message ?? 'Tệp đính kèm'), 60) }}
-                                @else
-                                    {{ $conversation->subject ?? 'Cuộc trò chuyện mới' }}
-                                @endif
-                            </p>
-                            <div class="chat-item-footer">
-                                <div class="chat-item-badges">
-                                    @switch($conversation->status)
-                                        @case('new')
-                                            <span class="badge badge-waiting">Chờ xử lý</span>
-                                            <span class="badge badge-high">Cao</span>
-                                        @break
-
-                                        @case('distributed')
-                                            <span class="badge badge-distributed">Đã phân công</span>
-                                        @break
-
-                                        @case('closed')
-                                            <span class="badge badge-waiting">Đã đóng</span>
-                                        @break
-
-                                        @default
-                                            <span class="badge badge-waiting">Đang xử lý</span>
-                                    @endswitch
-
-                                </div>
-                            </div>
-
-                            @if ($conversation->status === 'new')
-                                <select class="distribution-select" data-conversation-id="{{ $conversation->id }}">
-                                    <option value="" disabled selected>Phân công cho chi nhánh</option>
-                                    @foreach ($branches as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                                    @endforeach
-                                </select>
-                            @endif
-                        </div>
-                        @empty
-                            <div class="empty-state">
-                                <i class="fas fa-inbox"></i>
-                                <h3>Không có cuộc trò chuyện</h3>
-                                <p>Chưa có cuộc trò chuyện nào được tạo</p>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-
-                <!-- Chat Main Area -->
-                <div class="chat-main" id="chat-main">
-                    @if ($conversations->count() > 0)
-                        @php $firstConversation = $conversations->first(); @endphp
-                        <!-- Chat Header -->
-                        <div class="chat-header" id="chat-header">
-                            <div class="chat-header-user">
-                                <div class="chat-avatar" id="chat-avatar">
-                                    {{ strtoupper(substr($firstConversation->customer->full_name ?? ($firstConversation->customer->name ?? 'K'), 0, 1)) }}
-                                </div>
-                                <div class="chat-header-info">
-                                    <h3 id="chat-customer-name">
-                                        {{ $firstConversation->customer->full_name ?? ($firstConversation->customer->name ?? 'Khách hàng') }}
-                                    </h3>
-                                    <p id="chat-customer-email">
-                                        {{ $firstConversation->customer->email ?? 'test@customer.com' }}
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="chat-header-actions" id="chat-header-actions">
-                                @switch($firstConversation->status)
-                                    @case('new')
-                                        <span class="badge badge-waiting">Chờ xử lý</span>
-                                        <span class="badge badge-high">Cao</span>
-                                    @break
-
-                                    @case('distributed')
-                                        <span class="badge badge-distributed">Đã phân công</span>
-                                    @break
-
-                                    @case('closed')
-                                        <span class="badge badge-waiting">Đã đóng</span>
-                                    @break
-
-                                    @default
-                                        <span class="badge badge-waiting">Đang xử lý</span>
-                                @endswitch
-                            </div>
-                        </div>
-
-                        <!-- Chat Messages -->
-                        <div class="chat-messages" id="chat-messages">
-                            <!-- Messages will be loaded here via AJAX -->
-                        </div>
-
-                        <!-- Chat Input -->
-                        <div class="chat-input-container">
-                            <button class="chat-tools-btn" id="attachFileBtn">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                            <textarea id="message-input" class="chat-input" placeholder="Nhập tin nhắn..." rows="1"></textarea>
-                            <button id="sendBtn" class="chat-send-btn" disabled>
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    @else
-                        <div class="empty-state">
-                            <i class="fas fa-comments"></i>
-                            <h3>Chọn cuộc trò chuyện</h3>
-                            <p>Chọn một cuộc trò chuyện từ danh sách để bắt đầu nhắn tin</p>
-                        </div>
-                    @endif
+                <div class="flex items-center gap-2">
+                    <select id="chat-status-filter" class="form-select flex-1">
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="new">Chờ phản hồi</option>
+                        <option value="distributed">Đã phân phối</option>
+                        <option value="closed">Đã đóng</option>
+                    </select>
+                    <button id="refresh-chat-list" class="btn btn-light px-2"><i class="fas fa-sync-alt"></i></button>
                 </div>
             </div>
-
-            <!-- Hidden file input -->
-            <input type="file" id="fileInput" style="display: none;" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar">
+            <div id="chat-list" class="chat-list">
+                @foreach ($conversations as $conv)
+                    <div class="chat-item {{ $conv->id == $conversation->id ? 'active' : '' }}  relative"
+                        data-conversation-id="{{ $conv->id }}" data-status="{{ $conv->status }}"
+                        data-customer-name="{{ $conv->customer->full_name ?? ($conv->customer->name ?? 'Khách hàng') }}"
+                        data-customer-email="{{ $conv->customer->email }}"
+                        data-branch-name="{{ $conv->branch ? $conv->branch->name : '' }}">
+                        <div class="flex items-center gap-3 w-full min-w-0">
+                            <div class="flex flex-col items-center justify-center relative">
+                                <div
+                                    class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg {{ $conv->id == $conversation->id ? 'bg-blue-500' : 'bg-orange-500' }}">
+                                    {{ strtoupper(substr($conv->customer->full_name ?? ($conv->customer->name ?? 'K'), 0, 1)) }}
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="chat-item-name truncate font-semibold text-base">{{ $conv->customer->full_name ?? ($conv->customer->name ?? 'Khách hàng') }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span
+                                        class="chat-item-preview truncate text-sm text-gray-500 flex-1">{{ $conv->messages->last()->message ?? '...' }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span
+                                        class="chat-item-time text-xs text-gray-400">{{ $conv->updated_at->format('H:i') }}</span>
+                                </div>
+                            </div>
+                            @if ($conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() > 0)
+                                <span
+                                    class="unread-badge ml-2 absolute right-2 bottom-2">{{ $conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() }}</span>
+                            @endif
+                        </div>
+                        <div class="chat-item-badges mt-5 flex flex-row gap-2 mt-1">
+                            @if ($conv->status == 'new')
+                                <span class="badge badge-waiting">Chờ phản hồi</span>
+                            @elseif ($conv->status == 'active' || $conv->status == 'distributed')
+                                <span class="badge badge-distributed">Đã phân phối</span>
+                            @elseif ($conv->status == 'closed')
+                                <span class="badge badge-high">Đã đóng</span>
+                            @endif
+                            @if ($conv->branch)
+                                <span class="badge badge-xs branch-badge ml-2">{{ $conv->branch->name }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </div>
+        <!-- Main Chat -->
+        <div class="chat-main" style="width:50%">
+            <div class="chat-header">
+                <div class="chat-header-user">
+                    <div class="chat-avatar" id="chat-avatar">
+                        {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+                    </div>
+                    <div class="chat-header-info">
+                        <h3 id="chat-customer-name">
+                            {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}
+                        </h3>
+                        <p id="chat-customer-email">{{ $conversation->customer->email }}</p>
+                    </div>
+                </div>
+                <div class="chat-header-actions" id="chat-header-actions">
+                    <span
+                        class="badge status-badge status-{{ $conversation->status }}">{{ ucfirst($conversation->status) }}</span>
+                    @if ($conversation->branch)
+                        <span class="badge badge-xs branch-badge ml-2"
+                            id="main-branch-badge">{{ $conversation->branch->name }}</span>
+                    @endif
+                    <button class="chat-tools-btn"><i class="fas fa-phone"></i></button>
+                    <button class="chat-tools-btn"><i class="fas fa-video"></i></button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                @foreach ($conversation->messages as $msg)
+                    <div class="flex {{ $msg->sender_id == auth()->id() ? 'justify-end' : 'justify-start' }}">
+                        {{-- <div
+                            class="max-w-[70%] p-3 rounded-2xl {{ $msg->sender_id == auth()->id() ? 'bg-orange-300 text-white' : 'bg-white border' }}">
+                            <div>{{ $msg->message }}</div>
+                            @if ($msg->attachment)
+                                @if ($msg->attachment_type == 'image')
+                                    <img src="/storage/{{ $msg->attachment }}" class="mt-2 rounded-lg max-h-40">
+                                @else
+                                    <a href="/storage/{{ $msg->attachment }}" target="_blank"
+                                        class="text-blue-500 underline">Tải tệp</a>
+                                @endif
+                            @endif
+                            <div class="text-xs text-gray-400 mt-1">{{ $msg->created_at->format('H:i d/m/Y') }}</div>
+                        </div> --}}
+                    </div>
+                @endforeach
+            </div>
+            <div class="chat-input-container">
+                <form id="chat-form" enctype="multipart/form-data" class="flex w-full gap-2">
+                    <textarea id="message-input" class="chat-input" placeholder="Nhập tin nhắn..."></textarea>
+                    <input type="file" id="imageInput" class="hidden" name="image" accept="image/*">
+                    <input type="file" id="fileInput" class="hidden" name="file"
+                        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/x-rar-compressed,application/octet-stream">
+                    <button type="button" id="attachImageBtn" class="chat-tools-btn" title="Gửi ảnh"><i
+                            class="fas fa-image"></i></button>
+                    <button type="button" id="attachFileBtn" class="chat-tools-btn" title="Gửi file"><i
+                            class="fas fa-paperclip"></i></button>
+
+                    <button type="submit" id="sendBtn" class="chat-send-btn"><i
+                            class="fas fa-paper-plane"></i></button>
+                </form>
+            </div>
         </div>
+        <!-- Customer Info -->
+        <div class="chat-sidebar border-l" style="width:20%">
+            <div class="flex flex-col items-center gap-2 p-4">
+                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl mb-2"
+                    id="customer-info-avatar">
+                    {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+                </div>
+                <div class="font-bold" id="customer-info-name">
+                    {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}</div>
+                <div class="text-xs text-gray-500" id="customer-info-email">{{ $conversation->customer->email }}</div>
+                <div class="text-xs text-gray-500" id="customer-info-phone">SĐT:
+                    {{ $conversation->customer->phone ?? '---' }}</div>
+                <div class="text-xs text-gray-500">Trạng thái: <span class="font-semibold"
+                        id="customer-info-status">{{ ucfirst($conversation->status) }}</span></div>
+                <div class="text-xs text-gray-500">Lần cuối hoạt động: {{ $conversation->updated_at->diffForHumans() }}
+                </div>
+                @if ($conversation->branch)
+                    <div class="mt-2"><span class="badge badge-xs branch-badge ml-2"
+                            id="customer-info-branch-badge">{{ $conversation->branch->name }}</span></div>
+                @endif
+            </div>
+            <div class="p-4 flex justify-end">
+                <div class="w-full flex flex-col items-end">
 
-        <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-        <script src="{{ asset('js/echo.js') }}"></script>
-        <script src="{{ asset('js/chat-common.js') }}" defer></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                        console.log('🚀 Admin Chat Dashboard Loading...');
+                    <select class="distribution-select form-select w-full max-w-xs" id="distribution-select"
+                        data-conversation-id="{{ $conversation->id }}"
+                        @if ($conversation->status == 'distributed') style="display:none" @endif>
+                        <option value="" disabled selected>Chọn chi nhánh</option>
+                        @foreach ($branches as $branch)
+                            <option value="{{ $branch->id }}"
+                                {{ $conversation->branch_id == $branch->id ? 'selected' : '' }}>{{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="p-4">
+                <a href="#" style="background-color: #111827" class="btn w-full text-white">Xem lịch sử đơn
+                    hàng</a>
+            </div>
+        </div>
+    </div>
 
-                        // Global variables
-                        const currentUserId = 1;
-                        let selectedConversationId = {{ $conversations->first()->id ?? 'null' }};
-                        let currentConversationData = null;
-
-                        // DOM elements
-                        const chatMessages = document.getElementById('chat-messages');
-                        const messageInput = document.getElementById('messageInput');
-                        const sendBtn = document.getElementById('sendBtn');
-                        const attachFileBtn = document.getElementById('attachFileBtn');
-                        const fileInput = document.getElementById('fileInput');
-                        const chatHeader = document.getElementById('chat-header');
-                        const chatAvatar = document.getElementById('chat-avatar');
-                        const chatCustomerName = document.getElementById('chat-customer-name');
-                        const chatCustomerEmail = document.getElementById('chat-customer-email');
-                        const chatHeaderActions = document.getElementById('chat-header-actions');
-
-                        console.log('✅ Initialized with conversation ID:', selectedConversationId);
-
-                        // Initialize
-                        init();
-
-                        function init() {
-                            setupEventListeners();
-                            if (selectedConversationId) {
-                                loadConversation(selectedConversationId);
-                                var chatContainer = document.getElementById('chat-container');
-                                if (!chatContainer) return;
-                                var chat = new ChatCommon({
-                                    conversationId: chatContainer.getAttribute('data-conversation-id'),
-                                    userId: chatContainer.getAttribute('data-user-id'),
-                                    userType: chatContainer.getAttribute('data-user-type'),
-                                    api: {
-                                        send: '{{ route('admin.chat.send') }}',
-                                        getMessages: '{{ route('admin.chat.messages', [':id']) }}',
-                                        distribute: '{{ route('admin.chat.distribute') }}'
-                                    }
-                                });
-
-                                // Lắng nghe sự kiện change của select phân công (distribution-select) và gọi chat.distributeConversation(convId, branchId)
-                                var distributeSelects = document.querySelectorAll('.distribution-select');
-                                distributeSelects.forEach(function(select) {
-                                    select.addEventListener('change', function() {
-                                        var convId = this.getAttribute('data-conversation-id');
-                                        var branchId = this.value;
-                                        if (convId && branchId) {
-                                            chat.distributeConversation(convId, branchId);
-                                        }
-                                    });
-                                });
-                            });
-        </script>
-    @endsection
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="{{ asset('js/chat-realtime.js') }}" defer></script>
+@endsection

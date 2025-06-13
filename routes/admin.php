@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\BranchChatController;
+use App\Http\Controllers\Branch\BranchChatController;
 use Illuminate\Support\Facades\Route;
 
 // Admin Controllers
