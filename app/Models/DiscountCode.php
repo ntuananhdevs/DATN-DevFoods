@@ -64,4 +64,14 @@ class DiscountCode extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function products()
+    {
+        return $this->hasMany(DiscountCodeProduct::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(UserDiscountCode::class);
+    }
 }

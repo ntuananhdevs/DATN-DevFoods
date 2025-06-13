@@ -3,6 +3,12 @@
 @section('title', 'FastFood - Đăng Nhập')
 
 @section('content')
+<style>
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+   }
+</style>
 <div class="min-h-screen flex flex-col items-center justify-center px-4">
     <div class="w-full max-w-lg">
         <div class="text-center">
@@ -100,20 +106,18 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3 mt-6">
+                <div class="mt-6">
                     <button
                         type="button"
-                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                        id="googleLoginBtn"
+                        class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <i class="fab fa-google text-red-500 mr-2"></i>
-                        Google
-                    </button>
-                    <button
-                        type="button"
-                        class="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                    >
-                        <i class="fab fa-facebook text-blue-600 mr-2"></i>
-                        Facebook
+                        <span id="googleBtnText">Đăng nhập với Google</span>
+                        <span id="googleBtnLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Đang xử lý...
+                        </span>
                     </button>
                 </div>
 
@@ -142,6 +146,12 @@
 @endsection
 
 @section('scripts')
+<!-- Firebase CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+<!-- Firebase Config -->
+<script src="{{ asset('js/firebase-config.js') }}"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -150,6 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const loginBtnLoading = document.getElementById('loginBtnLoading');
     const togglePasswordButton = document.getElementById('toggle-password');
     const passwordInput = document.getElementById('password');
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+    const googleBtnText = document.getElementById('googleBtnText');
+    const googleBtnLoading = document.getElementById('googleBtnLoading');
 
     // Toggle password visibility
     if (togglePasswordButton && passwordInput) {
@@ -171,8 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Form submission handling
     loginForm.addEventListener('submit', function(e) {
-        // Không gọi e.preventDefault() để cho phép form tự submit
-        
         // Clear previous errors
         document.getElementById('emailError').classList.add('hidden');
         document.getElementById('passwordError').classList.add('hidden');
@@ -181,9 +192,29 @@ document.addEventListener('DOMContentLoaded', function() {
         loginBtn.disabled = true;
         loginBtnText.classList.add('hidden');
         loginBtnLoading.classList.remove('hidden');
-        
-        // Không cần gọi this.submit() vì form sẽ tự submit
     });
+
+    // Google Login Button Handler
+    if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', async function() {
+            // Show loading state
+            googleLoginBtn.disabled = true;
+            googleBtnText.classList.add('hidden');
+            googleBtnLoading.classList.remove('hidden');
+
+            try {
+                await handleGoogleLogin();
+            } catch (error) {
+                console.error('Google login error:', error);
+                alert('Đã xảy ra lỗi trong quá trình đăng nhập Google');
+            } finally {
+                // Reset button state
+                googleLoginBtn.disabled = false;
+                googleBtnText.classList.remove('hidden');
+                googleBtnLoading.classList.add('hidden');
+            }
+        });
+    }
 });
 </script>
 @endsection

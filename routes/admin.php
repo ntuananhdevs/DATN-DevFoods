@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\UserRankController;
 use App\Http\Controllers\Admin\BranchStockController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Admin\DriverApplicationController;
+use App\Http\Controllers\Admin\DiscountCodeController;
 
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
@@ -45,9 +46,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
     Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
     Route::get('/ecommerce', [DashboardController::class, 'ecommerce'])->name('ecommerce');
     Route::get('/store_analytics', [DashboardController::class, 'store_analytics'])->name('store_analytics');
-
-    // Đăng xuất
-    // Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);
@@ -87,6 +85,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
             Route::post('/store', [UserController::class, 'storeManager'])->name('store');
         });
     });
+
     // Branch Management
     Route::prefix('branches')->name('branches.')->group(function () {
         Route::get('/', [BranchController::class, 'index'])->name('index');
@@ -124,7 +123,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         // Stock management
         Route::get('{product}/stock', [ProductController::class, 'stock'])->name('stock');
         Route::post('{product}/update-stocks', [ProductController::class, 'updateStocks'])->name('update-stocks');
-        Route::post('/update-topping-stocks', [ProductController::class, 'updateToppingStocksAjax'])->name('update-topping-stocks');
+        Route::post('/update-topping-stocks', [ProductController::class, 'updateToppingStocks'])->name('update-topping-stocks');
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
@@ -198,6 +197,32 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::delete('/{program}/discount-codes/{discountCode}', [PromotionProgramController::class, 'unlinkDiscountCode'])->name('unlink-discount');
         Route::post('/{program}/branches', [PromotionProgramController::class, 'linkBranch'])->name('link-branch');
         Route::delete('/{program}/branches/{branch}', [PromotionProgramController::class, 'unlinkBranch'])->name('unlink-branch');
+    });
+
+    // Discount Codes Management
+    Route::prefix('discount_codes')->name('discount_codes.')->group(function () {
+        Route::get('/', [DiscountCodeController::class, 'index'])->name('index');
+        Route::get('/create', [DiscountCodeController::class, 'create'])->name('create');
+        Route::post('/store', [DiscountCodeController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [DiscountCodeController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [DiscountCodeController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [DiscountCodeController::class, 'destroy'])->name('destroy');
+        Route::get('/show/{id}', [DiscountCodeController::class, 'show'])->name('show');
+        Route::post('/search', [DiscountCodeController::class, 'search'])->name('search');
+        Route::patch('/{id}/toggle-status', [DiscountCodeController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/bulk-status-update', [DiscountCodeController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
+        Route::get('/export', [DiscountCodeController::class, 'export'])->name('export');
+        // Liên kết chi nhánh
+        Route::post('/{id}/branches', [DiscountCodeController::class, 'linkBranch'])->name('link-branch');
+        Route::delete('/{id}/branches/{branch}', [DiscountCodeController::class, 'unlinkBranch'])->name('unlink-branch');
+        // Liên kết sản phẩm/danh mục/combo
+        Route::post('/{id}/products', [DiscountCodeController::class, 'linkProduct'])->name('link-product');
+        Route::delete('/{id}/products/{product}', [DiscountCodeController::class, 'unlinkProduct'])->name('unlink-product');
+        // Gán mã cho người dùng
+        Route::post('/{id}/assign-users', [DiscountCodeController::class, 'assignUsers'])->name('assign-users');
+        Route::delete('/{id}/users/{user}', [DiscountCodeController::class, 'unassignUser'])->name('unassign-user');
+        // Lịch sử sử dụng
+        Route::get('/{id}/usage-history', [DiscountCodeController::class, 'usageHistory'])->name('usage-history');
     });
 
     // Product Stock Management Routes
