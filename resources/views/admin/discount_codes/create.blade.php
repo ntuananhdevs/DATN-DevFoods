@@ -421,7 +421,7 @@
                             @enderror
                         </div>
 
-                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_products' ? '' : 'display: none;' }}"
+                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_products' ? '' : 'display: none;' }}">
                             <label class="form-label font-medium">Chọn sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -441,8 +441,7 @@
                                                 </svg>
                                                 SP
                                             </span>
-                                            <input type="checkbox" name="items[]" id="product_{{ $product->id }}" value="{{ $product->id }}" 
-                                                {{ in_array($product->id, old('items', [])) ? 'checked' : '' }}>
+                                            <input type="checkbox" name="product_ids[]" id="product_{{ $product->id }}" value="{{ $product->id }}">
                                             <label for="product_{{ $product->id }}">
                                                 {{ $product->name }}
                                             </label>
@@ -468,8 +467,7 @@
                                                 </svg>
                                                 DM
                                             </span>
-                                            <input type="checkbox" name="items[]" id="category_{{ $category->id }}" value="{{ $category->id }}" 
-                                                {{ in_array($category->id, old('items', [])) ? 'checked' : '' }}>
+                                            <input type="checkbox" name="category_ids[]" id="category_{{ $category->id }}" value="{{ $category->id }}">
                                             <label for="category_{{ $category->id }}">
                                                 {{ $category->name }}
                                             </label>
@@ -495,8 +493,7 @@
                                                 </svg>
                                                 Combo
                                             </span>
-                                            <input type="checkbox" name="items[]" id="combo_{{ $combo->id }}" value="{{ $combo->id }}" 
-                                                {{ in_array($combo->id, old('items', [])) ? 'checked' : '' }}>
+                                            <input type="checkbox" name="combo_ids[]" id="combo_{{ $combo->id }}" value="{{ $combo->id }}">
                                             <label for="combo_{{ $combo->id }}">
                                                 {{ $combo->name }}
                                             </label>
@@ -954,42 +951,42 @@
         // Add event listeners for select/unselect all buttons
         if (selectAllProducts) {
             selectAllProducts.addEventListener('click', function() {
-                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = true);
             });
         }
         
         if (unselectAllProducts) {
             unselectAllProducts.addEventListener('click', function() {
-                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
         
         if (selectAllCategories) {
             selectAllCategories.addEventListener('click', function() {
-                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = true);
             });
         }
         
         if (unselectAllCategories) {
             unselectAllCategories.addEventListener('click', function() {
-                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
         
         if (selectAllCombos) {
             selectAllCombos.addEventListener('click', function() {
-                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = true);
             });
         }
         
         if (unselectAllCombos) {
             unselectAllCombos.addEventListener('click', function() {
-                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }

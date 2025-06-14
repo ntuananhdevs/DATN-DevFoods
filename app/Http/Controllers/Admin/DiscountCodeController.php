@@ -184,44 +184,151 @@ class DiscountCodeController extends Controller
                 'end_date' => $request->end_date,
             ];
             
+            Log::info('Create data: ' . json_encode($createData));
             $discountCode = DiscountCode::create($createData);
             
             // Handle specific branches if applicable
             if ($request->applicable_scope === 'specific_branches' && $request->has('branch_ids')) {
-                foreach ($request->branch_ids as $branchId) {
-                    DiscountCodeBranch::create([
-                        'discount_code_id' => $discountCode->id,
-                        'branch_id' => $branchId,
-                    ]);
+                // Kiểm tra xem đã chọn tất cả chi nhánh chưa
+                $allBranchCount = Branch::count();
+                $selectedBranchCount = count($request->branch_ids);
+                
+                // Nếu đã chọn tất cả chi nhánh, chuyển thành 'all_branches'
+                if ($allBranchCount === $selectedBranchCount) {
+                    Log::info('All branches are selected, switching to all_branches mode');
+                    $discountCode->update(['applicable_scope' => 'all_branches']);
+                    session()->flash('info', 'Đã tự động chuyển sang chế độ "Tất cả chi nhánh" vì bạn đã chọn tất cả chi nhánh hiện có.');
+                } else {
+                    // Nếu chỉ chọn một số chi nhánh, thêm vào bảng liên kết
+                    foreach ($request->branch_ids as $branchId) {
+                        DiscountCodeBranch::create([
+                            'discount_code_id' => $discountCode->id,
+                            'branch_id' => $branchId,
+                        ]);
+                    }
                 }
             }
             
             // Handle specific products/categories/combos if applicable
-            if ($request->applicable_items !== 'all_items' && $request->has('items')) {
+            Log::info('Create applicable_items: ' . $request->applicable_items);
+            if ($request->applicable_items !== 'all_items' && $request->applicable_items !== 'all_combos') {
                 $type = $request->applicable_items;
-                $items = $request->items;
+                $shouldSwitchToAllItems = false;
                 
-                foreach ($items as $itemId) {
-                    $data = [
-                        'discount_code_id' => $discountCode->id,
-                        'product_id' => null,
-                        'category_id' => null,
-                        'combo_id' => null,
-                    ];
+                switch ($type) {
+                    case 'specific_products':
+                        if ($request->has('product_ids')) {
+                            // Kiểm tra xem đã chọn tất cả sản phẩm chưa
+                            $allProductCount = Product::count();
+                            $selectedProductCount = count($request->product_ids);
+                            
+                            if ($allProductCount === $selectedProductCount) {
+                                Log::info('All products are selected, switching to all_items mode');
+                                $shouldSwitchToAllItems = true;
+                            } else {
+                                foreach ($request->product_ids as $productId) {
+                                    // Kiểm tra xem sản phẩm có tồn tại không
+                                    $productExists = Product::where('id', $productId)->exists();
+                                    if (!$productExists) {
+                                        continue; // Bỏ qua nếu không tồn tại
+                                    }
+                                    
+                                    DiscountCodeProduct::create([
+                                        'discount_code_id' => $discountCode->id,
+                                        'product_id' => $productId,
+                                        'category_id' => null,
+                                        'combo_id' => null,
+                                    ]);
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'specific_categories':
+                        if ($request->has('category_ids')) {
+                            // Kiểm tra xem đã chọn tất cả danh mục chưa
+                            $allCategoryCount = Category::count();
+                            $selectedCategoryCount = count($request->category_ids);
+                            
+                            if ($allCategoryCount === $selectedCategoryCount) {
+                                Log::info('All categories are selected, switching to all_items mode');
+                                $shouldSwitchToAllItems = true;
+                            } else {
+                                foreach ($request->category_ids as $categoryId) {
+                                    // Kiểm tra xem danh mục có tồn tại không
+                                    $categoryExists = Category::where('id', $categoryId)->exists();
+                                    if (!$categoryExists) {
+                                        continue; // Bỏ qua nếu không tồn tại
+                                    }
+                                    
+                                    DiscountCodeProduct::create([
+                                        'discount_code_id' => $discountCode->id,
+                                        'product_id' => null,
+                                        'category_id' => $categoryId,
+                                        'combo_id' => null,
+                                    ]);
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'combos_only':
+                        if ($request->has('combo_ids')) {
+                            // Kiểm tra xem đã chọn tất cả combo chưa
+                            $allComboCount = Combo::count();
+                            $selectedComboCount = count($request->combo_ids);
+                            
+                            if ($allComboCount === $selectedComboCount) {
+                                Log::info('All combos are selected, switching to all_combos mode');
+                                // Chuyển sang all_combos thay vì giữ nguyên combos_only
+                                $discountCode->update(['applicable_items' => 'all_combos']);
+                                
+                                // Xóa các liên kết cụ thể vì đã chọn tất cả
+                                DiscountCodeProduct::where('discount_code_id', $discountCode->id)
+                                    ->where('combo_id', '!=', null)
+                                    ->delete();
+                                $shouldSwitchToAllItems = false;
+                                
+                                // Thêm thông báo flash cho người dùng
+                                session()->flash('info', 'Đã tự động chuyển sang chế độ "Tất cả combo" vì bạn đã chọn tất cả combo hiện có.');
+                            } else {
+                                foreach ($request->combo_ids as $comboId) {
+                                    // Kiểm tra xem combo có tồn tại không
+                                    $comboExists = Combo::where('id', $comboId)->exists();
+                                    if (!$comboExists) {
+                                        continue; // Bỏ qua nếu không tồn tại
+                                    }
+                                    
+                                    DiscountCodeProduct::create([
+                                        'discount_code_id' => $discountCode->id,
+                                        'product_id' => null,
+                                        'category_id' => null,
+                                        'combo_id' => $comboId,
+                                    ]);
+                                }
+                            }
+                        }
+                        break;
+                }
+                
+                // Nếu đã chọn tất cả sản phẩm/danh mục/combo, chuyển thành 'all_items'
+                if ($shouldSwitchToAllItems) {
+                    $discountCode->update(['applicable_items' => 'all_items']);
                     
+                    $itemTypeMessage = '';
                     switch ($type) {
                         case 'specific_products':
-                            $data['product_id'] = $itemId;
+                            $itemTypeMessage = 'sản phẩm';
                             break;
                         case 'specific_categories':
-                            $data['category_id'] = $itemId;
+                            $itemTypeMessage = 'danh mục';
                             break;
                         case 'combos_only':
-                            $data['combo_id'] = $itemId;
+                            $itemTypeMessage = 'combo';
                             break;
                     }
                     
-                    DiscountCodeProduct::create($data);
+                    session()->flash('info', 'Đã tự động chuyển sang chế độ "Tất cả sản phẩm" vì bạn đã chọn tất cả ' . $itemTypeMessage . ' hiện có.');
                 }
             }
             
@@ -294,6 +401,11 @@ class DiscountCodeController extends Controller
         $selectedCategories = $discountCode->products->where('category_id', '!=', null)->pluck('category_id')->toArray();
         $selectedCombos = $discountCode->products->where('combo_id', '!=', null)->pluck('combo_id')->toArray();
         
+        // Nếu applicable_items là all_combos, hiển thị tất cả combo đã được chọn
+        if ($discountCode->applicable_items === 'all_combos') {
+            $selectedCombos = $combos->pluck('id')->toArray();
+        }
+        
         return view('admin.discount_codes.edit', compact(
             'discountCode', 'branches', 'categories', 'products', 'combos',
             'selectedBranches', 'selectedProducts', 'selectedCategories', 'selectedCombos'
@@ -358,57 +470,175 @@ class DiscountCodeController extends Controller
                 'end_date' => $request->end_date,
             ];
             
+            Log::info('Update data: ' . json_encode($updateData));
             $discountCode->update($updateData);
             
             // Handle specific branches update if applicable
+            Log::info('Update applicable_scope: ' . $request->applicable_scope);
             if ($request->applicable_scope === 'specific_branches') {
                 // Remove existing branch relationships
                 DiscountCodeBranch::where('discount_code_id', $discountCode->id)->delete();
+                Log::info('Deleted existing branch relationships for specific branches');
                 
                 // Add new branch relationships
                 if ($request->has('branch_ids')) {
-                    foreach ($request->branch_ids as $branchId) {
-                        DiscountCodeBranch::create([
-                            'discount_code_id' => $discountCode->id,
-                            'branch_id' => $branchId,
-                        ]);
+                    Log::info('Adding new branch relationships: ' . json_encode($request->branch_ids));
+                    
+                    // Kiểm tra xem đã chọn tất cả chi nhánh chưa
+                    $allBranchCount = Branch::count();
+                    $selectedBranchCount = count($request->branch_ids);
+                    
+                    // Nếu đã chọn tất cả chi nhánh, chuyển thành 'all_branches'
+                    if ($allBranchCount === $selectedBranchCount) {
+                        Log::info('All branches are selected, switching to all_branches mode');
+                        $discountCode->update(['applicable_scope' => 'all_branches']);
+                        session()->flash('info', 'Đã tự động chuyển sang chế độ "Tất cả chi nhánh" vì bạn đã chọn tất cả chi nhánh hiện có.');
+                    } else {
+                        // Nếu chỉ chọn một số chi nhánh, thêm vào bảng liên kết
+                        foreach ($request->branch_ids as $branchId) {
+                            DiscountCodeBranch::create([
+                                'discount_code_id' => $discountCode->id,
+                                'branch_id' => $branchId,
+                            ]);
+                        }
                     }
                 }
+            } else {
+                // Nếu chọn "Tất cả chi nhánh", xóa tất cả liên kết chi nhánh cụ thể
+                Log::info('All branches selected, deleting all branch relationships');
+                DiscountCodeBranch::where('discount_code_id', $discountCode->id)->delete();
             }
             
             // Handle specific products/categories/combos update if applicable
-            if ($request->applicable_items !== 'all_items') {
+            Log::info('Update applicable_items: ' . $request->applicable_items);
+            if ($request->applicable_items !== 'all_items' && $request->applicable_items !== 'all_combos') {
                 // Remove existing product relationships
                 DiscountCodeProduct::where('discount_code_id', $discountCode->id)->delete();
+                Log::info('Deleted existing product relationships for specific items');
                 
-                // Add new product relationships
-                if ($request->has('items')) {
-                    $type = $request->applicable_items;
-                    $items = $request->items;
-                    
-                    foreach ($items as $itemId) {
-                        $data = [
-                            'discount_code_id' => $discountCode->id,
-                            'product_id' => null,
-                            'category_id' => null,
-                            'combo_id' => null,
-                        ];
-                        
-                        switch ($type) {
-                            case 'specific_products':
-                                $data['product_id'] = $itemId;
-                                break;
-                            case 'specific_categories':
-                                $data['category_id'] = $itemId;
-                                break;
-                            case 'combos_only':
-                                $data['combo_id'] = $itemId;
-                                break;
+                // Add new product relationships based on the type
+                $type = $request->applicable_items;
+                $shouldSwitchToAllItems = false;
+                
+                switch ($type) {
+                    case 'specific_products':
+                        if ($request->has('product_ids')) {
+                            // Kiểm tra xem đã chọn tất cả sản phẩm chưa
+                            $allProductCount = Product::count();
+                            $selectedProductCount = count($request->product_ids);
+                            
+                            if ($allProductCount === $selectedProductCount) {
+                                Log::info('All products are selected, switching to all_items mode');
+                                $shouldSwitchToAllItems = true;
+                            } else {
+                                foreach ($request->product_ids as $productId) {
+                                    // Kiểm tra xem sản phẩm có tồn tại không
+                                    $productExists = Product::where('id', $productId)->exists();
+                                    if (!$productExists) {
+                                        continue; // Bỏ qua nếu không tồn tại
+                                    }
+                                    
+                                    DiscountCodeProduct::create([
+                                        'discount_code_id' => $discountCode->id,
+                                        'product_id' => $productId,
+                                        'category_id' => null,
+                                        'combo_id' => null,
+                                    ]);
+                                }
+                            }
                         }
+                        break;
                         
-                        DiscountCodeProduct::create($data);
-                    }
+                    case 'specific_categories':
+                        if ($request->has('category_ids')) {
+                            // Kiểm tra xem đã chọn tất cả danh mục chưa
+                            $allCategoryCount = Category::count();
+                            $selectedCategoryCount = count($request->category_ids);
+                            
+                            if ($allCategoryCount === $selectedCategoryCount) {
+                                Log::info('All categories are selected, switching to all_items mode');
+                                $shouldSwitchToAllItems = true;
+                            } else {
+                                foreach ($request->category_ids as $categoryId) {
+                                    // Kiểm tra xem danh mục có tồn tại không
+                                    $categoryExists = Category::where('id', $categoryId)->exists();
+                                    if (!$categoryExists) {
+                                        continue; // Bỏ qua nếu không tồn tại
+                                    }
+                                    
+                                    DiscountCodeProduct::create([
+                                        'discount_code_id' => $discountCode->id,
+                                        'product_id' => null,
+                                        'category_id' => $categoryId,
+                                        'combo_id' => null,
+                                    ]);
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'combos_only':
+                        if ($request->has('combo_ids')) {
+                            // Kiểm tra xem đã chọn tất cả combo chưa
+                            $allComboCount = Combo::count();
+                            $selectedComboCount = count($request->combo_ids);
+                            
+                            if ($allComboCount === $selectedComboCount) {
+                                Log::info('All combos are selected, switching to all_combos mode');
+                                // Chuyển sang all_combos thay vì giữ nguyên combos_only
+                                $discountCode->update(['applicable_items' => 'all_combos']);
+                                
+                                // Xóa các liên kết cụ thể vì đã chọn tất cả
+                                DiscountCodeProduct::where('discount_code_id', $discountCode->id)
+                                    ->where('combo_id', '!=', null)
+                                    ->delete();
+                                $shouldSwitchToAllItems = false;
+                                
+                                // Thêm thông báo flash cho người dùng
+                                session()->flash('info', 'Đã tự động chuyển sang chế độ "Tất cả combo" vì bạn đã chọn tất cả combo hiện có.');
+                            } else {
+                                foreach ($request->combo_ids as $comboId) {
+                                    // Kiểm tra xem combo có tồn tại không
+                                    $comboExists = Combo::where('id', $comboId)->exists();
+                                    if (!$comboExists) {
+                                        continue; // Bỏ qua nếu không tồn tại
+                                    }
+                                    
+                                    DiscountCodeProduct::create([
+                                        'discount_code_id' => $discountCode->id,
+                                        'product_id' => null,
+                                        'category_id' => null,
+                                        'combo_id' => $comboId,
+                                    ]);
+                                }
+                            }
+                        }
+                        break;
                 }
+                
+                // Nếu đã chọn tất cả sản phẩm/danh mục/combo, chuyển thành 'all_items'
+                if ($shouldSwitchToAllItems) {
+                    $discountCode->update(['applicable_items' => 'all_items']);
+                    
+                    $itemTypeMessage = '';
+                    switch ($type) {
+                        case 'specific_products':
+                            $itemTypeMessage = 'sản phẩm';
+                            break;
+                        case 'specific_categories':
+                            $itemTypeMessage = 'danh mục';
+                            break;
+                        case 'combos_only':
+                            $itemTypeMessage = 'combo';
+                            break;
+                    }
+                    
+                    session()->flash('info', 'Đã tự động chuyển sang chế độ "Tất cả sản phẩm" vì bạn đã chọn tất cả ' . $itemTypeMessage . ' hiện có.');
+                }
+            } else {
+                // Nếu chọn "Tất cả sản phẩm", xóa tất cả các liên kết sản phẩm cụ thể
+                Log::info('All items selected, deleting all product relationships');
+                DiscountCodeProduct::where('discount_code_id', $discountCode->id)->delete();
             }
             
             // Handle assigned users if discount code is personal

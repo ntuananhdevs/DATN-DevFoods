@@ -227,6 +227,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         // Liên kết sản phẩm/danh mục/combo
         Route::post('/{id}/products', [DiscountCodeController::class, 'linkProduct'])->name('link-product');
         Route::delete('/{id}/products/{product}', [DiscountCodeController::class, 'unlinkProduct'])->name('unlink-product');
+        // Liên kết biến thể sản phẩm
+        Route::post('/{id}/product-variants', [DiscountCodeController::class, 'linkProductVariant'])->name('link-product-variant');
+        Route::delete('/{id}/product-variants/{variant}', [DiscountCodeController::class, 'unlinkProductVariant'])->name('unlink-product-variant');
         // Gán mã cho người dùng
         Route::post('/{id}/assign-users', [DiscountCodeController::class, 'assignUsers'])->name('assign-users');
         Route::delete('/{id}/users/{user}', [DiscountCodeController::class, 'unassignUser'])->name('unassign-user');
@@ -234,6 +237,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/{id}/usage-history', [DiscountCodeController::class, 'usageHistory'])->name('usage-history');
         // Ajax endpoint to get users by rank
         Route::post('/get-users-by-rank', [DiscountCodeController::class, 'getUsersByRank'])->name('users-by-rank');
+        // Lấy sản phẩm/danh mục/combo theo chi nhánh
+        Route::get('/products-by-branch', [DiscountCodeController::class, 'getProductsByBranch'])->name('products-by-branch');
+        Route::get('/variants-by-branch', [DiscountCodeController::class, 'getVariantsByBranch'])->name('variants-by-branch');
     });
 
     // Product Stock Management Routes

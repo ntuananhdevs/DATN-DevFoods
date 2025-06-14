@@ -414,7 +414,11 @@
                                 </div>
                                 <div class="checkbox-group">
                                     <input type="radio" name="applicable_items" id="applicable_items_combos" value="combos_only" {{ old('applicable_items', $discountCode->applicable_items) == 'combos_only' ? 'checked' : '' }}>
-                                    <label for="applicable_items_combos">Chỉ áp dụng cho combo</label>
+                                    <label for="applicable_items_combos">Combo cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_all_combos" value="all_combos" {{ old('applicable_items', $discountCode->applicable_items) == 'all_combos' ? 'checked' : '' }}>
+                                    <label for="applicable_items_all_combos">Tất cả combo</label>
                                 </div>
                             </div>
                             @error('applicable_items')
@@ -425,6 +429,16 @@
                         <div id="products_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_products') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Mẹo:</strong> Nếu bạn chọn tất cả sản phẩm, hệ thống sẽ tự động chuyển sang chế độ "Tất cả sản phẩm".
+                                        </p>
+                                    </div>
+                                </div>
                                 <div class="relative mb-2">
                                     <input type="text" id="product_search" placeholder="Tìm kiếm sản phẩm..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -442,7 +456,7 @@
                                                 </svg>
                                                 SP
                                             </span>
-                                            <input type="checkbox" name="items[]" id="product_{{ $product->id }}" value="{{ $product->id }}" 
+                                            <input type="checkbox" name="product_ids[]" id="product_{{ $product->id }}" value="{{ $product->id }}" 
                                                 {{ in_array($product->id, $selectedProducts ?? []) ? 'checked' : '' }}>
                                             <label for="product_{{ $product->id }}">
                                                 {{ $product->name }}
@@ -460,6 +474,16 @@
                         <div id="categories_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_categories') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn danh mục</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Mẹo:</strong> Nếu bạn chọn tất cả danh mục, hệ thống sẽ tự động chuyển sang chế độ "Tất cả sản phẩm".
+                                        </p>
+                                    </div>
+                                </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @foreach($categories as $category)
                                         <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
@@ -469,7 +493,7 @@
                                                 </svg>
                                                 DM
                                             </span>
-                                            <input type="checkbox" name="items[]" id="category_{{ $category->id }}" value="{{ $category->id }}" 
+                                            <input type="checkbox" name="category_ids[]" id="category_{{ $category->id }}" value="{{ $category->id }}" 
                                                 {{ in_array($category->id, $selectedCategories ?? []) ? 'checked' : '' }}>
                                             <label for="category_{{ $category->id }}">
                                                 {{ $category->name }}
@@ -487,6 +511,16 @@
                         <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'combos_only') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn combo</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Mẹo:</strong> Nếu bạn chọn tất cả combo, hệ thống sẽ tự động chuyển sang chế độ "Tất cả combo".
+                                        </p>
+                                    </div>
+                                </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @foreach($combos as $combo)
                                         <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
@@ -496,7 +530,7 @@
                                                 </svg>
                                                 Combo
                                             </span>
-                                            <input type="checkbox" name="items[]" id="combo_{{ $combo->id }}" value="{{ $combo->id }}" 
+                                            <input type="checkbox" name="combo_ids[]" id="combo_{{ $combo->id }}" value="{{ $combo->id }}" 
                                                 {{ in_array($combo->id, $selectedCombos ?? []) ? 'checked' : '' }}>
                                             <label for="combo_{{ $combo->id }}">
                                                 {{ $combo->name }}
@@ -531,6 +565,16 @@
                         <div class="form-group mb-3" id="branch_selection" @if(old('applicable_scope', $discountCode->applicable_scope) != 'specific_branches') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn chi nhánh</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Mẹo:</strong> Nếu bạn chọn tất cả chi nhánh, hệ thống sẽ tự động chuyển sang chế độ "Tất cả chi nhánh".
+                                        </p>
+                                    </div>
+                                </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
                                     @foreach($branches as $branch)
                                         <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
@@ -984,42 +1028,42 @@
         // Add event listeners for select/unselect all buttons
         if (selectAllProducts) {
             selectAllProducts.addEventListener('click', function() {
-                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = true);
             });
         }
         
         if (unselectAllProducts) {
             unselectAllProducts.addEventListener('click', function() {
-                const checkboxes = productsSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
         
         if (selectAllCategories) {
             selectAllCategories.addEventListener('click', function() {
-                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = true);
             });
         }
         
         if (unselectAllCategories) {
             unselectAllCategories.addEventListener('click', function() {
-                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
         
         if (selectAllCombos) {
             selectAllCombos.addEventListener('click', function() {
-                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = true);
             });
         }
         
         if (unselectAllCombos) {
             unselectAllCombos.addEventListener('click', function() {
-                const checkboxes = combosSelectionDiv.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
@@ -1056,29 +1100,51 @@
         
         function toggleBranchSelection() {
             const selectedScope = document.querySelector('input[name="applicable_scope"]:checked').value;
+            console.log('Selected scope:', selectedScope);
             
             if (branchSelectionDiv) {
                 if (selectedScope === 'specific_branches') {
                     branchSelectionDiv.style.display = 'block';
                 } else {
                     branchSelectionDiv.style.display = 'none';
+                    // Bỏ chọn tất cả các checkbox chi nhánh khi chọn "Tất cả chi nhánh"
+                    const branchCheckboxes = document.querySelectorAll('input[name="branch_ids[]"]');
+                    branchCheckboxes.forEach(checkbox => checkbox.checked = false);
                 }
             }
         }
         
         function toggleItemsSelection() {
             const selectedItems = document.querySelector('input[name="applicable_items"]:checked').value;
+            console.log('Selected items:', selectedItems);
             
             if (productsSelectionDiv) {
                 productsSelectionDiv.style.display = selectedItems === 'specific_products' ? 'block' : 'none';
+                if (selectedItems !== 'specific_products') {
+                    // Bỏ chọn tất cả các checkbox sản phẩm khi không chọn "Sản phẩm cụ thể"
+                    const productCheckboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
+                    productCheckboxes.forEach(checkbox => checkbox.checked = false);
+                }
             }
             
             if (categoriesSelectionDiv) {
                 categoriesSelectionDiv.style.display = selectedItems === 'specific_categories' ? 'block' : 'none';
+                if (selectedItems !== 'specific_categories') {
+                    // Bỏ chọn tất cả các checkbox danh mục khi không chọn "Danh mục cụ thể"
+                    const categoryCheckboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
+                    categoryCheckboxes.forEach(checkbox => checkbox.checked = false);
+                }
             }
             
             if (combosSelectionDiv) {
+                // Hiển thị phần chọn combo chỉ khi chọn "Combo cụ thể" (combos_only)
+                // Không hiển thị khi chọn "Tất cả combo" (all_combos)
                 combosSelectionDiv.style.display = selectedItems === 'combos_only' ? 'block' : 'none';
+                if (selectedItems !== 'combos_only') {
+                    // Bỏ chọn tất cả các checkbox combo khi không chọn "Combo cụ thể"
+                    const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
+                    comboCheckboxes.forEach(checkbox => checkbox.checked = false);
+                }
             }
         }
         

@@ -72,6 +72,11 @@ class DiscountCode extends Model
         return $this->hasMany(DiscountCodeProduct::class);
     }
 
+    public function productVariants()
+    {
+        return $this->hasMany(DiscountCodeProductVariant::class);
+    }
+
     public function users()
     {
         return $this->hasMany(UserDiscountCode::class);
