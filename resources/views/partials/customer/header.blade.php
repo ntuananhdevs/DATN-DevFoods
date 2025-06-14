@@ -1,110 +1,143 @@
-<header class="bg-white shadow">
+<header class="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
     <div class="container mx-auto px-4">
-        <div class="flex justify-between items-center py-4">
+        <div class="flex h-16 items-center justify-between">
             <div class="flex items-center">
-                <a href="{{ route('customer.home') }}" class="text-xl font-bold text-indigo-600">DevFoods</a>
-                <nav class="ml-10 hidden md:flex space-x-6">
-                    <a href="{{ route('customer.home') }}" class="text-gray-700 hover:text-indigo-600">Trang chủ</a>
-                    <a href="#" class="text-gray-700 hover:text-indigo-600">Thực đơn</a>
-                    <a href="#" class="text-gray-700 hover:text-indigo-600">Khuyến mãi</a>
-                    <a href="#" class="text-gray-700 hover:text-indigo-600">Liên hệ</a>
+                <button id="mobile-menu-button" class="md:hidden">
+                    <i class="fas fa-bars h-5 w-5"></i>
+                    <span class="sr-only">Mở menu</span>
+                </button>
+
+                <a href="/" class="flex items-center gap-2 ml-4 md:ml-0">
+                    <span class="font-bold text-xl text-orange-500">PolyCrispyWings</span>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-6 ml-10">
+                    <a href="/" class="text-sm font-medium {{ request()->is('/') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Trang Chủ
+                    </a>
+                    <a href="{{ asset('/shop/products') }}" class="text-sm font-medium {{ request()->is('shop/products*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Thực Đơn
+                    </a>
+                    <a href="{{ asset('/promotions') }}" class="text-sm font-medium {{ request()->is('promotions*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Khuyến Mãi
+                    </a>
+                    <a href="{{ asset('/branchs') }}" class="text-sm font-medium {{ request()->is('branchs*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Cửa Hàng
+                    </a>
+                    <a href="{{ asset('/about') }}" class="text-sm font-medium {{ request()->is('about*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Về Chúng Tôi
+                    </a>
+                    <a href="{{ asset('/support') }}" class="text-sm font-medium {{ request()->is('support*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Hỗ Trợ
+                    </a>
+                    <a href="{{ asset('/contact') }}" class="text-sm font-medium {{ request()->is('contact*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Liên Hệ
+                    </a>
+                    <a href="{{ asset('/hiring-driver') }}" class="text-sm font-medium {{ request()->is('hiring-driver*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                        Tuyển dụng
+                    </a>
                 </nav>
             </div>
-            
-            <div class="flex items-center space-x-4">
-                @auth
-                    <a href="#" class="text-gray-700 hover:text-indigo-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
+
+            <div class="flex items-center gap-4">
+                <div id="search-container" class="relative">
+                    <button id="search-button" class="p-2">
+                        <ion-icon class="h-6 w-6" name="search-outline"></ion-icon>
+                        <span class="sr-only">Tìm kiếm</span>
+                    </button>
+                    <div id="search-input-container" class="hidden absolute right-0 top-full mt-1 w-64 bg-white shadow-lg rounded-lg p-2 z-50">
+                        <div class="flex items-center">
+                            <input type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="Tìm kiếm...">
+                            <button id="close-search" class="ml-2">
+                                <i class="fas fa-times h-4 w-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="wishlist-container" class="relative">
+                    <a href="{{ route('wishlist.index') }}" class="relative">
+                        <ion-icon class="h-6 w-6" name="heart-outline"></ion-icon>
+                        <span class="absolute bottom-4 left-3 bg-red-500 text-white rounded-full h-4 w-4 text-xs flex items-center justify-center">
+                            {{ auth()->check() ? auth()->user()->wishlist->count() : 0 }}
+                        </span>
                     </a>
-                    
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center text-gray-700 hover:text-indigo-600">
-                            <span class="mr-2">{{ Auth::user()->full_name }}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
+                </div>
+
+                @auth
+                    <div class="relative" id="user-dropdown-container">
+                        <button class="flex items-center p-2" id="user-dropdown-button">
+                            <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
+                            <span class="ml-2 text-sm">{{ Auth::user()->full_name }}</span>
+                            <ion-icon class="h-4 w-4 ml-1" name="chevron-down-outline"></ion-icon>
                         </button>
-                        
-                        <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">Hồ sơ cá nhân</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">Đơn hàng của tôi</a>
-                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">Địa chỉ giao hàng</a>
-                            <hr class="my-1">
-                            <form method="POST" action="{{ route('customer.logout') }}">
+                        <div class="absolute right-0 top-full mt-1 w-48 bg-white shadow-lg rounded-lg py-2 z-50 hidden dropdown-menu" id="user-dropdown-menu">
+                            <a href="{{ route('customer.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Tài khoản của tôi
+                            </a>
+                            <a href="{{ route('customer.profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Chỉnh sửa hồ sơ
+                            </a>
+                            <a href="{{ route('customer.profile.setting') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Cài đặt
+                            </a>
+                            <form action="{{ route('customer.logout') }}" method="POST">
                                 @csrf
-                                <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50">Đăng xuất</button>
+                                <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Đăng xuất
+                                </button>
                             </form>
                         </div>
                     </div>
                 @else
-                    <a href="{{ route('customer.login') }}" class="text-gray-700 hover:text-indigo-600">Đăng nhập</a>
-                    <a href="{{ route('customer.register') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Đăng ký</a>
+                    <a href="{{ route('customer.login') }}" class="p-2 flex items-center">
+                        <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
+                        <span class="ml-2 text-sm">Đăng nhập</span>
+                    </a>
+                    
                 @endauth
+
+                <a href="{{ asset('/cart') }}" class="relative p-2">
+                    <ion-icon class="h-6 w-6" name="cart-outline"></ion-icon>
+                    <span id="cart-counter" class="absolute -top-0 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-orange-500 text-white text-xs rounded-full">{{ session('cart_count', 0) }}</span>
+                    <span class="sr-only">Giỏ hàng</span>
+                </a>
             </div>
         </div>
     </div>
 </header>
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-orange" href="{{ url('/') }}">PolyCrispyWings</a>
-        
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/') }}">Trang Chủ</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('shop/products') }}">Thực Đơn</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/store') }}">Cửa Hàng</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/promotions') }}">Khuyến Mãi</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/blog') }}">Bài Viết</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/about') }}">Về Chúng Tôi</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url('/contact') }}">Liên Hệ</a>
-                </li>
-            </ul>
-            
-            <div class="d-flex align-items-center">
-                <div class="search-box me-3">
-                    <form class="d-flex" action="{{ url('/search') }}" method="GET">
-                        <input class="form-control me-2" type="search" name="query" placeholder="Tìm kiếm..." aria-label="Search">
-                        <button class="btn btn-outline-secondary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
-                </div>
-                
-                <div class="d-flex align-items-center">
-                    <a href="{{ url('/profile') }}" class="btn btn-link text-dark me-2">
-                        <i class="fas fa-user"></i>
-                    </a>
-                    <a href="{{ url('/cart') }}" class="btn btn-link text-dark position-relative">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span id="cart-counter" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-orange">
-                            {{ session('cart_count', 0) }}
-                        </span>
-                    </a>
-                    <div class="d-none d-lg-flex align-items-center ms-3">
-                        <i class="fas fa-phone text-orange me-1"></i>
-                        <span class="fw-medium">1900 1234</span>
-                    </div>
-                </div>
-            </div>
+
+<!-- Mobile Menu Sidebar -->
+<div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+    <div class="bg-white h-full w-[300px] p-4 transform -translate-x-full transition-transform duration-300" id="mobile-menu-content">
+        <div class="flex justify-between items-center mb-6">
+            <span class="font-bold text-xl text-orange-500">FastFood</span>
+            <button id="close-mobile-menu">
+                <i class="fas fa-times h-5 w-5"></i>
+            </button>
         </div>
-    </nav>
-</header>
+        <nav class="flex flex-col gap-4">
+            <a href="/" class="text-lg font-medium {{ request()->is('/') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Trang Chủ
+            </a>
+            <a href="/products" class="text-lg font-medium {{ request()->is('products*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Thực Đơn
+            </a>
+            <a href="/promotions" class="text-lg font-medium {{ request()->is('promotions*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Khuyến Mãi
+            </a>
+            <a href="/stores" class="text-lg font-medium {{ request()->is('stores*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Cửa Hàng
+            </a>
+            <a href="/about" class="text-lg font-medium {{ request()->is('about*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Về Chúng Tôi
+            </a>
+            <a href="/contact" class="text-lg font-medium {{ request()->is('contact*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Liên Hệ
+            </a>
+            <a href="/recruitment" class="text-lg font-medium {{ request()->is('recruitment*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                Tuyển dụng
+            </a>
+        </nav>
+    </div>
+</div>

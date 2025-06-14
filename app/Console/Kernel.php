@@ -13,15 +13,18 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        
+
         // Xử lý hàng đợi email mỗi phút
         $schedule->command('queue:process')->everyMinute()->withoutOverlapping();
-        
+
         // Xóa các job đã hoàn thành sau 7 ngày
         $schedule->command('queue:prune-batches --hours=168')->daily();
-        
+
         // Xóa các job thất bại sau 30 ngày
         $schedule->command('queue:prune-failed --hours=720')->daily();
+        
+        // Dọn dẹp file avatar tạm thời mỗi giờ
+        $schedule->command('avatar:cleanup-temp --force')->hourly();
     }
 
     /**
@@ -29,8 +32,8 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
-} 
+}

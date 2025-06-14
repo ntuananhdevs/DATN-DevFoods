@@ -8,12 +8,16 @@ use App\Models\User;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\BranchService;
 
 class WishlistController extends Controller
 {
-    public function __construct()
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
     {
         $this->middleware('CustomerAuth'); // Sử dụng đúng tên class của middleware
+        $this->branchService = $branchService;
     }
 
     public function index()

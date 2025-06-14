@@ -3,1476 +3,1142 @@
 @section('title', 'Chỉnh sửa sản phẩm')
 
 @section('content')
-<style>
-  /* Tăng kích thước cho input */
-  input[type="text"],
-  input[type="number"],
-  input[type="date"],
-  input[type="datetime-local"],
-  select {
-    padding: 0.625rem 0.75rem;
-    height: 2.75rem;
-  }
-  
-  textarea {
-    padding: 0.625rem 0.75rem;
-    min-height: 6rem;
-  }
-  
-  /* CSS cho khu vực tải lên hình ảnh */
-  #image-placeholder {
-    transition: all 0.2s ease;
-    border: 2px dashed #d1d5db;
-  }
-  
-  #image-placeholder:hover {
-    background-color: #f3f4f6;
-    border-color: #9ca3af;
-  }
-  
-  /* CSS cho gallery hình ảnh */
-  #image-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 0.75rem;
-    margin-top: 1rem;
-  }
-  
-  .image-item {
-    position: relative;
-    overflow: hidden;
-    border-radius: 0.375rem;
-    border: 1px solid #e5e7eb;
-    padding-bottom: 100%;
-  }
-  
-  .image-item img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .image-remove-btn {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    background-color: rgba(239, 68, 68, 0.9);
-    color: white;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 1;
-    transition: all 0.2s ease;
-  }
-  
-  .image-remove-btn:hover {
-    background-color: rgba(220, 38, 38, 1);
-  }
 
-  /* CSS cho attributes và variants */
-  .attribute-group {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .variant-value-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .remove-value-btn {
-    color: #ef4444;
-    cursor: pointer;
-  }
-
-  .remove-value-btn:hover {
-    color: #dc2626;
-  }
-</style>
+@section('page-style-prd-edit')
+    <link rel="stylesheet" href="{{ asset('css/admin/product.css') }}">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+@endsection
 
 <main class="container">
     <h1 class="text-3xl font-extrabold mb-1">Chỉnh Sửa Sản Phẩm</h1>
-    <p class="text-gray-500 mb-8">Chỉnh sửa thông tin chi tiết sản phẩm</p>
+    <p class="text-gray-500 mb-8">Cập nhật thông tin chi tiết của sản phẩm</p>
 
     <form id="edit-product-form" class="space-y-8" action="{{ route('admin.products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
-      <!-- Basic Information -->
-      <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-900">Thông tin cơ bản</h2>
-            <p class="text-gray-500 text-sm mt-1">Nhập thông tin cơ bản của sản phẩm</p>
-          </div>
-        </header>
-
-        <div class="px-6 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="space-y-5 md:col-span-2">
-            <div>
-              <label for="name" class="block text-sm font-medium text-gray-700">Tên sản phẩm <span class="text-red-500">*</span></label>
-              <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm" value="{{ old('name', $product->name) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-              <div class="error-message text-red-500 text-xs mt-1" id="name-error"></div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-            <div>
-                            <label for="category_id" class="block text-sm font-medium text-gray-700">Danh mục <span class="text-red-500">*</span></label>
-                            <select id="category_id" name="category_id" class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="">Chọn danh mục</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
-                                @endforeach
-                </select>
-                <div class="error-message text-red-500 text-xs mt-1" id="category_id-error"></div>
-              </div>
-              <div>
-                            <label for="base_price" class="block text-sm font-medium text-gray-700">Giá cơ bản <span class="text-red-500">*</span></label>
-                <div class="relative mt-1">
-                                <input type="number" id="base_price" name="base_price" min="0" step="0.01" placeholder="0" value="{{ old('base_price', $product->base_price) }}" class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                            </div>
-                <div class="error-message text-red-500 text-xs mt-1" id="base_price-error"></div>
+        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Thông tin cơ bản</h2>
+                    <p class="text-gray-500 text-sm mt-1">Cập nhật thông tin cơ bản của sản phẩm</p>
                 </div>
-            </div>
+            </header>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                            <label for="preparation_time" class="block text-sm font-medium text-gray-700">Thời gian chuẩn bị (phút)</label>
-                            <input type="number" id="preparation_time" name="preparation_time" min="0" placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time', $product->preparation_time) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                            <div class="error-message text-red-500 text-xs mt-1" id="preparation_time-error"></div>
-              </div>
-            </div>
+            <div class="px-6 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-5 md:col-span-2">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">Tên sản phẩm <span
+                                class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm"
+                            value="{{ old('name', $product->name) }}"
+                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-500 @enderror" />
+                        @error('name')
+                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-            <div>
-                        <label for="short_description" class="block text-sm font-medium text-gray-700">Mô tả ngắn</label>
-                        <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('short_description', $product->short_description) }}</textarea>
-            </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="category_id" class="block text-sm font-medium text-gray-700"> Danh mục <span
+                                    class="text-red-500">*</span></label>
+                            <select id="category_id" name="category_id"
+                                class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('category_id') border-red-500 @enderror">
+                                <option value=""> Chọn danh mục</option>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category->id }}"
+                                        {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
+                                         {{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('category_id')
+                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="base_price" class="block text-sm font-medium text-gray-700">Giá cơ bản <span
+                                    class="text-red-500">*</span></label>
+                            <div class="relative mt-1">
+                                <input type="number" id="base_price" name="base_price" min="0" step="0.01"
+                                    placeholder="0" value="{{ old('base_price', $product->base_price) }}"
+                                    class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('base_price') border-red-500 @enderror" />
+                            </div>
+                            @error('base_price')
+                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
 
-            <div>
-              <label for="description" class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
-                        <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">{{ old('description', $product->description) }}</textarea>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="preparation_time" class="block text-sm font-medium text-gray-700">Thời gian
+                                chuẩn bị (phút) <span
+                                class="text-red-500">*</span></label>
+                            <input type="number" id="preparation_time" name="preparation_time" min="0"
+                                placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time', $product->preparation_time) }}"
+                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('preparation_time') border-red-500 @enderror" />
+                            @error('preparation_time')
+                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
                     <div>
-                        <label for="ingredients" class="block text-sm font-medium text-gray-700">Nguyên liệu</label>
-                        <textarea id="ingredients" name="ingredients" rows="5" placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none">@php
-$ingredientsData = $product->ingredients;
-if (is_array($ingredientsData)) {
-    // Check if it's a structured format (with categories)
-    $isStructured = false;
-    foreach ($ingredientsData as $key => $value) {
-        if (is_array($value)) {
-            $isStructured = true;
-            break;
-        }
-    }
-    
-    if ($isStructured) {
-        // Format 1: Structured with categories
-        foreach ($ingredientsData as $category => $items) {
-            echo $category . ":\n";
-            if (is_array($items)) {
-                foreach ($items as $item) {
-                    echo "- " . $item . "\n";
-                }
-            }
-        }
-    } else {
-        // Format 2: Simple array
-        foreach ($ingredientsData as $ingredient) {
-            if (is_string($ingredient)) {
-                echo $ingredient . "\n";
-            }
-        }
-    }
-} elseif (is_string($ingredientsData)) {
-    // Just output as is if it's a string
-    echo $ingredientsData;
-} else {
-    // Handle other cases (null, object, etc.)
-    echo '';
-}
-@endphp</textarea>
-                        <div class="error-message text-red-500 text-xs mt-1" id="ingredients-error"></div>
-            </div>
-
-            <div>
-                <span class="block text-sm font-medium text-gray-700">Tùy chọn</span>
-              <div class="space-y-4 mt-2">
-                <div class="flex gap-4">
-                  <label class="inline-flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }} class="form-checkbox text-blue-600" />
-                    <span>Sản phẩm nổi bật</span>
-                  </label>
-                  
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái sản phẩm</label>
-                  <div class="flex gap-4">
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" value="coming_soon" {{ old('status', $product->status) == 'coming_soon' ? 'checked' : '' }} class="form-radio text-blue-600" />
-                      <span>Sắp ra mắt</span>
-                    </label>
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" value="selling" {{ old('status', $product->status) == 'selling' ? 'checked' : '' }} class="form-radio text-blue-600" />
-                      <span>Đang bán</span>
-                    </label>
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="status" value="discontinued" {{ old('status', $product->status) == 'discontinued' ? 'checked' : '' }} class="form-radio text-blue-600" />
-                      <span>Ngừng bán</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label for="release_at" class="block text-sm font-medium text-gray-700">Ngày ra mắt</label>
-                  <input type="datetime-local" id="release_at" name="release_at" value="{{ old('release_at', $product->release_at) }}" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh sản phẩm <span class="text-red-500">*</span></label>
-              <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
-                <!-- Primary Image -->
-                <div class="md:col-span-1">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
-                  <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
-                    <div id="image-placeholder" class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
-                      <div id="main-image-preview" class="absolute inset-0 w-full h-full {{ $primaryImage ? '' : 'hidden' }}">
-                        <img src="{{ $primaryImage ? Storage::disk('s3')->url($primaryImage->img) : '' }}" alt="Main image preview" class="w-full h-full object-cover" />
-                      </div>
-                      <div id="upload-content" class="flex flex-col items-center justify-center {{ $primaryImage ? 'hidden' : '' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-3" width="48" height="48" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="17 8 12 3 7 8" />
-                          <line x1="12" y1="3" x2="12" y2="15" />
-                        </svg>
-                        <p class="text-base text-gray-600 mb-2">Kéo thả ảnh chính vào đây</p>
-                        <p class="text-sm text-gray-500 mb-4">hoặc</p>
-                        <button type="button" id="select-primary-image-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Chọn ảnh chính</button>
-                        <p class="text-xs text-gray-500 mt-3">Hỗ trợ: JPG, PNG, GIF (Tối đa 5MB)</p>
-                      </div>
-                      <input type="file" id="primary-image-upload" name="primary_image" accept="image/*" class="hidden" />
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Nguyên liệu 
+                            <span class="text-red-500">*</span>
+                        </label>
+                    
+                        @if(!empty($product->ingredients))
+                            @php
+                                $ingredients = is_string($product->ingredients) ? json_decode($product->ingredients, true) : $product->ingredients;
+                                // Chuyển tất cả nguyên liệu thành chuỗi để hiển thị trong một textarea
+                                $allIngredients = [];
+                                foreach ($ingredients as $category => $items) {
+                                    if (is_array($items)) {
+                                        $allIngredients[] = implode(', ', (array)$items);
+                                    } else {
+                                        $allIngredients[] = $items;
+                                    }
+                                }
+                                $ingredientsText = implode(', ', $allIngredients);
+                            @endphp
+                    
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border border-gray-300 rounded-lg" rows="6">{{ $ingredientsText }}</textarea>
+                            </div>
+                        @else
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border border-gray-300 rounded-lg" rows="6" placeholder="Nhập nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, hành tây, ớt chuông)"></textarea>
+                            </div>
+                        @endif
+                    
+                        {{-- Hidden input để giữ dữ liệu nguyên liệu gốc --}}
+                        <input type="hidden" name="ingredients_raw" value="{{ $product->ingredients }}">
+                    
+                        @error('ingredients')
+                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                        @enderror
                     </div>
-                  </div>
-                  <p class="text-xs text-gray-500 mb-2">
-                  <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử dụng làm ảnh chính của sản phẩm.
-                </p>
+                    
+                    
+
+                    <div>
+                        <label for="short_description" class="block text-sm font-medium text-gray-700">Mô tả ngắn
+                            <span class="text-red-500">*</span></label>
+                        </label>
+                        <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" 
+                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('short_description') border-red-500 @enderror">{{ old('short_description', $product->short_description) }}</textarea>
+                        @error('short_description')
+                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
+                        <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm"
+                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('description') border-red-500 @enderror">{{ old('description', $product->description) }}</textarea>
+                        @error('description')
+                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700">Tùy chọn</span>
+                        <div class="space-y-4 mt-2">
+                            <div class="flex gap-4">
+                                <label class="inline-flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="is_featured" value="1"
+                                        {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}
+                                        class="form-checkbox text-blue-600" />
+                                    <span>Sản phẩm nổi bật</span>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Trạng thái sản phẩm</label>
+                                <div class="flex gap-4">
+                                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="status" value="coming_soon"
+                                            @if (old('status', $product->status) == 'coming_soon') checked @endif
+                                            class="form-radio text-blue-600" />
+                                        <span>Sắp ra mắt</span>
+                                    </label>
+                                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="status" value="selling"
+                                            @if (old('status', $product->status) == 'selling') checked @endif
+                                            class="form-radio text-blue-600" />
+                                        <span>Đang bán</span>
+                                    </label>
+                                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="status" value="discontinued"
+                                            @if (old('status', $product->status) == 'discontinued') checked @endif
+                                            class="form-radio text-blue-600" />
+                                        <span>Ngừng bán</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="release_at_container" class="hidden">
+                                <label for="release_at" class="block text-sm font-medium text-gray-700">Ngày ra mắt</label>
+                                <input type="datetime-local" id="release_at" name="release_at"
+                                    value="{{ old('release_at', $product->release_at ? $product->release_at->format('Y-m-d\TH:i') : '') }}"
+                                    class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Additional Images -->
-                <div class="md:col-span-2">
-                  <div class="flex justify-between items-center mb-2">
-                    <label class="block text-sm font-medium text-gray-700">Ảnh phụ</label>
-                    <button type="button" id="select-additional-images-btn" class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                      </svg>
-                      Thêm ảnh
-                    </button>
-                    <input type="file" id="additional-images-upload" name="images[]" accept="image/*" multiple class="hidden" />
-                  </div>
-                  <div id="image-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh sản phẩm <span
+                                class="text-red-500">*</span></label>
+                        @error('primary_image')
+                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                        @enderror
+                        @error('images')
+                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                        @enderror
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <!-- Primary Image -->
+                            <div class="md:col-span-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
+                                <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                                    <div id="image-placeholder"
+                                        class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                                        @php
+                                            $primaryImage = $product->images->where('is_primary', true)->first();
+                                        @endphp
+                                        @if($primaryImage)
+                                            <div id="main-image-preview" class="absolute inset-0 w-full h-full">
+                                                <img src="{{ Storage::disk('s3')->url($primaryImage->img) }}" alt="Current main image"
+                                                    class="w-full h-full object-cover" />
+                                                <div class="absolute top-2 right-2">
+                                                    <button type="button" id="change-primary-image-btn"
+                                                        class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors">Thay đổi</button>
+                                                </div>
+                                            </div>
+                                            <div id="upload-content" class="flex flex-col items-center justify-center hidden">
+                                        @else
+                                            <div id="main-image-preview" class="absolute inset-0 w-full h-full hidden">
+                                                <img src="" alt="Main image preview"
+                                                    class="w-full h-full object-cover" />
+                                            </div>
+                                            <div id="upload-content" class="flex flex-col items-center justify-center">
+                                        @endif
+                                            <svg xmlns="http://www.w3.org/2000/svg"
+                                                class="stroke-current text-gray-400 mb-3" width="48"
+                                                height="48" fill="none" stroke-width="1.5"
+                                                stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                <polyline points="17 8 12 3 7 8" />
+                                                <line x1="12" y1="3" x2="12" y2="15" />
+                                            </svg>
+                                            <p class="text-base text-gray-600 mb-2">Kéo thả ảnh chính vào đây</p>
+                                            <p class="text-sm text-gray-500 mb-4">hoặc</p>
+                                            <button type="button" id="select-primary-image-btn"
+                                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Chọn
+                                                ảnh chính</button>
+                                            <p class="text-xs text-gray-500 mt-3">Hỗ trợ: JPG, PNG, GIF (Tối đa 5MB)
+                                            </p>
+                                        </div>
+                                        <input type="file" id="primary-image-upload" name="primary_image"
+                                            accept="image/*" class="hidden" />
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mb-2">
+                                    <span class="font-semibold text-blue-600">Lưu ý:</span> Ảnh đầu tiên sẽ được sử
+                                    dụng làm ảnh chính của sản phẩm.
+                                </p>
+                            </div>
+
+                            <!-- Additional Images -->
+                            <div class="md:col-span-2">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Ảnh phụ</label>
+                                    <button type="button" id="select-additional-images-btn"
+                                        class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                            fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                        Thêm ảnh
+                                    </button>
+                                    <input type="file" id="additional-images-upload" name="images[]"
+                                        accept="image/*" multiple class="hidden" />
+                                </div>
+                                <div id="image-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                    @if($product->images && $product->images->count() > 0)
+                                        @foreach($product->images->where('is_primary', false) as $image)
+                                            <div class="relative group">
+                                                <img src="{{ Storage::disk('s3')->url($image->img) }}" alt="Product image"
+                                                    class="w-full h-24 object-cover rounded-md border border-gray-200">
+                                                <div class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button type="button" class="remove-existing-image bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                                                        data-image-id="{{ $image->id }}">
+                                                        ×
+                                                    </button>
+                                                </div>
+                                                <input type="hidden" name="existing_images[]" value="{{ $image->id }}">
+                                            </div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
-        </div>
-      </section>
+        </section>
 
         <!-- Attributes and Variant Values -->
-          <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <header class="px-6 py-4 border-b border-gray-100">
                 <h2 class="text-xl font-semibold text-gray-900">Thuộc tính và Giá trị biến thể</h2>
                 <p class="text-gray-500 text-sm mt-1">Thêm các thuộc tính và giá trị biến thể cho sản phẩm</p>
             </header>
 
             <div class="px-6 py-6">
-                <div id="attributes-container">
-                    <!-- Load existing attributes with PHP instead of JavaScript -->
+                 <div id="attributes-container">
                     @php
-                        // Get existing attributes either directly or from variant details
-                        $existingAttributes = [];
-                        
-                        if(isset($product->attributes) && count($product->attributes) > 0) {
-                            // If we have attributes relationship loaded
-                            $existingAttributes = $product->attributes;
-                        } elseif(isset($product->variants) && count($product->variants) > 0) {
-                            // Extract attributes from variants if the attributes relationship doesn't work
-                            $attributesMap = [];
+                        // Get attributes from old input or from product variants
+                        $attributes = old('attributes', []);
+                        if (empty($attributes) && $product->variants->count() > 0) {
+                            $attributesData = [];
                             foreach ($product->variants as $variant) {
                                 foreach ($variant->productVariantDetails as $detail) {
-                                    if (isset($detail->variantValue) && isset($detail->variantValue->attribute)) {
-                                        $attributeId = $detail->variantValue->attribute->id;
-                                        $attributeName = $detail->variantValue->attribute->name;
-                                        
-                                        if (!isset($attributesMap[$attributeId])) {
-                                            $attributesMap[$attributeId] = (object)[
-                                                'id' => $attributeId,
-                                                'name' => $attributeName,
-                                                'values' => []
-                                            ];
+                                    $attrName = $detail->variantValue->attribute->name;
+                                    $attrValue = $detail->variantValue->value;
+                                    $attrPrice = $detail->variantValue->price_adjustment;
+                                    
+                                    // Find existing attribute or create new one
+                                    $attrIndex = null;
+                                    foreach ($attributesData as $index => $attr) {
+                                        if ($attr['name'] === $attrName) {
+                                            $attrIndex = $index;
+                                            break;
                                         }
-                                        
+                                    }
+                                    
+                                    if ($attrIndex === null) {
+                                        $attributesData[] = [
+                                            'name' => $attrName,
+                                            'values' => [[
+                                                'value' => $attrValue,
+                                                'price' => $attrPrice
+                                            ]]
+                                        ];
+                                    } else {
                                         // Check if value already exists
                                         $valueExists = false;
-                                        foreach ($attributesMap[$attributeId]->values as $value) {
-                                            if ($value->id == $detail->variantValue->id) {
+                                        foreach ($attributesData[$attrIndex]['values'] as $val) {
+                                            if ($val['value'] === $attrValue) {
                                                 $valueExists = true;
                                                 break;
                                             }
                                         }
-                                        
                                         if (!$valueExists) {
-                                            $attributesMap[$attributeId]->values[] = (object)[
-                                                'id' => $detail->variantValue->id,
-                                                'value' => $detail->variantValue->value,
-                                                'price_adjustment' => $detail->variantValue->price_adjustment
+                                            $attributesData[$attrIndex]['values'][] = [
+                                                'value' => $attrValue,
+                                                'price_adjustment' => $attrPrice
                                             ];
                                         }
                                     }
                                 }
                             }
-                            $existingAttributes = array_values($attributesMap);
+                            $attributes = $attributesData;
+                        }
+                        if (empty($attributes)) {
+                            $attributes = [[]];
                         }
                     @endphp
-
-                    @foreach($existingAttributes as $attrIndex => $attribute)
-                        <div class="attribute-group">
-                            <div class="flex justify-between items-center mb-4">
-                                <div class="flex-1 mr-4">
-                                    <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-                                    <input type="text" name="attributes[{{ $attrIndex }}][name]" required 
-                                        placeholder="Ví dụ: Size, Màu sắc" value="{{ $attribute->name }}" 
-                                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                                    <!-- Add hidden field to preserve attribute ID -->
-                                    <input type="hidden" name="attributes[{{ $attrIndex }}][id]" value="{{ $attribute->id }}" />
+                    
+                    @foreach ($attributes as $attrIndex => $attribute)
+                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50 attribute-group">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-md font-semibold text-gray-800">Thuộc tính {{ $attrIndex + 1 }}</h3>
+                                @if ($attrIndex > 0)
+                                    <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
+                                @endif
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="attribute_name_{{ $attrIndex }}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                                    <input type="text" id="attribute_name_{{ $attrIndex }}" name="attributes[{{ $attrIndex }}][name]" placeholder="VD: Kích thước"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ $attribute['name'] ?? '' }}">
+                                    @error("attributes.{$attrIndex}.name")
+                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="variant-values-container">
-                                @foreach($attribute->values as $valueIndex => $value)
-                                    <div class="variant-value-row">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                                            <input type="text" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][value]" 
-                                                required placeholder="Ví dụ: S, M, L" value="{{ $value->value }}" 
-                                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                                            <!-- Add hidden field to preserve value ID -->
-                                            <input type="hidden" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][id]" value="{{ $value->id }}" />
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                                            <input type="number" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" 
-                                                step="0.01" value="{{ $value->price_adjustment ?? 0 }}" 
-                                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                                        </div>
-                                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                            </svg>
-                                        </button>
+                                <div class="col-span-2">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
+                                    <div id="attribute_values_container_{{ $attrIndex }}" class="space-y-3">
+                                        @php
+                                            $values = $attribute['values'] ?? [];
+                                            if (empty($values)) {
+                                                $values = [[]];
+                                            }
+                                        @endphp
+                                        
+                                        @foreach ($values as $valueIndex => $value)
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
+                                                <div class="md:col-span-2">
+                                                    <label for="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                                                    <input type="text" id="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][value]" placeholder="VD: Nhỏ"
+                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ $value['value'] ?? '' }}">
+                                                    @error("attributes.{$attrIndex}.values.{$valueIndex}.value")
+                                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                                <div>
+                                                    <label for="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                                                    <input type="number" id="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" placeholder="0" step="any"
+                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ $value['price_adjustment'] ?? 0 }}">
+                                                    @error("attributes.{$attrIndex}.values.{$valueIndex}.price_adjustment")
+                                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                    @enderror
+                                                </div>
+                                                @if ($valueIndex > 0 || count($values) > 1)
+                                                    <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+                                                @endif
+                                            </div>
+                                        @endforeach
                                     </div>
-                                @endforeach
+                                    <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="{{ $attrIndex }}">+ Thêm giá trị</button>
+                                </div>
                             </div>
-                            <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                                </svg>
-                                Thêm giá trị
-                            </button>
                         </div>
                     @endforeach
+                </div>
+                @error('attributes')
+                    <div class="text-red-500 text-xs mt-2 mb-2">{{ $message }}</div>
+                @enderror
+                <button type="button" id="add-attribute-btn"
+                    class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16"
+                        fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        viewBox="0 0 24 24">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Thêm thuộc tính
+                </button>
+            </div>
+        </section>
+        <!-- Toppings Section -->
+        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+                <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
+            </header>
 
-                    @if(count($existingAttributes) == 0)
-                        <!-- Add a default empty attribute group if no attributes exist -->
-                        <div class="attribute-group">
-                            <div class="flex justify-between items-center mb-4">
-                                <div class="flex-1 mr-4">
-                                    <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-                                    <input type="text" name="attributes[0][name]" required placeholder="Ví dụ: Size, Màu sắc" 
-                                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                                </div>
-                                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
+            <div class="px-6 py-6">
+                <div id="toppings-container">
+                    @php
+                        $toppings = old('toppings', $product->toppings->toArray());
+                    @endphp
+                    
+                    @forelse ($toppings as $toppingIndex => $topping)
+                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50 topping-group">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-md font-semibold text-gray-800">Topping {{ $toppingIndex + 1 }}</h3>
+                                <button type="button" class="remove-topping-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa topping</button>
                             </div>
-                            <div class="variant-values-container">
-                                <div class="variant-value-row">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                                        <input type="text" name="attributes[0][values][0][value]" required placeholder="Ví dụ: S, M, L" 
-                                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                                <div>
+                                    <label for="topping_name_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Tên topping</label>
+                                    <input type="text" id="topping_name_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][name]" placeholder="VD: Phô mai thêm"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ $topping['name'] ?? '' }}">
+                                    @error("toppings.{$toppingIndex}.name")
+                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="topping_price_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Giá</label>
+                                    <input type="number" id="topping_price_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][price]" placeholder="0" step="any"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ $topping['price'] ?? '' }}">
+                                    @error("toppings.{$toppingIndex}.price")
+                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="flex items-center mt-7">
+                                    <input type="checkbox" id="topping_available_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][available]" value="1"
+                                        {{ ($topping['available'] ?? false) ? 'checked' : '' }}
+                                        class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <label for="topping_available_{{ $toppingIndex }}" class="ml-2 text-sm text-gray-700">Có sẵn</label>
+                                </div>
+                                <div>
+                                    <label for="topping_image_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Ảnh topping</label>
+                                    <input type="file" id="topping_image_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][image]" accept="image/*"
+                                        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                    <div id="topping_image_preview_container_{{ $toppingIndex }}" class="mt-2 w-24 h-24 border border-gray-300 rounded-md overflow-hidden flex items-center justify-center bg-gray-100">
+                                        @if(isset($topping['image']) && $topping['image'])
+                                            <img id="topping_image_preview_{{ $toppingIndex }}" src="{{ str_starts_with($topping['image'], 'http') ? $topping['image'] : asset('storage/' . $topping['image']) }}" alt="Preview" class="w-full h-full object-cover">
+                                        @else
+                                            <img id="topping_image_preview_{{ $toppingIndex }}" src="#" alt="Preview" class="hidden w-full h-full object-cover">
+                                            <span id="topping_image_placeholder_{{ $toppingIndex }}" class="text-xs text-gray-400">Xem trước</span>
+                                        @endif
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                                        <input type="number" name="attributes[0][values][0][price_adjustment]" step="0.01" value="0" 
-                                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                                    </div>
-                                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
-                            <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                                </svg>
-                                Thêm giá trị
+                        </div>
+                    @empty
+                        <!-- No toppings message when empty -->
+                    @endforelse
+                </div>
+                <button type="button" id="add-topping-btn"
+                    class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16"
+                        fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        viewBox="0 0 24 24">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Thêm topping
+                </button>
+            </div>
+        </section>
+
+        <!-- Inventory Management Section -->
+        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-xl font-semibold text-gray-900">Quản lý tồn kho</h2>
+                <p class="text-gray-500 text-sm mt-1">Quản lý số lượng sản phẩm theo chi nhánh</p>
+            </header>
+
+            <div class="px-6 py-6">
+                <!-- Tab Navigation -->
+                <div class="flex border-b border-gray-200 mb-6">
+                    <button type="button" id="tab-variants" class="tab-button active px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600" onclick="switchTab('variants')">
+                        <i data-lucide="package" class="w-4 h-4 inline mr-2"></i>
+                        Biến thể sản phẩm ({{ $product->variants->count() }})
+                    </button>
+                    <button type="button" id="tab-toppings" class="tab-button px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300" onclick="switchTab('toppings')">
+                        <i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>
+                        Toppings ({{ $product->toppings->count() }})
+                    </button>
+                </div>
+
+                <!-- Variants Tab Content -->
+                <div id="content-variants" class="tab-content active">
+                    <!-- Branch Filter Controls -->
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Lọc chi nhánh</h3>
+                            <div class="text-sm text-gray-600">
+                                Đã chọn: <span id="selected-count">3</span>/<span id="total-count">5</span> chi nhánh
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+                            @foreach($branches as $branch)
+                            <label class="flex items-center space-x-2 p-2 border border-gray-200 rounded-md hover:bg-white cursor-pointer">
+                                <input type="checkbox" class="branch-checkbox" data-branch-id="{{ $branch->id }}" {{ $loop->index < 3 ? 'checked' : '' }}>
+                                <span class="text-sm text-gray-700">{{ $branch->name }}</span>
+                            </label>
+                            @endforeach
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button type="button" id="toggle-all-branches" class="text-sm text-blue-600 hover:text-blue-800" onclick="toggleAllBranches()">
+                                <i data-lucide="eye" class="w-4 h-4 inline mr-1"></i>
+                                Hiện tất cả chi nhánh
+                            </button>
+                            <button type="button" class="text-sm text-gray-600 hover:text-gray-800" onclick="toggleInactive()">
+                                <i data-lucide="eye-off" class="w-4 h-4 inline mr-1"></i>
+                                Hiện tạm dừng
                             </button>
                         </div>
-                    @endif
-                </div>
-                <div class="error-message text-red-500 text-xs mt-2 mb-2" id="attributes-error"></div>
-                <button type="button" id="add-attribute-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Thêm thuộc tính
-              </button>
-            </div>
-          </section>
-<!-- Toppings Section -->
-<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-  <header class="px-6 py-4 border-b border-gray-100">
-    <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
-    <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
-  </header>
-
-  <div class="px-6 py-6">
-    <div id="toppings-container">
-      <!-- Existing topping groups will be loaded here -->
-      @if(isset($product->toppings) && count($product->toppings) > 0)
-        @foreach($product->toppings as $index => $topping)
-          <div class="border rounded-md p-4 mb-4">
-            <div class="flex justify-between items-start mb-4">
-              <div class="flex-1 mr-4">
-                <label class="block text-sm font-medium text-gray-700">Tên topping</label>
-                <input type="text" name="toppings[{{ $index }}][name]" value="{{ $topping->name }}" placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                <input type="hidden" name="toppings[{{ $index }}][id]" value="{{ $topping->id }}">
-                <div class="error-message text-red-500 text-xs mt-1" id="topping-{{ $index }}-name-error"></div>
-              </div>
-              <div class="flex-1 mr-4">
-                <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
-                <input type="number" name="toppings[{{ $index }}][price]" value="{{ $topping->price }}" min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                <div class="error-message text-red-500 text-xs mt-1" id="topping-{{ $index }}-price-error"></div>
-              </div>
-              <div class="w-48 mr-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
-                <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
-                  <div id="topping-image-placeholder-{{ $index }}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
-                    <div id="topping-image-preview-wrap-{{ $index }}" class="absolute inset-0 w-full h-full {{ $topping->image ? '' : 'hidden' }}">
-                      <img id="topping-image-preview-{{ $index }}" src="{{ $topping->image ? Storage::disk('s3')->url($topping->image) : '' }}" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
                     </div>
-                    <div id="topping-upload-content-{{ $index }}" class="flex flex-col items-center justify-center {{ $topping->image ? 'hidden' : '' }}">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="17 8 12 3 7 8" />
-                        <line x1="12" y1="3" x2="12" y2="15" />
-                      </svg>
-                      <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
-                      <button type="button" id="select-topping-image-btn-{{ $index }}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
+
+                    <!-- Variants Stock Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 font-medium text-gray-900 min-w-64">Biến thể</th>
+                                    <th class="text-center py-3 px-4 font-medium text-gray-900 min-w-24">Giá bán</th>
+                                    @foreach($branches as $branch)
+                                    <th class="text-center py-3 px-4 font-medium text-gray-900 min-w-36" data-branch-id="{{ $branch->id }}" {{ $loop->index >= 3 ? 'style=display:none;' : '' }}>
+                                        <div class="flex items-center justify-center gap-2">
+                                            <i data-lucide="store" class="w-4 h-4"></i>
+                                            <div>
+                                                <div class="font-medium">{{ $branch->name }}</div>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if($product->variants && $product->variants->count() > 0)
+                                    @foreach($product->variants as $variant)
+                                    <tr class="border-b border-gray-100 {{ !$variant->active ? 'inactive-variant hidden' : '' }}">
+                                        <td class="sticky-column py-4 px-4 border-r border-gray-200">
+                                            <div class="flex items-start gap-3">
+                                                <div class="space-y-2">
+                                                    <div class="font-medium">
+                                                        @if($variant->variantValues && $variant->variantValues->count() > 0)
+                                                            {{ $variant->variantValues->map(function($value) { return $value->attribute->name . ': ' . $value->value; })->implode(' • ') }}
+                                                        @else
+                                                            Biến thể mặc định
+                                                        @endif
+                                                    </div>
+                                                    <div class="flex flex-wrap gap-1">
+                                                        @if($variant->variantValues && $variant->variantValues->count() > 0)
+                                                            @foreach($variant->variantValues as $value)
+                                                                <span class="badge-outline px-2 py-1 rounded text-xs">{{ $value->attribute->name }}: {{ $value->value }}</span>
+                                                            @endforeach
+                                                        @else
+                                                            <span class="badge-outline px-2 py-1 rounded text-xs">Biến thể mặc định</span>
+                                                        @endif
+                                                    </div>
+                                                    <span class="badge-{{ $variant->active ? 'success' : 'secondary' }} px-2 py-1 rounded text-xs">
+                                                         {{ $variant->active ? 'Hoạt động' : 'Tạm dừng' }}
+                                                     </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4 font-medium">
+                                            @php
+                                                $variantPrice = $product->base_price;
+                                                if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                                                    $variantPrice += $variant->variantValues->sum('price_adjustment');
+                                                }
+                                            @endphp
+                                            {{ number_format($variantPrice, 0, ',', '.') }}₫
+                                        </td>
+                                        @foreach($branches as $branch)
+                                        @php
+                                            $quantity = isset($branchStocks[$branch->id][$variant->id]) ? $branchStocks[$branch->id][$variant->id] : 0;
+                                        @endphp
+                                        <td class="text-center py-4 px-4" data-branch-id="{{ $branch->id }}" {{ $loop->index >= 3 ? 'style=display:none;' : '' }}>
+                                            <div class="space-y-2">
+                                                <input type="number" min="0" value="{{ $quantity }}" 
+                                                    name="variant_stocks[{{ $variant->id }}][{{ $branch->id }}]" 
+                                                    class="w-20 text-center mx-auto px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                    onchange="updateStockStatus(this)">
+                                                <span class="badge-{{ $quantity > 10 ? 'default' : ($quantity > 0 ? 'secondary' : 'destructive') }} px-2 py-1 rounded text-xs">
+                                                    {{ $quantity > 10 ? 'Còn hàng' : ($quantity > 0 ? 'Sắp hết' : 'Hết hàng') }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        @endforeach
+                                    </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td colspan="{{ 2 + $branches->count() }}" class="text-center py-8 text-gray-500">
+                                            Chưa có biến thể nào được tạo
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
                     </div>
-                    <input type="file" id="topping-image-upload-{{ $index }}" name="toppings[{{ $index }}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-{{ $index }}" data-preview-wrap-id="topping-image-preview-wrap-{{ $index }}" data-upload-content-id="topping-upload-content-{{ $index }}" />
-                  </div>
                 </div>
-              </div>
-              <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            <div class="flex items-center gap-4">
-              <label class="inline-flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" name="toppings[{{ $index }}][active]" value="1" {{ $topping->active ? 'checked' : '' }} class="form-checkbox text-blue-600" />
-                <span class="text-sm text-gray-700">Đang bán</span>
-              </label>
-            </div>
-          </div>
-        @endforeach
-      @endif
-    </div>
-    <button type="button" id="add-topping-btn" class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-      Thêm topping
-    </button>
-  </div>
-</section>
-      
-<!-- Branch Inventory Section -->
-<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-  <header class="px-6 py-4 border-b border-gray-100">
-    <h2 class="text-xl font-semibold text-gray-900">Số lượng tại chi nhánh</h2>
-    <p class="text-gray-500 text-sm mt-1">Quản lý số lượng sản phẩm tại các chi nhánh</p>
-  </header>
 
-  <div class="px-6 py-6">
-    @if(empty($branchStocks) || count($branchStocks) === 0)
-      <div class="bg-blue-50 p-4 mb-4 rounded-md">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-blue-800">Thông tin số lượng</h3>
-            <div class="mt-2 text-sm text-blue-700">
-              <p>Hiện tại chưa có dữ liệu số lượng tại chi nhánh. Cập nhật số lượng cho từng biến thể tại chi nhánh bên dưới.</p>
+                <!-- Toppings Tab Content -->
+                <div id="content-toppings" class="tab-content">
+                    <!-- Toppings Stock Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 font-medium text-gray-900 min-w-64">Topping</th>
+                                    <th class="text-center py-3 px-4 font-medium text-gray-900 min-w-24">Giá</th>
+                                    @foreach($branches as $branch)
+                                    <th class="text-center py-3 px-4 font-medium text-gray-900 min-w-36" data-branch-id="{{ $branch->id }}" {{ $loop->index >= 3 ? 'style=display:none;' : '' }}>
+                                        <div class="flex items-center justify-center gap-2">
+                                            <i data-lucide="store" class="w-4 h-4"></i>
+                                            <div>
+                                                <div class="font-medium">{{ $branch->name }}</div>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if($product->toppings && $product->toppings->count() > 0)
+                                    @foreach($product->toppings as $topping)
+                                    <tr class="border-b border-gray-100">
+                                        <td class="py-4 px-4">
+                                            <div class="flex items-center gap-3">
+                                                @if($topping->image)
+                                                <img src="{{ str_starts_with($topping->image, 'http') ? $topping->image : asset('storage/' . $topping->image) }}" alt="{{ $topping->name }}" class="w-10 h-10 rounded-md object-cover">
+                                                @else
+                                                <div class="w-10 h-10 rounded-md bg-gray-200 flex items-center justify-center">
+                                                    <i data-lucide="image" class="w-5 h-5 text-gray-400"></i>
+                                                </div>
+                                                @endif
+                                                <div>
+                                                    <div class="font-medium">{{ $topping->name }}</div>
+                                                    <div class="text-sm text-gray-500">{{ $topping->description ?? 'Không có mô tả' }}</div>
+                                                    <span class="badge-{{ $topping->available ? 'default' : 'secondary' }} px-2 py-1 rounded text-xs">
+                                                        {{ $topping->available ? 'Hoạt động' : 'Tạm dừng' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center py-4 px-4 font-medium">{{ number_format($topping->price) }}₫</td>
+                                        @foreach($branches as $branch)
+                                        @php
+                                            $toppingQuantity = isset($toppingStocks[$branch->id][$topping->id]) ? $toppingStocks[$branch->id][$topping->id] : 0;
+                                        @endphp
+                                        <td class="text-center py-4 px-4" data-branch-id="{{ $branch->id }}" {{ $loop->index >= 3 ? 'style=display:none;' : '' }}>
+                                            <div class="space-y-2">
+                                                <input type="number" min="0" value="{{ $toppingQuantity }}" 
+                                                    name="topping_stocks[{{ $topping->id }}][{{ $branch->id }}]" 
+                                                    class="w-20 text-center mx-auto px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                                    onchange="updateStockStatus(this)">
+                                                <span class="badge-{{ $toppingQuantity > 10 ? 'default' : ($toppingQuantity > 0 ? 'secondary' : 'destructive') }} px-2 py-1 rounded text-xs">
+                                                    {{ $toppingQuantity > 10 ? 'Còn hàng' : ($toppingQuantity > 0 ? 'Sắp hết' : 'Hết hàng') }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        @endforeach
+                                    </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td colspan="{{ 2 + $branches->count() }}" class="text-center py-8 text-gray-500">
+                                            Chưa có topping nào được tạo
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-          </div>
+        </section>
+
+        <!-- Save Buttons -->
+        <div class="p-4 flex justify-end gap-2 mt-6">
+            <button type="submit" id="save-product-btn"
+                class="fixed bottom-4 right-4 rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 shadow-lg z-50">
+                Cập nhật sản phẩm
+            </button>
         </div>
-      </div>
-    @endif
-
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chi nhánh</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa chỉ</th>
-            @if(isset($product->variants) && count($product->variants) > 0)
-              @foreach($product->variants as $variant)
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  @php
-                    $variantName = [];
-                    foreach($variant->productVariantDetails as $detail) {
-                      if(isset($detail->variantValue)) {
-                        $variantName[] = $detail->variantValue->value;
-                      }
-                    }
-                    echo implode(' / ', $variantName) ?: "Biến thể #" . $variant->id;
-                  @endphp
-                </th>
-              @endforeach
-            @else
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
-            @endif
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          @forelse($branches ?? [] as $branch)
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $branch->name }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $branch->address }}</td>
-              
-              @if(isset($product->variants) && count($product->variants) > 0)
-                @foreach($product->variants as $variant)
-                  @php
-                    $stockQuantity = 0;
-                    
-                    // Look for existing branch stock using the new array structure
-                    if (isset($branchStocks[$branch->id]) && isset($branchStocks[$branch->id][$variant->id])) {
-                      $stockQuantity = $branchStocks[$branch->id][$variant->id];
-                    }
-                  @endphp
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <input 
-                      type="number" 
-                      name="branch_stock[{{ $branch->id }}][{{ $variant->id }}]" 
-                      min="0" 
-                      class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                      value="{{ $stockQuantity }}"
-                    >
-                  </td>
-                @endforeach
-              @else
-                @php
-                  $stockQuantity = 0;
-                  $defaultVariantId = 0;
-                  
-                  // Create default variant ID if no variants exist
-                  if (isset($product->variants) && count($product->variants) > 0) {
-                    $defaultVariantId = $product->variants[0]->id;
-                  }
-                  
-                  // Look for existing branch stock using the new array structure
-                  if (isset($branchStocks[$branch->id]) && isset($branchStocks[$branch->id][$defaultVariantId])) {
-                    $stockQuantity = $branchStocks[$branch->id][$defaultVariantId];
-                  }
-                @endphp
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <input 
-                    type="number" 
-                    name="branch_stock[{{ $branch->id }}][{{ $defaultVariantId }}]" 
-                    min="0" 
-                    class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                    value="{{ $stockQuantity }}"
-                  >
-                </td>
-              @endif
-            </tr>
-          @empty
-            <tr>
-              <td colspan="{{ isset($product->variants) && count($product->variants) > 0 ? count($product->variants) + 2 : 3 }}" class="px-6 py-4 text-center text-sm text-gray-500">Không có chi nhánh nào</td>
-            </tr>
-          @endforelse
-        </tbody>
-      </table>
-    </div>
-    <div class="mt-4 text-right">
-      <button type="button" id="save-branch-stocks-btn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-        </svg>
-        Lưu số lượng tại chi nhánh
-      </button>
-    </div>
-  </div>
-</section>
-
-<!-- Topping Stock Section -->
-@if(isset($product->toppings) && count($product->toppings) > 0)
-<section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden mt-8">
-  <header class="px-6 py-4 border-b border-gray-100">
-    <h2 class="text-xl font-semibold text-gray-900">Số lượng Topping tại chi nhánh</h2>
-    <p class="text-gray-500 text-sm mt-1">Quản lý số lượng topping tại các chi nhánh</p>
-  </header>
-
-  <div class="px-6 py-6">
-    @if(empty($toppingStocks) || count($toppingStocks) === 0)
-      <div class="bg-blue-50 p-4 mb-4 rounded-md">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-blue-800">Thông tin số lượng</h3>
-            <div class="mt-2 text-sm text-blue-700">
-              <p>Hiện tại chưa có dữ liệu số lượng topping tại chi nhánh. Cập nhật số lượng cho từng topping tại chi nhánh bên dưới.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    @endif
-
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chi nhánh</th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa chỉ</th>
-            @foreach($product->toppings as $topping)
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {{ $topping->name }}
-              </th>
-            @endforeach
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          @forelse($branches ?? [] as $branch)
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $branch->name }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $branch->address }}</td>
-              
-              @foreach($product->toppings as $topping)
-                @php
-                  $stockQuantity = 0;
-                  
-                  // Look for existing topping stock
-                  if (isset($toppingStocks[$branch->id]) && isset($toppingStocks[$branch->id][$topping->id])) {
-                    $stockQuantity = $toppingStocks[$branch->id][$topping->id];
-                  }
-                @endphp
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <input 
-                    type="number" 
-                    name="topping_stock[{{ $branch->id }}][{{ $topping->id }}]" 
-                    min="0" 
-                    class="block w-24 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" 
-                    value="{{ $stockQuantity }}"
-                  >
-                </td>
-              @endforeach
-            </tr>
-          @empty
-            <tr>
-              <td colspan="{{ count($product->toppings) + 2 }}" class="px-6 py-4 text-center text-sm text-gray-500">Không có chi nhánh nào</td>
-            </tr>
-          @endforelse
-        </tbody>
-      </table>
-    </div>
-    <div class="mt-4 text-right">
-      <button type="button" id="save-topping-stocks-btn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-        </svg>
-        Lưu số lượng topping
-      </button>
-    </div>
-  </div>
-</section>
-@endif
-
-      <!-- Save Buttons -->
-      <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
-        <button type="button" id="save-draft-btn" class="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100">Lưu nháp</button>
-        <button type="submit" id="save-product-btn" class="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Cập nhật sản phẩm</button>
-      </div>
     </form>
-  </main>
+</main>
 
 @endsection
 
 @section('scripts')
-  <!-- Debug output -->
-  <script>
-    console.log('Product data:', @json($product));
-    console.log('Product images:', @json($product->images));
-    console.log('Primary image:', @json($primaryImage));
-    @if($primaryImage)
-      console.log('Primary image URL:', "{{ Storage::disk('s3')->url($primaryImage->img) }}");
-    @endif
-    console.log('Attributes:', @json($product->attributes));
-    console.log('Variants:', @json($product->variants));
-    @if(isset($product->variants) && count($product->variants) > 0)
-      console.log('Variant details:');
-      @foreach($product->variants as $index => $variant)
-        console.log('  Variant #{{ $index + 1 }} (ID: {{ $variant->id }})');
-        @if(isset($variant->productVariantDetails) && count($variant->productVariantDetails) > 0)
-          @foreach($variant->productVariantDetails as $detail)
-            @if(isset($detail->variantValue) && isset($detail->variantValue->attribute))
-              console.log('    - {{ $detail->variantValue->attribute->name }}: {{ $detail->variantValue->value }}');
-            @endif
-          @endforeach
-        @endif
-      @endforeach
-    @endif
-    console.log('Branch Stocks Info:');
-    console.log('  Type:', typeof @json($branchStocks));
-    console.log('  Is array:', Array.isArray(@json($branchStocks)));
-    console.log('  Length:', @json($branchStocks) ? @json($branchStocks).length : 0);
-    console.log('  Content:', @json($branchStocks ?? []));
-    console.log('  Branch count:', @json($branches ? count($branches) : 0));
-    console.log('Branches:', @json($branches ?? []));
-    console.log('Toppings:', @json($product->toppings ?? []));
-    console.log('Topping Stocks:', @json($toppingStocks ?? []));
-  </script>
-  <script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Handle branch stock update button
-        const saveBranchStocksBtn = document.getElementById('save-branch-stocks-btn');
-        if (saveBranchStocksBtn) {
-            saveBranchStocksBtn.addEventListener('click', function() {
-                const branchStockInputs = document.querySelectorAll('input[name^="branch_stock"]');
-                const branchStockData = {};
-                
-                branchStockInputs.forEach(input => {
-                    const name = input.getAttribute('name');
-                    const matches = name.match(/branch_stock\[(\d+)\]\[(\d+)\]/);
-                    if (matches) {
-                        const branchId = matches[1];
-                        const variantId = matches[2];
-                        if (!branchStockData[branchId]) {
-                            branchStockData[branchId] = {};
-                        }
-                        branchStockData[branchId][variantId] = input.value || 0;
-                    }
-                });
-                
-                // Send AJAX request to update branch stocks
-                fetch('{{ route("admin.products.update", $product->id) }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        _method: 'PUT',
-                        update_branch_stocks: 1,
-                        branch_stock: branchStockData
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: 'Số lượng sản phẩm tại các chi nhánh đã được cập nhật!'
-                        });
-                    } else {
-                        dtmodalShowToast('error', {
-                            title: 'Lỗi',
-                            message: data.message || 'Đã có lỗi xảy ra khi cập nhật số lượng.'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    dtmodalShowToast('error', {
-                        title: 'Lỗi',
-                        message: 'Đã có lỗi xảy ra khi cập nhật số lượng.'
-                    });
-                });
-            });
-        }
-        
-        // Handle topping stock update button
-        const saveToppingStocksBtn = document.getElementById('save-topping-stocks-btn');
-        if (saveToppingStocksBtn) {
-            saveToppingStocksBtn.addEventListener('click', function() {
-                const toppingStockInputs = document.querySelectorAll('input[name^="topping_stock"]');
-                const toppingStockData = {};
-                
-                toppingStockInputs.forEach(input => {
-                    const name = input.getAttribute('name');
-                    const matches = name.match(/topping_stock\[(\d+)\]\[(\d+)\]/);
-                    if (matches) {
-                        const branchId = matches[1];
-                        const toppingId = matches[2];
-                        if (!toppingStockData[branchId]) {
-                            toppingStockData[branchId] = {};
-                        }
-                        toppingStockData[branchId][toppingId] = input.value || 0;
-                    }
-                });
-                
-                // Send AJAX request to update topping stocks
-                fetch('{{ route("admin.products.update", $product->id) }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        _method: 'PUT',
-                        update_topping_stocks: 1,
-                        topping_stock: toppingStockData
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: 'Số lượng topping tại các chi nhánh đã được cập nhật!'
-                        });
-                    } else {
-                        dtmodalShowToast('error', {
-                            title: 'Lỗi',
-                            message: data.message || 'Đã có lỗi xảy ra khi cập nhật số lượng topping.'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    dtmodalShowToast('error', {
-                        title: 'Lỗi',
-                        message: 'Đã có lỗi xảy ra khi cập nhật số lượng topping.'
-                    });
-                });
-            });
-        }
-
-        // Validation functions
-        const validateField = (fieldId, errorMessage) => {
-            const field = document.getElementById(fieldId);
-            const errorElement = document.getElementById(`${fieldId}-error`);
-            
-            if (!field || !errorElement) return true; // Skip if elements don't exist
-            
-            const isValid = field.value.trim() !== '';
-            
-            if (!isValid) {
-                errorElement.textContent = errorMessage;
-                field.classList.add('border-red-500');
-            } else {
-                errorElement.textContent = '';
-                field.classList.remove('border-red-500');
-            }
-            
-            return isValid;
-        };
-        
-        const validateRequired = () => {
-            let isValid = true;
-            
-            // Validate product name
-            if (!validateField('name', 'Tên sản phẩm không được bỏ trống')) {
-                isValid = false;
-            }
-            
-            // Validate category
-            if (!validateField('category_id', 'Vui lòng chọn danh mục')) {
-                isValid = false;
-            }
-            
-            // Validate price
-            if (!validateField('base_price', 'Giá cơ bản không được bỏ trống')) {
-                isValid = false;
-            }
-            
-            // Always validate preparation time - show error if not provided or invalid
-            const preparationTime = document.getElementById('preparation_time');
-            const preparationTimeError = document.getElementById('preparation_time-error');
-            if (!preparationTime || preparationTime.value.trim() === '') {
-                preparationTimeError.textContent = 'Thời gian chuẩn bị không được bỏ trống';
-                preparationTime.classList.add('border-red-500');
-                isValid = false;
-            } else if (isNaN(preparationTime.value) || parseInt(preparationTime.value) < 0) {
-                preparationTimeError.textContent = 'Thời gian chuẩn bị phải là số dương';
-                preparationTime.classList.add('border-red-500');
-                isValid = false;
-            } else {
-                preparationTimeError.textContent = '';
-                preparationTime.classList.remove('border-red-500');
-            }
-            
-            // Always validate ingredients - show error if not provided or invalid
-            const ingredients = document.getElementById('ingredients');
-            const ingredientsError = document.getElementById('ingredients-error');
-            if (!ingredients || ingredients.value.trim() === '') {
-                ingredientsError.textContent = 'Nguyên liệu không được bỏ trống';
-                ingredients.classList.add('border-red-500');
-                isValid = false;
-            } else {
-                const lines = ingredients.value.trim().split('\n');
-                if (lines.some(line => line.trim() === '')) {
-                    ingredientsError.textContent = 'Mỗi dòng nên chứa một nguyên liệu';
-                    ingredients.classList.add('border-red-500');
-                    isValid = false;
-                } else {
-                    ingredientsError.textContent = '';
-                    ingredients.classList.remove('border-red-500');
-                }
-            }
-            
-            // Validate attributes - at least one attribute with name and value
-            const attributeGroups = document.querySelectorAll('.attribute-group');
-            const attributesError = document.getElementById('attributes-error');
-            
-            if (attributeGroups.length === 0) {
-                attributesError.textContent = 'Sản phẩm cần có ít nhất một thuộc tính';
-                isValid = false;
-            } else {
-                let hasValidAttribute = false;
-                
-                for (const group of attributeGroups) {
-                    const nameInput = group.querySelector('input[name$="[name]"]');
-                    const valueInputs = group.querySelectorAll('input[name$="[value]"]');
-                    
-                    if (nameInput && nameInput.value.trim() !== '' && 
-                        valueInputs.length > 0 && Array.from(valueInputs).some(input => input.value.trim() !== '')) {
-                        hasValidAttribute = true;
-                        break;
-                    }
-                }
-                
-                if (!hasValidAttribute) {
-                    attributesError.textContent = 'Mỗi thuộc tính cần có tên và ít nhất một giá trị';
-                    isValid = false;
-                } else {
-                    attributesError.textContent = '';
-                }
-            }
-            
-            // Validate primary image
-            const primaryImageUpload = document.getElementById('primary-image-upload');
-            const mainImagePreview = document.getElementById('main-image-preview');
-            
-            if ((!primaryImageUpload || !primaryImageUpload.files.length) && 
-                (mainImagePreview && mainImagePreview.classList.contains('hidden'))) {
-                dtmodalShowToast('warning', {
-                    title: 'Chú ý',
-                    message: 'Vui lòng tải lên ít nhất một hình ảnh cho sản phẩm'
-                });
-                isValid = false;
-            }
-            
-            return isValid;
-        };
-
-        // Image upload handling
-        const imagePlaceholder = document.getElementById('image-placeholder');
+        // Image Upload Logic (Primary and Additional)
         const primaryImageUpload = document.getElementById('primary-image-upload');
-        const additionalImagesUpload = document.getElementById('additional-images-upload');
         const selectPrimaryImageBtn = document.getElementById('select-primary-image-btn');
+        const imagePlaceholder = document.getElementById('image-placeholder');
+        const mainImagePreviewDiv = document.getElementById('main-image-preview');
+        const mainImagePreviewImg = mainImagePreviewDiv.querySelector('img');
+        const uploadContent = document.getElementById('upload-content');
+
+        const additionalImagesUpload = document.getElementById('additional-images-upload');
         const selectAdditionalImagesBtn = document.getElementById('select-additional-images-btn');
         const imageGallery = document.getElementById('image-gallery');
-        const mainImagePreview = document.getElementById('main-image-preview');
-        const uploadContent = document.getElementById('upload-content');
-        let uploadedImages = [];
+        let additionalImageFiles = []; 
 
-        // Initialize with existing images if available
-        @if($primaryImage)
-            mainImagePreview.classList.remove('hidden');
-            uploadContent.classList.add('hidden');
-        @endif
-
-        @if($product->images && count($product->images) > 0)
-            @foreach($product->images as $image)
-                uploadedImages.push({
-                    id: {{ $image->id }},
-                    preview: "{{ Storage::disk('s3')->url($image->img) }}",
-                    isExisting: true
-                });
-            @endforeach
-            updateImageGallery();
-        @endif
-
-        // Handle primary image
-        imagePlaceholder.addEventListener('click', (e) => {
-            if (e.target !== selectPrimaryImageBtn) {
+        // Function to handle primary image selection
+        selectPrimaryImageBtn.addEventListener('click', () => primaryImageUpload.click());
+        
+        // Handle change primary image button
+        const changePrimaryImageBtn = document.getElementById('change-primary-image-btn');
+        if (changePrimaryImageBtn) {
+            changePrimaryImageBtn.addEventListener('click', () => {
                 primaryImageUpload.click();
-            }
-        });
+            });
+        }
 
-        selectPrimaryImageBtn.addEventListener('click', () => {
-            primaryImageUpload.click();
-        });
-
-        primaryImageUpload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file && file.type.startsWith('image/')) {
+        primaryImageUpload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
                 const reader = new FileReader();
-                reader.onload = (e) => {
-                    mainImagePreview.querySelector('img').src = e.target.result;
-                    mainImagePreview.classList.remove('hidden');
+                reader.onload = function(e) {
+                    mainImagePreviewImg.src = e.target.result;
+                    mainImagePreviewDiv.classList.remove('hidden');
                     uploadContent.classList.add('hidden');
-                };
+                }
                 reader.readAsDataURL(file);
             }
         });
 
-        // Handle additional images
-        selectAdditionalImagesBtn.addEventListener('click', () => {
-            additionalImagesUpload.click();
+        // Drag and drop for primary image
+        imagePlaceholder.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            imagePlaceholder.classList.add('border-blue-500', 'bg-blue-50');
         });
 
-        additionalImagesUpload.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
+        imagePlaceholder.addEventListener('dragleave', () => {
+            imagePlaceholder.classList.remove('border-blue-500', 'bg-blue-50');
         });
 
-        function handleFiles(files) {
-            Array.from(files).forEach(file => {
+        imagePlaceholder.addEventListener('drop', (event) => {
+            event.preventDefault();
+            imagePlaceholder.classList.remove('border-blue-500', 'bg-blue-50');
+            const file = event.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                primaryImageUpload.files = event.dataTransfer.files; // Assign to file input
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    mainImagePreviewImg.src = e.target.result;
+                    mainImagePreviewDiv.classList.remove('hidden');
+                    uploadContent.classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Function to handle additional images selection
+        selectAdditionalImagesBtn.addEventListener('click', () => additionalImagesUpload.click());
+
+        additionalImagesUpload.addEventListener('change', function(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => {
                 if (file.type.startsWith('image/')) {
+                    additionalImageFiles.push(file);
                     const reader = new FileReader();
-                    reader.onload = (e) => {
-                        uploadedImages.push({
-                            file: file,
-                            preview: e.target.result,
-                            isExisting: false
-                        });
-                        updateImageGallery();
-                    };
+                    reader.onload = function(e) {
+                        addImageToGallery(e.target.result, file);
+                    }
                     reader.readAsDataURL(file);
                 }
             });
-        }
-
-        function updateImageGallery() {
-            imageGallery.innerHTML = uploadedImages.map((image, index) => {
-                const isExisting = image.isExisting;
-                return `
-                    <div class="image-item">
-                        <img src="${image.preview}" alt="Preview" class="w-full h-32 object-cover rounded-md" />
-                        <button type="button" class="image-remove-btn" onclick="removeImage(${index})">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                        ${isExisting ? `<input type="hidden" name="existing_images[]" value="${image.id}">` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        window.removeImage = function(index) {
-            const image = uploadedImages[index];
-            if (image.isExisting) {
-                // Add a hidden input to track deleted images
-                const deletedInput = document.createElement('input');
-                deletedInput.type = 'hidden';
-                deletedInput.name = 'deleted_images[]';
-                deletedInput.value = image.id;
-                document.getElementById('edit-product-form').appendChild(deletedInput);
-            }
-            uploadedImages.splice(index, 1);
-            updateImageGallery();
-        };
-
-        // Add topping functionality
-        const toppingsContainer = document.getElementById('toppings-container');
-        const addToppingBtn = document.getElementById('add-topping-btn');
-        let toppingCount = @json(isset($product->toppings) ? count($product->toppings) : 0);
-
-        // Handle topping image preview functionality
-        function handleToppingImagePreview(input) {
-            const previewId = input.getAttribute('data-preview-id');
-            const previewWrapId = input.getAttribute('data-preview-wrap-id');
-            const uploadContentId = input.getAttribute('data-upload-content-id');
-            const previewImg = document.getElementById(previewId);
-            const previewWrap = document.getElementById(previewWrapId);
-            const uploadContent = document.getElementById(uploadContentId);
-
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    previewWrap.classList.remove('hidden');
-                    uploadContent.classList.add('hidden');
-                };
-                reader.readAsDataURL(input.files[0]);
-            } else {
-                previewImg.src = '';
-                previewWrap.classList.add('hidden');
-                uploadContent.classList.remove('hidden');
-            }
-        }
-
-        function createToppingGroup(index) {
-            const toppingGroup = document.createElement('div');
-            toppingGroup.className = 'border rounded-md p-4 mb-4';
-            toppingGroup.innerHTML = `
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex-1 mr-4">
-                        <label class="block text-sm font-medium text-gray-700">Tên topping</label>
-                        <input type="text" name="toppings[${index}][name]" placeholder="Ví dụ: Sốt mayonnaise" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-name-error"></div>
-                    </div>
-                    <div class="flex-1 mr-4">
-                        <label class="block text-sm font-medium text-gray-700">Giá (VNĐ)</label>
-                        <input type="number" name="toppings[${index}][price]" min="0" step="1000" placeholder="0" class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        <div class="error-message text-red-500 text-xs mt-1" id="topping-${index}-price-error"></div>
-                    </div>
-                    <div class="w-48 mr-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
-                        <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
-                          <div id="topping-image-placeholder-${index}" class="w-full h-28 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
-                            <div id="topping-image-preview-wrap-${index}" class="absolute inset-0 w-full h-full hidden">
-                              <img id="topping-image-preview-${index}" src="" alt="Topping image preview" class="w-full h-full object-cover rounded-md" />
-                            </div>
-                            <div id="topping-upload-content-${index}" class="flex flex-col items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current text-gray-400 mb-1" width="28" height="28" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="17 8 12 3 7 8" />
-                                <line x1="12" y1="3" x2="12" y2="15" />
-                              </svg>
-                              <p class="text-xs text-gray-600 mb-1">Chọn ảnh</p>
-                              <button type="button" id="select-topping-image-btn-${index}" class="px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs">Tải lên</button>
-                            </div>
-                            <input type="file" id="topping-image-upload-${index}" name="toppings[${index}][image]" accept="image/*" class="hidden topping-image-input" data-preview-id="topping-image-preview-${index}" data-preview-wrap-id="topping-image-preview-wrap-${index}" data-upload-content-id="topping-upload-content-${index}" />
-                          </div>
-                        </div>
-                      </div>
-                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.border').remove()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="flex items-center gap-4">
-                    <label class="inline-flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="toppings[${index}][active]" value="1" checked class="form-checkbox text-blue-600" />
-                        <span class="text-sm text-gray-700">Đang bán</span>
-                    </label>
-                </div>
-            `;
-            
-            return toppingGroup;
-        }
-
-        addToppingBtn.addEventListener('click', () => {
-            const toppingGroup = createToppingGroup(toppingCount);
-            toppingsContainer.appendChild(toppingGroup);
-            
-            // Set up topping image events after the element is added to DOM
-            const placeholder = document.getElementById(`topping-image-placeholder-${toppingCount}`);
-            const uploadBtn = document.getElementById(`select-topping-image-btn-${toppingCount}`);
-            const fileInput = document.getElementById(`topping-image-upload-${toppingCount}`);
-            
-            if (placeholder && fileInput) {
-                placeholder.addEventListener('click', (e) => {
-                    if (e.target !== uploadBtn) {
-                        fileInput.click();
-                    }
-                });
-                
-                uploadBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    fileInput.click();
-                });
-
-                fileInput.addEventListener('change', function() {
-                    handleToppingImagePreview(this);
-                });
-            }
-            
-            toppingCount++;
+            // Clear the input value to allow selecting the same file again if removed
+            additionalImagesUpload.value = '';
         });
 
-        // Set up image preview handlers for existing toppings
-        document.querySelectorAll('.topping-image-input').forEach(input => {
-            input.addEventListener('change', function() {
-                handleToppingImagePreview(this);
-            });
-            
-            const index = input.id.replace('topping-image-upload-', '');
-            const placeholder = document.getElementById(`topping-image-placeholder-${index}`);
-            const uploadBtn = document.getElementById(`select-topping-image-btn-${index}`);
-            
-            if (placeholder && uploadBtn) {
-                placeholder.addEventListener('click', (e) => {
-                    if (e.target !== uploadBtn) {
-                        input.click();
-                    }
-                });
-                
-                uploadBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    input.click();
-                });
-            }
-        });
+        function addImageToGallery(src, file) {
+            const imageWrapper = document.createElement('div');
+            imageWrapper.classList.add('relative', 'group', 'border', 'border-gray-200', 'rounded-md',
+                'overflow-hidden');
 
-        // Handle status and release date visibility
-        const statusInputs = document.querySelectorAll('input[name="status"]');
-        const releaseAtDiv = document.querySelector('label[for="release_at"]').parentElement;
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = 'Additional image';
+            img.classList.add('w-full', 'h-32', 'object-cover');
 
-        function toggleReleaseDate() {
-            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
-            if (selectedStatus === 'coming_soon') {
-                releaseAtDiv.classList.remove('hidden');
-            } else {
-                releaseAtDiv.classList.add('hidden');
-            }
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.innerHTML = '×';
+            removeBtn.classList.add(
+                'absolute', 'top-1', 'right-1', 'bg-red-500', 'text-white',
+                'rounded-full', 'w-6', 'h-6', 'flex', 'items-center', 'justify-center',
+                'opacity-0', 'group-hover:opacity-100', 'transition-opacity', 'text-lg'
+            );
+            removeBtn.onclick = () => {
+                imageWrapper.remove();
+                additionalImageFiles = additionalImageFiles.filter(f => f !== file);
+                updateAdditionalImagesInput();
+            };
+
+            imageWrapper.appendChild(img);
+            imageWrapper.appendChild(removeBtn);
+            imageGallery.appendChild(imageWrapper);
+            updateAdditionalImagesInput();
         }
 
-        statusInputs.forEach(input => {
-            input.addEventListener('change', toggleReleaseDate);
-        });
+        function updateAdditionalImagesInput() {
+            const dataTransfer = new DataTransfer();
+            additionalImageFiles.forEach(file => dataTransfer.items.add(file));
+            additionalImagesUpload.files = dataTransfer.files;
+        }
 
-        // Initial check
-        toggleReleaseDate();
-        
-        // Add attribute functionality
+        // Attributes Logic - Simplified with Event Delegation
         const attributesContainer = document.getElementById('attributes-container');
         const addAttributeBtn = document.getElementById('add-attribute-btn');
-        
-        addAttributeBtn.addEventListener('click', function() {
-            const attributeCount = attributesContainer.querySelectorAll('.attribute-group').length;
-            
-            const attributeGroup = document.createElement('div');
-            attributeGroup.className = 'attribute-group';
-            attributeGroup.innerHTML = `
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex-1 mr-4">
-                        <label class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
-                        <input type="text" name="attributes[${attributeCount}][name]" required placeholder="Ví dụ: Size, Màu sắc" 
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                    </div>
-                    <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.attribute-group').remove()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                </div>
-                <div class="variant-values-container">
-                    <div class="variant-value-row">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                            <input type="text" name="attributes[${attributeCount}][values][0][value]" required placeholder="Ví dụ: S, M, L" 
-                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                            <input type="number" name="attributes[${attributeCount}][values][0][price_adjustment]" step="0.01" value="0" 
-                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                        </div>
-                        <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <button type="button" class="mt-2 text-blue-600 hover:text-blue-800" onclick="addVariantValue(this)">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                    </svg>
-                    Thêm giá trị
-                </button>
-            `;
-            
-            attributesContainer.appendChild(attributeGroup);
-        });
-        
-        // Define the function to add variant values
-        window.addVariantValue = function(button) {
-            const container = button.previousElementSibling;
-            const valueCount = container.querySelectorAll('.variant-value-row').length;
-            const attributeIndex = Array.from(attributesContainer.children).indexOf(button.closest('.attribute-group'));
-            
-            const valueRow = document.createElement('div');
-            valueRow.className = 'variant-value-row';
-            valueRow.innerHTML = `
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Giá trị</label>
-                    <input type="text" name="attributes[${attributeIndex}][values][${valueCount}][value]" required placeholder="Ví dụ: S, M, L" 
-                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Giá điều chỉnh</label>
-                    <input type="number" name="attributes[${attributeIndex}][values][${valueCount}][price_adjustment]" step="0.01" value="0" 
-                        class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
-                </div>
-                <button type="button" class="text-red-600 hover:text-red-800" onclick="this.closest('.variant-value-row').remove()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            `;
-            
-            container.appendChild(valueRow);
-        };
+        let attributeCount = document.querySelectorAll('.attribute-group').length;
 
-        // Form submission
-        const form = document.getElementById('edit-product-form');
-        form.addEventListener('submit', function(e) {
-            e.preventDefault(); // Prevent default submission to avoid page reload
-            
-            // Validate the form
-            if (!validateRequired()) {
-                return false;
+        function createAttributeGroup(index) {
+            const group = document.createElement('div');
+            group.classList.add('p-4', 'border', 'border-gray-200', 'rounded-md', 'mb-4', 'bg-gray-50', 'attribute-group');
+            group.innerHTML = `
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-md font-semibold text-gray-800">Thuộc tính ${index + 1}</h3>
+                    <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="attribute_name_${index}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                        <input type="text" id="attribute_name_${index}" name="attributes[${index}][name]" placeholder="VD: Kích thước"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div class="col-span-2">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
+                        <div id="attribute_values_container_${index}" class="space-y-3">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
+                                <div class="md:col-span-2">
+                                    <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                                    <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                </div>
+                                <div>
+                                    <label for="attribute_price_${index}_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                                    <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any" value="0"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="${index}">+ Thêm giá trị</button>
+                    </div>
+                </div>
+            `;
+            return group;
+        }
+
+        function addAttributeValue(attributeIndex) {
+            const valuesContainer = document.getElementById(`attribute_values_container_${attributeIndex}`);
+            const existingValues = valuesContainer.querySelectorAll('.grid');
+            const valueIndex = existingValues.length;
+
+            const valueDiv = document.createElement('div');
+            valueDiv.classList.add('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-3', 'p-3', 'border', 'border-dashed', 'border-gray-300', 'rounded-md');
+            valueDiv.innerHTML = `
+                <div class="md:col-span-2">
+                    <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                    <input type="text" id="attribute_value_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][value]" placeholder="VD: Nhỏ"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                </div>
+                <div>
+                    <label for="attribute_price_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                    <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any" value="0"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                </div>
+                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+            `;
+            valuesContainer.appendChild(valueDiv);
+        }
+
+        // Event delegation for all dynamic elements
+        document.addEventListener('click', function(e) {
+            // Remove attribute group
+            if (e.target.classList.contains('remove-attribute-btn')) {
+                e.target.closest('.attribute-group').remove();
             }
             
+            // Add attribute value
+            if (e.target.classList.contains('add-attribute-value-btn')) {
+                const attributeIndex = e.target.getAttribute('data-index');
+                addAttributeValue(parseInt(attributeIndex));
+            }
+            
+            // Remove attribute value
+            if (e.target.classList.contains('remove-attribute-value-btn')) {
+                e.target.closest('.grid').remove();
+            }
+            
+            // Remove topping
+            if (e.target.classList.contains('remove-topping-btn')) {
+                e.target.closest('.topping-group').remove();
+            }
+        });
+
+        // Add new attribute group
+        if (addAttributeBtn) {
+            addAttributeBtn.addEventListener('click', () => {
+                const attributeGroup = createAttributeGroup(attributeCount);
+                attributesContainer.appendChild(attributeGroup);
+                attributeCount++;
+            });
+        }
+
+        // Toppings Logic
+        const toppingsContainer = document.getElementById('toppings-container');
+        const addToppingBtn = document.getElementById('add-topping-btn');
+        let toppingCount = 0;
+
+        function createToppingGroup(index) {
+            const group = document.createElement('div');
+            group.classList.add('p-4', 'border', 'border-gray-200', 'rounded-md', 'mb-4', 'bg-gray-50', 'topping-group');
+            group.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-md font-semibold text-gray-800">Topping ${index + 1}</h3>
+                    <button type="button" class="remove-topping-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa topping</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
+                    <div>
+                        <label for="topping_name_${index}" class="block text-sm font-medium text-gray-700">Tên topping</label>
+                        <input type="text" id="topping_name_${index}" name="toppings[${index}][name]" placeholder="VD: Trân châu đen"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="topping_price_${index}" class="block text-sm font-medium text-gray-700">Giá</label>
+                        <input type="number" id="topping_price_${index}" name="toppings[${index}][price]" min="0" placeholder="0"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div class="flex items-center mt-7">
+                        <input type="checkbox" id="topping_available_${index}" name="toppings[${index}][available]" value="1" checked
+                            class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <label for="topping_available_${index}" class="ml-2 text-sm text-gray-700">Có sẵn</label>
+                    </div>
+                    <div>
+                        <label for="topping_image_${index}" class="block text-sm font-medium text-gray-700">Ảnh topping</label>
+                        <input type="file" id="topping_image_${index}" name="toppings[${index}][image]" accept="image/*"
+                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <div id="topping_image_preview_container_${index}" class="mt-2 w-24 h-24 border border-gray-300 rounded-md overflow-hidden flex items-center justify-center bg-gray-100">
+                            <img id="topping_image_preview_${index}" src="#" alt="Preview" class="hidden w-full h-full object-cover">
+                            <span id="topping_image_placeholder_${index}" class="text-xs text-gray-400">Xem trước</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return group;
+        }
+
+        // Add topping button event
+        if (addToppingBtn) {
+            addToppingBtn.addEventListener('click', () => {
+                const toppingGroup = createToppingGroup(toppingCount);
+                toppingsContainer.appendChild(toppingGroup);
+                toppingCount++;
+            });
+        }
+
+        // Handle topping image preview with event delegation
+        document.addEventListener('change', function(e) {
+            if (e.target.type === 'file' && e.target.name && e.target.name.includes('toppings') && e.target.name.includes('image')) {
+                const index = e.target.id.split('_').pop();
+                const imagePreview = document.getElementById(`topping_image_preview_${index}`);
+                const imagePlaceholder = document.getElementById(`topping_image_placeholder_${index}`);
+                
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        imagePreview.src = event.target.result;
+                        imagePreview.classList.remove('hidden');
+                        imagePlaceholder.classList.add('hidden');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.src = '#';
+                    imagePreview.classList.add('hidden');
+                    imagePlaceholder.classList.remove('hidden');
+                }
+            }
+        });
+
+        // Initialize counters based on existing data
+        toppingCount = document.querySelectorAll('.topping-group').length;
+        attributeCount = document.querySelectorAll('.attribute-group').length;
+
+        // Function to display validation errors for dynamic inputs
+        function displayValidationErrors() {
+            @if ($errors->any())
+                const errors = @json($errors->messages());
+                
+                // Display errors for attributes
+                Object.keys(errors).forEach(key => {
+                    if (key.startsWith('attributes.')) {
+                        const errorElementId = 'error_' + key.replace(/\./g, '_');
+                        const errorElement = document.getElementById(errorElementId);
+                        if (errorElement) {
+                            errorElement.textContent = errors[key][0];
+                            errorElement.style.display = 'block';
+                        }
+                    }
+                    
+                    // Display errors for toppings
+                    if (key.startsWith('toppings.')) {
+                        const errorElementId = 'error_' + key.replace(/\./g, '_');
+                        const errorElement = document.getElementById(errorElementId);
+                        if (errorElement) {
+                            errorElement.textContent = errors[key][0];
+                            errorElement.style.display = 'block';
+                        }
+                    }
+                });
+            @endif
+        }
+
+        // Call displayValidationErrors after restoring old data
+        setTimeout(displayValidationErrors, 100);
+
+        // Handle removing existing images
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-existing-image')) {
+                e.preventDefault();
+                const imageContainer = e.target.closest('.relative');
+                const hiddenInput = imageContainer.querySelector('input[name="existing_images[]"]');
+                
+                // Create a hidden input to mark this image for deletion
+                const deleteInput = document.createElement('input');
+                deleteInput.type = 'hidden';
+                deleteInput.name = 'deleted_images[]';
+                deleteInput.value = e.target.dataset.imageId;
+                document.getElementById('edit-product-form').appendChild(deleteInput);
+                
+                // Remove the image container
+                imageContainer.remove();
+            }
+        });
+
+        // Form Submission Logic
+        const editProductForm = document.getElementById('edit-product-form');
+        editProductForm.addEventListener('submit', function(e) {
             // Convert ingredients textarea to JSON array
             const ingredientsText = document.getElementById('ingredients').value;
-            const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
+            const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
             const ingredientsInput = document.createElement('input');
             ingredientsInput.type = 'hidden';
             ingredientsInput.name = 'ingredients_json';
             ingredientsInput.value = JSON.stringify(ingredientsArray);
-            form.appendChild(ingredientsInput);
-            
+            editProductForm.appendChild(ingredientsInput);
+
             // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
             
-            // Add a flag to indicate branch stocks are being updated
-            const updateBranchStocksFlag = document.createElement('input');
-            updateBranchStocksFlag.type = 'hidden';
-            updateBranchStocksFlag.name = 'update_branch_stocks';
-            updateBranchStocksFlag.value = '1';
-            form.appendChild(updateBranchStocksFlag);
-            
-            // Add a flag to indicate topping stocks are being updated
-            const updateToppingStocksFlag = document.createElement('input');
-            updateToppingStocksFlag.type = 'hidden';
-            updateToppingStocksFlag.name = 'update_topping_stocks';
-            updateToppingStocksFlag.value = '1';
-            form.appendChild(updateToppingStocksFlag);
-            
-            // Add a flag to indicate we're preserving attributes
-            const preserveAttributesFlag = document.createElement('input');
-            preserveAttributesFlag.type = 'hidden';
-            preserveAttributesFlag.name = 'preserve_attributes';
-            preserveAttributesFlag.value = '1';
-            form.appendChild(preserveAttributesFlag);
-            
-            // Send form data via AJAX to avoid page reload
-            const formData = new FormData(this);
-            
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    dtmodalShowToast('success', {
-                        title: 'Thành công',
-                        message: 'Sản phẩm đã được cập nhật thành công!'
-                    });
-                    
-                    // Redirect after a short delay
-                    setTimeout(() => {
-                        window.location.href = data.redirect || '/admin/products';
-                    }, 1500);
-                } else {
-                    // Handle validation errors
-                    if (data.errors) {
-                        Object.keys(data.errors).forEach(key => {
-                            const errorElement = document.getElementById(`${key.replace(/\./g, '-')}-error`);
-                            if (errorElement) {
-                                errorElement.textContent = data.errors[key][0];
-                                const inputElement = document.querySelector(`[name="${key}"]`);
-                                if (inputElement) {
-                                    inputElement.classList.add('border-red-500');
-                                }
-                            } else if (key === 'primary_image') {
-                                dtmodalShowToast('error', {
-                                    title: 'Lỗi',
-                                    message: data.errors[key][0]
-                                });
-                            }
-                        });
-                    } else {
-                        dtmodalShowToast('error', {
-                            title: 'Lỗi',
-                            message: data.message || 'Đã có lỗi xảy ra khi cập nhật sản phẩm.'
-                        });
+            // Collect variant stock data
+            const variantStockInputs = document.querySelectorAll('input[name^="variant_stocks["]');
+            const variantStocks = {};
+            variantStockInputs.forEach(input => {
+                if (input.value && input.value.trim() !== '') {
+                    const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
+                    if (matches) {
+                        const variantId = matches[1];
+                        const branchId = matches[2];
+                        if (!variantStocks[variantId]) {
+                            variantStocks[variantId] = {};
+                        }
+                        variantStocks[variantId][branchId] = parseInt(input.value) || 0;
                     }
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                dtmodalShowToast('error', {
-                    title: 'Lỗi',
-                    message: 'Đã có lỗi xảy ra khi gửi biểu mẫu.'
-                });
             });
+            
+            // Collect topping stock data
+            const toppingStockInputs = document.querySelectorAll('input[name^="topping_stocks["]');
+            const toppingStocks = {};
+            toppingStockInputs.forEach(input => {
+                if (input.value && input.value.trim() !== '') {
+                    const matches = input.name.match(/topping_stocks\[(\d+)\]\[(\d+)\]/);
+                    if (matches) {
+                        const toppingId = matches[1];
+                        const branchId = matches[2];
+                        if (!toppingStocks[toppingId]) {
+                            toppingStocks[toppingId] = {};
+                        }
+                        toppingStocks[toppingId][branchId] = parseInt(input.value) || 0;
+                    }
+                }
+            });
+            
+            console.log('Variant Stocks:', variantStocks);
+            console.log('Topping Stocks:', toppingStocks);
         });
 
         // Handle status and release date visibility
         const statusInputs = document.querySelectorAll('input[name="status"]');
-        const releaseAtDiv = document.querySelector('label[for="release_at"]').parentElement;
+        const releaseAtContainer = document.getElementById('release_at_container');
 
         function toggleReleaseDate() {
             const selectedStatus = document.querySelector('input[name="status"]:checked').value;
-            if (selectedStatus === 'coming_soon') {
-                releaseAtDiv.classList.remove('hidden');
-            } else {
-                releaseAtDiv.classList.add('hidden');
-            }
+            releaseAtContainer.classList.toggle('hidden', selectedStatus !== 'coming_soon');
         }
 
         statusInputs.forEach(input => {
@@ -1481,24 +1147,223 @@ if (is_array($ingredientsData)) {
 
         // Initial check
         toggleReleaseDate();
+
+        // Inventory Management JavaScript
+        // Tab switching functionality
+        window.switchTab = function(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+                button.classList.add('text-gray-500', 'border-transparent');
+                button.classList.remove('text-blue-600', 'border-blue-600');
+            });
+            
+            // Show selected tab content
+            const selectedContent = document.getElementById(`content-${tabName}`);
+            if (selectedContent) {
+                selectedContent.classList.add('active');
+            }
+            
+            // Add active class to selected tab button
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+            if (selectedTab) {
+                selectedTab.classList.add('active', 'text-blue-600', 'border-blue-600');
+                selectedTab.classList.remove('text-gray-500', 'border-transparent');
+            }
+        };
+
+        // Branch management
+        let showAllBranches = false;
+
+        window.toggleAllBranches = function() {
+            showAllBranches = !showAllBranches;
+            const button = document.getElementById('toggle-all-branches');
+            const checkboxes = document.querySelectorAll('.branch-checkbox');
+            
+            if (showAllBranches) {
+                // Check all branches
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+                if (button) {
+                    button.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4 inline mr-1"></i> Ẩn bớt chi nhánh';
+                }
+            } else {
+                // Uncheck all branches except first 3
+                checkboxes.forEach((checkbox, index) => {
+                    checkbox.checked = index < 3;
+                });
+                if (button) {
+                    button.innerHTML = '<i data-lucide="eye" class="w-4 h-4 inline mr-1"></i> Hiện tất cả chi nhánh';
+                }
+            }
+            
+            updateBranchDisplay();
+        };
+
+        function updateBranchDisplay() {
+            const checkboxes = document.querySelectorAll('.branch-checkbox');
+            const selectedCount = document.querySelectorAll('.branch-checkbox:checked').length;
+            const totalCount = checkboxes.length;
+            
+            // Update counter
+            const selectedCountEl = document.getElementById('selected-count');
+            const totalCountEl = document.getElementById('total-count');
+            if (selectedCountEl) selectedCountEl.textContent = selectedCount;
+            if (totalCountEl) totalCountEl.textContent = totalCount;
+            
+            // Show/hide branch columns
+            checkboxes.forEach(checkbox => {
+                const branchId = checkbox.dataset.branchId;
+                const columns = document.querySelectorAll(`[data-branch-id="${branchId}"]`);
+                
+                columns.forEach(column => {
+                    if (checkbox.checked) {
+                        column.style.display = '';
+                    } else {
+                        column.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Add event listeners to branch checkboxes
+        const checkboxes = document.querySelectorAll('.branch-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateBranchDisplay);
+        });
+        
+        // Initialize display
+         updateBranchDisplay();
+
+         // Initialize Lucide icons
+         if (typeof lucide !== 'undefined') {
+             lucide.createIcons();
+         }
+
+        // Toggle inactive variants visibility
+        let showInactive = false;
+        window.toggleInactive = function() {
+            showInactive = !showInactive;
+            const inactiveVariants = document.querySelectorAll('.inactive-variant');
+            const button = event.target.closest('button');
+            
+            if (showInactive) {
+                inactiveVariants.forEach(variant => variant.classList.remove('hidden'));
+                if (button) {
+                    button.innerHTML = '<i data-lucide="eye" class="w-4 h-4 inline mr-1"></i> Ẩn tạm dừng';
+                }
+            } else {
+                inactiveVariants.forEach(variant => variant.classList.add('hidden'));
+                if (button) {
+                    button.innerHTML = '<i data-lucide="eye-off" class="w-4 h-4 inline mr-1"></i> Hiện tạm dừng';
+                }
+            }
+        };
+
+        // Update stock status based on quantity
+        window.updateStockStatus = function(input) {
+            const quantity = parseInt(input.value) || 0;
+            const badge = input.parentElement.querySelector('.badge-default, .badge-secondary, .badge-success, .badge-destructive');
+            
+            if (badge) {
+                if (quantity === 0) {
+                    badge.className = 'badge-destructive px-2 py-1 rounded text-xs';
+                    badge.textContent = 'Hết hàng';
+                } else if (quantity < 10) {
+                    badge.className = 'badge-secondary px-2 py-1 rounded text-xs';
+                    badge.textContent = 'Sắp hết';
+                } else {
+                    badge.className = 'badge-success px-2 py-1 rounded text-xs';
+                    badge.textContent = 'Còn hàng';
+                }
+            }
+        };
     });
-  </script>
-  <script>
-    // Debug form submission
-    document.getElementById('edit-product-form').addEventListener('submit', function() {
-      try {
-        const formData = new FormData(this);
-        console.log('Form attributes:', Array.from(formData.entries())
-          .filter(item => item[0].includes('attributes') || item[0].includes('existing_attributes')));
-        console.log('Form branch stocks:', Array.from(formData.entries())
-          .filter(item => item[0].includes('branch_stock')));
-        console.log('Form topping stocks:', Array.from(formData.entries())
-          .filter(item => item[0].includes('topping_stock')));
-        console.log('Form toppings:', Array.from(formData.entries())
-          .filter(item => item[0].includes('toppings')));
-      } catch(e) {
-        console.error('Debug error:', e);
-      }
-    });
-  </script>
+</script>
+
+<style>
+/* Tab styles */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-button {
+    transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+.tab-button.active {
+    color: #2563eb;
+    border-color: #2563eb;
+}
+
+/* Badge styles */
+.badge-default {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.badge-secondary {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.badge-success {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge-destructive {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+/* Stock input styles */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Table responsive styles */
+.overflow-x-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f9fafb;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+    height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+    background: #f9fafb;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+</style>
 @endsection

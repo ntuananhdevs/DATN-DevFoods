@@ -13,9 +13,16 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Cart;
 use App\Models\Branch;
 use App\Models\Address;
+use App\Services\BranchService;
 
 class CheckoutController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
     /**
      * Display the checkout page.
      *
@@ -141,8 +148,12 @@ class CheckoutController extends Controller
             // Calculate total
             $total = $subtotal + $shipping - $discount;
             
-            // Lấy branch_id mặc định (có thể cập nhật tùy theo logic nghiệp vụ)
-            $defaultBranchId = Branch::first()->id ?? 1;
+            // Lấy branch hiện tại từ session
+            $currentBranch = $this->branchService->getCurrentBranch();
+            if (!$currentBranch) {
+                throw new \Exception('Vui lòng chọn chi nhánh trước khi thanh toán.');
+            }
+            $branchId = $currentBranch->id;
             
             // Create order
             $order = new Order();
@@ -168,7 +179,7 @@ class CheckoutController extends Controller
             }
             
             // Thông tin chung
-            $order->branch_id = $defaultBranchId;
+            $order->branch_id = $branchId;
             $order->order_number = 'ORD-' . strtoupper(uniqid());
             $order->status = 'pending';
             $order->delivery_fee = $shipping;

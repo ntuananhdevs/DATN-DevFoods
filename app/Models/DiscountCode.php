@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class DiscountCode extends Model
 {
@@ -38,10 +39,12 @@ class DiscountCode extends Model
     ];
 
     protected $casts = [
-        'applicable_ranks' => 'array',
-        'valid_days_of_week' => 'array',
+        'applicable_ranks' => 'json',
+        'valid_days_of_week' => 'json',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'valid_from_time' => 'datetime',
+        'valid_to_time' => 'datetime',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'rank_exclusive' => 'boolean',
@@ -57,11 +60,75 @@ class DiscountCode extends Model
 
     public function branches()
     {
-        return $this->belongsToMany(Branch::class, 'discount_code_branches', 'discount_code_id', 'branch_id');
+        return $this->belongsToMany(Branch::class, 'discount_code_branches');
     }
 
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function products()
+    {
+        return $this->hasMany(DiscountCodeProduct::class);
+    }
+
+    public function productVariants()
+    {
+        return $this->hasMany(DiscountCodeProductVariant::class);
+    }
+
+    public function combos()
+    {
+        return $this->hasMany(DiscountCodeProduct::class)->whereNotNull('combo_id');
+    }
+
+    public function users()
+    {
+        return $this->hasMany(UserDiscountCode::class);
+    }
+
+    public function usageHistory()
+    {
+        return $this->hasMany(DiscountUsageHistory::class);
+    }
+
+    public function scopeActive($query)
+    {
+        $now = Carbon::now();
+        return $query->where('is_active', true)
+                    ->where('start_date', '<=', $now)
+                    ->where('end_date', '>=', $now);
+    }
+
+    public function isActiveNow()
+    {
+        $now = Carbon::now();
+        return $this->is_active && 
+               $this->start_date <= $now && 
+               $this->end_date >= $now;
+    }
+
+    public function isExpired()
+    {
+        return $this->end_date < Carbon::now();
+    }
+
+    public function isUpcoming()
+    {
+        return $this->start_date > Carbon::now();
+    }
+
+    public function getStatusAttribute()
+    {
+        if (!$this->is_active) {
+            return 'inactive';
+        } elseif ($this->isExpired()) {
+            return 'expired';
+        } elseif ($this->isUpcoming()) {
+            return 'upcoming';
+        } else {
+            return 'active';
+        }
     }
 }

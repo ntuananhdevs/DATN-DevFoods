@@ -1,970 +1,286 @@
 @extends('layouts.admin.contentLayoutMaster')
 
+@section('styles')
+    <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
+    <link href="{{ asset('css/admin/branchs/branch-edit.css') }}" rel="stylesheet">
+@endsection
+
 @section('content')
-<style>
-    .branch-form-container {
-        max-width: 100%;
-        margin: 0 auto;
-        padding: 2rem 1rem;
-    }
-
-    h1, h2, h3, h4, h5, h6 {
-        margin: 0;
-        font-weight: 600;
-        line-height: 1.2;
-    }
-
-    h1 { font-size: 1.5rem; }
-    h2 { font-size: 1.25rem; }
-    h3 { font-size: 1.125rem; }
-    h4 { font-size: 1rem; }
-    p { margin: 0; line-height: 1.5; }
-
-    a:hover { color: #3f37c9; }
-
-    .branch-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.5rem 1rem;
-        border-radius: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        border: none;
-        font-size: 0.875rem;
-        gap: 0.5rem;
-    }
-
-    .branch-btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
-    .branch-btn-block { width: 100%; }
-    .branch-btn-primary { background-color: #4361ee; color: #ffffff; }
-    .branch-btn-primary:hover { background-color: #3f37c9; color: #ffffff; }
-    .branch-btn-outline { background-color: transparent; color: #4b5563; border: 1px solid #e5e7eb; }
-    .branch-btn-outline:hover { background-color: #e5e7eb; color: #1f2937; }
-    .branch-btn-danger { background-color: #f43f5e; color: #ffffff; }
-    .branch-btn-danger:hover { background-color: #e11d48; color: #ffffff; }
-    .branch-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
-    .branch-page-header { margin-bottom: 1.5rem; }
-    .branch-header-content { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
-    .branch-header-left { display: flex; align-items: center; gap: 1rem; }
-    .branch-header-icon { width: 3rem; height: 3rem; background-color: rgba(67, 97, 238, 0.1); color: #4361ee; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
-    .branch-header-text p { color: #6b7280; margin-top: 0.25rem; }
-    .branch-header-actions { display: flex; gap: 0.75rem; }
-
-    .branch-card { background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); overflow: hidden; transition: all 0.3s ease; margin-bottom: 1.5rem; }
-    .branch-card:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); transform: translateY(-2px); }
-    .branch-card-header { display: flex; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; gap: 0.75rem; }
-    .branch-card-icon { width: 2.5rem; height: 2.5rem; background-color: rgba(67, 97, 238, 0.1); color: #4361ee; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
-    .branch-card-header h3 { flex-grow: 1; }
-    .branch-card-actions { display: flex; gap: 0.5rem; }
-    .branch-card-body { padding: 1.5rem; }
-
-    .branch-form-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
-    @media (min-width: 992px) { .branch-form-grid { grid-template-columns: 2fr 1fr; } }
-    .branch-form-group { margin-bottom: 1.25rem; }
-    .branch-form-group:last-child { margin-bottom: 0; }
-    .branch-form-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-    .branch-form-label-icon { display: flex; align-items: center; gap: 0.5rem; }
-    .branch-form-control { display: block; width: 100%; padding: 0.625rem 0.75rem; font-size: 0.875rem; line-height: 1.5; color: #1f2937; background-color: #ffffff; background-clip: padding-box; border: 1px solid #e5e7eb; border-radius: 12px; transition: all 0.15s ease; }
-    .branch-form-control:focus { border-color: #4895ef; outline: 0; box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.25); }
-    select.branch-form-control { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
-    textarea.branch-form-control { min-height: 100px; resize: vertical; }
-    .branch-form-hint { margin-top: 0.375rem; font-size: 0.75rem; color: #6b7280; }
-    .branch-form-error { margin-top: 0.375rem; font-size: 0.75rem; color: #f43f5e; }
-    .branch-form-check { display: flex; align-items: center; gap: 0.5rem; padding: 1rem; border: 1px solid #e5e7eb; border-radius: 12px; }
-    .branch-form-check-content { flex-grow: 1; }
-    .branch-form-check-label { font-weight: 500; }
-    .branch-form-check-hint { font-size: 0.875rem; color: #6b7280; }
-
-    .branch-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-    .branch-switch input { opacity: 0; width: 0; height: 0; }
-    .branch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e5e7eb; transition: all 0.15s ease; border-radius: 34px; }
-    .branch-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: #ffffff; transition: all 0.15s ease; border-radius: 50%; }
-    input:checked + .branch-slider { background-color: #4361ee; }
-    input:focus + .branch-slider { box-shadow: 0 0 1px #4361ee; }
-    input:checked + .branch-slider:before { transform: translateX(20px); }
-
-    .branch-grid { display: grid; gap: 1.5rem; }
-    .branch-grid-2 { grid-template-columns: 1fr; }
-    @media (min-width: 768px) { .branch-grid-2 { grid-template-columns: 1fr 1fr; } }
-
-    .branch-upload-label { cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background-color: #e5e7eb; border-radius: 12px; font-size: 0.875rem; transition: all 0.15s ease; }
-    .branch-upload-label:hover { background-color: #6b7280; color: #ffffff; }
-    .branch-upload-input { display: none; }
-    .branch-image-preview-grid {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 1rem;
-        overflow-x: auto;
-        padding-bottom: 0.5rem;
-        scroll-behavior: smooth;
-    }
-    .branch-image-preview-item {
-        position: relative;
-        border-radius: 12px;
-        overflow: hidden;
-        flex: 0 0 auto;
-        width: 150px;
-        aspect-ratio: 4/3;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    }
-    .branch-image-preview-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .branch-image-preview-overlay {
-        position: absolute;
-        inset: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: all 0.3s ease;
-    }
-    .branch-image-preview-item:hover .branch-image-preview-overlay {
-        opacity: 1;
-    }
-    .branch-image-preview-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-    .branch-image-preview-btn {
-        width: 2rem;
-        height: 2rem;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: #ffffff;
-        color: #1f2937;
-        border: none;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-    .branch-image-preview-btn:hover {
-        transform: scale(1.1);
-    }
-    .branch-image-preview-btn.branch-remove-btn:hover {
-        background-color: #f43f5e;
-        color: #ffffff;
-    }
-    .branch-image-preview-badge {
-        position: absolute;
-        top: 0.5rem;
-        left: 0.5rem;
-        padding: 0.25rem 0.5rem;
-        background-color: #f59e0b;
-        color: #ffffff;
-        border-radius: 9999px;
-        font-size: 0.625rem;
-        font-weight: 600;
-    }
-
-    .branch-empty-state { text-align: center; padding: 3rem 1rem; }
-    .branch-empty-icon { width: 4rem; height: 4rem; background-color: #e5e7eb; color: #6b7280; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; }
-    .branch-empty-title { margin-bottom: 0.5rem; font-weight: 500; }
-    .branch-empty-text { color: #6b7280; margin-bottom: 1.5rem; }
-
-    .branch-preview-card { padding: 1rem; background-color: rgba(67, 97, 238, 0.05); border-radius: 12px; border: 1px solid rgba(67, 97, 238, 0.1); margin-bottom: 1rem; }
-    .branch-preview-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-    .branch-preview-title { font-weight: 500; }
-    .branch-preview-item { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; color: #4b5563; }
-    .branch-preview-item i { margin-top: 0.25rem; }
-    .branch-preview-hours { display: flex; gap: 1rem; margin-top: 1rem; }
-    .branch-preview-hour { flex: 1; padding: 0.75rem; border-radius: 12px; text-align: center; }
-    .branch-preview-hour.branch-opening { background-color: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); }
-    .branch-preview-hour.branch-closing { background-color: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); }
-    .branch-preview-hour-label { font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem; }
-    .branch-preview-hour-value.branch-opening { color: #4ade80; font-weight: 500; }
-    .branch-preview-hour-value.branch-closing { color: #f43f5e; font-weight: 500; }
-    .branch-preview-status { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; border-radius: 12px; border: 1px solid #e5e7eb; margin-top: 1rem; }
-    .branch-preview-status-label { font-weight: 500; }
-    .branch-preview-status-value { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-    .branch-preview-status-value.branch-active { background-color: rgba(74, 222, 128, 0.1); color: #4ade80; }
-    .branch-preview-status-value.branch-inactive { background-color: rgba(244, 63, 94, 0.1); color: #f43f5e; }
-
-    #branch-map {
-        height: 300px !important;
-        width: 100%;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        min-height: 300px;
-        background-color: #f0f0f0;
-    }
-    .branch-map-coordinates { display: flex; gap: 1rem; }
-    .branch-map-hint { margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280; }
-    .branch-map-hint-error { color: #f43f5e; }
-
-    .branch-mb-6 { margin-bottom: 1.5rem; }
-    .branch-space-y-6 > * + * { margin-top: 1.5rem; }
-    .branch-flex { display: flex; }
-    .branch-items-center { align-items: center; }
-    .branch-justify-between { justify-content: space-between; }
-    .branch-gap-2 { gap: 0.5rem; }
-    .branch-gap-3 { gap: 0.75rem; }
-    .branch-gap-4 { gap: 1rem; }
-    .branch-flex-wrap { flex-wrap: wrap; }
-    .branch-hidden { display: none; }
-    .branch-text-center { text-align: center; }
-    .branch-text-sm { font-size: 0.875rem; }
-    .branch-text-xs { font-size: 0.75rem; }
-    .branch-text-gray { color: #6b7280; }
-    .branch-text-primary { color: #4361ee; }
-    .branch-text-success { color: #4ade80; }
-    .branch-text-danger { color: #f43f5e; }
-    .branch-font-medium { font-weight: 500; }
-    .branch-font-semibold { font-weight: 600; }
-    .branch-w-full { width: 100%; }
-    .branch-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-    .branch-badge-info { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-</style>
-
-<!-- Include Mapbox CSS and JS -->
-<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css" />
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js"></script>
-
-<div class="branch-form-container">
-    <div class="branch-mb-6">
-        <div class="branch-flex branch-justify-between branch-items-center branch-flex-wrap branch-gap-4">
-            <div class="branch-flex branch-items-center branch-gap-4">
-                <div class="branch-header-icon">
-                    <i class="fas fa-building"></i>
+    <div class="branch-form-container">
+        <div class="page-header">
+            <div class="header-content">
+                <div class="flex items-center gap-4">
+                    <div class="header-icon"><i class="fas fa-edit" style="color: #4361ee;"></i></div>
+                    <div>
+                        <h1>Chỉnh sửa chi nhánh</h1>
+                        <p>Cập nhật thông tin chi nhánh: {{ $branch->name }}</p>
+                    </div>
                 </div>
-                <div class="branch-header-text">
-                    <h1>Chỉnh sửa chi nhánh</h1>
-                    <p>Cập nhật thông tin chi nhánh {{ $branch->name }}</p>
+                <div class="flex gap-2">
+                    <a href="{{ route('admin.branches.show', $branch->id) }}" class="btn btn-outline"><i class="fas fa-eye"></i> Xem chi tiết</a>
+                    <a href="{{ route('admin.branches.index') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Quay lại</a>
                 </div>
-            </div>
-            <div class="branch-header-actions">
-                <a href="{{ route('admin.branches.index') }}" class="branch-btn branch-btn-outline">
-                    <i class="fas fa-arrow-left"></i>
-                    <span>Quay lại</span>
-                </a>
             </div>
         </div>
-    </div>
 
-    @if ($errors->any())
-        <div class="alert alert-danger" style="background-color: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                <i class="fas fa-exclamation-circle" style="color: #dc2626;"></i>
-                <h4 style="color: #dc2626; font-weight: 600; margin: 0;">Đã xảy ra lỗi!</h4>
-            </div>
-            <ul style="list-style-type: none; margin: 0; padding: 0;">
-                @foreach ($errors->all() as $error)
-                    <li style="color: #dc2626; font-size: 0.875rem; margin-top: 0.25rem;">
-                        <i class="fas fa-times" style="margin-right: 0.5rem;"></i>
-                        {{ $error }}
-                    </li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form id="branchForm" action="{{ route('admin.branches.update', $branch->id) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        @method('PUT')
-
-        <div class="branch-form-grid">
-            <div class="branch-space-y-6">
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <div class="branch-card-icon">
-                            <i class="fas fa-info-circle"></i>
+        <form id="branchForm" action="{{ route('admin.branches.update', $branch->id) }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
+            <div class="form-grid">
+                <div class="space-y-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-info-circle" style="color: #4361ee;"></i></div>
+                            <h3>Thông tin cơ bản</h3>
                         </div>
-                        <h3>Thông tin cơ bản</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div class="branch-form-group">
-                            <label for="name" class="branch-form-label branch-form-label-icon">
-                                <i class="fas fa-building branch-text-primary"></i>
-                                Tên chi nhánh
-                            </label>
-                            <input type="text" id="name" name="name" class="branch-form-control @error('name') is-invalid @enderror"
-                                   placeholder="Nhập tên chi nhánh" value="{{ old('name', $branch->name) }}" maxlength="255">
-                            @error('name')
-                                <div class="branch-form-error">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="branch-form-group">
-                            <label for="address" class="branch-form-label branch-form-label-icon">
-                                <i class="fas fa-map-marker-alt branch-text-danger"></i>
-                                Địa chỉ
-                            </label>
-                            <textarea id="address" name="address" class="branch-form-control @error('address') is-invalid @enderror"
-                                      placeholder="Nhập địa chỉ chi nhánh" maxlength="255">{{ old('address', $branch->address) }}</textarea>
-                            @error('address')
-                                <div class="branch-form-error">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="branch-grid branch-grid-2">
-                            <div class="branch-form-group">
-                                <label for="phone" class="branch-form-label branch-form-label-icon">
-                                    <i class="fas fa-phone branch-text-primary"></i>
-                                    Số điện thoại
-                                </label>
-                                <input type="tel" id="phone" name="phone" class="branch-form-control @error('phone') is-invalid @enderror"
-                                       placeholder="Nhập số điện thoại" value="{{ old('phone', $branch->phone) }}" pattern="[0-9\s\-\+\(\)]{10,}">
-                                @error('phone')
-                                    <div class="branch-form-error">{{ $message }}</div>
-                                @enderror
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="name" class="form-label"><i class="fas fa-building" style="color: #4361ee;"></i> Tên chi nhánh</label>
+                                <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror" placeholder="Nhập tên chi nhánh" value="{{ old('name', $branch->name) }}" maxlength="255">
+                                @error('name') <div class="form-error">{{ $message }}</div> @enderror
                             </div>
-
-                            <div class="branch-form-group">
-                                <label for="email" class="branch-form-label branch-form-label-icon">
-                                    <i class="fas fa-envelope branch-text-primary"></i>
-                                    Email
-                                </label>
-                                <input type="email" id="email" name="email" class="branch-form-control @error('email') is-invalid @enderror"
-                                       placeholder="Nhập email (không bắt buộc)" value="{{ old('email', $branch->email) }}">
-                                @error('email')
-                                    <div class="branch-form-error">{{ $message }}</div>
-                                @enderror
+                            <div class="form-group">
+                                <label for="address" class="form-label"><i class="fas fa-map-marker-alt" style="color: #4361ee;"></i> Địa chỉ</label>
+                                <textarea id="address" name="address" class="form-control @error('address') is-invalid @enderror" placeholder="Nhập địa chỉ chi nhánh" maxlength="255">{{ old('address', $branch->address) }}</textarea>
+                                @error('address') <div class="form-error">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="phone" class="form-label"><i class="fas fa-phone" style="color: #4361ee;"></i> Số điện thoại</label>
+                                    <input type="tel" id="phone" name="phone" class="form-control @error('phone') is-invalid @enderror" placeholder="Nhập số điện thoại" value="{{ old('phone', $branch->phone) }}" pattern="[0-9\s\-\+\(\)]{10,}">
+                                    @error('phone') <div class="form-error">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="form-group">
+                                    <label for="email" class="form-label"><i class="fas fa-envelope" style="color: #4361ee;"></i> Email</label>
+                                    <input type="email" id="email" name="email" class="form-control @error('email') is-invalid @enderror" placeholder="Nhập email (không bắt buộc)" value="{{ old('email', $branch->email) }}">
+                                    @error('email') <div class="form-error">{{ $message }}</div> @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <div class="branch-card-icon">
-                            <i class="fas fa-clock"></i>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-clock" style="color: #4361ee;"></i></div>
+                            <h3>Giờ hoạt động</h3>
                         </div>
-                        <h3>Giờ hoạt động</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div class="branch-grid branch-grid-2">
-                            <div class="branch-form-group">
-                                <label for="opening_hour" class="branch-form-label branch-form-label-icon">
-                                    <i class="fas fa-sun branch-text-success"></i>
-                                    Giờ mở cửa
-                                </label>
-                                <input type="time" id="opening_hour" name="opening_hour"
-                                       class="branch-form-control @error('opening_hour') is-invalid @enderror"
-                                       value="{{ old('opening_hour', $branch->opening_hour) }}">
-                                @error('opening_hour')
-                                    <div class="branch-form-error">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="branch-form-group">
-                                <label for="closing_hour" class="branch-form-label branch-form-label-icon">
-                                    <i class="fas fa-moon branch-text-danger"></i>
-                                    Giờ đóng cửa
-                                </label>
-                                <input type="time" id="closing_hour" name="closing_hour"
-                                       class="branch-form-control @error('closing_hour') is-invalid @enderror"
-                                       value="{{ old('closing_hour', $branch->closing_hour) }}">
-                                @error('closing_hour')
-                                    <div class="branch-form-error">{{ $message }}</div>
-                                @enderror
-                                <div class="branch-form-hint">Giờ đóng cửa phải sau giờ mở cửa</div>
+                        <div class="card-body">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="opening_hour" class="form-label"><i class="fas fa-sun" style="color:rgb(78, 228, 93);"></i> Giờ mở cửa</label>
+                                    <input type="time" id="opening_hour" name="opening_hour" class="form-control @error('opening_hour') is-invalid @enderror" value="{{ old('opening_hour', $branch->opening_hour) }}">
+                                    @error('opening_hour') <div class="form-error">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="form-group">
+                                    <label for="closing_hour" class="form-label"><i class="fas fa-moon" style="color:rgb(222, 93, 93);"></i> Giờ đóng cửa</label>
+                                    <input type="time" id="closing_hour" name="closing_hour" class="form-control @error('closing_hour') is-invalid @enderror" value="{{ old('closing_hour', $branch->closing_hour) }}">
+                                    @error('closing_hour') <div class="form-error">{{ $message }}</div> @enderror
+                                    <div class="form-hint">Giờ đóng cửa phải sau giờ mở cửa</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <div class="branch-card-icon">
-                            <i class="fas fa-map-marked-alt"></i>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-map-marked-alt" style="color: #4361ee;"></i></div>
+                            <h3>Vị trí chi nhánh</h3>
                         </div>
-                        <h3>Vị trí chi nhánh</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div id="branch-map"></div>
-                        <div class="branch-map-hint" id="mapHint">Nhấp vào bản đồ để chọn vị trí chi nhánh</div>
-
-                        <div class="branch-map-coordinates branch-grid branch-grid-2">
-                            <div class="branch-form-group">
-                                <label for="latitude" class="branch-form-label">
-                                    <i class="fas fa-map-pin branch-text-primary"></i>
-                                    Vĩ độ (Latitude)
-                                </label>
-                                <input type="text" id="latitude" name="latitude"
-                                       class="branch-form-control @error('latitude') is-invalid @enderror"
-                                       value="{{ old('latitude', $branch->latitude) }}" readonly>
-                                @error('latitude')
-                                    <div class="branch-form-error">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="branch-form-group">
-                                <label for="longitude" class="branch-form-label">
-                                    <i class="fas fa-map-pin branch-text-primary"></i>
-                                    Kinh độ (Longitude)
-                                </label>
-                                <input type="text" id="longitude" name="longitude"
-                                       class="branch-form-control @error('longitude') is-invalid @enderror"
-                                       value="{{ old('longitude', $branch->longitude) }}" readonly>
-                                @error('longitude')
-                                    <div class="branch-form-error">{{ $message }}</div>
-                                @enderror
+                        <div class="card-body">
+                            <div id="map"></div>
+                            <div class="map-hint">Nhấp vào bản đồ để chọn vị trí chi nhánh</div>
+                            <div class="map-coordinates grid-2">
+                                <div class="form-group">
+                                    <label for="latitude" class="form-label"><i class="fas fa-map-pin" style="color: #4361ee;"></i> Vĩ độ</label>
+                                    <input type="text" id="latitude" name="latitude" class="form-control @error('latitude') is-invalid @enderror" value="{{ old('latitude', $branch->latitude) }}" readonly>
+                                    @error('latitude') <div class="form-error">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="form-group">
+                                    <label for="longitude" class="form-label"><i class="fas fa-map-pin" style="color: #4361ee;"></i> Kinh độ</label>
+                                    <input type="text" id="longitude" name="longitude" class="form-control @error('longitude') is-invalid @enderror" value="{{ old('longitude', $branch->longitude) }}" readonly>
+                                    @error('longitude') <div class="form-error">{{ $message }}</div> @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <div class="branch-card-icon">
-                            <i class="fas fa-images"></i>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-images" style="color: #4361ee;"></i></div>
+                            <h3>Hình ảnh chi nhánh</h3>
                         </div>
-                        <h3>Hình ảnh chi nhánh</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div class="branch-form-group">
-                            <label for="images" class="branch-form-label branch-form-label-icon">
-                                <i class="fas fa-upload branch-text-primary"></i>
-                                Tải lên hình ảnh mới
-                            </label>
-                            <div class="branch-upload-label">
-                                <input type="file" id="images" name="images[]" class="branch-upload-input @error('images') is-invalid @enderror"
-                                       accept="image/jpeg,image/png,image/jpg,image/gif" multiple aria-label="Tải lên hình ảnh chi nhánh">
-                                <span class="branch-upload-label-text">Chọn nhiều hình ảnh...</span>
-                            </div>
-                            <div class="branch-form-hint">Chấp nhận: JPEG, PNG, JPG, GIF. Tối đa 2MB mỗi ảnh.</div>
-                            @error('images')
-                                <div class="branch-form-error">{{ $message }}</div>
-                            @enderror
-                            @error('images.*')
-                                <div class="branch-form-error">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div id="existingImages" class="branch-image-preview-grid {{ $branch->images->isEmpty() ? 'branch-hidden' : '' }}">
-                            <h4>Hình ảnh hiện có:</h4>
-                            <div id="existingImagesContainer" class="branch-flex branch-flex-wrap branch-gap-3">
-                                @foreach($branch->images as $index => $image)
-                                    <div class="branch-image-preview-item" data-existing-image-id="{{ $image->id }}">
-                                        <img src="{{ Storage::disk('s3')->url($image->image_path) }}" class="branch-image-preview-img" alt="Ảnh chi nhánh {{ $index + 1 }}">
-                                        <div class="branch-image-preview-overlay">
-                                            <div class="branch-image-preview-actions">
-                                                <button type="button" class="branch-image-preview-btn branch-remove-btn" data-existing-image-id="{{ $image->id }}" aria-label="Xóa ảnh {{ $index + 1 }}">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
+                        <div class="card-body">
+                            @if($branch->images && $branch->images->count() > 0)
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fas fa-image" style="color: #4361ee;"></i> Hình ảnh hiện tại</label>
+                                    <div class="existing-images">
+                                        @foreach($branch->images as $image)
+                                            <div class="existing-image-item" data-image-id="{{ $image->id }}">
+                                                <img src="{{ Storage::disk('s3')->url($image->image_path) }}" alt="{{ $image->caption }}" class="existing-image-img">
+                                                @if($image->is_primary)
+                                                    <div class="existing-image-badge primary-badge">Ảnh chính</div>
+                                                @else
+                                                    <div class="existing-image-badge">Ảnh phụ</div>
+                                                @endif
+                                                <div class="existing-image-overlay">
+                                                    <button type="button" class="image-preview-btn" onclick="setPrimaryImage({{ $image->id }})" title="Đặt làm ảnh chính">
+                                                        <i class="fas fa-star"></i>
+                                                    </button>
+                                                    <button type="button" class="image-preview-btn remove-btn" onclick="markImageForDeletion({{ $image->id }})" title="Xóa ảnh">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        @if($image->is_primary)
-                                            <div class="branch-image-preview-badge">Ảnh chính</div>
-                                        @endif
+                                        @endforeach
                                     </div>
-                                @endforeach
+                                    <div class="form-hint">Nhấp vào nút sao để đặt ảnh chính, nhấp vào nút thùng rác để xóa ảnh</div>
+                                </div>
+                            @endif
+
+                            <div class="form-group">
+                                <label class="form-label" style="border: 2px solid #4361ee; padding: 12px; border-radius: 8px; display: inline-block; cursor: pointer;" onclick="document.getElementById('images').click()">
+                                    <i class="fas fa-upload" style="color: #4361ee;"></i> Thêm hình ảnh mới
+                                    <span id="imageCount" class="badge" style="display: none; background: #4361ee; color: white; margin-left: 8px; border-radius: 12px; padding: 4px 8px;">0 ảnh</span>
+                                </label>
+                                <input type="file" id="images" name="images[]" class="upload-input @error('images') is-invalid @enderror" accept="image/jpeg,image/png,image/jpg,image/gif" multiple style="display: none;">
+                                <div class="form-hint">Chấp nhận: JPEG, PNG, JPG, GIF. Tối đa 2MB mỗi ảnh. Nhấp vào nút để chọn nhiều ảnh cùng lúc.</div>
+                                @error('images') <div class="form-error">{{ $message }}</div> @enderror
+                                @error('images.*') <div class="form-error">{{ $message }}</div> @enderror
+                            </div>
+                            
+                            <div id="imagePreview" class="image-preview-grid hidden">
+                                <h4>Xem trước hình ảnh mới:</h4>
+                                <div id="previewContainer" class="flex gap-3"></div>
+                                <div class="form-group">
+                                    <label for="primary_image" class="form-label">Chọn ảnh chính từ ảnh mới</label>
+                                    <select id="primary_image" name="primary_image" class="form-control">
+                                        <option value="0">Ảnh đầu tiên</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="captionsContainer" class="hidden">
+                                <h4>Mô tả ảnh mới:</h4>
+                                <div id="captionInputs"></div>
+                            </div>
+
+                            <!-- Hidden inputs for image deletion -->
+                            <div id="deleteImageInputs"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-hashtag" style="color: #4361ee;"></i></div>
+                            <h3>Mã chi nhánh</h3>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="badge-warning"><i class="fas fa-code"></i> {{ $branch->branch_code }}</div>
+                            <p class="text-sm text-gray">Mã chi nhánh không thể thay đổi</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-user-tie" style="color: #4361ee;"></i></div>
+                            <h3>Quản lý chi nhánh</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="manager_user_id" class="form-label">Chọn người quản lý</label>
+                                <select id="manager_user_id" name="manager_user_id" class="form-control @error('manager_user_id') is-invalid @enderror">
+                                    <option value="">-- Chọn quản lý --</option>
+                                    @foreach($availableManagers as $manager)
+                                        <option value="{{ $manager->id }}" {{ old('manager_user_id', $branch->manager_user_id) == $manager->id ? 'selected' : '' }}>{{ $manager->full_name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-hint">Chỉ hiển thị quản lý chưa được phân công hoặc quản lý hiện tại</div>
+                                @error('manager_user_id') <div class="form-error">{{ $message }}</div> @enderror
                             </div>
                         </div>
+                    </div>
 
-                        <div id="imagePreview" class="branch-image-preview-grid branch-hidden">
-                            <h4>Xem trước hình ảnh mới:</h4>
-                            <div id="previewContainer" class="branch-flex branch-flex-wrap branch-gap-3"></div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon"><i class="fas fa-star" style="color: #4361ee;"></i></div>
+                            <h3>Trạng thái</h3>
                         </div>
-
-                        <div id="captionsContainer" class="branch-hidden">
-                            <h4 class="branch-mb-3">Mô tả cho ảnh mới:</h4>
-                            <div id="captionInputs"></div>
-                        </div>
-
-                        <div id="existingCaptionsContainer" class="{{ $branch->images->isEmpty() ? 'branch-hidden' : '' }}">
-                            <h4 class="branch-mb-3">Mô tả cho ảnh hiện có:</h4>
-                            <div id="existingCaptionInputs">
-                                @foreach($branch->images as $index => $image)
-                                    <div class="branch-form-group" data-existing-image-id="{{ $image->id }}">
-                                        <label class="branch-form-label">Mô tả ảnh hiện có {{ $index + 1 }}:</label>
-                                        <input type="text" class="branch-form-control" name="captions[{{ $image->id }}]"
-                                               maxlength="255" placeholder="Nhập mô tả cho ảnh..."
-                                               value="{{ old('captions.' . $image->id, $image->caption) }}"
-                                               aria-label="Mô tả cho ảnh hiện có {{ $index + 1 }}">
-                                    </div>
-                                @endforeach
+                        <div class="card-body">
+                            <div class="form-check">
+                                <div>
+                                    <div class="form-check-label">Trạng thái hoạt động</div>
+                                    <div class="form-hint" id="statusHint">{{ $branch->active ? 'Chi nhánh đang hoạt động' : 'Chi nhánh đã bị vô hiệu hóa' }}</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="active" name="active" {{ old('active', $branch->active) ? 'checked' : '' }}>
+                                    <span class="slider"></span>
+                                </label>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="branch-form-group">
-                            <label for="primary_image" class="branch-form-label">Chọn ảnh chính</label>
-                            <select id="primary_image" name="primary_image" class="branch-form-control">
-                                <option value="">Không chọn ảnh chính</option>
-                                @foreach($branch->images as $index => $image)
-                                    <option value="existing_{{ $image->id }}" {{ $image->is_primary ? 'selected' : '' }}>Ảnh hiện có {{ $index + 1 }}</option>
-                                @endforeach
-                            </select>
-                            <input type="hidden" id="primary_image_type" name="primary_image_type" value="">
+                    <div class="card">
+                        <div class="card-body">
+                            <button type="submit" id="submitButton" class="btn btn-primary btn-block"><i class="fas fa-save"></i> Cập nhật chi nhánh</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h3>Xem trước</h3></div>
+                        <div class="card-body">
+                            <div class="preview-card">
+                                <div class="preview-header">
+                                    <i class="fas fa-building" style="color: #4361ee;"></i>
+                                    <h4 id="previewName">{{ $branch->name }}</h4>
+                                </div>
+                                <div class="preview-item">
+                                    <i class="fas fa-code" style="color: #4361ee;"></i>
+                                    <span>Mã: <strong>{{ $branch->branch_code }}</strong></span>
+                                </div>
+                                <div class="preview-item">
+                                    <i class="fas fa-map-marker-alt" style="color: #4361ee;"></i>
+                                    <span id="previewAddress">{{ $branch->address }}</span>
+                                </div>
+                                <div class="preview-item">
+                                    <i class="fas fa-phone" style="color: #4361ee;"></i>
+                                    <span id="previewPhone">{{ $branch->phone }}</span>
+                                </div>
+                                @if($branch->email)
+                                <div class="preview-item">
+                                    <i class="fas fa-envelope" style="color: #4361ee;"></i>
+                                    <span id="previewEmail">{{ $branch->email }}</span>
+                                </div>
+                                @endif
+                                <div class="preview-hours">
+                                    <div class="preview-hour opening">
+                                        <div>Mở cửa</div>
+                                        <div class="preview-hour-value opening" id="previewOpeningHour">{{ date('H:i', strtotime($branch->opening_hour)) }}</div>
+                                    </div>
+                                    <div class="preview-hour closing">
+                                        <div>Đóng cửa</div>
+                                        <div class="preview-hour-value closing" id="previewClosingHour">{{ date('H:i', strtotime($branch->closing_hour)) }}</div>
+                                    </div>
+                                </div>
+                                <div class="preview-status">
+                                    <span>Trạng thái:</span>
+                                    <span class="preview-status-value {{ $branch->active ? 'active' : 'inactive' }}" id="previewStatus">{{ $branch->active ? 'Hoạt động' : 'Vô hiệu hóa' }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </form>
+    </div>
+@endsection
 
-            <div class="branch-space-y-6">
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <div class="branch-card-icon">
-                            <i class="fas fa-hashtag"></i>
-                        </div>
-                        <h3>Mã chi nhánh</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div class="branch-text-center">
-                            <div class="branch-badge branch-badge-info">
-                                <i class="fas fa-info-circle"></i>
-                                <span>{{ $branch->branch_code }}</span>
-                            </div>
-                            <p class="branch-text-sm branch-text-gray branch-mt-2">
-                                Mã chi nhánh không thể chỉnh sửa
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <div class="branch-card-icon">
-                            <i class="fas fa-user-tie"></i>
-                        </div>
-                        <h3>Quản lý chi nhánh</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div class="branch-form-group">
-                            <label for="manager_user_id" class="branch-form-label">
-                                Chọn người quản lý
-                            </label>
-                            <select id="manager_user_id" name="manager_user_id"
-                                    class="branch-form-control @error('manager_user_id') is-invalid @enderror">
-                                <option value="">-- Chọn quản lý --</option>
-                                @foreach($availableManagers as $manager)
-                                    <option value="{{ $manager->id }}" {{ old('manager_user_id', $branch->manager_user_id) == $manager->id ? 'selected' : '' }}>
-                                        {{ $manager->full_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="branch-form-hint">
-                                Chỉ hiển thị những quản lý chưa được phân công hoặc quản lý hiện tại
-                            </div>
-                            @error('manager_user_id')
-                                <div class="branch-form-error">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <div class="branch-card-icon">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <h3>Trạng thái</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div class="branch-form-check">
-                            <div class="branch-form-check-content">
-                                <div class="branch-form-check-label">Trạng thái hoạt động</div>
-                                <div class="branch-form-check-hint" id="statusHint">{{ $branch->active ? 'Chi nhánh đang hoạt động' : 'Chi nhánh ngưng hoạt động' }}</div>
-                            </div>
-                            <label class="branch-switch">
-                                <input type="checkbox" id="active" name="active" {{ old('active', $branch->active) ? 'checked' : '' }} aria-label="Bật/tắt trạng thái hoạt động">
-                                <span class="branch-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="branch-card">
-                    <div class="branch-card-body">
-                        <button type="submit" id="submitButton" class="branch-btn branch-btn-primary branch-w-full">
-                            <i class="fas fa-save"></i>
-                            <span>Cập nhật chi nhánh</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="branch-card">
-                    <div class="branch-card-header">
-                        <h3>Xem trước</h3>
-                    </div>
-                    <div class="branch-card-body">
-                        <div class="branch-preview-card">
-                            <div class="branch-preview-header">
-                                <i class="fas fa-building branch-text-primary"></i>
-                                <h4 class="branch-preview-title" id="previewName">{{ $branch->name }}</h4>
-                            </div>
-                            <div class="branch-preview-item">
-                                <i class="fas fa-map-marker-alt branch-text-danger"></i>
-                                <span id="previewAddress">{{ $branch->address }}</span>
-                            </div>
-                            <div class="branch-preview-item">
-                                <i class="fas fa-phone branch-text-primary"></i>
-                                <span id="previewPhone">{{ $branch->phone }}</span>
-                            </div>
-                            <div class="branch-preview-item {{ $branch->email ? '' : 'branch-hidden' }}" id="previewEmailContainer">
-                                <i class="fas fa-envelope branch-text-primary"></i>
-                                <span id="previewEmail">{{ $branch->email ?? 'Email' }}</span>
-                            </div>
-                            <div class="branch-preview-item" id="previewManagerContainer">
-                                <i class="fas fa-user-tie branch-text-primary"></i>
-                                <span id="previewManager">{{ $branch->manager ? $branch->manager->full_name : 'Chưa chọn quản lý' }}</span>
-                            </div>
-                        </div>
-
-                        <div class="branch-preview-hours">
-                            <div class="branch-preview-hour branch-opening">
-                                <i class="fas fa-sun branch-text-success"></i>
-                                <div class="branch-preview-hour-label">Mở cửa</div>
-                                <div class="branch-preview-hour-value branch-opening" id="previewOpeningHour">{{ $branch->opening_hour }}</div>
-                            </div>
-                            <div class="branch-preview-hour branch-closing">
-                                <i class="fas fa-moon branch-text-danger"></i>
-                                <div class="branch-preview-hour-label">Đóng cửa</div>
-                                <div class="branch-preview-hour-value branch-closing" id="previewClosingHour">{{ $branch->closing_hour }}</div>
-                            </div>
-                        </div>
-
-                        <div class="branch-preview-status">
-                            <div class="branch-preview-status-label">Trạng thái</div>
-                            <div class="branch-preview-status-value {{ $branch->active ? 'branch-active' : 'branch-inactive' }}" id="previewStatus">{{ $branch->active ? 'Đang hoạt động' : 'Ngưng hoạt động' }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </form>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const mapboxApiKey = "{{ env('MAPBOX_API_KEY') }}";
-    if (!mapboxApiKey) {
-        document.getElementById('mapHint').classList.add('branch-map-hint-error');
-        document.getElementById('mapHint').textContent = 'API key không được cấu hình.';
-        return;
-    }
-
-    mapboxgl.accessToken = mapboxApiKey;
-
-    const elements = {
-        form: document.getElementById('branchForm'),
-        name: document.getElementById('name'),
-        address: document.getElementById('address'),
-        phone: document.getElementById('phone'),
-        email: document.getElementById('email'),
-        openingHour: document.getElementById('opening_hour'),
-        closingHour: document.getElementById('closing_hour'),
-        active: document.getElementById('active'),
-        manager: document.getElementById('manager_user_id'),
-        latitude: document.getElementById('latitude'),
-        longitude: document.getElementById('longitude'),
-        images: document.getElementById('images'),
-        primaryImage: document.getElementById('primary_image'),
-        primaryImageType: document.getElementById('primary_image_type'),
-        previewContainer: document.getElementById('previewContainer'),
-        existingImagesContainer: document.getElementById('existingImagesContainer'),
-        imagePreview: document.getElementById('imagePreview'),
-        captionsContainer: document.getElementById('captionsContainer'),
-        captionInputs: document.getElementById('captionInputs'),
-        existingCaptionsContainer: document.getElementById('existingCaptionsContainer'),
-        existingCaptionInputs: document.getElementById('existingCaptionInputs'),
-        submitButton: document.getElementById('submitButton'),
-        uploadLabelText: document.querySelector('.branch-upload-label-text'),
-        mapHint: document.getElementById('mapHint'),
-        preview: {
-            name: document.getElementById('previewName'),
-            address: document.getElementById('previewAddress'),
-            phone: document.getElementById('previewPhone'),
-            email: document.getElementById('previewEmail'),
-            emailContainer: document.getElementById('previewEmailContainer'),
-            manager: document.getElementById('previewManager'),
-            openingHour: document.getElementById('previewOpeningHour'),
-            closingHour: document.getElementById('previewClosingHour'),
-            status: document.getElementById('previewStatus'),
-            statusHint: document.getElementById('statusHint')
-        }
-    };
-
-    let uploadedImages = [];
-    let deletedImageIds = [];
-    let map, marker, geocodeTimeout;
-
-    function initMap(lat = parseFloat('{{ old('latitude', $branch->latitude) }}') || 21.0285, lng = parseFloat('{{ old('longitude', $branch->longitude) }}') || 105.8542) {
-        try {
-            map = new mapboxgl.Map({
-                container: 'branch-map',
-                style: 'mapbox://styles/mapbox/streets-v12',
-                center: [lng, lat],
-                zoom: 13
-            });
-            map.addControl(new mapboxgl.NavigationControl());
-            map.addControl(new mapboxgl.FullscreenControl());
-            map.on('load', () => map.resize());
-            setMarker(lat, lng);
-            map.on('click', e => setMarker(e.lngLat.lat, e.lngLat.lng));
-        } catch (error) {
-            console.error('Map initialization failed:', error);
-            elements.mapHint.classList.add('branch-map-hint-error');
-            elements.mapHint.textContent = 'Không thể khởi tạo bản đồ.';
-        }
-    }
-
-    function setMarker(lat, lng) {
-        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-            elements.mapHint.classList.add('branch-map-hint-error');
-            elements.mapHint.textContent = 'Tọa độ không hợp lệ.';
-            return;
-        }
-        if (marker) marker.remove();
-        marker = new mapboxgl.Marker({ draggable: true, color: '#4361ee' })
-            .setLngLat([lng, lat])
-            .addTo(map);
-        map.setCenter([lng, lat]);
-        elements.latitude.value = lat.toFixed(6);
-        elements.longitude.value = lng.toFixed(6);
-        elements.mapHint.classList.remove('branch-map-hint-error');
-        elements.mapHint.textContent = 'Nhấp vào bản đồ để chọn vị trí chi nhánh';
-        marker.on('dragend', () => {
-            const { lng, lat } = marker.getLngLat();
-            elements.latitude.value = lat.toFixed(6);
-            elements.longitude.value = lng.toFixed(6);
-        });
-    }
-
-    function geocodeAddress(address) {
-        if (!address) {
-            elements.mapHint.classList.add('branch-map-hint-error');
-            elements.mapHint.textContent = 'Vui lòng nhập địa chỉ.';
-            return;
-        }
-        fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}&limit=1&country=VN`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.features?.length) {
-                    const [lng, lat] = data.features[0].center;
-                    setMarker(lat, lng);
-                } else {
-                    elements.mapHint.classList.add('branch-map-hint-error');
-                    elements.mapHint.textContent = 'Không tìm thấy địa chỉ.';
-                }
-            })
-            .catch(() => {
-                elements.mapHint.classList.add('branch-map-hint-error');
-                elements.mapHint.textContent = 'Lỗi khi tìm vị trí.';
-            });
-    }
-
-    function updatePreview() {
-        elements.preview.name.textContent = elements.name.value || 'Tên chi nhánh';
-        elements.preview.address.textContent = elements.address.value || 'Địa chỉ chi nhánh';
-        elements.preview.phone.textContent = elements.phone.value || 'Số điện thoại';
-        elements.preview.email.textContent = elements.email.value || 'Email';
-        elements.preview.emailContainer.classList.toggle('branch-hidden', !elements.email.value);
-        elements.preview.manager.textContent = elements.manager.value ? elements.manager.options[elements.manager.selectedIndex].text : 'Chưa chọn quản lý';
-        elements.preview.openingHour.textContent = elements.openingHour.value || '08:00';
-        elements.preview.closingHour.textContent = elements.closingHour.value || '22:00';
-        elements.preview.status.textContent = elements.active.checked ? 'Đang hoạt động' : 'Ngưng hoạt động';
-        elements.preview.status.className = `branch-preview-status-value ${elements.active.checked ? 'branch-active' : 'branch-inactive'}`;
-        elements.preview.statusHint.textContent = elements.active.checked ? 'Chi nhánh đang hoạt động' : 'Chi nhánh ngưng hoạt động';
-    }
-
-    function handleImageUpload(event) {
-        const files = Array.from(event.target.files).filter(file => file.type.match('image/(jpeg|png|jpg|gif)') && file.size <= 2048 * 1024);
-        const totalImages = elements.existingImagesContainer.querySelectorAll('.branch-image-preview-item').length + uploadedImages.length + files.length;
-        if (totalImages > 10) {
-            alert('Tối đa 10 hình ảnh.');
-            elements.images.value = '';
-            return;
-        }
-        uploadedImages = [...uploadedImages, ...files];
-        if (files.length) {
-            displayImagePreviews();
-            elements.imagePreview.classList.remove('branch-hidden');
-            elements.captionsContainer.classList.remove('branch-hidden');
-            elements.uploadLabelText.textContent = `${uploadedImages.length} ảnh đã chọn`;
-            updateFileInput();
-            updatePrimaryImageSelect();
-            if (!elements.primaryImage.value && uploadedImages.length) {
-                elements.primaryImage.value = `new_0`;
-                elements.primaryImageType.value = 'new';
-            }
-            updatePrimaryImage();
-        }
-        elements.images.value = '';
-    }
-
-    function updateFileInput() {
-        const dt = new DataTransfer();
-        uploadedImages.forEach(file => dt.items.add(file));
-        elements.images.files = dt.files;
-    }
-
-    function displayImagePreviews() {
-        elements.previewContainer.innerHTML = '';
-        elements.captionInputs.innerHTML = '';
-        uploadedImages.forEach((file, index) => {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const item = document.createElement('div');
-                item.className = 'branch-image-preview-item';
-                item.dataset.newImageIndex = index;
-                item.innerHTML = `
-                    <img src="${e.target.result}" class="branch-image-preview-img" alt="Xem trước ảnh mới ${index + 1}">
-                    <div class="branch-image-preview-overlay">
-                        <div class="branch-image-preview-actions">
-                            <button type="button" class="branch-image-preview-btn branch-remove-btn" aria-label="Xóa ảnh mới ${index + 1}">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                item.querySelector('.branch-remove-btn').addEventListener('click', () => removeNewImage(index));
-                elements.previewContainer.appendChild(item);
-
-                const captionGroup = document.createElement('div');
-                captionGroup.className = 'branch-form-group';
-                captionGroup.innerHTML = `
-                    <label class="branch-form-label">Mô tả ảnh mới ${index + 1}:</label>
-                    <input type="text" class="branch-form-control" name="captions[${index}]" maxlength="255" placeholder="Nhập mô tả cho ảnh..." aria-label="Mô tả cho ảnh mới ${index + 1}">
-                `;
-                elements.captionInputs.appendChild(captionGroup);
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    function updatePrimaryImageSelect() {
-        const selectedValue = elements.primaryImage.value;
-        elements.primaryImage.innerHTML = '<option value="">Không chọn ảnh chính</option>';
-        const existingImages = elements.existingImagesContainer.querySelectorAll('.branch-image-preview-item');
-        existingImages.forEach((item, index) => {
-            const option = document.createElement('option');
-            option.value = `existing_${item.dataset.existingImageId}`;
-            option.textContent = `Ảnh hiện có ${index + 1}`;
-            if (`existing_${item.dataset.existingImageId}` === selectedValue) option.selected = true;
-            elements.primaryImage.appendChild(option);
-        });
-        uploadedImages.forEach((_, index) => {
-            const option = document.createElement('option');
-            option.value = `new_${index}`;
-            option.textContent = `Ảnh mới ${index + 1}`;
-            if (`new_${index}` === selectedValue) option.selected = true;
-            elements.primaryImage.appendChild(option);
-        });
-    }
-
-    function updatePrimaryImage() {
-        document.querySelectorAll('.branch-image-preview-badge').forEach(badge => badge.remove());
-        const value = elements.primaryImage.value;
-        let selected = null;
-
-        if (value.startsWith('existing_')) {
-            const imageId = value.replace('existing_', '');
-            selected = elements.existingImagesContainer.querySelector(`[data-existing-image-id="${imageId}"]`);
-            elements.primaryImageType.value = 'existing';
-        } else if (value.startsWith('new_')) {
-            const index = value.replace('new_', '');
-            selected = elements.previewContainer.querySelector(`[data-new-image-index="${index}"]`);
-            elements.primaryImageType.value = 'new';
-        } else {
-            elements.primaryImageType.value = '';
-        }
-
-        if (selected) {
-            selected.innerHTML += '<div class="branch-image-preview-badge">Ảnh chính</div>';
-        }
-    }
-
-    function removeExistingImage(imageId) {
-        deletedImageIds.push(imageId);
-        const item = elements.existingImagesContainer.querySelector(`[data-existing-image-id="${imageId}"]`);
-        const caption = elements.existingCaptionInputs.querySelector(`[data-existing-image-id="${imageId}"]`);
-        if (item) item.remove();
-        if (caption) caption.remove();
-        if (!elements.existingImagesContainer.children.length) {
-            elements.existingImages.classList.add('branch-hidden');
-            elements.existingCaptionsContainer.classList.add('branch-hidden');
-        }
-        updatePrimaryImageSelect();
-        if (elements.primaryImage.value === `existing_${imageId}`) {
-            elements.primaryImage.value = uploadedImages.length ? `new_0` : (elements.existingImagesContainer.children.length ? `existing_${elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId}` : '');
-            updatePrimaryImage();
-        }
-    }
-
-    function removeNewImage(index) {
-        uploadedImages.splice(index, 1);
-        updateFileInput();
-        if (uploadedImages.length) {
-            displayImagePreviews();
-            elements.uploadLabelText.textContent = `${uploadedImages.length} ảnh đã chọn`;
-        } else {
-            elements.imagePreview.classList.add('branch-hidden');
-            elements.captionsContainer.classList.add('branch-hidden');
-            elements.uploadLabelText.textContent = 'Chọn nhiều hình ảnh...';
-        }
-        updatePrimaryImageSelect();
-        if (elements.primaryImage.value === `new_${index}`) {
-            elements.primaryImage.value = uploadedImages.length ? `new_0` : (elements.existingImagesContainer.children.length ? `existing_${elements.existingImagesContainer.querySelector('.branch-image-preview-item').dataset.existingImageId}` : '');
-            updatePrimaryImage();
-        }
-    }
-
-    function initForm() {
-        updatePreview();
-        elements.address.addEventListener('input', () => {
-            updatePreview();
-            clearTimeout(geocodeTimeout);
-            geocodeTimeout = setTimeout(() => elements.address.value && geocodeAddress(elements.address.value), 500);
-        });
-        ['name', 'phone', 'email', 'openingHour', 'closingHour', 'active', 'manager'].forEach(key => {
-            elements[key].addEventListener('input', updatePreview);
-            if (key === 'manager') elements[key].addEventListener('change', updatePreview);
-        });
-        elements.images.addEventListener('change', handleImageUpload);
-        elements.primaryImage.addEventListener('change', updatePrimaryImage);
-        elements.existingImagesContainer.querySelectorAll('.branch-remove-btn').forEach(btn => {
-            btn.addEventListener('click', () => removeExistingImage(btn.dataset.existingImageId));
-        });
-
-        elements.form.addEventListener('submit', e => {
-            if (elements.openingHour.value && elements.closingHour.value && elements.openingHour.value >= elements.closingHour.value) {
-                e.preventDefault();
-                alert('Giờ đóng cửa phải sau giờ mở cửa!');
-                return;
-            }
-            const lat = parseFloat(elements.latitude.value);
-            const lng = parseFloat(elements.longitude.value);
-            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                e.preventDefault();
-                alert('Vui lòng chọn một vị trí hợp lệ trên bản đồ!');
-                return;
-            }
-
-            if (elements.primaryImage.value) {
-                if (elements.primaryImage.value.startsWith('existing_')) {
-                    elements.primaryImage.value = elements.primaryImage.value.replace('existing_', '');
-                    elements.primaryImageType.value = 'existing';
-                } else if (elements.primaryImage.value.startsWith('new_')) {
-                    elements.primaryImage.value = elements.primaryImage.value.replace('new_', '');
-                    elements.primaryImageType.value = 'new';
-                }
-            } else {
-                elements.primaryImageType.value = '';
-            }
-
-            deletedImageIds.forEach(id => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'delete_images[]';
-                input.value = id;
-                elements.form.appendChild(input);
-            });
-        });
-
-        initMap();
-        if (elements.address.value) geocodeAddress(elements.address.value);
-        updatePrimaryImage();
-    }
-
-    initForm();
-});
-</script>
+@section('scripts')
+    <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
+    <script src="{{ asset('js/admin/branchs/branch-edit.js') }}"></script>
+    <script>
+        // Set Mapbox API key for the external JavaScript file
+        setMapboxApiKey("{{ env('MAPBOX_API_KEY') }}");
+    </script>
 @endsection

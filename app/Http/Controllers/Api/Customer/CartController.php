@@ -8,9 +8,16 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Events\Customer\CartUpdated;
 use Illuminate\Support\Facades\DB;
+use App\Services\BranchService;
 
 class CartController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
     /**
      * Add a product to the cart
      */
@@ -37,12 +44,20 @@ class CartController extends Controller
                 'toppings.*' => 'exists:toppings,id'
             ]);
 
-            // Verify selected branch matches session branch
-            $sessionBranchId = session('selected_branch');
-            if ($sessionBranchId && $sessionBranchId != $request->branch_id) {
+            // Verify selected branch matches current branch
+            $currentBranch = $this->branchService->getCurrentBranch();
+            if ($currentBranch && $currentBranch->id != $request->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Chi nhánh đã thay đổi. Vui lòng làm mới trang và thử lại.'
+                ], 400);
+            }
+
+            // Validate branch is active
+            if (!$this->branchService->isValidBranch($request->branch_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chi nhánh không khả dụng. Vui lòng chọn chi nhánh khác.'
                 ], 400);
             }
             
@@ -338,4 +353,4 @@ class CartController extends Controller
             ], 500);
         }
     }
-} 
+}

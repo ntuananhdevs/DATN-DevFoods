@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\Admin\UserFactory> */
-    use HasFactory, Notifiable , SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
 
     /**
@@ -28,6 +28,7 @@ class User extends Authenticatable
         'phone',
         'avatar',
         'google_id',
+        'remember_token',
         'balance',
         'user_rank_id',
         'total_spending',
@@ -59,6 +60,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'active' => 'boolean',
             'balance' => 'decimal:2',
+            'rank_updated_at' => 'datetime',
         ];
     }
 
@@ -70,7 +72,7 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
-       public function roles()
+    public function roles()
     {
         return $this->belongsToMany(Role::class, 'user_roles')
             ->withTimestamps();
@@ -126,5 +128,49 @@ class User extends Authenticatable
     public function discountUsageHistory()
     {
         return $this->hasMany(DiscountUsageHistory::class);
+    }
+
+    /**
+     * Check if user is authenticated via Google
+     */
+    public function isGoogleUser()
+    {
+        return !empty($this->google_id);
+    }
+
+    /**
+     * Check if user is social login user
+     */
+    public function isSocialUser()
+    {
+        return $this->isGoogleUser();
+    }
+
+    /**
+     * Get full avatar URL from filename
+     * Access via $user->avatar_url
+     */
+    public function getAvatarUrlAttribute()
+    {
+        if (empty($this->attributes['avatar'])) {
+            return null;
+        }
+
+        $avatar = $this->attributes['avatar'];
+        
+        // If it's already a full URL, return as is
+        if (str_starts_with($avatar, 'http')) {
+            return $avatar;
+        }
+
+        // Build S3 URL from filename
+        $bucket = env('AWS_BUCKET');
+        $region = env('AWS_DEFAULT_REGION', 'us-east-1');
+        
+        if ($region === 'us-east-1') {
+            return "https://{$bucket}.s3.amazonaws.com/users/avatars/{$avatar}";
+        } else {
+            return "https://{$bucket}.s3.{$region}.amazonaws.com/users/avatars/{$avatar}";
+        }
     }
 }

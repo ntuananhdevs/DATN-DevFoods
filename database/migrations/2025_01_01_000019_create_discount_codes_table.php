@@ -26,7 +26,7 @@ return new class extends Migration
             
             // Phạm vi áp dụng
             $table->enum('applicable_scope', ['all_branches', 'specific_branches'])->default('all_branches');
-            $table->enum('applicable_items', ['all_items', 'specific_products', 'specific_categories', 'combos_only'])->default('all_items');
+            $table->enum('applicable_items', ['all_items', 'all_products', 'all_categories', 'all_combos', 'specific_products', 'specific_categories', 'specific_combos'])->default('all_items');
             
             // Áp dụng theo rank
             $table->json('applicable_ranks')->nullable(); // [1,2,3] - ID của các rank được áp dụng
@@ -44,8 +44,9 @@ return new class extends Migration
             $table->integer('current_usage_count')->default(0); // Số lần đã sử dụng
             
             // Thời gian hiệu lực
-            $table->timestamp('start_date');
-            $table->timestamp('end_date');
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
+
             $table->boolean('is_active')->default(true);
             
             // Hiển thị

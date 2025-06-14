@@ -62,7 +62,7 @@
     }
     
     .email-info {
-        background: #10b981;
+        background: var(--primary-color);
         color: white;
         padding: 10px 16px;
         border-radius: 6px;
@@ -137,25 +137,25 @@
     }
     
     .btn-primary {
-        background: #10b981;
+        background: var(--primary-color);
         color: white;
-        border: 1px solid #10b981;
+        border: 1px solid var(--primary-color);
     }
     
     .btn-primary:hover {
-        background: #059669;
-        border-color: #059669;
+        background: var(--primary-dark);
+        border-color: var(--primary-dark);
         color: white;
     }
     
     .btn-secondary {
         background: white;
-        color: #6366f1;
-        border: 1px solid #6366f1;
+        color: var(--primary-color);
+        border: 1px solid var(--primary-color);
     }
     
     .btn-secondary:hover {
-        background: #6366f1;
+        background: var(--primary-color);
         color: white;
     }
     
@@ -176,6 +176,13 @@
     
     .additional-info a:hover {
         text-decoration: underline;
+    }
+    
+    /* === Primary Color Overrides === */
+    :root {
+        --primary-color: #f97316;
+        --primary-dark: #c2410c;
+        --primary-light: #ffedd5;
     }
     
     /* Mobile responsive */

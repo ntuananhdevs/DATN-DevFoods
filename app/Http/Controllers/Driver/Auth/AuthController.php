@@ -147,6 +147,10 @@ class AuthController extends Controller
             // Đăng nhập thành công
             RateLimiter::clear($key); // reset khi đúng
 
+            // Sử dụng Laravel Auth guard để đăng nhập
+            Auth::guard('driver')->login($driver);
+            
+            // Vẫn giữ session cho backward compatibility
             session([
                 'driver_id' => $driver->id,
                 'driver_name' => $driver->full_name,
@@ -172,7 +176,7 @@ class AuthController extends Controller
                 'message' => 'Đăng nhập thành công!'
             ]);
 
-            return redirect()->route('driver.home')->with('success', 'Đăng nhập thành công!');
+            return redirect()->route('driver.dashboard')->with('success', 'Đăng nhập thành công!');
         } catch (Exception $e) {
             $message = 'Đã xảy ra lỗi: ' . $e->getMessage();
 
