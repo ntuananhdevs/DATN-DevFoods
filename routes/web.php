@@ -33,7 +33,7 @@ Route::get('/test-update-stock', function() {
     ]);
     
     $oldStock = $branchStock->stock_quantity;
-    $branchStock->stock_quantity = 10; // Thay đổi số lượng
+    $branchStock->stock_quantity = 0; // Thay đổi số lượng
     $branchStock->save();
     
     \Log::debug('Stock saved with new quantity:', [
