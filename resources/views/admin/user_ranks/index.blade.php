@@ -5,6 +5,135 @@
 
 @section('content')
 <style>
+    /* Dark mode variables */
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 84% 4.9%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --accent-foreground: 222.2 84% 4.9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 84% 4.9%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 94.1%;
+    }
+
+    * {
+        border-color: hsl(var(--border));
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+
+    /* Color classes */
+    .bg-background { background-color: hsl(var(--background)); }
+    .bg-foreground { background-color: hsl(var(--foreground)); }
+    .bg-card { background-color: hsl(var(--card)); }
+    .bg-card-foreground { background-color: hsl(var(--card-foreground)); }
+    .bg-popover { background-color: hsl(var(--popover)); }
+    .bg-popover-foreground { background-color: hsl(var(--popover-foreground)); }
+    .bg-primary { background-color: hsl(var(--primary)); }
+    .bg-primary-foreground { background-color: hsl(var(--primary-foreground)); }
+    .bg-secondary { background-color: hsl(var(--secondary)); }
+    .bg-secondary-foreground { background-color: hsl(var(--secondary-foreground)); }
+    .bg-muted { background-color: hsl(var(--muted)); }
+    .bg-muted-foreground { background-color: hsl(var(--muted-foreground)); }
+    .bg-accent { background-color: hsl(var(--accent)); }
+    .bg-accent-foreground { background-color: hsl(var(--accent-foreground)); }
+    .bg-destructive { background-color: hsl(var(--destructive)); }
+    .bg-destructive-foreground { background-color: hsl(var(--destructive-foreground)); }
+
+    .text-background { color: hsl(var(--background)); }
+    .text-foreground { color: hsl(var(--foreground)); }
+    .text-card { color: hsl(var(--card)); }
+    .text-card-foreground { color: hsl(var(--card-foreground)); }
+    .text-popover { color: hsl(var(--popover)); }
+    .text-popover-foreground { color: hsl(var(--popover-foreground)); }
+    .text-primary { color: hsl(var(--primary)); }
+    .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+    .text-secondary { color: hsl(var(--secondary)); }
+    .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+    .text-muted { color: hsl(var(--muted)); }
+    .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+    .text-accent { color: hsl(var(--accent)); }
+    .text-accent-foreground { color: hsl(var(--accent-foreground)); }
+    .text-destructive { color: hsl(var(--destructive)); }
+    .text-destructive-foreground { color: hsl(var(--destructive-foreground)); }
+
+    .border { border-color: hsl(var(--border)); }
+    .border-border { border-color: hsl(var(--border)); }
+    .border-input { border-color: hsl(var(--input)); }
+
+    /* Theme toggle button */
+    .theme-toggle {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background-color: hsl(var(--muted));
+        border-radius: 12px;
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .theme-toggle.dark {
+        background-color: hsl(var(--primary));
+    }
+
+    .theme-toggle-handle {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        background-color: hsl(var(--background));
+        border-radius: 50%;
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+    }
+
+    .theme-toggle.dark .theme-toggle-handle {
+        transform: translateX(20px);
+    }
+
     /* Custom input styles */
     input[type="text"],
     input[type="number"],
@@ -47,14 +176,14 @@
     .progress-bar {
         width: 100%;
         height: 8px;
-        background-color: #e5e7eb;
+        background-color: hsl(var(--muted));
         border-radius: 4px;
         overflow: hidden;
     }
 
     .progress-fill {
         height: 100%;
-        background-color: #3b82f6;
+        background-color: hsl(var(--primary));
         transition: width 0.3s ease;
     }
 
@@ -75,15 +204,25 @@
         color: #15803d;
     }
 
+    .dark .status-badge.active {
+        background-color: rgba(22, 163, 74, 0.2);
+        color: #4ade80;
+    }
+
     .status-badge.inactive {
         background-color: #f3f4f6;
         color: #6b7280;
     }
 
+    .dark .status-badge.inactive {
+        background-color: rgba(107, 114, 128, 0.2);
+        color: #9ca3af;
+    }
+
     /* Statistics cards */
     .stat-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background-color: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
         border-radius: 8px;
         padding: 1rem;
         transition: all 0.2s ease;
@@ -91,6 +230,10 @@
 
     .stat-card:hover {
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark .stat-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
     }
 
     .stat-icon {
@@ -119,6 +262,10 @@
         flex-shrink: 0;
     }
 
+    .dark .benefit-icon {
+        color: #4ade80;
+    }
+
     /* Discount percentage badge */
     .discount-badge {
         display: inline-block;
@@ -130,16 +277,22 @@
         font-weight: 500;
     }
 
+    .dark .discount-badge {
+        background-color: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+    }
+
     /* User count slider */
     .user-range-container {
         margin: 10px 0;
         padding: 10px 0;
+        position: relative;
     }
 
     .user-slider {
         position: relative;
         height: 4px;
-        background: #e5e7eb;
+        background: hsl(var(--muted));
         margin: 20px 10px 30px;
         border-radius: 2px;
     }
@@ -147,22 +300,23 @@
     .user-slider-track {
         position: absolute;
         height: 100%;
-        background: #3b82f6;
+        background: hsl(var(--primary));
         border-radius: 2px;
+        max-width: 100%;
     }
 
     .user-slider-handle {
         position: absolute;
         width: 16px;
         height: 16px;
-        background: #2563eb;
-        border: 2px solid #fff;
+        background: hsl(var(--primary));
+        border: 2px solid hsl(var(--background));
         border-radius: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
         cursor: pointer;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        z-index: 2;
+        z-index: 1000;
     }
 
     .user-inputs {
@@ -175,8 +329,10 @@
     .user-input {
         width: 100%;
         padding: 8px 12px;
-        border: 1px solid #e5e7eb;
+        border: 1px solid hsl(var(--border));
         border-radius: 4px;
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
     }
 
     .user-display {
@@ -201,7 +357,16 @@
                 <p class="text-muted-foreground">Quản lý các hạng thành viên và quyền lợi</p>
             </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-4">
+            <!-- Theme Toggle -->
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-muted-foreground">Theme:</span>
+                <button id="themeToggle" class="theme-toggle">
+                    <div class="theme-toggle-handle">
+                        <span id="themeIcon">🌙</span>
+                    </div>
+                </button>
+            </div>
             <div class="dropdown relative">
                 <button class="btn btn-outline flex items-center" id="exportDropdown" onclick="toggleDropdown('exportMenu')">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
@@ -391,7 +556,7 @@
                         </td>
                         <td class="py-3 px-4">
                             <div class="flex items-center gap-3">
-                                <div class="tier-icon" style="background-color: {{ $rank->color }};">
+                                <div class="tier-icon" style="background-color: {{ $rank->color }}">
                                     {{ $rank->icon ?? substr($rank->name, 0, 1) }}
                                 </div>
                                 <div>
@@ -544,13 +709,13 @@
                             <div class="user-slider-handle" id="maxUserHandle" data-handle="max"></div>
                         </div>
                         <div class="user-display">
-                            <span id="minUserDisplay">{{ $minUsers }}</span>
-                            <span id="maxUserDisplay">{{ $maxUsers }}</span>
+                            <span id="minUserDisplay">0</span>
+                            <span id="maxUserDisplay">1500</span>
                         </div>
                     </div>
                     <div class="user-inputs">
-                        <input type="number" id="minUserInput" name="user_min" class="user-input" placeholder="Số tối thiểu" value="{{ request('user_min') }}">
-                        <input type="number" id="maxUserInput" name="user_max" class="user-input" placeholder="Số tối đa" value="{{ request('user_max') }}">
+                        <input type="number" id="minUserInput" name="user_min" class="user-input" placeholder="Số tối thiểu" value="{{ request('user_min', 0) }}">
+                        <input type="number" id="maxUserInput" name="user_max" class="user-input" placeholder="Số tối đa" value="{{ request('user_max', 1500) }}">
                     </div>
                 </div>
 
@@ -585,15 +750,6 @@
 
 @section('scripts')
 <script>
-@if (session('toast'))
-    <script>
-        dtmodalShowToast('{{ session('toast.type') }}', {
-            title: '{{ session('toast.title') }}',
-            message: '{{ session('toast.message') }}'
-        });
-    </script>
-@endif
-
 // Define constants and global variables
 const ROUTES = {
     search: '{{ route("admin.user_ranks.search") }}',
@@ -603,6 +759,36 @@ const ROUTES = {
 };
 
 const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content;
+
+// Theme Management
+function initThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const html = document.documentElement;
+    
+    // Load saved theme or default to light
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    setTheme(savedTheme);
+    
+    function setTheme(theme) {
+        if (theme === 'dark') {
+            html.classList.add('dark');
+            themeToggle.classList.add('dark');
+            themeIcon.textContent = '☀️';
+        } else {
+            html.classList.remove('dark');
+            themeToggle.classList.remove('dark');
+            themeIcon.textContent = '🌙';
+        }
+        localStorage.setItem('theme', theme);
+    }
+    
+    themeToggle.addEventListener('click', function() {
+        const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+    });
+}
 
 // Utility functions
 function debounce(func, wait) {
@@ -639,37 +825,6 @@ function resetFilters() {
     window.location.href = '{{ route("admin.user_ranks.index") }}';
 }
 
-// Hàm hiển thị thông báo
-function dtmodalShowToast(type, { title, message }) {
-    // Tạo phần tử toast
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg text-sm max-w-sm transition-opacity duration-300 opacity-0 ${
-        type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-    }`;
-
-    // Đặt nội dung
-    toast.innerHTML = `
-        <div class="font-medium">${title}</div>
-        <div>${message}</div>
-    `;
-
-    // Thêm vào body
-    document.body.appendChild(toast);
-
-    // Hiệu ứng fade-in
-    setTimeout(() => {
-        toast.style.opacity = '1';
-    }, 100);
-
-    // Tự động xóa sau 3 giây
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-    }, 3000);
-}
-
 function updateSelectedStatus(status) {
     const selectedRanks = Array.from(document.querySelectorAll('.rank-checkbox:checked')).map(cb => cb.value);
 
@@ -690,6 +845,16 @@ function updateSelectedStatus(status) {
         return;
     }
 
+    // Hiển thị xác nhận bằng modal
+    const actionText = status ? 'kích hoạt' : 'vô hiệu hóa';
+    
+    dtmodalConfirmIndex({
+        title: `Xác nhận ${actionText} hạng thành viên`,
+        subtitle: `Bạn có chắc chắn muốn ${actionText} các hạng thành viên đã chọn?`,
+        message: "Hành động này sẽ thay đổi trạng thái của các hạng thành viên.",
+        itemName: `${selectedRanks.length} hạng thành viên`,
+        onConfirm: () => {
+            // Gửi request
     fetch(ROUTES.updateStatus, {
         method: 'POST',
         headers: {
@@ -758,6 +923,8 @@ function updateSelectedStatus(status) {
             title: 'Lỗi',
             message: errorMessage
         });
+            });
+        }
     });
 }
 
@@ -783,9 +950,9 @@ const performSearch = debounce(function(searchTerm) {
         },
         body: JSON.stringify({
             search: searchTerm,
-            user_min: parseInt('{{ request("user_min", 0) }}') || 0,
-            user_max: parseInt('{{ request("user_max", 1500) }}') || 1500,
-            status: '{{ request("status", "all") }}'
+            user_min: parseInt(document.getElementById('minUserInput')?.value || 0),
+            user_max: parseInt(document.getElementById('maxUserInput')?.value || 1500),
+            status: document.querySelector('input[name="status"]:checked')?.value || 'all'
         })
     })
     .then(response => {
@@ -905,7 +1072,7 @@ const performSearch = debounce(function(searchTerm) {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M3 6h18"></path>
                                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                        <path d="M8 6V4c0-1 1-2 2h4c1 0 2 1 2 2v2"></path>
+                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                                     </svg>
                                 </button>
                             </form>
@@ -964,6 +1131,26 @@ class UserRangeSlider {
     }
 
     init() {
+        // Ensure initial values are within bounds
+        this.minValue = Math.max(this.min, Math.min(this.minValue, this.max - this.step));
+        this.maxValue = Math.min(this.max, Math.max(this.maxValue, this.min + this.step));
+        
+        // Set initial input values if they're empty
+        if (this.minInput && !this.minInput.value) {
+            this.minInput.value = this.minValue;
+        }
+        if (this.maxInput && !this.maxInput.value) {
+            this.maxInput.value = this.maxValue;
+        }
+        
+        // Read values from inputs if they exist
+        if (this.minInput && this.minInput.value) {
+            this.minValue = parseInt(this.minInput.value) || this.min;
+        }
+        if (this.maxInput && this.maxInput.value) {
+            this.maxValue = parseInt(this.maxInput.value) || this.max;
+        }
+        
         this.updateVisual();
         this.attachEvents();
     }
@@ -977,11 +1164,19 @@ class UserRangeSlider {
         const minPercent = ((this.minValue - this.min) / range) * 100;
         const maxPercent = ((this.maxValue - this.min) / range) * 100;
 
-        this.minHandle.style.left = `${minPercent}%`;
-        this.maxHandle.style.left = `${maxPercent}%`;
-        this.track.style.left = `${minPercent}%`;
-        this.track.style.width = `${maxPercent - minPercent}%`;
+        // Ensure percentages are within bounds
+        const safeMinPercent = Math.max(0, Math.min(minPercent, 100));
+        const safeMaxPercent = Math.max(0, Math.min(maxPercent, 100));
 
+        // Update handle positions
+        this.minHandle.style.left = `${safeMinPercent}%`;
+        this.maxHandle.style.left = `${safeMaxPercent}%`;
+        
+        // Update track position and width
+        this.track.style.left = `${safeMinPercent}%`;
+        this.track.style.width = `${safeMaxPercent - safeMinPercent}%`;
+
+        // Update displays and inputs
         if (this.minDisplay) this.minDisplay.textContent = this.formatNumber(this.minValue);
         if (this.maxDisplay) this.maxDisplay.textContent = this.formatNumber(this.maxValue);
         if (this.minInput) this.minInput.value = this.minValue;
@@ -1078,12 +1273,24 @@ class UserRangeSlider {
 
 // Initialize on DOM content loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize theme toggle
+    initThemeToggle();
+    
+    // Check for session toast notification
+    if (typeof dtmodalShowToast === 'function' && document.querySelector('[data-toast]')) {
+        const toastData = document.querySelector('[data-toast]').dataset;
+        dtmodalShowToast(toastData.type, {
+            title: toastData.title,
+            message: toastData.message
+        });
+    }
+    
     // Initialize user range slider
     window.userSlider = new UserRangeSlider({
-        min: {{ $minUsers }},
-        max: {{ $maxUsers }},
-        minValue: {{ request('user_min', $minUsers) }},
-        maxValue: {{ request('user_max', $maxUsers) }},
+        min: parseInt(document.getElementById('minUserDisplay')?.textContent) || 0,
+        max: parseInt(document.getElementById('maxUserDisplay')?.textContent) || 1500,
+        minValue: parseInt(document.getElementById('minUserInput')?.value) || 0,
+        maxValue: parseInt(document.getElementById('maxUserInput')?.value) || 1500,
         step: 10,
         sliderId: 'userSlider',
         trackId: 'userTrack',

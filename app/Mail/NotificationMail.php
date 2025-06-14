@@ -24,6 +24,7 @@ class NotificationMail extends Mailable implements ShouldQueue
         'verification' => 'emails.auth.verify',
         'branch_manager_assigned' => 'emails.branch.manager-assigned',
         'branch_manager_removed' => 'emails.branch.manager-removed',
+        'branch_disabled' => 'emails.branch.branch-disabled', // Thêm template mới
     ];
 
     /**
@@ -80,6 +81,9 @@ class NotificationMail extends Mailable implements ShouldQueue
                 break;
             case 'branch_manager_removed':
                 $this->subject = 'Thông báo gỡ bỏ quản lý chi nhánh - ' . config('app.name');
+                break;
+            case 'branch_disabled':
+                $this->subject = 'Thông báo chi nhánh bị vô hiệu hóa - ' . config('app.name');
                 break;
             default:
                 $this->subject = 'Thông báo từ ' . config('app.name');

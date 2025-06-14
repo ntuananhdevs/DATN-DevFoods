@@ -5,9 +5,16 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use Illuminate\Http\Request;
+use App\Services\BranchService;
 
 class BranchController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
     /**
      * Display a listing of the resource.
      */

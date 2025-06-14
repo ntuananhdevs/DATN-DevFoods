@@ -5,6 +5,92 @@
 
 @section('content')
 <style>
+    /* Dark mode variables */
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 84% 4.9%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --accent-foreground: 222.2 84% 4.9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 84% 4.9%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 94.1%;
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+
+    /* Theme toggle button */
+    .theme-toggle {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background-color: hsl(var(--muted));
+        border-radius: 12px;
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .theme-toggle.dark {
+        background-color: hsl(var(--primary));
+    }
+
+    .theme-toggle-handle {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        background-color: hsl(var(--background));
+        border-radius: 50%;
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+    }
+
+    .theme-toggle.dark .theme-toggle-handle {
+        transform: translateX(20px);
+    }
+
     /* Form styling */
     .form-group {
         margin-bottom: 1.5rem;
@@ -15,22 +101,24 @@
         font-size: 0.875rem;
         font-weight: 500;
         margin-bottom: 0.5rem;
-        color: #374151;
+        color: hsl(var(--foreground));
     }
 
     .form-input {
         width: 100%;
         padding: 0.75rem;
-        border: 1px solid #d1d5db;
+        border: 1px solid hsl(var(--border));
         border-radius: 0.375rem;
         font-size: 0.875rem;
         transition: all 0.2s ease;
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
     }
 
     .form-input:focus {
         outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 3px hsla(var(--primary), 0.1);
     }
 
     .form-textarea {
@@ -49,14 +137,14 @@
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        border: 2px solid #e5e7eb;
+        border: 2px solid hsl(var(--border));
         cursor: pointer;
         transition: all 0.2s ease;
     }
 
     .color-preview:hover {
         transform: scale(1.1);
-        border-color: #3b82f6;
+        border-color: hsl(var(--primary));
     }
 
     /* Icon selector */
@@ -67,9 +155,9 @@
         max-height: 200px;
         overflow-y: auto;
         padding: 1rem;
-        border: 1px solid #e5e7eb;
+        border: 1px solid hsl(var(--border));
         border-radius: 0.375rem;
-        background: #f9fafb;
+        background: hsl(var(--muted));
     }
 
     .icon-option {
@@ -83,25 +171,25 @@
         cursor: pointer;
         font-size: 1.5rem;
         transition: all 0.2s ease;
-        background: white;
+        background: hsl(var(--background));
     }
 
     .icon-option:hover {
-        border-color: #3b82f6;
-        background: #eff6ff;
+        border-color: hsl(var(--primary));
+        background: hsla(var(--primary), 0.1);
     }
 
     .icon-option.selected {
-        border-color: #2563eb;
-        background: #dbeafe;
+        border-color: hsl(var(--primary));
+        background: hsla(var(--primary), 0.2);
     }
 
     /* Benefits list */
     .benefits-container {
-        border: 1px solid #e5e7eb;
+        border: 1px solid hsl(var(--border));
         border-radius: 0.375rem;
         padding: 1rem;
-        background: #f9fafb;
+        background: hsl(var(--muted));
     }
 
     .benefit-item {
@@ -109,8 +197,8 @@
         align-items: center;
         gap: 0.75rem;
         padding: 0.75rem;
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: hsl(var(--background));
+        border: 1px solid hsl(var(--border));
         border-radius: 0.375rem;
         margin-bottom: 0.5rem;
     }
@@ -124,10 +212,12 @@
         border: none;
         outline: none;
         font-size: 0.875rem;
+        background: transparent;
+        color: hsl(var(--foreground));
     }
 
     .benefit-remove {
-        color: #ef4444;
+        color: hsl(var(--destructive));
         cursor: pointer;
         padding: 0.25rem;
         border-radius: 0.25rem;
@@ -135,15 +225,16 @@
     }
 
     .benefit-remove:hover {
-        background: #fee2e2;
+        background: hsla(var(--destructive), 0.1);
     }
 
     /* Preview card */
     .tier-preview {
-        border: 1px solid #e5e7eb;
+        border: 1px solid hsl(var(--border));
         border-radius: 0.5rem;
         padding: 1.5rem;
-        background: white;
+        background: hsl(var(--card));
+        color: hsl(var(--card-foreground));
         position: sticky;
         top: 2rem;
     }
@@ -164,10 +255,11 @@
         font-size: 1.25rem;
         font-weight: 600;
         margin-bottom: 0.5rem;
+        color: hsl(var(--foreground));
     }
 
     .tier-preview-description {
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
         font-size: 0.875rem;
         margin-bottom: 1rem;
     }
@@ -182,19 +274,19 @@
     .tier-preview-stat {
         text-align: center;
         padding: 0.75rem;
-        background: #f3f4f6;
+        background: hsl(var(--muted));
         border-radius: 0.375rem;
     }
 
     .tier-preview-stat-value {
         font-weight: 600;
         font-size: 1.125rem;
-        color: #1f2937;
+        color: hsl(var(--foreground));
     }
 
     .tier-preview-stat-label {
         font-size: 0.75rem;
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
         margin-top: 0.25rem;
     }
 
@@ -207,7 +299,7 @@
     }
 
     .range-separator {
-        color: #6b7280;
+        color: hsl(var(--muted-foreground));
         font-weight: 500;
     }
 
@@ -217,19 +309,19 @@
         gap: 0.75rem;
         justify-content: flex-end;
         padding-top: 2rem;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid hsl(var(--border));
         margin-top: 2rem;
     }
 
     /* Validation errors */
     .error-message {
-        color: #ef4444;
+        color: hsl(var(--destructive));
         font-size: 0.75rem;
         margin-top: 0.25rem;
     }
 
     .form-input.error {
-        border-color: #ef4444;
+        border-color: hsl(var(--destructive));
     }
 
     /* Success message */
@@ -242,10 +334,16 @@
         border: 1px solid #bbf7d0;
     }
 
+    .dark .success-message {
+        background: rgba(22, 101, 52, 0.2);
+        color: #4ade80;
+        border-color: rgba(187, 247, 208, 0.3);
+    }
+
     /* Card sections */
     .form-card {
-        background: white;
-        border: 1px solid #e5e7eb;
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
         border-radius: 0.5rem;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
@@ -255,7 +353,7 @@
         font-size: 1.125rem;
         font-weight: 600;
         margin-bottom: 1rem;
-        color: #1f2937;
+        color: hsl(var(--foreground));
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -264,7 +362,7 @@
     .form-card-title svg {
         width: 20px;
         height: 20px;
-        color: #3b82f6;
+        color: hsl(var(--primary));
     }
 </style>
 
@@ -285,6 +383,17 @@
             <div>
                 <h2 class="text-3xl font-bold tracking-tight">Thêm hạng thành viên mới</h2>
                 <p class="text-muted-foreground">Tạo hạng thành viên mới với các quyền lợi và điều kiện</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <!-- Theme Toggle -->
+            <div class="flex items-center gap-2">
+                <span class="text-sm text-muted-foreground">Theme:</span>
+                <button id="themeToggle" class="theme-toggle">
+                    <div class="theme-toggle-handle">
+                        <span id="themeIcon">🌙</span>
+                    </div>
+                </button>
             </div>
         </div>
     </div>
@@ -342,7 +451,7 @@
                         <div class="form-group">
                             <label for="color" class="form-label">Màu sắc *</label>
                             <div class="color-picker-container">
-                                <div class="color-preview" id="colorPreview" style="background-color: {{ old('color', '#CD7F32') }};"></div>
+                                <div class="color-preview" id="colorPreview" style="background-color: {{ old('color', '#CD7F32') }}"></div>
                                 <input type="color" id="color" name="color" class="form-input @error('color') error @enderror"
                                     value="{{ old('color', '#CD7F32') }}" required>
                                 <input type="text" id="colorText" class="form-input"
@@ -512,7 +621,7 @@
                 <div class="tier-preview">
                     <h3 class="text-lg font-medium mb-4">Xem trước</h3>
 
-                    <div class="tier-preview-icon" id="previewIcon" style="background-color: {{ old('color', '#CD7F32') }};">
+                    <div class="tier-preview-icon" id="previewIcon" style="background-color: {{ old('color', '#CD7F32') }}">
                         {{ old('icon', '🥉') }}
                     </div>
 
@@ -742,6 +851,38 @@
         const existingInputs = document.querySelectorAll('input[name="benefits[]"]');
         existingInputs.forEach(input => {
             input.addEventListener('input', updateBenefitsPreview);
+        });
+    });
+</script>
+
+<script>
+    // Theme Management
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+        
+        // Load saved theme or default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+        
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                html.classList.add('dark');
+                themeToggle.classList.add('dark');
+                themeIcon.textContent = '☀️';
+            } else {
+                html.classList.remove('dark');
+                themeToggle.classList.remove('dark');
+                themeIcon.textContent = '🌙';
+            }
+            localStorage.setItem('theme', theme);
+        }
+        
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
         });
     });
 </script>

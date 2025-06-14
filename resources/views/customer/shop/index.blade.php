@@ -3,6 +3,14 @@
 @section('title', 'FastFood - Thực Đơn')
 
 @section('content')
+<script>
+    // Add authentication class to body
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(Auth::check())
+            document.body.classList.add('user-authenticated');
+        @endif
+    });
+</script>
 <style>
     .container {
       max-width: 1280px;
@@ -32,6 +40,46 @@
         border-radius: 100px;
         font-size: 10px;
         z-index: 10;
+    }
+    
+    /* Discount code pill badges */
+    .discount-code-pill {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        z-index: 10;
+    }
+    
+    .discount-code-item {
+        display: inline-flex;
+        align-items: center;
+        background-color: rgba(249, 115, 22, 0.9);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 600;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .discount-code-item i {
+        margin-right: 4px;
+        font-size: 9px;
+    }
+    
+    .discount-code-item.free-shipping {
+        background-color: rgba(10, 132, 255, 0.9);
+    }
+    
+    .discount-code-item.fixed-amount {
+        background-color: rgba(130, 32, 246, 0.9);
     }
 
     /* Product card styling */
@@ -306,6 +354,34 @@
                     @elseif($product->created_at->diffInDays(now()) <= 7)
                         <span class="custom-badge badge-new">Mới</span>
                     @endif
+                    
+                    @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
+                        <div class="discount-code-pill">
+                            @foreach($product->applicable_discount_codes as $discountCode)
+                                @php
+                                    $badgeClass = 'discount-code-item';
+                                    $icon = 'fa-percent';
+                                    if($discountCode->discount_type === 'fixed_amount') {
+                                        $badgeClass .= ' fixed-amount';
+                                        $icon = 'fa-money-bill-wave';
+                                    } elseif($discountCode->discount_type === 'free_shipping') {
+                                        $badgeClass .= ' free-shipping';
+                                        $icon = 'fa-shipping-fast';
+                                    }
+                                @endphp
+                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
+                                    <i class="fas {{ $icon }}"></i>
+                                    @if($discountCode->discount_type === 'percentage')
+                                        Giảm {{ $discountCode->discount_value }}%
+                                    @elseif($discountCode->discount_type === 'fixed_amount')
+                                        Giảm {{ number_format($discountCode->discount_value) }}đ
+                                    @else
+                                        Miễn phí vận chuyển
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
 
                 <div class="p-4">
@@ -359,9 +435,9 @@
             <div class="col-span-4 text-center py-8">
                 <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
                 <h3 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy sản phẩm</h3>
-                @if(session('selected_branch'))
+                @if($currentBranch)
                     @php
-                        $branch = App\Models\Branch::find(session('selected_branch'));
+                        $branch = $currentBranch;
                     @endphp
                     @if($branch)
                         <p class="text-gray-500">Không tìm thấy sản phẩm nào tại chi nhánh {{ $branch->name }}.</p>
@@ -737,6 +813,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             `<span class="custom-badge badge-sale">-${discountPercent}%</span>` : 
                             (isNew ? `<span class="custom-badge badge-new">Mới</span>` : '')
                         }
+                        
+                        ${discountCodesHtml}
                     </div>
 
                     <div class="p-4">
@@ -1143,4 +1221,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+{{-- Include branch checking logic --}}
+@include('partials.customer.branch-check')
+<!-- Branch Selector Modal -->
 @endsection

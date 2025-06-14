@@ -21,6 +21,7 @@ return new class extends Migration
             $table->json('ingredients')->nullable();
             $table->text('short_description')->nullable();
             $table->text('description')->nullable();
+            $table->integer('favorite_count')->default(0);
             $table->enum('status', ['coming_soon', 'selling', 'discontinued'])->default('selling');
             $table->timestamp('release_at')->nullable();
             $table->boolean('is_featured')->default(false);

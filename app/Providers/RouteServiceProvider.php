@@ -41,6 +41,10 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware('web')
                 ->group(base_path('routes/customer.php'));
 
+            // Load driver routes
+            Route::middleware('web')
+                ->group(base_path('routes/driver.php'));
+
             // Any remaining routes in web.php if you still have general web routes
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));

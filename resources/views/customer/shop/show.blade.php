@@ -8,6 +8,51 @@
       max-width: 1280px;
       margin: 0 auto;
    }
+   
+   /* Discount code styles */
+   .discount-code-animation {
+       animation: pulse 2s infinite;
+   }
+   
+   @keyframes pulse {
+       0%, 100% {
+           opacity: 1;
+       }
+       50% {
+           opacity: 0.8;
+       }
+   }
+   
+   .copy-code:active {
+       transform: scale(0.95);
+   }
+   
+   /* Discount pill badge styles */
+   .discount-pill {
+       position: relative;
+       overflow: hidden;
+   }
+   
+   .discount-pill::after {
+       content: '';
+       position: absolute;
+       top: 0;
+       right: 0;
+       width: 30%;
+       height: 100%;
+       background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3));
+       transform: skewX(-20deg);
+       animation: shine 3s infinite;
+   }
+   
+   @keyframes shine {
+       0% {
+           transform: translateX(-100%) skewX(-20deg);
+       }
+       100% {
+           transform: translateX(200%) skewX(-20deg);
+       }
+   }
 </style>
 <div class="container mx-auto px-4 py-8">
     <!-- Product Info Section -->
@@ -49,11 +94,71 @@
                 </span>
             </div>
 
+            <!-- Discount Codes Section -->
+            @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
+            <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200 shadow-sm">
+                <h3 class="text-sm font-semibold flex items-center gap-2 mb-3 text-orange-800">
+                    <i class="fas fa-tags text-orange-500"></i>
+                    Mã giảm giá áp dụng
+                </h3>
+                <div class="space-y-2">
+                    @foreach($product->applicable_discount_codes as $discountCode)
+                        @php
+                            $bgColor = 'bg-orange-500';
+                            $icon = 'fa-percent';
+                            
+                            if($discountCode->discount_type === 'fixed_amount') {
+                                $bgColor = 'bg-purple-500';
+                                $icon = 'fa-money-bill-wave';
+                            } elseif($discountCode->discount_type === 'free_shipping') {
+                                $bgColor = 'bg-blue-500';
+                                $icon = 'fa-shipping-fast';
+                            }
+                        @endphp
+                        <div class="flex items-center gap-3 p-2 rounded-md bg-white hover:bg-orange-50 transition-colors cursor-pointer relative group shadow-sm">
+                            <div class="flex-shrink-0 w-10 h-10 {{ $bgColor }} rounded-full flex items-center justify-center discount-code-animation">
+                                <i class="fas {{ $icon }} text-white"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-gray-900">{{ $discountCode->code }}</span>
+                                    @if($discountCode->end_date->diffInDays(now()) <= 3)
+                                        <span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded-sm">
+                                            Sắp hết hạn
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="text-sm text-gray-600 truncate">
+                                    @if($discountCode->discount_type === 'percentage')
+                                        Giảm {{ $discountCode->discount_value }}% 
+                                    @elseif($discountCode->discount_type === 'fixed_amount')
+                                        Giảm {{ number_format($discountCode->discount_value) }}đ
+                                    @else
+                                        Miễn phí vận chuyển
+                                    @endif
+                                    @if($discountCode->min_order_amount > 0)
+                                        cho đơn từ {{ number_format($discountCode->min_order_amount) }}đ
+                                    @endif
+                                </p>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    HSD: {{ $discountCode->end_date->format('d/m/Y') }}
+                                </div>
+                            </div>
+                            <button class="copy-code opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-md text-xs font-medium" data-code="{{ $discountCode->code }}">
+                                Sao chép
+                            </button>
+                            <div class="absolute inset-0 bg-white pointer-events-none opacity-0 group-hover:opacity-10 transition-opacity rounded-md"></div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <p class="text-gray-600">{{ $product->short_description }}</p>
 
             <!-- Get selected branch information for JS -->
             @php
-                $selectedBranchId = session('selected_branch');
+                $selectedBranchId = $currentBranch ? $currentBranch->id : null;
                 $isAvailable = false;
                 
                 if ($selectedBranchId) {
@@ -537,6 +642,35 @@
                     @if($relatedProduct->release_at && $relatedProduct->release_at->diffInDays(now()) <= 7)
                         <span class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">Mới</span>
                     @endif
+                    
+                    @if(isset($relatedProduct->applicable_discount_codes) && $relatedProduct->applicable_discount_codes->count() > 0)
+                        <div class="absolute bottom-2 left-2 right-2 flex flex-col gap-1 z-10">
+                            @foreach($relatedProduct->applicable_discount_codes as $discountCode)
+                                @php
+                                    $bgColor = 'bg-orange-500';
+                                    $icon = 'fa-percent';
+                                    
+                                    if($discountCode->discount_type === 'fixed_amount') {
+                                        $bgColor = 'bg-purple-500';
+                                        $icon = 'fa-money-bill-wave';
+                                    } elseif($discountCode->discount_type === 'free_shipping') {
+                                        $bgColor = 'bg-blue-500';
+                                        $icon = 'fa-shipping-fast';
+                                    }
+                                @endphp
+                                <div class="inline-flex items-center {{ $bgColor }} bg-opacity-90 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm discount-pill">
+                                    <i class="fas {{ $icon }} mr-1 text-xs"></i>
+                                    @if($discountCode->discount_type === 'percentage')
+                                        Giảm {{ $discountCode->discount_value }}%
+                                    @elseif($discountCode->discount_type === 'fixed_amount')
+                                        Giảm {{ number_format($discountCode->discount_value) }}đ
+                                    @else
+                                        Miễn phí vận chuyển
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </a>
 
                 <div class="p-4">
@@ -617,7 +751,7 @@
         });
 
         // Auto-show branch selector if no branch is selected
-        const selectedBranchId = {{ session('selected_branch') ? session('selected_branch') : 'null' }};
+        const selectedBranchId = {{ $currentBranch ? $currentBranch->id : 'null' }};
         if (!selectedBranchId) {
             const branchModal = document.getElementById('branch-selector-modal');
             if (branchModal) {
@@ -841,6 +975,43 @@
 
         // Initialize
         updatePrice();
+        
+        // Handle discount code copy functionality
+        const copyButtons = document.querySelectorAll('.copy-code');
+        copyButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const code = this.dataset.code;
+                
+                // Create a temporary input element
+                const tempInput = document.createElement('input');
+                tempInput.value = code;
+                document.body.appendChild(tempInput);
+                
+                // Select and copy the text
+                tempInput.select();
+                document.execCommand('copy');
+                
+                // Remove the temporary element
+                document.body.removeChild(tempInput);
+                
+                // Update button text temporarily
+                const originalText = this.textContent;
+                this.textContent = 'Đã sao chép!';
+                this.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                this.classList.add('bg-green-500', 'hover:bg-green-600');
+                
+                // Reset button text after a delay
+                setTimeout(() => {
+                    this.textContent = originalText;
+                    this.classList.remove('bg-green-500', 'hover:bg-green-600');
+                    this.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                }, 2000);
+                
+                // Show toast notification
+                showToast(`Đã sao chép mã "${code}" vào clipboard`, 'success');
+            });
+        });
     });
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -1045,4 +1216,6 @@
         updateProductAvailability();
     });
 </script>
+@include('partials.customer.branch-check')
+
 @endsection

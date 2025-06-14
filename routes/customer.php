@@ -17,6 +17,8 @@ use App\Http\Controllers\Customer\ContactController as CustomerContactController
 use App\Http\Controllers\Customer\ChatController as CustomerChatController;
 use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
 use App\Http\Middleware\Customer\CartCountMiddleware;
+use App\Http\Controllers\FirebaseConfigController;
+use App\Http\Controllers\Admin\HiringController;
 
 // API Controllers for Customer
 use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
@@ -25,106 +27,122 @@ use App\Http\Controllers\Api\Customer\ProductVariantController as ApiCustomerPro
 use App\Http\Controllers\Api\Customer\BranchController as ApiCustomerBranchController;
 use App\Http\Controllers\Api\Customer\CartController as ApiCustomerCartController;
 
+// ===== WEB ROUTES (giao diện web, view) =====
+Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(function () {
+    Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
-Route::prefix('/')->group(function () {
-    // Apply the cart count middleware to all customer-facing routes
-    Route::middleware([CartCountMiddleware::class])->group(function () {
-        // Home
-        Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
+    // Product
+    Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
+    Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
 
-        // Products
-        Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
-        Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
+    // Wishlist
+    Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
+    Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
+    Route::delete('/wishlist/{id}', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
 
-        // Wishlist
-        Route::get('/wishlist', [CustomerWishlistController::class,'index'])->name('wishlist.index');
-        Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
-        Route::delete('/wishlist/{id}', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
+    // Cart
+    Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
 
-        // Cart
-        Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
-        Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add'); // Updated to use the correct class name
-        Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update'); // Updated to use the correct class name
-        Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove'); // Updated to use the correct class name
-        Route::post('/coupon/apply', [ApiCustomerCartController::class, 'applyCoupon'])->name('coupon.apply'); // Updated to use the correct class name
+    // Checkout
+    Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
 
-        // Checkout
-        Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
-        Route::post('/checkout/process', [CustomerCheckoutController::class, 'process'])->name('checkout.process');
-        Route::get('/checkout/success', [CustomerCheckoutController::class, 'success'])->name('checkout.success');
-
-        // About
-        Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
-
-        // Contact
-        Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
-
-        // Promotions
-        Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
-
-        // Branches
-        Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branchs.index');
-
-        // Support
-        Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
-    });
-
-    // Chat routes
-    Route::prefix('api/chat')->group(function () {
-        Route::post('/send-message', [CustomerChatController::class, 'sendMessage'])->name('chat.send');
-        Route::post('/rating', [CustomerChatController::class, 'submitRating'])->name('chat.rating');
-        Route::get('/history', [CustomerChatController::class, 'getChatHistory'])->name('chat.history');
-    });
-
-    // Customer Authentication (login / logout / register) - With guest middleware
-    Route::middleware('guest')->group(function () {
-        Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
-        Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.post');
-        Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
-        Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.post');
-
-        // OTP authentication routes
-        Route::get('/verify-otp', [CustomerAuthController::class, 'showOTPForm'])->name('customer.verify.otp.show');
-        Route::post('/verify-otp', [CustomerAuthController::class, 'verifyOTP'])->name('customer.verify.otp.post');
-        Route::post('/resend-otp', [CustomerAuthController::class, 'resendOTP'])->name('customer.resend.otp');
-
-        // Forgot password routes
-        Route::get('/forgot-password', [CustomerAuthController::class, 'showForgotPasswordForm'])
-            ->name('customer.password.request');
-        Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])
-            ->name('customer.password.email');
-        Route::get('/reset-password/{token}', [CustomerAuthController::class, 'showResetPasswordForm'])
-            ->name('customer.password.reset');
-        Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])
-            ->name('customer.password.update');
-    });
-
-    // Logout does not require guest middleware
-    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
-
-    // Customer Profile - Requires authentication
-    Route::middleware('auth')->group(function () {
-        Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
-        Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
-        Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
-    });
+    // About, Contact, Promotion, Branches, Support
+    Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
+    Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
+    Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
+    Route::get('/branches', [CustomerBranchController::class, 'branchs'])->name('branches.index');
+    Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 });
 
+// Chat routes (API)
+Route::prefix('api/chat')->group(function () {
+    Route::post('/send-message', [CustomerChatController::class, 'sendMessage'])->name('chat.send');
+    Route::post('/rating', [CustomerChatController::class, 'submitRating'])->name('chat.rating');
+    Route::get('/history', [CustomerChatController::class, 'getChatHistory'])->name('chat.history');
+});
 
-// API Routes for products, cart and favorites (Customer-facing API)
+// Authentication (login / logout / register)
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
+    Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.post');
+    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
+    Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.post');
+
+    // OTP
+    Route::get('/verify-otp', [CustomerAuthController::class, 'showOTPForm'])->name('customer.verify.otp.show');
+    Route::post('/verify-otp', [CustomerAuthController::class, 'verifyOTP'])->name('customer.verify.otp.post');
+    Route::post('/resend-otp', [CustomerAuthController::class, 'resendOTP'])->name('customer.resend.otp');
+
+    // Forgot password
+    Route::get('/forgot-password', [CustomerAuthController::class, 'showForgotPasswordForm'])->name('customer.password.request');
+    Route::post('/forgot-password', [CustomerAuthController::class, 'forgotPassword'])->name('customer.password.email');
+    Route::get('/reset-password/{token}', [CustomerAuthController::class, 'showResetPasswordForm'])->name('customer.password.reset');
+    Route::post('/reset-password', [CustomerAuthController::class, 'resetPassword'])->name('customer.password.update');
+});
+
+// Logout
+Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
+
+// Customer Profile (cần đăng nhập)
+Route::middleware(['auth', 'phone.required'])->group(function () {
+    Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
+    Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
+    Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+});
+
+// Phone Required routes (không cần phone.required middleware)
+Route::middleware('auth')->group(function () {
+    Route::get('/phone-required', [CustomerAuthController::class, 'showPhoneRequired'])->name('customer.phone-required');
+    Route::post('/phone-required', [CustomerAuthController::class, 'updatePhone'])->name('customer.phone-required.post');
+});
+
+// ===== API ROUTES (prefix /api/...) =====
 Route::prefix('api')->group(function () {
-    // Product listing for AJAX filtering
     Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
-
-    // Favorites
     Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
+    Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add');
+    Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update');
+    Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove');
+    Route::post('/coupon/apply', [ApiCustomerCartController::class, 'applyCoupon'])->name('coupon.apply');
 
-    // Customer API routes
+    // Customer API
     Route::prefix('customer')->group(function () {
         Route::post('/products/get-variant', [ApiCustomerProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
-
-        // Branch routes
         Route::post('/branches/set-selected', [ApiCustomerBranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
         Route::get('/branches/nearest', [ApiCustomerBranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
     });
+
+    // Firebase Auth (Google)
+    Route::prefix('auth')->group(function () {
+        Route::post('/google', [CustomerAuthController::class, 'handleGoogleAuth'])->name('api.auth.google');
+        Route::get('/status', [CustomerAuthController::class, 'checkAuthStatus'])->name('api.auth.status');
+    });
+
+    // Firebase Config
+    Route::get('/firebase/config', [FirebaseConfigController::class, 'getConfig'])->name('api.firebase.config');
+});
+// Hiring driver routes (these are publicly accessible for applications but relate to driver management)
+Route::prefix('hiring-driver')->name('driver.')->group(function () {
+    Route::get('/', [HiringController::class, 'landing'])->name('landing');
+    Route::get('/apply', [HiringController::class, 'applicationForm'])->name('application.form');
+    Route::post('/apply', [HiringController::class, 'submitApplication'])->name('application.submit');
+    Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
+});
+
+Route::prefix('customer')->middleware(['auth'])->group(function () {
+    Route::get('/chat', function () {
+        $conversations = \App\Models\Conversation::where('customer_id', auth()->id())
+            ->with(['branch', 'messages.sender'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        return view('customer.chat', compact('conversations'));
+    })->name('customer.chat.index');
+
+    Route::post('/chat/create', [App\Http\Controllers\Customer\ChatController::class, 'createConversation'])->name('customer.chat.create');
+    Route::post('/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
+    Route::get('/chat/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('customer.chat.conversations');
+    Route::get('/chat/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('customer.chat.messages');
+    Route::post('/chat/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('customer.chat.typing');
 });
