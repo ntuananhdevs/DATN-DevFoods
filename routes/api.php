@@ -35,14 +35,6 @@ Route::group([
   });
 });
 
-// Test S3 API Routes
-Route::prefix('test')->name('api.test.')->group(function () {
-  Route::post('/upload', [TestController::class, 'uploadImage'])->name('upload.image');
-  Route::get('/images', [TestController::class, 'listImages'])->name('images.list');
-  Route::delete('/images/{filename}', [TestController::class, 'deleteImage'])->name('images.delete');
-  Route::get('/connection', [TestController::class, 'testConnection'])->name('connection');
-});
-
 Route::prefix('conversations')->group(function () {
   Route::post('/', [ChatController::class, 'createConversation'])->name('conversations.create'); // Tạo cuộc trò chuyện mới
   Route::post('/{conversationId}/messages', [ChatController::class, 'sendMessage'])->name('conversations.messages.send'); // Gửi tin nhắn

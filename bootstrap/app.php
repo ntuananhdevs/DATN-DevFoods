@@ -4,7 +4,7 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\Admin\RoleAdmin;
 use App\Http\Middleware\Driver\DriverAuth;
 use App\Http\Middleware\Customer\CustomerAuth;
-use App\Http\Middleware\BranchMiddleware;
+use App\Http\Middleware\Customer\BranchMiddleware;
 use App\Http\Middleware\PhoneRequired;
 use App\Http\Middleware\VerifyTurnstile;
 use Illuminate\Foundation\Application;

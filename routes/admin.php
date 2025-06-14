@@ -16,7 +16,7 @@ use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PromotionProgramController;
 use App\Http\Controllers\Admin\ChatController as AdminChatController;
-use App\Http\Controllers\Admin\User\UserController as UserUserController; // This one is not used directly in the provided web.php but is listed in the original uses
+use App\Http\Controllers\Admin\User\UserController as UserUserController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\UserRankController;
 use App\Http\Controllers\Admin\BranchStockController;

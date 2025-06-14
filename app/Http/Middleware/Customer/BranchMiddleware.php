@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace App\Http\Middleware\Customer;
 
 use Closure;
 use Illuminate\Http\Request;
@@ -22,8 +22,6 @@ class BranchMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-
-
         // Handle branch selection and validation
         $this->processBranchSelection($request);
 
@@ -62,7 +60,6 @@ class BranchMiddleware
         try {
             $this->branchService->setSelectedBranch($branchId, false);
         } catch (\Exception $e) {
-            \Log::warning("Invalid branch_id in {$source}: {$e->getMessage()}");
             if ($source === 'cookie') {
                 cookie()->queue(cookie()->forget('selected_branch'));
             }
@@ -79,7 +76,6 @@ class BranchMiddleware
         if ($currentBranchId && !$this->branchService->isValidBranch($currentBranchId)) {
             $this->branchService->clearSelectedBranch();
             cookie()->queue(cookie()->forget('selected_branch'));
-            \Log::info("Cleared invalid selected branch: {$currentBranchId}");
         }
     }
 
