@@ -409,16 +409,16 @@
                                     <label for="applicable_items_products">Sản phẩm cụ thể</label>
                                 </div>
                                 <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_variants" value="specific_variants" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_variants' ? 'checked' : '' }}>
+                                    <label for="applicable_items_variants">Biến thể sản phẩm cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
                                     <input type="radio" name="applicable_items" id="applicable_items_categories" value="specific_categories" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_categories' ? 'checked' : '' }}>
                                     <label for="applicable_items_categories">Danh mục cụ thể</label>
                                 </div>
                                 <div class="checkbox-group">
                                     <input type="radio" name="applicable_items" id="applicable_items_combos" value="combos_only" {{ old('applicable_items', $discountCode->applicable_items) == 'combos_only' ? 'checked' : '' }}>
                                     <label for="applicable_items_combos">Combo cụ thể</label>
-                                </div>
-                                <div class="checkbox-group">
-                                    <input type="radio" name="applicable_items" id="applicable_items_all_combos" value="all_combos" {{ old('applicable_items', $discountCode->applicable_items) == 'all_combos' ? 'checked' : '' }}>
-                                    <label for="applicable_items_all_combos">Tất cả combo</label>
                                 </div>
                             </div>
                             @error('applicable_items')
@@ -557,6 +557,44 @@
                                 <div class="text-right mt-2">
                                     <span class="text-sm text-blue-600 cursor-pointer select-all-combos">Chọn tất cả</span> | 
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="variants_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_variants') style="display: none;" @endif>
+                            <label class="form-label font-medium">Chọn biến thể sản phẩm</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Mẹo:</strong> Biến thể sản phẩm bao gồm tên sản phẩm và các thuộc tính biến thể (kích thước, màu sắc, v.v).
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="relative mb-2">
+                                    <input type="text" id="variant_search" placeholder="Tìm kiếm biến thể sản phẩm..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card" id="variants_container">
+                                    @php
+                                        $selectedVariants = $discountCode->products->where('product_variant_id', '!=', null)->pluck('product_variant_id')->toArray() ?? [];
+                                    @endphp
+                                    <!-- Variant items will be loaded dynamically -->
+                                    <div class="col-span-full p-4 text-center">
+                                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                        <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách biến thể sản phẩm...</p>
+                                    </div>
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-variants">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-variants">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
                         </div>
@@ -1004,6 +1042,7 @@
         const productsSelectionDiv = document.getElementById('products_selection');
         const categoriesSelectionDiv = document.getElementById('categories_selection');
         const combosSelectionDiv = document.getElementById('combos_selection');
+        const variantsSelectionDiv = document.getElementById('variants_selection');
         const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
         
         // Branch checkboxes
@@ -1136,7 +1175,7 @@
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
-
+        
         if (unselectAllBranches) {
             unselectAllBranches.addEventListener('click', function() {
                 const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
@@ -1182,7 +1221,7 @@
                     success: function(data) {
                         if (data.success) {
                             fetchItemsByType('products');
-                        } else {
+                    } else {
                             console.error('Error searching products:', data.message);
                         }
                     },
@@ -1295,6 +1334,7 @@
             if (productsSelectionDiv) productsSelectionDiv.style.display = 'none';
             if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'none';
             if (combosSelectionDiv) combosSelectionDiv.style.display = 'none';
+            if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'none';
             
             // Hiển thị phần chọn tương ứng với lựa chọn
             switch (selectedItems) {
@@ -1306,6 +1346,12 @@
                     break;
                 case 'combos_only':
                     if (combosSelectionDiv) combosSelectionDiv.style.display = 'block';
+                    break;
+                case 'specific_variants':
+                    if (variantsSelectionDiv) {
+                        variantsSelectionDiv.style.display = 'block';
+                        fetchProductVariants();
+                    }
                     break;
             }
             
@@ -1324,6 +1370,11 @@
                 const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
                 comboCheckboxes.forEach(checkbox => checkbox.checked = false);
             }
+            
+            if (selectedItems !== 'specific_variants' && variantsSelectionDiv) {
+                const variantCheckboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
+                variantCheckboxes.forEach(checkbox => checkbox.checked = false);
+            }
         }
         
         function validateDates() {
@@ -1335,7 +1386,7 @@
                 endDateField.value = startDate.toISOString().split('T')[0];
             }
         }
-        
+
         // Usage Type and User Selection
         const usageTypeSelect = document.getElementById('usage_type');
         const usersSelectionDiv = document.getElementById('users_selection');
@@ -1388,7 +1439,7 @@
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
-        
+
         function toggleUserSelection() {
             if (!usersSelectionDiv || !usageTypeSelect) return;
             
@@ -1456,54 +1507,54 @@
                 success: function(data) {
                     console.log('User data received:', data);
                     if (data.success) {
-                        // Update user count display
-                        if (userCountDisplay) {
-                            userCountDisplay.textContent = `Đang hiển thị ${data.count} người dùng hợp lệ`;
-                        }
-                        
-                        // Generate HTML for users
-                        if (userContainer) {
-                            if (data.users.length === 0) {
-                                userContainer.innerHTML = `
-                                    <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
-                                        <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy người dùng nào với hạng đã chọn.</p>
-                                    </div>
-                                `;
-                            } else {
-                                let usersHtml = '';
-                                
-                                data.users.forEach(user => {
-                                    usersHtml += `
-                                        <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${user.rank_class}">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                                </svg>
-                                                ${user.rank_name || 'Chưa xếp hạng'}
-                                            </span>
-                                            <input type="checkbox" name="assigned_users[]" id="user_${user.id}" value="${user.id}" ${user.is_assigned ? 'checked' : ''}>
-                                            <label for="user_${user.id}" class="flex flex-col">
-                                                <span class="font-medium">${user.full_name}</span>
-                                                <span class="text-xs text-gray-500">${user.email}</span>
-                                                <span class="text-xs text-gray-500">${user.phone}</span>
-                                            </label>
-                                        </div>
-                                    `;
-                                });
-                                
-                                userContainer.innerHTML = usersHtml;
-                            }
-                        }
-                    } else {
-                        console.error('Error fetching users:', data.message);
-                        if (userContainer) {
+                    // Update user count display
+                    if (userCountDisplay) {
+                        userCountDisplay.textContent = `Đang hiển thị ${data.count} người dùng hợp lệ`;
+                    }
+                    
+                    // Generate HTML for users
+                    if (userContainer) {
+                        if (data.users.length === 0) {
                             userContainer.innerHTML = `
-                                <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                                    <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
+                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy người dùng nào với hạng đã chọn.</p>
                                 </div>
                             `;
+                        } else {
+                            let usersHtml = '';
+                            
+                            data.users.forEach(user => {
+                                usersHtml += `
+                                    <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${user.rank_class}">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                            ${user.rank_name || 'Chưa xếp hạng'}
+                                        </span>
+                                        <input type="checkbox" name="assigned_users[]" id="user_${user.id}" value="${user.id}" ${user.is_assigned ? 'checked' : ''}>
+                                        <label for="user_${user.id}" class="flex flex-col">
+                                            <span class="font-medium">${user.full_name}</span>
+                                            <span class="text-xs text-gray-500">${user.email}</span>
+                                            <span class="text-xs text-gray-500">${user.phone}</span>
+                                        </label>
+                                    </div>
+                                `;
+                            });
+                            
+                            userContainer.innerHTML = usersHtml;
                         }
                     }
+                } else {
+                    console.error('Error fetching users:', data.message);
+                    if (userContainer) {
+                        userContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
+                            </div>
+                        `;
+                    }
+                }
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX error:', error);
@@ -1685,6 +1736,163 @@
                     `;
                 }
             });
+        }
+        
+        /**
+         * Fetch product variants for the variants selection
+         */
+        function fetchProductVariants() {
+            const variantContainer = document.getElementById('variants_container');
+            const variantSearch = document.getElementById('variant_search');
+            const selectAllVariants = document.querySelector('.select-all-variants');
+            const unselectAllVariants = document.querySelector('.unselect-all-variants');
+            
+            if (!variantContainer) {
+                console.error('Variant container not found!');
+                return;
+            }
+            
+            // Show loading indicator
+            variantContainer.innerHTML = `
+                <div class="col-span-full p-4 text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách biến thể sản phẩm...</p>
+                </div>
+            `;
+            
+            // Get selected variants
+            const selectedVariantIds = @json($selectedVariants ?? []);
+            console.log('Selected Variants:', selectedVariantIds);
+            
+            // Make AJAX request to get product variants
+            $.ajax({
+                url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    type: 'variants',
+                    search: variantSearch ? variantSearch.value : '',
+                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                success: function(data) {
+                    console.log('Variants data received:', data);
+                    
+                    if (data && data.success) {
+                        if (!data.items || data.items.length === 0) {
+                            variantContainer.innerHTML = `
+                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy biến thể sản phẩm nào.</p>
+                                </div>
+                            `;
+                        } else {
+                            let variantsHtml = '';
+                            
+                            data.items.forEach(variant => {
+                                const isChecked = selectedVariantIds.includes(variant.id) ? 'checked' : '';
+                                const variantPrice = parseFloat(variant.price).toLocaleString();
+                                
+                                variantsHtml += `
+                                    <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                                            </svg>
+                                            BT
+                                        </span>
+                                        <input type="checkbox" name="variant_ids[]" id="variant_${variant.id}" value="${variant.id}" ${isChecked}>
+                                        <label for="variant_${variant.id}" class="flex flex-col">
+                                            <span class="font-medium">${variant.product_name}</span>
+                                            <span class="text-xs text-blue-600">${variant.variant_description}</span>
+                                            <div class="flex items-center justify-between mt-1">
+                                                <span class="text-xs text-gray-500">${variantPrice} đ</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                `;
+                            });
+                            
+                            variantContainer.innerHTML = variantsHtml;
+                        }
+                    } else {
+                        console.error('Error fetching variants:', data ? data.message : 'No data received');
+                        variantContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi: Không thể tải danh sách biến thể sản phẩm.</p>
+                                <p class="text-red-500">${data && data.message ? data.message : 'Không có thông tin lỗi'}</p>
+                            </div>
+                        `;
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+                    
+                    variantContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                            <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách biến thể sản phẩm.</p>
+                            <p class="text-red-500 text-sm mt-2">${error}</p>
+                            <button class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="fetchProductVariants()">
+                                Thử lại
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+            
+            // Add event listeners for search
+            if (variantSearch) {
+                variantSearch.addEventListener('input', debounce(function() {
+                    const searchTerm = this.value.toLowerCase();
+                    
+                    // Show loading indicator
+                    if (variantContainer) {
+                        variantContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center">
+                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm biến thể sản phẩm...</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Make AJAX request to search variants
+                    $.ajax({
+                        url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            type: 'variants',
+                            search: searchTerm,
+                            _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        success: function(data) {
+                            if (data.success) {
+                                fetchProductVariants();
+                            } else {
+                                console.error('Error searching variants:', data.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('AJAX error:', error);
+                        }
+                    });
+                }, 500));
+            }
+            
+            // Add event listeners for select/unselect all variants
+            if (selectAllVariants) {
+                selectAllVariants.addEventListener('click', function() {
+                    const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
+                    checkboxes.forEach(checkbox => checkbox.checked = true);
+                });
+            }
+            
+            if (unselectAllVariants) {
+                unselectAllVariants.addEventListener('click', function() {
+                    const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
+                    checkboxes.forEach(checkbox => checkbox.checked = false);
+                });
+            }
         }
     });
 </script>

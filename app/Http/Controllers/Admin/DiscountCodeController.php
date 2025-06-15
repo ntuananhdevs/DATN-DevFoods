@@ -13,6 +13,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\Combo;
 use App\Models\User;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -1072,14 +1073,23 @@ class DiscountCodeController extends Controller
 
     public function getUsersByRank(Request $request)
     {
-        $request->validate([
-            'ranks' => 'required|array',
-            'ranks.*' => 'integer|between:1,5',
-            'discount_code_id' => 'nullable|exists:discount_codes,id'
-        ]);
+        // Kiểm tra xem dữ liệu có phải là JSON không
+        if ($request->isJson()) {
+            $data = $request->json()->all();
+            $rankIds = $data['ranks'] ?? [];
+            $discountCodeId = $data['discount_code_id'] ?? null;
+        } else {
+            $request->validate([
+                'ranks' => 'required|array',
+                'ranks.*' => 'integer|between:1,5',
+                'discount_code_id' => 'nullable|exists:discount_codes,id'
+            ]);
+            $rankIds = $request->ranks;
+            $discountCodeId = $request->discount_code_id;
+        }
 
-        $rankIds = $request->ranks;
-        $discountCodeId = $request->discount_code_id;
+        // Ghi log để debug
+        Log::info('getUsersByRank called with ranks: ' . json_encode($rankIds) . ' and discount_code_id: ' . $discountCodeId);
         
         // Get users with selected ranks
         $users = User::whereIn('user_rank_id', $rankIds)
@@ -1154,7 +1164,7 @@ class DiscountCodeController extends Controller
     {
         try {
             $request->validate([
-                'type' => 'required|string|in:products,categories,combos',
+                'type' => 'required|string|in:products,categories,combos,variants',
                 'search' => 'nullable|string|max:255',
             ]);
             
@@ -1205,6 +1215,35 @@ class DiscountCodeController extends Controller
                         ->limit($limit)
                         ->get(['id', 'name', 'image', 'price']);
                     Log::info("Combos fetched: " . $items->count());
+                    break;
+                    
+                case 'variants':
+                    $query = ProductVariant::with(['product', 'variantValues'])
+                        ->whereHas('product', function($q) use ($search) {
+                            if (!empty($search)) {
+                                $q->where('name', 'like', "%{$search}%");
+                            }
+                        })
+                        ->orderBy('id')
+                        ->limit($limit);
+                    
+                    $variants = $query->get();
+                    
+                    // Transform the data to include product and variant information
+                    $items = $variants->map(function($variant) {
+                        $variantDescription = $variant->variantValues->pluck('value')->implode(', ');
+                        
+                        return [
+                            'id' => $variant->id,
+                            'product_id' => $variant->product_id,
+                            'product_name' => $variant->product->name,
+                            'variant_description' => $variantDescription,
+                            'price' => $variant->price,
+                            'sku' => $variant->sku
+                        ];
+                    });
+                    
+                    Log::info("Variants fetched: " . $items->count());
                     break;
                     
                 default:
