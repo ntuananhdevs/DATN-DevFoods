@@ -471,3 +471,73 @@ channel.bind('stock-updated', function(data) {
     // Update overall product availability
     updateProductAvailability();
 });
+
+// Listen for topping stock updates
+channel.bind('topping-stock-updated', function(data) {
+    console.log('Topping stock update received:', data);
+    
+    // Only process if branch ID matches
+    const currentBranchId = document.querySelector('.topping-input')?.dataset.branchId;
+    if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
+        console.log('Branch ID mismatch, ignoring update');
+        return;
+    }
+    
+    // Find all topping inputs that match the updated stock
+    const toppingInputs = document.querySelectorAll(`.topping-input[data-topping-id="${data.toppingId}"]`);
+    
+    if (toppingInputs.length === 0) {
+        console.log('No matching toppings found for toppingId:', data.toppingId);
+        return;
+    }
+    
+    toppingInputs.forEach(input => {
+        // Update the stock quantity data attribute
+        input.dataset.stockQuantity = data.stockQuantity;
+        
+        // Get the label element (parent of input)
+        const label = input.closest('label');
+        
+        // Get the stock display element
+        let stockDisplay = label.querySelector('.stock-display');
+        
+        // If stock is 0, hide the entire topping
+        if (data.stockQuantity <= 0) {
+            // If this topping is currently checked, uncheck it
+            if (input.checked) {
+                input.checked = false;
+                input.dispatchEvent(new Event('change'));
+            }
+            
+            // Hide the entire topping
+            label.style.display = 'none';
+        } else {
+            // Show the topping
+            label.style.display = 'block';
+            
+            // Update or create stock display
+            if (!stockDisplay) {
+                stockDisplay = document.createElement('div');
+                stockDisplay.className = 'absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display';
+                label.querySelector('.relative').appendChild(stockDisplay);
+            }
+            
+            // Only show stock display if quantity is less than 5
+            if (data.stockQuantity < 5) {
+                stockDisplay.style.display = 'block';
+                stockDisplay.textContent = `Còn ${data.stockQuantity}`;
+                stockDisplay.className = 'absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display';
+            } else {
+                stockDisplay.style.display = 'none';
+            }
+            
+            // Enable the input
+            input.disabled = false;
+            label.classList.remove('opacity-50', 'cursor-not-allowed');
+            label.classList.add('hover:bg-gray-50');
+        }
+    });
+    
+    // Update overall product availability
+    updateProductAvailability();
+});

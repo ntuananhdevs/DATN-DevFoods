@@ -6,6 +6,9 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Passport\Passport;
 use App\Models\BranchStock;
+use App\Models\ToppingStock;
+use App\Observers\BranchStockObserver;
+use App\Observers\ToppingStockObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
         Passport::ignoreRoutes();
+
+        // Register BranchStock Observer
+        BranchStock::observe(BranchStockObserver::class);
+        ToppingStock::observe(ToppingStockObserver::class);
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));

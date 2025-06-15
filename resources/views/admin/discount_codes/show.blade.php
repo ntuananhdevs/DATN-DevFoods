@@ -587,24 +587,102 @@
         </div>
         
         <div class="detail-content">
-            @if ($discountCode->products && $discountCode->products->isNotEmpty())
+            @php
+                $applicableItems = $discountCode->applicable_items ?? 'all_items';
+            @endphp
+            
+            @if ($applicableItems === 'all_items')
+                <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #9ca3af;">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500;">Áp dụng cho tất cả sản phẩm</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem;">Mã giảm giá này có thể được sử dụng cho tất cả sản phẩm, danh mục và combo.</p>
+                </div>
+            @elseif ($applicableItems === 'all_categories')
+                <div class="empty-state bg-indigo-50 border-indigo-200">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #6366f1;">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #4f46e5;">Áp dụng cho tất cả danh mục</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #6366f1;">Mã giảm giá này có thể được sử dụng cho tất cả sản phẩm trong tất cả danh mục.</p>
+                </div>
+            @elseif ($applicableItems === 'all_combos')
+                <div class="empty-state bg-amber-50 border-amber-200">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #d97706;">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.29 7 12 12 20.71 7"/>
+                        <line x1="12" y1="22" x2="12" y2="12"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #b45309;">Áp dụng cho tất cả combo</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #d97706;">Mã giảm giá này có thể được sử dụng cho tất cả combo sản phẩm.</p>
+                </div>
+            @elseif ($discountCode->products && $discountCode->products->isNotEmpty())
                 <div class="info-value">
                     @php
-                        $products = $discountCode->products->pluck('product.name')->filter();
-                        $categories = $discountCode->products->pluck('category.name')->filter();
-                        $combos = $discountCode->products->pluck('combo.name')->filter();
+                        $products = $discountCode->products->whereNotNull('product_id')->pluck('product.name')->filter();
+                        $categories = $discountCode->products->whereNotNull('category_id')->pluck('category.name')->filter();
+                        $combos = $discountCode->products->whereNotNull('combo_id')->pluck('combo.name')->filter();
                     @endphp
                     
                     @if($products->isNotEmpty())
-                        <strong>Sản phẩm:</strong> {{ $products->implode(', ') }}<br>
+                        <div class="mb-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                                    <path d="M3 6h18"/>
+                                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                                </svg>
+                                Sản phẩm cụ thể:
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($products as $product)
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200">
+                                        {{ $product }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
                     @endif
                     
                     @if($categories->isNotEmpty())
-                        <strong>Danh mục:</strong> {{ $categories->implode(', ') }}<br>
+                        <div class="mb-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Danh mục cụ thể:
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($categories as $category)
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                                        {{ $category }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
                     @endif
                     
                     @if($combos->isNotEmpty())
-                        <strong>Combo:</strong> {{ $combos->implode(', ') }}
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                    <polyline points="3.29 7 12 12 20.71 7"/>
+                                    <line x1="12" y1="22" x2="12" y2="12"/>
+                                </svg>
+                                Combo cụ thể:
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($combos as $combo)
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                                        {{ $combo }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
                     @endif
                 </div>
             @else

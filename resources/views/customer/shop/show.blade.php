@@ -274,6 +274,9 @@
                                    value="{{ $topping->id }}"
                                    class="sr-only topping-input"
                                    data-price="{{ $topping->price }}"
+                                   data-topping-id="{{ $topping->id }}"
+                                   data-branch-id="{{ $selectedBranchId }}"
+                                   data-stock-quantity="{{ $topping->toppingStocks->first() ? $topping->toppingStocks->first()->stock_quantity : 0 }}"
                                    {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                             <div class="relative aspect-square rounded-lg overflow-hidden border group-hover:border-orange-500 transition-colors">
                                 @if($topping->image)
@@ -295,7 +298,7 @@
                                         $stockQuantity = $toppingStock ? $toppingStock->stock_quantity : 0;
                                     @endphp
                                     @if($stockQuantity < 5)
-                                        <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1">
+                                        <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display">
                                             Còn {{ $stockQuantity }}
                                         </div>
                                     @endif

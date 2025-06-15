@@ -70,4 +70,9 @@ class ProductVariant extends Model
     {
         return $this->hasMany(ProductVariantDetail::class);
     }
+    
+    public function discountCodes()
+    {
+        return $this->hasMany(DiscountCodeProductVariant::class);
+    }
 }

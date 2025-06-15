@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\ToppingStock;
 use Illuminate\Support\Facades\Log;
-use App\Events\Customer\StockUpdated;
 
 class ProductController extends Controller
 {
@@ -622,9 +621,6 @@ class ProductController extends Controller
                             ],
                             ['stock_quantity' => $quantity]
                         );
-
-                        // Dispatch StockUpdated event
-                        event(new StockUpdated($branchId, $variantId, $quantity));
                     }
                 }
             }
@@ -656,9 +652,6 @@ class ProductController extends Controller
                             ],
                             ['stock_quantity' => $quantity]
                         );
-
-                        // Dispatch StockUpdated event for toppings
-                        event(new StockUpdated($branchId, $toppingId, $quantity));
                     }
                 }
             }
@@ -892,16 +885,25 @@ class ProductController extends Controller
                         if (!$branchExists) continue;
 
                         // Update branch stock
-                        BranchStock::updateOrCreate(
-                            [
+                        $branchStock = DB::table('branch_stocks')
+                            ->where('branch_id', $branchId)
+                            ->where('product_variant_id', $variantId)
+                            ->first();
+
+                        if ($branchStock) {
+                            DB::table('branch_stocks')
+                                ->where('branch_id', $branchId)
+                                ->where('product_variant_id', $variantId)
+                                ->update(['stock_quantity' => $quantity]);
+                        } else {
+                            DB::table('branch_stocks')->insert([
                                 'branch_id' => $branchId,
                                 'product_variant_id' => $variantId,
-                            ],
-                            ['stock_quantity' => $quantity]
-                        );
-
-                        // Dispatch StockUpdated event
-                        event(new StockUpdated($branchId, $variantId, $quantity));
+                                'stock_quantity' => $quantity,
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                        }
                     }
                 }
             }
@@ -933,9 +935,6 @@ class ProductController extends Controller
                             ],
                             ['stock_quantity' => $quantity]
                         );
-
-                        // Dispatch StockUpdated event for toppings
-                        event(new StockUpdated($branchId, $toppingId, $quantity));
                     }
                 }
             }
