@@ -298,8 +298,6 @@
         <form method="POST" action="{{ route('admin.discount_codes.update', $discountCode->id) }}">
             @csrf
             @method('PUT')
-            <!-- Hidden input to store applied_ids -->
-            <input type="hidden" name="applied_ids" id="applied_ids" value="{{ json_encode(array_merge($selectedProducts, $selectedCategories, $selectedCombos, $selectedVariants)) }}">
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Basic Information -->
@@ -1091,8 +1089,8 @@
         toggleItemsSelection();
         validateDates();
         
-        // Initialize applied_ids with the current selections
-        setTimeout(updateAppliedIds, 500); // Delay to ensure all items are loaded
+        // Log selected items after initial load
+        setTimeout(logSelectedItems, 500); // Delay to ensure all items are loaded
         
         console.log('Initial applicable_items value:', '{{ $discountCode->applicable_items }}');
         console.log('Initial selectedComboIds:', selectedComboIds);
@@ -1715,11 +1713,11 @@
                             
                             // Add change event listeners to the newly created checkboxes
                             container.querySelectorAll(`input[name="${fieldName}[]"]`).forEach(checkbox => {
-                                checkbox.addEventListener('change', updateAppliedIds);
+                                checkbox.addEventListener('change', logSelectedItems);
                             });
                             
-                            // Update applied_ids after loading items
-                            updateAppliedIds();
+                            // Log selected items after loading
+                            logSelectedItems();
                         } else {
                             console.error(`Invalid data format for ${type}:`, data);
                             container.innerHTML = `
@@ -1858,11 +1856,11 @@
                             
                             // Add change event listeners to the newly created variant checkboxes
                             variantContainer.querySelectorAll('input[name="variant_ids[]"]').forEach(checkbox => {
-                                checkbox.addEventListener('change', updateAppliedIds);
+                                checkbox.addEventListener('change', logSelectedItems);
                             });
                             
-                            // Update applied_ids after loading variants
-                            updateAppliedIds();
+                            // Log selected items after loading variants
+                            logSelectedItems();
                         }
                     } else {
                         console.error('Error fetching variants:', data ? data.message : 'No data received');
@@ -1946,8 +1944,8 @@
             });
         }
         
-        // Function to update the applied_ids hidden field
-        function updateAppliedIds() {
+        // Function for logging selected items (for debugging)
+        function logSelectedItems() {
             const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
             let selectedIds = [];
             
@@ -1956,33 +1954,30 @@
                 case 'specific_products':
                     const productCheckboxes = document.querySelectorAll('input[name="product_ids[]"]:checked');
                     selectedIds = Array.from(productCheckboxes).map(cb => cb.value);
+                    console.log('Selected products:', selectedIds);
                     break;
                     
                 case 'specific_categories':
                     const categoryCheckboxes = document.querySelectorAll('input[name="category_ids[]"]:checked');
                     selectedIds = Array.from(categoryCheckboxes).map(cb => cb.value);
+                    console.log('Selected categories:', selectedIds);
                     break;
                     
                 case 'specific_combos':
                     const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');
                     selectedIds = Array.from(comboCheckboxes).map(cb => cb.value);
+                    console.log('Selected combos:', selectedIds);
                     break;
                     
                 case 'specific_variants':
                     const variantCheckboxes = document.querySelectorAll('input[name="variant_ids[]"]:checked');
                     selectedIds = Array.from(variantCheckboxes).map(cb => cb.value);
+                    console.log('Selected variants:', selectedIds);
                     break;
-            }
-            
-            // Update the hidden field
-            const appliedIdsInput = document.getElementById('applied_ids');
-            if (appliedIdsInput) {
-                appliedIdsInput.value = JSON.stringify(selectedIds);
-                console.log('Updated applied_ids:', selectedIds);
             }
         }
         
-        // Add event listeners to all checkboxes to update applied_ids when selection changes
+        // Add event listeners to all checkboxes to log selected items when selection changes
         const allCheckboxSelectors = [
             'input[name="product_ids[]"]',
             'input[name="category_ids[]"]',
@@ -1992,13 +1987,13 @@
         
         allCheckboxSelectors.forEach(selector => {
             document.querySelectorAll(selector).forEach(checkbox => {
-                checkbox.addEventListener('change', updateAppliedIds);
+                checkbox.addEventListener('change', logSelectedItems);
             });
         });
         
-        // Also update applied_ids when the applicable_items radio buttons change
+        // Also log selected items when the applicable_items radio buttons change
         document.querySelectorAll('input[name="applicable_items"]').forEach(radio => {
-            radio.addEventListener('change', updateAppliedIds);
+            radio.addEventListener('change', logSelectedItems);
         });
         
         // Add form submission handler to log data
@@ -2009,8 +2004,8 @@
                 const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
                 console.log('Form is being submitted with applicable_items:', applicableItemsValue);
                 
-                // Update applied_ids one last time before submission
-                updateAppliedIds();
+                // Log selected items one last time before submission
+                logSelectedItems();
                 
                 // Check for combo checkboxes
                 const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');

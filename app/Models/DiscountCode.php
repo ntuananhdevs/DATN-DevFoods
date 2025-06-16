@@ -208,4 +208,17 @@ class DiscountCode extends Model
     {
         return $this->applicable_items === self::APPLICABLE_ITEMS_SPECIFIC_VARIANTS;
     }
+
+    /**
+     * Get all combo IDs from the applied_ids field if applicable_items is combos_only or specific_combos
+     * 
+     * @return array
+     */
+    public function getAppliedComboIds()
+    {
+        if (in_array($this->applicable_items, ['combos_only', 'specific_combos'])) {
+            return $this->specificCombos()->pluck('combo_id')->toArray();
+        }
+        return [];
+    }
 }
