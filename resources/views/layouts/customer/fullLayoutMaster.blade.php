@@ -167,7 +167,6 @@
 
     <!-- Navbar -->
     @include('partials.customer.header')
-
     <!-- Main Content -->
     <main>
         @yield('content')
@@ -381,6 +380,36 @@
         });
     </script>
     
+    <!-- Dropdown Menu JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownButton = document.getElementById('user-dropdown-button');
+            const dropdownMenu = document.getElementById('user-dropdown-menu');
+            
+            if (dropdownButton && dropdownMenu) {
+                // Toggle dropdown khi click button
+                dropdownButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('hidden');
+                });
+                
+                // Đóng dropdown khi click bên ngoài
+                document.addEventListener('click', function(e) {
+                    if (!dropdownButton.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                        dropdownMenu.classList.add('hidden');
+                    }
+                });
+                
+                // Đóng dropdown khi nhấn ESC
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        dropdownMenu.classList.add('hidden');
+                    }
+                });
+            }
+        });
+    </script>
+
     @yield('scripts')
     @stack('scripts')
 </body>

@@ -24,7 +24,6 @@ use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
 use App\Http\Controllers\Api\Customer\FavoriteController as ApiCustomerFavoriteController;
 use App\Http\Controllers\Api\Customer\ProductVariantController as ApiCustomerProductVariantController;
-use App\Http\Controllers\Api\Customer\BranchController as ApiCustomerBranchController;
 use App\Http\Controllers\Api\Customer\CartController as ApiCustomerCartController;
 
 // ===== WEB ROUTES (giao diện web, view) =====
@@ -100,7 +99,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/phone-required', [CustomerAuthController::class, 'updatePhone'])->name('customer.phone-required.post');
 });
 
-// ===== API ROUTES (prefix /api/...) =====
 Route::prefix('api')->group(function () {
     Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
     Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
@@ -112,8 +110,8 @@ Route::prefix('api')->group(function () {
     // Customer API
     Route::prefix('customer')->group(function () {
         Route::post('/products/get-variant', [ApiCustomerProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
-        Route::post('/branches/set-selected', [ApiCustomerBranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
-        Route::get('/branches/nearest', [ApiCustomerBranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
+        Route::post('/branches/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
+        Route::get('/branches/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
     });
 
     // Firebase Auth (Google)
