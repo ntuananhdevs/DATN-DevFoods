@@ -12,7 +12,7 @@
 <div class="bg-gradient-to-r from-orange-500 to-red-500 py-8">
     <div class="container mx-auto px-4">
         <div class="flex items-center">
-            <a href="/profile" class="text-white hover:text-white/80 mr-2">
+            <a href="{{ route('customer.profile') }}" class="text-white hover:text-white/80 mr-2">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <h1 class="text-2xl md:text-3xl font-bold text-white">Cài Đặt Tài Khoản</h1>
@@ -73,7 +73,6 @@
 
         <!-- Main Content -->
         <div class="lg:w-3/4">
-            <!-- Password & Security Section -->
             <section id="password" class="mb-10">
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div class="p-6 border-b border-gray-100">
@@ -81,21 +80,21 @@
                     </div>
                     
                     <div class="p-6">
-                        <form id="password-form" class="space-y-6">
+                        <form id="password-form" action="{{ route('customer.password.update') }}" method="POST" class="space-y-6">
+                            @csrf
+                            @method('PUT')
+
                             <div>
                                 <label for="current_password" class="block text-sm font-medium mb-2">Mật khẩu hiện tại <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <input type="password" id="current_password" name="current_password" placeholder="Nhập mật khẩu hiện tại" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-password">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
+                                    <input type="password" id="current_password" name="current_password" placeholder="Nhập mật khẩu hiện tại" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" required>
                                 </div>
                             </div>
                             
                             <div>
                                 <label for="new_password" class="block text-sm font-medium mb-2">Mật khẩu mới <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <input type="password" id="new_password" name="new_password" placeholder="Nhập mật khẩu mới" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <input type="password" id="new_password" name="password" placeholder="Nhập mật khẩu mới" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" required>
                                     <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-password">
                                         <i class="fas fa-eye"></i>
                                     </button>
@@ -114,7 +113,7 @@
                             <div>
                                 <label for="confirm_password" class="block text-sm font-medium mb-2">Xác nhận mật khẩu mới <span class="text-red-500">*</span></label>
                                 <div class="relative">
-                                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Nhập lại mật khẩu mới" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <input type="password" id="confirm_password" name="password_confirmation" placeholder="Nhập lại mật khẩu mới" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" required>
                                     <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 toggle-password">
                                         <i class="fas fa-eye"></i>
                                     </button>
@@ -731,8 +730,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (passwordForm) {
         passwordForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
-            // Basic form validation
             const currentPassword = document.getElementById('current_password').value;
             const newPassword = document.getElementById('new_password').value;
             const confirmPassword = document.getElementById('confirm_password').value;
@@ -741,24 +738,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast('Vui lòng điền đầy đủ thông tin');
                 return;
             }
-            
             if (newPassword !== confirmPassword) {
                 showToast('Mật khẩu mới không khớp');
                 return;
             }
-            
-            // Password strength validation
             const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
             if (!passwordRegex.test(newPassword)) {
-                showToast('Mật khẩu mới không đủ mạnh');
+                showToast('Mật khẩu mới không đủ mạnh. Hãy đảm bảo mật khẩu có đủ 8 ký tự, chữ hoa, chữ thường, số và ký tự đặc biệt.');
                 return;
             }
             
-            // Show success modal
-            document.getElementById('success-modal').classList.remove('hidden');
-            
-            // Reset form
-            passwordForm.reset();
+            const formData = new FormData(this);
+            const actionUrl = this.action;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            fetch(actionUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                if (status === 200) {
+                    showToast(body.message);
+                    document.getElementById('success-modal').classList.remove('hidden');
+                    passwordForm.reset();
+                } else {
+                    if (body.errors) {
+                        let firstError = Object.values(body.errors)[0][0];
+                        showToast(firstError);
+                    } else {
+                        showToast(body.message || 'Đã có lỗi xảy ra.');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                showToast('Lỗi kết nối. Vui lòng thử lại.');
+            });
         });
     }
     
