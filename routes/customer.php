@@ -90,6 +90,8 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
     Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
     Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+    Route::put('/profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.password.update');
+    Route::patch('/profile/update', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
 });
 
 // Phone Required routes (không cần phone.required middleware)
