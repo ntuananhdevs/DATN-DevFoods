@@ -409,16 +409,16 @@
                                     <label for="applicable_items_products">Sản phẩm cụ thể</label>
                                 </div>
                                 <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_variants" value="specific_variants" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_variants' ? 'checked' : '' }}>
+                                    <label for="applicable_items_variants">Biến thể sản phẩm cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
                                     <input type="radio" name="applicable_items" id="applicable_items_categories" value="specific_categories" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_categories' ? 'checked' : '' }}>
                                     <label for="applicable_items_categories">Danh mục cụ thể</label>
                                 </div>
                                 <div class="checkbox-group">
-                                    <input type="radio" name="applicable_items" id="applicable_items_combos" value="combos_only" {{ old('applicable_items', $discountCode->applicable_items) == 'combos_only' ? 'checked' : '' }}>
+                                    <input type="radio" name="applicable_items" id="applicable_items_combos" value="specific_combos" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_combos' ? 'checked' : '' }}>
                                     <label for="applicable_items_combos">Combo cụ thể</label>
-                                </div>
-                                <div class="checkbox-group">
-                                    <input type="radio" name="applicable_items" id="applicable_items_all_combos" value="all_combos" {{ old('applicable_items', $discountCode->applicable_items) == 'all_combos' ? 'checked' : '' }}>
-                                    <label for="applicable_items_all_combos">Tất cả combo</label>
                                 </div>
                             </div>
                             @error('applicable_items')
@@ -516,7 +516,7 @@
                             </div>
                         </div>
 
-                        <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'combos_only') style="display: none;" @endif>
+                        <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_combos') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn combo</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
@@ -557,6 +557,45 @@
                                 <div class="text-right mt-2">
                                     <span class="text-sm text-blue-600 cursor-pointer select-all-combos">Chọn tất cả</span> | 
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="variants_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_variants') style="display: none;" @endif>
+                            <label class="form-label font-medium">Chọn biến thể sản phẩm</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Mẹo:</strong> Biến thể sản phẩm bao gồm tên sản phẩm và các thuộc tính biến thể (kích thước, màu sắc, v.v).
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="relative mb-2">
+                                    <input type="text" id="variant_search" placeholder="Tìm kiếm biến thể sản phẩm..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card" id="variants_container">
+                                    <!-- Hidden element to store selected variants data -->
+                                    <script id="selected_variants_data" type="application/json">
+                                        @json($selectedVariants)
+                                    </script>
+                                    <!-- Variant items will be loaded dynamically -->
+                                    <div class="col-span-full p-4 text-center">
+                                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                        <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách biến thể sản phẩm...</p>
+                                    </div>
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-variants">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-variants">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
                         </div>
@@ -977,6 +1016,14 @@
         var selectedCategoryIds = JSON.parse('@json($selectedCategories)');
         var selectedComboIds = JSON.parse('@json($selectedCombos)');
         
+        // Convert IDs to integers to ensure proper comparison
+        selectedProductIds = selectedProductIds.map(id => parseInt(id));
+        selectedCategoryIds = selectedCategoryIds.map(id => parseInt(id));
+        selectedComboIds = selectedComboIds.map(id => parseInt(id));
+        
+        // Flag to track initial load
+        window.initialLoadComplete = false;
+        
         console.log('Selected Products:', selectedProductIds);
         console.log('Selected Categories:', selectedCategoryIds);
         console.log('Selected Combos:', selectedComboIds);
@@ -989,10 +1036,6 @@
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': csrfToken
-            },
-            beforeSend: function(xhr, settings) {
-                console.log('Sending AJAX request to:', settings.url);
-                console.log('Request data:', settings.data);
             }
         });
         
@@ -1004,6 +1047,7 @@
         const productsSelectionDiv = document.getElementById('products_selection');
         const categoriesSelectionDiv = document.getElementById('categories_selection');
         const combosSelectionDiv = document.getElementById('combos_selection');
+        const variantsSelectionDiv = document.getElementById('variants_selection');
         const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
         
         // Branch checkboxes
@@ -1045,15 +1089,53 @@
         toggleItemsSelection();
         validateDates();
         
-        // Tải danh sách sản phẩm, danh mục, combo khi trang được tải
-        const initialSelectedItem = document.querySelector('input[name="applicable_items"]:checked').value;
-        if (initialSelectedItem === 'specific_products') {
-            fetchItemsByType('products');
-        } else if (initialSelectedItem === 'specific_categories') {
-            fetchItemsByType('categories');
-        } else if (initialSelectedItem === 'combos_only') {
-            fetchItemsByType('combos');
+        // Log selected items after initial load
+        setTimeout(logSelectedItems, 500); // Delay to ensure all items are loaded
+        
+        console.log('Initial applicable_items value:', '{{ $discountCode->applicable_items }}');
+        console.log('Initial selectedComboIds:', selectedComboIds);
+        
+        // Special handling for combos - ensure they're visible if applicable_items is specific_combos
+        if ('{{ $discountCode->applicable_items }}' === 'specific_combos') {
+            if (combosSelectionDiv) {
+                combosSelectionDiv.style.display = 'block';
+                console.log('Forcing display of combos selection div');
+            }
+            
+            // Force check the combos radio button
+            const combosRadio = document.getElementById('applicable_items_combos');
+            if (combosRadio) {
+                combosRadio.checked = true;
+                console.log('Forcing combos radio button to be checked');
+            }
         }
+        
+        // Special handling for variants - ensure they're visible if applicable_items is specific_variants
+        if ('{{ $discountCode->applicable_items }}' === 'specific_variants') {
+            if (variantsSelectionDiv) {
+                variantsSelectionDiv.style.display = 'block';
+                console.log('Forcing display of variants selection div');
+            }
+            
+            // Force check the variants radio button
+            const variantsRadio = document.getElementById('applicable_items_variants');
+            if (variantsRadio) {
+                variantsRadio.checked = true;
+                console.log('Forcing variants radio button to be checked');
+            }
+        }
+        
+        // Load data for all item types to ensure they're available when needed
+        fetchItemsByType('products');
+        fetchItemsByType('categories');
+        fetchItemsByType('combos');
+        fetchProductVariants();
+        
+        // Set the flag to indicate initial loading is complete
+        setTimeout(() => {
+            window.initialLoadComplete = true;
+            console.log('Initial load complete');
+        }, 1000);
         
         // Add event listeners for changes
         branchRadios.forEach(radio => {
@@ -1064,21 +1146,21 @@
             radio.addEventListener('change', function() {
                 toggleItemsSelection();
                 
-                // Tự động chọn tất cả combo khi chọn "all_combos"
-                if (this.value === 'all_combos' && combosSelectionDiv) {
-                    const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
-                    comboCheckboxes.forEach(checkbox => checkbox.checked = true);
-                }
-                
-                // Tải danh sách sản phẩm, danh mục, combo khi chọn vào chúng
+                // Based on the selected value, ensure the correct data is loaded
                 const selectedValue = this.value;
                 
                 if (selectedValue === 'specific_products') {
+                    // Ensure products are loaded
                     fetchItemsByType('products');
                 } else if (selectedValue === 'specific_categories') {
+                    // Ensure categories are loaded
                     fetchItemsByType('categories');
-                } else if (selectedValue === 'combos_only') {
+                } else if (selectedValue === 'specific_combos') {
+                    // Ensure combos are loaded
                     fetchItemsByType('combos');
+                } else if (selectedValue === 'specific_variants') {
+                    // Ensure variants are loaded
+                    fetchProductVariants();
                 }
             });
         });
@@ -1136,7 +1218,7 @@
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
-
+        
         if (unselectAllBranches) {
             unselectAllBranches.addEventListener('click', function() {
                 const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
@@ -1182,7 +1264,7 @@
                     success: function(data) {
                         if (data.success) {
                             fetchItemsByType('products');
-                        } else {
+                    } else {
                             console.error('Error searching products:', data.message);
                         }
                     },
@@ -1289,12 +1371,13 @@
         
         function toggleItemsSelection() {
             const selectedItems = document.querySelector('input[name="applicable_items"]:checked').value;
-            console.log('Selected items:', selectedItems);
+            console.log('toggleItemsSelection called with value:', selectedItems);
             
             // Ẩn tất cả các phần chọn trước
             if (productsSelectionDiv) productsSelectionDiv.style.display = 'none';
             if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'none';
             if (combosSelectionDiv) combosSelectionDiv.style.display = 'none';
+            if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'none';
             
             // Hiển thị phần chọn tương ứng với lựa chọn
             switch (selectedItems) {
@@ -1304,25 +1387,12 @@
                 case 'specific_categories':
                     if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'block';
                     break;
-                case 'combos_only':
+                case 'specific_combos':
                     if (combosSelectionDiv) combosSelectionDiv.style.display = 'block';
                     break;
-            }
-            
-            // Bỏ chọn các checkbox không liên quan
-            if (selectedItems !== 'specific_products' && productsSelectionDiv) {
-                const productCheckboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
-                productCheckboxes.forEach(checkbox => checkbox.checked = false);
-            }
-            
-            if (selectedItems !== 'specific_categories' && categoriesSelectionDiv) {
-                const categoryCheckboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
-                categoryCheckboxes.forEach(checkbox => checkbox.checked = false);
-            }
-            
-            if (selectedItems !== 'combos_only' && combosSelectionDiv) {
-                const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
-                comboCheckboxes.forEach(checkbox => checkbox.checked = false);
+                case 'specific_variants':
+                    if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'block';
+                    break;
             }
         }
         
@@ -1335,7 +1405,7 @@
                 endDateField.value = startDate.toISOString().split('T')[0];
             }
         }
-        
+
         // Usage Type and User Selection
         const usageTypeSelect = document.getElementById('usage_type');
         const usersSelectionDiv = document.getElementById('users_selection');
@@ -1388,7 +1458,7 @@
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
-        
+
         function toggleUserSelection() {
             if (!usersSelectionDiv || !usageTypeSelect) return;
             
@@ -1456,54 +1526,54 @@
                 success: function(data) {
                     console.log('User data received:', data);
                     if (data.success) {
-                        // Update user count display
-                        if (userCountDisplay) {
-                            userCountDisplay.textContent = `Đang hiển thị ${data.count} người dùng hợp lệ`;
-                        }
-                        
-                        // Generate HTML for users
-                        if (userContainer) {
-                            if (data.users.length === 0) {
-                                userContainer.innerHTML = `
-                                    <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
-                                        <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy người dùng nào với hạng đã chọn.</p>
-                                    </div>
-                                `;
-                            } else {
-                                let usersHtml = '';
-                                
-                                data.users.forEach(user => {
-                                    usersHtml += `
-                                        <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${user.rank_class}">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                                </svg>
-                                                ${user.rank_name || 'Chưa xếp hạng'}
-                                            </span>
-                                            <input type="checkbox" name="assigned_users[]" id="user_${user.id}" value="${user.id}" ${user.is_assigned ? 'checked' : ''}>
-                                            <label for="user_${user.id}" class="flex flex-col">
-                                                <span class="font-medium">${user.full_name}</span>
-                                                <span class="text-xs text-gray-500">${user.email}</span>
-                                                <span class="text-xs text-gray-500">${user.phone}</span>
-                                            </label>
-                                        </div>
-                                    `;
-                                });
-                                
-                                userContainer.innerHTML = usersHtml;
-                            }
-                        }
-                    } else {
-                        console.error('Error fetching users:', data.message);
-                        if (userContainer) {
+                    // Update user count display
+                    if (userCountDisplay) {
+                        userCountDisplay.textContent = `Đang hiển thị ${data.count} người dùng hợp lệ`;
+                    }
+                    
+                    // Generate HTML for users
+                    if (userContainer) {
+                        if (data.users.length === 0) {
                             userContainer.innerHTML = `
-                                <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                                    <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
+                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy người dùng nào với hạng đã chọn.</p>
                                 </div>
                             `;
+                        } else {
+                            let usersHtml = '';
+                            
+                            data.users.forEach(user => {
+                                usersHtml += `
+                                    <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${user.rank_class}">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                            ${user.rank_name || 'Chưa xếp hạng'}
+                                        </span>
+                                        <input type="checkbox" name="assigned_users[]" id="user_${user.id}" value="${user.id}" ${user.is_assigned ? 'checked' : ''}>
+                                        <label for="user_${user.id}" class="flex flex-col">
+                                            <span class="font-medium">${user.full_name}</span>
+                                            <span class="text-xs text-gray-500">${user.email}</span>
+                                            <span class="text-xs text-gray-500">${user.phone}</span>
+                                        </label>
+                                    </div>
+                                `;
+                            });
+                            
+                            userContainer.innerHTML = usersHtml;
                         }
                     }
+                } else {
+                    console.error('Error fetching users:', data.message);
+                    if (userContainer) {
+                        userContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
+                            </div>
+                        `;
+                    }
+                }
                 },
                 error: function(xhr, status, error) {
                     console.error('AJAX error:', error);
@@ -1604,9 +1674,13 @@
                                     selectedItems = selectedCategoryIds || [];
                                 } else {
                                     selectedItems = selectedComboIds || [];
+                                    console.log(`Loading combos with selectedComboIds:`, selectedComboIds);
                                 }
                                 
-                                const isChecked = selectedItems.includes(item.id) ? 'checked' : '';
+                                // Convert item.id to integer for comparison
+                                const itemId = parseInt(item.id);
+                                const isChecked = selectedItems.includes(itemId) ? 'checked' : '';
+                                console.log(`Item ${itemId} (${item.name}) is ${isChecked ? 'checked' : 'not checked'}`);
                                 
                                 itemsHtml += `
                                     <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
@@ -1636,6 +1710,14 @@
                             });
                             
                             container.innerHTML = itemsHtml;
+                            
+                            // Add change event listeners to the newly created checkboxes
+                            container.querySelectorAll(`input[name="${fieldName}[]"]`).forEach(checkbox => {
+                                checkbox.addEventListener('change', logSelectedItems);
+                            });
+                            
+                            // Log selected items after loading
+                            logSelectedItems();
                         } else {
                             console.error(`Invalid data format for ${type}:`, data);
                             container.innerHTML = `
@@ -1683,6 +1765,271 @@
                             </button>
                         </div>
                     `;
+                }
+            });
+        }
+        
+        /**
+         * Fetch product variants for the variants selection
+         */
+        function fetchProductVariants() {
+            const variantContainer = document.getElementById('variants_container');
+            const variantSearch = document.getElementById('variant_search');
+            const selectAllVariants = document.querySelector('.select-all-variants');
+            const unselectAllVariants = document.querySelector('.unselect-all-variants');
+            
+            if (!variantContainer) {
+                console.error('Variant container not found!');
+                return;
+            }
+            
+            // Show loading indicator
+            variantContainer.innerHTML = `
+                <div class="col-span-full p-4 text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách biến thể sản phẩm...</p>
+                </div>
+            `;
+            
+            // Get selected variants from the hidden data element
+            let selectedVariantIds = [];
+            try {
+                const selectedVariantsData = document.getElementById('selected_variants_data');
+                if (selectedVariantsData) {
+                    selectedVariantIds = JSON.parse(selectedVariantsData.textContent) || [];
+                }
+            } catch (e) {
+                console.error('Error parsing selected variants:', e);
+                selectedVariantIds = [];
+            }
+            
+            console.log('Selected Variants:', selectedVariantIds);
+            
+            // Make AJAX request to get product variants
+            $.ajax({
+                url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    type: 'variants',
+                    search: variantSearch ? variantSearch.value : '',
+                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                success: function(data) {
+                    console.log('Variants data received:', data);
+                    
+                    if (data && data.success) {
+                        if (!data.items || data.items.length === 0) {
+                            variantContainer.innerHTML = `
+                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy biến thể sản phẩm nào.</p>
+                                </div>
+                            `;
+                        } else {
+                            let variantsHtml = '';
+                            
+                            data.items.forEach(variant => {
+                                const isChecked = selectedVariantIds.includes(parseInt(variant.id)) ? 'checked' : '';
+                                const variantPrice = parseFloat(variant.price).toLocaleString();
+                                
+                                variantsHtml += `
+                                    <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                                            </svg>
+                                            BT
+                                        </span>
+                                        <input type="checkbox" name="variant_ids[]" id="variant_${variant.id}" value="${variant.id}" ${isChecked}>
+                                        <label for="variant_${variant.id}" class="flex flex-col">
+                                            <span class="font-medium">${variant.product_name}</span>
+                                            <span class="text-xs text-blue-600">${variant.variant_description}</span>
+                                            <div class="flex items-center justify-between mt-1">
+                                                <span class="text-xs text-gray-500">${variantPrice} đ</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                `;
+                            });
+                            
+                            variantContainer.innerHTML = variantsHtml;
+                            
+                            // Add change event listeners to the newly created variant checkboxes
+                            variantContainer.querySelectorAll('input[name="variant_ids[]"]').forEach(checkbox => {
+                                checkbox.addEventListener('change', logSelectedItems);
+                            });
+                            
+                            // Log selected items after loading variants
+                            logSelectedItems();
+                        }
+                    } else {
+                        console.error('Error fetching variants:', data ? data.message : 'No data received');
+                        variantContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi: Không thể tải danh sách biến thể sản phẩm.</p>
+                                <p class="text-red-500">${data && data.message ? data.message : 'Không có thông tin lỗi'}</p>
+                            </div>
+                        `;
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+                    
+                    variantContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                            <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách biến thể sản phẩm.</p>
+                            <p class="text-red-500 text-sm mt-2">${error}</p>
+                            <button class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="fetchProductVariants()">
+                                Thử lại
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        // Add event listeners for search
+        if (variantSearch) {
+            variantSearch.addEventListener('input', debounce(function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // Show loading indicator
+                if (variantContainer) {
+                    variantContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm biến thể sản phẩm...</p>
+                        </div>
+                    `;
+                }
+                
+                // Make AJAX request to search variants
+                $.ajax({
+                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        type: 'variants',
+                        search: searchTerm,
+                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            fetchProductVariants();
+                        } else {
+                            console.error('Error searching variants:', data.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
+                    }
+                });
+            }, 500));
+        }
+        
+        // Add event listeners for select/unselect all variants
+        if (selectAllVariants) {
+            selectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllVariants) {
+            unselectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        // Function for logging selected items (for debugging)
+        function logSelectedItems() {
+            const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
+            let selectedIds = [];
+            
+            // Get the selected IDs based on the applicable_items type
+            switch (applicableItemsValue) {
+                case 'specific_products':
+                    const productCheckboxes = document.querySelectorAll('input[name="product_ids[]"]:checked');
+                    selectedIds = Array.from(productCheckboxes).map(cb => cb.value);
+                    console.log('Selected products:', selectedIds);
+                    break;
+                    
+                case 'specific_categories':
+                    const categoryCheckboxes = document.querySelectorAll('input[name="category_ids[]"]:checked');
+                    selectedIds = Array.from(categoryCheckboxes).map(cb => cb.value);
+                    console.log('Selected categories:', selectedIds);
+                    break;
+                    
+                case 'specific_combos':
+                    const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');
+                    selectedIds = Array.from(comboCheckboxes).map(cb => cb.value);
+                    console.log('Selected combos:', selectedIds);
+                    break;
+                    
+                case 'specific_variants':
+                    const variantCheckboxes = document.querySelectorAll('input[name="variant_ids[]"]:checked');
+                    selectedIds = Array.from(variantCheckboxes).map(cb => cb.value);
+                    console.log('Selected variants:', selectedIds);
+                    break;
+            }
+        }
+        
+        // Add event listeners to all checkboxes to log selected items when selection changes
+        const allCheckboxSelectors = [
+            'input[name="product_ids[]"]',
+            'input[name="category_ids[]"]',
+            'input[name="combo_ids[]"]',
+            'input[name="variant_ids[]"]'
+        ];
+        
+        allCheckboxSelectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(checkbox => {
+                checkbox.addEventListener('change', logSelectedItems);
+            });
+        });
+        
+        // Also log selected items when the applicable_items radio buttons change
+        document.querySelectorAll('input[name="applicable_items"]').forEach(radio => {
+            radio.addEventListener('change', logSelectedItems);
+        });
+        
+        // Add form submission handler to log data
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Get the currently selected radio button
+                const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
+                console.log('Form is being submitted with applicable_items:', applicableItemsValue);
+                
+                // Log selected items one last time before submission
+                logSelectedItems();
+                
+                // Check for combo checkboxes
+                const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');
+                if (comboCheckboxes.length > 0) {
+                    console.log('Selected combo checkboxes:', comboCheckboxes.length);
+                    
+                    // Log each selected combo ID
+                    const selectedComboIds = Array.from(comboCheckboxes).map(cb => cb.value);
+                    console.log('Selected combo IDs:', selectedComboIds);
+                    
+                    // If combos are selected, ensure the combos radio button is checked
+                    const combosRadio = document.getElementById('applicable_items_combos');
+                    if (combosRadio) {
+                        combosRadio.checked = true;
+                        console.log('Forcing combos radio button to be checked before submission');
+                    }
+                }
+                
+                // If specific_combos is selected but no combos are checked, prevent submission
+                if (document.querySelector('input[name="applicable_items"]:checked').value === 'specific_combos' && 
+                    document.querySelectorAll('input[name="combo_ids[]"]:checked').length === 0) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn ít nhất một combo.');
+                    return false;
                 }
             });
         }

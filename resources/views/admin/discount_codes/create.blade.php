@@ -408,6 +408,10 @@
                                     <label for="applicable_items_products">Sản phẩm cụ thể</label>
                                 </div>
                                 <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_variants" value="specific_variants" {{ old('applicable_items') == 'specific_variants' ? 'checked' : '' }}>
+                                    <label for="applicable_items_variants">Biến thể sản phẩm cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
                                     <input type="radio" name="applicable_items" id="applicable_items_categories" value="specific_categories" {{ old('applicable_items') == 'specific_categories' ? 'checked' : '' }}>
                                     <label for="applicable_items_categories">Danh mục cụ thể</label>
                                 </div>
@@ -503,6 +507,31 @@
                                 <div class="text-right mt-2">
                                     <span class="text-sm text-blue-600 cursor-pointer select-all-combos">Chọn tất cả</span> | 
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="variants_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_variants' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn biến thể sản phẩm</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="relative mb-2">
+                                    <input type="text" id="variant_search" placeholder="Tìm kiếm biến thể sản phẩm..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card" id="variants_container">
+                                    <!-- Variant items will be loaded dynamically -->
+                                    <div class="col-span-full p-4 text-center">
+                                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                        <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách biến thể sản phẩm...</p>
+                                    </div>
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-variants">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-variants">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
                         </div>
@@ -899,6 +928,7 @@
 @endsection
 
 @section('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Branch selection toggle
@@ -909,7 +939,14 @@
         const productsSelectionDiv = document.getElementById('products_selection');
         const categoriesSelectionDiv = document.getElementById('categories_selection');
         const combosSelectionDiv = document.getElementById('combos_selection');
+        const variantsSelectionDiv = document.getElementById('variants_selection');
         const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
+        
+        // Product containers
+        const productContainer = document.querySelector('#products_selection .grid');
+        const categoryContainer = document.querySelector('#categories_selection .grid');
+        const comboContainer = document.querySelector('#combos_selection .grid');
+        const variantContainer = document.querySelector('#variants_selection #variants_container');
         
         // Select/Unselect all buttons
         const selectAllProducts = document.querySelector('.select-all-products');
@@ -918,11 +955,14 @@
         const unselectAllCategories = document.querySelector('.unselect-all-categories');
         const selectAllCombos = document.querySelector('.select-all-combos');
         const unselectAllCombos = document.querySelector('.unselect-all-combos');
+        const selectAllVariants = document.querySelector('.select-all-variants');
+        const unselectAllVariants = document.querySelector('.unselect-all-variants');
         const selectAllBranches = document.querySelector('.select-all-branches');
         const unselectAllBranches = document.querySelector('.unselect-all-branches');
         
         // Product search
         const productSearch = document.getElementById('product_search');
+        const variantSearch = document.getElementById('variant_search');
         
         // Date fields
         const startDateField = document.getElementById('start_date');
@@ -933,13 +973,40 @@
         toggleItemsSelection();
         validateDates();
         
+        // Tải danh sách sản phẩm, danh mục, combo khi trang được tải
+        const initialSelectedItem = document.querySelector('input[name="applicable_items"]:checked').value;
+        if (initialSelectedItem === 'specific_products') {
+            fetchItemsByType('products');
+        } else if (initialSelectedItem === 'specific_categories') {
+            fetchItemsByType('categories');
+        } else if (initialSelectedItem === 'combos_only') {
+            fetchItemsByType('combos');
+        } else if (initialSelectedItem === 'specific_variants') {
+            fetchItemsByType('variants');
+        }
+        
         // Add event listeners for changes
         branchRadios.forEach(radio => {
             radio.addEventListener('change', toggleBranchSelection);
         });
         
         itemRadios.forEach(radio => {
-            radio.addEventListener('change', toggleItemsSelection);
+            radio.addEventListener('change', function() {
+                toggleItemsSelection();
+                
+                // Tải danh sách sản phẩm, danh mục, combo khi chọn vào chúng
+                const selectedValue = this.value;
+                
+                if (selectedValue === 'specific_products') {
+                    fetchItemsByType('products');
+                } else if (selectedValue === 'specific_categories') {
+                    fetchItemsByType('categories');
+                } else if (selectedValue === 'combos_only') {
+                    fetchItemsByType('combos');
+                } else if (selectedValue === 'specific_variants') {
+                    fetchItemsByType('variants');
+                }
+            });
         });
         
         // Add event listeners for date validation
@@ -991,6 +1058,20 @@
             });
         }
         
+        if (selectAllVariants) {
+            selectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllVariants) {
+            unselectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
         if (selectAllBranches) {
             selectAllBranches.addEventListener('click', function() {
                 const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
@@ -1005,20 +1086,172 @@
             });
         }
         
+        // Add debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+        
+        // Product search with debounce
         if (productSearch) {
-            productSearch.addEventListener('input', function() {
+            productSearch.addEventListener('input', debounce(function() {
                 const searchTerm = this.value.toLowerCase();
-                const productItems = productsSelectionDiv.querySelectorAll('.checkbox-group');
                 
-                productItems.forEach(item => {
-                    const label = item.querySelector('label').textContent.toLowerCase();
-                    if (label.includes(searchTerm)) {
-                        item.style.display = '';
-                    } else {
-                        item.style.display = 'none';
+                // Show loading indicator
+                if (productContainer) {
+                    productContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm sản phẩm...</p>
+                        </div>
+                    `;
+                }
+                
+                // Make AJAX request to search products
+                $.ajax({
+                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        type: 'products',
+                        search: searchTerm,
+                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            fetchItemsByType('products');
+                        } else {
+                            console.error('Error searching products:', data.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
                     }
                 });
-            });
+            }, 500));
+        }
+        
+        // Category search with debounce
+        const categorySearch = document.getElementById('category_search');
+        if (categorySearch) {
+            categorySearch.addEventListener('input', debounce(function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // Show loading indicator
+                if (categoryContainer) {
+                    categoryContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm danh mục...</p>
+                        </div>
+                    `;
+                }
+                
+                // Make AJAX request to search categories
+                $.ajax({
+                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        type: 'categories',
+                        search: searchTerm,
+                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            fetchItemsByType('categories');
+                        } else {
+                            console.error('Error searching categories:', data.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
+                    }
+                });
+            }, 500));
+        }
+        
+        // Combo search with debounce
+        const comboSearch = document.getElementById('combo_search');
+        if (comboSearch) {
+            comboSearch.addEventListener('input', debounce(function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // Show loading indicator
+                if (comboContainer) {
+                    comboContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm combo...</p>
+                        </div>
+                    `;
+                }
+                
+                // Make AJAX request to search combos
+                $.ajax({
+                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        type: 'combos',
+                        search: searchTerm,
+                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            fetchItemsByType('combos');
+                        } else {
+                            console.error('Error searching combos:', data.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
+                    }
+                });
+            }, 500));
+        }
+        
+        // Variant search with debounce
+        if (variantSearch) {
+            variantSearch.addEventListener('input', debounce(function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // Show loading indicator
+                if (variantContainer) {
+                    variantContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm biến thể sản phẩm...</p>
+                        </div>
+                    `;
+                }
+                
+                // Make AJAX request to search variants
+                $.ajax({
+                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        type: 'variants',
+                        search: searchTerm,
+                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            fetchItemsByType('variants');
+                        } else {
+                            console.error('Error searching variants:', data.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
+                    }
+                });
+            }, 500));
         }
         
         function toggleBranchSelection() {
@@ -1029,6 +1262,9 @@
                     branchSelectionDiv.style.display = 'block';
                 } else {
                     branchSelectionDiv.style.display = 'none';
+                    // Bỏ chọn tất cả các checkbox chi nhánh khi chọn "Tất cả chi nhánh"
+                    const branchCheckboxes = document.querySelectorAll('input[name="branch_ids[]"]');
+                    branchCheckboxes.forEach(checkbox => checkbox.checked = false);
                 }
             }
         }
@@ -1036,16 +1272,47 @@
         function toggleItemsSelection() {
             const selectedItems = document.querySelector('input[name="applicable_items"]:checked').value;
             
-            if (productsSelectionDiv) {
-                productsSelectionDiv.style.display = selectedItems === 'specific_products' ? 'block' : 'none';
+            // Ẩn tất cả các phần chọn trước
+            if (productsSelectionDiv) productsSelectionDiv.style.display = 'none';
+            if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'none';
+            if (combosSelectionDiv) combosSelectionDiv.style.display = 'none';
+            if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'none';
+            
+            // Hiển thị phần chọn tương ứng với lựa chọn
+            switch (selectedItems) {
+                case 'specific_products':
+                    if (productsSelectionDiv) productsSelectionDiv.style.display = 'block';
+                    break;
+                case 'specific_categories':
+                    if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'block';
+                    break;
+                case 'combos_only':
+                    if (combosSelectionDiv) combosSelectionDiv.style.display = 'block';
+                    break;
+                case 'specific_variants':
+                    if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'block';
+                    break;
             }
             
-            if (categoriesSelectionDiv) {
-                categoriesSelectionDiv.style.display = selectedItems === 'specific_categories' ? 'block' : 'none';
+            // Bỏ chọn các checkbox không liên quan
+            if (selectedItems !== 'specific_products' && productsSelectionDiv) {
+                const productCheckboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
+                productCheckboxes.forEach(checkbox => checkbox.checked = false);
             }
             
-            if (combosSelectionDiv) {
-                combosSelectionDiv.style.display = selectedItems === 'combos_only' ? 'block' : 'none';
+            if (selectedItems !== 'specific_categories' && categoriesSelectionDiv) {
+                const categoryCheckboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
+                categoryCheckboxes.forEach(checkbox => checkbox.checked = false);
+            }
+            
+            if (selectedItems !== 'combos_only' && combosSelectionDiv) {
+                const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
+                comboCheckboxes.forEach(checkbox => checkbox.checked = false);
+            }
+            
+            if (selectedItems !== 'specific_variants' && variantsSelectionDiv) {
+                const variantCheckboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
+                variantCheckboxes.forEach(checkbox => checkbox.checked = false);
             }
         }
         
@@ -1075,44 +1342,31 @@
         // Initial state check for user selection
         toggleUserSelection();
         
+        // If initially personal is selected, load the users list
+        if (usageTypeSelect && usageTypeSelect.value === 'personal') {
+            fetchUsersByRank();
+        }
+        
         // Add event listener for usage type change
         if (usageTypeSelect) {
-            usageTypeSelect.addEventListener('change', toggleUserSelection);
+            usageTypeSelect.addEventListener('change', function() {
+                toggleUserSelection();
+                
+                // If personal is selected, load the users list
+                if (this.value === 'personal') {
+                    fetchUsersByRank();
+                }
+            });
         }
         
         // Add event listener for rank checkboxes
         if (rankCheckboxes.length > 0) {
             rankCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    // When ranks change, we need to reload the page to update the user list
-                    // This is a simple approach - in a more advanced implementation, you would use AJAX
-                    const form = this.closest('form');
-                    if (form) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = '_refresh_ranks';
-                        input.value = '1';
-                        form.appendChild(input);
-                        
-                        // Save form data to session and reload
-                        const formData = new FormData(form);
-                        
-                        // Use fetch to save form data without full submission
-                        fetch(window.location.href, {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    }
-                });
+                checkbox.addEventListener('change', fetchUsersByRank);
             });
         }
         
-        // Add event listeners for user search
+        // Add event listener for user search
         if (userSearchInput) {
             userSearchInput.addEventListener('input', function() {
                 const searchTerm = this.value.toLowerCase();
@@ -1156,6 +1410,299 @@
             } else {
                 usersSelectionDiv.style.display = 'none';
             }
+        }
+        
+        /**
+         * Fetch users by selected ranks via AJAX
+         */
+        function fetchUsersByRank() {
+            // Get all selected ranks
+            const selectedRanks = [];
+            rankCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedRanks.push(checkbox.value);
+                }
+            });
+            
+            // If no ranks selected, clear user list
+            if (selectedRanks.length === 0) {
+                const userContainer = document.querySelector('#users_selection .grid');
+                const userCountDisplay = document.querySelector('#users_selection .flex .text-xs.text-gray-500');
+                
+                if (userContainer) {
+                    userContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                            <p class="text-gray-500 dark:text-muted-foreground">Vui lòng chọn ít nhất một hạng thành viên để hiển thị danh sách người dùng.</p>
+                        </div>
+                    `;
+                }
+                if (userCountDisplay) {
+                    userCountDisplay.textContent = 'Đang hiển thị 0 người dùng hợp lệ';
+                }
+                return;
+            }
+            
+            // Show loading indicator
+            const userContainer = document.querySelector('#users_selection .grid');
+            if (userContainer) {
+                userContainer.innerHTML = `
+                    <div class="col-span-full p-4 text-center">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách người dùng...</p>
+                    </div>
+                `;
+            }
+            
+            // Make AJAX request using jQuery
+            $.ajax({
+                url: "{{ route('admin.discount_codes.users-by-rank') }}",
+                type: 'POST',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    ranks: selectedRanks,
+                    discount_code_id: null
+                }),
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                success: function(data) {
+                    const userContainer = document.querySelector('#users_selection .grid');
+                    const userCountDisplay = document.querySelector('#users_selection .flex .text-xs.text-gray-500');
+                    
+                    if (data.success) {
+                        // Update user count display
+                        if (userCountDisplay) {
+                            userCountDisplay.textContent = `Đang hiển thị ${data.count} người dùng hợp lệ`;
+                        }
+                        
+                        // Generate HTML for users
+                        if (userContainer) {
+                            if (data.users.length === 0) {
+                                userContainer.innerHTML = `
+                                    <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                                        <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy người dùng nào với hạng đã chọn.</p>
+                                    </div>
+                                `;
+                            } else {
+                                let usersHtml = '';
+                                
+                                data.users.forEach(user => {
+                                    usersHtml += `
+                                        <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${user.rank_class}">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                                ${user.rank_name || 'Chưa xếp hạng'}
+                                            </span>
+                                            <input type="checkbox" name="assigned_users[]" id="user_${user.id}" value="${user.id}" ${user.is_assigned ? 'checked' : ''}>
+                                            <label for="user_${user.id}" class="flex flex-col">
+                                                <span class="font-medium">${user.full_name}</span>
+                                                <span class="text-xs text-gray-500">${user.email}</span>
+                                                <span class="text-xs text-gray-500">${user.phone}</span>
+                                            </label>
+                                        </div>
+                                    `;
+                                });
+                                
+                                userContainer.innerHTML = usersHtml;
+                            }
+                        }
+                    } else {
+                        console.error('Error fetching users:', data.message);
+                        if (userContainer) {
+                            userContainer.innerHTML = `
+                                <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                    <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
+                                </div>
+                            `;
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+                    
+                    const userContainer = document.querySelector('#users_selection .grid');
+                    if (userContainer) {
+                        userContainer.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách người dùng.</p>
+                                <p class="text-red-500 text-sm mt-2">${error}</p>
+                            </div>
+                        `;
+                    }
+                }
+            });
+        }
+        
+        function fetchItemsByType(type) {
+            const containerMap = {
+                'products': productContainer,
+                'categories': categoryContainer,
+                'combos': comboContainer,
+                'variants': variantContainer
+            };
+            
+            const container = containerMap[type];
+            
+            if (!container) {
+                console.error(`Container for ${type} not found!`);
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="col-span-full p-4 text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách...</p>
+                </div>
+            `;
+            
+            console.log(`Fetching ${type} data...`);
+            
+            $.ajax({
+                url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    type: type,
+                    search: '',
+                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                beforeSend: function() {
+                    console.log(`Sending request for ${type}...`);
+                },
+                success: function(data) {
+                    console.log(`${type} data received:`, data);
+                    if (data && data.success) {
+                        if (data.items && data.items.length === 0) {
+                            container.innerHTML = `
+                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
+                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy dữ liệu.</p>
+                                </div>
+                            `;
+                        } else if (data.items && data.items.length > 0) {
+                            let itemsHtml = '';
+                            
+                            data.items.forEach(item => {
+                                let badgeClass, badgeIcon, badgeText;
+                                
+                                switch (type) {
+                                    case 'products':
+                                        badgeClass = 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200';
+                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+                                        badgeText = 'SP';
+                                        break;
+                                    case 'categories':
+                                        badgeClass = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200';
+                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>';
+                                        badgeText = 'DM';
+                                        break;
+                                    case 'combos':
+                                        badgeClass = 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200';
+                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>';
+                                        badgeText = 'Combo';
+                                        break;
+                                    case 'variants':
+                                        badgeClass = 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200';
+                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>';
+                                        badgeText = 'Variant';
+                                        break;
+                                }
+                                
+                                const fieldName = type === 'products' ? 'product_ids' : (type === 'categories' ? 'category_ids' : (type === 'combos' ? 'combo_ids' : 'variant_ids'));
+                                
+                                itemsHtml += `
+                                    <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${badgeClass}">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                ${badgeIcon}
+                                            </svg>
+                                            ${badgeText}
+                                        </span>
+                                        <input type="checkbox" name="${fieldName}[]" id="${type}_${item.id}" value="${item.id}">
+                                        <label for="${type}_${item.id}">
+                                            ${type === 'variants' ? 
+                                                `<div class="font-medium">${item.product_name}</div>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    <span class="font-medium">Biến thể:</span> ${item.variant_description}
+                                                </div>
+                                                <div class="flex items-center justify-between mt-1">
+                                                    <span class="text-xs text-gray-500 block">${parseFloat(item.price || 0).toLocaleString()} đ</span>
+                                                    <span class="text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 px-2 py-0.5 rounded-full">
+                                                        ${item.product_sku || 'Không có SKU'}
+                                                    </span>
+                                                </div>`
+                                            : type === 'products' ? 
+                                                `<div class="font-medium">${item.name}</div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-gray-500 block">${parseFloat(item.price || 0).toLocaleString()} đ</span>
+                                                    ${item.variant_count !== undefined ? 
+                                                        `<span class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 px-2 py-0.5 rounded-full">
+                                                            ${item.variant_count} biến thể
+                                                        </span>` : ''
+                                                    }
+                                                </div>
+                                                ${item.short_description ? `<span class="text-xs text-gray-500 block mt-1 italic">${item.short_description}</span>` : ''}`
+                                            : `<div class="font-medium">${item.name}</div>
+                                               ${item.price ? `<span class="text-xs text-gray-500 block">${parseFloat(item.price).toLocaleString()} đ</span>` : ''}`
+                                            }
+                                        </label>
+                                    </div>
+                                `;
+                            });
+                            
+                            container.innerHTML = itemsHtml;
+                        } else {
+                            console.error(`Invalid data format for ${type}:`, data);
+                            container.innerHTML = `
+                                <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                    <p class="text-red-500">Lỗi: Định dạng dữ liệu không hợp lệ</p>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        console.error(`Error fetching ${type}:`, data ? data.message : 'No data received');
+                        container.innerHTML = `
+                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                                <p class="text-red-500">Lỗi: Không thể tải danh sách.</p>
+                                <p class="text-red-500">${data && data.message ? data.message : 'Không có thông tin lỗi'}</p>
+                            </div>
+                        `;
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(`AJAX error for ${type}:`, error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+
+                    let errorMessage = 'Lỗi kết nối không xác định';
+                    
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.message) {
+                            errorMessage = response.message;
+                        } else if (response.error) {
+                            errorMessage = response.error;
+                        }
+                    } catch (e) {
+                        errorMessage = xhr.responseText || error || 'Lỗi kết nối không xác định';
+                    }
+                    
+                    container.innerHTML = `
+                        <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
+                            <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách ${type}.</p>
+                            <p class="text-red-500 text-sm mt-2">${errorMessage}</p>
+                            <p class="text-red-500 text-xs mt-1">Status: ${status}</p>
+                            <button class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="fetchItemsByType('${type}')">
+                                Thử lại
+                            </button>
+                        </div>
+                    `;
+                }
+            });
         }
     });
 </script>
