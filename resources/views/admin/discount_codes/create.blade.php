@@ -408,6 +408,10 @@
                                     <label for="applicable_items_products">Sản phẩm cụ thể</label>
                                 </div>
                                 <div class="checkbox-group">
+                                    <input type="radio" name="applicable_items" id="applicable_items_variants" value="specific_variants" {{ old('applicable_items') == 'specific_variants' ? 'checked' : '' }}>
+                                    <label for="applicable_items_variants">Biến thể sản phẩm cụ thể</label>
+                                </div>
+                                <div class="checkbox-group">
                                     <input type="radio" name="applicable_items" id="applicable_items_categories" value="specific_categories" {{ old('applicable_items') == 'specific_categories' ? 'checked' : '' }}>
                                     <label for="applicable_items_categories">Danh mục cụ thể</label>
                                 </div>
@@ -503,6 +507,31 @@
                                 <div class="text-right mt-2">
                                     <span class="text-sm text-blue-600 cursor-pointer select-all-combos">Chọn tất cả</span> | 
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="variants_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_variants' ? '' : 'display: none;' }}">
+                            <label class="form-label font-medium">Chọn biến thể sản phẩm</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="relative mb-2">
+                                    <input type="text" id="variant_search" placeholder="Tìm kiếm biến thể sản phẩm..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card" id="variants_container">
+                                    <!-- Variant items will be loaded dynamically -->
+                                    <div class="col-span-full p-4 text-center">
+                                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                        <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách biến thể sản phẩm...</p>
+                                    </div>
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-variants">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-variants">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
                         </div>
@@ -910,12 +939,14 @@
         const productsSelectionDiv = document.getElementById('products_selection');
         const categoriesSelectionDiv = document.getElementById('categories_selection');
         const combosSelectionDiv = document.getElementById('combos_selection');
+        const variantsSelectionDiv = document.getElementById('variants_selection');
         const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
         
         // Product containers
         const productContainer = document.querySelector('#products_selection .grid');
         const categoryContainer = document.querySelector('#categories_selection .grid');
         const comboContainer = document.querySelector('#combos_selection .grid');
+        const variantContainer = document.querySelector('#variants_selection #variants_container');
         
         // Select/Unselect all buttons
         const selectAllProducts = document.querySelector('.select-all-products');
@@ -924,11 +955,14 @@
         const unselectAllCategories = document.querySelector('.unselect-all-categories');
         const selectAllCombos = document.querySelector('.select-all-combos');
         const unselectAllCombos = document.querySelector('.unselect-all-combos');
+        const selectAllVariants = document.querySelector('.select-all-variants');
+        const unselectAllVariants = document.querySelector('.unselect-all-variants');
         const selectAllBranches = document.querySelector('.select-all-branches');
         const unselectAllBranches = document.querySelector('.unselect-all-branches');
         
         // Product search
         const productSearch = document.getElementById('product_search');
+        const variantSearch = document.getElementById('variant_search');
         
         // Date fields
         const startDateField = document.getElementById('start_date');
@@ -947,6 +981,8 @@
             fetchItemsByType('categories');
         } else if (initialSelectedItem === 'combos_only') {
             fetchItemsByType('combos');
+        } else if (initialSelectedItem === 'specific_variants') {
+            fetchItemsByType('variants');
         }
         
         // Add event listeners for changes
@@ -967,6 +1003,8 @@
                     fetchItemsByType('categories');
                 } else if (selectedValue === 'combos_only') {
                     fetchItemsByType('combos');
+                } else if (selectedValue === 'specific_variants') {
+                    fetchItemsByType('variants');
                 }
             });
         });
@@ -1016,6 +1054,20 @@
         if (unselectAllCombos) {
             unselectAllCombos.addEventListener('click', function() {
                 const checkboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        if (selectAllVariants) {
+            selectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllVariants) {
+            unselectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
             });
         }
@@ -1163,6 +1215,45 @@
             }, 500));
         }
         
+        // Variant search with debounce
+        if (variantSearch) {
+            variantSearch.addEventListener('input', debounce(function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // Show loading indicator
+                if (variantContainer) {
+                    variantContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm biến thể sản phẩm...</p>
+                        </div>
+                    `;
+                }
+                
+                // Make AJAX request to search variants
+                $.ajax({
+                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        type: 'variants',
+                        search: searchTerm,
+                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            fetchItemsByType('variants');
+                        } else {
+                            console.error('Error searching variants:', data.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
+                    }
+                });
+            }, 500));
+        }
+        
         function toggleBranchSelection() {
             const selectedScope = document.querySelector('input[name="applicable_scope"]:checked').value;
             
@@ -1185,6 +1276,7 @@
             if (productsSelectionDiv) productsSelectionDiv.style.display = 'none';
             if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'none';
             if (combosSelectionDiv) combosSelectionDiv.style.display = 'none';
+            if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'none';
             
             // Hiển thị phần chọn tương ứng với lựa chọn
             switch (selectedItems) {
@@ -1196,6 +1288,9 @@
                     break;
                 case 'combos_only':
                     if (combosSelectionDiv) combosSelectionDiv.style.display = 'block';
+                    break;
+                case 'specific_variants':
+                    if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'block';
                     break;
             }
             
@@ -1213,6 +1308,11 @@
             if (selectedItems !== 'combos_only' && combosSelectionDiv) {
                 const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
                 comboCheckboxes.forEach(checkbox => checkbox.checked = false);
+            }
+            
+            if (selectedItems !== 'specific_variants' && variantsSelectionDiv) {
+                const variantCheckboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
+                variantCheckboxes.forEach(checkbox => checkbox.checked = false);
             }
         }
         
@@ -1442,7 +1542,8 @@
             const containerMap = {
                 'products': productContainer,
                 'categories': categoryContainer,
-                'combos': comboContainer
+                'combos': comboContainer,
+                'variants': variantContainer
             };
             
             const container = containerMap[type];
@@ -1504,9 +1605,14 @@
                                         badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>';
                                         badgeText = 'Combo';
                                         break;
+                                    case 'variants':
+                                        badgeClass = 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200';
+                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>';
+                                        badgeText = 'Variant';
+                                        break;
                                 }
                                 
-                                const fieldName = type === 'products' ? 'product_ids' : (type === 'categories' ? 'category_ids' : 'combo_ids');
+                                const fieldName = type === 'products' ? 'product_ids' : (type === 'categories' ? 'category_ids' : (type === 'combos' ? 'combo_ids' : 'variant_ids'));
                                 
                                 itemsHtml += `
                                     <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
@@ -1518,9 +1624,20 @@
                                         </span>
                                         <input type="checkbox" name="${fieldName}[]" id="${type}_${item.id}" value="${item.id}">
                                         <label for="${type}_${item.id}">
-                                            ${item.name}
-                                            ${type === 'products' ? 
-                                                `<div class="flex items-center justify-between">
+                                            ${type === 'variants' ? 
+                                                `<div class="font-medium">${item.product_name}</div>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    <span class="font-medium">Biến thể:</span> ${item.variant_description}
+                                                </div>
+                                                <div class="flex items-center justify-between mt-1">
+                                                    <span class="text-xs text-gray-500 block">${parseFloat(item.price || 0).toLocaleString()} đ</span>
+                                                    <span class="text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 px-2 py-0.5 rounded-full">
+                                                        ${item.product_sku || 'Không có SKU'}
+                                                    </span>
+                                                </div>`
+                                            : type === 'products' ? 
+                                                `<div class="font-medium">${item.name}</div>
+                                                <div class="flex items-center justify-between">
                                                     <span class="text-xs text-gray-500 block">${parseFloat(item.price || 0).toLocaleString()} đ</span>
                                                     ${item.variant_count !== undefined ? 
                                                         `<span class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 px-2 py-0.5 rounded-full">
@@ -1528,8 +1645,10 @@
                                                         </span>` : ''
                                                     }
                                                 </div>
-                                                ${item.short_description ? `<span class="text-xs text-gray-500 block mt-1 italic">${item.short_description}</span>` : ''}` 
-                                            : (item.price ? `<span class="text-xs text-gray-500 block">${parseFloat(item.price).toLocaleString()} đ</span>` : '')}
+                                                ${item.short_description ? `<span class="text-xs text-gray-500 block mt-1 italic">${item.short_description}</span>` : ''}`
+                                            : `<div class="font-medium">${item.name}</div>
+                                               ${item.price ? `<span class="text-xs text-gray-500 block">${parseFloat(item.price).toLocaleString()} đ</span>` : ''}`
+                                            }
                                         </label>
                                     </div>
                                 `;

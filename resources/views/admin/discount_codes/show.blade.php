@@ -602,22 +602,32 @@
                     <p style="margin: 0.5rem 0 0; font-size: 0.875rem;">Mã giảm giá này có thể được sử dụng cho tất cả sản phẩm, danh mục và combo.</p>
                 </div>
             @elseif ($applicableItems === 'all_categories')
-                <div class="empty-state bg-indigo-50 border-indigo-200">
+                <div class="empty-state bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #6366f1;">
                         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                     </svg>
-                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #4f46e5;">Áp dụng cho tất cả danh mục</p>
-                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #6366f1;">Mã giảm giá này có thể được sử dụng cho tất cả sản phẩm trong tất cả danh mục.</p>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #4f46e5;" class="dark:text-indigo-300">Áp dụng cho tất cả danh mục</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #6366f1;" class="dark:text-indigo-400">Mã giảm giá này có thể được sử dụng cho tất cả sản phẩm trong tất cả danh mục.</p>
                 </div>
-            @elseif ($applicableItems === 'all_combos')
-                <div class="empty-state bg-amber-50 border-amber-200">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #d97706;">
+            @elseif ($applicableItems === 'all_combos' || $applicableItems === 'specific_combos')
+                <div class="empty-state bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #d97706;" class="dark:text-amber-400">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                         <polyline points="3.29 7 12 12 20.71 7"/>
                         <line x1="12" y1="22" x2="12" y2="12"/>
                     </svg>
-                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #b45309;">Áp dụng cho tất cả combo</p>
-                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #d97706;">Mã giảm giá này có thể được sử dụng cho tất cả combo sản phẩm.</p>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #b45309;" class="dark:text-amber-300">Áp dụng cho tất cả combo</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #d97706;" class="dark:text-amber-400">Mã giảm giá này chỉ có thể được sử dụng cho các combo sản phẩm.</p>
+                </div>
+            @elseif ($applicableItems === 'specific_variants')
+                <div class="empty-state bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #3b82f6;" class="dark:text-blue-400">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <path d="M3.29 7 12 12l8.71-5"></path>
+                        <path d="M12 22V12"></path>
+                    </svg>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #2563eb;" class="dark:text-blue-300">Áp dụng cho các biến thể sản phẩm</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #3b82f6;" class="dark:text-blue-400">Mã giảm giá này chỉ có thể được sử dụng cho các biến thể sản phẩm cụ thể.</p>
                 </div>
             @elseif ($discountCode->products && $discountCode->products->isNotEmpty())
                 <div class="info-value">
@@ -625,6 +635,7 @@
                         $products = $discountCode->products->whereNotNull('product_id')->pluck('product.name')->filter();
                         $categories = $discountCode->products->whereNotNull('category_id')->pluck('category.name')->filter();
                         $combos = $discountCode->products->whereNotNull('combo_id')->pluck('combo.name')->filter();
+                        $variants = $discountCode->products->whereNotNull('product_variant_id');
                     @endphp
                     
                     @if($products->isNotEmpty())
@@ -641,6 +652,33 @@
                                 @foreach($products as $product)
                                     <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200">
                                         {{ $product }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                    
+                    @if($variants->isNotEmpty())
+                        <div class="mb-4">
+                            <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                    <path d="M3.29 7 12 12l8.71-5"></path>
+                                    <path d="M12 22V12"></path>
+                                </svg>
+                                Biến thể sản phẩm cụ thể:
+                            </h4>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($variants as $variantItem)
+                                    @php
+                                        $variant = $variantItem->productVariant;
+                                        if(!$variant || !$variant->product) continue;
+                                        
+                                        $variantValues = $variant->variantValues ?? collect([]);
+                                        $variantDescription = $variantValues->pluck('value')->implode(', ');
+                                    @endphp
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                                        {{ $variant->product->name }} ({{ $variantDescription }})
                                     </span>
                                 @endforeach
                             </div>
@@ -684,6 +722,24 @@
                             </div>
                         </div>
                     @endif
+                </div>
+            @elseif ($applicableItems === 'specific_products')
+                <div class="empty-state bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-900">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #10b981;" class="dark:text-green-400">
+                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #047857;" class="dark:text-green-300">Áp dụng cho sản phẩm cụ thể</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #10b981;" class="dark:text-green-400">Mã giảm giá này chỉ có thể được sử dụng cho các sản phẩm cụ thể đã chọn.</p>
+                </div>
+            @elseif ($applicableItems === 'specific_categories')
+                <div class="empty-state bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin: 0 auto 1rem; color: #6366f1;" class="dark:text-indigo-400">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <p style="margin: 0; font-size: 1rem; font-weight: 500; color: #4f46e5;" class="dark:text-indigo-300">Áp dụng cho danh mục cụ thể</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #6366f1;" class="dark:text-indigo-400">Mã giảm giá này chỉ có thể được sử dụng cho các danh mục cụ thể đã chọn.</p>
                 </div>
             @else
                 <div class="empty-state">

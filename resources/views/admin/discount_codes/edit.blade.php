@@ -298,6 +298,8 @@
         <form method="POST" action="{{ route('admin.discount_codes.update', $discountCode->id) }}">
             @csrf
             @method('PUT')
+            <!-- Hidden input to store applied_ids -->
+            <input type="hidden" name="applied_ids" id="applied_ids" value="{{ json_encode(array_merge($selectedProducts, $selectedCategories, $selectedCombos, $selectedVariants)) }}">
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Basic Information -->
@@ -417,7 +419,7 @@
                                     <label for="applicable_items_categories">Danh mục cụ thể</label>
                                 </div>
                                 <div class="checkbox-group">
-                                    <input type="radio" name="applicable_items" id="applicable_items_combos" value="combos_only" {{ old('applicable_items', $discountCode->applicable_items) == 'combos_only' ? 'checked' : '' }}>
+                                    <input type="radio" name="applicable_items" id="applicable_items_combos" value="specific_combos" {{ old('applicable_items', $discountCode->applicable_items) == 'specific_combos' ? 'checked' : '' }}>
                                     <label for="applicable_items_combos">Combo cụ thể</label>
                                 </div>
                             </div>
@@ -516,7 +518,7 @@
                             </div>
                         </div>
 
-                        <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'combos_only') style="display: none;" @endif>
+                        <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items', $discountCode->applicable_items) != 'specific_combos') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn combo</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
@@ -583,9 +585,10 @@
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card" id="variants_container">
-                                    @php
-                                        $selectedVariants = $discountCode->products->where('product_variant_id', '!=', null)->pluck('product_variant_id')->toArray() ?? [];
-                                    @endphp
+                                    <!-- Hidden element to store selected variants data -->
+                                    <script id="selected_variants_data" type="application/json">
+                                        @json($selectedVariants)
+                                    </script>
                                     <!-- Variant items will be loaded dynamically -->
                                     <div class="col-span-full p-4 text-center">
                                         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -1015,6 +1018,14 @@
         var selectedCategoryIds = JSON.parse('@json($selectedCategories)');
         var selectedComboIds = JSON.parse('@json($selectedCombos)');
         
+        // Convert IDs to integers to ensure proper comparison
+        selectedProductIds = selectedProductIds.map(id => parseInt(id));
+        selectedCategoryIds = selectedCategoryIds.map(id => parseInt(id));
+        selectedComboIds = selectedComboIds.map(id => parseInt(id));
+        
+        // Flag to track initial load
+        window.initialLoadComplete = false;
+        
         console.log('Selected Products:', selectedProductIds);
         console.log('Selected Categories:', selectedCategoryIds);
         console.log('Selected Combos:', selectedComboIds);
@@ -1027,10 +1038,6 @@
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': csrfToken
-            },
-            beforeSend: function(xhr, settings) {
-                console.log('Sending AJAX request to:', settings.url);
-                console.log('Request data:', settings.data);
             }
         });
         
@@ -1084,15 +1091,53 @@
         toggleItemsSelection();
         validateDates();
         
-        // Tải danh sách sản phẩm, danh mục, combo khi trang được tải
-        const initialSelectedItem = document.querySelector('input[name="applicable_items"]:checked').value;
-        if (initialSelectedItem === 'specific_products') {
-            fetchItemsByType('products');
-        } else if (initialSelectedItem === 'specific_categories') {
-            fetchItemsByType('categories');
-        } else if (initialSelectedItem === 'combos_only') {
-            fetchItemsByType('combos');
+        // Initialize applied_ids with the current selections
+        setTimeout(updateAppliedIds, 500); // Delay to ensure all items are loaded
+        
+        console.log('Initial applicable_items value:', '{{ $discountCode->applicable_items }}');
+        console.log('Initial selectedComboIds:', selectedComboIds);
+        
+        // Special handling for combos - ensure they're visible if applicable_items is specific_combos
+        if ('{{ $discountCode->applicable_items }}' === 'specific_combos') {
+            if (combosSelectionDiv) {
+                combosSelectionDiv.style.display = 'block';
+                console.log('Forcing display of combos selection div');
+            }
+            
+            // Force check the combos radio button
+            const combosRadio = document.getElementById('applicable_items_combos');
+            if (combosRadio) {
+                combosRadio.checked = true;
+                console.log('Forcing combos radio button to be checked');
+            }
         }
+        
+        // Special handling for variants - ensure they're visible if applicable_items is specific_variants
+        if ('{{ $discountCode->applicable_items }}' === 'specific_variants') {
+            if (variantsSelectionDiv) {
+                variantsSelectionDiv.style.display = 'block';
+                console.log('Forcing display of variants selection div');
+            }
+            
+            // Force check the variants radio button
+            const variantsRadio = document.getElementById('applicable_items_variants');
+            if (variantsRadio) {
+                variantsRadio.checked = true;
+                console.log('Forcing variants radio button to be checked');
+            }
+        }
+        
+        // Load data for all item types to ensure they're available when needed
+        fetchItemsByType('products');
+        fetchItemsByType('categories');
+        fetchItemsByType('combos');
+        fetchProductVariants();
+        
+        // Set the flag to indicate initial loading is complete
+        setTimeout(() => {
+            window.initialLoadComplete = true;
+            console.log('Initial load complete');
+        }, 1000);
         
         // Add event listeners for changes
         branchRadios.forEach(radio => {
@@ -1103,21 +1148,21 @@
             radio.addEventListener('change', function() {
                 toggleItemsSelection();
                 
-                // Tự động chọn tất cả combo khi chọn "all_combos"
-                if (this.value === 'all_combos' && combosSelectionDiv) {
-                    const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
-                    comboCheckboxes.forEach(checkbox => checkbox.checked = true);
-                }
-                
-                // Tải danh sách sản phẩm, danh mục, combo khi chọn vào chúng
+                // Based on the selected value, ensure the correct data is loaded
                 const selectedValue = this.value;
                 
                 if (selectedValue === 'specific_products') {
+                    // Ensure products are loaded
                     fetchItemsByType('products');
                 } else if (selectedValue === 'specific_categories') {
+                    // Ensure categories are loaded
                     fetchItemsByType('categories');
-                } else if (selectedValue === 'combos_only') {
+                } else if (selectedValue === 'specific_combos') {
+                    // Ensure combos are loaded
                     fetchItemsByType('combos');
+                } else if (selectedValue === 'specific_variants') {
+                    // Ensure variants are loaded
+                    fetchProductVariants();
                 }
             });
         });
@@ -1328,7 +1373,7 @@
         
         function toggleItemsSelection() {
             const selectedItems = document.querySelector('input[name="applicable_items"]:checked').value;
-            console.log('Selected items:', selectedItems);
+            console.log('toggleItemsSelection called with value:', selectedItems);
             
             // Ẩn tất cả các phần chọn trước
             if (productsSelectionDiv) productsSelectionDiv.style.display = 'none';
@@ -1344,36 +1389,12 @@
                 case 'specific_categories':
                     if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'block';
                     break;
-                case 'combos_only':
+                case 'specific_combos':
                     if (combosSelectionDiv) combosSelectionDiv.style.display = 'block';
                     break;
                 case 'specific_variants':
-                    if (variantsSelectionDiv) {
-                        variantsSelectionDiv.style.display = 'block';
-                        fetchProductVariants();
-                    }
+                    if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'block';
                     break;
-            }
-            
-            // Bỏ chọn các checkbox không liên quan
-            if (selectedItems !== 'specific_products' && productsSelectionDiv) {
-                const productCheckboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
-                productCheckboxes.forEach(checkbox => checkbox.checked = false);
-            }
-            
-            if (selectedItems !== 'specific_categories' && categoriesSelectionDiv) {
-                const categoryCheckboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
-                categoryCheckboxes.forEach(checkbox => checkbox.checked = false);
-            }
-            
-            if (selectedItems !== 'combos_only' && combosSelectionDiv) {
-                const comboCheckboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
-                comboCheckboxes.forEach(checkbox => checkbox.checked = false);
-            }
-            
-            if (selectedItems !== 'specific_variants' && variantsSelectionDiv) {
-                const variantCheckboxes = variantsSelectionDiv.querySelectorAll('input[name="variant_ids[]"]');
-                variantCheckboxes.forEach(checkbox => checkbox.checked = false);
             }
         }
         
@@ -1655,9 +1676,13 @@
                                     selectedItems = selectedCategoryIds || [];
                                 } else {
                                     selectedItems = selectedComboIds || [];
+                                    console.log(`Loading combos with selectedComboIds:`, selectedComboIds);
                                 }
                                 
-                                const isChecked = selectedItems.includes(item.id) ? 'checked' : '';
+                                // Convert item.id to integer for comparison
+                                const itemId = parseInt(item.id);
+                                const isChecked = selectedItems.includes(itemId) ? 'checked' : '';
+                                console.log(`Item ${itemId} (${item.name}) is ${isChecked ? 'checked' : 'not checked'}`);
                                 
                                 itemsHtml += `
                                     <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
@@ -1687,6 +1712,14 @@
                             });
                             
                             container.innerHTML = itemsHtml;
+                            
+                            // Add change event listeners to the newly created checkboxes
+                            container.querySelectorAll(`input[name="${fieldName}[]"]`).forEach(checkbox => {
+                                checkbox.addEventListener('change', updateAppliedIds);
+                            });
+                            
+                            // Update applied_ids after loading items
+                            updateAppliedIds();
                         } else {
                             console.error(`Invalid data format for ${type}:`, data);
                             container.innerHTML = `
@@ -1760,8 +1793,18 @@
                 </div>
             `;
             
-            // Get selected variants
-            const selectedVariantIds = @json($selectedVariants ?? []);
+            // Get selected variants from the hidden data element
+            let selectedVariantIds = [];
+            try {
+                const selectedVariantsData = document.getElementById('selected_variants_data');
+                if (selectedVariantsData) {
+                    selectedVariantIds = JSON.parse(selectedVariantsData.textContent) || [];
+                }
+            } catch (e) {
+                console.error('Error parsing selected variants:', e);
+                selectedVariantIds = [];
+            }
+            
             console.log('Selected Variants:', selectedVariantIds);
             
             // Make AJAX request to get product variants
@@ -1788,7 +1831,7 @@
                             let variantsHtml = '';
                             
                             data.items.forEach(variant => {
-                                const isChecked = selectedVariantIds.includes(variant.id) ? 'checked' : '';
+                                const isChecked = selectedVariantIds.includes(parseInt(variant.id)) ? 'checked' : '';
                                 const variantPrice = parseFloat(variant.price).toLocaleString();
                                 
                                 variantsHtml += `
@@ -1812,6 +1855,14 @@
                             });
                             
                             variantContainer.innerHTML = variantsHtml;
+                            
+                            // Add change event listeners to the newly created variant checkboxes
+                            variantContainer.querySelectorAll('input[name="variant_ids[]"]').forEach(checkbox => {
+                                checkbox.addEventListener('change', updateAppliedIds);
+                            });
+                            
+                            // Update applied_ids after loading variants
+                            updateAppliedIds();
                         }
                     } else {
                         console.error('Error fetching variants:', data ? data.message : 'No data received');
@@ -1839,60 +1890,153 @@
                     `;
                 }
             });
-            
-            // Add event listeners for search
-            if (variantSearch) {
-                variantSearch.addEventListener('input', debounce(function() {
-                    const searchTerm = this.value.toLowerCase();
-                    
-                    // Show loading indicator
-                    if (variantContainer) {
-                        variantContainer.innerHTML = `
-                            <div class="col-span-full p-4 text-center">
-                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                                <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm biến thể sản phẩm...</p>
-                            </div>
-                        `;
-                    }
-                    
-                    // Make AJAX request to search variants
-                    $.ajax({
-                        url: "{{ route('admin.discount_codes.get-items-by-type') }}",
-                        type: 'POST',
-                        dataType: 'json',
-                        data: {
-                            type: 'variants',
-                            search: searchTerm,
-                            _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        success: function(data) {
-                            if (data.success) {
-                                fetchProductVariants();
-                            } else {
-                                console.error('Error searching variants:', data.message);
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('AJAX error:', error);
+        }
+        
+        // Add event listeners for search
+        if (variantSearch) {
+            variantSearch.addEventListener('input', debounce(function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                // Show loading indicator
+                if (variantContainer) {
+                    variantContainer.innerHTML = `
+                        <div class="col-span-full p-4 text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm biến thể sản phẩm...</p>
+                        </div>
+                    `;
+                }
+                
+                // Make AJAX request to search variants
+                $.ajax({
+                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        type: 'variants',
+                        search: searchTerm,
+                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    success: function(data) {
+                        if (data.success) {
+                            fetchProductVariants();
+                        } else {
+                            console.error('Error searching variants:', data.message);
                         }
-                    });
-                }, 500));
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('AJAX error:', error);
+                    }
+                });
+            }, 500));
+        }
+        
+        // Add event listeners for select/unselect all variants
+        if (selectAllVariants) {
+            selectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = true);
+            });
+        }
+        
+        if (unselectAllVariants) {
+            unselectAllVariants.addEventListener('click', function() {
+                const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            });
+        }
+        
+        // Function to update the applied_ids hidden field
+        function updateAppliedIds() {
+            const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
+            let selectedIds = [];
+            
+            // Get the selected IDs based on the applicable_items type
+            switch (applicableItemsValue) {
+                case 'specific_products':
+                    const productCheckboxes = document.querySelectorAll('input[name="product_ids[]"]:checked');
+                    selectedIds = Array.from(productCheckboxes).map(cb => cb.value);
+                    break;
+                    
+                case 'specific_categories':
+                    const categoryCheckboxes = document.querySelectorAll('input[name="category_ids[]"]:checked');
+                    selectedIds = Array.from(categoryCheckboxes).map(cb => cb.value);
+                    break;
+                    
+                case 'specific_combos':
+                    const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');
+                    selectedIds = Array.from(comboCheckboxes).map(cb => cb.value);
+                    break;
+                    
+                case 'specific_variants':
+                    const variantCheckboxes = document.querySelectorAll('input[name="variant_ids[]"]:checked');
+                    selectedIds = Array.from(variantCheckboxes).map(cb => cb.value);
+                    break;
             }
             
-            // Add event listeners for select/unselect all variants
-            if (selectAllVariants) {
-                selectAllVariants.addEventListener('click', function() {
-                    const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
-                    checkboxes.forEach(checkbox => checkbox.checked = true);
-                });
+            // Update the hidden field
+            const appliedIdsInput = document.getElementById('applied_ids');
+            if (appliedIdsInput) {
+                appliedIdsInput.value = JSON.stringify(selectedIds);
+                console.log('Updated applied_ids:', selectedIds);
             }
-            
-            if (unselectAllVariants) {
-                unselectAllVariants.addEventListener('click', function() {
-                    const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
-                    checkboxes.forEach(checkbox => checkbox.checked = false);
-                });
-            }
+        }
+        
+        // Add event listeners to all checkboxes to update applied_ids when selection changes
+        const allCheckboxSelectors = [
+            'input[name="product_ids[]"]',
+            'input[name="category_ids[]"]',
+            'input[name="combo_ids[]"]',
+            'input[name="variant_ids[]"]'
+        ];
+        
+        allCheckboxSelectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(checkbox => {
+                checkbox.addEventListener('change', updateAppliedIds);
+            });
+        });
+        
+        // Also update applied_ids when the applicable_items radio buttons change
+        document.querySelectorAll('input[name="applicable_items"]').forEach(radio => {
+            radio.addEventListener('change', updateAppliedIds);
+        });
+        
+        // Add form submission handler to log data
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Get the currently selected radio button
+                const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
+                console.log('Form is being submitted with applicable_items:', applicableItemsValue);
+                
+                // Update applied_ids one last time before submission
+                updateAppliedIds();
+                
+                // Check for combo checkboxes
+                const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');
+                if (comboCheckboxes.length > 0) {
+                    console.log('Selected combo checkboxes:', comboCheckboxes.length);
+                    
+                    // Log each selected combo ID
+                    const selectedComboIds = Array.from(comboCheckboxes).map(cb => cb.value);
+                    console.log('Selected combo IDs:', selectedComboIds);
+                    
+                    // If combos are selected, ensure the combos radio button is checked
+                    const combosRadio = document.getElementById('applicable_items_combos');
+                    if (combosRadio) {
+                        combosRadio.checked = true;
+                        console.log('Forcing combos radio button to be checked before submission');
+                    }
+                }
+                
+                // If specific_combos is selected but no combos are checked, prevent submission
+                if (document.querySelector('input[name="applicable_items"]:checked').value === 'specific_combos' && 
+                    document.querySelectorAll('input[name="combo_ids[]"]:checked').length === 0) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn ít nhất một combo.');
+                    return false;
+                }
+            });
         }
     });
 </script>

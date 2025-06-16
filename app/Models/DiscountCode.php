@@ -53,6 +53,18 @@ class DiscountCode extends Model
         'max_discount_amount' => 'decimal:2',
     ];
 
+    /**
+     * Define the possible values for applicable_items
+     */
+    const APPLICABLE_ITEMS_ALL = 'all_items';
+    const APPLICABLE_ITEMS_ALL_PRODUCTS = 'all_products';
+    const APPLICABLE_ITEMS_ALL_CATEGORIES = 'all_categories';
+    const APPLICABLE_ITEMS_ALL_COMBOS = 'all_combos';
+    const APPLICABLE_ITEMS_SPECIFIC_PRODUCTS = 'specific_products';
+    const APPLICABLE_ITEMS_SPECIFIC_CATEGORIES = 'specific_categories';
+    const APPLICABLE_ITEMS_SPECIFIC_COMBOS = 'specific_combos';
+    const APPLICABLE_ITEMS_SPECIFIC_VARIANTS = 'specific_variants';
+
     public function promotionPrograms()
     {
         return $this->belongsToMany(PromotionProgram::class, 'promotion_discount_codes', 'discount_code_id', 'promotion_program_id');
@@ -68,19 +80,44 @@ class DiscountCode extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * Get all discount code products
+     */
     public function products()
     {
         return $this->hasMany(DiscountCodeProduct::class);
     }
 
-    public function productVariants()
+    /**
+     * Get all specific product relations (product_id is not null)
+     */
+    public function specificProducts()
     {
-        return $this->hasMany(DiscountCodeProductVariant::class);
+        return $this->hasMany(DiscountCodeProduct::class)->whereNotNull('product_id');
     }
 
-    public function combos()
+    /**
+     * Get all specific category relations (category_id is not null)
+     */
+    public function specificCategories()
+    {
+        return $this->hasMany(DiscountCodeProduct::class)->whereNotNull('category_id');
+    }
+
+    /**
+     * Get all specific combo relations (combo_id is not null)
+     */
+    public function specificCombos()
     {
         return $this->hasMany(DiscountCodeProduct::class)->whereNotNull('combo_id');
+    }
+
+    /**
+     * Get all specific variant relations (product_variant_id is not null)
+     */
+    public function specificVariants()
+    {
+        return $this->hasMany(DiscountCodeProduct::class)->whereNotNull('product_variant_id');
     }
 
     public function users()
@@ -130,5 +167,45 @@ class DiscountCode extends Model
         } else {
             return 'active';
         }
+    }
+
+    /**
+     * Determine if this discount code applies to all items
+     */
+    public function appliesToAllItems()
+    {
+        return $this->applicable_items === self::APPLICABLE_ITEMS_ALL;
+    }
+
+    /**
+     * Determine if this discount code applies to specific products
+     */
+    public function appliesToSpecificProducts()
+    {
+        return $this->applicable_items === self::APPLICABLE_ITEMS_SPECIFIC_PRODUCTS;
+    }
+
+    /**
+     * Determine if this discount code applies to specific categories
+     */
+    public function appliesToSpecificCategories()
+    {
+        return $this->applicable_items === self::APPLICABLE_ITEMS_SPECIFIC_CATEGORIES;
+    }
+
+    /**
+     * Determine if this discount code applies to specific combos
+     */
+    public function appliesToSpecificCombos()
+    {
+        return $this->applicable_items === self::APPLICABLE_ITEMS_SPECIFIC_COMBOS;
+    }
+
+    /**
+     * Determine if this discount code applies to specific variants
+     */
+    public function appliesToSpecificVariants()
+    {
+        return $this->applicable_items === self::APPLICABLE_ITEMS_SPECIFIC_VARIANTS;
     }
 }
