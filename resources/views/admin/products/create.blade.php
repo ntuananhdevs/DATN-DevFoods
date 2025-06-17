@@ -271,9 +271,9 @@
                                         </div>
                                         <div>
                                             <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                            <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price]" placeholder="0" step="any"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.price') }}">
-                                            @error('attributes.0.values.0.price')
+                                            <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
+                                            @error('attributes.0.values.0.price_adjustment')
                                                 <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                             @enderror
                                         </div>
@@ -480,9 +480,9 @@
                                 </div>
                                 <div>
                                     <label for="attribute_price_${index}_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                    <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price]" placeholder="0" step="any"
+                                    <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
-                                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_price" style="display: none;"></div>
+                                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_price_adjustment" style="display: none;"></div>
                                 </div>
                                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
                             </div>
@@ -533,9 +533,9 @@
                 </div>
                 <div>
                     <label for="attribute_price_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                    <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price]" placeholder="0" step="any"
+                    <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
-                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_price" style="display: none;"></div>
+                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_price_adjustment" style="display: none;"></div>
                 </div>
                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
             `;
@@ -734,9 +734,9 @@
                                     </div>
                                     <div>
                                         <label for="attribute_price_${index}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                        <input type="number" id="attribute_price_${index}_${valueIndex}" name="attributes[${index}][values][${valueIndex}][price]" placeholder="0" step="any"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="${valueData.price || ''}">
-                                        <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_${valueIndex}_price" style="display: none;"></div>
+                                        <input type="number" id="attribute_price_${index}_${valueIndex}" name="attributes[${index}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="${valueData.price_adjustment || ''}">
+                                        <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_${valueIndex}_price_adjustment" style="display: none;"></div>
                                     </div>
                                     <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
                                 `;

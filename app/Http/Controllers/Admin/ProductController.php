@@ -18,9 +18,9 @@ use App\Models\BranchStock;
 use App\Models\ProductVariant;
 use App\Models\ProductImg;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Models\ToppingStock;
-use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -234,14 +234,12 @@ class ProductController extends Controller
                                 continue;
                             }
 
-                            // Create or update variant value
-                            $value = VariantValue::updateOrCreate(
-                                [
-                                    'variant_attribute_id' => $attribute->id,
-                                    'value' => $valueData['value']
-                                ],
-                                ['price_adjustment' => $valueData['price_adjustment'] ?? 0]
-                            );
+                            // Create new variant value for each product (don't share between products)
+                            $value = VariantValue::create([
+                                'variant_attribute_id' => $attribute->id,
+                                'value' => $valueData['value'],
+                                'price_adjustment' => $valueData['price_adjustment'] ?? 0
+                            ]);
                             Log::info('Created/Updated variant value:', ['id' => $value->id, 'value' => $value->value]);
                             $values[] = $value;
                         }
@@ -758,56 +756,86 @@ class ProductController extends Controller
     // Handle attributes and variants
     protected function handleAttributesAndVariants($product, $request)
     {
-        // Kiểm tra và cập nhật hoặc tạo mới các thuộc tính và giá trị
+        // Clear existing variants first
+        $product->variants()->each(function ($variant) {
+            $variant->productVariantDetails()->delete();
+            $variant->delete();
+        });
+
         $attributes = $request->input('attributes', []);
+        if (!empty($attributes)) {
+            $attributeGroups = [];
 
-        foreach ($attributes as $attributeData) {
-            // Kiểm tra nếu tên thuộc tính không rỗng
-            if (empty($attributeData['name'])) continue;
+            foreach ($attributes as $attributeData) {
+                // Skip if attribute name is empty
+                if (empty($attributeData['name'])) {
+                    continue;
+                }
 
-            // Tìm hoặc tạo mới thuộc tính
-            $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
+                // Create or get attribute
+                $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
 
-            $values = [];
-            if (isset($attributeData['values']) && is_array($attributeData['values'])) {
-                foreach ($attributeData['values'] as $valueData) {
-                    if (empty($valueData['value'])) continue;
+                $values = [];
+                if (isset($attributeData['values']) && is_array($attributeData['values'])) {
+                    foreach ($attributeData['values'] as $valueData) {
+                        // Skip if value is empty
+                        if (empty($valueData['value'])) {
+                            continue;
+                        }
 
-                    // Cập nhật hoặc tạo mới giá trị thuộc tính
-                    $value = VariantValue::updateOrCreate(
-                        [
+                        // Create new variant value for each product (don't share between products)
+                        $value = VariantValue::create([
                             'variant_attribute_id' => $attribute->id,
-                            'value' => $valueData['value']
-                        ],
-                        ['price_adjustment' => $valueData['price_adjustment'] ?? 0]
-                    );
-                    $values[] = $value;
+                            'value' => $valueData['value'],
+                            'price_adjustment' => $valueData['price_adjustment'] ?? 0
+                        ]);
+                        Log::info('Updated variant value:', ['id' => $value->id, 'value' => $value->value]);
+                        $values[] = $value;
+                    }
+                }
+
+                if (!empty($values)) {
+                    $attributeGroups[] = [
+                        'attribute' => $attribute,
+                        'values' => $values
+                    ];
                 }
             }
 
-            // Nếu có giá trị thì gắn kết các giá trị vào thuộc tính
-            if (!empty($values)) {
-                $attribute->values()->saveMany($values);
-            }
-        }
+            if (!empty($attributeGroups)) {
+                // Generate all possible combinations
+                $combinations = $this->generateVariantCombinations($attributeGroups);
+                Log::info('Generated combinations count for update:', ['count' => count($combinations)]);
 
-        // Lấy tất cả các biến thể hiện có của sản phẩm
-        $existingVariants = $product->variants;
+                // Create variants for each combination
+                foreach ($combinations as $index => $combination) {
+                    // Create product variant
+                    $variant = $product->variants()->create([
+                        'active' => true
+                    ]);
+                    Log::info('Updated/Created variant:', ['id' => $variant->id]);
 
-        // Cập nhật hoặc tạo mới các biến thể dựa trên thuộc tính và giá trị mới
-        foreach ($existingVariants as $variant) {
-            // Kiểm tra và cập nhật chi tiết của biến thể
-            foreach ($variant->productVariantDetails as $variantDetail) {
-                $attributeValue = $variantDetail->variantValue;
-                $attributeValue->update([
-                    'price_adjustment' => $attributeValue->price_adjustment,  // Cập nhật giá trị nếu cần
+                    // Create variant details for each value in the combination
+                    foreach ($combination as $variantValue) {
+                        $variantDetail = $variant->productVariantDetails()->create([
+                            'variant_value_id' => $variantValue->id
+                        ]);
+                        Log::info('Updated/Created variant detail:', ['id' => $variantDetail->id, 'variant_value_id' => $variantValue->id]);
+                    }
+                }
+            } else {
+                // Create default variant if no attributes
+                $defaultVariant = $product->variants()->create([
+                    'active' => true
                 ]);
+                Log::info('Created default variant for update:', ['id' => $defaultVariant->id]);
             }
-        }
-
-        // Cập nhật hoặc tạo mới biến thể nếu không có biến thể nào được tạo từ trước
-        if ($existingVariants->isEmpty()) {
-            $product->variants()->create(['active' => true]);  // Tạo một biến thể mặc định nếu chưa có
+        } else {
+            // Create default variant if no attributes provided
+            $defaultVariant = $product->variants()->create([
+                'active' => true
+            ]);
+            Log::info('Created default variant (no attributes):', ['id' => $defaultVariant->id]);
         }
     }
 
