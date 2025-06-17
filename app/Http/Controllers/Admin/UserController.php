@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Address;
+use App\Models\UserRank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -65,6 +67,150 @@ class UserController extends Controller
                     'message' => 'Lỗi hệ thống: ' . $e->getMessage()
                 ], 500)
                 : redirect()->back()->with('error', 'Lỗi tải danh sách: ' . $e->getMessage());
+        }
+    }
+    public function create()
+    {
+        try {
+            $roles = Role::whereIn('name', ['customer'])->get();
+           
+            
+            return view('admin.users.customer.create', compact('roles'));
+        } catch (\Exception $e) {
+            Log::error('Lỗi form tạo người dùng: ' . $e->getMessage());
+            var_dump($e->getMessage());           return redirect()->back()->with('error', 'Không tải được form: ' . $e->getMessage());
+        }
+    }
+    public function store(Request $request)
+    {
+        try {
+            // Validate dữ liệu
+            $validated = $request->validate([
+                'user_name' => 'required|string|max:255|unique:users',
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users',
+                'phone' => 'nullable|string|max:20|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'role_id' => 'required|exists:roles,id',
+                'user_rank_id' => 'nullable|exists:user_ranks,id',
+                'balance' => 'nullable|numeric|min:0',
+                'active' => 'boolean',
+                // Address fields
+                'address_line' => 'nullable|string|max:255',
+                'city' => 'nullable|string|max:100',
+                'district' => 'nullable|string|max:100',
+                'ward' => 'nullable|string|max:100',
+                'address_phone' => 'nullable|string|max:20',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
+                'is_default' => 'boolean'
+            ], [
+                'password.confirmed' => 'Xác nhận mật khẩu không khớp',
+                'user_name.unique' => 'Tên đăng nhập đã tồn tại',
+                'email.unique' => 'Email đã tồn tại',
+                'phone.unique' => 'Số điện thoại đã tồn tại',
+                'role_id.required' => 'Vui lòng chọn vai trò',
+                'role_id.exists' => 'Vai trò không hợp lệ'
+            ]);
+
+            DB::beginTransaction();
+
+            // Kiểm tra role tồn tại
+            $role = Role::findOrFail($validated['role_id']);
+
+            // Xử lý upload avatar
+            $avatarPath = null;
+            if ($request->hasFile('avatar')) {
+                try {
+                    $avatar = $request->file('avatar');
+                    $filename = 'users/avatars/' . Str::uuid() . '.' . $avatar->getClientOriginalExtension();
+                    $avatarPath = Storage::disk('s3')->put($filename, file_get_contents($avatar));
+                    $avatarPath = $filename;
+                } catch (\Exception $e) {
+                    Log::error('Error uploading avatar to S3: ' . $e->getMessage());
+                    throw new \Exception('Không thể tải lên ảnh đại diện: ' . $e->getMessage());
+                }
+            }
+
+            // Tạo user mới (loại bỏ birthday và gender)
+            $user = User::create([
+                'user_name' => $validated['user_name'],
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'password' => Hash::make($validated['password']),
+                'avatar' => $avatarPath,
+                'user_rank_id' => $validated['user_rank_id'] ?? null,
+                'balance' => $validated['balance'] ?? 0,
+                'active' => $validated['active'] ?? true
+            ]);
+
+            // Gán role cho user
+            $user->roles()->attach($role->id);
+
+            // Tạo địa chỉ nếu có thông tin
+            if (!empty($validated['address_line'])) {
+                Address::create([
+                    'user_id' => $user->id,
+                    'address_line' => $validated['address_line'],
+                    'city' => $validated['city'],
+                    'district' => $validated['district'],
+                    'ward' => $validated['ward'],
+                    'phone_number' => $validated['address_phone'] ?? $validated['phone'],
+                    'latitude' => $validated['latitude'] ?? null,
+                    'longitude' => $validated['longitude'] ?? null,
+                    'is_default' => $validated['is_default'] ?? true
+                ]);
+            }
+
+            // Gửi email chào mừng
+            try {
+                $user->notify(new NewUserWelcomeNotification());
+            } catch (\Exception $e) {
+                Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
+            }
+
+            DB::commit();
+            // Get user's role
+            $userRole = $user->roles()->first();
+
+            // Determine redirect path and message based on role
+            if ($userRole->name === 'customer') {
+                return redirect()->route('admin.users.index')->with([
+                    'toast' => [
+                        'type' => 'success',
+                        'title' => 'Thành công',
+                        'message' => 'Tạo khách hàng thành công'
+                    ]
+                ]);
+            } else if ($userRole->name === 'manager') {
+                return redirect()->route('admin.users.managers.index')->with([
+                    'toast' => [
+                        'type' => 'success',
+                        'title' => 'Thành công',
+                        'message' => 'Tạo quản lý thành công'
+                    ]
+                ]);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect()->back()->withErrors($e->validator)->withInput();
+
+        } catch (\Exception $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            Log::error('Lỗi tạo người dùng: ' . $e->getMessage());
+
+            return redirect()->back()->withInput()->with([
+                'toast' => [
+                    'type' => 'error',
+                    'title' => 'Lỗi',
+                    'message' => 'Không thể tạo người dùng: ' . $e->getMessage()
+                ]
+            ]);
         }
     }
     public function manager(Request $request)
@@ -136,7 +282,7 @@ class UserController extends Controller
     public function createManager()
     {
         try {
-            $roles = Role::where('name', 'manager')->get();
+            $roles = Role::whereIn('name', [ 'manager'])->get();
             return view('admin.users.manager.create', compact('roles'));
         } catch (\Exception $e) {
             Log::error('Lỗi form tạo người quản lý: ' . $e->getMessage());
@@ -144,94 +290,7 @@ class UserController extends Controller
         }
     }
 
-    public function storeManager(Request $request)
-    {
-        try {
-            // Validate dữ liệu trước khi bắt đầu transaction
-            $validated = $request->validate([
-                'user_name' => 'required|string|max:255|unique:users',
-                'full_name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users',
-                'phone' => 'nullable|string|max:20|unique:users',
-                'password' => 'required|string|min:8|confirmed',
-                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            ], [
-                'password.confirmed' => 'Xác nhận mật khẩu không khớp'
-            ]);
 
-            DB::beginTransaction();
-
-            // Kiểm tra role trước khi tạo user
-            $managerRole = Role::where('name', 'manager')->first();
-            if (!$managerRole) {
-                throw new \Exception('Không tìm thấy vai trò quản lý');
-            }
-
-            // Xử lý upload avatar
-            $avatarPath = null;
-            if ($request->hasFile('avatar')) {
-                try {
-                    $avatar = $request->file('avatar');
-                    $filename = 'users/avatars/' . Str::uuid() . '.' . $avatar->getClientOriginalExtension();
-                    $avatarPath = Storage::disk('s3')->put($filename, file_get_contents($avatar));
-                    $avatarPath = $filename;
-                } catch (\Exception $e) {
-                    Log::error('Error uploading avatar to S3: ' . $e->getMessage());
-                    throw new \Exception('Không thể tải lên ảnh đại diện: ' . $e->getMessage());
-                }
-            }
-
-            $user = User::create([
-                'user_name' => $validated['user_name'],
-                'full_name' => $validated['full_name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'password' => Hash::make($validated['password']),
-                'avatar' => $avatarPath
-            ]);
-
-            // Gán role manager cho user
-            $user->roles()->attach($managerRole->id);
-
-            // Gửi email thông báo cho người quản lý mới
-            try {
-                $user->notify(new NewUserWelcomeNotification());
-            } catch (\Exception $e) {
-                Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
-
-            }
-
-            DB::commit();
-
-            return redirect()->route('admin.users.managers.index')->with([
-                'toast' => [
-                    'type' => 'success',
-                    'title' => 'Thành công',
-                    'message' => 'Tạo người quản lý thành công và đã gửi mail '
-                ]
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            // Xử lý riêng lỗi validation
-            return redirect()->back()->withErrors($e->validator)->withInput();
-
-        } catch (\Exception $e) {
-            // Đảm bảo rollback transaction nếu có lỗi
-            if (DB::transactionLevel() > 0) {
-                DB::rollBack();
-            }
-
-            Log::error('Lỗi tạo người quản lý: ' . $e->getMessage());
-
-            return redirect()->back()->withInput()->with([
-                'toast' => [
-                    'type' => 'error',
-                    'title' => 'Lỗi',
-                    'message' => 'Không thể tạo người quản lý: ' . $e->getMessage()
-                ]
-            ]);
-        }
-    }
     // Thêm phương thức mới để xử lý thay đổi trạng thái
     public function toggleStatus($id)
     {
@@ -287,114 +346,21 @@ class UserController extends Controller
         }
     }
 
-    public function create()
-    {
-        try {
-            $roles = Role::where('name', '!=', 'admin')->get();
-            return view('admin.users.customer.create', compact('roles'));
-        } catch (\Exception $e) {
-            Log::error('Lỗi form tạo người dùng: ' . $e->getMessage());
-            var_dump($e->getMessage());die;
-            return redirect()->back()->with('error', 'Không tải được form: ' . $e->getMessage());
-        }
-    }
-
-    public function store(Request $request)
-    {
-        try {
-            // Validate dữ liệu trước khi bắt đầu transaction
-            $validated = $request->validate([
-                'user_name' => 'required|string|max:255|unique:users',
-                'full_name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users',
-                'phone' => 'nullable|string|max:20|unique:users',
-                'password' => 'required|string|min:8|confirmed',
-                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            ], [
-                'password.confirmed' => 'Xác nhận mật khẩu không khớp'
-            ]);
-
-            DB::beginTransaction();
-
-            // Kiểm tra role trước khi tạo user
-            $managerRole = Role::where('name', 'customer')->first();
-            if (!$managerRole) {
-                throw new \Exception('Không tìm thấy vai trò người dùng');
-            }
-
-            // Xử lý upload avatar
-            $avatarPath = null;
-            if ($request->hasFile('avatar')) {
-                try {
-                    $avatar = $request->file('avatar');
-                    $filename = 'users/avatars/' . Str::uuid() . '.' . $avatar->getClientOriginalExtension();
-                    $avatarPath = Storage::disk('s3')->put($filename, file_get_contents($avatar));
-                    $avatarPath = $filename;
-                } catch (\Exception $e) {
-                    Log::error('Error uploading avatar to S3: ' . $e->getMessage());
-                    throw new \Exception('Không thể tải lên ảnh đại diện: ' . $e->getMessage());
-                }
-            }
-
-            $user = User::create([
-                'user_name' => $validated['user_name'],
-                'full_name' => $validated['full_name'],
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-                'password' => Hash::make($validated['password']),
-                'avatar' => $avatarPath
-            ]);
-
-            // Gán role manager cho user
-            $user->roles()->attach($managerRole->id);
-
-            // Gửi email thông báo cho người quản lý mới
-            try {
-                $user->notify(new NewUserWelcomeNotification());
-            } catch (\Exception $e) {
-                Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
-
-            }
-
-            DB::commit();
-
-            return redirect()->route('admin.users.index')->with([
-                'toast' => [
-                    'type' => 'success',
-                    'title' => 'Thành công',
-                    'message' => 'Tạo người dùng thành công và đã gửi mail '
-                ]
-            ]);
-
-        } catch (ValidationException $e) {
-            // Xử lý riêng lỗi validation
-            return redirect()->back()->withErrors($e->validator)->withInput();
-
-        } catch (\Exception $e) {
-            // Đảm bảo rollback transaction nếu có lỗi
-            if (DB::transactionLevel() > 0) {
-                DB::rollBack();
-            }
-
-            Log::error('Lỗi tạo người quản lý: ' . $e->getMessage());
-
-            return redirect()->back()->withInput()->with([
-                'toast' => [
-                    'type' => 'error',
-                    'title' => 'Lỗi',
-                    'message' => 'Không thể tạo người quản lý: ' . $e->getMessage()
-                ]
-            ]);
-        }
-    }
     public function show(Request $request, $id)
     {
         try {
-            $user = User::with(['roles'])
-                ->withTrashed()
-                ->whereHas('roles')
-                ->findOrFail($id);
-
+            $user = User::with([
+                'roles',
+                'userRank',
+                'addresses' => function($query) {
+                    $query->orderBy('is_default', 'desc')
+                          ->orderBy('created_at', 'desc');
+                }
+            ])
+            ->withTrashed()
+            ->whereHas('roles')
+            ->findOrFail($id);
+    
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -404,22 +370,54 @@ class UserController extends Controller
                         'full_name' => $user->full_name,
                         'email' => $user->email,
                         'phone' => $user->phone,
-                        'balance' => $user->balance,
+                        'google_id' => $user->google_id,
+                        'balance' => number_format($user->balance, 0, ',', '.') . ' VNĐ',
+                        'raw_balance' => $user->balance,
+                        'total_spending' => number_format($user->total_spending, 0, ',', '.') . ' VNĐ',
+                        'raw_total_spending' => $user->total_spending,
+                        'total_orders' => $user->total_orders,
+                        'user_rank' => [
+                            'id' => $user->userRank?->id,
+                            'name' => $user->userRank?->name ?? 'Chưa có hạng',
+                            'updated_at' => $user->rank_updated_at?->format('d/m/Y H:i')
+                        ],
                         'avatar_url' => $user->avatar ? config('filesystems.disks.s3.url') . '/' . $user->avatar : null,
                         'roles' => $user->roles->pluck('name'),
                         'status' => $user->active ? 'Hoạt động' : 'Vô hiệu hóa',
+                        'email_verified' => $user->email_verified_at ? 'Đã xác thực' : 'Chưa xác thực',
+                        'email_verified_at' => $user->email_verified_at?->format('d/m/Y H:i'),
+                        'addresses' => $user->addresses->map(function($address) {
+                            return [
+                                'id' => $address->id,
+                                'address_line' => $address->address_line,
+                                'city' => $address->city,
+                                'district' => $address->district,
+                                'ward' => $address->ward,
+                                'phone_number' => $address->phone_number,
+                                'is_default' => $address->is_default,
+                                'full_address' => $address->address_line . ', ' . $address->ward . ', ' . $address->district . ', ' . $address->city,
+                                'coordinates' => [
+                                    'latitude' => $address->latitude,
+                                    'longitude' => $address->longitude
+                                ],
+                                'created_at' => $address->created_at->format('d/m/Y H:i')
+                            ];
+                        }),
+                        'addresses_count' => $user->addresses->count(),
+                        'default_address' => $user->addresses->where('is_default', true)->first(),
                         'created_at' => $user->created_at->format('d/m/Y H:i'),
+                        'updated_at' => $user->updated_at->format('d/m/Y H:i'),
                         'deleted_at' => $user->deleted_at?->format('d/m/Y H:i')
                     ],
                     'html' => view('admin.users.partials.user_info', compact('user'))->render(),
                     'message' => 'Tải thông tin người dùng thành công'
                 ]);
             }
-
+    
             return view('admin.users.show', compact('user'));
         } catch (\Exception $e) {
             Log::error('UserController@show Error: ' . $e->getMessage());
-
+    
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -427,7 +425,7 @@ class UserController extends Controller
                     'error' => $e->getMessage()
                 ], 404);
             }
-
+    
             return redirect()->back()->with('error', 'Không tìm thấy người dùng: ' . $e->getMessage());
         }
     }

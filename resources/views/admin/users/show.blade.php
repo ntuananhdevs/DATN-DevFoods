@@ -3,7 +3,6 @@
 @section('title', 'User Details')
 
 @section('page-style')
-
 <style>
     :root {
         --primary: #7367f0;
@@ -189,6 +188,16 @@
         color: var(--primary);
     }
 
+    .badge-verified {
+        background-color: rgba(40, 199, 111, 0.15);
+        color: var(--success);
+    }
+
+    .badge-unverified {
+        background-color: rgba(255, 159, 67, 0.15);
+        color: var(--warning);
+    }
+
     /* Action Buttons */
     .user-action-buttons {
         display: flex;
@@ -238,16 +247,34 @@
         box-shadow: 0 4px 12px rgba(130, 134, 139, 0.4);
     }
 
-   /* Thêm vào phần style */
-.btn-success {
-    background-color: #28c76f !important;
-    border-color: #28c76f !important;
-}
+    .btn-success {
+        background-color: #28c76f !important;
+        border-color: #28c76f !important;
+    }
 
-.btn-danger {
-    background-color: #ea5455 !important;
-    border-color: #ea5455 !important;
-}
+    .btn-danger {
+        background-color: #ea5455 !important;
+        border-color: #ea5455 !important;
+    }
+
+    /* Address Card */
+    .address-card {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: var(--transition);
+    }
+
+    .address-card:hover {
+        box-shadow: 0 2px 8px rgba(34, 41, 47, 0.1);
+    }
+
+    .address-card.default {
+        border-color: var(--primary);
+        background-color: var(--primary-light);
+    }
 
     /* Responsive adjustments */
     @media (max-width: 991.98px) {
@@ -295,24 +322,34 @@
             
             <div class="px-6 py-4 text-center">
                 <h3 class="text-2xl font-semibold text-gray-800 mb-1">{{ $user->full_name }}</h3>
-           
+                <p class="text-gray-600 mb-2">@{{ $user->user_name }}</p>
                 
-              
+                <!-- User Rank -->
+                @if($user->userRank)
+                <div class="mb-4">
+                    <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                        <i class="fas fa-crown mr-1"></i>
+                        {{ $user->userRank->name }}
+                    </span>
+                </div>
+                @endif
                 
-                <div class="flex justify-between items-center mb-6">
+                <!-- Stats -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
                     <div class="text-center">
-                        <p class="text-xl font-semibold text-primary-600">${{ number_format($user->balance, 2) }}</p>
-                        <span class="text-gray-600 text-sm">Balance</span>
+                        <p class="text-xl font-semibold text-primary-600">{{ number_format($user->balance, 0, ',', '.') }} VNĐ</p>
+                        <span class="text-gray-600 text-sm">Số dư</span>
                     </div>
                     <div class="text-center">
-                        <button onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }})" 
-                            class="px-4 py-2 rounded-lg text-sm font-medium {{ $user->active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} 
-                                   hover:{{ $user->active ? 'bg-green-200' : 'bg-red-200' }} transition-colors">
-                            {{ $user->active ? 'Hoạt động' : 'Vô hiệu hóa' }}
-                        </button>
-                        <span class="block text-gray-600 text-sm mt-1">Trạng thái</span>
+                        <p class="text-xl font-semibold text-green-600">{{ number_format($user->total_spending, 0, ',', '.') }} VNĐ</p>
+                        <span class="text-gray-600 text-sm">Tổng chi tiêu</span>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xl font-semibold text-blue-600">{{ $user->total_orders }}</p>
+                        <span class="text-gray-600 text-sm">Đơn hàng</span>
                     </div>
                 </div>
+             
                 
                 <a href="{{ url()->previous() }}"
                    class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
@@ -348,9 +385,21 @@
                         <span class="font-medium text-gray-800">{{ $user->email }}</span>
                     </div>
                     <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Xác thực email:</span>
+                        <span class="badge-custom {{ $user->email_verified_at ? 'badge-verified' : 'badge-unverified' }}">
+                            {{ $user->email_verified_at ? 'Đã xác thực' : 'Chưa xác thực' }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
                         <span class="text-gray-600">Điện thoại:</span>
                         <span class="font-medium text-gray-800">{{ $user->phone ?: 'N/A' }}</span>
                     </div>
+                    @if($user->google_id)
+                    <div class="flex justify-between items-center pb-2 border-b border-gray-200">
+                        <span class="text-gray-600">Google ID:</span>
+                        <span class="font-medium text-gray-800">{{ $user->google_id }}</span>
+                    </div>
+                    @endif
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Ngày tạo:</span>
                         <span class="font-medium text-gray-800">
@@ -389,9 +438,60 @@
             </div>
         </div>
     </div>
+
+    <!-- Addresses Section -->
+    @if($user->addresses && $user->addresses->count() > 0)
+    <div class="mt-6">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Địa chỉ ({{ $user->addresses->count() }})
+            </h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @foreach($user->addresses as $address)
+                <div class="address-card {{ $address->is_default ? 'default' : '' }}">
+                    @if($address->is_default)
+                    <div class="flex items-center mb-2">
+                        <span class="bg-primary-100 text-primary-800 px-2 py-1 rounded-full text-xs font-medium">
+                            <i class="fas fa-star mr-1"></i>
+                            Địa chỉ mặc định
+                        </span>
+                    </div>
+                    @endif
+                    
+                    <div class="space-y-2">
+                        <p class="font-medium text-gray-800">{{ $address->address_line }}</p>
+                        <p class="text-gray-600 text-sm">
+                            {{ $address->ward }}, {{ $address->district }}, {{ $address->city }}
+                        </p>
+                        <p class="text-gray-600 text-sm">
+                            <i class="fas fa-phone mr-1"></i>
+                            {{ $address->phone_number }}
+                        </p>
+                        @if($address->latitude && $address->longitude)
+                        <p class="text-gray-500 text-xs">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            {{ $address->latitude }}, {{ $address->longitude }}
+                        </p>
+                        @endif
+                        <p class="text-gray-500 text-xs">
+                            Tạo: {{ $address->created_at->format('d/m/Y H:i') }}
+                        </p>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
 </div>
 
 @endsection
+
 @section('page-script')
 <script>
     function toggleUserStatus(button, userId, userName, currentStatus) {
@@ -423,28 +523,8 @@
                     },
                     success: function(response) {
                         if (response.success) {
-                            // Update UI
-                            const newStatus = !currentStatus;
-                            const statusButton = $(button);
-
-                            statusButton
-                                .removeClass(currentStatus ? 'data-table-status-success' : 'data-table-status-failed')
-                                .addClass(newStatus ? 'data-table-status-success' : 'data-table-status-failed');
-
-                            statusButton.html(
-                                newStatus ?
-                                '<i class="fas fa-check"></i> Hoạt động' :
-                                '<i class="fas fa-times"></i> Vô hiệu hóa'
-                            );
-
-                            // Update onclick handler with new status
-                            statusButton.attr('onclick', `toggleUserStatus(this, ${userId}, '${userName}', ${newStatus})`);
-
-                            // Show success toast message instead of alert
-                            dtmodalShowToast('success', {
-                                title: 'Thành công',
-                                message: messages.successMessage
-                            });
+                            // Reload page to reflect changes
+                            location.reload();
                         }
                     },
                     error: function(xhr) {
@@ -470,6 +550,7 @@
             }
         });
     }
+
     function fetchUserData() {
         $.ajax({
             url: window.location.href,
@@ -477,23 +558,8 @@
             dataType: 'json',
             success: function(response) {
                 if(response.success) {
-                    // Cập nhật thông tin chính
-                    $('.user-profile-name').text(response.data.full_name);
-                    $('.user-profile-username').text('@' + response.data.user_name);
-                    $('.user-profile-stat-value').first().text('$' + response.data.balance.toFixed(2));
-                    
-                    // Cập nhật trạng thái
-                    const statusButton = $('.btn-status-toggle');
-                    statusButton
-                        .toggleClass('btn-success btn-danger', response.data.active)
-                        .find('i')
-                        .toggleClass('fa-check fa-times', response.data.active);
-                    statusButton.find('div').last().text(response.data.active ? 'Hoạt động' : 'Vô hiệu hóa');
-                    
-                    // Cập nhật thông tin chi tiết
-                    $('#user-email').text(response.data.email);
-                    $('#user-phone').text(response.data.phone || 'Not provided');
-                    $('#user-created-at').text(response.data.created_at);
+                    // Update user information without page reload
+                    console.log('User data updated:', response.data);
                 }
             },
             error: function(xhr) {
@@ -502,9 +568,9 @@
         });
     }
 
-    // Khởi chạy lần đầu và lặp lại mỗi giây
-    fetchUserData();
-    setInterval(fetchUserData, 1);
-    
+    // Initialize on page load
+    $(document).ready(function() {
+        fetchUserData();
+    });
 </script>
 @endsection
