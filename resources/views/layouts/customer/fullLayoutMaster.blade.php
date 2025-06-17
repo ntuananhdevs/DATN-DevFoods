@@ -412,5 +412,105 @@
 
     @yield('scripts')
     @stack('scripts')
+    
+    <!-- Branch Selector Modal -->
+    @include('partials.customer.branch-selector-modal')
+
+    <script>
+        // Global function to update the wishlist counter
+        window.updateWishlistCount = function(count) {
+            // Save the wishlist count in localStorage for consistency between pages
+            localStorage.setItem('wishlist_count', count);
+            
+            // Update all wishlist counter elements on the page
+            const counters = document.querySelectorAll('#wishlist-container span');
+            counters.forEach(counter => {
+                // Update the counter with animation
+                counter.textContent = count;
+                
+                // Add animation class
+                counter.classList.add('animate-bounce', 'bg-green-500');
+                setTimeout(() => {
+                    counter.classList.remove('animate-bounce', 'bg-green-500');
+                    counter.classList.add('bg-red-500');
+                }, 1000);
+            });
+        };
+
+        // Initialize Pusher on every page to listen for wishlist updates
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we should restore wishlist count from localStorage
+            const savedCount = localStorage.getItem('wishlist_count');
+            if (savedCount) {
+                const sessionCount = {{ auth()->check() ? auth()->user()->wishlist->count() : 0 }};
+                // Only use localStorage if it has a newer value than the session
+                if (parseInt(savedCount) > sessionCount) {
+                    window.updateWishlistCount(savedCount);
+                }
+            }
+            
+            // Set up Pusher if the script is loaded and user is authenticated
+            if (typeof Pusher !== 'undefined' && {{ auth()->check() ? 'true' : 'false' }}) {
+                console.log('Initializing Pusher for wishlist updates...');
+                
+                const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                    cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
+                    encrypted: true,
+                    enabledTransports: ['ws', 'wss'],
+                    debug: true
+                });
+                
+                // Subscribe to wishlist channel
+                const channelName = 'user-wishlist-channel.{{ auth()->id() }}';
+                console.log('Subscribing to channel:', channelName);
+                
+                const wishlistChannel = pusher.subscribe(channelName);
+                
+                // Log connection status
+                pusher.connection.bind('connected', () => {
+                    console.log('Pusher connected successfully');
+                });
+                
+                pusher.connection.bind('error', (err) => {
+                    console.error('Pusher connection error:', err);
+                });
+                
+                // Listen for wishlist updates
+                wishlistChannel.bind('favorite-updated', function(data) {
+                    console.log('Received favorite-updated event:', data);
+                    
+                    window.updateWishlistCount(data.count);
+                    
+                    // Update favorite button state if on product page
+                    const favoriteBtn = document.querySelector(`.favorite-btn[data-product-id="${data.product_id}"]`);
+                    if (favoriteBtn) {
+                        console.log('Updating favorite button state for product:', data.product_id);
+                        const icon = favoriteBtn.querySelector('i');
+                        if (data.is_favorite) {
+                            icon.classList.remove('far');
+                            icon.classList.add('fas', 'text-red-500');
+                        } else {
+                            icon.classList.remove('fas', 'text-red-500');
+                            icon.classList.add('far');
+                        }
+                    }
+                });
+                
+                // Log subscription status
+                wishlistChannel.bind('subscription_succeeded', () => {
+                    console.log('Successfully subscribed to wishlist channel');
+                });
+                
+                wishlistChannel.bind('subscription_error', (error) => {
+                    console.error('Error subscribing to wishlist channel:', error);
+                });
+            } else {
+                console.log('Pusher not initialized because:', {
+                    pusherLoaded: typeof Pusher !== 'undefined',
+                    userAuthenticated: {{ auth()->check() ? 'true' : 'false' }}
+                });
+            }
+        });
+    </script>
 </body>
 </html>
