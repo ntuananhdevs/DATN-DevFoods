@@ -147,13 +147,15 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Add to cart functionality
     const addToCartBtn = document.getElementById('add-to-cart');
+    const buyNowBtn = document.getElementById('buy-now');
     
-    addToCartBtn.addEventListener('click', function() {
+    // Function to get selected product data
+    function getSelectedProductData() {
         // Get selected branch
         const branchId = document.getElementById('branch-select').value;
         if (!branchId) {
             showToast('Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng', 'warning');
-            return;
+            return null;
         }
         
         // Get all selected variant values
@@ -171,49 +173,36 @@ document.addEventListener("DOMContentLoaded", function() {
         const selectedToppings = Array.from(document.querySelectorAll('.topping-input:checked'))
             .map(input => parseInt(input.value));
         
-        // API call to get actual product variant ID
-        console.log('Selected variant values:', selectedVariantValueIds);
+        // Get quantity
+        const quantity = parseInt(document.getElementById('quantity').textContent);
         
-        // First, fetch the actual product variant ID based on the selected variant values
-        fetch('/api/customer/products/get-variant', {
+        return {
+            product_id: window.productId,
+            variant_values: selectedVariantValueIds,
+            branch_id: branchId,
+            quantity: quantity,
+            toppings: selectedToppings
+        };
+    }
+    
+    // Add to cart button click handler
+    addToCartBtn.addEventListener('click', function() {
+        const productData = getSelectedProductData();
+        if (!productData) return;
+        
+        // Send request using Fetch API
+        fetch('/cart/add', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': window.csrfToken
             },
-            body: JSON.stringify({
-                product_id: window.productId,
-                variant_values: selectedVariantValueIds
-            })
+            body: JSON.stringify(productData)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const variantId = data.variant_id;
-                
-                // Now add to cart with the retrieved variant ID
-                return fetch('/api/customer/cart/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': window.csrfToken
-                    },
-                    body: JSON.stringify({
-                        product_id: window.productId,
-                        variant_id: variantId,
-                        branch_id: branchId,
-                        quantity: quantity,
-                        toppings: selectedToppings
-                    })
-                });
-            } else {
-                throw new Error(data.message || 'Không tìm thấy biến thể sản phẩm');
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Sản phẩm đã được thêm vào giỏ hàng!', 'success');
+                showToast(data.message, 'success');
                 
                 // Update cart counter if needed
                 if (typeof window.updateCartCount === 'function' && data.count) {
@@ -225,7 +214,39 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast(error.message || 'Có lỗi xảy ra', 'error');
+            showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
+        });
+    });
+
+    // Buy now button click handler
+    buyNowBtn.addEventListener('click', function() {
+        const productData = getSelectedProductData();
+        if (!productData) return;
+        
+        // Add buy_now flag to the data
+        productData.buy_now = true;
+        
+        // Send request using Fetch API
+        fetch('/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': window.csrfToken
+            },
+            body: JSON.stringify(productData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to checkout page
+                window.location.href = '/checkout';
+            } else {
+                showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
         });
     });
 
@@ -310,11 +331,17 @@ function updateProductAvailability() {
     
     // Check if any variant is available
     const hasAvailableVariant = Array.from(document.querySelectorAll('.variant-input'))
-        .some(input => parseInt(input.dataset.stockQuantity) > 0);
+        .some(input => parseInt(input.dataset.stockQuantity || 0) > 0);
         
     // Check if currently selected variant is available
     const selectedVariant = document.querySelector('.variant-input:checked');
-    const isSelectedVariantAvailable = selectedVariant && parseInt(selectedVariant.dataset.stockQuantity) > 0;
+    const isSelectedVariantAvailable = selectedVariant && parseInt(selectedVariant.dataset.stockQuantity || 0) > 0;
+    
+    console.log('Availability check:', {
+        hasAvailableVariant,
+        isSelectedVariantAvailable,
+        selectedVariantStock: selectedVariant ? selectedVariant.dataset.stockQuantity : null
+    });
     
     // Update out of stock message
     if (outOfStockMessage) {
@@ -468,8 +495,8 @@ channel.bind('stock-updated', function(data) {
         }
     });
     
-    // Update overall product availability
-    updateProductAvailability();
+    // Force update product availability
+    setTimeout(updateProductAvailability, 100);
 });
 
 // Listen for topping stock updates
