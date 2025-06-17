@@ -96,15 +96,16 @@ class UserController extends Controller
                 'user_rank_id' => 'nullable|exists:user_ranks,id',
                 'balance' => 'nullable|numeric|min:0',
                 'active' => 'boolean',
-                // Address fields
-                'address_line' => 'nullable|string|max:255',
-                'city' => 'nullable|string|max:100',
-                'district' => 'nullable|string|max:100',
-                'ward' => 'nullable|string|max:100',
-                'address_phone' => 'nullable|string|max:20',
-                'latitude' => 'nullable|numeric|between:-90,90',
-                'longitude' => 'nullable|numeric|between:-180,180',
-                'is_default' => 'boolean'
+                // Multiple addresses validation
+                'addresses' => 'nullable|array',
+                'addresses.*.address_line' => 'nullable|string|max:255',
+                'addresses.*.city' => 'nullable|string|max:100',
+                'addresses.*.district' => 'nullable|string|max:100',
+                'addresses.*.ward' => 'nullable|string|max:100',
+                'addresses.*.phone' => 'nullable|string|max:20',
+                'addresses.*.latitude' => 'nullable|numeric|between:-90,90',
+                'addresses.*.longitude' => 'nullable|numeric|between:-180,180',
+                'addresses.*.is_default' => 'nullable|boolean'
             ], [
                 'password.confirmed' => 'Xác nhận mật khẩu không khớp',
                 'user_name.unique' => 'Tên đăng nhập đã tồn tại',
@@ -113,12 +114,12 @@ class UserController extends Controller
                 'role_id.required' => 'Vui lòng chọn vai trò',
                 'role_id.exists' => 'Vai trò không hợp lệ'
             ]);
-
+    
             DB::beginTransaction();
-
+    
             // Kiểm tra role tồn tại
             $role = Role::findOrFail($validated['role_id']);
-
+    
             // Xử lý upload avatar
             $avatarPath = null;
             if ($request->hasFile('avatar')) {
@@ -132,8 +133,8 @@ class UserController extends Controller
                     throw new \Exception('Không thể tải lên ảnh đại diện: ' . $e->getMessage());
                 }
             }
-
-            // Tạo user mới (loại bỏ birthday và gender)
+    
+            // Tạo user mới
             $user = User::create([
                 'user_name' => $validated['user_name'],
                 'full_name' => $validated['full_name'],
@@ -145,36 +146,63 @@ class UserController extends Controller
                 'balance' => $validated['balance'] ?? 0,
                 'active' => $validated['active'] ?? true
             ]);
-
+    
             // Gán role cho user
             $user->roles()->attach($role->id);
-
-            // Tạo địa chỉ nếu có thông tin
-            if (!empty($validated['address_line'])) {
-                Address::create([
-                    'user_id' => $user->id,
-                    'address_line' => $validated['address_line'],
-                    'city' => $validated['city'],
-                    'district' => $validated['district'],
-                    'ward' => $validated['ward'],
-                    'phone_number' => $validated['address_phone'] ?? $validated['phone'],
-                    'latitude' => $validated['latitude'] ?? null,
-                    'longitude' => $validated['longitude'] ?? null,
-                    'is_default' => $validated['is_default'] ?? true
-                ]);
+    
+            // Xử lý multiple addresses
+            if (!empty($validated['addresses'])) {
+                $hasDefault = false;
+                
+                // Kiểm tra xem có địa chỉ nào được đánh dấu là default không
+                foreach ($validated['addresses'] as $addressData) {
+                    if (!empty($addressData['is_default'])) {
+                        $hasDefault = true;
+                        break;
+                    }
+                }
+                
+                foreach ($validated['addresses'] as $index => $addressData) {
+                    // Bỏ qua địa chỉ trống
+                    if (empty($addressData['address_line']) && empty($addressData['city']) && 
+                        empty($addressData['district']) && empty($addressData['ward'])) {
+                        continue;
+                    }
+                    
+                    // Nếu không có địa chỉ nào được đánh dấu default, đặt địa chỉ đầu tiên làm default
+                    $isDefault = !empty($addressData['is_default']) || (!$hasDefault && $index === array_key_first($validated['addresses']));
+                    
+                    Address::create([
+                        'user_id' => $user->id,
+                        'address_line' => $addressData['address_line'] ?? '',
+                        'city' => $addressData['city'] ?? '',
+                        'district' => $addressData['district'] ?? '',
+                        'ward' => $addressData['ward'] ?? '',
+                        'phone_number' => $addressData['phone'] ?? $validated['phone'],
+                        'latitude' => $addressData['latitude'] ?? null,
+                        'longitude' => $addressData['longitude'] ?? null,
+                        'is_default' => $isDefault
+                    ]);
+                    
+                    // Nếu địa chỉ này được đặt làm default, đảm bảo các địa chỉ khác không phải default
+                    if ($isDefault && $hasDefault) {
+                        $hasDefault = false; // Chỉ cho phép một địa chỉ default
+                    }
+                }
             }
-
+    
             // Gửi email chào mừng
             try {
                 $user->notify(new NewUserWelcomeNotification());
             } catch (\Exception $e) {
                 Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
             }
-
+    
             DB::commit();
+            
             // Get user's role
             $userRole = $user->roles()->first();
-
+    
             // Determine redirect path and message based on role
             if ($userRole->name === 'customer') {
                 return redirect()->route('admin.users.index')->with([
@@ -193,17 +221,17 @@ class UserController extends Controller
                     ]
                 ]);
             }
-
+    
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()->withErrors($e->validator)->withInput();
-
+    
         } catch (\Exception $e) {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
             }
-
+    
             Log::error('Lỗi tạo người dùng: ' . $e->getMessage());
-
+    
             return redirect()->back()->withInput()->with([
                 'toast' => [
                     'type' => 'error',

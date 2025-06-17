@@ -8,7 +8,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\View;
 
-class NewUserWelcomeNotification extends Notification implements ShouldQueue
+class NewUserWelcomeNotification extends Notification // Bỏ implements ShouldQueue
 {
     use Queueable;
 
