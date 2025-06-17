@@ -56,7 +56,8 @@ document.addEventListener("DOMContentLoaded", function() {
     let quantity = 1;
     let totalPrice = basePrice;
     
-    function updatePrice() {
+    // Define updatePrice function in global scope
+    window.updatePrice = function() {
         // Calculate variant price adjustments
         let variantAdjustment = 0;
         document.querySelectorAll('.variant-input:checked').forEach(input => {
@@ -70,7 +71,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
         
         // Single item price (variant price + toppings)
-        const singleItemPrice = basePrice + variantAdjustment;
+        const singleItemPrice = window.basePrice + variantAdjustment;
         const totalItemPrice = singleItemPrice + toppingPrice;
         
         // Apply quantity
@@ -78,7 +79,7 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // Update display
         if (variantAdjustment !== 0 || toppingPrice !== 0) {
-            basePriceDisplay.textContent = `${basePrice.toLocaleString('vi-VN')}đ`;
+            basePriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
             basePriceDisplay.classList.remove('hidden');
         } else {
             basePriceDisplay.classList.add('hidden');
@@ -87,14 +88,14 @@ document.addEventListener("DOMContentLoaded", function() {
         currentPriceDisplay.textContent = `${totalPrice.toLocaleString('vi-VN')}đ`;
         
         // Highlight current price if different from base
-        if (totalPrice !== basePrice) {
+        if (totalPrice !== window.basePrice) {
             currentPriceDisplay.classList.add('text-green-500');
             currentPriceDisplay.classList.remove('text-orange-500');
         } else {
             currentPriceDisplay.classList.add('text-orange-500');
             currentPriceDisplay.classList.remove('text-green-500');
         }
-    }
+    };
     
     // Variant selection
     variantInputs.forEach(input => {
@@ -249,9 +250,6 @@ document.addEventListener("DOMContentLoaded", function() {
             showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
         });
     });
-
-    // Initialize
-    updatePrice();
     
     // Handle discount code copy functionality
     const copyButtons = document.querySelectorAll('.copy-code');
@@ -289,6 +287,9 @@ document.addEventListener("DOMContentLoaded", function() {
             showToast(`Đã sao chép mã "${code}" vào clipboard`, 'success');
         });
     });
+
+    // Initialize
+    updatePrice();
 });
 
 // Tab switching functionality
@@ -567,4 +568,71 @@ channel.bind('topping-stock-updated', function(data) {
     
     // Update overall product availability
     updateProductAvailability();
+});
+
+// Listen for product price updates
+channel.bind('product-price-updated', function(data) {
+    console.log('Product price update received:', data);
+    
+    // Get current branch ID from the hidden input
+    const currentBranchId = document.getElementById('branch-select')?.value;
+    if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
+        console.log('Branch ID mismatch, ignoring update');
+        return;
+    }
+    
+    // Update base price
+    window.basePrice = parseFloat(data.basePrice);
+    
+    // Update price displays
+    const basePriceDisplay = document.getElementById('base-price');
+    const currentPriceDisplay = document.getElementById('current-price');
+    const priceUpdateNotification = document.getElementById('price-update-notification');
+    
+    // Add animation class to current price
+    currentPriceDisplay.classList.add('animate-price-update');
+    
+    // Update base price display
+    basePriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+    basePriceDisplay.classList.remove('hidden');
+    
+    // Update current price display
+    currentPriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+    currentPriceDisplay.classList.add('text-orange-500');
+    currentPriceDisplay.classList.remove('text-green-500');
+    
+    // Show price update notification
+    priceUpdateNotification.classList.remove('hidden');
+    
+    // Force price recalculation
+    window.updatePrice();
+    
+    // Remove animation class after animation completes
+    setTimeout(() => {
+        currentPriceDisplay.classList.remove('animate-price-update');
+    }, 500);
+    
+    // Hide notification after 5 seconds
+    setTimeout(() => {
+        priceUpdateNotification.classList.add('hidden');
+    }, 5000);
+    
+    // Show toast notification
+    showToast('Giá sản phẩm đã được cập nhật', 'info');
+    
+    // Update related products prices if they exist
+    const relatedProducts = document.querySelectorAll('.related-product');
+    relatedProducts.forEach(product => {
+        const productId = product.dataset.productId;
+        if (productId == data.productId) {
+            const priceElement = product.querySelector('.product-price');
+            if (priceElement) {
+                priceElement.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+                priceElement.classList.add('animate-price-update');
+                setTimeout(() => {
+                    priceElement.classList.remove('animate-price-update');
+                }, 500);
+            }
+        }
+    });
 });

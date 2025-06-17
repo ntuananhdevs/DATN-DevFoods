@@ -53,6 +53,30 @@
            transform: translateX(200%) skewX(-20deg);
        }
    }
+   
+   @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes priceUpdate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .animate-price-update {
+        animation: priceUpdate 0.5s ease-out;
+    }
+    
+    .price-updated {
+        color: #f97316 !important;
+        font-weight: bold;
+    }
 </style>
 <div class="container mx-auto px-4 py-8">
     <!-- Product Info Section -->
@@ -85,13 +109,23 @@
             <h1 class="text-2xl sm:text-3xl font-bold">{{ $product->name }}</h1>
 
             <!-- Price Display -->
-            <div class="flex items-center gap-3">
-                <span class="text-3xl font-bold text-orange-500" id="current-price">
-                    {{ number_format($product->base_price, 0, ',', '.') }}đ
-                </span>
-                <span class="text-lg text-gray-400 line-through hidden" id="base-price">
-                    {{ number_format($product->base_price, 0, ',', '.') }}đ
-                </span>
+            <div class="space-y-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl font-bold text-orange-500 transition-all duration-300" id="current-price">
+                        {{ number_format($product->base_price, 0, ',', '.') }}đ
+                    </span>
+                    <span class="text-lg text-gray-400 line-through hidden" id="base-price">
+                        {{ number_format($product->base_price, 0, ',', '.') }}đ
+                    </span>
+                </div>
+                
+                <!-- Price Update Notification -->
+                <div id="price-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-md border border-orange-200 animate-fade-in">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Giá sản phẩm vừa được cập nhật</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Discount Codes Section -->
@@ -637,7 +671,7 @@
         <h2 class="text-2xl font-bold mb-6">Sản Phẩm Liên Quan</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @foreach($relatedProducts as $relatedProduct)
-            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow related-product" data-product-id="{{ $relatedProduct->id }}">
                 <a href="{{ route('products.show', $relatedProduct->id) }}" class="block relative h-48 overflow-hidden">
                     <img src="{{ $relatedProduct->primary_image ? $relatedProduct->primary_image->s3_url : '/placeholder.svg?height=400&width=400' }}" 
                          alt="{{ $relatedProduct->name }}" 
@@ -700,7 +734,7 @@
 
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-lg">{{ number_format($relatedProduct->base_price, 0, ',', '.') }}đ</span>
+                            <span class="font-bold text-lg product-price">{{ number_format($relatedProduct->base_price, 0, ',', '.') }}đ</span>
                         </div>
 
                         <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">

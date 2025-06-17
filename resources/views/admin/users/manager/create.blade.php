@@ -8,15 +8,15 @@
             <div class="p-3 bg-blue-100 rounded-lg">
                 <i class="fas fa-user-plus text-blue-600 text-2xl"></i>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800">Thêm người dùng mới</h1>
+            <h1 class="text-2xl font-bold text-gray-800">Thêm Quản Lý Mới</h1>
         </div>
 
         <!-- Main Content -->
         <div class="grid md:grid-cols-2 gap-6">
             <!-- Left Column -->
             <div class="bg-white rounded-xl shadow-md p-6">
-                <h2 class="text-lg font-semibold mb-6 text-gray-700">Thông tin người dùng</h2>
-                <form action="{{ route('admin.users.managers.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
+                <h2 class="text-lg font-semibold mb-6 text-gray-700">Thông tin quản lý </h2>
+                <form action="{{ route('admin.users.store') }}" method="POST" enctype="multipart/form-data" id="userForm">
                     @csrf
 
                     <div class="space-y-4">
@@ -77,15 +77,103 @@
                                    placeholder="Nhập lại mật khẩu">
                         </div>
 
-                        <!-- Hidden role selection -->
-                        <div class="hidden">
-                            <select name="role_ids[]">
-                                @foreach($roles as $role)
-                                    <option value="{{ $role->id }}" {{ $role->name === 'manager' ? 'selected' : '' }}>
-                                        {{ $role->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <!-- Hidden role input with default customer role -->
+                        <input type="hidden" name="role_id" value="{{ $roles->where('name', 'manager')->first()->id }}">
+                        @error('role_id')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+
+                        <!-- Address fields -->
+                        <div class="border-t pt-4 mt-6">
+                            <h3 class="text-md font-medium text-gray-700 mb-4">Thông tin địa chỉ (tùy chọn)</h3>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ chi tiết</label>
+                                <input type="text" name="address_line" id="address_line" value="{{ old('address_line') }}"
+                                       class="w-full px-3 py-2 border rounded-lg @error('address_line') border-red-500 @enderror"
+                                       placeholder="Số nhà, tên đường..." onchange="updateMap()">
+                                @error('address_line')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-4 mt-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Phường/Xã</label>
+                                    <input type="text" name="ward" id="ward" value="{{ old('ward') }}"
+                                           class="w-full px-3 py-2 border rounded-lg @error('ward') border-red-500 @enderror"
+                                           placeholder="Phường/Xã" onchange="updateMap()">
+                                    @error('ward')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
+                                    <input type="text" name="district" id="district" value="{{ old('district') }}"
+                                           class="w-full px-3 py-2 border rounded-lg @error('district') border-red-500 @enderror"
+                                           placeholder="Quận/Huyện" onchange="updateMap()">
+                                    @error('district')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Thành phố/Tỉnh</label>
+                                    <input type="text" name="city" id="city" value="{{ old('city') }}"
+                                           class="w-full px-3 py-2 border rounded-lg @error('city') border-red-500 @enderror"
+                                           placeholder="Thành phố/Tỉnh" onchange="updateMap()">
+                                    @error('city')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1 mt-4">Số điện thoại địa chỉ</label>
+                                <input type="tel" name="address_phone" value="{{ old('address_phone') }}"
+                                       class="w-full px-3 py-2 border rounded-lg @error('address_phone') border-red-500 @enderror"
+                                       placeholder="Số điện thoại cho địa chỉ này">
+                                @error('address_phone')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Coordinates -->
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Vĩ độ (Latitude)</label>
+                                    <input type="number" name="latitude" id="latitude" value="{{ old('latitude') }}" step="any"
+                                           class="w-full px-3 py-2 border rounded-lg @error('latitude') border-red-500 @enderror"
+                                           placeholder="Vĩ độ" readonly>
+                                    @error('latitude')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Kinh độ (Longitude)</label>
+                                    <input type="number" name="longitude" id="longitude" value="{{ old('longitude') }}" step="any"
+                                           class="w-full px-3 py-2 border rounded-lg @error('longitude') border-red-500 @enderror"
+                                           placeholder="Kinh độ" readonly>
+                                    @error('longitude')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Map Container -->
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Vị trí trên bản đồ</label>
+                                <div id="map" class="w-full h-64 rounded-lg border"></div>
+                                <p class="text-sm text-gray-500 mt-1">Nhấp vào bản đồ để chọn vị trí chính xác</p>
+                            </div>
+
+                            <div class="flex items-center mt-4">
+                                <input type="checkbox" name="is_default" value="1" {{ old('is_default') ? 'checked' : 'checked' }}
+                                       class="mr-2" id="is_default">
+                                <label for="is_default" class="text-sm text-gray-700">Đặt làm địa chỉ mặc định</label>
+                            </div>
                         </div>
 
                         <!-- Hidden avatar input -->
@@ -99,7 +187,7 @@
                         </button>
                         <button type="submit"
                                 class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
-                            Tạo quản lý
+                            Tạo người dùng
                         </button>
                     </div>
                 </form>
@@ -128,7 +216,92 @@
     </div>
 </div>
 
+<!-- Mapbox CSS -->
+<link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+
+<!-- Mapbox JS -->
+<script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+
 <script>
+// Mapbox Access Token - Bạn cần thay thế bằng token của mình
+mapboxgl.accessToken ='{{ config('services.mapbox.access_token') }}';
+
+let map;
+let marker;
+
+// Khởi tạo bản đồ
+function initMap() {
+    map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [105.8342, 21.0278], // Tọa độ Hà Nội mặc định
+        zoom: 10
+    });
+
+    // Thêm marker
+    marker = new mapboxgl.Marker({
+        draggable: true
+    })
+    .setLngLat([105.8342, 21.0278])
+    .addTo(map);
+
+    // Xử lý khi kéo thả marker
+    marker.on('dragend', function() {
+        const lngLat = marker.getLngLat();
+        document.getElementById('latitude').value = lngLat.lat.toFixed(6);
+        document.getElementById('longitude').value = lngLat.lng.toFixed(6);
+    });
+
+    // Xử lý khi click vào bản đồ
+    map.on('click', function(e) {
+        const lngLat = e.lngLat;
+        marker.setLngLat([lngLat.lng, lngLat.lat]);
+        document.getElementById('latitude').value = lngLat.lat.toFixed(6);
+        document.getElementById('longitude').value = lngLat.lng.toFixed(6);
+    });
+}
+
+// Cập nhật bản đồ dựa trên địa chỉ
+function updateMap() {
+    const addressLine = document.getElementById('address_line').value;
+    const ward = document.getElementById('ward').value;
+    const district = document.getElementById('district').value;
+    const city = document.getElementById('city').value;
+    
+    // Tạo địa chỉ đầy đủ
+    const fullAddress = [addressLine, ward, district, city]
+        .filter(part => part && part.trim() !== '')
+        .join(', ');
+    
+    if (fullAddress.trim() === '') return;
+    
+    // Sử dụng Mapbox Geocoding API để tìm tọa độ
+    const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(fullAddress)}.json?access_token=${mapboxgl.accessToken}&country=VN&limit=1`;
+    
+    fetch(geocodingUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.features && data.features.length > 0) {
+                const coordinates = data.features[0].center;
+                const lng = coordinates[0];
+                const lat = coordinates[1];
+                
+                // Cập nhật bản đồ và marker
+                map.setCenter([lng, lat]);
+                map.setZoom(15);
+                marker.setLngLat([lng, lat]);
+                
+                // Cập nhật input tọa độ
+                document.getElementById('latitude').value = lat.toFixed(6);
+                document.getElementById('longitude').value = lng.toFixed(6);
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi geocoding:', error);
+        });
+}
+
+// Avatar preview function
 function previewAndTransferAvatar(input) {
     if (input.files && input.files[0]) {
         const hiddenInput = document.getElementById('avatar-input');
@@ -149,6 +322,21 @@ function previewAndTransferAvatar(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
+
+// Khởi tạo bản đồ khi trang được tải
+document.addEventListener('DOMContentLoaded', function() {
+    initMap();
+    
+    // Nếu có dữ liệu cũ, cập nhật bản đồ
+    const oldLat = '{{ old("latitude") }}';
+    const oldLng = '{{ old("longitude") }}';
+    
+    if (oldLat && oldLng) {
+        map.setCenter([parseFloat(oldLng), parseFloat(oldLat)]);
+        map.setZoom(15);
+        marker.setLngLat([parseFloat(oldLng), parseFloat(oldLat)]);
+    }
+});
 </script>
 @endsection
 
