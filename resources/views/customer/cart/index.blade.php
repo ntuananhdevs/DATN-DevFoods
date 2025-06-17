@@ -588,17 +588,10 @@
                     discount: discount
                 })
                 .then(response => {
-                    if (response.data.success) {
-                        showToast('Áp dụng mã giảm giá thành công');
-                        // Update checkout button to include discount
-                        const checkoutButton = document.querySelector('a[href="{{ route('checkout.index') }}"]');
-                        const total = parseInt(document.getElementById('total').textContent.replace(/\D/g, ''));
-                        checkoutButton.href = "{{ route('checkout.index') }}?discount=" + discount;
-                    }
+                    showToast('Áp dụng mã giảm giá thành công');
                 })
                 .catch(error => {
                     console.error('Error applying coupon:', error);
-                    showToast('Đã xảy ra lỗi khi áp dụng mã giảm giá');
                 });
             } else {
                 showToast('Mã giảm giá không hợp lệ');
