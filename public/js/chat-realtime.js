@@ -2823,7 +2823,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         location.reload();
                     }
                 } else {
-                    alert(data.message || "Có lỗi xảy ra!");
+                    alert(data.message || "Có lỗi xảy ra!!");
                 }
             });
     }
