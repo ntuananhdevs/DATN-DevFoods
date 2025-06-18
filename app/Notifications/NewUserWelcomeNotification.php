@@ -17,7 +17,7 @@ class NewUserWelcomeNotification extends Notification implements ShouldQueue
      */
     public function __construct()
     {
-        //
+        $this->onQueue('emails');
     }
 
     /**

@@ -695,16 +695,15 @@
             <div class="p-4 flex justify-end">
                 <div class="w-full flex flex-col items-end">
                     @if ($hasConversation)
-                        <select class="distribution-select form-select w-full max-w-xs" id="distribution-select"
-                            data-conversation-id="{{ $conversation->id }}"
-                            @if ($conversation->branch_id) style="display:none" @endif>
-                            <option value="" disabled selected>Chọn chi nhánh</option>
-                            @foreach ($branches as $branch)
-                                <option value="{{ $branch->id }}"
-                                    {{ $conversation->branch_id == $branch->id ? 'selected' : '' }}>{{ $branch->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        @if (!$conversation->branch_id && $conversation->status === 'new')
+                            <select class="distribution-select form-select w-full max-w-xs" id="distribution-select"
+                                data-conversation-id="{{ $conversation->id }}">
+                                <option value="" disabled selected>Chọn chi nhánh</option>
+                                @foreach ($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                        @endif
                     @endif
                 </div>
             </div>

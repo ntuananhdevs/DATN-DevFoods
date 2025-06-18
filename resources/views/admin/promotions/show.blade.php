@@ -4,6 +4,92 @@
 
 @section('content')
 <style>
+    /* Dark mode variables */
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 84% 4.9%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --accent-foreground: 222.2 84% 4.9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 217.2 91.2% 59.8%;
+        --primary-foreground: 222.2 84% 4.9%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 224.3 76.3% 94.1%;
+    }
+
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+
+    /* Theme toggle button */
+    .theme-toggle {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        background-color: hsl(var(--muted));
+        border-radius: 12px;
+        transition: background-color 0.3s ease;
+        cursor: pointer;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .theme-toggle.dark {
+        background-color: hsl(var(--primary));
+    }
+
+    .theme-toggle-handle {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        background-color: hsl(var(--background));
+        border-radius: 50%;
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+    }
+
+    .theme-toggle.dark .theme-toggle-handle {
+        transform: translateX(20px);
+    }
+    
     .fade-in {
         animation: fadeIn 0.5s ease-in;
     }
@@ -21,16 +107,20 @@
     }
 
     .detail-card {
-        background: white;
+        background-color: hsl(var(--card));
         border-radius: 12px;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
+        border: 1px solid hsl(var(--border));
         transition: all 0.3s ease;
     }
 
     .detail-card:hover {
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         transform: translateY(-2px);
+    }
+
+    .dark .detail-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
     }
 
     .detail-header {
@@ -41,6 +131,10 @@
         display: flex;
         align-items: center;
         gap: 12px;
+    }
+
+    .dark .detail-header {
+        background: linear-gradient(135deg, #4f6ce7 0%, #8b5dc7 100%);
     }
 
     .detail-content {
@@ -62,14 +156,14 @@
 
     .info-label {
         font-weight: 600;
-        color: #374151;
+        color: hsl(var(--foreground));
         font-size: 0.875rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
     .info-value {
-        color: #1f2937;
+        color: hsl(var(--foreground));
         font-size: 1rem;
         line-height: 1.5;
     }
@@ -84,25 +178,98 @@
         font-weight: 500;
     }
 
-    .status-active {
-        background: #dcfce7;
+    .status-badge.active {
+        background-color: #dcfce7;
         color: #166534;
     }
 
-    .status-inactive {
-        background: #fee2e2;
-        color: #991b1b;
+    .dark .status-badge.active {
+        background-color: rgba(22, 163, 74, 0.2);
+        color: #4ade80;
     }
 
-    .status-featured {
-        background: #fef3c7;
-        color: #92400e;
+    .status-badge.scheduled {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+
+    .dark .status-badge.scheduled {
+        background-color: rgba(217, 119, 6, 0.2);
+        color: #fbbf24;
+    }
+
+    .status-badge.expired {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+
+    .dark .status-badge.expired {
+        background-color: rgba(220, 38, 38, 0.2);
+        color: #f87171;
+    }
+
+    .status-badge.inactive {
+        background-color: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .dark .status-badge.inactive {
+        background-color: rgba(107, 114, 128, 0.2);
+        color: #9ca3af;
+    }
+
+    /* Statistics cards */
+    .stat-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+        background-color: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark .stat-card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+    
+    .stat-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .text-muted-foreground {
+        color: hsl(var(--muted-foreground));
+    }
+
+    /* Progress bar styling */
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background-color: hsl(var(--muted));
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background-color: hsl(var(--primary));
+        transition: width 0.3s ease;
     }
 
     .image-preview {
         max-width: 200px;
         border-radius: 8px;
-        border: 2px solid #e5e7eb;
+        border: 2px solid hsl(var(--border));
         transition: transform 0.3s ease;
     }
 
@@ -113,7 +280,7 @@
     .section-title {
         font-size: 1.25rem;
         font-weight: 600;
-        color: #1f2937;
+        color: hsl(var(--foreground));
         margin-bottom: 1rem;
         display: flex;
         align-items: center;
@@ -127,41 +294,96 @@
     }
 
     .data-table th {
-        background: #f9fafb;
+        background: hsl(var(--muted));
         padding: 12px;
         text-align: left;
         font-weight: 600;
-        color: #374151;
-        border-bottom: 2px solid #e5e7eb;
+        color: hsl(var(--foreground));
+        border-bottom: 2px solid hsl(var(--border));
         font-size: 0.875rem;
     }
 
     .data-table td {
         padding: 12px;
-        border-bottom: 1px solid #e5e7eb;
-        color: #1f2937;
+        border-bottom: 1px solid hsl(var(--border));
+        color: hsl(var(--foreground));
     }
 
     .data-table tr:hover {
-        background: #f9fafb;
+        background: hsl(var(--accent));
     }
 
-    .type-badge {
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.75rem;
+    .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 1.5rem;
+        color: hsl(var(--muted-foreground));
+        font-size: 0.875rem;
+    }
+
+    .breadcrumb a {
+        color: hsl(var(--primary));
+        text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: hsl(var(--muted));
+        color: hsl(var(--foreground));
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
         font-weight: 500;
-        text-transform: uppercase;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
     }
 
-    .type-percentage {
-        background: #dbeafe;
-        color: #1e40af;
+    .back-btn:hover {
+        background: hsl(var(--accent));
+        transform: translateY(-1px);
     }
 
-    .type-fixed {
-        background: #d1fae5;
-        color: #065f46;
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: hsl(var(--muted-foreground));
+        background: hsl(var(--muted));
+        border-radius: 8px;
+        border: 2px dashed hsl(var(--border));
+    }
+
+    .form-group {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: hsl(var(--muted));
+        border-radius: 8px;
+        border: 1px solid hsl(var(--border));
+    }
+
+    .form-select {
+        padding: 8px 12px;
+        border: 1px solid hsl(var(--border));
+        border-radius: 6px;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        min-width: 200px;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: hsl(var(--primary));
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
     .action-btn {
@@ -180,6 +402,11 @@
         color: #991b1b;
     }
 
+    .dark .btn-danger {
+        background: rgba(220, 38, 38, 0.2);
+        color: #f87171;
+    }
+
     .btn-danger:hover {
         background: #fecaca;
         transform: translateY(-1px);
@@ -190,129 +417,14 @@
         color: #1e40af;
     }
 
+    .dark .btn-primary {
+        background: rgba(59, 130, 246, 0.2);
+        color: #60a5fa;
+    }
+
     .btn-primary:hover {
         background: #bfdbfe;
         transform: translateY(-1px);
-    }
-
-    .form-group {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        margin-top: 1rem;
-        padding: 1rem;
-        background: #f9fafb;
-        border-radius: 8px;
-        border: 1px solid #e5e7eb;
-    }
-
-    .form-select {
-        padding: 8px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        background: white;
-        color: #374151;
-        min-width: 200px;
-    }
-
-    .form-select:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 2rem;
-        color: #6b7280;
-        background: #f9fafb;
-        border-radius: 8px;
-        border: 2px dashed #d1d5db;
-    }
-
-    .breadcrumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 1.5rem;
-        color: #6b7280;
-        font-size: 0.875rem;
-    }
-
-    .breadcrumb a {
-        color: #3b82f6;
-        text-decoration: none;
-    }
-
-    .breadcrumb a:hover {
-        text-decoration: underline;
-    }
-
-    .back-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        background: #f3f4f6;
-        color: #374151;
-        text-decoration: none;
-        border-radius: 6px;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        margin-bottom: 1.5rem;
-    }
-
-    .back-btn:hover {
-        background: #e5e7eb;
-        transform: translateY(-1px);
-    }
-
-    /* Thêm CSS cho thẻ thống kê */
-    .stat-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.25rem;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        border: 1px solid #e5e7eb;
-        transition: all 0.3s ease;
-    }
-    
-    .stat-card:hover {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-    }
-    
-    .stat-icon {
-        width: 24px;
-        height: 24px;
-    }
-    
-    .text-blue-500 {
-        color: #3b82f6;
-    }
-    
-    .text-green-500 {
-        color: #10b981;
-    }
-    
-    .text-purple-500 {
-        color: #8b5cf6;
-    }
-    
-    .text-amber-500 {
-        color: #f59e0b;
-    }
-    
-    .text-muted-foreground {
-        color: #6b7280;
     }
 
     @media (max-width: 768px) {
@@ -336,6 +448,11 @@
         
         .stat-cards {
             grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .stat-card {
+            padding: 0.75rem;
         }
     }
 </style>
@@ -346,6 +463,14 @@
         <a href="{{ route('admin.promotions.index') }}">Chương trình khuyến mãi</a>
         <span>/</span>
         <span>{{ $program->name }}</span>
+        <div class="ml-auto flex items-center gap-2">
+            <span class="text-sm text-muted-foreground">Theme:</span>
+            <button id="themeToggle" class="theme-toggle">
+                <div class="theme-toggle-handle">
+                    <span id="themeIcon">🌙</span>
+                </div>
+            </button>
+        </div>
     </div>
 
     <!-- Back Button -->
@@ -366,8 +491,8 @@
     <!-- Thống kê -->
     <div class="stat-cards">
         <div class="stat-card">
-            <div class="flex items-center gap-2 mb-2">
-                <svg class="stat-icon text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="min-width: 16px;">
                     <path d="M20 7h-9m0 0l3-3m-3 3l3 3m-3 8h9m0 0l-3 3m3-3l-3-3" />
                     <rect x="3" y="5" width="4" height="14" rx="1" />
                 </svg>
@@ -377,12 +502,10 @@
         </div>
 
         <div class="stat-card">
-            <div class="flex items-center gap-2 mb-2">
-                <svg class="stat-icon text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12c.562 0 .998-.428 1-.988.008-3.104-1.457-6.126-3.985-8.02-2.528-1.895-5.903-2.342-8.884-1.158C6.15 3.01 4.193 5.256 3.5 7.99m-.46 3.52c-.235 4.49 2.35 8.68 6.64 10.18 3.903 1.36 8.22.05 10.96-3.18" />
-                    <path d="M1 11a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm21.54.54a1.5 1.5 0 1 0 0-2.12 1.5 1.5 0 0 0 0 2.12z" />
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="min-width: 16px;">
                     <circle cx="12" cy="12" r="10" />
-                    <path d="M12 7v5l2.5 2.5" />
+                    <path d="M12 6v6l4 2" />
                 </svg>
                 <span class="text-sm font-medium text-muted-foreground">Thời gian còn lại</span>
             </div>
@@ -397,8 +520,8 @@
         </div>
 
         <div class="stat-card">
-            <div class="flex items-center gap-2 mb-2">
-                <svg class="stat-icon text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" style="min-width: 16px;">
                     <path d="M2 10s3-3 5-3 4 3 6 3 4-3 6-3 5 3 5 3" />
                     <path d="M2 19s3-3 5-3 4 3 6 3 4-3 6-3 5 3 5 3" />
                 </svg>
@@ -417,8 +540,8 @@
         </div>
 
         <div class="stat-card">
-            <div class="flex items-center gap-2 mb-2">
-                <svg class="stat-icon text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <svg class="stat-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="min-width: 16px;">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                 </svg>
@@ -724,7 +847,7 @@
                                         @php
                                             $percentage = min(100, ($discount->current_usage_count / $discount->max_total_usage) * 100);
                                         @endphp
-                                        <div style="height: 100%; background: #3b82f6; width: {{ $percentage }}%; border-radius: 2px;"></div>
+                                        <div class="progress-fill" data-width="{{ $percentage }}" style="height: 100%; background: #3b82f6; border-radius: 2px;"></div>
                                     @endif
                                 </div>
                                 <div style="font-size: 10px; color: #6b7280; margin-top: 3px;">
@@ -887,4 +1010,52 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+    // Theme Management
+    function initThemeToggle() {
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+        
+        // Load saved theme or default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+        
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                html.classList.add('dark');
+                themeToggle.classList.add('dark');
+                themeIcon.textContent = '☀️';
+            } else {
+                html.classList.remove('dark');
+                themeToggle.classList.remove('dark');
+                themeIcon.textContent = '🌙';
+            }
+            localStorage.setItem('theme', theme);
+        }
+        
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+    }
+
+    // Initialize on DOM Ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize theme toggle
+        initThemeToggle();
+        
+        // Apply progress bar widths from data attributes
+        document.querySelectorAll('.progress-fill').forEach(el => {
+            if (el.hasAttribute('data-width')) {
+                const width = el.getAttribute('data-width');
+                el.style.width = width + '%';
+            }
+        });
+    });
+</script>
 @endsection

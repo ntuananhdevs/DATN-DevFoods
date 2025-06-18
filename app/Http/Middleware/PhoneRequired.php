@@ -32,7 +32,7 @@ class PhoneRequired
                 // Danh sách route được phép access khi chưa có số điện thoại
                 $allowedRoutes = [
                     'customer.phone-required',
-                    'customer.update-phone',
+                    'customer.phone-required.post',
                     'customer.logout',
                     'api.auth.google',
                     'api.auth.status'

@@ -17,16 +17,24 @@ use App\Models\DiscountCode;
 use App\Models\UserDiscountCode;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Services\BranchService;
 
 class ProductController extends Controller
 {
+    protected $branchService;
+
+    public function __construct(BranchService $branchService)
+    {
+        $this->branchService = $branchService;
+    }
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {        
-        // Get selected branch ID from session
-        $selectedBranchId = session('selected_branch');
+        // Get selected branch ID from BranchService
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $selectedBranchId = $currentBranch ? $currentBranch->id : null;
         
         // Lấy tất cả categories để hiển thị filter
         $categories = Category::where('status', true)
@@ -215,8 +223,9 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        // Get selected branch ID from session
-        $selectedBranchId = session('selected_branch');
+        // Get selected branch ID from BranchService
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $selectedBranchId = $currentBranch ? $currentBranch->id : null;
         
         $product = Product::with([
             'category',
@@ -408,21 +417,8 @@ class ProductController extends Controller
             return $relatedProduct;
         });
 
-        // If branch is selected, only show that branch, otherwise show all active branches
-        if ($selectedBranchId) {
-            $branches = Branch::where('id', $selectedBranchId)
-                ->where('active', true)
-                ->get();
-        } else {
-            // Lấy danh sách chi nhánh có sản phẩm
-            $branches = Branch::whereHas('stocks', function($query) use ($product) {
-                $query->whereHas('productVariant', function($q) use ($product) {
-                    $q->where('product_id', $product->id);
-                });
-            })
-            ->where('active', true)
-            ->get();
-        }
+        // Always get all active branches for the modal to display all options
+        $branches = Branch::where('active', true)->get();
 
         return view('customer.shop.show', compact(
             'product',

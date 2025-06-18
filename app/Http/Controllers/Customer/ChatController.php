@@ -45,6 +45,7 @@ class ChatController extends Controller
             Log::info('Customer conversation found', ['conversation' => $conversation]);
 
             $receiverId = $conversation->branch_id ?? 11;
+            $receiverType = $conversation->branch_id ? 'branch_staff' : 'super_admin';
 
             $attachmentPath = null;
             $attachmentType = null;
@@ -70,6 +71,7 @@ class ChatController extends Controller
                 'conversation_id' => $request->conversation_id,
                 'sender_id' => $userId,
                 'receiver_id' => $receiverId,
+                'receiver_type' => $receiverType,
                 'sender_type' => 'customer',
                 'message' => $messageText,
                 'attachment' => $attachmentPath,
@@ -202,8 +204,7 @@ class ChatController extends Controller
                 'conversation_id' => $conversation->id,
                 'sender_id' => $adminId,
                 'receiver_id' => $userId,
-                'sender_type' => 'super_admin',
-                'receiver_type' => 'customer',
+                'receiver_type' => 'super_admin',
                 'message' => 'Xin chào! Tôi có thể giúp gì cho bạn hôm nay? 😊',
                 'attachment' => null,
                 'attachment_type' => null,

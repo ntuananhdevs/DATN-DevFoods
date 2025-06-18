@@ -2,6 +2,10 @@
 
 @section('title', 'FastFood - Đăng Nhập')
 
+@push('styles')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <style>
     .container {

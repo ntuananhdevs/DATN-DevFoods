@@ -1,106 +1,74 @@
 @extends('layouts.customer.fullLayoutMaster')
 
-@section('title', 'Cập nhật số điện thoại - FastFood')
+@section('title', 'FastFood - Bổ sung thông tin')
+
+@push('styles')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
 
 @section('content')
-<div class="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-        <div class="text-center">
-            <div class="mx-auto h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-phone text-orange-500 text-2xl"></i>
-            </div>
-            <h2 class="mt-6 text-3xl font-bold text-gray-900">
-                Cập nhật số điện thoại
-            </h2>
-            <p class="mt-2 text-sm text-gray-600">
-                Để hoàn tất quá trình đăng ký, vui lòng cung cấp số điện thoại của bạn
-            </p>
+<div class="min-h-screen flex flex-col items-center justify-center px-4">
+    <div class="w-full max-w-lg">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Hoàn tất đăng ký</h1>
+            <p class="text-orange-500 font-medium">Vui lòng bổ sung số điện thoại để hoàn tất quá trình đăng nhập</p>
         </div>
 
-        <div class="bg-white rounded-lg shadow-md p-8">
-            <form id="phone-form" class="space-y-6">
-                @csrf
-                <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
-                        Số điện thoại <span class="text-red-500">*</span>
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-phone text-gray-400"></i>
-                        </div>
-                        <input 
-                            type="tel" 
-                            id="phone" 
-                            name="phone" 
-                            class="appearance-none relative block w-full pl-10 pr-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500 focus:z-10 sm:text-sm" 
-                            placeholder="Nhập số điện thoại của bạn"
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-6">
+                <form id="phoneForm" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
+                            Số điện thoại <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            id="phone"
+                            name="phone"
+                            type="tel"
                             required
-                            pattern="^0\d{9}$"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
+                            placeholder="0987654321"
+                            pattern="0[0-9]{9}"
                             maxlength="10"
-                        >
+                        />
+                        <div class="text-red-500 text-sm mt-1 hidden" id="phoneError"></div>
+                        <div class="text-gray-500 text-xs mt-1">Nhập số điện thoại 10 số, bắt đầu bằng số 0</div>
                     </div>
-                    <p class="mt-1 text-xs text-gray-500">
-                        Số điện thoại phải có 10 chữ số, bắt đầu bằng số 0
-                    </p>
-                </div>
 
-                @if(session('warning'))
-                <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
-                    <div class="flex">
-                        <i class="fas fa-exclamation-triangle text-yellow-400 flex-shrink-0 mt-0.5"></i>
-                        <div class="ml-3">
-                            <p class="text-sm text-yellow-800">{{ session('warning') }}</p>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                <div id="error-message" class="hidden bg-red-50 border border-red-200 rounded-md p-3">
-                    <div class="flex">
-                        <i class="fas fa-exclamation-circle text-red-400 flex-shrink-0 mt-0.5"></i>
-                        <div class="ml-3">
-                            <p class="text-sm text-red-800" id="error-text"></p>
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <button 
-                        type="submit" 
-                        id="submit-btn"
-                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    <button
+                        type="submit"
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="submitBtn"
                     >
-                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                            <i class="fas fa-check text-orange-500 group-hover:text-orange-400" aria-hidden="true"></i>
+                        <span id="submitBtnText">Hoàn tất</span>
+                        <span id="submitBtnLoading" class="hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Đang xử lý...
                         </span>
-                        <span id="btn-text">Cập nhật số điện thoại</span>
-                        <div id="loading-spinner" class="hidden ml-2">
-                            <i class="fas fa-spinner fa-spin"></i>
-                        </div>
                     </button>
-                </div>
-            </form>
-        </div>
+                </form>
 
-        <div class="text-center">
-            <p class="text-sm text-gray-600">
-                Số điện thoại sẽ được sử dụng để liên hệ về đơn hàng của bạn
-            </p>
+                <div class="text-center text-sm mt-4 text-gray-500">
+                    Số điện thoại sẽ được sử dụng để giao hàng và liên hệ khi cần thiết
+                </div>
+            </div>
         </div>
     </div>
 </div>
+@endsection
 
+@section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('phone-form');
+    const phoneForm = document.getElementById('phoneForm');
     const phoneInput = document.getElementById('phone');
-    const submitBtn = document.getElementById('submit-btn');
-    const btnText = document.getElementById('btn-text');
-    const loadingSpinner = document.getElementById('loading-spinner');
-    const errorMessage = document.getElementById('error-message');
-    const errorText = document.getElementById('error-text');
+    const phoneError = document.getElementById('phoneError');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const submitBtnLoading = document.getElementById('submitBtnLoading');
 
-    // Format phone number while typing
+    // Phone input formatting
     phoneInput.addEventListener('input', function(e) {
         let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
         if (value.length > 10) {
@@ -108,88 +76,74 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         e.target.value = value;
         
-        // Hide error when user starts typing
-        hideError();
+        // Clear error when user starts typing
+        phoneError.classList.add('hidden');
+        phoneError.textContent = '';
     });
 
-    function showError(message) {
-        errorText.textContent = message;
-        errorMessage.classList.remove('hidden');
-        phoneInput.classList.add('border-red-300', 'focus:border-red-500', 'focus:ring-red-500');
-        phoneInput.classList.remove('border-gray-300', 'focus:border-orange-500', 'focus:ring-orange-500');
-    }
-
-    function hideError() {
-        errorMessage.classList.add('hidden');
-        phoneInput.classList.remove('border-red-300', 'focus:border-red-500', 'focus:ring-red-500');
-        phoneInput.classList.add('border-gray-300', 'focus:border-orange-500', 'focus:ring-orange-500');
-    }
-
-    function setLoading(isLoading) {
-        submitBtn.disabled = isLoading;
-        if (isLoading) {
-            btnText.textContent = 'Đang cập nhật...';
-            loadingSpinner.classList.remove('hidden');
-        } else {
-            btnText.textContent = 'Cập nhật số điện thoại';
-            loadingSpinner.classList.add('hidden');
-        }
-    }
-
-    form.addEventListener('submit', function(e) {
+    // Form submission
+    phoneForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const phone = phoneInput.value.trim();
         
-        // Validate phone number
+        // Reset error state
+        phoneError.classList.add('hidden');
+        phoneError.textContent = '';
+        
+        // Validate phone
         if (!phone) {
             showError('Vui lòng nhập số điện thoại');
             return;
         }
         
-        if (phone.length !== 10) {
-            showError('Số điện thoại phải có đúng 10 chữ số');
+        if (!/^0\d{9}$/.test(phone)) {
+            showError('Số điện thoại phải là 10 số và bắt đầu bằng số 0');
             return;
         }
         
-        if (!phone.match(/^0\d{9}$/)) {
-            showError('Số điện thoại phải bắt đầu bằng số 0 và có 10 chữ số');
-            return;
-        }
-
-        setLoading(true);
-        hideError();
-
-        // Send request
-        fetch('{{ route("customer.update-phone") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                phone: phone
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtnText.classList.add('hidden');
+        submitBtnLoading.classList.remove('hidden');
+        
+        try {
+            const response = await fetch('{{ route("customer.phone-required.post") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ phone: phone })
+            });
+            
+            const data = await response.json();
+            
             if (data.success) {
-                // Show success message briefly then redirect
-                btnText.textContent = 'Thành công!';
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 1000);
+                // Redirect to home page
+                window.location.href = '{{ route("home") }}';
             } else {
-                setLoading(false);
-                showError(data.message || 'Có lỗi xảy ra, vui lòng thử lại');
+                if (data.errors && data.errors.phone) {
+                    showError(data.errors.phone[0]);
+                } else {
+                    showError(data.message || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                }
             }
-        })
-        .catch(error => {
-            setLoading(false);
+        } catch (error) {
             console.error('Error:', error);
-            showError('Có lỗi xảy ra, vui lòng thử lại');
-        });
+            showError('Đã xảy ra lỗi. Vui lòng thử lại.');
+        } finally {
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtnText.classList.remove('hidden');
+            submitBtnLoading.classList.add('hidden');
+        }
     });
+    
+    function showError(message) {
+        phoneError.textContent = message;
+        phoneError.classList.remove('hidden');
+    }
 });
 </script>
 @endsection 

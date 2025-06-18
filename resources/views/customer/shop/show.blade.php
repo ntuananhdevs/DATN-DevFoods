@@ -53,6 +53,30 @@
            transform: translateX(200%) skewX(-20deg);
        }
    }
+   
+   @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes priceUpdate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .animate-price-update {
+        animation: priceUpdate 0.5s ease-out;
+    }
+    
+    .price-updated {
+        color: #f97316 !important;
+        font-weight: bold;
+    }
 </style>
 <div class="container mx-auto px-4 py-8">
     <!-- Product Info Section -->
@@ -85,13 +109,23 @@
             <h1 class="text-2xl sm:text-3xl font-bold">{{ $product->name }}</h1>
 
             <!-- Price Display -->
-            <div class="flex items-center gap-3">
-                <span class="text-3xl font-bold text-orange-500" id="current-price">
-                    {{ number_format($product->base_price, 0, ',', '.') }}đ
-                </span>
-                <span class="text-lg text-gray-400 line-through hidden" id="base-price">
-                    {{ number_format($product->base_price, 0, ',', '.') }}đ
-                </span>
+            <div class="space-y-2">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl font-bold text-orange-500 transition-all duration-300" id="current-price">
+                        {{ number_format($product->base_price, 0, ',', '.') }}đ
+                    </span>
+                    <span class="text-lg text-gray-400 line-through hidden" id="base-price">
+                        {{ number_format($product->base_price, 0, ',', '.') }}đ
+                    </span>
+                </div>
+                
+                <!-- Price Update Notification -->
+                <div id="price-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-md border border-orange-200 animate-fade-in">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Giá sản phẩm vừa được cập nhật</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Discount Codes Section -->
@@ -158,33 +192,38 @@
 
             <!-- Get selected branch information for JS -->
             @php
-                $selectedBranchId = session('selected_branch');
+                $selectedBranchId = $currentBranch ? $currentBranch->id : null;
                 $isAvailable = false;
                 
                 if ($selectedBranchId) {
-                    $selectedBranch = $branches->where('id', $selectedBranchId)->first();
-                    if ($selectedBranch) {
-                        $variantCount = $selectedBranch->stocks()
-                            ->whereHas('productVariant', function($query) use ($product) {
-                                $query->where('product_id', $product->id);
-                            })
-                            ->where('stock_quantity', '>', 0)
-                            ->distinct('product_variant_id')
-                            ->count('product_variant_id');
-                        
-                        $isAvailable = $variantCount > 0;
-                    }
+                    $variantCount = \App\Models\BranchStock::whereHas('productVariant', function($query) use ($product) {
+                            $query->where('product_id', $product->id);
+                        })
+                        ->where('branch_id', $selectedBranchId)
+                        ->where('stock_quantity', '>', 0)
+                        ->distinct('product_variant_id')
+                        ->count('product_variant_id');
+                    
+                    $isAvailable = $variantCount > 0;
                 }
             @endphp
             
             <!-- Hidden branch_id input for JS -->
             <input type="hidden" id="branch-select" value="{{ $selectedBranchId }}">
-            
+
             @if($selectedBranchId && !$isAvailable)
-                <div class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
+                <div id="out-of-stock-message" class="p-3 mb-4 bg-red-50 rounded-md text-red-700 text-sm border border-red-200">
                     <p>Sản phẩm hiện đang hết hàng tại chi nhánh của bạn. Vui lòng chọn chi nhánh khác.</p>
                 </div>
             @endif
+
+            @php
+                // Debug log for selected branch and product
+                \Log::debug('Product and Branch Info:', [
+                    'product_id' => $product->id,
+                    'selected_branch_id' => $selectedBranchId
+                ]);
+            @endphp
 
             <!-- Product variants -->
             <div class="space-y-4" id="variants-container">
@@ -194,22 +233,56 @@
                     <h3 class="font-medium mb-2">{{ $attribute->name }}</h3>
                     <div class="flex flex-wrap gap-2">
                         @foreach($attribute->values as $value)
+                        @php
+                            $variantStock = $selectedBranchId ? \App\Models\BranchStock::whereHas('productVariant', function($query) use ($product, $value) {
+                                    $query->where('product_id', $product->id)
+                                          ->whereHas('variantValues', function($q) use ($value) {
+                                              $q->where('variant_value_id', $value->id);
+                                          });
+                                })
+                                ->where('branch_id', $selectedBranchId)
+                                ->first() : null;
+                            
+                            // Debug log for each variant
+                            \Log::debug('Variant Stock Info:', [
+                                'attribute' => $attribute->name,
+                                'value' => $value->value,
+                                'variant_stock' => $variantStock ? [
+                                    'id' => $variantStock->id,
+                                    'product_variant_id' => $variantStock->product_variant_id,
+                                    'stock_quantity' => $variantStock->stock_quantity
+                                ] : null
+                            ]);
+                            
+                            $stockQuantity = $variantStock ? $variantStock->stock_quantity : 0;
+                            $productVariantId = $variantStock ? $variantStock->product_variant_id : null;
+                        @endphp
                         <label class="relative flex items-center">
                             <input type="radio" 
                                    name="attribute_{{ $attribute->id }}" 
                                    value="{{ $value->id }}" 
                                    data-attribute-id="{{ $attribute->id }}"
                                    data-price-adjustment="{{ $value->price_adjustment }}"
+                                   data-variant-id="{{ $productVariantId }}"
+                                   data-stock-quantity="{{ $stockQuantity }}"
+                                   data-branch-id="{{ $selectedBranchId }}"
                                    class="sr-only variant-input"
                                    {{ $loop->first ? 'checked' : '' }}
-                                   {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
-                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50 {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'opacity-50 cursor-not-allowed' : '' }}">
+                                   {{ $stockQuantity <= 0 ? 'disabled' : '' }}>
+                            <span class="px-4 py-2 rounded-md border cursor-pointer variant-label {{ $loop->first ? 'bg-orange-100 border-orange-500 text-orange-600' : '' }} hover:bg-gray-50 {{ $stockQuantity <= 0 ? 'opacity-50 cursor-not-allowed' : '' }}">
                                 {{ $value->value }}
                                 @if($value->price_adjustment != 0)
                                     <span class="text-sm ml-1 {{ $value->price_adjustment > 0 ? 'text-red-600' : 'text-green-600' }}">
                                         {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, ',', '.') }}đ
                                     </span>
                                 @endif
+                                <span class="text-xs ml-1 {{ $stockQuantity <= 5 ? 'text-orange-500' : 'text-gray-500' }} stock-display">
+                                    @if($stockQuantity > 0)
+                                        (Còn {{ $stockQuantity }})
+                                    @else
+                                        (Hết hàng)
+                                    @endif
+                                </span>
                             </span>
                         </label>
                         @endforeach
@@ -235,6 +308,9 @@
                                    value="{{ $topping->id }}"
                                    class="sr-only topping-input"
                                    data-price="{{ $topping->price }}"
+                                   data-topping-id="{{ $topping->id }}"
+                                   data-branch-id="{{ $selectedBranchId }}"
+                                   data-stock-quantity="{{ $topping->toppingStocks->first() ? $topping->toppingStocks->first()->stock_quantity : 0 }}"
                                    {{ isset($selectedBranch) && $selectedBranch && !$isAvailable ? 'disabled' : '' }}>
                             <div class="relative aspect-square rounded-lg overflow-hidden border group-hover:border-orange-500 transition-colors">
                                 @if($topping->image)
@@ -256,7 +332,7 @@
                                         $stockQuantity = $toppingStock ? $toppingStock->stock_quantity : 0;
                                     @endphp
                                     @if($stockQuantity < 5)
-                                        <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1">
+                                        <div class="absolute bottom-0 left-0 right-0 bg-orange-500 bg-opacity-80 text-white text-xs text-center py-1 stock-display">
                                             Còn {{ $stockQuantity }}
                                         </div>
                                     @endif
@@ -301,7 +377,8 @@
                     <i class="fas {{ isset($product->has_stock) && $product->has_stock ? 'fa-shopping-cart' : 'fa-ban' }} h-5 w-5 mr-2"></i>
                     <span>{{ isset($product->has_stock) && !$product->has_stock ? 'Hết hàng' : 'Thêm vào giỏ hàng' }}</span>
                 </button>
-                <button class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                <button id="buy-now" 
+                        class="w-full sm:flex-1 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
                     Mua ngay
                 </button>
@@ -594,7 +671,7 @@
         <h2 class="text-2xl font-bold mb-6">Sản Phẩm Liên Quan</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @foreach($relatedProducts as $relatedProduct)
-            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+            <div class="group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow related-product" data-product-id="{{ $relatedProduct->id }}">
                 <a href="{{ route('products.show', $relatedProduct->id) }}" class="block relative h-48 overflow-hidden">
                     <img src="{{ $relatedProduct->primary_image ? $relatedProduct->primary_image->s3_url : '/placeholder.svg?height=400&width=400' }}" 
                          alt="{{ $relatedProduct->name }}" 
@@ -657,7 +734,7 @@
 
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-lg">{{ number_format($relatedProduct->base_price, 0, ',', '.') }}đ</span>
+                            <span class="font-bold text-lg product-price">{{ number_format($relatedProduct->base_price, 0, ',', '.') }}đ</span>
                         </div>
 
                         <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
@@ -698,304 +775,19 @@
         </div>
     </div>
 </div>
+
 @endsection
 
 @section('scripts')
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Auto-show branch selector if no branch is selected
-        const selectedBranchId = {{ session('selected_branch') ? session('selected_branch') : 'null' }};
-        if (!selectedBranchId) {
-            const branchModal = document.getElementById('branch-selector-modal');
-            if (branchModal) {
-                branchModal.style.display = 'flex';
-                document.body.classList.add('overflow-hidden');
-            }
-        }
-        
-        // Show toast function
-        window.showToast = function(message, type = 'info') {
-            if (typeof showNotification === 'function') {
-                const titles = {
-                    success: 'Thành công!',
-                    error: 'Lỗi!',
-                    warning: 'Cảnh báo!', 
-                    info: 'Thông báo!'
-                };
-                showNotification(type, titles[type], message);
-            } else {
-                alert(message);
-            }
-        };
-        
-        // Product image gallery
-        const mainImage = document.getElementById('main-product-image');
-        const thumbnails = document.querySelectorAll('.product-thumbnail');
-        
-        thumbnails.forEach(thumb => {
-            thumb.addEventListener('click', function() {
-                // Update main image
-                mainImage.src = this.querySelector('img').src;
-                
-                // Update active state
-                thumbnails.forEach(t => t.classList.remove('border-orange-500'));
-                this.classList.add('border-orange-500');
-            });
-        });
-        
-        // Price calculation
-        const basePrice = {{ $product->base_price }};
-        const basePriceDisplay = document.getElementById('base-price');
-        const currentPriceDisplay = document.getElementById('current-price');
-        const variantInputs = document.querySelectorAll('.variant-input');
-        const toppingInputs = document.querySelectorAll('.topping-input');
-        const quantityDisplay = document.getElementById('quantity');
-        let quantity = 1;
-        let totalPrice = basePrice;
-        
-        function updatePrice() {
-            // Calculate variant price adjustments
-            let variantAdjustment = 0;
-            document.querySelectorAll('.variant-input:checked').forEach(input => {
-                variantAdjustment += parseFloat(input.dataset.priceAdjustment || 0);
-            });
-            
-            // Calculate topping price
-            let toppingPrice = 0;
-            document.querySelectorAll('.topping-input:checked').forEach(input => {
-                toppingPrice += parseFloat(input.dataset.price || 0);
-            });
-            
-            // Single item price (variant price + toppings)
-            const singleItemPrice = basePrice + variantAdjustment;
-            const totalItemPrice = singleItemPrice + toppingPrice;
-            
-            // Apply quantity
-            totalPrice = totalItemPrice * quantity;
-            
-            // Update display
-            if (variantAdjustment !== 0 || toppingPrice !== 0) {
-                basePriceDisplay.textContent = `${basePrice.toLocaleString('vi-VN')}đ`;
-                basePriceDisplay.classList.remove('hidden');
-            } else {
-                basePriceDisplay.classList.add('hidden');
-            }
-            
-            currentPriceDisplay.textContent = `${totalPrice.toLocaleString('vi-VN')}đ`;
-            
-            // Highlight current price if different from base
-            if (totalPrice !== basePrice) {
-                currentPriceDisplay.classList.add('text-green-500');
-                currentPriceDisplay.classList.remove('text-orange-500');
-            } else {
-                currentPriceDisplay.classList.add('text-orange-500');
-                currentPriceDisplay.classList.remove('text-green-500');
-            }
-        }
-        
-        // Variant selection
-        variantInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                // Update visual state of labels
-                const attributeId = this.dataset.attributeId;
-                document.querySelectorAll(`[data-attribute-id="${attributeId}"] + .variant-label`).forEach(label => {
-                    label.classList.remove('bg-orange-100', 'border-orange-500', 'text-orange-600');
-                });
-                
-                this.nextElementSibling.classList.add('bg-orange-100', 'border-orange-500', 'text-orange-600');
-                updatePrice();
-            });
-        });
-        
-        // Topping selection
-        toppingInputs.forEach(input => {
-            input.addEventListener('change', function() {
-                const toppingContainer = this.closest('label');
-                if (this.checked) {
-                    toppingContainer.classList.add('topping-checked');
-                    toppingContainer.querySelector('.w-full').classList.add('scale-110');
-                    toppingContainer.querySelector('.bg-orange-500').classList.add('scale-100');
-                } else {
-                    toppingContainer.classList.remove('topping-checked');
-                    toppingContainer.querySelector('.w-full').classList.remove('scale-110');
-                    toppingContainer.querySelector('.bg-orange-500').classList.remove('scale-100');
-                }
-                updatePrice();
-            });
-        });
-        
-        // Quantity controls
-        const decreaseBtn = document.getElementById('decrease-quantity');
-        const increaseBtn = document.getElementById('increase-quantity');
-        
-        decreaseBtn.addEventListener('click', function() {
-            if (quantity > 1) {
-                quantity--;
-                quantityDisplay.textContent = quantity;
-                updatePrice();
-            }
-        });
-        
-        increaseBtn.addEventListener('click', function() {
-            quantity++;
-            quantityDisplay.textContent = quantity;
-            updatePrice();
-        });
-        
-        // Add to cart functionality
-        const addToCartBtn = document.getElementById('add-to-cart');
-        
-        addToCartBtn.addEventListener('click', function() {
-            // Get selected branch
-            const branchId = document.getElementById('branch-select').value;
-            if (!branchId) {
-                showToast('Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng', 'warning');
-                return;
-            }
-            
-            // Get all selected variant values
-            const selectedVariantValueIds = [];
-            const variantGroups = document.querySelectorAll('#variants-container > div');
-            
-            variantGroups.forEach(group => {
-                const checkedInput = group.querySelector('input:checked');
-                if (checkedInput) {
-                    selectedVariantValueIds.push(parseInt(checkedInput.value));
-                }
-            });
-            
-            // Get selected toppings
-            const selectedToppings = Array.from(document.querySelectorAll('.topping-input:checked'))
-                .map(input => parseInt(input.value));
-            
-            // API call to get actual product variant ID
-            console.log('Selected variant values:', selectedVariantValueIds);
-            
-            // First, fetch the actual product variant ID based on the selected variant values
-            fetch('/api/customer/products/get-variant', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    product_id: {{ $product->id }},
-                    variant_values: selectedVariantValueIds
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const variantId = data.variant_id;
-                    
-                    // Now add to cart with the retrieved variant ID
-                    return fetch('/api/customer/cart/add', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            product_id: {{ $product->id }},
-                            variant_id: variantId,
-                            branch_id: branchId,
-                            quantity: quantity,
-                            toppings: selectedToppings
-                        })
-                    });
-                } else {
-                    throw new Error(data.message || 'Không tìm thấy biến thể sản phẩm');
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Sản phẩm đã được thêm vào giỏ hàng!', 'success');
-                    
-                    // Update cart counter if needed
-                    if (typeof window.updateCartCount === 'function' && data.count) {
-                        window.updateCartCount(data.count);
-                    }
-                } else {
-                    showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast(error.message || 'Có lỗi xảy ra', 'error');
-            });
-        });
-
-        // Initialize
-        updatePrice();
-        
-        // Handle discount code copy functionality
-        const copyButtons = document.querySelectorAll('.copy-code');
-        copyButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const code = this.dataset.code;
-                
-                // Create a temporary input element
-                const tempInput = document.createElement('input');
-                tempInput.value = code;
-                document.body.appendChild(tempInput);
-                
-                // Select and copy the text
-                tempInput.select();
-                document.execCommand('copy');
-                
-                // Remove the temporary element
-                document.body.removeChild(tempInput);
-                
-                // Update button text temporarily
-                const originalText = this.textContent;
-                this.textContent = 'Đã sao chép!';
-                this.classList.remove('bg-orange-500', 'hover:bg-orange-600');
-                this.classList.add('bg-green-500', 'hover:bg-green-600');
-                
-                // Reset button text after a delay
-                setTimeout(() => {
-                    this.textContent = originalText;
-                    this.classList.remove('bg-green-500', 'hover:bg-green-600');
-                    this.classList.add('bg-orange-500', 'hover:bg-orange-600');
-                }, 2000);
-                
-                // Show toast notification
-                showToast(`Đã sao chép mã "${code}" vào clipboard`, 'success');
-            });
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Tab switching functionality
-        const tabButtons = document.querySelectorAll('[data-tab]');
-        const tabContents = document.querySelectorAll('.tab-content');
-        
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const tabName = this.getAttribute('data-tab');
-                
-                // Reset all tab buttons
-                tabButtons.forEach(btn => {
-                    btn.classList.remove('border-orange-500', 'text-orange-500');
-                    btn.classList.add('border-transparent');
-                });
-                
-                // Hide all tab contents
-                tabContents.forEach(content => {
-                    content.classList.add('hidden');
-                });
-                
-                // Activate clicked tab
-                this.classList.add('border-orange-500', 'text-orange-500');
-                this.classList.remove('border-transparent');
-                
-                // Show corresponding content
-                document.getElementById('content-' + tabName).classList.remove('hidden');
-            });
-        });
-    });
+    window.selectedBranchId = {{ $selectedBranchId ? $selectedBranchId : 'null' }};
+    window.productId = {{ $product->id }};
+    window.basePrice = {{ $product->base_price }};
+    window.csrfToken = '{{ csrf_token() }}';
+    window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
+    window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
 </script>
+<script src="{{ asset('js/Customer/Shop/shop.js') }}"></script>
+@include('partials.customer.branch-check')
 @endsection

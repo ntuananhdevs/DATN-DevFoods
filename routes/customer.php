@@ -22,14 +22,13 @@ use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
 
 // API Controllers for Customer
-use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
-use App\Http\Controllers\Api\Customer\FavoriteController as ApiCustomerFavoriteController;
-use App\Http\Controllers\Api\Customer\ProductVariantController as ApiCustomerProductVariantController;
-use App\Http\Controllers\Api\Customer\BranchController as ApiCustomerBranchController;
-use App\Http\Controllers\Api\Customer\CartController as ApiCustomerCartController;
+// use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
+// use App\Http\Controllers\Api\Customer\FavoriteController as ApiCustomerFavoriteController;
+// use App\Http\Controllers\Api\Customer\ProductVariantController as ApiCustomerProductVariantController;
+// use App\Http\Controllers\Api\Customer\CartController as ApiCustomerCartController;
 
 // ===== WEB ROUTES (giao diện web, view) =====
-Route::middleware([CartCountMiddleware::class])->group(function () {
+Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
     // Product
@@ -43,6 +42,7 @@ Route::middleware([CartCountMiddleware::class])->group(function () {
 
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
 
     // Checkout
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
@@ -82,33 +82,27 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('customer.logout');
 
 // Customer Profile (cần đăng nhập)
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/profile', [CustomerProfileController::class, 'profile'])->name('customer.profile');
     Route::get('/profile/edit', [CustomerProfileController::class, 'edit'])->name('customer.profile.edit');
     Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
+    Route::put('/profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.password.update');
+    Route::patch('/profile/update', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
 });
 
-// ===== API ROUTES (prefix /api/...) =====
+// Phone Required routes (không cần phone.required middleware)
+Route::middleware('auth')->group(function () {
+    Route::get('/phone-required', [CustomerAuthController::class, 'showPhoneRequired'])->name('customer.phone-required');
+    Route::post('/phone-required', [CustomerAuthController::class, 'updatePhone'])->name('customer.phone-required.post');
+});
+
 Route::prefix('api')->group(function () {
-    // Product AJAX filtering
-    Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
-
-    // Favorites
-    Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
-
-    // Cart APIs
-    Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add');
-    Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update');
-    Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove');
-    Route::post('/coupon/apply', [ApiCustomerCartController::class, 'applyCoupon'])->name('coupon.apply');
-
-    // Customer API
-    Route::prefix('customer')->group(function () {
-        Route::post('/products/get-variant', [ApiCustomerProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
-        // Branch APIs
-        Route::post('/branches/set-selected', [ApiCustomerBranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
-        Route::get('/branches/nearest', [ApiCustomerBranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
-    });
+    // Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
+    // Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
+    // Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add');
+    // Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update');
+    // Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove');
+    // Route::post('/coupon/apply', [ApiCustomerCartController::class, 'applyCoupon'])->name('coupon.apply');
 
     // Firebase Auth (Google)
     Route::prefix('auth')->group(function () {
@@ -120,6 +114,10 @@ Route::prefix('api')->group(function () {
     Route::get('/firebase/config', [FirebaseConfigController::class, 'getConfig'])->name('api.firebase.config');
 });
 
+Route::prefix('branches')->group(function () {
+    Route::post('/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('branches.set-selected');
+    Route::get('/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('branches.nearest');
+});
 // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
 Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/', [HiringController::class, 'landing'])->name('landing');
@@ -129,7 +127,10 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
 });
 
 Route::prefix('customer')->middleware(['auth'])->group(function () {
-    Route::get('/chat', [ChatController::class, 'index'])->name('customer.chat.index');
+    Route::get('/chat', function () {
+        return view('customer.chat');
+    })->name('customer.chat.index');
+
     Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('customer.chat.create');
     Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');

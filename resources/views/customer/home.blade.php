@@ -295,7 +295,6 @@
         </div>
     </div>
     </div>
-    </div>
     </section>
 
     <!-- Order Now Section -->
@@ -399,7 +398,7 @@
 
             // Initialize slider
             function startSlider() {
-                slideInterval = setInterval(nextSlide, 5000);
+                slideInterval = setInterval(nextSlide, 3000);
             }
 
             function stopSlider() {
@@ -413,10 +412,24 @@
                 startSlider();
             });
 
+            nextButton.addEventListener('click', function() {
+                stopSlider();
+                nextSlide();
+                startSlider();
+            });
+
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', function() {
+                    stopSlider();
+                    showSlide(index);
+                    startSlider();
+                });
+            });
+
         // Start the slider
         startSlider();
     });
-</script>
+    </script>
 <script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
 <script>
     var swiper = new Swiper(".category-slider", {
@@ -438,4 +451,8 @@
     }
 });
 </script>
+
+{{-- Include branch checking logic --}}
+@include('partials.customer.branch-check')
+<!-- Branch Selector Modal -->
 @endsection

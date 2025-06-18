@@ -4,7 +4,7 @@
 @section('page-title', 'Đơn hàng')
 
 @section('content')
-<div class="pt-16 p-4">
+<div class="pt-4 p-4">
     <!-- Search -->
     <div class="mb-4">
         <div class="relative">

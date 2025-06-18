@@ -1,4 +1,4 @@
-<header class="bg-gray-800 text-white p-4 fixed top-0 left-0 right-0 z-50">
+{{-- <header class="bg-gray-800 text-white p-4 fixed top-0 left-0 right-0 z-50">
     <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
             @if(request()->routeIs('driver.dashboard'))
@@ -21,4 +21,4 @@
             </button>
         </div>
     </div>
-</header>
+</header> --}}

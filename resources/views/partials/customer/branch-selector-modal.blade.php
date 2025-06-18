@@ -25,7 +25,7 @@
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full mx-4 transform transition-transform">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold text-gray-900">Chọn Chi Nhánh</h2>
-            @if(session()->has('selected_branch'))
+            @if($hasBranchSelected ?? false)
             <button id="close-branch-modal" class="text-gray-400 hover:text-gray-500">
                 <i class="fas fa-times"></i>
             </button>
@@ -64,7 +64,7 @@
                     <label class="flex items-start p-3 cursor-pointer">
                         <input type="radio" name="selected_branch" value="{{ $branch->id }}" 
                                class="mt-1 h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300"
-                               {{ session('selected_branch') == $branch->id ? 'checked' : '' }}>
+                               {{ ($currentBranch && $currentBranch->id == $branch->id) ? 'checked' : '' }}>
                         <div class="ml-3 flex-1">
                             <p class="font-medium text-gray-900">{{ $branch->name }}</p>
                             <p class="text-sm text-gray-500">{{ $branch->address }}</p>
@@ -93,11 +93,11 @@
 </div>
 
 <!-- Branch switching button (fixed at bottom corner) -->
-<button id="change-branch-btn" class="fixed bottom-4 left-4 bg-white text-orange-500 border border-orange-300 px-4 py-2 rounded-full shadow-lg z-30 flex items-center gap-2 hover:bg-orange-50 {{ !session()->has('selected_branch') ? 'hidden' : '' }}">
+<button id="change-branch-btn" class="fixed bottom-4 left-4 bg-white text-orange-500 border border-orange-300 px-4 py-2 rounded-full shadow-lg z-30 flex items-center gap-2 hover:bg-orange-50 {{ !($hasBranchSelected ?? false) ? 'hidden' : '' }}">
     <i class="fas fa-store h-4 w-4"></i>
-    @if(session()->has('selected_branch'))
+    @if($currentBranch)
         @php
-            $branch = App\Models\Branch::find(session('selected_branch'));
+        $branch = $currentBranch;
         @endphp
         @if($branch)
             <span>{{ $branch->name }}</span>
@@ -127,8 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Debug session status on page load
     console.log('Branch session status on load:', {
-        hasSession: {{ session()->has('selected_branch') ? 'true' : 'false' }},
-        branchId: '{{ session('selected_branch') }}',
+        hasSession: {{ ($hasBranchSelected ?? false) ? 'true' : 'false' }},
+        branchId: '{{ $currentBranch ? $currentBranch->id : '' }}',
         modalDisplay: branchModal.style.display
     });
     
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Branch cookie:', branchCookie);
     
     // Check if we need to show the modal (no branch selected)
-    const hasSelectedBranch = {{ session()->has('selected_branch') ? 'true' : 'false' }} || branchCookie;
+    const hasSelectedBranch = {{ ($hasBranchSelected ?? false) ? 'true' : 'false' }} || branchCookie;
     
     if (!hasSelectedBranch) {
         console.log('No branch selected, showing modal');
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to hide modal
     function hideBranchModal() {
         // Only allow hiding if a branch is selected or there's a branch in session
-        if (document.querySelector('input[name="selected_branch"]:checked') || {{ session()->has('selected_branch') ? 'true' : 'false' }}) {
+        if (document.querySelector('input[name="selected_branch"]:checked') || {{ ($hasBranchSelected ?? false) ? 'true' : 'false' }}) {
             branchModal.style.display = 'none';
             document.body.classList.remove('overflow-hidden'); // Allow body scrolling
         } else {
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const lng = position.coords.longitude;
                     
                     // Send to server to find nearest branch
-                    fetch(`/api/customer/branches/nearest?lat=${lat}&lng=${lng}`, {
+                    fetch(`/branches/nearest?lat=${lat}&lng=${lng}`, {
                         method: 'GET',
                         credentials: 'same-origin',
                         headers: {
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Set branch in session via AJAX
-                fetch('/api/customer/branches/set-selected', {
+                fetch('/branches/set-selected', {
                     method: 'POST',
                     credentials: 'same-origin', // Important to include cookies
                     headers: {
@@ -391,11 +391,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="fas fa-store h-4 w-4"></i>
                                 <span>${branchName}</span>
                             `;
-                        }
-                        
-                        // Show success message
-                        if (window.showToast) {
-                            window.showToast('Chi nhánh đã được chọn thành công', 'success');
                         }
                         
                         // Append the branch ID to all forms as a hidden input
@@ -475,8 +470,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Check if user is changing branches and has items in cart
-            @if(session('selected_branch') && session('cart_count', 0) > 0)
-            if (selectedBranch.value != '{{ session('selected_branch') }}') {
+            @if($currentBranch && session('cart_count', 0) > 0)
+            if (selectedBranch.value != '{{ $currentBranch->id }}') {
                 // Show custom confirmation modal instead of browser alert
                 pendingBranchSelection = selectedBranch;
                 branchChangeConfirmationModal.style.display = 'flex';
@@ -490,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
             
             // Set branch in session via AJAX
-            fetch('/api/customer/branches/set-selected', {
+            fetch('/branches/set-selected', {
                 method: 'POST',
                 credentials: 'same-origin', // Important to include cookies
                 headers: {
@@ -533,11 +528,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span>${branchName}</span>
                         `;
                     }
-                    
-                    // Show success message
-                    if (window.showToast) {
-                        window.showToast('Chi nhánh đã được chọn thành công', 'success');
-                    }
+ 
                     
                     // Append the branch ID to all forms as a hidden input
                     document.querySelectorAll('form').forEach(form => {
@@ -593,4 +584,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-</script> 
+</script>

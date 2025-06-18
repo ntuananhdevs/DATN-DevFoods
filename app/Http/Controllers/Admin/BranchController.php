@@ -70,119 +70,7 @@ class BranchController extends Controller
         }
     }
 
-    public function create()
-    {
-        try {
-            // Lấy danh sách người dùng có vai trò manager và đang active
-            $managers = User::whereHas('roles', function ($query) {
-                $query->where('name', 'manager');
-            })
-                ->where('active', true)
-                ->orderBy('full_name', 'asc')
-                ->get();
 
-            // Lấy danh sách chi nhánh đang hoạt động đã có người quản lý
-            $assignedBranches = Branch::whereNotNull('manager_user_id')
-                ->where('active', true)
-                ->pluck('manager_user_id')
-                ->toArray();
-
-            // Lọc ra những quản lý có thể phân công (chưa quản lý chi nhánh nào)
-            $availableManagers = $managers->filter(function ($manager) use ($assignedBranches) {
-                return !in_array($manager->id, $assignedBranches);
-            });
-
-            return view('admin.branch.create', compact('availableManagers'));
-        } catch (\Exception $e) {
-            Log::error('Error in BranchController@create: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi tải form tạo chi nhánh: ' . $e->getMessage());
-        }
-    }
-    public function store(Request $request)
-    {
-        try {
-            // Validate dữ liệu đầu vào
-            $validated = $request->validate([
-                'name' => 'required|string|max:255|unique:branches,name',
-                'address' => 'required|string|max:255|unique:branches,address',
-                'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone',
-                'email' => 'nullable|email|unique:branches,email',
-                'opening_hour' => 'required|date_format:H:i',
-                'closing_hour' => 'required|date_format:H:i|after:opening_hour',
-                'latitude' => 'nullable|numeric|between:-90,90',
-                'longitude' => 'nullable|numeric|between:-180,180',
-                'manager_user_id' => 'nullable|exists:users,id',
-                'images' => 'nullable|array',
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-                'primary_image' => 'nullable|integer|min:0',
-                'captions' => 'nullable|array',
-                'captions.*' => 'nullable|string|max:255',
-            ]);
-
-            DB::beginTransaction();
-
-            // Tạo mã chi nhánh
-            $branchCode = 'BR' . str_pad((Branch::max('id') ?? 0) + 1, 4, '0', STR_PAD_LEFT);
-
-            // Tạo chi nhánh mới
-            $branch = new Branch();
-            $branch->branch_code = $branchCode;
-            $branch->name = $validated['name'];
-            $branch->address = $validated['address'];
-            $branch->phone = $validated['phone'];
-            $branch->email = $validated['email'] ?? null;
-            $branch->opening_hour = $validated['opening_hour'];
-            $branch->closing_hour = $validated['closing_hour'];
-            $branch->latitude = $validated['latitude'] ?? null;
-            $branch->longitude = $validated['longitude'] ?? null;
-            $branch->manager_user_id = $validated['manager_user_id'] ?? null;
-            $branch->active = $request->has('active') ? true : false;
-            $branch->balance = 0.00; // Mặc định từ migration
-            $branch->rating = 5.00; // Mặc định từ migration
-            $branch->reliability_score = 100; // Mặc định từ migration
-            $branch->save();
-
-            // Upload images to S3
-            if ($request->hasFile('images')) {
-                $directory = 'branches/' . $branch->branch_code;
-                $primaryImageIndex = $request->input('primary_image', 0);
-
-                foreach ($request->file('images') as $index => $image) {
-                    $filename = $directory . '/' . \Illuminate\Support\Str::uuid() . '.' . $image->getClientOriginalExtension();
-                    // Upload to S3
-                    $putResult = Storage::disk('s3')->put($filename, file_get_contents($image));
-                    if ($putResult) {
-                        BranchImage::create([
-                            'branch_id' => $branch->id,
-                            'image_path' => $filename, // S3 path
-                            'caption' => $request->input("captions.$index", ''),
-                            'is_primary' => ($index == $primaryImageIndex),
-                        ]);
-                    }
-                }
-            }
-
-            DB::commit();
-
-            return redirect()->route('admin.branches.index')->with([
-                'toast' => [
-                    'type' => 'success',
-                    'title' => 'Thành công',
-                    'message' => 'Đã thêm chi nhánh mới thành công'
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error creating branch: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Có lỗi xảy ra khi tạo chi nhánh: ' . $e->getMessage() .
-                    "\nFile: " . $e->getFile() .
-                    "\nLine: " . $e->getLine() .
-                    "\nTrace: " . $e->getTraceAsString())
-                ->withInput();
-        }
-    }
 
     public function show($id)
     {
@@ -827,6 +715,159 @@ class BranchController extends Controller
             'success' => false,
             'message' => 'Có lỗi xảy ra khi tải lên ảnh: ' . $e->getMessage()
         ], 500);
+    }
+}
+
+// ... existing code ...
+
+/**
+ * Hiển thị form tạo chi nhánh mới
+ */
+public function create()
+{
+    try {
+        // Lấy danh sách người dùng có vai trò manager và đang active
+        $managers = User::whereHas('roles', function ($query) {
+            $query->where('name', 'manager');
+        })
+            ->where('active', true)
+            ->orderBy('full_name', 'asc')
+            ->get();
+
+        // Lấy danh sách chi nhánh đang hoạt động đã có người quản lý
+        $assignedBranches = Branch::whereNotNull('manager_user_id')
+            ->where('active', true)
+            ->pluck('manager_user_id')
+            ->toArray();
+
+        // Lọc ra những quản lý có thể phân công (chưa quản lý chi nhánh nào)
+        $availableManagers = $managers->filter(function ($manager) use ($assignedBranches) {
+            return !in_array($manager->id, $assignedBranches);
+        });
+
+        return view('admin.branch.create', compact('availableManagers'));
+    } catch (\Exception $e) {
+        Log::error('Error in BranchController@create: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Có lỗi xảy ra khi tải form tạo chi nhánh: ' . $e->getMessage());
+    }
+}
+
+
+public function store(Request $request)
+{
+    try {
+        // Validate dữ liệu đầu vào
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:branches,name',
+            'address' => 'required|string|max:255|unique:branches,address',
+            'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:branches,phone',
+            'email' => 'nullable|email|unique:branches,email',
+            'opening_hour' => 'required|date_format:H:i',
+            'closing_hour' => 'required|date_format:H:i|after:opening_hour',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'manager_user_id' => 'nullable|exists:users,id',
+            'images' => 'nullable|array|max:10',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'primary_image' => 'nullable|integer|min:0',
+            'captions' => 'nullable|array',
+            'captions.*' => 'nullable|string|max:255',
+        ], [
+            'name.unique' => 'Tên chi nhánh đã tồn tại',
+            'address.unique' => 'Địa chỉ chi nhánh đã tồn tại',
+            'phone.unique' => 'Số điện thoại đã được sử dụng',
+            'email.unique' => 'Email đã được sử dụng',
+            'closing_hour.after' => 'Giờ đóng cửa phải sau giờ mở cửa',
+            'phone.regex' => 'Số điện thoại không đúng định dạng',
+        ]);
+
+        DB::beginTransaction();
+
+        // Tạo mã chi nhánh tự động
+        $branchCode = 'BR' . str_pad(Branch::count() + 1, 4, '0', STR_PAD_LEFT);
+        
+        // Đảm bảo mã chi nhánh là duy nhất
+        while (Branch::where('branch_code', $branchCode)->exists()) {
+            $branchCode = 'BR' . str_pad(rand(1000, 9999), 4, '0', STR_PAD_LEFT);
+        }
+
+        // Tạo chi nhánh mới
+        $branch = Branch::create([
+            'branch_code' => $branchCode,
+            'name' => $validated['name'],
+            'address' => $validated['address'],
+            'phone' => $validated['phone'],
+            'email' => $validated['email'] ?? null,
+            'opening_hour' => $validated['opening_hour'],
+            'closing_hour' => $validated['closing_hour'],
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'manager_user_id' => $validated['manager_user_id'] ?? null,
+            'active' => $request->has('active') ? true : false,
+            'balance' => 0,
+            'rating' => 5.00,
+            'reliability_score' => 100,
+        ]);
+
+        // Xử lý upload hình ảnh
+        if ($request->hasFile('images')) {
+            $directory = 'branches/' . $branch->branch_code;
+            $primaryImageIndex = $request->input('primary_image', 0);
+
+            foreach ($request->file('images') as $index => $image) {
+                try {
+                    $filename = $directory . '/' . Str::uuid() . '.' . $image->getClientOriginalExtension();
+                    
+                    // Upload to S3
+                    $putResult = Storage::disk('s3')->put($filename, file_get_contents($image));
+                    
+                    if ($putResult) {
+                        $isPrimary = ($index == $primaryImageIndex);
+                        
+                        BranchImage::create([
+                            'branch_id' => $branch->id,
+                            'image_path' => $filename,
+                            'caption' => $request->input("captions.$index", ''),
+                            'is_primary' => $isPrimary,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Error uploading branch image: ' . $e->getMessage());
+                    // Tiếp tục với ảnh tiếp theo
+                }
+            }
+        }
+
+        // Gửi thông báo cho quản lý nếu có
+        if ($validated['manager_user_id']) {
+            $manager = User::find($validated['manager_user_id']);
+            if ($manager && $manager->active) {
+                $manager->notify(new BranchManagerAssigned($branch, $manager));
+            }
+        }
+
+        DB::commit();
+
+        return redirect()->route('admin.branches.show', $branch->id)->with([
+            'toast' => [
+                'type' => 'success',
+                'title' => 'Thành công',
+                'message' => 'Đã tạo chi nhánh mới thành công'
+            ]
+        ]);
+
+    } catch (ValidationException $e) {
+        DB::rollBack();
+        return redirect()->back()
+            ->withErrors($e->validator)
+            ->withInput();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error creating branch: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Có lỗi xảy ra khi tạo chi nhánh: ' . $e->getMessage())
+            ->withInput();
     }
 }
 }

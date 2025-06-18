@@ -27,6 +27,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'avatar',
+        'birthday',
+        'gender',
         'google_id',
         'remember_token',
         'balance',
@@ -58,6 +60,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birthday' => 'date',
             'active' => 'boolean',
             'balance' => 'decimal:2',
             'rank_updated_at' => 'datetime',
@@ -89,6 +92,16 @@ class User extends Authenticatable
         return $this->hasMany(WishlistItem::class);
     }
 
+    public function orders() {
+        return $this->hasMany(Order::class, 'customer_id');
+    }
+    public function addresses() {
+        return $this->hasMany(Address::class);
+    }
+    public function favorites() {
+        return $this->hasMany(Favorite::class)->with('product');
+    }
+
     public function userRank()
     {
         return $this->belongsTo(UserRank::class, 'user_rank_id');
@@ -109,7 +122,7 @@ class User extends Authenticatable
         return $this->hasMany(UserImage::class)->where('is_primary', true);
     }
 
-    public function discountCodes()
+    public function userDiscountCodes()
     {
         return $this->belongsToMany(DiscountCode::class, 'user_discount_codes')
                     ->withPivot('usage_count', 'status', 'assigned_at', 'first_used_at', 'last_used_at');
@@ -123,6 +136,11 @@ class User extends Authenticatable
     public function createdPromotionPrograms()
     {
         return $this->hasMany(PromotionProgram::class, 'created_by');
+    }
+
+    public function rewardPointHistories()
+    {
+        return $this->hasMany(RewardPointHistory::class, 'user_id');
     }
 
     public function discountUsageHistory()
