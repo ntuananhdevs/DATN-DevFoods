@@ -264,36 +264,58 @@ class FastFoodSeeder extends Seeder
                 }
             }
 
-            // Tạo variants
-            $variants = [
-                'Size' => ['Small', 'Medium', 'Large'],
-                'Spice Level' => ['Mild', 'Medium', 'Hot'],
+            // Giảm số lượng variant để tránh tạo quá nhiều tổ hợp
+            // Chỉ sử dụng 2 thuộc tính với 2 giá trị mỗi cái = 2×2 = 4 variant mỗi sản phẩm
+            $variantAttributesData = [
+                'Kích thước' => ['Nhỏ', 'Lớn'],
+                'Đường' => ['Ít đường', 'Nhiều đường']
             ];
+            
 
-            foreach ($variants as $variantName => $values) {
-                $variant = VariantAttribute::create(['name' => $variantName]);
-                foreach ($values as $value) {
-                    VariantValue::create([
-                        'variant_attribute_id' => $variant->id,
-                        'value' => $value,
-                        'price_adjustment' => rand(5000, 20000)
-                    ]);
+            $variantAttributes = [];
+            foreach ($variantAttributesData as $variantName => $values) {
+                // Tìm VariantAttribute đã có thay vì tạo mới
+                $attribute = VariantAttribute::where('name', $variantName)->first();
+                if (!$attribute) {
+                    echo "Warning: VariantAttribute '{$variantName}' not found. Creating new one.\n";
+                    $attribute = VariantAttribute::create(['name' => $variantName]);
                 }
+                
+                $variantAttributes[$variantName] = [
+                    'attribute' => $attribute,
+                    'values' => $values
+                ];
             }
 
-            // Tạo variants cho mỗi product
+            // Tạo variants cho mỗi product với VariantValue riêng biệt
             $products = Product::all();
-            $variantAttributes = VariantAttribute::with('values')->get();
 
             foreach ($products as $product) {
-                // Tạo mảng chứa các giá trị của từng attribute
-                $attributeValues = [];
-                foreach ($variantAttributes as $attribute) {
-                    $attributeValues[] = $attribute->values->pluck('id')->toArray();
+                // Tạo VariantValue riêng cho từng sản phẩm
+                $productVariantValues = [];
+                
+                foreach ($variantAttributes as $attributeName => $attributeData) {
+                    $attribute = $attributeData['attribute'];
+                    $values = $attributeData['values'];
+                    
+                    $productVariantValues[$attributeName] = [];
+                    
+                    foreach ($values as $value) {
+                        // Tạo VariantValue riêng cho từng sản phẩm
+                        $variantValue = VariantValue::create([
+                            'variant_attribute_id' => $attribute->id,
+                            'value' => $value,
+                            'price_adjustment' => rand(5000, 20000)
+                        ]);
+                        
+                        $productVariantValues[$attributeName][] = $variantValue->id;
+                        echo "Created unique VariantValue for product {$product->id}: {$value} (ID: {$variantValue->id})\n";
+                    }
                 }
 
-                // Tạo tất cả các tổ hợp có thể có của variant values
-                $combinations = $this->generateCombinations($attributeValues);
+                // Tạo tất cả các tổ hợp có thể có của variant values cho sản phẩm này
+                $attributeValueIds = array_values($productVariantValues);
+                $combinations = $this->generateCombinations($attributeValueIds);
 
                 // Tạo variant cho mỗi tổ hợp
                 foreach ($combinations as $combination) {

@@ -108,13 +108,6 @@ Route::prefix('api')->group(function () {
     // Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove');
     // Route::post('/coupon/apply', [ApiCustomerCartController::class, 'applyCoupon'])->name('coupon.apply');
 
-    // Customer API
-    // Route::prefix('customer')->group(function () {
-    //     Route::post('/products/get-variant', [ApiCustomerProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
-    //     Route::post('/branches/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
-    //     Route::get('/branches/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
-    // });
-
     // Firebase Auth (Google)
     Route::prefix('auth')->group(function () {
         Route::post('/google', [CustomerAuthController::class, 'handleGoogleAuth'])->name('api.auth.google');
@@ -123,6 +116,11 @@ Route::prefix('api')->group(function () {
 
     // Firebase Config
     Route::get('/firebase/config', [FirebaseConfigController::class, 'getConfig'])->name('api.firebase.config');
+});
+
+Route::prefix('branches')->group(function () {
+        Route::post('/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('branches.set-selected');
+        Route::get('/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('branches.nearest');
 });
 // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
 Route::prefix('hiring-driver')->name('driver.')->group(function () {
