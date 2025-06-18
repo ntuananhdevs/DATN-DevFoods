@@ -8,6 +8,49 @@
       max-width: 1280px;
       margin: 0 auto;
    }
+   
+   /* Price update animation */
+   @keyframes priceUpdate {
+       0% { 
+           transform: scale(1); 
+           background-color: rgba(249, 115, 22, 0.1);
+           color: #f97316;
+       }
+       50% { 
+           transform: scale(1.05); 
+           background-color: rgba(249, 115, 22, 0.2);
+           color: #ea580c;
+       }
+       100% { 
+           transform: scale(1); 
+           background-color: transparent;
+           color: inherit;
+       }
+   }
+   
+   .price-updated {
+       animation: priceUpdate 2s ease-in-out;
+       font-weight: bold;
+   }
+   
+   /* Notification animations */
+   @keyframes fadeIn {
+       from { opacity: 0; transform: translateY(-10px); }
+       to { opacity: 1; transform: translateY(0); }
+   }
+   
+   @keyframes fadeOut {
+       from { opacity: 1; transform: translateY(0); }
+       to { opacity: 0; transform: translateY(-10px); }
+   }
+   
+   .animate-fade-in {
+       animation: fadeIn 0.3s ease-out;
+   }
+   
+   .animate-fade-out {
+       animation: fadeOut 0.3s ease-out;
+   }
 </style>
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-2">Giỏ Hàng</h1>
@@ -27,7 +70,14 @@
 
                 @if(count($cartItems) > 0)
                     @foreach($cartItems as $item)
-                    <div class="p-4 md:p-6 cart-item" data-id="{{ $item->id }}">
+                    <div class="p-4 md:p-6 cart-item" 
+                         data-id="{{ $item->id }}"
+                         data-product-id="{{ $item->variant->product->id }}"
+                         data-base-price="{{ $item->variant->product->base_price }}"
+                         data-variant-value-ids="{{ json_encode($item->variant->variantValues->pluck('id')->toArray()) }}"
+                         data-variant-adjustment="{{ $item->variant->variantValues->sum('price_adjustment') }}"
+                         data-topping-ids="{{ json_encode($item->toppings->pluck('id')->toArray()) }}"
+                         data-topping-price="{{ $item->toppings->sum('price') }}">
                         <div class="grid md:grid-cols-12 gap-4 items-center">
                             <div class="md:col-span-6 flex items-center gap-4">
                                 <div class="relative h-20 w-20 flex-shrink-0 rounded overflow-hidden">
@@ -277,7 +327,14 @@
 
         <div class="flex-1 overflow-y-auto p-4">
             @foreach($cartItems as $item)
-            <div class="flex gap-3 {{ !$loop->last ? 'pb-3 border-b mb-3' : '' }}">
+            <div class="flex gap-3 {{ !$loop->last ? 'pb-3 border-b mb-3' : '' }}"
+                 data-id="{{ $item->id }}"
+                 data-product-id="{{ $item->variant->product->id }}"
+                 data-base-price="{{ $item->variant->product->base_price }}"
+                 data-variant-value-ids="{{ json_encode($item->variant->variantValues->pluck('id')->toArray()) }}"
+                 data-variant-adjustment="{{ $item->variant->variantValues->sum('price_adjustment') }}"
+                 data-topping-ids="{{ json_encode($item->toppings->pluck('id')->toArray()) }}"
+                 data-topping-price="{{ $item->toppings->sum('price') }}">
                 <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
                     @if($item->variant->product->primary_image)
                         <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" 
@@ -379,258 +436,10 @@
 @section('scripts')
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Pusher
-        const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
-            cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
-            encrypted: true
-        });
-        
-        // Subscribe to cart channel
-        const cartChannel = pusher.subscribe('user-cart-channel');
-        
-        // Listen for cart updates
-        cartChannel.bind('cart-updated', function(data) {
-            // Reload the page when cart is updated from elsewhere
-            window.location.reload();
-        });
-        
-        // Cart functionality
-        const decreaseButtons = document.querySelectorAll('.decrease-quantity');
-        const increaseButtons = document.querySelectorAll('.increase-quantity');
-        const removeButtons = document.querySelectorAll('.remove-item');
-        const addSuggestedButtons = document.querySelectorAll('.add-suggested');
-        const applyButton = document.getElementById('apply-coupon');
-        const couponInput = document.getElementById('coupon-code');
-        
-        // Update cart totals
-        function updateCartTotals() {
-            let subtotal = 0;
-            const cartItems = document.querySelectorAll('.cart-item');
-            
-            cartItems.forEach(item => {
-                const totalText = item.querySelector('.item-total').textContent;
-                const total = parseInt(totalText.replace(/\D/g, ''));
-                subtotal += total;
-            });
-            
-            document.getElementById('subtotal').textContent = subtotal.toLocaleString() + 'đ';
-            
-            // Check if discount is applied
-            const discountContainer = document.getElementById('discount-container');
-            const discountText = document.getElementById('discount').textContent;
-            let discount = 0;
-            
-            if (!discountContainer.classList.contains('hidden')) {
-                discount = parseInt(discountText.replace(/\D/g, ''));
-            }
-            
-            // Free shipping for orders over 100,000đ
-            const shipping = subtotal > 100000 ? 0 : 15000;
-            document.getElementById('shipping').textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
-            
-            // Calculate total
-            const total = subtotal + shipping - discount;
-            document.getElementById('total').textContent = total.toLocaleString() + 'đ';
-            
-            // Update checkout button state
-            const checkoutButton = document.querySelector('a[href="{{ route('checkout.index') }}"]');
-            if (cartItems.length === 0) {
-                checkoutButton.classList.add('opacity-50', 'pointer-events-none');
-            } else {
-                checkoutButton.classList.remove('opacity-50', 'pointer-events-none');
-            }
-        }
-        
-        // Decrease quantity
-        decreaseButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const itemId = this.getAttribute('data-id');
-                const quantityElement = this.parentElement.querySelector('.item-quantity');
-                let quantity = parseInt(quantityElement.textContent);
-                
-                if (quantity > 1) {
-                    quantity--;
-                    quantityElement.textContent = quantity;
-                    
-                    // Update via API
-                    axios.post('/api/cart/update', {
-                        cart_item_id: itemId,
-                        quantity: quantity
-                    })
-                    .then(response => {
-                        if (response.data.success) {
-                            updateCartTotals();
-                            
-                            // Update cart counter in header
-                            if (window.updateCartCount) {
-                                window.updateCartCount(response.data.cart_count);
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error updating cart:', error);
-                        showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
-                    });
-                }
-            });
-        });
-        
-        // Increase quantity
-        increaseButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const itemId = this.getAttribute('data-id');
-                const quantityElement = this.parentElement.querySelector('.item-quantity');
-                let quantity = parseInt(quantityElement.textContent);
-                
-                quantity++;
-                quantityElement.textContent = quantity;
-                
-                // Update via API
-                axios.post('/api/cart/update', {
-                    cart_item_id: itemId,
-                    quantity: quantity
-                })
-                .then(response => {
-                    if (response.data.success) {
-                        updateCartTotals();
-                        
-                        // Update cart counter in header
-                        if (window.updateCartCount) {
-                            window.updateCartCount(response.data.cart_count);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error updating cart:', error);
-                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
-                });
-            });
-        });
-        
-        // Remove item
-        removeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const itemId = this.getAttribute('data-id');
-                const cartItem = this.closest('.cart-item');
-                
-                // Remove via API
-                axios.post('/api/cart/remove', {
-                    cart_item_id: itemId
-                })
-                .then(response => {
-                    if (response.data.success) {
-                        cartItem.remove();
-                        updateCartTotals();
-                        
-                        // Update cart counter in header
-                        if (window.updateCartCount) {
-                            window.updateCartCount(response.data.cart_count);
-                        }
-                        
-                        // Show toast notification
-                        showToast('Sản phẩm đã được xóa khỏi giỏ hàng');
-                        
-                        // Check if cart is empty
-                        const remainingItems = document.querySelectorAll('.cart-item');
-                        if (remainingItems.length === 0) {
-                            // Reload to show empty cart message
-                            window.location.reload();
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error removing item:', error);
-                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
-                });
-            });
-        });
-        
-        // Add suggested product
-        addSuggestedButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const productName = this.closest('.bg-white').querySelector('h3').textContent.trim();
-                
-                // Show toast notification
-                showToast(`Đã thêm ${productName} vào giỏ hàng`);
-                
-                // In a real application, you would add the product to the cart
-                // and update the cart UI
-            });
-        });
-        
-        // Apply coupon
-        applyButton.addEventListener('click', function() {
-            const couponCode = couponInput.value.trim();
-            
-            if (couponCode === '') {
-                showToast('Vui lòng nhập mã giảm giá');
-                return;
-            }
-            
-            // Simulate coupon validation
-            if (couponCode.toUpperCase() === 'FASTFOOD10') {
-                // Calculate 10% discount
-                const subtotalText = document.getElementById('subtotal').textContent;
-                const subtotal = parseInt(subtotalText.replace(/\D/g, ''));
-                const discount = Math.round(subtotal * 0.1);
-                
-                // Show discount in summary
-                document.getElementById('discount-container').classList.remove('hidden');
-                document.getElementById('discount').textContent = '-' + discount.toLocaleString() + 'đ';
-                
-                // Update total
-                updateCartTotals();
-                
-                // Save discount to session via AJAX
-                axios.post('/api/coupon/apply', {
-                    coupon_code: couponCode,
-                    discount: discount
-                })
-                .then(response => {
-                    if (response.data.success) {
-                        showToast('Áp dụng mã giảm giá thành công');
-                        // Update checkout button to include discount
-                        const checkoutButton = document.querySelector('a[href="{{ route('checkout.index') }}"]');
-                        const total = parseInt(document.getElementById('total').textContent.replace(/\D/g, ''));
-                        checkoutButton.href = "{{ route('checkout.index') }}?discount=" + discount;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error applying coupon:', error);
-                    showToast('Đã xảy ra lỗi khi áp dụng mã giảm giá');
-                });
-            } else {
-                showToast('Mã giảm giá không hợp lệ');
-            }
-        });
-        
-        // Simple toast notification function
-        function showToast(message) {
-            // Create toast element
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
-            toast.textContent = message;
-            
-            // Add to DOM
-            document.body.appendChild(toast);
-            
-            // Show toast
-            setTimeout(() => {
-                toast.classList.remove('opacity-0');
-                toast.classList.add('opacity-100');
-            }, 10);
-            
-            // Hide and remove toast after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0');
-                
-                setTimeout(() => {
-                    document.body.removeChild(toast);
-                }, 300);
-            }, 3000);
-        }
-    });
+    // Global variables for cart.js
+    window.pusherKey = '{{ env('PUSHER_APP_KEY') }}';
+    window.pusherCluster = '{{ env('PUSHER_APP_CLUSTER') }}';
+    window.csrfToken = '{{ csrf_token() }}';
 </script>
+<script src="{{ asset('js/Customer/Cart/cart.js') }}"></script>
 @endsection

@@ -70,14 +70,10 @@ document.addEventListener("DOMContentLoaded", function() {
             toppingPrice += parseFloat(input.dataset.price || 0);
         });
         
-        // Single item price (variant price + toppings)
-        const singleItemPrice = window.basePrice + variantAdjustment;
-        const totalItemPrice = singleItemPrice + toppingPrice;
+        // Single item price (base price + variant price + toppings)
+        const singleItemPrice = window.basePrice + variantAdjustment + toppingPrice;
         
-        // Apply quantity
-        totalPrice = totalItemPrice * quantity;
-        
-        // Update display
+        // Update display - chỉ hiển thị giá của 1 sản phẩm, không nhân với quantity
         if (variantAdjustment !== 0 || toppingPrice !== 0) {
             basePriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
             basePriceDisplay.classList.remove('hidden');
@@ -85,10 +81,10 @@ document.addEventListener("DOMContentLoaded", function() {
             basePriceDisplay.classList.add('hidden');
         }
         
-        currentPriceDisplay.textContent = `${totalPrice.toLocaleString('vi-VN')}đ`;
+        currentPriceDisplay.textContent = `${singleItemPrice.toLocaleString('vi-VN')}đ`;
         
         // Highlight current price if different from base
-        if (totalPrice !== window.basePrice) {
+        if (singleItemPrice !== window.basePrice) {
             currentPriceDisplay.classList.add('text-green-500');
             currentPriceDisplay.classList.remove('text-orange-500');
         } else {
@@ -136,14 +132,14 @@ document.addEventListener("DOMContentLoaded", function() {
         if (quantity > 1) {
             quantity--;
             quantityDisplay.textContent = quantity;
-            updatePrice();
+            // Không cần updatePrice() vì số lượng không ảnh hưởng đến giá hiển thị trên trang chi tiết
         }
     });
     
     increaseBtn.addEventListener('click', function() {
         quantity++;
         quantityDisplay.textContent = quantity;
-        updatePrice();
+        // Không cần updatePrice() vì số lượng không ảnh hưởng đến giá hiển thị trên trang chi tiết
     });
     
     // Add to cart functionality
@@ -617,9 +613,7 @@ channel.bind('product-price-updated', function(data) {
         priceUpdateNotification.classList.add('hidden');
     }, 5000);
     
-    // Show toast notification
-    showToast('Giá sản phẩm đã được cập nhật', 'info');
-    
+    // Show toast notification    
     // Update related products prices if they exist
     const relatedProducts = document.querySelectorAll('.related-product');
     relatedProducts.forEach(product => {
@@ -636,3 +630,544 @@ channel.bind('product-price-updated', function(data) {
         }
     });
 });
+
+// Listen for variant price updates
+channel.bind('variant-price-updated', function(data) {
+    console.log('Variant price update received:', data);
+    
+    // Get current branch ID from the hidden input
+    const currentBranchId = document.getElementById('branch-select')?.value;
+    if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
+        console.log('Branch ID mismatch, ignoring update');
+        return;
+    }
+    
+    // Find the variant input that matches the updated variant value
+    const variantInput = document.querySelector(`.variant-input[value="${data.variantValueId}"]`);
+    
+    if (variantInput) {
+        // Update the price adjustment data attribute
+        variantInput.dataset.priceAdjustment = data.newPriceAdjustment;
+        
+        // Get the label element
+        const label = variantInput.nextElementSibling;
+        
+        // Update the price display in the label
+        const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
+        if (priceSpan) {
+            if (data.newPriceAdjustment > 0) {
+                priceSpan.textContent = `+${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
+                priceSpan.className = 'text-sm ml-1 text-red-600';
+            } else if (data.newPriceAdjustment < 0) {
+                priceSpan.textContent = `${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
+                priceSpan.className = 'text-sm ml-1 text-green-600';
+            } else {
+                // Remove price span if adjustment is 0
+                priceSpan.remove();
+            }
+        } else if (data.newPriceAdjustment !== 0) {
+            // Create new price span if it doesn't exist
+            const newPriceSpan = document.createElement('span');
+            newPriceSpan.className = `text-sm ml-1 ${data.newPriceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+            newPriceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
+            label.appendChild(newPriceSpan);
+        }
+        
+        // Add animation to the label
+        label.classList.add('animate-price-update');
+        setTimeout(() => {
+            label.classList.remove('animate-price-update');
+        }, 500);
+        
+        // Force price recalculation if this variant is currently selected
+        if (variantInput.checked) {
+            window.updatePrice();
+            
+            // Show variant price update notification
+            const variantPriceNotification = document.getElementById('variant-price-update-notification');
+            if (variantPriceNotification) {
+                variantPriceNotification.classList.remove('hidden');
+                setTimeout(() => {
+                    variantPriceNotification.classList.add('hidden');
+                }, 5000);
+            }
+        }
+        
+        // Simple fade animation for variant price change (no toast)
+        const variantLabel = variantInput.nextElementSibling;
+        variantLabel.classList.add('variant-price-updated');
+        setTimeout(() => {
+            variantLabel.classList.remove('variant-price-updated');
+        }, 2000);
+    }
+    
+    // Update related products variant prices if they exist
+    const relatedProducts = document.querySelectorAll('.related-product');
+    relatedProducts.forEach(product => {
+        const productId = product.dataset.productId;
+        if (productId == data.productId) {
+            // Update variant prices in related products if needed
+            const variantInputs = product.querySelectorAll('.variant-input');
+            variantInputs.forEach(input => {
+                if (input.value == data.variantValueId) {
+                    input.dataset.priceAdjustment = data.newPriceAdjustment;
+                    const label = input.nextElementSibling;
+                    const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
+                    if (priceSpan && data.newPriceAdjustment !== 0) {
+                        priceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
+                        priceSpan.className = `text-sm ml-1 ${data.newPriceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+                    }
+                }
+            });
+        }
+    });
+});
+
+// Listen for topping price updates
+channel.bind('topping-price-updated', function(data) {
+    console.log('Topping price update received:', data);
+    
+    // Get current branch ID from the hidden input
+    const currentBranchId = document.getElementById('branch-select')?.value;
+    if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
+        console.log('Branch ID mismatch, ignoring update');
+        return;
+    }
+    
+    // Find all topping inputs that match the updated topping
+    const toppingInputs = document.querySelectorAll(`.topping-input[data-topping-id="${data.toppingId}"]`);
+    
+    if (toppingInputs.length > 0) {
+        toppingInputs.forEach(input => {
+            // Update the price data attribute
+            input.dataset.price = data.newPrice;
+            
+            // Get the label element (parent of input)
+            const label = input.closest('label');
+            
+            // Update the price display
+            const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
+            if (priceElement) {
+                priceElement.textContent = `+${parseFloat(data.newPrice).toLocaleString('vi-VN')}đ`;
+                
+                // Add animation to the price element
+                priceElement.classList.add('topping-price-updated');
+                setTimeout(() => {
+                    priceElement.classList.remove('topping-price-updated');
+                }, 2000);
+            }
+            
+            // Add animation to the entire topping label
+            label.classList.add('topping-price-updated');
+            setTimeout(() => {
+                label.classList.remove('topping-price-updated');
+            }, 2000);
+        });
+        
+        // Force price recalculation if any topping is currently selected
+        const selectedToppings = document.querySelectorAll('.topping-input:checked');
+        if (selectedToppings.length > 0) {
+            window.updatePrice();
+        }
+        
+        // Show topping price update notification
+        const toppingPriceNotification = document.getElementById('topping-price-update-notification');
+        if (toppingPriceNotification) {
+            toppingPriceNotification.classList.remove('hidden');
+            setTimeout(() => {
+                toppingPriceNotification.classList.add('hidden');
+            }, 5000);
+        }
+    }
+    
+    // Update related products topping prices if they exist
+    const relatedProducts = document.querySelectorAll('.related-product');
+    relatedProducts.forEach(product => {
+        const toppingInputs = product.querySelectorAll('.topping-input');
+        toppingInputs.forEach(input => {
+            if (input.dataset.toppingId == data.toppingId) {
+                input.dataset.price = data.newPrice;
+                const label = input.closest('label');
+                const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
+                if (priceElement) {
+                    priceElement.textContent = `+${parseFloat(data.newPrice).toLocaleString('vi-VN')}đ`;
+                }
+            }
+        });
+    });
+});
+
+// Listen for product variant updates (create, update, delete)
+channel.bind('product-variant-updated', function(data) {
+    console.log('Product variant update received:', data);
+    console.log('Data structure:', {
+        productId: data.productId,
+        action: data.action,
+        variantData: data.variantData,
+        branchId: data.branchId
+    });
+    
+    // Get current branch ID from the hidden input
+    const currentBranchId = document.getElementById('branch-select')?.value;
+    console.log('Current branch ID:', currentBranchId, 'Event branch ID:', data.branchId);
+    
+    if (currentBranchId && parseInt(currentBranchId) !== data.branchId) {
+        console.log('Branch ID mismatch, ignoring update');
+        return;
+    }
+    
+    const variantsContainer = document.getElementById('variants-container');
+    console.log('Variants container found:', variantsContainer);
+    
+    if (!variantsContainer) {
+        console.log('Variants container not found!');
+        return;
+    }
+    
+    console.log('Processing action:', data.action);
+    
+    switch (data.action) {
+        case 'created':
+            handleVariantCreated(data, variantsContainer);
+            break;
+        case 'updated':
+            handleVariantUpdated(data, variantsContainer);
+            break;
+        case 'deleted':
+            handleVariantDeleted(data, variantsContainer);
+            break;
+        default:
+            console.log('Unknown action:', data.action);
+    }
+    
+    // Force price recalculation
+    window.updatePrice();
+    
+    // Update product availability
+    updateProductAvailability();
+});
+
+// Handle variant created
+function handleVariantCreated(data, container) {
+    console.log('Handling variant created:', data);
+    console.log('Container:', container);
+    console.log('Variant data:', data.variantData);
+    
+    // Check if variant data has values
+    if (!data.variantData.variant_values || data.variantData.variant_values.length === 0) {
+        console.log('No variant values found, reloading page...');
+        showVariantNotification('Biến thể mới đã được thêm - Đang tải lại trang...', 'info');
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+        return;
+    }
+    
+    // Add new variant options to the UI
+    data.variantData.variant_values.forEach(variantValue => {
+        console.log('Processing variant value:', variantValue);
+        
+        const attributeContainer = findOrCreateAttributeContainer(container, variantValue.attribute_name, variantValue.attribute_id);
+        console.log('Attribute container found/created:', attributeContainer);
+        
+        // Check if variant value already exists
+        const existingInput = attributeContainer.querySelector(`input[value="${variantValue.id}"]`);
+        console.log('Existing input:', existingInput);
+        
+        if (!existingInput) {
+            // Create new variant option
+            const variantOption = createVariantOption(variantValue, data.variantData.id);
+            console.log('Created variant option:', variantOption);
+            
+            if (attributeContainer && variantOption) {
+                attributeContainer.appendChild(variantOption);
+                console.log('Variant option appended to container');
+                
+                // Add animation
+                variantOption.classList.add('variant-created');
+                setTimeout(() => {
+                    variantOption.classList.remove('variant-created');
+                }, 2000);
+            } else {
+                console.error('Failed to append variant option - container or option is null');
+            }
+        }
+    });
+    
+    // Show notification
+    showVariantNotification('Biến thể mới đã được thêm', 'success');
+}
+
+// Handle variant updated
+function handleVariantUpdated(data, container) {
+    console.log('Handling variant updated:', data);
+    
+    // Update existing variant options
+    data.variantData.variant_values.forEach(variantValue => {
+        const existingInput = container.querySelector(`input[value="${variantValue.id}"]`);
+        if (existingInput) {
+            const label = existingInput.nextElementSibling;
+            
+            // Update variant value text
+            const valueText = label.childNodes[0];
+            if (valueText && valueText.nodeType === Node.TEXT_NODE) {
+                valueText.textContent = variantValue.value;
+            }
+            
+            // Update price adjustment
+            existingInput.dataset.priceAdjustment = variantValue.price_adjustment;
+            
+            // Update price display
+            updateVariantPriceDisplay(label, variantValue.price_adjustment);
+            
+            // Add animation
+            label.classList.add('variant-updated');
+            setTimeout(() => {
+                label.classList.remove('variant-updated');
+            }, 2000);
+        }
+    });
+    
+    // Show notification
+    showVariantNotification('Biến thể đã được cập nhật', 'info');
+}
+
+// Handle variant deleted
+function handleVariantDeleted(data, container) {
+    console.log('Handling variant deleted:', data);
+    
+    // If variant_values is empty, we need to find the variant by its ID
+    if (!data.variantData.variant_values || data.variantData.variant_values.length === 0) {
+        console.log('No variant values found, trying to find variant by ID:', data.variantData.id);
+        
+        // Find all variant inputs that belong to this variant ID
+        const variantInputs = container.querySelectorAll(`input[data-variant-id="${data.variantData.id}"]`);
+        console.log('Found variant inputs by ID:', variantInputs.length);
+        console.log('All variant inputs in container:', container.querySelectorAll('input[data-variant-id]'));
+        
+        if (variantInputs.length === 0) {
+            console.log('No variant inputs found, reloading page...');
+            showVariantNotification('Biến thể đã được xóa - Đang tải lại trang...', 'warning');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            return;
+        }
+        
+        variantInputs.forEach((input, index) => {
+            console.log(`Processing variant input ${index}:`, input);
+            const label = input.nextElementSibling;
+            console.log('Label found:', label);
+            
+            if (label) {
+                // Add fade out animation
+                label.classList.add('variant-deleted');
+                console.log('Added variant-deleted class to label');
+                setTimeout(() => {
+                    if (label.parentNode) {
+                        label.parentNode.removeChild(label);
+                        console.log('Removed label from DOM');
+                    }
+                }, 500);
+            }
+        });
+        
+        // Show notification
+        showVariantNotification('Biến thể đã được xóa', 'warning');
+        return;
+    }
+    
+    // Remove variant options from UI using variant values
+    data.variantData.variant_values.forEach(variantValue => {
+        const existingInput = container.querySelector(`input[value="${variantValue.id}"]`);
+        if (existingInput) {
+            const label = existingInput.nextElementSibling;
+            
+            // Add fade out animation
+            label.classList.add('variant-deleted');
+            setTimeout(() => {
+                if (label.parentNode) {
+                    label.parentNode.removeChild(label);
+                }
+            }, 500);
+        }
+    });
+    
+    // Show notification
+    showVariantNotification('Biến thể đã được xóa', 'warning');
+}
+
+// Helper function to find or create attribute container
+function findOrCreateAttributeContainer(container, attributeName, attributeId) {
+    console.log('Looking for attribute container:', attributeName, attributeId);
+    console.log('Container children:', container.children);
+    
+    // First, try to find existing attribute container by looking for h3 with the attribute name
+    let attributeContainer = null;
+    const h3Elements = container.querySelectorAll('h3');
+    console.log('Found h3 elements:', h3Elements.length);
+    
+    for (let h3 of h3Elements) {
+        console.log('Checking h3:', h3.textContent.trim(), 'vs', attributeName);
+        if (h3.textContent.trim() === attributeName) {
+            attributeContainer = h3.parentElement;
+            console.log('Found existing attribute container:', attributeContainer);
+            break;
+        }
+    }
+    
+    if (!attributeContainer) {
+        console.log('Creating new attribute container for:', attributeName);
+        
+        // Create new attribute container
+        attributeContainer = document.createElement('div');
+        attributeContainer.setAttribute('data-attribute-name', attributeName);
+        attributeContainer.setAttribute('data-attribute-id', attributeId);
+        
+        const title = document.createElement('h3');
+        title.className = 'font-medium mb-2';
+        title.textContent = attributeName;
+        
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'flex flex-wrap gap-2';
+        
+        attributeContainer.appendChild(title);
+        attributeContainer.appendChild(optionsContainer);
+        container.appendChild(attributeContainer);
+        
+        console.log('Created new attribute container:', attributeContainer);
+    }
+    
+    // Try to find the options container
+    let optionsContainer = attributeContainer.querySelector('.flex.flex-wrap.gap-2');
+    
+    // If not found, try alternative selectors
+    if (!optionsContainer) {
+        optionsContainer = attributeContainer.querySelector('div:last-child');
+        console.log('Using alternative selector for options container:', optionsContainer);
+    }
+    
+    // If still not found, create one
+    if (!optionsContainer) {
+        console.log('Creating new options container');
+        optionsContainer = document.createElement('div');
+        optionsContainer.className = 'flex flex-wrap gap-2';
+        attributeContainer.appendChild(optionsContainer);
+    }
+    
+    console.log('Final options container:', optionsContainer);
+    return optionsContainer;
+}
+
+// Helper function to create variant option
+function createVariantOption(variantValue, variantId) {
+    console.log('Creating variant option for:', variantValue, 'variantId:', variantId);
+    
+    const label = document.createElement('label');
+    label.className = 'relative flex items-center';
+    
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = `attribute_${variantValue.attribute_id}`;
+    input.value = variantValue.id;
+    input.dataset.attributeId = variantValue.attribute_id;
+    input.dataset.priceAdjustment = variantValue.price_adjustment;
+    input.dataset.variantId = variantId;
+    input.dataset.stockQuantity = '0'; // Default stock
+    input.dataset.branchId = window.selectedBranchId || '';
+    input.className = 'sr-only variant-input';
+    
+    console.log('Created input:', input);
+    
+    const span = document.createElement('span');
+    span.className = 'px-4 py-2 rounded-md border cursor-pointer variant-label hover:bg-gray-50';
+    span.textContent = variantValue.value;
+    
+    console.log('Created span with text:', variantValue.value);
+    
+    // Add price adjustment if not zero
+    if (variantValue.price_adjustment !== 0) {
+        const priceSpan = document.createElement('span');
+        priceSpan.className = `text-sm ml-1 ${variantValue.price_adjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+        priceSpan.textContent = `${variantValue.price_adjustment > 0 ? '+' : ''}${parseFloat(variantValue.price_adjustment).toLocaleString('vi-VN')}đ`;
+        span.appendChild(priceSpan);
+        console.log('Added price span:', priceSpan.textContent);
+    }
+    
+    // Add stock display
+    const stockSpan = document.createElement('span');
+    stockSpan.className = 'text-xs ml-1 text-gray-500 stock-display';
+    stockSpan.textContent = '(Còn 0)';
+    span.appendChild(stockSpan);
+    console.log('Added stock span');
+    
+    label.appendChild(input);
+    label.appendChild(span);
+    
+    console.log('Final label created:', label);
+    
+    // Add event listener
+    input.addEventListener('change', function() {
+        console.log('Variant input changed:', this.value);
+        // Update visual state of labels
+        const attributeId = this.dataset.attributeId;
+        document.querySelectorAll(`[data-attribute-id="${attributeId}"] + .variant-label`).forEach(label => {
+            label.classList.remove('bg-orange-100', 'border-orange-500', 'text-orange-600');
+        });
+        
+        this.nextElementSibling.classList.add('bg-orange-100', 'border-orange-500', 'text-orange-600');
+        window.updatePrice();
+    });
+    
+    return label;
+}
+
+// Helper function to update variant price display
+function updateVariantPriceDisplay(label, priceAdjustment) {
+    let priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
+    
+    if (priceAdjustment !== 0) {
+        if (priceSpan) {
+            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${parseFloat(priceAdjustment).toLocaleString('vi-VN')}đ`;
+            priceSpan.className = `text-sm ml-1 ${priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+        } else {
+            priceSpan = document.createElement('span');
+            priceSpan.className = `text-sm ml-1 ${priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${parseFloat(priceAdjustment).toLocaleString('vi-VN')}đ`;
+            label.appendChild(priceSpan);
+        }
+    } else if (priceSpan) {
+        priceSpan.remove();
+    }
+}
+
+// Helper function to show variant notification
+function showVariantNotification(message, type) {
+    const notification = document.getElementById('variant-update-notification');
+    if (notification) {
+        const messageElement = notification.querySelector('span');
+        if (messageElement) {
+            messageElement.textContent = message;
+        }
+        
+        // Update notification style based on type
+        const notificationDiv = notification.querySelector('div');
+        notificationDiv.className = `flex items-center gap-2 text-sm px-3 py-2 rounded-md border animate-fade-in`;
+        
+        switch (type) {
+            case 'success':
+                notificationDiv.classList.add('text-green-600', 'bg-green-50', 'border-green-200');
+                break;
+            case 'warning':
+                notificationDiv.classList.add('text-yellow-600', 'bg-yellow-50', 'border-yellow-200');
+                break;
+            default:
+                notificationDiv.classList.add('text-blue-600', 'bg-blue-50', 'border-blue-200');
+        }
+        
+        notification.classList.remove('hidden');
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 5000);
+    }
+}
