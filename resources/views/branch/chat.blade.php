@@ -517,7 +517,10 @@
                         </div>
                     </div>
                 @empty
-                    <div class="p-4 text-center text-muted">Không có cuộc trò chuyện nào.</div>
+                    <div class="p-4 text-center ">
+                        <strong>Hiện tại bạn chưa có cuộc trò chuyện nào với khách hàng.</strong><br>
+                        Khi khách hàng nhắn tin, cuộc trò chuyện sẽ xuất hiện tại đây để bạn hỗ trợ.
+                    </div>
                 @endforelse
             </div>
         </div>
@@ -535,7 +538,16 @@
                 </div>
             </div>
             <div class="chat-messages" id="chat-messages">
-                <!-- Tin nhắn sẽ được load bằng JS BranchChat -->
+                @if (isset($conversations) && count($conversations) > 0)
+                    <!-- Tin nhắn sẽ được load bằng JS BranchChat -->
+                @else
+                    <div class="flex flex-col items-center justify-center h-full p-8 text-center ">
+                        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" alt="No chat"
+                            style="width:80px;height:80px;opacity:0.5;">
+                        <h3 class="mt-4 mb-2 text-lg font-semibold">Chưa có cuộc trò chuyện nào</h3>
+                        <p>Bạn sẽ thấy các cuộc trò chuyện với khách hàng tại đây khi có tin nhắn mới.</p>
+                    </div>
+                @endif
             </div>
             <div class="chat-input">
                 <input type="text" id="chat-input-message" placeholder="Nhập tin nhắn..." autocomplete="off">
@@ -564,20 +576,34 @@
                 </div>
             </div>
             <div class="chat-info-actions flex flex-wrap gap-2 mt-4">
-                <button id="btn-activate-conversation"
-                    class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200 transition">
-                    <i class="fas fa-play-circle text-blue-600"></i> Kích hoạt
-                </button>
-
-                <button id="btn-resolve-conversation"
-                    class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition">
-                    <i class="fas fa-check-circle text-green-600"></i> Đã giải quyết
-                </button>
-
-                <button id="btn-close-conversation"
-                    class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition">
-                    <i class="fas fa-times-circle text-gray-600"></i> Đóng
-                </button>
+                @php
+                    $hasConversation = isset($conversations) && count($conversations) > 0;
+                    $currentConversation = $hasConversation ? $conversations->first() : null;
+                @endphp
+                @if ($hasConversation && $currentConversation)
+                    @if ($currentConversation->status === 'distributed')
+                        <button id="btn-activate-conversation"
+                            class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200 transition">
+                            <i class="fas fa-play-circle text-blue-600"></i> Kích hoạt
+                        </button>
+                    @endif
+                    @if ($currentConversation->status === 'active')
+                        <button id="btn-resolve-conversation"
+                            class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition">
+                            <i class="fas fa-check-circle text-green-600"></i> Đã giải quyết
+                        </button>
+                        <button id="btn-close-conversation"
+                            class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+                            <i class="fas fa-times-circle text-gray-600"></i> Đóng
+                        </button>
+                    @endif
+                    @if ($currentConversation->status === 'resolved')
+                        <button id="btn-close-conversation"
+                            class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+                            <i class="fas fa-times-circle text-gray-600"></i> Đóng
+                        </button>
+                    @endif
+                @endif
             </div>
 
         </div>

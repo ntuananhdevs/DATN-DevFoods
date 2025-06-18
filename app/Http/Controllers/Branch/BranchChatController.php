@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Branch;
 
+use App\Events\Chat\TypingStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
@@ -134,7 +135,6 @@ class BranchChatController extends Controller
             ]);
 
             $user = Auth::user();
-            // Lấy branch mà user này là manager
             $branch = Branch::where('manager_user_id', $user->id)->first();
             if (!$branch) {
                 return response()->json([
@@ -144,7 +144,6 @@ class BranchChatController extends Controller
             }
             $branchId = $branch->id;
 
-            // Log thông tin để debug
             Log::info('Branch send message attempt', [
                 'conversation_id' => $request->conversation_id,
                 'branch_id' => $branchId,
@@ -153,7 +152,6 @@ class BranchChatController extends Controller
                 'manager_user_id' => $branch->manager_user_id
             ]);
 
-            // Lấy thông tin conversation trước để xác định receiver
             $conversation = Conversation::where('id', $request->conversation_id)
                 ->where('branch_id', $branchId)
                 ->first();
@@ -172,41 +170,45 @@ class BranchChatController extends Controller
                 ], 404);
             }
 
-            // Gửi lại dữ liệu cho người dùng dựa trên customer_id
             $customerId = $conversation->customer_id;
 
             $attachmentPath = null;
             $attachmentType = null;
+            $messageText = $request->message;
 
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 $attachmentPath = $file->store('chat-attachments', 'public');
-                $attachmentType = $file->getMimeType();
-
-                if (str_starts_with($attachmentType, 'image/')) {
-                    $attachmentType = 'image';
-                } else {
-                    $attachmentType = 'file';
+                $attachmentType = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'file';
+                Log::info('Branch gửi file', ['file' => $attachmentPath, 'type' => $attachmentType]);
+                if (!$messageText) {
+                    $messageText = $attachmentType === 'image' ? 'Đã gửi ảnh' : 'Đã gửi file';
                 }
             }
+            Log::info('Branch tạo message', ['attachment' => $attachmentPath, 'attachment_type' => $attachmentType, 'message' => $messageText]);
 
-            // Tạo data cho message
+            if (!$messageText && !$attachmentPath) {
+                Log::warning('Branch gửi tin nhắn rỗng', ['conversation_id' => $request->conversation_id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn phải nhập nội dung hoặc đính kèm file!'
+                ], 422);
+            }
+
             $messageData = [
                 'conversation_id' => $request->conversation_id,
                 'sender_id' => $user->id,
                 'receiver_id' => $customerId,
                 'sender_type' => 'branch_staff',
-                'message' => $request->message,
+                'message' => $messageText,
                 'attachment' => $attachmentPath,
                 'attachment_type' => $attachmentType,
                 'sent_at' => now(),
                 'status' => 'sent'
             ];
 
-            // Tạo tin nhắn mới
             $message = ChatMessage::create($messageData);
 
-            // Cập nhật trạng thái conversation
             if ($conversation->status === 'distributed') {
                 $conversation->update([
                     'status' => 'active',
@@ -216,12 +218,10 @@ class BranchChatController extends Controller
                 $conversation->update(['updated_at' => now()]);
             }
 
-            // Load relationship để gửi đầy đủ thông tin
             $message->load(['sender' => function ($query) {
                 $query->select('id', 'full_name');
             }]);
 
-            // Broadcast tin nhắn mới
             broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
 
             return response()->json([
@@ -262,7 +262,23 @@ class BranchChatController extends Controller
             ]);
 
             $userId = Auth::id() ?? 1;
-            $branchId = Auth::user()->branch_id; // Lấy branch_id từ người dùng hiện tại
+            $user = Auth::user();
+            $branch = Branch::where('manager_user_id', $userId)->first();
+            if (!$branch) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không phải quản lý của chi nhánh nào!'
+                ], 403);
+            }
+            $branchId = $branch->id;
+
+            // Log để debug trước khi tìm conversation
+            Log::info('Branch updateStatus', [
+                'conversation_id' => $request->conversation_id,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+                'all_conversations_of_branch' => Conversation::where('branch_id', $branchId)->pluck('id')->toArray(),
+            ]);
 
             // Verify the conversation belongs to this branch
             $conversation = Conversation::where('id', $request->conversation_id)
@@ -284,7 +300,7 @@ class BranchChatController extends Controller
                 'closed' => '🔒 Cuộc trò chuyện đã được đóng'
             ];
 
-            $systemMessage = ChatMessage::create([
+            $systemMessage = \App\Models\ChatMessage::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $userId,
                 'receiver_id' => $conversation->customer_id,
@@ -326,7 +342,7 @@ class BranchChatController extends Controller
         $user = Auth::user();
         $userType = 'branch';
         $userName = $user->name ?? 'Nhân viên chi nhánh';
-        broadcast(new \App\Events\Chat\TypingStatus(
+        broadcast(new TypingStatus(
             $request->conversation_id,
             $userId,
             $request->is_typing,

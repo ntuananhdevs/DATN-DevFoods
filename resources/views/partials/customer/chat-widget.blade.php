@@ -267,16 +267,18 @@
             skipRatingBtn.addEventListener('click', closeRatingModal);
             submitRatingBtn.addEventListener('click', submitRating);
             closeNotificationBtn.addEventListener('click', closeSuccessNotification);
-            imageInput.addEventListener('change', function(e) {
-                pendingImage = e.target.files[0];
-                if (pendingImage) {
-                    // Hiển thị preview nếu muốn
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    pendingImage = this.files[0];
+                } else {
+                    pendingImage = null;
                 }
             });
-            fileInput.addEventListener('change', function(e) {
-                pendingFile = e.target.files[0];
-                if (pendingFile) {
-                    // Hiển thị preview nếu muốn
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    pendingFile = this.files[0];
+                } else {
+                    pendingFile = null;
                 }
             });
             document.addEventListener('click', (e) => {
@@ -762,8 +764,8 @@
                         timestamp: new Date(message.sent_at || message.created_at),
                         type: message.attachment ? (message.attachment_type === 'image' ?
                             'image' : 'file') : 'text',
-                        imageUrl: message.attachment_type === 'image' ? '/storage/' +
-                            message.attachment : undefined,
+                        imageUrl: message.attachment_type === 'image' && message
+                            .attachment ? '/storage/' + message.attachment : undefined,
                         fileName: message.attachment_type !== 'image' && message
                             .attachment ? message.attachment.split('/').pop() : undefined,
                         fileSize: message.attachment_type !== 'image' && message

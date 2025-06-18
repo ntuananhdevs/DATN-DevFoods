@@ -49,13 +49,34 @@ class ConversationUpdated implements ShouldBroadcast
      */
     public function broadcastWith()
     {
+        // Lấy message cuối cùng (nếu có)
+        $lastMessage = $this->conversation->messages()->latest('sent_at')->first();
+
         return [
-            'conversation_id' => $this->conversation->id,
-            'status' => $this->conversation->status,
-            'branch_id' => $this->conversation->branch_id,
-            'assigned_to' => $this->conversation->assigned_to,
+            'conversation' => [
+                'id' => $this->conversation->id,
+                'status' => $this->conversation->status,
+                'branch_id' => $this->conversation->branch_id,
+                'customer' => $this->conversation->customer ? [
+                    'id' => $this->conversation->customer->id,
+                    'full_name' => $this->conversation->customer->full_name,
+                    'email' => $this->conversation->customer->email,
+                ] : null,
+                'assigned_to' => $this->conversation->assigned_to,
+                'updated_at' => $this->conversation->updated_at,
+            ],
+            'last_message' => $lastMessage ? [
+                'id' => $lastMessage->id,
+                'conversation_id' => $lastMessage->conversation_id,
+                'sender_id' => $lastMessage->sender_id,
+                'message' => $lastMessage->message,
+                'created_at' => $lastMessage->created_at,
+                'sender' => $lastMessage->sender ? [
+                    'id' => $lastMessage->sender->id,
+                    'full_name' => $lastMessage->sender->full_name,
+                ] : null,
+            ] : null,
             'update_type' => $this->updateType,
-            'updated_at' => $this->conversation->updated_at,
         ];
     }
 

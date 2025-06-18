@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\Chat\ConversationUpdated;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\Branch;
@@ -12,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Events\TypingStatus;
+use App\Events\Chat\TypingStatus;
 
 class ChatController extends Controller
 {
@@ -61,14 +62,20 @@ class ChatController extends Controller
         $messageText = $request->message;
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            $attachmentPath = $file->store('chat_attachments', 'public');
+            $attachmentPath = $file->store('chat-attachments', 'public');
             $attachmentType = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'file';
+            Log::info('Admin gửi file', ['file' => $attachmentPath, 'type' => $attachmentType]);
             if (!$messageText) {
                 $messageText = $attachmentType === 'image' ? 'Đã gửi ảnh' : 'Đã gửi file';
             }
         }
-        if (!$messageText) {
-            $messageText = '';
+        Log::info('Admin tạo message', ['attachment' => $attachmentPath, 'attachment_type' => $attachmentType, 'message' => $messageText]);
+        if (!$messageText && !$attachmentPath) {
+            Log::warning('Admin gửi tin nhắn rỗng', ['conversation_id' => $request->conversation_id]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn phải nhập nội dung hoặc đính kèm file!'
+            ], 422);
         }
         $message = ChatMessage::create([
             'conversation_id' => $conversation->id,
@@ -82,15 +89,12 @@ class ChatController extends Controller
             'status' => 'sent'
         ]);
         Log::info('Admin đã tạo message', ['message_id' => $message->id, 'message' => $message->toArray()]);
-
-        // Khi trả về message, luôn load sender với full_name
         $message->load(['sender' => function ($query) {
             $query->select('id', 'full_name');
         }]);
         Log::info('Sender loaded:', ['sender' => $message->sender]);
         broadcast(new NewMessage($message, $conversation->id))->toOthers();
-
-        // Trả về message dạng mảng, sender chỉ gồm id và full_name
+        broadcast(new ConversationUpdated($conversation, 'created'))->toOthers();
         return response()->json([
             'success' => true,
             'message' => [
@@ -175,6 +179,8 @@ class ChatController extends Controller
                 Log::error('Pusher broadcast error: ' . $e->getMessage());
             }
 
+            broadcast(new ConversationUpdated($conversation, 'created'))->toOthers();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Phân phối thành công',
@@ -253,6 +259,13 @@ class ChatController extends Controller
 
     public function handleTyping(Request $request)
     {
+        Log::info('[ADMIN] handleTyping', [
+            'user_id' => Auth::id(),
+            'conversation_id' => $request->conversation_id,
+            'is_typing' => $request->is_typing,
+            'request_data' => $request->all(),
+            'ip' => $request->ip(),
+        ]);
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
             'is_typing' => 'required|boolean'
@@ -270,8 +283,14 @@ class ChatController extends Controller
             $userType = 'branch';
             $userName = $user->name ?? 'Chi nhánh';
         }
-        // Broadcast typing status
-        broadcast(new \App\Events\Chat\TypingStatus(
+        Log::info('[ADMIN] Broadcasting TypingStatus', [
+            'conversation_id' => $request->conversation_id,
+            'user_id' => $userId,
+            'is_typing' => $request->is_typing,
+            'user_type' => $userType,
+            'user_name' => $userName
+        ]);
+        broadcast(new TypingStatus(
             $request->conversation_id,
             $userId,
             $request->is_typing,

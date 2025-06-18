@@ -218,9 +218,6 @@ class ChatCommon {
                         this.appendMessage(data.message);
                         this.scrollToBottom();
                         // Phát âm thanh thông báo nếu tin nhắn từ người khác
-                        if (data.message.sender_id !== this.userId) {
-                            this.playNotificationSound();
-                        }
                     }
                 }
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
@@ -230,7 +227,46 @@ class ChatCommon {
 
         channel.bind("conversation-updated", (data) => {
             console.log("🔄 Cập nhật cuộc trò chuyện:", data);
-            this.updateConversationStatus(data.status);
+            // Nếu là cuộc trò chuyện mới hoặc có last_message thì cập nhật sidebar
+            if (data.update_type === "created") {
+                // Nếu có last_message thì dùng, không thì tạo message giả từ thông tin conversation
+                let sidebarMsg = data.last_message
+                    ? {
+                          ...data.last_message,
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                      }
+                    : {
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                          message: "",
+                          sender: data.conversation.customer
+                              ? {
+                                    full_name:
+                                        data.conversation.customer.full_name,
+                                }
+                              : { full_name: "Khách hàng" },
+                          sender_id: data.conversation.customer
+                              ? data.conversation.customer.id
+                              : "",
+                          created_at: data.conversation.updated_at,
+                      };
+                this.updateSidebarPreview(sidebarMsg);
+            } else if (data.last_message) {
+                this.updateSidebarPreview({
+                    ...data.last_message,
+                    conversation_id: data.conversation.id,
+                    status: data.conversation.status,
+                    customer: data.conversation.customer,
+                    branch_id: data.conversation.branch_id,
+                });
+            }
+            // Cập nhật trạng thái nếu cần
+            this.updateConversationStatus(data.conversation.status);
         });
 
         channel.bind("UserTyping", (data) => {
@@ -244,73 +280,58 @@ class ChatCommon {
     }
 
     updateSidebarPreview(message) {
-        const chatItem = document.querySelector(
+        let chatItem = document.querySelector(
             `.chat-item[data-conversation-id="${message.conversation_id}"]`
         );
-        if (chatItem) {
-            // Cập nhật preview tin nhắn
-            const previewElement = chatItem.querySelector(".chat-item-preview");
-            if (previewElement) {
-                previewElement.textContent = message.message;
-            }
-
-            // Cập nhật thời gian với định dạng realtime
-            const timeElement = chatItem.querySelector(".chat-item-time");
-            if (timeElement) {
-                const now = new Date();
-                const messageTime = new Date(message.created_at);
-                const diffMinutes = Math.floor(
-                    (now - messageTime) / (1000 * 60)
-                );
-
-                let timeText;
-                if (diffMinutes < 1) {
-                    timeText = "Vừa xong";
-                } else if (diffMinutes < 60) {
-                    timeText = `${diffMinutes} phút trước`;
-                } else if (diffMinutes < 1440) {
-                    // 24 giờ
-                    timeText = `${Math.floor(diffMinutes / 60)} giờ trước`;
-                } else {
-                    timeText = this.formatTime(message.created_at);
-                }
-                timeElement.textContent = timeText;
-            }
-
-            // Cập nhật số tin nhắn chưa đọc
-            if (message.sender_id !== this.userId) {
-                const unreadBadge = chatItem.querySelector(".unread-badge");
-                if (unreadBadge) {
-                    const currentCount = parseInt(unreadBadge.textContent) || 0;
-                    unreadBadge.textContent = currentCount + 1;
-                } else {
-                    const newBadge = document.createElement("span");
-                    newBadge.className =
-                        "unread-badge ml-2 absolute right-2 bottom-2";
-                    newBadge.textContent = "1";
-                    const flexDiv = chatItem.querySelector(".flex");
-                    if (flexDiv) {
-                        flexDiv.appendChild(newBadge);
-                    } else {
-                        chatItem.appendChild(newBadge);
-                    }
-                }
-            }
-
-            // Di chuyển cuộc trò chuyện lên đầu danh sách
+        const isNew = !chatItem;
+        if (!chatItem) {
+            chatItem = this.createSidebarChatItem(message);
             if (this.chatList) {
-                // Xóa chat item khỏi vị trí hiện tại
-                chatItem.remove();
-                // Thêm vào đầu danh sách
                 this.chatList.insertBefore(chatItem, this.chatList.firstChild);
-
-                // Thêm hiệu ứng highlight
-                chatItem.classList.add("highlight-new");
-                setTimeout(() => {
-                    chatItem.classList.remove("highlight-new");
-                }, 2000);
             }
         }
+        // Cập nhật preview tin nhắn
+        const previewElement = chatItem.querySelector(".chat-item-preview");
+        if (previewElement) {
+            previewElement.textContent = message.message;
+        }
+        // Cập nhật thời gian
+        const timeElement = chatItem.querySelector(".chat-item-time");
+        if (timeElement) {
+            timeElement.textContent = "Vừa xong";
+        }
+        // Cập nhật số tin nhắn chưa đọc
+        if (message.sender_id !== this.userId) {
+            const unreadBadge = chatItem.querySelector(".unread-badge");
+            if (unreadBadge) {
+                const currentCount = parseInt(unreadBadge.textContent) || 0;
+                unreadBadge.textContent = currentCount + 1;
+            } else {
+                const newBadge = document.createElement("span");
+                newBadge.className =
+                    "unread-badge ml-2 absolute right-2 bottom-2";
+                newBadge.textContent = "1";
+                const flexDiv = chatItem.querySelector(".flex");
+                if (flexDiv) {
+                    flexDiv.appendChild(newBadge);
+                } else {
+                    chatItem.appendChild(newBadge);
+                }
+            }
+        }
+        // Luôn di chuyển lên đầu sidebar (kể cả khi đang không ở conversation đó)
+        if (
+            this.chatList &&
+            (!this.chatList.firstChild || this.chatList.firstChild !== chatItem)
+        ) {
+            chatItem.remove();
+            this.chatList.insertBefore(chatItem, this.chatList.firstChild);
+        }
+        // Thêm hiệu ứng highlight khi có tin nhắn mới hoặc vừa tạo mới
+        chatItem.classList.add("highlight-new");
+        setTimeout(() => {
+            chatItem.classList.remove("highlight-new");
+        }, 2000);
     }
 
     moveConversationToTop(conversationId) {
@@ -526,6 +547,10 @@ class ChatCommon {
     }
 
     async sendTypingIndicator(isTyping) {
+        console.log("[ChatCommon] Gửi typing:", {
+            conversation_id: this.conversationId,
+            is_typing: isTyping,
+        });
         try {
             await fetch("/admin/chat/typing", {
                 method: "POST",
@@ -858,19 +883,6 @@ class ChatCommon {
         }
     }
 
-    playNotificationSound() {
-        // Create audio element for notification
-        try {
-            const audio = new Audio("/sounds/notification.mp3");
-            audio.volume = 0.3;
-            audio
-                .play()
-                .catch((e) => console.log("Could not play notification sound"));
-        } catch (e) {
-            console.log("Notification sound not available");
-        }
-    }
-
     formatTime(timestamp) {
         const date = new Date(timestamp);
         return date.toLocaleTimeString("vi-VN", {
@@ -1028,11 +1040,7 @@ class ChatCommon {
         const formData = new FormData();
         formData.append("conversation_id", this.conversationId);
         formData.append("message", ""); // Gửi message rỗng
-        if (type === "image") {
-            formData.append("image", file);
-        } else {
-            formData.append("file", file);
-        }
+        formData.append("attachment", file); // Sử dụng key 'attachment' cho mọi loại file
         formData.append(
             "_token",
             document.querySelector('meta[name="csrf-token"]').content
@@ -1089,9 +1097,6 @@ class ChatCommon {
                         this.appendMessage(data.message);
                         this.scrollToBottom();
                         // Phát âm thanh thông báo nếu tin nhắn từ người khác
-                        if (data.message.sender_id !== this.userId) {
-                            this.playNotificationSound();
-                        }
                     }
                 }
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
@@ -1101,7 +1106,46 @@ class ChatCommon {
 
         channel.bind("conversation-updated", (data) => {
             console.log("🔄 Cập nhật cuộc trò chuyện:", data);
-            this.updateConversationStatus(data.status);
+            // Nếu là cuộc trò chuyện mới hoặc có last_message thì cập nhật sidebar
+            if (data.update_type === "created") {
+                // Nếu có last_message thì dùng, không thì tạo message giả từ thông tin conversation
+                let sidebarMsg = data.last_message
+                    ? {
+                          ...data.last_message,
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                      }
+                    : {
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                          message: "",
+                          sender: data.conversation.customer
+                              ? {
+                                    full_name:
+                                        data.conversation.customer.full_name,
+                                }
+                              : { full_name: "Khách hàng" },
+                          sender_id: data.conversation.customer
+                              ? data.conversation.customer.id
+                              : "",
+                          created_at: data.conversation.updated_at,
+                      };
+                this.updateSidebarPreview(sidebarMsg);
+            } else if (data.last_message) {
+                this.updateSidebarPreview({
+                    ...data.last_message,
+                    conversation_id: data.conversation.id,
+                    status: data.conversation.status,
+                    customer: data.conversation.customer,
+                    branch_id: data.conversation.branch_id,
+                });
+            }
+            // Cập nhật trạng thái nếu cần
+            this.updateConversationStatus(data.conversation.status);
         });
 
         channel.bind("UserTyping", (data) => {
@@ -1115,73 +1159,58 @@ class ChatCommon {
     }
 
     updateSidebarPreview(message) {
-        const chatItem = document.querySelector(
+        let chatItem = document.querySelector(
             `.chat-item[data-conversation-id="${message.conversation_id}"]`
         );
-        if (chatItem) {
-            // Cập nhật preview tin nhắn
-            const previewElement = chatItem.querySelector(".chat-item-preview");
-            if (previewElement) {
-                previewElement.textContent = message.message;
-            }
-
-            // Cập nhật thời gian với định dạng realtime
-            const timeElement = chatItem.querySelector(".chat-item-time");
-            if (timeElement) {
-                const now = new Date();
-                const messageTime = new Date(message.created_at);
-                const diffMinutes = Math.floor(
-                    (now - messageTime) / (1000 * 60)
-                );
-
-                let timeText;
-                if (diffMinutes < 1) {
-                    timeText = "Vừa xong";
-                } else if (diffMinutes < 60) {
-                    timeText = `${diffMinutes} phút trước`;
-                } else if (diffMinutes < 1440) {
-                    // 24 giờ
-                    timeText = `${Math.floor(diffMinutes / 60)} giờ trước`;
-                } else {
-                    timeText = this.formatTime(message.created_at);
-                }
-                timeElement.textContent = timeText;
-            }
-
-            // Cập nhật số tin nhắn chưa đọc
-            if (message.sender_id !== this.userId) {
-                const unreadBadge = chatItem.querySelector(".unread-badge");
-                if (unreadBadge) {
-                    const currentCount = parseInt(unreadBadge.textContent) || 0;
-                    unreadBadge.textContent = currentCount + 1;
-                } else {
-                    const newBadge = document.createElement("span");
-                    newBadge.className =
-                        "unread-badge ml-2 absolute right-2 bottom-2";
-                    newBadge.textContent = "1";
-                    const flexDiv = chatItem.querySelector(".flex");
-                    if (flexDiv) {
-                        flexDiv.appendChild(newBadge);
-                    } else {
-                        chatItem.appendChild(newBadge);
-                    }
-                }
-            }
-
-            // Di chuyển cuộc trò chuyện lên đầu danh sách
+        const isNew = !chatItem;
+        if (!chatItem) {
+            chatItem = this.createSidebarChatItem(message);
             if (this.chatList) {
-                // Xóa chat item khỏi vị trí hiện tại
-                chatItem.remove();
-                // Thêm vào đầu danh sách
                 this.chatList.insertBefore(chatItem, this.chatList.firstChild);
-
-                // Thêm hiệu ứng highlight
-                chatItem.classList.add("highlight-new");
-                setTimeout(() => {
-                    chatItem.classList.remove("highlight-new");
-                }, 2000);
             }
         }
+        // Cập nhật preview tin nhắn
+        const previewElement = chatItem.querySelector(".chat-item-preview");
+        if (previewElement) {
+            previewElement.textContent = message.message;
+        }
+        // Cập nhật thời gian
+        const timeElement = chatItem.querySelector(".chat-item-time");
+        if (timeElement) {
+            timeElement.textContent = "Vừa xong";
+        }
+        // Cập nhật số tin nhắn chưa đọc
+        if (message.sender_id !== this.userId) {
+            const unreadBadge = chatItem.querySelector(".unread-badge");
+            if (unreadBadge) {
+                const currentCount = parseInt(unreadBadge.textContent) || 0;
+                unreadBadge.textContent = currentCount + 1;
+            } else {
+                const newBadge = document.createElement("span");
+                newBadge.className =
+                    "unread-badge ml-2 absolute right-2 bottom-2";
+                newBadge.textContent = "1";
+                const flexDiv = chatItem.querySelector(".flex");
+                if (flexDiv) {
+                    flexDiv.appendChild(newBadge);
+                } else {
+                    chatItem.appendChild(newBadge);
+                }
+            }
+        }
+        // Luôn di chuyển lên đầu sidebar (kể cả khi đang không ở conversation đó)
+        if (
+            this.chatList &&
+            (!this.chatList.firstChild || this.chatList.firstChild !== chatItem)
+        ) {
+            chatItem.remove();
+            this.chatList.insertBefore(chatItem, this.chatList.firstChild);
+        }
+        // Thêm hiệu ứng highlight khi có tin nhắn mới hoặc vừa tạo mới
+        chatItem.classList.add("highlight-new");
+        setTimeout(() => {
+            chatItem.classList.remove("highlight-new");
+        }, 2000);
     }
 
     switchConversation(conversationId, chatItem) {
@@ -1664,11 +1693,7 @@ class ChatCommon {
         const formData = new FormData();
         formData.append("conversation_id", this.conversationId);
         formData.append("message", ""); // Gửi message rỗng
-        if (type === "image") {
-            formData.append("image", file);
-        } else {
-            formData.append("file", file);
-        }
+        formData.append("attachment", file); // Sử dụng key 'attachment' cho mọi loại file
         formData.append(
             "_token",
             document.querySelector('meta[name="csrf-token"]').content
@@ -1783,6 +1808,51 @@ class ChatCommon {
             console.error("❌ Lỗi khi phân công:", error);
             this.showError("Không thể phân công cuộc trò chuyện");
         }
+    }
+
+    // Thêm hàm tạo chat-item cho admin
+    createSidebarChatItem(message) {
+        const div = document.createElement("div");
+        div.className = "chat-item relative";
+        div.dataset.conversationId = message.conversation_id;
+        div.dataset.status = message.status || "new";
+        div.innerHTML = `
+            <div class="flex items-center gap-3 w-full min-w-0">
+                <div class="flex flex-col items-center justify-center relative">
+                    <div class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg bg-orange-500">
+                        ${(message.sender?.full_name || "K")
+                            .charAt(0)
+                            .toUpperCase()}
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="chat-item-name truncate font-semibold text-base">
+                            ${message.sender?.full_name || "Khách hàng"}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="chat-item-preview truncate text-sm text-gray-500 flex-1">
+                            ${message.message}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="chat-item-time text-xs text-gray-400">
+                            Vừa xong
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
+                <span class="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                    Mới
+                </span>
+            </div>
+        `;
+        div.addEventListener("click", () => {
+            this.switchConversation(message.conversation_id, div);
+        });
+        return div;
     }
 }
 
@@ -1982,10 +2052,6 @@ class BranchChat {
                     if (!existingMessage) {
                         this.appendMessage(data.message);
                         this.scrollToBottom();
-                        // Phát âm thanh thông báo nếu tin nhắn từ người khác
-                        if (data.message.sender_id !== this.userId) {
-                            this.playNotificationSound();
-                        }
                     }
                 }
             }
@@ -1993,7 +2059,46 @@ class BranchChat {
 
         channel.bind("conversation-updated", (data) => {
             console.log("[BranchChat] Cập nhật cuộc trò chuyện:", data);
-            this.updateConversationStatus(data.status);
+            // Nếu là cuộc trò chuyện mới hoặc có last_message thì cập nhật sidebar
+            if (data.update_type === "created") {
+                // Nếu có last_message thì dùng, không thì tạo message giả từ thông tin conversation
+                let sidebarMsg = data.last_message
+                    ? {
+                          ...data.last_message,
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                      }
+                    : {
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                          message: "",
+                          sender: data.conversation.customer
+                              ? {
+                                    full_name:
+                                        data.conversation.customer.full_name,
+                                }
+                              : { full_name: "Khách hàng" },
+                          sender_id: data.conversation.customer
+                              ? data.conversation.customer.id
+                              : "",
+                          created_at: data.conversation.updated_at,
+                      };
+                this.updateSidebarPreview(sidebarMsg);
+            } else if (data.last_message) {
+                this.updateSidebarPreview({
+                    ...data.last_message,
+                    conversation_id: data.conversation.id,
+                    status: data.conversation.status,
+                    customer: data.conversation.customer,
+                    branch_id: data.conversation.branch_id,
+                });
+            }
+            // Cập nhật trạng thái nếu cần
+            this.updateConversationStatus(data.conversation.status);
         });
 
         channel.bind("UserTyping", (data) => {
@@ -2006,73 +2111,58 @@ class BranchChat {
     }
 
     updateSidebarPreview(message) {
-        const chatItem = document.querySelector(
+        let chatItem = document.querySelector(
             `.chat-item[data-conversation-id="${message.conversation_id}"]`
         );
-        if (chatItem) {
-            // Cập nhật preview tin nhắn
-            const previewElement = chatItem.querySelector(".chat-item-preview");
-            if (previewElement) {
-                previewElement.textContent = message.message;
-            }
-
-            // Cập nhật thời gian với định dạng realtime
-            const timeElement = chatItem.querySelector(".chat-item-time");
-            if (timeElement) {
-                const now = new Date();
-                const messageTime = new Date(message.created_at);
-                const diffMinutes = Math.floor(
-                    (now - messageTime) / (1000 * 60)
-                );
-
-                let timeText;
-                if (diffMinutes < 1) {
-                    timeText = "Vừa xong";
-                } else if (diffMinutes < 60) {
-                    timeText = `${diffMinutes} phút trước`;
-                } else if (diffMinutes < 1440) {
-                    // 24 giờ
-                    timeText = `${Math.floor(diffMinutes / 60)} giờ trước`;
-                } else {
-                    timeText = this.formatTime(message.created_at);
-                }
-                timeElement.textContent = timeText;
-            }
-
-            // Cập nhật số tin nhắn chưa đọc
-            if (message.sender_id !== this.userId) {
-                const unreadBadge = chatItem.querySelector(".unread-badge");
-                if (unreadBadge) {
-                    const currentCount = parseInt(unreadBadge.textContent) || 0;
-                    unreadBadge.textContent = currentCount + 1;
-                } else {
-                    const newBadge = document.createElement("span");
-                    newBadge.className =
-                        "unread-badge ml-2 absolute right-2 bottom-2";
-                    newBadge.textContent = "1";
-                    const flexDiv = chatItem.querySelector(".flex");
-                    if (flexDiv) {
-                        flexDiv.appendChild(newBadge);
-                    } else {
-                        chatItem.appendChild(newBadge);
-                    }
-                }
-            }
-
-            // Di chuyển cuộc trò chuyện lên đầu danh sách
+        const isNew = !chatItem;
+        if (!chatItem) {
+            chatItem = this.createSidebarChatItem(message);
             if (this.chatList) {
-                // Xóa chat item khỏi vị trí hiện tại
-                chatItem.remove();
-                // Thêm vào đầu danh sách
                 this.chatList.insertBefore(chatItem, this.chatList.firstChild);
-
-                // Thêm hiệu ứng highlight
-                chatItem.classList.add("highlight-new");
-                setTimeout(() => {
-                    chatItem.classList.remove("highlight-new");
-                }, 2000);
             }
         }
+        // Cập nhật preview tin nhắn
+        const previewElement = chatItem.querySelector(".chat-item-preview");
+        if (previewElement) {
+            previewElement.textContent = message.message;
+        }
+        // Cập nhật thời gian
+        const timeElement = chatItem.querySelector(".chat-item-time");
+        if (timeElement) {
+            timeElement.textContent = "Vừa xong";
+        }
+        // Cập nhật số tin nhắn chưa đọc
+        if (message.sender_id !== this.userId) {
+            const unreadBadge = chatItem.querySelector(".unread-badge");
+            if (unreadBadge) {
+                const currentCount = parseInt(unreadBadge.textContent) || 0;
+                unreadBadge.textContent = currentCount + 1;
+            } else {
+                const newBadge = document.createElement("span");
+                newBadge.className =
+                    "unread-badge ml-2 absolute right-2 bottom-2";
+                newBadge.textContent = "1";
+                const flexDiv = chatItem.querySelector(".flex");
+                if (flexDiv) {
+                    flexDiv.appendChild(newBadge);
+                } else {
+                    chatItem.appendChild(newBadge);
+                }
+            }
+        }
+        // Luôn di chuyển lên đầu sidebar (kể cả khi đang không ở conversation đó)
+        if (
+            this.chatList &&
+            (!this.chatList.firstChild || this.chatList.firstChild !== chatItem)
+        ) {
+            chatItem.remove();
+            this.chatList.insertBefore(chatItem, this.chatList.firstChild);
+        }
+        // Thêm hiệu ứng highlight khi có tin nhắn mới hoặc vừa tạo mới
+        chatItem.classList.add("highlight-new");
+        setTimeout(() => {
+            chatItem.classList.remove("highlight-new");
+        }, 2000);
     }
 
     appendMessage(message) {
@@ -2366,13 +2456,6 @@ class BranchChat {
             .replace(/'/g, "&#039;");
     }
 
-    playNotificationSound() {
-        const audio = new Audio("/sounds/notification.mp3");
-        audio.play().catch((error) => {
-            console.log("Không thể phát âm thanh thông báo:", error);
-        });
-    }
-
     updateConversationStatus(status) {
         const statusBadge = document.querySelector(".status-badge");
         if (statusBadge) {
@@ -2514,6 +2597,51 @@ class BranchChat {
         const typingDiv = document.getElementById("branch-typing-indicator");
         if (typingDiv) typingDiv.remove();
     }
+
+    // Thêm hàm tạo chat-item cho admin
+    createSidebarChatItem(message) {
+        const div = document.createElement("div");
+        div.className = "chat-item relative";
+        div.dataset.conversationId = message.conversation_id;
+        div.dataset.status = message.status || "new";
+        div.innerHTML = `
+            <div class="flex items-center gap-3 w-full min-w-0">
+                <div class="flex flex-col items-center justify-center relative">
+                    <div class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg bg-orange-500">
+                        ${(message.sender?.full_name || "K")
+                            .charAt(0)
+                            .toUpperCase()}
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="chat-item-name truncate font-semibold text-base">
+                            ${message.sender?.full_name || "Khách hàng"}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="chat-item-preview truncate text-sm text-gray-500 flex-1">
+                            ${message.message}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="chat-item-time text-xs text-gray-400">
+                            Vừa xong
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
+                <span class="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                    Mới
+                </span>
+            </div>
+        `;
+        div.addEventListener("click", () => {
+            this.switchConversation(message.conversation_id, div);
+        });
+        return div;
+    }
 }
 
 window.BranchChat = BranchChat;
@@ -2574,6 +2702,17 @@ class CustomerChatRealtime {
                     this.appendMessage(data.message);
                 }
             });
+            channel.bind("UserTyping", (data) => {
+                console.log(
+                    "[CustomerChatRealtime] Nhận event UserTyping:",
+                    data
+                );
+                if (data.user_id !== this.userId && data.is_typing) {
+                    this.showTypingIndicator(data.user_name);
+                } else {
+                    this.hideTypingIndicator();
+                }
+            });
         } catch (e) {
             console.error("[CustomerChatRealtime] Lỗi khi setup channel:", e);
         }
@@ -2593,6 +2732,10 @@ class CustomerChatRealtime {
     }
 
     async sendTypingIndicator(isTyping) {
+        console.log("[CustomerChatRealtime] Gửi typing:", {
+            conversation_id: this.conversationId,
+            is_typing: isTyping,
+        });
         try {
             await fetch("/customer/chat/typing", {
                 method: "POST",
@@ -2635,4 +2778,57 @@ class CustomerChatRealtime {
 }
 
 window.CustomerChatRealtime = CustomerChatRealtime;
+// ... existing code ...
+
+document.addEventListener("DOMContentLoaded", function () {
+    // ... existing code ...
+    // BranchChat instance đã được khởi tạo ở trên
+    // Thêm event cho các nút trạng thái
+    const btnActivate = document.getElementById("btn-activate-conversation");
+    const btnResolve = document.getElementById("btn-resolve-conversation");
+    const btnClose = document.getElementById("btn-close-conversation");
+    function getCurrentConversationId() {
+        // Lấy id từ item đang active trong sidebar
+        const activeItem = document.querySelector(".conversation-item.active");
+        return activeItem
+            ? activeItem.getAttribute("data-conversation-id")
+            : null;
+    }
+    function updateStatus(status) {
+        const conversationId = getCurrentConversationId();
+        if (!conversationId) return;
+        fetch("/branch/chat/update-status", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": document.querySelector(
+                    'meta[name="csrf-token"]'
+                ).content,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: JSON.stringify({
+                conversation_id: conversationId,
+                status: status,
+            }),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.success) {
+                    if (status === "active") {
+                        // Nếu là kích hoạt thì reload lại trang branch
+                        window.location.reload();
+                    } else if (window.chatInstance) {
+                        window.chatInstance.loadConversation(conversationId);
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.message || "Có lỗi xảy ra!");
+                }
+            });
+    }
+    if (btnActivate) btnActivate.onclick = () => updateStatus("active");
+    if (btnResolve) btnResolve.onclick = () => updateStatus("resolved");
+    if (btnClose) btnClose.onclick = () => updateStatus("closed");
+});
 // ... existing code ...

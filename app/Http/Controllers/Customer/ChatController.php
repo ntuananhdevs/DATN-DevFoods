@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Events\Chat\TypingStatus;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 
@@ -43,41 +44,45 @@ class ChatController extends Controller
 
             Log::info('Customer conversation found', ['conversation' => $conversation]);
 
-            // Nếu chưa phân phối thì receiver_id là admin (id=11), nếu đã phân phối thì là branch_id
             $receiverId = $conversation->branch_id ?? 11;
 
-            // Xử lý file đính kèm nếu có
             $attachmentPath = null;
             $attachmentType = null;
+            $messageText = $request->message;
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
-                $attachmentPath = $file->store('chat_attachments', 'public');
+                $attachmentPath = $file->store('chat-attachments', 'public');
                 $attachmentType = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'file';
+                Log::info('Customer gửi file', ['file' => $attachmentPath, 'type' => $attachmentType]);
+                if (!$messageText) {
+                    $messageText = $attachmentType === 'image' ? 'Đã gửi ảnh' : 'Đã gửi file';
+                }
             }
-
+            Log::info('Customer tạo message', ['attachment' => $attachmentPath, 'attachment_type' => $attachmentType, 'message' => $messageText]);
+            if (!$messageText && !$attachmentPath) {
+                Log::warning('Customer gửi tin nhắn rỗng', ['conversation_id' => $request->conversation_id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn phải nhập nội dung hoặc đính kèm file!'
+                ], 422);
+            }
             $messageData = [
                 'conversation_id' => $request->conversation_id,
                 'sender_id' => $userId,
                 'receiver_id' => $receiverId,
                 'sender_type' => 'customer',
-                'message' => $request->message,
+                'message' => $messageText,
                 'attachment' => $attachmentPath,
                 'attachment_type' => $attachmentType,
                 'sent_at' => now(),
                 'status' => 'sent'
             ];
-
             Log::info('Customer message data before create', $messageData);
-
             $message = ChatMessage::create($messageData);
-
-            // Load sender info với trường full_name
             $message->load(['sender' => function ($query) {
                 $query->select('id', 'full_name');
             }]);
-
             broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
-
             return response()->json([
                 'success' => true,
                 'message' => $message
@@ -85,7 +90,6 @@ class ChatController extends Controller
         } catch (\Exception $e) {
             Log::error('Customer send message error: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
-
             return response()->json([
                 'success' => false,
                 'message' => 'Lỗi gửi tin nhắn! Vui lòng thử lại sau.'
@@ -265,6 +269,13 @@ class ChatController extends Controller
 
     public function typing(Request $request)
     {
+        Log::info('[CUSTOMER] typing', [
+            'user_id' => Auth::id(),
+            'conversation_id' => $request->conversation_id,
+            'is_typing' => $request->is_typing,
+            'request_data' => $request->all(),
+            'ip' => $request->ip(),
+        ]);
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
             'is_typing' => 'required|boolean'
@@ -274,7 +285,14 @@ class ChatController extends Controller
         $user = Auth::user();
         $userType = 'customer';
         $userName = $user->name ?? 'Khách hàng';
-        broadcast(new \App\Events\Chat\TypingStatus(
+        Log::info('[CUSTOMER] Broadcasting TypingStatus', [
+            'conversation_id' => $request->conversation_id,
+            'user_id' => $userId,
+            'is_typing' => $request->is_typing,
+            'user_type' => $userType,
+            'user_name' => $userName
+        ]);
+        broadcast(new TypingStatus(
             $request->conversation_id,
             $userId,
             $request->is_typing,

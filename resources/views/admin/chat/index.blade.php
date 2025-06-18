@@ -509,7 +509,8 @@
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <div id="chat-container" class="chat-container" data-conversation-id="{{ $conversation->id }}"
+    <div id="chat-container" class="chat-container"
+        @if (isset($conversation) && $conversation) data-conversation-id="{{ $conversation->id }}" @endif
         data-user-id="{{ auth()->id() }}" data-user-type="admin">
         <!-- Sidebar: Danh sách cuộc trò chuyện -->
         <div class="chat-sidebar" style="width:26%">
@@ -530,8 +531,8 @@
                 </div>
             </div>
             <div id="chat-list" class="chat-list">
-                @foreach ($conversations as $conv)
-                    <div class="chat-item {{ $conv->id == $conversation->id ? 'active' : '' }}  relative"
+                @forelse ($conversations as $conv)
+                    <div class="chat-item {{ $conv->id == optional($conversation)->id ? 'active' : '' }}  relative"
                         data-conversation-id="{{ $conv->id }}" data-status="{{ $conv->status }}"
                         data-customer-name="{{ $conv->customer->full_name ?? ($conv->customer->name ?? 'Khách hàng') }}"
                         data-customer-email="{{ $conv->customer->email }}"
@@ -539,7 +540,7 @@
                         <div class="flex items-center gap-3 w-full min-w-0">
                             <div class="flex flex-col items-center justify-center relative">
                                 <div
-                                    class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg {{ $conv->id == $conversation->id ? 'bg-blue-500' : 'bg-orange-500' }}">
+                                    class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg {{ $conv->id == optional($conversation)->id ? 'bg-blue-500' : 'bg-orange-500' }}">
                                     {{ strtoupper(substr($conv->customer->full_name ?? ($conv->customer->name ?? 'K'), 0, 1)) }}
                                 </div>
                             </div>
@@ -585,7 +586,9 @@
                         </div>
 
                     </div>
-                @endforeach
+                @empty
+                    <div class="p-4 text-center ">Không có cuộc trò chuyện nào.</div>
+                @endforelse
             </div>
         </div>
         <!-- Main Chat -->
@@ -637,7 +640,12 @@
                     </form>
                 </div>
             @else
-                <div class="p-4 text-center text-muted">Không có cuộc trò chuyện nào.</div>
+                <div class="flex flex-col items-center justify-center h-full p-8 text-center ">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" alt="No chat"
+                        style="width:80px;height:80px;opacity:0.5;">
+                    <h3 class="mt-4 mb-2 text-lg font-semibold">Chưa có cuộc trò chuyện nào</h3>
+                    <p>Bạn sẽ thấy các cuộc trò chuyện với khách hàng tại đây khi có tin nhắn mới.</p>
+                </div>
             @endif
         </div>
         <!-- Customer Info -->
@@ -645,35 +653,59 @@
             <div class="flex flex-col items-center gap-2 p-4">
                 <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl mb-2"
                     id="customer-info-avatar">
-                    {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+                    @if ($hasConversation)
+                        {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+                    @else
+                        ?
+                    @endif
                 </div>
                 <div class="font-bold" id="customer-info-name">
-                    {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}</div>
-                <div class="text-xs text-gray-500" id="customer-info-email">{{ $conversation->customer->email }}</div>
-                <div class="text-xs text-gray-500" id="customer-info-phone">SĐT:
-                    {{ $conversation->customer->phone ?? '---' }}</div>
-                <div class="text-xs text-gray-500">Trạng thái: <span class="font-semibold"
-                        id="customer-info-status">{{ ucfirst($conversation->status) }}</span></div>
-                <div class="text-xs text-gray-500">Lần cuối hoạt động: {{ $conversation->updated_at->diffForHumans() }}
+                    @if ($hasConversation)
+                        {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}
+                    @else
+                        Khách hàng
+                    @endif
                 </div>
-                @if ($conversation->branch)
+                <div class="text-xs text-gray-500" id="customer-info-email">
+                    @if ($hasConversation)
+                        {{ $conversation->customer->email }}
+                    @endif
+                </div>
+                <div class="text-xs text-gray-500" id="customer-info-phone">SĐT:
+                    @if ($hasConversation)
+                        {{ $conversation->customer->phone ?? '---' }}
+                    @else
+                        ---
+                    @endif
+                </div>
+                <div class="text-xs text-gray-500">Trạng thái: <span class="font-semibold" id="customer-info-status">
+                        @if ($hasConversation)
+                            {{ ucfirst($conversation->status) }}
+                        @endif
+                    </span></div>
+                <div class="text-xs text-gray-500">Lần cuối hoạt động: @if ($hasConversation)
+                        {{ $conversation->updated_at->diffForHumans() }}
+                    @endif
+                </div>
+                @if ($hasConversation && $conversation->branch)
                     <div class="mt-2"><span class="badge badge-xs branch-badge ml-2"
                             id="customer-info-branch-badge">{{ $conversation->branch->name }}</span></div>
                 @endif
             </div>
             <div class="p-4 flex justify-end">
                 <div class="w-full flex flex-col items-end">
-
-                    <select class="distribution-select form-select w-full max-w-xs" id="distribution-select"
-                        data-conversation-id="{{ $conversation->id }}"
-                        @if ($conversation->status == 'distributed') style="display:none" @endif>
-                        <option value="" disabled selected>Chọn chi nhánh</option>
-                        @foreach ($branches as $branch)
-                            <option value="{{ $branch->id }}"
-                                {{ $conversation->branch_id == $branch->id ? 'selected' : '' }}>{{ $branch->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    @if ($hasConversation)
+                        <select class="distribution-select form-select w-full max-w-xs" id="distribution-select"
+                            data-conversation-id="{{ $conversation->id }}"
+                            @if ($conversation->branch_id) style="display:none" @endif>
+                            <option value="" disabled selected>Chọn chi nhánh</option>
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}"
+                                    {{ $conversation->branch_id == $branch->id ? 'selected' : '' }}>{{ $branch->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
                 </div>
             </div>
             <div class="p-4">

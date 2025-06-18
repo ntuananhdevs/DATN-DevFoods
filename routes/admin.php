@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Branch\BranchChatController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 
 // Admin Controllers
 use App\Http\Controllers\Admin\DashboardController;
@@ -274,3 +275,5 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         // ... các route khác nếu có
     });
 });
+
+Broadcast::routes(['middleware' => ['auth:sp_admin,customer,branch']]);
