@@ -418,7 +418,7 @@
             <div class="profile-section">
                 <div class="profile-image">
                     @if($application->profile_image)
-                        <img src="{{ asset($application->profile_image) }}" alt="Ảnh đại diện">
+                        <img src="{{ Storage::disk('driver_documents')->url($application->profile_image) }}" alt="Ảnh đại diện">
                     @else
                         <img src="https://ui-avatars.com/api/?name={{ urlencode($application->full_name) }}&background=eee&color=555&size=150" alt="Ảnh đại diện">
                     @endif
@@ -457,7 +457,7 @@
                     <div class="info-item">
                         <i class="fas fa-map-marker-alt icon"></i>
                         <span class="label">Địa chỉ:</span>
-                        <span class="value">{{ $application->address }}, {{ $application->district }}, {{ $application->city }}</span>
+                        <span class="value">{{ $application->address }}</span>
                     </div>
                 </div>
             </div>
@@ -484,7 +484,7 @@
                             <span class="label">Ảnh mặt trước:</span>
                             <div class="document-image">
                                 @if($application->id_card_front_image)
-                                    <img src="{{ asset($application->id_card_front_image) }}" alt="CMND mặt trước">
+                                    <img src="{{ Storage::disk('driver_documents')->url($application->id_card_front_image) }}" alt="CMND mặt trước">
                                 @else
                                     <span class="text-muted">Không có</span>
                                 @endif
@@ -494,7 +494,7 @@
                             <span class="label">Ảnh mặt sau:</span>
                             <div class="document-image">
                                 @if($application->id_card_back_image)
-                                    <img src="{{ asset($application->id_card_back_image) }}" alt="CMND mặt sau">
+                                    <img src="{{ Storage::disk('driver_documents')->url($application->id_card_back_image) }}" alt="CMND mặt sau">
                                 @else
                                     <span class="text-muted">Không có</span>
                                 @endif
@@ -531,7 +531,7 @@
                             <span class="label">Ảnh đăng ký xe:</span>
                             <div class="document-image">
                                 @if($application->vehicle_registration_image)
-                                    <img src="{{ asset($application->vehicle_registration_image) }}" alt="Đăng ký xe">
+                                    <img src="{{ Storage::disk('driver_documents')->url($application->vehicle_registration_image) }}" alt="Đăng ký xe">
                                 @else
                                     <span class="text-muted">Không có</span>
                                 @endif
@@ -541,7 +541,7 @@
                             <span class="label">Ảnh GPLX:</span>
                             <div class="document-image">
                                 @if($application->driver_license_image)
-                                    <img src="{{ asset($application->driver_license_image) }}" alt="GPLX">
+                                    <img src="{{ Storage::disk('driver_documents')->url($application->driver_license_image) }}" alt="GPLX">
                                 @else
                                     <span class="text-muted">Không có</span>
                                 @endif
@@ -805,4 +805,30 @@ function showRejectModal() {
     }, 100);
 }
 </script>
-@endsection 
+<!-- Modal xem ảnh -->
+<div id="imageModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+  <span id="closeImageModal" style="position:absolute;top:30px;right:40px;font-size:40px;color:#fff;cursor:pointer;font-weight:bold;z-index:10001;">&times;</span>
+  <img id="modalImage" src="" alt="Xem ảnh" style="max-width:90vw;max-height:90vh;box-shadow:0 0 20px #000;border-radius:8px;z-index:10000;">
+</div>
+<script>
+    document.querySelectorAll('.document-image img, .profile-image img').forEach(function(img) {
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', function(e) {
+      var modal = document.getElementById('imageModal');
+      var modalImg = document.getElementById('modalImage');
+      modalImg.src = img.src;
+      modal.style.display = 'flex';
+    });
+  });
+  document.getElementById('closeImageModal').onclick = function() {
+    document.getElementById('imageModal').style.display = 'none';
+    document.getElementById('modalImage').src = '';
+  };
+  document.getElementById('imageModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.style.display = 'none';
+      document.getElementById('modalImage').src = '';
+    }
+  });
+</script>
+@endsection

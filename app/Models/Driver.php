@@ -14,42 +14,27 @@ class Driver extends Model implements Authenticatable
     use HasFactory, AuthenticatableTrait, Notifiable;
 
     protected $fillable = [
+        'email',
+        'password',
+        'full_name',
+        'phone_number',
+        'address',
         'application_id',
-        'license_number',
-        'license_class',
-        'license_expiry',
-        'license_plate',
-        'vehicle_type',
-        'vehicle_registration',
-        'vehicle_color',
         'status',
         'is_available',
-        'current_latitude',
-        'current_longitude',
         'balance',
         'rating',
         'cancellation_count',
         'reliability_score',
         'penalty_count',
         'auto_deposit_earnings',
-        'email',
-        'password',
-        'phone_number',
-        'full_name',
-        'address',
-        'id_card_front',
-        'id_card_back',
-        'license_front',
-        'license_back',
+        'otp',
+        'expires_at',
         'admin_notes',
         'password_reset_at',
         'password_changed_at',
         'must_change_password',
         'updated_by',
-        'email_verified_at',
-        'remember_token',
-        'expires_at',
-        'otp_code',
         'locked_at',
         'locked_until',
         'locked_by',
@@ -57,21 +42,18 @@ class Driver extends Model implements Authenticatable
         'unlocked_at',
         'unlocked_by',
         'status_changed_at',
-        'status_changed_by'
+        'status_changed_by',
     ];
 
     protected $hidden = [
         'password',
-        'remember_token',
-        'otp_code'
+        'otp',
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        'expires_at' => 'datetime',
         'password_reset_at' => 'datetime',
         'password_changed_at' => 'datetime',
-        'license_expiry' => 'date',
-        'expires_at' => 'datetime',
         'locked_at' => 'datetime',
         'locked_until' => 'datetime',
         'unlocked_at' => 'datetime',
@@ -81,8 +63,6 @@ class Driver extends Model implements Authenticatable
         'must_change_password' => 'boolean',
         'balance' => 'decimal:2',
         'rating' => 'decimal:2',
-        'current_latitude' => 'decimal:8',
-        'current_longitude' => 'decimal:8',
     ];
 
     // Mutator để tự động hash mật khẩu khi được gán
@@ -91,6 +71,7 @@ class Driver extends Model implements Authenticatable
         $this->attributes['password'] = bcrypt($value);
     }
 
+    // Relationships
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -131,6 +112,17 @@ class Driver extends Model implements Authenticatable
         return $this->belongsTo(User::class, 'status_changed_by');
     }
 
+    public function documents()
+    {
+        return $this->hasMany(DriverDocument::class, 'driver_id');
+    }
+
+    public function location()
+    {
+        return $this->hasOne(DriverLocation::class, 'driver_id');
+    }
+
+    // Scopes
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
@@ -141,9 +133,41 @@ class Driver extends Model implements Authenticatable
         return $query->where('is_available', true);
     }
 
-    public function scopeByVehicleType($query, $type)
+    // Accessors lấy data từ bảng documents
+    public function getVehicleTypeAttribute()
     {
-        return $query->where('vehicle_type', $type);
+        return $this->documents?->vehicle_type;
+    }
+
+    public function getLicenseClassAttribute()
+    {
+        return $this->documents?->license_class;
+    }
+
+    public function getVehicleTypeLabelAttribute()
+    {
+        $vehicleType = $this->documents?->vehicle_type;
+        return match($vehicleType) {
+            'motorbike' => 'Xe máy',
+            'car' => 'Ô tô',
+            'truck' => 'Xe tải',
+            null, '' => null,
+            default => ucfirst($vehicleType)
+        };
+    }
+
+    public function getLicenseClassLabelAttribute()
+    {
+        $licenseClass = $this->documents?->license_class;
+        return match($licenseClass) {
+            'A1' => 'A1 - Xe máy dưới 175cc',
+            'A2' => 'A2 - Xe máy trên 175cc',
+            'B1' => 'B1 - Ô tô dưới 9 chỗ',
+            'B2' => 'B2 - Ô tô từ 9-30 chỗ',
+            'C'  => 'C - Xe tải',
+            null, '' => null,
+            default => $licenseClass
+        };
     }
 
     public function getStatusLabelAttribute()
@@ -153,28 +177,6 @@ class Driver extends Model implements Authenticatable
             'inactive' => 'Không hoạt động',
             'locked' => 'Bị khóa',
             default => 'Không xác định'
-        };  
-    }
-
-    public function getVehicleTypeLabelAttribute()
-    {
-        return match($this->vehicle_type) {
-            'motorbike' => 'Xe máy',
-            'car' => 'Ô tô',
-            'truck' => 'Xe tải',
-            default => ucfirst($this->vehicle_type)
-        };
-    }
-
-    public function getLicenseClassLabelAttribute()
-    {
-        return match($this->license_class) {
-            'A1' => 'A1 - Xe máy dưới 175cc',
-            'A2' => 'A2 - Xe máy trên 175cc',
-            'B1' => 'B1 - Ô tô dưới 9 chỗ',
-            'B2' => 'B2 - Ô tô từ 9-30 chỗ',
-            'C' => 'C - Xe tải',
-            default => $this->license_class
         };
     }
 }
