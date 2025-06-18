@@ -21,8 +21,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f8fafc;
-            color: #1f2937;
+            background-color: #111827;
+            color: white;
             height: 100vh;
             overflow: hidden;
         }
@@ -56,9 +56,9 @@
 
         .btn {
             padding: 0.5rem 1rem;
-            border: 1px solid #d1d5db;
-            background: white;
-            color: #374151;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
             border-radius: 0.375rem;
             cursor: pointer;
             display: inline-flex;
@@ -67,12 +67,10 @@
             font-size: 0.875rem;
             transition: all 0.2s;
             text-decoration: none;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .btn:hover {
-            background: #f9fafb;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .btn-icon {
@@ -86,7 +84,6 @@
         .btn-primary {
             background: #2563eb;
             border-color: #2563eb;
-            color: white;
         }
 
         .btn-primary:hover {
@@ -96,21 +93,16 @@
         .btn-success {
             background: #16a34a;
             border-color: #16a34a;
-            color: white;
         }
 
         .btn-success:hover {
             background: #15803d;
         }
 
-        .btn-danger {
-            background: #dc2626;
-            border-color: #dc2626;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #b91c1c;
+        .btn-white {
+            background: white;
+            color: #374151;
+            border-color: #d1d5db;
         }
 
         .badge {
@@ -120,7 +112,6 @@
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
-            color: white;
         }
 
         .badge-green {
@@ -132,12 +123,18 @@
         }
 
         .card {
-            background: white;
-            border: 1px solid #e5e7eb;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 0.5rem;
             padding: 1rem;
             margin-bottom: 1rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-white {
+            background: white;
+            color: black;
+            border: 1px solid #e5e7eb;
         }
 
         .customer-info {
@@ -159,18 +156,17 @@
             align-items: center;
             gap: 0.5rem;
             font-size: 0.875rem;
-            color: #6b7280;
+            color: #d1d5db;
             margin-bottom: 0.5rem;
         }
 
         .note {
             margin-top: 0.5rem;
             padding: 0.5rem;
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid rgba(245, 158, 11, 0.3);
             border-radius: 0.375rem;
             font-size: 0.875rem;
-            color: #92400e;
         }
 
         .map-controls {
@@ -203,7 +199,6 @@
         .info-value {
             font-size: 1.125rem;
             font-weight: bold;
-            color: #1f2937;
         }
 
         .info-label {
@@ -231,7 +226,6 @@
 
         .instruction-text {
             font-weight: 500;
-            color: #1f2937;
         }
 
         .instruction-distance {
@@ -251,7 +245,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: white;
+            background: #111827;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -262,8 +256,8 @@
         .spinner {
             width: 3rem;
             height: 3rem;
-            border: 2px solid #e5e7eb;
-            border-top: 2px solid #2563eb;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 1rem;
@@ -297,45 +291,6 @@
         .text-sm {
             font-size: 0.875rem;
         }
-
-        .route-line {
-            stroke: #2563eb;
-            stroke-width: 4;
-            fill: none;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        .toast {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            min-width: 300px;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .toast.show {
-            transform: translateX(0);
-        }
-
-        .toast-success {
-            border-left: 4px solid #16a34a;
-        }
-
-        .toast-error {
-            border-left: 4px solid #dc2626;
-        }
-
-        .toast-warning {
-            border-left: 4px solid #f59e0b;
-        }
     </style>
 </head>
 <body>
@@ -351,10 +306,10 @@
     <!-- Header Overlay -->
     <div class="overlay header">
         <div class="header-controls">
-            <a href="{{ route('driver.orders.index') }}" class="btn">
+            <button class="btn" onclick="goBack()">
                 <i data-lucide="arrow-left"></i>
                 Quay lại
-            </a>
+            </button>
             <div style="display: flex; gap: 0.5rem;">
                 <span id="navigation-badge" class="badge badge-green hidden">
                     <i data-lucide="navigation"></i>
@@ -372,7 +327,7 @@
             <div class="customer-info">
                 <div class="customer-name">
                     <i data-lucide="user"></i>
-                    <span id="customer-name">Nguyễn Văn An</span>
+                    <span id="customer-name">Khách hàng</span>
                 </div>
                 <button class="btn btn-success" onclick="callCustomer()">
                     <i data-lucide="phone"></i>
@@ -380,10 +335,10 @@
             </div>
             <div class="customer-address">
                 <i data-lucide="map-pin"></i>
-                <span id="customer-address">123 Đường Láng, Đống Đa, Hà Nội</span>
+                <span id="customer-address">Địa chỉ giao hàng</span>
             </div>
-            <div id="customer-note" class="note">
-                <strong>Ghi chú:</strong> <span id="note-text">Giao hàng tại cổng chính, gọi điện trước khi đến</span>
+            <div id="customer-note" class="note hidden">
+                <strong>Ghi chú:</strong> <span id="note-text"></span>
             </div>
             <button class="btn w-full mt-2" onclick="toggleCustomerInfo()">
                 <i data-lucide="chevron-down"></i>
@@ -400,13 +355,13 @@
 
     <!-- Map Controls -->
     <div class="map-controls">
-        <button class="btn btn-icon" onclick="zoomIn()">
+        <button class="btn btn-white btn-icon" onclick="zoomIn()">
             <i data-lucide="zoom-in"></i>
         </button>
-        <button class="btn btn-icon" onclick="zoomOut()">
+        <button class="btn btn-white btn-icon" onclick="zoomOut()">
             <i data-lucide="zoom-out"></i>
         </button>
-        <button class="btn btn-icon" onclick="centerOnUser()">
+        <button class="btn btn-white btn-icon" onclick="centerOnUser()">
             <i data-lucide="locate"></i>
         </button>
     </div>
@@ -414,7 +369,7 @@
     <!-- Bottom Panel -->
     <div class="overlay bottom-panel">
         <!-- Pre-navigation Panel -->
-        <div id="pre-navigation" class="card">
+        <div id="pre-navigation" class="card card-white">
             <div class="navigation-info">
                 <div class="info-item">
                     <div class="info-value" id="total-distance">0 km</div>
@@ -435,7 +390,7 @@
         </div>
 
         <!-- Navigation Panel -->
-        <div id="navigation-panel" class="card hidden">
+        <div id="navigation-panel" class="card card-white hidden">
             <div class="current-instruction">
                 <div class="instruction-icon">
                     <i data-lucide="navigation"></i>
@@ -461,8 +416,8 @@
     </div>
 
     <script>
-        // Mapbox access token
-        mapboxgl.accessToken = '{{ config('services.mapbox.access_token', 'pk.eyJ1IjoibmhhdG5ndXllbnF2IiwiYSI6ImNtYjZydDNnZDAwY24ybm9qcTdxcTNocG8ifQ.u7X_0DfN7d52xZ8cGFbWyQ') }}';
+        // Replace with your Mapbox access token
+        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
 
         // Global variables
         let map;
@@ -474,21 +429,29 @@
         let userMarker = null;
         let destinationMarker = null;
 
-        // Fake order data
-        const orderData = {
+        // Mock order data (replace with actual data)
+        const mockOrder = {
             id: 1,
-            customer_name: "Nguyễn Văn An",
-            customer_phone: "0987654321",
-            delivery_address: "123 Đường Láng, Đống Đa, Hà Nội",
+            customer_name: "Nguyễn Văn A",
+            customer_phone: "0123456789",
+            delivery_address: "123 Đường ABC, Quận 1, TP.HCM",
             guest_latitude: 21.0285,
             guest_longitude: 105.8542,
-            notes: "Giao hàng tại cổng chính, gọi điện trước khi đến"
+            notes: "Gọi trước khi đến 15 phút"
         };
 
         // Initialize the application
         function init() {
+            // Check login (mock)
+            const isLoggedIn = localStorage.getItem("isLoggedIn");
+            if (isLoggedIn !== "true") {
+                // Redirect to login
+                window.location.href = "/login.html";
+                return;
+            }
+
             // Set order data
-            order = orderData;
+            order = mockOrder;
             updateCustomerInfo();
 
             // Initialize map
@@ -504,8 +467,8 @@
         function initMap() {
             map = new mapboxgl.Map({
                 container: 'map',
-                style: 'mapbox://styles/mapbox/streets-v12',
-                center: [order.guest_longitude, order.guest_latitude],
+                style: 'mapbox://styles/mapbox/navigation-night-v1',
+                center: [105.8542, 21.0285], // Default to Hanoi
                 zoom: 16
             });
 
@@ -553,24 +516,7 @@
                     },
                     function(error) {
                         console.error("Error getting location:", error);
-                        // Use fake location for demo
-                        const fakeLocation = { latitude: 21.0245, longitude: 105.8412 };
-                        currentPosition = fakeLocation;
-                        
-                        if (userMarker) {
-                            userMarker.remove();
-                        }
-                        userMarker = new mapboxgl.Marker({ color: '#3b82f6' })
-                            .setLngLat([fakeLocation.longitude, fakeLocation.latitude])
-                            .addTo(map);
-
-                        map.flyTo({
-                            center: [fakeLocation.longitude, fakeLocation.latitude],
-                            zoom: 16
-                        });
-
-                        calculateRoute();
-                        showToast("Thông báo", "Sử dụng vị trí giả để demo", "warning");
+                        showToast("Lỗi vị trí", "Không thể lấy vị trí hiện tại. Vui lòng bật GPS.", "error");
                     },
                     {
                         enableHighAccuracy: true,
@@ -578,25 +524,6 @@
                         maximumAge: 60000
                     }
                 );
-            } else {
-                // Use fake location for demo
-                const fakeLocation = { latitude: 21.0245, longitude: 105.8412 };
-                currentPosition = fakeLocation;
-                
-                if (userMarker) {
-                    userMarker.remove();
-                }
-                userMarker = new mapboxgl.Marker({ color: '#3b82f6' })
-                    .setLngLat([fakeLocation.longitude, fakeLocation.latitude])
-                    .addTo(map);
-
-                map.flyTo({
-                    center: [fakeLocation.longitude, fakeLocation.latitude],
-                    zoom: 16
-                });
-
-                calculateRoute();
-                showToast("Thông báo", "Sử dụng vị trí giả để demo", "warning");
             }
         }
 
@@ -618,6 +545,9 @@
                     
                     // Update UI with route info
                     updateRouteInfo(route);
+                    
+                    // Add route to map
+                    addRouteToMap(route);
                     
                     // Enable start navigation button
                     document.getElementById('start-navigation-btn').disabled = false;
@@ -655,7 +585,7 @@
                     'line-cap': 'round'
                 },
                 paint: {
-                    'line-color': '#2563eb',
+                    'line-color': '#007cbf',
                     'line-width': 6,
                     'line-opacity': 0.8
                 }
@@ -688,21 +618,13 @@
             document.getElementById('customer-address').textContent = order.delivery_address || "Địa chỉ giao hàng";
             
             if (order.notes) {
-                const noteElement = document.getElementById('customer-note');
-                if (noteElement) {
-                    noteElement.classList.remove('hidden');
-                    document.getElementById('note-text').textContent = order.notes;
-                }
+                document.getElementById('customer-note').classList.remove('hidden');
+                document.getElementById('note-text').textContent = order.notes;
             }
         }
 
         function startNavigation() {
             navigationStarted = true;
-            
-            // Add route to map when navigation starts
-            if (route) {
-                addRouteToMap(route);
-            }
             
             // Show navigation panel
             document.getElementById('pre-navigation').classList.add('hidden');
@@ -727,21 +649,21 @@
                         // Center map on user during navigation
                         map.easeTo({
                             center: [longitude, latitude],
-                            zoom: 18
+                            duration: 1000
                         });
                     },
                     function(error) {
-                        console.error("Error tracking location:", error);
+                        console.error("Position tracking error:", error);
                     },
                     {
                         enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 1000
+                        maximumAge: 1000,
+                        timeout: 10000
                     }
                 );
             }
             
-            showToast("Điều hướng", "Đã bắt đầu điều hướng", "success");
+            showToast("Điều hướng đã bắt đầu", "Hệ thống sẽ hướng dẫn bạn đến địa điểm giao hàng", "success");
         }
 
         function updateNavigationInfo() {
@@ -754,36 +676,30 @@
                 order.guest_longitude
             );
             
-            const time = Math.round(distance / 40 * 60); // Assuming 40 km/h average speed
+            const time = (distance / 1000 / 30) * 3600; // Assuming 30 km/h average speed
             
-            document.getElementById('nav-distance').textContent = formatDistance(distance * 1000);
-            document.getElementById('nav-time').textContent = formatTime(time * 60);
-            document.getElementById('remaining-time').textContent = formatTime(time * 60);
+            document.getElementById('nav-distance').textContent = formatDistance(distance);
+            document.getElementById('nav-time').textContent = formatTime(time);
+            document.getElementById('remaining-time').textContent = formatTime(time);
         }
 
         function completeDelivery() {
-            if (confirm('Xác nhận đã giao hàng thành công?')) {
-                // Stop navigation
-                if (watchId) {
-                    navigator.geolocation.clearWatch(watchId);
-                }
-                
-                showToast("Thành công", "Đã hoàn thành giao hàng", "success");
-                
-                // Redirect back to orders list after 2 seconds
-                setTimeout(() => {
-                    window.location.href = '{{ route("driver.orders.index") }}';
-                }, 2000);
+            showToast("Giao hàng thành công", "Đơn hàng đã được cập nhật thành đã giao", "success");
+            
+            // Stop location tracking
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
             }
+            
+            // Redirect back to orders
+            setTimeout(() => {
+                window.location.href = `/orders/${order.id}?status=delivered`;
+            }, 2000);
         }
 
         function callCustomer() {
             if (order && order.customer_phone) {
-                if (confirm(`Gọi cho ${order.customer_name} (${order.customer_phone})?`)) {
-                    window.location.href = `tel:${order.customer_phone}`;
-                }
-            } else {
-                showToast("Lỗi", "Không có số điện thoại khách hàng", "error");
+                window.open(`tel:${order.customer_phone}`);
             }
         }
 
@@ -800,7 +716,6 @@
             }
         }
 
-        // Map control functions
         function zoomIn() {
             map.zoomIn();
         }
@@ -813,90 +728,71 @@
             if (currentPosition) {
                 map.flyTo({
                     center: [currentPosition.longitude, currentPosition.latitude],
-                    zoom: 18
+                    zoom: 16
                 });
             }
         }
 
         function goBack() {
-            if (confirm('Bạn có chắc muốn quay lại? Điều hướng sẽ bị dừng.')) {
-                if (watchId) {
-                    navigator.geolocation.clearWatch(watchId);
-                }
-                window.location.href = '{{ route("driver.orders.index") }}';
-            }
+            window.history.back();
         }
 
         // Utility functions
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // Radius of the Earth in kilometers
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            const R = 6371e3; // Earth's radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
             return R * c;
         }
 
         function formatDistance(meters) {
-            if (meters < 1000) {
-                return Math.round(meters) + ' m';
-            } else {
-                return (meters / 1000).toFixed(1) + ' km';
+            if (meters >= 1000) {
+                return `${(meters / 1000).toFixed(1)} km`;
             }
+            return `${Math.round(meters)} m`;
         }
 
         function formatTime(seconds) {
-            const minutes = Math.round(seconds / 60);
+            const minutes = Math.ceil(seconds / 60);
             if (minutes < 60) {
-                return minutes + ' phút';
-            } else {
-                const hours = Math.floor(minutes / 60);
-                const remainingMinutes = minutes % 60;
-                return hours + 'h ' + remainingMinutes + 'p';
+                return `${minutes} phút`;
             }
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            return `${hours}h ${remainingMinutes}m`;
         }
 
-        function showToast(title, message, type = 'info') {
-            // Remove existing toast
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-
-            // Create toast element
+        function showToast(title, message, type) {
+            // Simple toast implementation
             const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info'}"></i>
-                    <strong>${title}</strong>
-                </div>
-                <div style="font-size: 0.875rem; color: #6b7280;">${message}</div>
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#ef4444' : '#16a34a'};
+                color: white;
+                padding: 1rem;
+                border-radius: 0.5rem;
+                z-index: 1000;
+                max-width: 300px;
             `;
-
-            // Add to page
+            toast.innerHTML = `<strong>${title}</strong><br>${message}`;
             document.body.appendChild(toast);
-            lucide.createIcons();
-
-            // Show toast
+            
             setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-
-            // Hide toast after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
+                document.body.removeChild(toast);
             }, 3000);
         }
 
-        // Initialize when DOM is loaded
+        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>

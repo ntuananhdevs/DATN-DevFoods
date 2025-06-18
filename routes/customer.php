@@ -51,7 +51,7 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
     Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
     Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
-    Route::get('/branches', [CustomerBranchController::class, 'branchs'])->name('branches.index');
+    Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branches.index');
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 });
 
