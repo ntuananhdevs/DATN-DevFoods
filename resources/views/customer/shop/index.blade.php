@@ -86,6 +86,23 @@
     .discount-code-item.fixed-amount {
         background-color: rgba(130, 32, 246, 0.9);
     }
+    
+    /* Style for public discount codes */
+    .discount-code-item.public-code {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: rgba(34, 197, 94, 0.9);
+    }
+    
+    .code-badge {
+        margin-left: 6px;
+        background-color: rgba(255, 255, 255, 0.3);
+        padding: 1px 4px;
+        border-radius: 4px;
+        font-size: 8px;
+        font-weight: 700;
+    }
 
     /* Product card styling */
     .product-card {
@@ -383,15 +400,26 @@
                                         $badgeClass .= ' free-shipping';
                                         $icon = 'fa-shipping-fast';
                                     }
+                                    
+                                    // Add public badge styling for public discount codes
+                                    if($discountCode->usage_type === 'public') {
+                                        $badgeClass .= ' public-code';
+                                    }
                                 @endphp
                                 <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
-                                    <i class="fas {{ $icon }}"></i>
-                                    @if($discountCode->discount_type === 'percentage')
-                                        Giảm {{ $discountCode->discount_value }}%
-                                    @elseif($discountCode->discount_type === 'fixed_amount')
-                                        Giảm {{ number_format($discountCode->discount_value) }}đ
-                                    @else
-                                        Miễn phí vận chuyển
+                                    <div>
+                                        <i class="fas {{ $icon }}"></i>
+                                        @if($discountCode->discount_type === 'percentage')
+                                            Giảm {{ $discountCode->discount_value }}%
+                                        @elseif($discountCode->discount_type === 'fixed_amount')
+                                            Giảm {{ number_format($discountCode->discount_value) }}đ
+                                        @else
+                                            Miễn phí vận chuyển
+                                        @endif
+                                    </div>
+                                    
+                                    @if($discountCode->usage_type === 'public')
+                                        <span class="code-badge">{{ $discountCode->code }}</span>
                                     @endif
                                 </div>
                             @endforeach

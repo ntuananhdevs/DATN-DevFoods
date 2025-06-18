@@ -210,7 +210,7 @@ class ProductController extends Controller
                     
                     return false;
                 });
-            })->take(2); // Chỉ lấy tối đa 2 mã giảm giá hiển thị
+            }); // Hiển thị tất cả mã giảm giá áp dụng cho sản phẩm này
             
             return $product;
         });
