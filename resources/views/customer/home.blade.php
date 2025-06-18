@@ -298,7 +298,7 @@
     </section>
 
     <!-- Order Now Section -->
-    <section class="py-10">
+    <section class="py-10 container">
         <div class="rounded-xl overflow-hidden bg-gradient-to-r from-orange-500 to-red-500">
             <div class="grid md:grid-cols-2 gap-6">
                 <div class="p-8 md:p-12 flex flex-col justify-center">
