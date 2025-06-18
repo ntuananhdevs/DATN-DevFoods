@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\User;
+use App\Models\Branch;
 
 class ConversationSeeder extends Seeder
 {
@@ -34,16 +35,13 @@ class ConversationSeeder extends Seeder
             ]
         );
 
-        $branchAdmin = User::firstOrCreate(
-            ['email' => 'branchadmin2@example.com'],
-            [
-                'user_name' => 'BranchAdmin2',
-                'full_name' => 'Bob Johnson',
-                'phone' => '1-555-555-5555',
-                'avatar' => 'avatars/default.jpg',
-                'password' => bcrypt('secret123')
-            ]
-        );
+        $branch = Branch::firstOrCreate([
+            'name' => 'Chi nhánh 1',
+        ], [
+            'address' => '123 Main St',
+            'phone' => '0123456789',
+            'email' => 'branch1@example.com',
+        ]);
 
         // Tạo cuộc trò chuyện chưa phân phối
         $conversation = Conversation::create([
@@ -91,7 +89,7 @@ class ConversationSeeder extends Seeder
         // Tạo cuộc trò chuyện đã phân phối
         $distributedConversation = Conversation::create([
             'customer_id' => $customer->id,
-            'branch_id' => $branchAdmin->id,
+            'branch_id' => $branch->id,
             'status' => 'distributed',
             'is_distributed' => true,
             'distribution_time' => now(),
@@ -100,7 +98,7 @@ class ConversationSeeder extends Seeder
         ChatMessage::create([
             'conversation_id' => $distributedConversation->id,
             'sender_id' => $customer->id,
-            'receiver_id' => $branchAdmin->id,
+            'receiver_id' => $branch->id,
             'message' => 'I want to know the status of my branch order.',
             'attachment' => null,
             'attachment_type' => null,
@@ -116,7 +114,7 @@ class ConversationSeeder extends Seeder
 
         ChatMessage::create([
             'conversation_id' => $distributedConversation->id,
-            'sender_id' => $branchAdmin->id,
+            'sender_id' => $branch->id,
             'receiver_id' => $customer->id,
             'message' => 'Thanks for contacting us. Your order is being processed.',
             'attachment' => null,

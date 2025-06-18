@@ -7,6 +7,7 @@ use App\Models\Conversation;
 use App\Models\ConversationUser;
 use App\Models\ChatMessage;
 use App\Models\User;
+use App\Models\Branch;
 
 class ChatSeeder extends Seeder
 {
@@ -34,6 +35,18 @@ class ChatSeeder extends Seeder
                 'password' => bcrypt('password'),
             ]
         );
+
+        // Lấy các chi nhánh đã có
+        $branch1 = \App\Models\Branch::where('name', 'Chi nhánh Hà Nội')->first();
+        $branch2 = \App\Models\Branch::where('name', 'Chi nhánh Hồ Chí Minh')->first();
+        $branch3 = \App\Models\Branch::where('name', 'Chi nhánh Đà Nẵng')->first();
+
+        // Giả sử bạn có các user branch admin với id 27, 28, 29 (hoặc lấy đúng user manager của từng chi nhánh)
+        $branches = [
+            ['branch_id' => $branch1 ? $branch1->id : null, 'user_id' => 16],
+            ['branch_id' => $branch2 ? $branch2->id : null, 'user_id' => 17],
+            ['branch_id' => $branch3 ? $branch3->id : null, 'user_id' => 18],
+        ];
 
         // Tạo cuộc trò chuyện chưa phân phối
         $conversation1 = Conversation::create([
@@ -78,13 +91,8 @@ class ChatSeeder extends Seeder
         ]);
 
         // Tạo cuộc trò chuyện đã phân phối cho các chi nhánh
-        $branches = [
-            ['branch_id' => 1, 'user_id' => 27],
-            ['branch_id' => 2, 'user_id' => 28],
-            ['branch_id' => 3, 'user_id' => 29],
-        ];
-
         foreach ($branches as $branch) {
+            if (!$branch['branch_id']) continue;
             $conversation = Conversation::create([
                 'customer_id' => $customer->id,
                 'branch_id' => $branch['branch_id'],

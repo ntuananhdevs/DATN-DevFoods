@@ -18,9 +18,9 @@ use App\Models\BranchStock;
 use App\Models\ProductVariant;
 use App\Models\ProductImg;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Models\ToppingStock;
-use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -234,15 +234,13 @@ class ProductController extends Controller
                                 continue;
                             }
 
-                            // Create or update variant value
-                            $value = VariantValue::updateOrCreate(
-                                [
-                                    'variant_attribute_id' => $attribute->id,
-                                    'value' => $valueData['value']
-                                ],
-                                ['price_adjustment' => $valueData['price_adjustment'] ?? 0]
-                            );
-                            Log::info('Created/Updated variant value:', ['id' => $value->id, 'value' => $value->value]);
+                            // Always create new variant value for each product to avoid sharing between products
+                            $value = VariantValue::create([
+                                'variant_attribute_id' => $attribute->id,
+                                'value' => $valueData['value'],
+                                'price_adjustment' => $valueData['price_adjustment'] ?? 0
+                            ]);
+                            Log::info('Created variant value for new product:', ['id' => $value->id, 'value' => $value->value, 'price_adjustment' => $value->price_adjustment]);
                             $values[] = $value;
                         }
                     }
@@ -441,6 +439,79 @@ class ProductController extends Controller
         }
 
         return $combinations;
+    }
+    
+    // Create variant signature from existing variant
+    protected function createVariantSignatureFromVariant($variant)
+    {
+        return $variant->productVariantDetails
+            ->sortBy('variant_value_id')
+            ->pluck('variant_value_id')
+            ->implode(',');
+    }
+    
+    // Create variant signature from combination
+    protected function createVariantSignatureFromCombination($combination)
+    {
+        return collect($combination)
+            ->sortBy('id')
+            ->pluck('id')
+            ->implode(',');
+    }
+    
+    // Restore stock data for new variant from similar variants
+    protected function restoreStockDataForNewVariant($newVariant, $combination, $stockBackup, $variantsToDelete)
+    {
+        $newSignature = $this->createVariantSignatureFromCombination($combination);
+        
+        // First, try to find exact match in backup
+        if (isset($stockBackup[$newSignature])) {
+            foreach ($stockBackup[$newSignature] as $branchId => $stockQuantity) {
+                $newVariant->branchStocks()->updateOrCreate(
+                    ['branch_id' => $branchId],
+                    ['stock_quantity' => $stockQuantity]
+                );
+            }
+            Log::info('Restored exact stock data for new variant:', ['variant_id' => $newVariant->id, 'signature' => $newSignature]);
+            return;
+        }
+        
+        // If no exact match, try to find similar variant from variants to delete
+        $bestMatch = null;
+        $bestMatchScore = 0;
+        
+        foreach ($variantsToDelete as $deletingVariant) {
+            $deletingSignature = $this->createVariantSignatureFromVariant($deletingVariant);
+            $deletingValues = explode(',', $deletingSignature);
+            $newValues = explode(',', $newSignature);
+            
+            // Calculate similarity score (number of matching values)
+            $matchingValues = array_intersect($deletingValues, $newValues);
+            $score = count($matchingValues);
+            
+            if ($score > $bestMatchScore && $score > 0) {
+                $bestMatchScore = $score;
+                $bestMatch = $deletingVariant;
+            }
+        }
+        
+        // If we found a similar variant, transfer its stock data
+        if ($bestMatch && isset($stockBackup[$this->createVariantSignatureFromVariant($bestMatch)])) {
+            $stockData = $stockBackup[$this->createVariantSignatureFromVariant($bestMatch)];
+            foreach ($stockData as $branchId => $stockQuantity) {
+                $newVariant->branchStocks()->updateOrCreate(
+                    ['branch_id' => $branchId],
+                    ['stock_quantity' => $stockQuantity]
+                );
+            }
+            Log::info('Transferred stock data from similar variant:', [
+                'new_variant_id' => $newVariant->id,
+                'source_variant_id' => $bestMatch->id,
+                'similarity_score' => $bestMatchScore
+            ]);
+        } else {
+            Log::info('No similar variant found for stock transfer:', ['variant_id' => $newVariant->id]);
+        }
     }
 
     /**
@@ -758,56 +829,178 @@ class ProductController extends Controller
     // Handle attributes and variants
     protected function handleAttributesAndVariants($product, $request)
     {
-        // Kiểm tra và cập nhật hoặc tạo mới các thuộc tính và giá trị
         $attributes = $request->input('attributes', []);
-
-        foreach ($attributes as $attributeData) {
-            // Kiểm tra nếu tên thuộc tính không rỗng
-            if (empty($attributeData['name'])) continue;
-
-            // Tìm hoặc tạo mới thuộc tính
-            $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
-
-            $values = [];
-            if (isset($attributeData['values']) && is_array($attributeData['values'])) {
-                foreach ($attributeData['values'] as $valueData) {
-                    if (empty($valueData['value'])) continue;
-
-                    // Cập nhật hoặc tạo mới giá trị thuộc tính
-                    $value = VariantValue::updateOrCreate(
-                        [
-                            'variant_attribute_id' => $attribute->id,
-                            'value' => $valueData['value']
-                        ],
-                        ['price_adjustment' => $valueData['price_adjustment'] ?? 0]
-                    );
-                    $values[] = $value;
+        
+        if (!empty($attributes)) {
+            // Get existing variants with their details and stock data
+            $existingVariants = $product->variants()->with([
+                'productVariantDetails.variantValue.attribute',
+                'branchStocks'
+            ])->get();
+            
+            // Store stock data before processing variants
+            $stockBackup = [];
+            foreach ($existingVariants as $variant) {
+                $variantSignature = $this->createVariantSignatureFromVariant($variant);
+                $stockBackup[$variantSignature] = $variant->branchStocks->keyBy('branch_id')->map(function($stock) {
+                    return $stock->stock_quantity;
+                })->toArray();
+            }
+            
+            // Build attribute groups for new combinations
+            $attributeGroups = [];
+            $newVariantValues = [];
+            
+            foreach ($attributes as $attributeData) {
+                if (empty($attributeData['name'])) {
+                    continue;
+                }
+                
+                $attribute = VariantAttribute::firstOrCreate(['name' => $attributeData['name']]);
+                $values = [];
+                
+                if (isset($attributeData['values']) && is_array($attributeData['values'])) {
+                    foreach ($attributeData['values'] as $valueData) {
+                        if (empty($valueData['value'])) {
+                            continue;
+                        }
+                        
+                        // Find existing variant value for this product or create new one
+                        $existingValue = null;
+                        foreach ($existingVariants as $existingVariant) {
+                            foreach ($existingVariant->productVariantDetails as $detail) {
+                                if ($detail->variantValue->attribute->id == $attribute->id && 
+                                    $detail->variantValue->value == $valueData['value']) {
+                                    $existingValue = $detail->variantValue;
+                                    break 2;
+                                }
+                            }
+                        }
+                        
+                        if ($existingValue) {
+                            // Update existing variant value if price adjustment changed
+                            $newPriceAdjustment = $valueData['price_adjustment'] ?? 0;
+                            if ($existingValue->price_adjustment != $newPriceAdjustment) {
+                                $existingValue->update(['price_adjustment' => $newPriceAdjustment]);
+                                Log::info('Updated variant value price:', ['id' => $existingValue->id, 'old_price' => $existingValue->price_adjustment, 'new_price' => $newPriceAdjustment]);
+                            }
+                            $values[] = $existingValue;
+                        } else {
+                            // Create new variant value only if it doesn't exist for this product
+                            $value = VariantValue::create([
+                                'variant_attribute_id' => $attribute->id,
+                                'value' => $valueData['value'],
+                                'price_adjustment' => $valueData['price_adjustment'] ?? 0
+                            ]);
+                            Log::info('Created new variant value for updated product:', ['id' => $value->id, 'value' => $value->value, 'price_adjustment' => $value->price_adjustment]);
+                            $values[] = $value;
+                            $newVariantValues[] = $value;
+                        }
+                    }
+                }
+                
+                if (!empty($values)) {
+                    $attributeGroups[] = [
+                        'attribute' => $attribute,
+                        'values' => $values
+                    ];
                 }
             }
-
-            // Nếu có giá trị thì gắn kết các giá trị vào thuộc tính
-            if (!empty($values)) {
-                $attribute->values()->saveMany($values);
+            
+            if (!empty($attributeGroups)) {
+                // Generate new combinations
+                $newCombinations = $this->generateVariantCombinations($attributeGroups);
+                
+                // Create signature for each combination to compare
+                $newCombinationSignatures = [];
+                foreach ($newCombinations as $combination) {
+                    $signature = collect($combination)
+                        ->sortBy('id')
+                        ->pluck('id')
+                        ->implode(',');
+                    $newCombinationSignatures[$signature] = $combination;
+                }
+                
+                // Get existing combination signatures
+                $existingCombinationSignatures = [];
+                foreach ($existingVariants as $variant) {
+                    $signature = $variant->productVariantDetails
+                        ->sortBy('variant_value_id')
+                        ->pluck('variant_value_id')
+                        ->implode(',');
+                    $existingCombinationSignatures[$signature] = $variant;
+                }
+                
+                // Remove variants that no longer exist in new combinations
+                $variantsToDelete = [];
+                foreach ($existingCombinationSignatures as $signature => $variant) {
+                    if (!isset($newCombinationSignatures[$signature])) {
+                        Log::info('Marking variant for removal:', ['id' => $variant->id, 'signature' => $signature]);
+                        $variantsToDelete[] = $variant;
+                    }
+                }
+                
+                // Create or update variants for new combinations
+                foreach ($newCombinationSignatures as $signature => $combination) {
+                    if (isset($existingCombinationSignatures[$signature])) {
+                        // Variant already exists, keep it (preserves stock data)
+                        $variant = $existingCombinationSignatures[$signature];
+                        Log::info('Keeping existing variant:', ['id' => $variant->id, 'signature' => $signature]);
+                    } else {
+                        // Create new variant
+                        $variant = $product->variants()->create(['active' => true]);
+                        
+                        // Create variant details
+                        foreach ($combination as $variantValue) {
+                            $variant->productVariantDetails()->create([
+                                'variant_value_id' => $variantValue->id
+                            ]);
+                        }
+                        
+                        // Try to restore stock data from similar variant
+                        $this->restoreStockDataForNewVariant($variant, $combination, $stockBackup, $variantsToDelete);
+                        
+                        Log::info('Created new variant:', ['id' => $variant->id, 'signature' => $signature]);
+                    }
+                }
+                
+                // Delete variants that are no longer needed
+                foreach ($variantsToDelete as $variant) {
+                    $variant->productVariantDetails()->delete();
+                    $variant->delete();
+                    Log::info('Deleted variant:', ['id' => $variant->id]);
+                }
+            } else {
+                // No attributes provided, ensure default variant exists
+                if ($existingVariants->isEmpty()) {
+                    $defaultVariant = $product->variants()->create(['active' => true]);
+                    Log::info('Created default variant:', ['id' => $defaultVariant->id]);
+                } else {
+                    // Keep first variant as default, remove others
+                    $defaultVariant = $existingVariants->first();
+                    $existingVariants->slice(1)->each(function($variant) {
+                        $variant->productVariantDetails()->delete();
+                        $variant->delete();
+                    });
+                    Log::info('Kept default variant:', ['id' => $defaultVariant->id]);
+                }
             }
-        }
-
-        // Lấy tất cả các biến thể hiện có của sản phẩm
-        $existingVariants = $product->variants;
-
-        // Cập nhật hoặc tạo mới các biến thể dựa trên thuộc tính và giá trị mới
-        foreach ($existingVariants as $variant) {
-            // Kiểm tra và cập nhật chi tiết của biến thể
-            foreach ($variant->productVariantDetails as $variantDetail) {
-                $attributeValue = $variantDetail->variantValue;
-                $attributeValue->update([
-                    'price_adjustment' => $attributeValue->price_adjustment,  // Cập nhật giá trị nếu cần
-                ]);
+        } else {
+            // No attributes provided, ensure single default variant
+            $existingVariants = $product->variants()->get();
+            
+            if ($existingVariants->isEmpty()) {
+                $defaultVariant = $product->variants()->create(['active' => true]);
+                Log::info('Created default variant (no attributes):', ['id' => $defaultVariant->id]);
+            } else {
+                // Keep first variant, remove others
+                $defaultVariant = $existingVariants->first();
+                $existingVariants->slice(1)->each(function($variant) {
+                    $variant->productVariantDetails()->delete();
+                    $variant->delete();
+                });
+                Log::info('Kept single default variant:', ['id' => $defaultVariant->id]);
             }
-        }
-
-        // Cập nhật hoặc tạo mới biến thể nếu không có biến thể nào được tạo từ trước
-        if ($existingVariants->isEmpty()) {
-            $product->variants()->create(['active' => true]);  // Tạo một biến thể mặc định nếu chưa có
         }
     }
 
@@ -815,31 +1008,67 @@ class ProductController extends Controller
     // Handle toppings
     protected function handleToppings($product, $request)
     {
-        // Detach all previous toppings
-        $product->toppings()->detach();
-
         $toppings = $request->input('toppings', []);
+        
         if (!empty($toppings)) {
+            // Get current toppings attached to this product
+            $currentToppings = $product->toppings()->get();
+            $currentToppingNames = $currentToppings->pluck('name')->toArray();
+            $newToppingNames = [];
+            
             foreach ($toppings as $index => $toppingData) {
                 if (empty($toppingData['name'])) continue;
-
-                // Create or find the topping
-                $topping = Topping::firstOrCreate(
-                    ['name' => $toppingData['name']],
-                    [
+                
+                $newToppingNames[] = $toppingData['name'];
+                
+                // Find existing topping or create new one
+                $topping = Topping::where('name', $toppingData['name'])->first();
+                
+                if ($topping) {
+                    // Update existing topping if price or availability changed
+                    $newPrice = $toppingData['price'] ?? 0;
+                    $newActive = isset($toppingData['available']) ? (bool)$toppingData['available'] : true;
+                    
+                    if ($topping->price != $newPrice || $topping->active != $newActive) {
+                        $topping->update([
+                            'price' => $newPrice,
+                            'active' => $newActive
+                        ]);
+                        Log::info('Updated existing topping:', ['id' => $topping->id, 'name' => $topping->name, 'price' => $newPrice, 'active' => $newActive]);
+                    }
+                } else {
+                    // Create new topping
+                    $topping = Topping::create([
+                        'name' => $toppingData['name'],
                         'price' => $toppingData['price'] ?? 0,
                         'active' => isset($toppingData['available']) ? (bool)$toppingData['available'] : true
-                    ]
-                );
+                    ]);
+                    Log::info('Created new topping:', ['id' => $topping->id, 'name' => $topping->name]);
+                }
 
                 // Handle topping image upload if exists
                 if ($request->hasFile("toppings.{$index}.image")) {
                     $this->handleToppingImageUpload($topping, $request->file("toppings.{$index}.image"));
                 }
 
-                // Attach the topping to the product
-                $product->toppings()->attach($topping->id);
+                // Attach the topping to the product if not already attached
+                if (!$product->toppings()->where('topping_id', $topping->id)->exists()) {
+                    $product->toppings()->attach($topping->id);
+                    Log::info('Attached topping to product:', ['topping_id' => $topping->id, 'product_id' => $product->id]);
+                }
             }
+            
+            // Remove toppings that are no longer in the new list
+            $toppingsToRemove = array_diff($currentToppingNames, $newToppingNames);
+            if (!empty($toppingsToRemove)) {
+                $toppingIdsToRemove = $currentToppings->whereIn('name', $toppingsToRemove)->pluck('id')->toArray();
+                $product->toppings()->detach($toppingIdsToRemove);
+                Log::info('Detached toppings from product:', ['topping_ids' => $toppingIdsToRemove, 'product_id' => $product->id]);
+            }
+        } else {
+            // If no toppings provided, detach all current toppings
+            $product->toppings()->detach();
+            Log::info('Detached all toppings from product:', ['product_id' => $product->id]);
         }
     }
 

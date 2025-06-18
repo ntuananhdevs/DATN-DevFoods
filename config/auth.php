@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\Driver;
 
+
 return [
 
     /*
@@ -46,7 +47,7 @@ return [
 
         'admin' => [
             'driver' => 'session',
-            'provider' => 'users', // Dùng chung bảng users
+            'provider' => 'users',
         ],
 
         'driver' => [
@@ -55,8 +56,8 @@ return [
         ],
 
         'api' => [
-          'driver' => 'passport',
-          'provider' => 'users',
+            'driver' => 'passport',
+            'provider' => 'users',
         ],
     ],
 
@@ -87,6 +88,7 @@ return [
             'driver' => 'eloquent',
             'model' => Driver::class,
         ],
+
 
         // 'users' => [
         //     'driver' => 'database',
