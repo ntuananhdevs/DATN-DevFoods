@@ -270,23 +270,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
+        Route::post('/typing', [ChatController::class, 'handleTyping'])->name('typing');
         // ... các route khác nếu có
     });
-});
-
-Route::prefix('branch')->middleware(['auth'])->group(function () {
-    Route::get('/chat', [BranchChatController::class, 'index'])->name('branch.chat.index');
-    Route::get('/chat/api/conversation/{id}', [BranchChatController::class, 'apiGetConversation'])->name('branch.chat.conversation');
-    Route::post('/chat/send-message', [BranchChatController::class, 'sendMessage'])->name('branch.chat.send');
-    Route::post('/chat/update-status', [BranchChatController::class, 'updateStatus'])->name('branch.chat.status');
-    Route::post('/chat/typing', [BranchChatController::class, 'typing'])->name('branch.chat.typing');
-});
-
-
-
-
-Route::prefix('api')->group(function () {
-    Route::get('/conversations/{id}', [ChatController::class, 'getMessages']);
-    Route::post('/customer/send-message', [ChatController::class, 'sendMessage']);
-    Route::post('/customer/typing', [ChatController::class, 'typing']);
 });

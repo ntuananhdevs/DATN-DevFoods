@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function sendMessage(Request $request)
     {
         try {
@@ -75,8 +80,7 @@ class ChatController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tin nhắn đã được gửi thành công',
-                'data' => $message
+                'message' => $message
             ], 201);
         } catch (\Exception $e) {
             Log::error('Customer send message error: ' . $e->getMessage());
@@ -160,7 +164,7 @@ class ChatController extends Controller
     public function createConversation(Request $request)
     {
         // Kiểm tra xem khách hàng đã có cuộc trò chuyện chưa
-        $existingConversation = Conversation::where('customer_id', auth()->id())->first();
+        $existingConversation = Conversation::where('customer_id', Auth::id())->first();
         if ($existingConversation) {
             return response()->json([
                 'success' => false,
@@ -247,5 +251,36 @@ class ChatController extends Controller
                 'message' => 'Lỗi lấy danh sách cuộc trò chuyện: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function index()
+    {
+        $conversations = Conversation::where('customer_id', Auth::id())
+            ->with(['branch', 'messages.sender'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return view('customer.chat', compact('conversations'));
+    }
+
+    public function typing(Request $request)
+    {
+        $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'is_typing' => 'required|boolean'
+        ]);
+        $conversation = Conversation::findOrFail($request->conversation_id);
+        $userId = Auth::id();
+        $user = Auth::user();
+        $userType = 'customer';
+        $userName = $user->name ?? 'Khách hàng';
+        broadcast(new \App\Events\Chat\TypingStatus(
+            $request->conversation_id,
+            $userId,
+            $request->is_typing,
+            $userType,
+            $userName
+        ))->toOthers();
+        return response()->json(['success' => true]);
     }
 }

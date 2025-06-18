@@ -590,63 +590,55 @@
         </div>
         <!-- Main Chat -->
         <div class="chat-main" style="width:55%">
-            <div class="chat-header">
-                <div class="chat-header-user">
-                    <div class="chat-avatar" id="chat-avatar">
-                        {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+            @php
+                $hasConversation = isset($conversation) && $conversation;
+            @endphp
+            @if ($hasConversation)
+                <div class="chat-header">
+                    <div class="chat-header-user">
+                        <div class="chat-avatar" id="chat-avatar">
+                            {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+                        </div>
+                        <div class="chat-header-info">
+                            <h3 id="chat-customer-name">
+                                {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}
+                            </h3>
+                            <p id="chat-customer-email">{{ $conversation->customer->email }}</p>
+                        </div>
                     </div>
-                    <div class="chat-header-info">
-                        <h3 id="chat-customer-name">
-                            {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}
-                        </h3>
-                        <p id="chat-customer-email">{{ $conversation->customer->email }}</p>
+                    <div class="chat-header-actions" id="chat-header-actions">
+                        <span
+                            class="badge status-badge status-{{ $conversation->status }}">{{ ucfirst($conversation->status) }}</span>
+                        @if ($conversation->branch)
+                            <span class="badge badge-xs branch-badge ml-2"
+                                id="main-branch-badge">{{ $conversation->branch->name }}</span>
+                        @endif
+                        <button class="chat-tools-btn"><i class="fas fa-phone"></i></button>
+                        <button class="chat-tools-btn"><i class="fas fa-video"></i></button>
                     </div>
                 </div>
-                <div class="chat-header-actions" id="chat-header-actions">
-                    <span
-                        class="badge status-badge status-{{ $conversation->status }}">{{ ucfirst($conversation->status) }}</span>
-                    @if ($conversation->branch)
-                        <span class="badge badge-xs branch-badge ml-2"
-                            id="main-branch-badge">{{ $conversation->branch->name }}</span>
-                    @endif
-                    <button class="chat-tools-btn"><i class="fas fa-phone"></i></button>
-                    <button class="chat-tools-btn"><i class="fas fa-video"></i></button>
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Tin nhắn sẽ được load bằng JS ChatCommon -->
                 </div>
-            </div>
-            <div class="chat-messages" id="chat-messages">
-                @foreach ($conversation->messages as $msg)
-                    <div class="flex {{ $msg->sender_id == auth()->id() ? 'justify-end' : 'justify-start' }}">
-                        {{-- <div
-                            class="max-w-[70%] p-3 rounded-2xl {{ $msg->sender_id == auth()->id() ? 'bg-orange-300 text-white' : 'bg-white border' }}">
-                            <div>{{ $msg->message }}</div>
-                            @if ($msg->attachment)
-                                @if ($msg->attachment_type == 'image')
-                                    <img src="/storage/{{ $msg->attachment }}" class="mt-2 rounded-lg max-h-40">
-                                @else
-                                    <a href="/storage/{{ $msg->attachment }}" target="_blank"
-                                        class="text-blue-500 underline">Tải tệp</a>
-                                @endif
-                            @endif
-                            <div class="text-xs text-gray-400 mt-1">{{ $msg->created_at->format('H:i d/m/Y') }}</div>
-                        </div> --}}
-                    </div>
-                @endforeach
-            </div>
-            <div class="chat-input-container">
-                <form id="chat-form" enctype="multipart/form-data" class="flex w-full gap-2">
-                    <textarea id="message-input" class="chat-input" placeholder="Nhập tin nhắn..."></textarea>
-                    <input type="file" id="imageInput" class="hidden" name="image" accept="image/*">
-                    <input type="file" id="fileInput" class="hidden" name="file"
-                        accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/x-rar-compressed,application/octet-stream">
-                    <button type="button" id="attachImageBtn" class="chat-tools-btn" title="Gửi ảnh"><i
-                            class="fas fa-image"></i></button>
-                    <button type="button" id="attachFileBtn" class="chat-tools-btn" title="Gửi file"><i
-                            class="fas fa-paperclip"></i></button>
+                <div id="admin-typing-indicator" class="text-xs text-gray-500 px-4 py-2"></div>
+                <div class="chat-input-container">
+                    <form id="chat-form" enctype="multipart/form-data" class="flex w-full gap-2">
+                        <textarea id="chat-input-message" class="chat-input" placeholder="Nhập tin nhắn..."></textarea>
+                        <input type="file" id="imageInput" class="hidden" name="image" accept="image/*">
+                        <input type="file" id="fileInput" class="hidden" name="file"
+                            accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/x-rar-compressed,application/octet-stream">
+                        <button type="button" id="attachImageBtn" class="chat-tools-btn" title="Gửi ảnh"><i
+                                class="fas fa-image"></i></button>
+                        <button type="button" id="attachFileBtn" class="chat-tools-btn" title="Gửi file"><i
+                                class="fas fa-paperclip"></i></button>
 
-                    <button type="submit" id="sendBtn" class="chat-send-btn"><i
-                            class="fas fa-paper-plane"></i></button>
-                </form>
-            </div>
+                        <button type="submit" id="chat-send-btn" class="chat-send-btn"><i
+                                class="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            @else
+                <div class="p-4 text-center text-muted">Không có cuộc trò chuyện nào.</div>
+            @endif
         </div>
         <!-- Customer Info -->
         <div class="chat-sidebar border-l" style="width:20%">

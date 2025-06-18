@@ -551,8 +551,11 @@
             </div>
         </div>
         <div class="chat-info-panel" id="chat-info-panel">
+            <div style="margin-left: 70px;"
+                class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl mb-2 chat-info-avatar "
+                id="chat-info-avatar"></div>
             <div class="chat-info-header">
-                <div class="chat-info-avatar" id="chat-info-avatar"></div>
+
                 <div class="chat-info-details">
                     <div class="chat-info-name" id="chat-info-name"></div>
                     <div class="chat-info-email" id="chat-info-email"></div>
@@ -590,7 +593,29 @@
             function getApiGetMessagesUrl(conversationId) {
                 return `/branch/chat/api/conversation/${conversationId}`;
             }
+
+            // Khởi tạo thông tin ban đầu cho cuộc trò chuyện đầu tiên
             if (selectedConversationId && selectedConversationId !== 'null') {
+                const firstConversation = document.querySelector('.conversation-item');
+                if (firstConversation) {
+                    const customerName = firstConversation.getAttribute('data-customer-name');
+                    const customerEmail = firstConversation.getAttribute('data-customer-email');
+                    const branchName = firstConversation.getAttribute('data-branch-name');
+                    const status = firstConversation.getAttribute('data-status');
+
+                    // Cập nhật header
+                    document.getElementById('chat-header-name').textContent = customerName;
+                    document.getElementById('chat-header-email').textContent = customerEmail;
+                    document.getElementById('chat-header-avatar').textContent = customerName.charAt(0)
+                        .toUpperCase();
+
+                    // Cập nhật info panel
+                    document.getElementById('chat-info-name').textContent = customerName;
+                    document.getElementById('chat-info-email').textContent = customerEmail;
+                    document.getElementById('chat-info-avatar').textContent = customerName.charAt(0).toUpperCase();
+                    document.getElementById('chat-info-branch').textContent = `Chi nhánh: ${branchName}`;
+                }
+
                 chatInstance = new BranchChat({
                     conversationId: selectedConversationId,
                     userId: userId,
@@ -605,10 +630,20 @@
                     imageInputSelector: '#chat-input-image',
                 });
             }
+
+            // Xử lý sự kiện click vào cuộc trò chuyện
             document.querySelectorAll('.conversation-item').forEach(item => {
                 item.addEventListener('click', function() {
+                    // Xóa active class từ tất cả các items
+                    document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove(
+                        'active'));
+                    // Thêm active class cho item được click
+                    this.classList.add('active');
+
                     const conversationId = this.getAttribute('data-conversation-id');
-                    if (chatInstance) chatInstance.loadConversation(conversationId);
+                    if (chatInstance) {
+                        chatInstance.loadConversation(conversationId);
+                    }
                 });
             });
         });

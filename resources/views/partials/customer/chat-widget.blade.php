@@ -13,6 +13,20 @@
     <div class="absolute inset-0 rounded-full bg-orange-500 animate-ping opacity-20"></div>
 </button>
 
+<!-- Login Required Modal -->
+<div id="loginRequiredModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 class="text-lg font-semibold mb-4">Yêu cầu đăng nhập</h3>
+        <p class="text-gray-600 mb-6">Vui lòng đăng nhập để sử dụng tính năng chat với chúng tôi.</p>
+        <div class="flex justify-end gap-2">
+            <a href="{{ route('customer.login') }}"
+                class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors">
+                Đăng nhập
+            </a>
+        </div>
+    </div>
+</div>
+
 <!-- Chat Popup -->
 <div id="chatPopup"
     class="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-2rem)] shadow-2xl rounded-lg overflow-hidden z-50 border border-gray-200 chat-popup">
@@ -177,6 +191,8 @@
 <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.txt,.zip,.rar">
 <input type="file" id="imageInput" class="hidden" accept="image/*">
 
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script src="/js/chat-realtime.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Chat Widget JavaScript
@@ -209,6 +225,7 @@
         const typingIndicator = document.getElementById('typingIndicator');
         const chatBadge = document.getElementById('chatBadge');
         const initialTime = document.getElementById('initialTime');
+        const loginRequiredModal = document.getElementById('loginRequiredModal');
 
         // State
         let isChatOpen = false;
@@ -268,6 +285,11 @@
                 }
             });
             messageInput.addEventListener('input', autoResizeTextarea);
+            loginRequiredModal.addEventListener('click', function(e) {
+                if (e.target === loginRequiredModal) {
+                    loginRequiredModal.classList.add('hidden');
+                }
+            });
         }
 
         function populateEmojis() {
@@ -302,6 +324,14 @@
         }
 
         function toggleChat() {
+            // Check if user is authenticated
+            const isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+
+            if (!isAuthenticated) {
+                loginRequiredModal.classList.remove('hidden');
+                return;
+            }
+
             if (isChatOpen) {
                 closeChat();
             } else {
@@ -319,7 +349,11 @@
                 .then(list => {
                     if (list.conversations && list.conversations.length > 0) {
                         conversationId = list.conversations[0].id;
+                        window.conversationId = conversationId;
+                        console.log('[DEBUG] Sắp gọi initCustomerChatRealtime với conversationId:',
+                            conversationId);
                         loadMessages();
+                        initCustomerChatRealtime(conversationId);
                     } else {
                         createConversation();
                     }
@@ -579,7 +613,9 @@
                 .then(data => {
                     if (data.success && data.data && data.data.conversation) {
                         conversationId = data.data.conversation.id;
+                        window.conversationId = conversationId;
                         loadMessages();
+                        initCustomerChatRealtime(conversationId);
                     } else if (data.message && data.message.includes('một cuộc trò chuyện')) {
                         // Nếu đã có conversation, lấy lại id cũ (cần API getConversations)
                         fetch('/customer/chat/conversations')
@@ -587,7 +623,9 @@
                             .then(list => {
                                 if (list.conversations && list.conversations.length > 0) {
                                     conversationId = list.conversations[0].id;
+                                    window.conversationId = conversationId;
                                     loadMessages();
+                                    initCustomerChatRealtime(conversationId);
                                 }
                             });
                     }
@@ -699,6 +737,42 @@
                                 `;
 
             return messageDiv;
+        }
+
+        // Hàm khởi tạo CustomerChatRealtime sau khi đã có conversationId
+        function initCustomerChatRealtime(conversationId) {
+            const customerUserId = window.customerUserId || {{ auth()->id() ?? 'null' }};
+            console.log('[DEBUG] conversationId:', conversationId, 'customerUserId:', customerUserId);
+            if (!conversationId || !customerUserId) return;
+            if (window.customerChatInstance) return; // Không khởi tạo lại nếu đã có
+            console.log('[DEBUG] Khởi tạo CustomerChatRealtime với conversationId:', conversationId, 'userId:',
+                customerUserId);
+            window.customerChatInstance = new CustomerChatRealtime({
+                conversationId: conversationId,
+                userId: customerUserId,
+                api: {
+                    send: '/customer/chat/send',
+                    getMessages: '/customer/chat/messages?conversation_id=' + conversationId,
+                },
+                appendMessage: function(message) {
+                    addMessage({
+                        id: message.id,
+                        content: message.message,
+                        sender: message.sender_id == customerUserId ? 'user' : 'admin',
+                        timestamp: new Date(message.sent_at || message.created_at),
+                        type: message.attachment ? (message.attachment_type === 'image' ?
+                            'image' : 'file') : 'text',
+                        imageUrl: message.attachment_type === 'image' ? '/storage/' +
+                            message.attachment : undefined,
+                        fileName: message.attachment_type !== 'image' && message
+                            .attachment ? message.attachment.split('/').pop() : undefined,
+                        fileSize: message.attachment_type !== 'image' && message
+                            .attachment ? '' : undefined,
+                        fileUrl: message.attachment_type !== 'image' && message.attachment ?
+                            '/storage/' + message.attachment : undefined,
+                    });
+                }
+            });
         }
     });
 </script>

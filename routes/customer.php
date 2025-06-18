@@ -15,7 +15,7 @@ use App\Http\Controllers\Customer\SupportController as CustomerSupportController
 use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
-use App\Http\Controllers\Customer\ChatController as CustomerChatController;
+use App\Http\Controllers\Customer\ChatController;
 use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
 use App\Http\Middleware\Customer\CartCountMiddleware;
 use App\Http\Controllers\FirebaseConfigController;
@@ -57,12 +57,7 @@ Route::middleware([CartCountMiddleware::class])->group(function () {
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 });
 
-// Chat routes (API)
-Route::prefix('api/chat')->group(function () {
-    Route::post('/send-message', [CustomerChatController::class, 'sendMessage'])->name('chat.send');
-    Route::post('/rating', [CustomerChatController::class, 'submitRating'])->name('chat.rating');
-    Route::get('/history', [CustomerChatController::class, 'getChatHistory'])->name('chat.history');
-});
+
 
 // Authentication (login / logout / register)
 Route::middleware('guest')->group(function () {
@@ -133,26 +128,11 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
     Route::get('/success', [HiringController::class, 'applicationSuccess'])->name('application.success');
 });
 
-Route::prefix('customer')->group(function () {
-    Route::get('/chat', function () {
-        $conversations = \App\Models\Conversation::where('customer_id', Auth::id())
-            ->with(['branch', 'messages.sender'])
-            ->orderBy('updated_at', 'desc')
-            ->get();
-        return view('customer.chat', compact('conversations'));
-    })->name('customer.chat.index');
-
-    Route::post('/chat/create', [App\Http\Controllers\Customer\ChatController::class, 'createConversation'])->name('customer.chat.create');
-    Route::post('/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
-    Route::get('/chat/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('customer.chat.conversations');
-    Route::get('/chat/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('customer.chat.messages');
-    Route::post('/chat/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('customer.chat.typing');
-});
-
-// ===== API ROUTES FOR CUSTOMER CHAT REALTIME =====
-Route::prefix('api/customer/chat')->middleware('auth')->group(function () {
-    Route::post('/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('api.customer.chat.send');
-    Route::get('/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('api.customer.chat.messages');
-    Route::get('/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('api.customer.chat.conversations');
-    Route::post('/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('api.customer.chat.typing');
+Route::prefix('customer')->middleware(['auth'])->group(function () {
+    Route::get('/chat', [ChatController::class, 'index'])->name('customer.chat.index');
+    Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('customer.chat.create');
+    Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
+    Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
+    Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
+    Route::post('/chat/typing', [ChatController::class, 'typing'])->name('customer.chat.typing');
 });

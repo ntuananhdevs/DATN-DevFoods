@@ -55,7 +55,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
         ];
     }
 
-    return true; // Hoặc thêm logic kiểm tra quyền truy cập
+    return false; // Hoặc thêm logic kiểm tra quyền truy cập
 });
 
 // Admin conversations channel

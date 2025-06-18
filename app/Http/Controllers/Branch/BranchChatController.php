@@ -314,4 +314,25 @@ class BranchChatController extends Controller
             ], 500);
         }
     }
+
+    public function typing(Request $request)
+    {
+        $request->validate([
+            'conversation_id' => 'required|exists:conversations,id',
+            'is_typing' => 'required|boolean'
+        ]);
+        $conversation = Conversation::findOrFail($request->conversation_id);
+        $userId = Auth::id();
+        $user = Auth::user();
+        $userType = 'branch';
+        $userName = $user->name ?? 'Nhân viên chi nhánh';
+        broadcast(new \App\Events\Chat\TypingStatus(
+            $request->conversation_id,
+            $userId,
+            $request->is_typing,
+            $userType,
+            $userName
+        ))->toOthers();
+        return response()->json(['success' => true]);
+    }
 }

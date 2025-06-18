@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\Branch;
-use App\Models\User;
+
 use App\Events\Chat\NewMessage;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -44,6 +44,12 @@ class ChatController extends Controller
 
     public function sendMessage(Request $request)
     {
+        Log::info('Admin gửi tin nhắn', [
+            'conversation_id' => $request->conversation_id,
+            'message' => $request->message,
+            'user_id' => Auth::id(),
+            'has_attachment' => $request->hasFile('attachment')
+        ]);
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
             'message' => 'nullable|string',
@@ -75,8 +81,33 @@ class ChatController extends Controller
             'sent_at' => now(),
             'status' => 'sent'
         ]);
-        // Broadcast event nếu cần
-        return response()->json(['success' => true, 'data' => $message]);
+        Log::info('Admin đã tạo message', ['message_id' => $message->id, 'message' => $message->toArray()]);
+
+        // Khi trả về message, luôn load sender với full_name
+        $message->load(['sender' => function ($query) {
+            $query->select('id', 'full_name');
+        }]);
+        Log::info('Sender loaded:', ['sender' => $message->sender]);
+        broadcast(new NewMessage($message, $conversation->id))->toOthers();
+
+        // Trả về message dạng mảng, sender chỉ gồm id và full_name
+        return response()->json([
+            'success' => true,
+            'message' => [
+                'id' => $message->id,
+                'conversation_id' => $message->conversation_id,
+                'sender_id' => $message->sender_id,
+                'receiver_id' => $message->receiver_id,
+                'message' => $message->message,
+                'attachment' => $message->attachment,
+                'attachment_type' => $message->attachment_type,
+                'created_at' => $message->created_at,
+                'sender' => [
+                    'id' => $message->sender->id,
+                    'full_name' => $message->sender->full_name,
+                ],
+            ]
+        ]);
     }
 
     public function assignBranch(Request $request)
@@ -135,7 +166,11 @@ class ChatController extends Controller
 
             // Broadcast system message
             try {
-                broadcast(new NewMessage($systemMessage->load('sender'), $conversation->id))->toOthers();
+                $systemMessage->load(['sender' => function ($query) {
+                    $query->select('id', 'full_name');
+                }]);
+                Log::info('Sender loaded:', ['sender' => $systemMessage->sender]);
+                broadcast(new NewMessage($systemMessage, $conversation->id))->toOthers();
             } catch (\Exception $e) {
                 Log::error('Pusher broadcast error: ' . $e->getMessage());
             }
@@ -164,7 +199,7 @@ class ChatController extends Controller
         try {
             Log::info('Bắt đầu lấy tin nhắn', [
                 'conversation_id' => $conversationId,
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'user_type' => 'admin'
             ]);
 
@@ -175,9 +210,13 @@ class ChatController extends Controller
             ]);
 
             $messages = ChatMessage::where('conversation_id', $conversationId)
-                ->with('sender')
+                ->with(['sender:id,full_name'])
                 ->orderBy('created_at', 'asc')
                 ->get();
+
+            if ($messages->count()) {
+                Log::info('Sender loaded:', ['sender' => $messages->first()->sender]);
+            }
 
             Log::info('Lấy được tin nhắn', [
                 'message_count' => $messages->count(),
@@ -187,7 +226,7 @@ class ChatController extends Controller
 
             // Mark messages as read
             ChatMessage::where('conversation_id', $conversationId)
-                ->where('sender_id', '!=', auth()->id())
+                ->where('sender_id', '!=', Auth::id())
                 ->where('sender_type', '!=', 'App\Models\Admin')
                 ->whereNull('read_at')
                 ->update(['read_at' => now()]);
@@ -218,35 +257,27 @@ class ChatController extends Controller
             'conversation_id' => 'required|exists:conversations,id',
             'is_typing' => 'required|boolean'
         ]);
-
         $conversation = Conversation::findOrFail($request->conversation_id);
         $userId = Auth::id();
-
-        // Kiểm tra quyền truy cập
-        if (
-            $conversation->admin_id !== $userId &&
-            $conversation->customer_id !== $userId &&
-            $conversation->branch_id !== $userId
-        ) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
+        $user = Auth::user();
         // Xác định user type
         $userType = 'admin';
+        $userName = $user->name ?? 'Admin';
         if ($conversation->customer_id === $userId) {
             $userType = 'customer';
+            $userName = $user->name ?? 'Khách hàng';
         } elseif ($conversation->branch_id === $userId) {
             $userType = 'branch';
+            $userName = $user->name ?? 'Chi nhánh';
         }
-
         // Broadcast typing status
-        broadcast(new TypingStatus(
+        broadcast(new \App\Events\Chat\TypingStatus(
             $request->conversation_id,
             $userId,
             $request->is_typing,
-            $userType
+            $userType,
+            $userName
         ))->toOthers();
-
         return response()->json(['success' => true]);
     }
 };
