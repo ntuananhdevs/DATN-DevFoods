@@ -462,8 +462,7 @@
 
     <script>
         // Mapbox access token
-        mapboxgl.accessToken = '{{ config('services.mapbox.access_token', 'pk.eyJ1IjoibmhhdG5ndXllbnF2IiwiYSI6ImNtYjZydDNnZDAwY24ybm9qcTdxcTNocG8ifQ.u7X_0DfN7d52xZ8cGFbWyQ') }}';
-
+   mapboxgl.accessToken = "{{ config('services.mapbox.access_token') }}"
         // Global variables
         let map;
         let currentPosition = null;
@@ -476,13 +475,13 @@
 
         // Fake order data
         const orderData = {
-            id: 1,
-            customer_name: "Nguyễn Văn An",
-            customer_phone: "0987654321",
-            delivery_address: "123 Đường Láng, Đống Đa, Hà Nội",
-            guest_latitude: 21.0285,
-            guest_longitude: 105.8542,
-            notes: "Giao hàng tại cổng chính, gọi điện trước khi đến"
+            id: 123,
+            customer_name: "Trần Thị Bình", 
+            customer_phone: "0912345678",
+            delivery_address: "48 Tố Hữu, Nam Từ Liêm, Hà Nội",
+            guest_latitude: 21.0189,
+            guest_longitude: 105.7864,
+            notes: "Giao trong giờ hành chính, gọi trước 15 phút"
         };
 
         // Initialize the application
@@ -506,9 +505,9 @@
                 container: 'map',
                 style: 'mapbox://styles/mapbox/streets-v12',
                 center: [order.guest_longitude, order.guest_latitude],
-                zoom: 16
+                zoom: 11 // Giảm zoom để có thể thấy rộng hơn
             });
-
+        
             map.on('load', function() {
                 document.getElementById('loading').classList.add('hidden');
                 
@@ -542,11 +541,8 @@
                             .setLngLat([longitude, latitude])
                             .addTo(map);
 
-                        // Center map on user location
-                        map.flyTo({
-                            center: [longitude, latitude],
-                            zoom: 16
-                        });
+                        // Fit map to show both locations
+                        fitMapToBothLocations();
 
                         // Calculate route
                         calculateRoute();
@@ -564,10 +560,8 @@
                             .setLngLat([fakeLocation.longitude, fakeLocation.latitude])
                             .addTo(map);
 
-                        map.flyTo({
-                            center: [fakeLocation.longitude, fakeLocation.latitude],
-                            zoom: 16
-                        });
+                        // Fit map to show both locations
+                        fitMapToBothLocations();
 
                         calculateRoute();
                         showToast("Thông báo", "Sử dụng vị trí giả để demo", "warning");
@@ -590,14 +584,36 @@
                     .setLngLat([fakeLocation.longitude, fakeLocation.latitude])
                     .addTo(map);
 
-                map.flyTo({
-                    center: [fakeLocation.longitude, fakeLocation.latitude],
-                    zoom: 16
-                });
+                // Fit map to show both locations
+                fitMapToBothLocations();
 
                 calculateRoute();
                 showToast("Thông báo", "Sử dụng vị trí giả để demo", "warning");
             }
+        }
+
+        // Thêm hàm mới để fit map hiển thị cả hai vị trí
+        function fitMapToBothLocations() {
+            if (!currentPosition || !order) return;
+            
+            const bounds = new mapboxgl.LngLatBounds();
+            
+            // Thêm vị trí hiện tại vào bounds
+            bounds.extend([currentPosition.longitude, currentPosition.latitude]);
+            
+            // Thêm vị trí giao hàng vào bounds
+            bounds.extend([order.guest_longitude, order.guest_latitude]);
+            
+            // Fit map để hiển thị cả hai vị trí với padding
+            map.fitBounds(bounds, {
+                padding: {
+                    top: 100,
+                    bottom: 200, // Để không bị che bởi bottom panel
+                    left: 50,
+                    right: 50
+                },
+                maxZoom: 16 // Giới hạn zoom tối đa
+            });
         }
 
         async function calculateRoute() {
