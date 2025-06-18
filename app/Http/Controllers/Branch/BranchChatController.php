@@ -40,7 +40,7 @@ class BranchChatController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        return view('branch.chat', compact('conversations', 'branch', 'user'));
+        return view('admin.branch.chat', compact('conversations', 'branch', 'user'));
     }
 
     public function apiGetConversation($id)
