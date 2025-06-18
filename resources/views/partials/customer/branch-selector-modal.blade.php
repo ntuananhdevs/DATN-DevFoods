@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const lng = position.coords.longitude;
                     
                     // Send to server to find nearest branch
-                    fetch(`/api/customer/branches/nearest?lat=${lat}&lng=${lng}`, {
+                    fetch(`/branches/nearest?lat=${lat}&lng=${lng}`, {
                         method: 'GET',
                         credentials: 'same-origin',
                         headers: {
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Set branch in session via AJAX
-                fetch('/api/customer/branches/set-selected', {
+                fetch('/branches/set-selected', {
                     method: 'POST',
                     credentials: 'same-origin', // Important to include cookies
                     headers: {
@@ -485,7 +485,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
             
             // Set branch in session via AJAX
-            fetch('/api/customer/branches/set-selected', {
+            fetch('/branches/set-selected', {
                 method: 'POST',
                 credentials: 'same-origin', // Important to include cookies
                 headers: {

@@ -413,9 +413,6 @@
     @yield('scripts')
     @stack('scripts')
     
-    <!-- Branch Selector Modal -->
-    @include('partials.customer.branch-selector-modal')
-
     <script>
         // Global function to update the wishlist counter
         window.updateWishlistCount = function(count) {
