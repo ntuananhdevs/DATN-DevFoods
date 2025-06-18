@@ -21,10 +21,10 @@ use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
 
 // API Controllers for Customer
-use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
-use App\Http\Controllers\Api\Customer\FavoriteController as ApiCustomerFavoriteController;
-use App\Http\Controllers\Api\Customer\ProductVariantController as ApiCustomerProductVariantController;
-use App\Http\Controllers\Api\Customer\CartController as ApiCustomerCartController;
+// use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
+// use App\Http\Controllers\Api\Customer\FavoriteController as ApiCustomerFavoriteController;
+// use App\Http\Controllers\Api\Customer\ProductVariantController as ApiCustomerProductVariantController;
+// use App\Http\Controllers\Api\Customer\CartController as ApiCustomerCartController;
 
 // ===== WEB ROUTES (giao diện web, view) =====
 Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(function () {
@@ -41,6 +41,7 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
 
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
 
     // Checkout
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
@@ -100,19 +101,12 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::prefix('api')->group(function () {
-    Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
-    Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
-    Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add');
-    Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update');
-    Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove');
-    Route::post('/coupon/apply', [ApiCustomerCartController::class, 'applyCoupon'])->name('coupon.apply');
-
-    // Customer API
-    Route::prefix('customer')->group(function () {
-        Route::post('/products/get-variant', [ApiCustomerProductVariantController::class, 'getVariant'])->name('api.products.get-variant');
-        Route::post('/branches/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('api.branches.set-selected');
-        Route::get('/branches/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('api.branches.nearest');
-    });
+    // Route::get('/products', [ApiCustomerProductController::class, 'getProducts']);
+    // Route::post('/favorites/toggle', [ApiCustomerFavoriteController::class, 'toggle']);
+    // Route::post('/cart/add', [ApiCustomerCartController::class, 'add'])->name('cart.add');
+    // Route::post('/cart/update', [ApiCustomerCartController::class, 'update'])->name('cart.update');
+    // Route::post('/cart/remove', [ApiCustomerCartController::class, 'remove'])->name('cart.remove');
+    // Route::post('/coupon/apply', [ApiCustomerCartController::class, 'applyCoupon'])->name('coupon.apply');
 
     // Firebase Auth (Google)
     Route::prefix('auth')->group(function () {
@@ -122,6 +116,11 @@ Route::prefix('api')->group(function () {
 
     // Firebase Config
     Route::get('/firebase/config', [FirebaseConfigController::class, 'getConfig'])->name('api.firebase.config');
+});
+
+Route::prefix('branches')->group(function () {
+        Route::post('/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('branches.set-selected');
+        Route::get('/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('branches.nearest');
 });
 // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
 Route::prefix('hiring-driver')->name('driver.')->group(function () {

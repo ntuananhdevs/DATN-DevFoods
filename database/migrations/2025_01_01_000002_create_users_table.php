@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('avatar')->nullable();
             $table->decimal('balance', 10, 2)->default(0); 
             $table->foreignId('user_rank_id')->nullable()->constrained('user_ranks');
+            $table->date('birthday')->nullable();
+            $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->decimal('total_spending', 12, 2)->default(0);
             $table->integer('total_orders')->default(0);
             $table->timestamp('rank_updated_at')->nullable();

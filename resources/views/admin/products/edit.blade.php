@@ -327,7 +327,7 @@
                                             'name' => $attrName,
                                             'values' => [[
                                                 'value' => $attrValue,
-                                                'price' => $attrPrice
+                                                'price_adjustment' => $attrPrice
                                             ]]
                                         ];
                                     } else {

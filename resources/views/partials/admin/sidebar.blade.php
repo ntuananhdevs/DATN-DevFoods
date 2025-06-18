@@ -137,12 +137,17 @@
                 </button>
                 <div class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
                     <a href="{{ route('admin.products.index') }}"
-                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.products.index') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-text">Món ăn</span>
                     </a>
-                    {{-- <a href="{{ route('admin.combo.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.combo.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-                    <span class="sidebar-text">Combo</span>
-                    </a> --}}
+                    <a href="{{ ('admin.combo.index') }}"
+                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.combo.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-text">Combo</span>
+                    </a>
+                    <a href="{{ ('admin.topping.index') }}"
+                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.topping.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-text">Topping</span>
+                    </a>
                 </div>
             </div>
             <!-- Banner -->

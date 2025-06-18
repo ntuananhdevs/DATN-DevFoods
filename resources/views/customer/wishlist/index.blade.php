@@ -162,7 +162,7 @@
                     data-category="{{ $item->product->category->name ?? 'other' }}" 
                     data-price="{{ $item->productVariant ? $item->product->base_price + $item->productVariant->variantValues->sum('price_adjustment') : $item->product->base_price }}"
                     data-name="{{ $item->product->name }}"
-                    data-date="{{ $item->added_at->toDateString() }}"
+                    data-date="{{ $item->added_at ? $item->added_at->toDateString() : '' }}"
                     data-wishlist-id="{{ $item->id }}">
                     <div class="relative">
                         <a href="{{ route('products.show', $item->product->id) }}" class="block relative h-48 overflow-hidden">
@@ -221,7 +221,7 @@
                                     {{ number_format($item->productVariant ? $item->product->base_price + $item->productVariant->variantValues->sum('price_adjustment') : $item->product->base_price, 0, ',', '.') }}₫
                                 </span>
                             </div>
-                            <span class="text-xs text-gray-400">Đã lưu: {{ $item->added_at->diffForHumans() }}</span>
+                            <span class="text-xs text-gray-400">Đã lưu: {{ $item->added_at ? $item->added_at->diffForHumans() : 'N/A' }}</span>
                         </div>
 
                         <div class="product-actions flex gap-2">
