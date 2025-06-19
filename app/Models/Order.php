@@ -130,4 +130,30 @@ class Order extends Model
         }
         return $this->guest_name ?? 'Khách vãng lai';
     }
+
+    public function getStatusTextAttribute()
+    {
+        // Chuyển đổi status từ 'delivered' -> 'Đã giao'
+        return match ($this->status) {
+            'pending' => 'Đang chờ xử lý',
+            'processing' => 'Đang chuẩn bị',
+            'shipping' => 'Đang giao hàng',
+            'delivered' => 'Đã giao',
+            'cancelled' => 'Đã hủy',
+            default => 'Không xác định',
+        };
+    }
+
+    public function getStatusColorAttribute()
+    {
+        // Trả về màu nền và màu chữ cho từng trạng thái
+        return match ($this->status) {
+            'pending' => ['bg' => '#fef3c7', 'text' => '#b45309'], // yellow
+            'processing' => ['bg' => '#dbeafe', 'text' => '#1d4ed8'], // blue
+            'shipping' => ['bg' => '#e0e7ff', 'text' => '#4338ca'], // indigo
+            'delivered' => ['bg' => '#d1fae5', 'text' => '#065f46'], // green
+            'cancelled' => ['bg' => '#fee2e2', 'text' => '#991b1b'], // red
+            default => ['bg' => '#f3f4f6', 'text' => '#374151'], // gray
+        };
+    }
 }

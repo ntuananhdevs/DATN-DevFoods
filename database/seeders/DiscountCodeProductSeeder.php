@@ -14,6 +14,8 @@ class DiscountCodeProductSeeder extends Seeder
     public function run()
     {
         $discountCodes = DiscountCode::whereIn('applicable_items', ['specific_products', 'specific_categories', 'combos_only'])->get();
+        
+        echo "Found {$discountCodes->count()} discount codes with applicable items\n";
 
         // Kiểm tra dữ liệu
         if ($discountCodes->isEmpty()) {

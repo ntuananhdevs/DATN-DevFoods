@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use App\Services\BranchService;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +15,15 @@ class BranchController extends Controller
     public function __construct(BranchService $branchService)
     {
         $this->branchService = $branchService;
+    }
+    public function branchs()
+    {
+        $branches = Branch::with('images')
+            ->where('active', 1)
+            ->orderBy('id', 'asc')
+            ->paginate(10);
+
+        return view('customer.branchs.index', compact('branches'));
     }
 
     /**

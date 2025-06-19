@@ -13,7 +13,7 @@ class DriverApplication extends Model
     protected $fillable = [
         'full_name', 'email', 'phone_number', 'date_of_birth', 'gender',
         'id_card_number', 'id_card_issue_date', 'id_card_issue_place',
-        'address', 'city', 'district',
+        'address',
         'vehicle_type', 'vehicle_model', 'vehicle_color', 'license_plate', 'driver_license_number',
         'id_card_front_image', 'id_card_back_image', 'driver_license_image', 'profile_image', 'vehicle_registration_image',
         'bank_name', 'bank_account_number', 'bank_account_name',

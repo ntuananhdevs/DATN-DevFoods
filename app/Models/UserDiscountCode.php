@@ -30,7 +30,7 @@ class UserDiscountCode extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function discountCode()
+    public function userdiscountCode()
     {
         return $this->belongsTo(DiscountCode::class);
     }
