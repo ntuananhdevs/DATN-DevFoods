@@ -104,10 +104,38 @@ class DriverController extends Controller
     /**
      * Hiển thị trang thu nhập.
      */
-    public function earnings()
+    public function earnings(Request $request)
     {
-        // (Bạn sẽ thêm logic cho trang chi tiết thu nhập ở đây)
-        return view('driver.earnings');
+        $driverId = Auth::guard('driver')->id();
+        $filter = $request->query('filter', 'today');
+
+        $query = Order::where('driver_id', $driverId)->where('status', 'delivered');
+        $label = 'hôm nay';
+
+        switch ($filter) {
+            case 'week':
+                $query->whereBetween('delivery_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $label = 'tuần này';
+                break;
+            case 'month':
+                $query->whereMonth('delivery_date', Carbon::now()->month);
+                $label = 'tháng này';
+                break;
+            default: // today
+                $query->whereDate('delivery_date', Carbon::today());
+                break;
+        }
+
+        $completedOrders = $query->get();
+
+        $stats = [
+            'total_earnings' => $completedOrders->sum('driver_earning'),
+            'total_orders' => $completedOrders->count(),
+            'total_tips' => $completedOrders->sum('tip_amount'), // Giả sử có cột tip_amount
+            'avg_per_order' => $completedOrders->count() > 0 ? $completedOrders->sum('driver_earning') / $completedOrders->count() : 0,
+        ];
+
+        return view('driver.earnings', compact('stats', 'filter', 'label'));
     }
 
     /**
