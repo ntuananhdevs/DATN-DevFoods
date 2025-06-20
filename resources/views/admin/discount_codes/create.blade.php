@@ -368,9 +368,19 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="min_order_amount" class="form-label">Số tiền đơn hàng tối thiểu</label>
-                            <input type="number" name="min_order_amount" id="min_order_amount" class="form-control" step="0.01" min="0" value="{{ old('min_order_amount', 0) }}">
-                            @error('min_order_amount')
+                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu</label>
+                            <div class="flex gap-2">
+                                <select name="min_requirement_type" id="min_requirement_type" class="form-control w-1/2">
+                                    <option value="" {{ old('min_requirement_type') == '' ? 'selected' : '' }}>Không áp dụng</option>
+                                    <option value="order_amount" {{ old('min_requirement_type') == 'order_amount' ? 'selected' : '' }}>Đơn hàng tối thiểu</option>
+                                    <option value="product_price" {{ old('min_requirement_type') == 'product_price' ? 'selected' : '' }}>Giá sản phẩm tối thiểu</option>
+                                </select>
+                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0" value="{{ old('min_requirement_value') }}" placeholder="Nhập giá trị...">
+                            </div>
+                            @error('min_requirement_type')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                            @error('min_requirement_value')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>

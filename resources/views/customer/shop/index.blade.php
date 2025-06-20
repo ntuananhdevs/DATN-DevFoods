@@ -8,14 +8,13 @@
 <meta name="selected-branch" content="{{ $currentBranch->id }}">
 @endif
 
-<script>
-    // Add authentication class to body
-    document.addEventListener('DOMContentLoaded', function() {
-        @if(Auth::check())
+@if(Auth::check())
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('user-authenticated');
-        @endif
-    });
-</script>
+        });
+    </script>
+@endif
 <style>
     .container {
       max-width: 1280px;
@@ -421,7 +420,7 @@
                                 @php
                                     $badgeClass = 'discount-badge';
                                     $icon = 'fa-percent';
-                                    
+                                    $minText = '';
                                     if($discountCode->discount_type === 'fixed_amount') {
                                         $badgeClass .= ' fixed-amount';
                                         $icon = 'fa-money-bill-wave';
@@ -430,6 +429,13 @@
                                         $icon = 'fa-shipping-fast';
                                     } else {
                                         $badgeClass .= ' percentage';
+                                    }
+                                    if(isset($discountCode->min_requirement_type) && $discountCode->min_requirement_value > 0) {
+                                        if($discountCode->min_requirement_type === 'order_amount') {
+                                            $minText = 'Đơn từ '.number_format($discountCode->min_requirement_value/1000,0).'K';
+                                        } elseif($discountCode->min_requirement_type === 'product_price') {
+                                            $minText = 'Sản phẩm từ '.number_format($discountCode->min_requirement_value/1000,0).'K';
+                                        }
                                     }
                                 @endphp
                                 <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">

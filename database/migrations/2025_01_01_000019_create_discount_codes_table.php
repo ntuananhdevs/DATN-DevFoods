@@ -21,7 +21,8 @@ return new class extends Migration
             // Loại giảm giá
             $table->enum('discount_type', ['percentage', 'fixed_amount', 'free_shipping']);
             $table->decimal('discount_value', 12, 2); // Giá trị giảm (% hoặc số tiền)
-            $table->decimal('min_order_amount', 12, 2)->default(0); // Đơn hàng tối thiểu
+            $table->enum('min_requirement_type', ['order_amount', 'product_price'])->nullable(); // Loại điều kiện tối thiểu
+            $table->decimal('min_requirement_value', 12, 2)->nullable(); // Giá trị điều kiện tối thiểu
             $table->decimal('max_discount_amount', 12, 2)->nullable(); // Giảm tối đa (cho %)
             
             // Phạm vi áp dụng
