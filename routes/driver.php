@@ -65,6 +65,8 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::get('/history', [DriverController::class, 'history'])->name('history');
         Route::get('/earnings', [DriverController::class, 'earnings'])->name('earnings');
         Route::get('/notifications', [DriverController::class, 'notifications'])->name('notifications');
+        Route::post('/status/toggle', [DriverController::class, 'toggleStatus'])->name('status.toggle');
+        Route::get('/earnings/query', [DriverController::class, 'queryEarnings'])->name('earnings.query');
         
         // API routes for mobile app
         Route::prefix('api')->name('api.')->group(function () {

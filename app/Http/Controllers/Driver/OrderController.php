@@ -2,116 +2,115 @@
 
 namespace App\Http\Controllers\Driver;
 
+use App\Events\NewOrderAvailable;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Data\MockDriverData; // Import our mock data class
-use Carbon\Carbon; // Import Carbon for date/time handling
+use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class OrderController extends Controller
 {
+    /**
+     * Hiển thị danh sách đơn hàng theo các tab trạng thái.
+     */
     public function index(Request $request)
     {
-        $mockOrders = MockDriverData::getMockOrders();
-        $initialStatus = $request->query('status', 'Chờ nhận');
-        $tabStatuses = ["Chờ nhận", "Đang giao", "Đã hoàn thành", "Đã hủy"];
+        $driverId = Auth::guard('driver')->id();
+        $tabStatuses = ['pending', 'delivering', 'delivered', 'cancelled']; // Các trạng thái thật
+        $initialStatus = $request->query('status', 'pending');
 
-        $ordersByStatus = [];
+        if (!in_array($initialStatus, $tabStatuses)) {
+            $initialStatus = 'pending';
+        }
+
+        // Lấy các đơn hàng thuộc tab đang chọn
+        $orders = Order::where('driver_id', $driverId)
+                        ->where('status', $initialStatus)
+                        ->latest()
+                        ->paginate(10);
+
+        // Đếm số lượng đơn hàng cho mỗi tab
         $statusCounts = [];
-
         foreach ($tabStatuses as $status) {
-            $filtered = array_filter($mockOrders, function($order) use ($status) {
-                return $order['status'] === $status;
-            });
-            // Sort by orderTime descending for 'Chờ nhận' and 'Đang giao'
-            if ($status === 'Chờ nhận' || $status === 'Đang giao') {
-                usort($filtered, function($a, $b) {
-                    return strtotime($b['orderTime']) - strtotime($a['orderTime']);
-                });
-            }
-            $ordersByStatus[$status] = $filtered;
-            $statusCounts[$status] = count($filtered);
+            $statusCounts[$status] = Order::where('driver_id', $driverId)->where('status', $status)->count();
         }
 
-        return view('driver.orders.index', compact('ordersByStatus', 'initialStatus', 'tabStatuses', 'statusCounts'));
+        return view('driver.orders.index', compact('orders', 'initialStatus', 'tabStatuses', 'statusCounts'));
     }
 
-    public function show($orderId)
+    /**
+     * Hiển thị chi tiết một đơn hàng.
+     */
+    public function show(Order $order)
     {
-        // $mockOrders = MockDriverData::getMockOrders();
-        // $order = collect($mockOrders)->firstWhere('id', $orderId);
-
-        // if (!$order) {
-        //     abort(404, 'Order not found');
-        // }
-
-        // return view('driver.orders.show', compact('order'));
-        return view('driver.orders.show', ['orderId' => $orderId]);
-    }
-
-    public function navigate($orderId)
-    {
-        return view('driver.orders.navigate', ['orderId' => $orderId]);
-    }
-
-    public function updateStatus(Request $request, $orderId)
-    {
-        $newStatus = $request->input('status');
-
-        $orders = MockDriverData::getMockOrders(); // Lấy tất cả đơn hàng mock
-
-        $updated = false;
-        foreach ($orders as $key => $order) {
-            if ($order['id'] === $orderId) {
-                $orders[$key]['status'] = $newStatus;
-                // Cập nhật thời gian giao hàng ước tính nếu trạng thái là "Đang giao"
-                if ($newStatus === 'Đang giao') {
-                    $orders[$key]['estimatedDeliveryTime'] = Carbon::now()->addMinutes(30)->format('H:i');
-                }
-                // Cập nhật lại mock data (chỉ cho mục đích demo, không phải cách làm thực tế)
-                MockDriverData::setMockOrders($orders);
-                $updated = true;
-                break;
-            }
+        // Security check: Đảm bảo tài xế chỉ xem được đơn hàng của mình
+        if ($order->driver_id !== Auth::guard('driver')->id()) {
+            abort(403, 'Unauthorized action.');
         }
 
-        if ($updated) {
-            return response()->json(['success' => true, 'message' => 'Trạng thái đơn hàng đã được cập nhật.']);
-        } else {
-            return response()->json(['success' => false, 'message' => 'Không tìm thấy đơn hàng hoặc trạng thái không hợp lệ.'], 404);
+        return view('driver.orders.show', compact('order'));
+    }
+
+    /**
+     * Tài xế chấp nhận một đơn hàng.
+     */
+    public function accept(Order $order)
+    {
+        // Logic kiểm tra xem đơn hàng có thể nhận không (ví dụ: đang là 'pending' và chưa có driver)
+        if ($order->status === 'pending' && is_null($order->driver_id)) {
+            $order->driver_id = Auth::guard('driver')->id();
+            $order->status = 'processing'; // Chuyển sang trạng thái "Đang chuẩn bị"
+            $order->save();
+
+            // Gửi event Pusher cho khách hàng biết
+            // CustomerOrderUpdated::dispatch($order);
+
+            return response()->json(['success' => true, 'message' => 'Đã nhận đơn hàng thành công!']);
         }
+        
+        return response()->json(['success' => false, 'message' => 'Không thể nhận đơn hàng này.'], 400);
     }
-
-    public function accept($orderId)
+    
+    /**
+     * Tài xế xác nhận đã lấy hàng.
+     */
+    public function confirmPickup(Order $order)
     {
-        return response()->json(['message' => "Order {$orderId} accepted (mocked)."]);
+        if ($order->driver_id === Auth::guard('driver')->id() && $order->status === 'processing') {
+            $order->status = 'delivering'; // Chuyển sang "Đang giao hàng"
+            $order->save();
+            NewOrderAvailable::dispatch($order);
+            return response()->json(['success' => true, 'message' => 'Đã lấy hàng. Bắt đầu giao!']);
+        }
+        return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ.'], 400);
     }
 
-    public function startPickup($orderId)
+    /**
+     * Tài xế xác nhận đã giao hàng thành công.
+     */
+    public function confirmDelivery(Order $order)
     {
-        return response()->json(['message' => "Order {$orderId} pickup started (mocked)."]);
+        if ($order->driver_id === Auth::guard('driver')->id() && $order->status === 'delivering') {
+            $order->status = 'delivered';
+            $order->actual_delivery_time = Carbon::now();
+            $order->save();
+            return response()->json(['success' => true, 'message' => 'Đã giao hàng thành công!']);
+        }
+        return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ.'], 400);
     }
 
-    public function confirmPickup($orderId)
-    {
-        return response()->json(['message' => "Order {$orderId} pickup confirmed (mocked)."]);
-    }
-
-    public function confirmDelivery($orderId)
-    {
-        return response()->json(['message' => "Order {$orderId} delivered (mocked)."]);
-    }
-
-    public function cancel($orderId)
-    {
-        return response()->json(['message' => "Order {$orderId} cancelled (mocked)."]);
-    }
-
+    /**
+     * API để lấy các đơn hàng có sẵn cho tài xế nhận.
+     */
     public function available()
     {
-        $mockOrders = MockDriverData::getMockOrders();
-        $availableOrders = array_filter($mockOrders, function($order) {
-            return $order['status'] === 'Chờ nhận';
-        });
+        // Lấy các đơn hàng chưa có tài xế và đang chờ
+        $availableOrders = Order::whereNull('driver_id')
+                                ->where('status', 'pending')
+                                ->latest()
+                                ->get();
+
         return response()->json($availableOrders);
     }
 }
