@@ -161,6 +161,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const applyButton = document.getElementById('apply-coupon');
     const couponInput = document.getElementById('coupon-code');
     
+    // Initialize button states
+    initializeButtonStates();
+    
     // Update cart totals
     function updateCartTotals() {
         let subtotal = 0;
@@ -219,12 +222,16 @@ document.addEventListener('DOMContentLoaded', function() {
     decreaseButtons.forEach(button => {
         button.addEventListener('click', function() {
             const itemId = this.getAttribute('data-id');
+            const cartItem = this.closest('.cart-item');
             const quantityElement = this.parentElement.querySelector('.item-quantity');
             let quantity = parseInt(quantityElement.textContent);
             
             if (quantity > 1) {
                 quantity--;
                 quantityElement.textContent = quantity;
+                
+                // Update button states
+                updateQuantityButtonStates(cartItem);
                 
                 // Update cart totals immediately with new quantity
                 updateCartTotals();
@@ -249,17 +256,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             window.updateCartCount(data.cart_count);
                         }
                     } else {
-                        showToast(data.message || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                        showToast(data.message || 'Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
                         // Revert quantity if update failed
                         quantityElement.textContent = quantity + 1;
+                        updateQuantityButtonStates(cartItem);
                         updateCartTotals();
                     }
                 })
                 .catch(error => {
                     console.error('Error updating cart:', error);
-                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
+                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
                     // Revert quantity if update failed
                     quantityElement.textContent = quantity + 1;
+                    updateQuantityButtonStates(cartItem);
                     updateCartTotals();
                 });
             }
@@ -270,48 +279,60 @@ document.addEventListener('DOMContentLoaded', function() {
     increaseButtons.forEach(button => {
         button.addEventListener('click', function() {
             const itemId = this.getAttribute('data-id');
+            const cartItem = this.closest('.cart-item');
             const quantityElement = this.parentElement.querySelector('.item-quantity');
             let quantity = parseInt(quantityElement.textContent);
+            const stockQuantity = parseInt(cartItem.getAttribute('data-stock-quantity') || 0);
             
-            quantity++;
-            quantityElement.textContent = quantity;
-            
-            // Update cart totals immediately with new quantity
-            updateCartTotals();
-            
-            // Update via controller
-            fetch('/cart/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.csrfToken
-                },
-                body: JSON.stringify({
-                    cart_item_id: itemId,
-                    quantity: quantity
+            // Check if we can increase quantity
+            if (quantity < stockQuantity) {
+                quantity++;
+                quantityElement.textContent = quantity;
+                
+                // Update button states
+                updateQuantityButtonStates(cartItem);
+                
+                // Update cart totals immediately with new quantity
+                updateCartTotals();
+                
+                // Update via controller
+                fetch('/cart/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': window.csrfToken
+                    },
+                    body: JSON.stringify({
+                        cart_item_id: itemId,
+                        quantity: quantity
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update cart counter in header
-                    if (window.updateCartCount) {
-                        window.updateCartCount(data.cart_count);
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update cart counter in header
+                        if (window.updateCartCount) {
+                            window.updateCartCount(data.cart_count);
+                        }
+                    } else {
+                        showToast(data.message || 'Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
+                        // Revert quantity if update failed
+                        quantityElement.textContent = quantity - 1;
+                        updateQuantityButtonStates(cartItem);
+                        updateCartTotals();
                     }
-                } else {
-                    showToast(data.message || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                })
+                .catch(error => {
+                    console.error('Error updating cart:', error);
+                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
                     // Revert quantity if update failed
                     quantityElement.textContent = quantity - 1;
+                    updateQuantityButtonStates(cartItem);
                     updateCartTotals();
-                }
-            })
-            .catch(error => {
-                console.error('Error updating cart:', error);
-                showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
-                // Revert quantity if update failed
-                quantityElement.textContent = quantity - 1;
-                updateCartTotals();
-            });
+                });
+            } else {
+                showToast('Đã đạt giới hạn số lượng có sẵn', 'warning');
+            }
         });
     });
     
@@ -344,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     // Show toast notification
-                    showToast('Sản phẩm đã được xóa khỏi giỏ hàng');
+                    showToast('Sản phẩm đã được xóa khỏi giỏ hàng', 'success');
                     
                     // Check if cart is empty
                     const remainingItems = document.querySelectorAll('.cart-item');
@@ -353,12 +374,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.location.reload();
                     }
                 } else {
-                    showToast(data.message || 'Đã xảy ra lỗi. Vui lòng thử lại.');
+                    showToast(data.message || 'Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
                 }
             })
             .catch(error => {
                 console.error('Error removing item:', error);
-                showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
+                showToast('Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
             });
         });
     });
@@ -369,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const productName = this.closest('.bg-white').querySelector('h3').textContent.trim();
             
             // Show toast notification
-            showToast(`Đã thêm ${productName} vào giỏ hàng`);
+            showToast(`Đã thêm ${productName} vào giỏ hàng`, 'success');
             
             // In a real application, you would add the product to the cart
             // and update the cart UI
@@ -382,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const couponCode = couponInput.value.trim();
             
             if (couponCode === '') {
-                showToast('Vui lòng nhập mã giảm giá');
+                showToast('Vui lòng nhập mã giảm giá', 'warning');
                 return;
             }
             
@@ -415,52 +436,102 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        showToast('Áp dụng mã giảm giá thành công');
+                        showToast('Áp dụng mã giảm giá thành công', 'success');
                         // Update checkout button to include discount
                         const checkoutButton = document.querySelector('a[href*="checkout"]');
                         const total = parseInt(document.getElementById('total').textContent.replace(/\D/g, ''));
                         checkoutButton.href = checkoutButton.href + "?discount=" + discount;
                     } else {
-                        showToast(data.message || 'Đã xảy ra lỗi khi áp dụng mã giảm giá');
+                        showToast(data.message || 'Đã xảy ra lỗi khi áp dụng mã giảm giá', 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Error applying coupon:', error);
-                    showToast('Đã xảy ra lỗi khi áp dụng mã giảm giá');
+                    showToast('Đã xảy ra lỗi khi áp dụng mã giảm giá', 'error');
                 });
             } else {
-                showToast('Mã giảm giá không hợp lệ');
+                showToast('Mã giảm giá không hợp lệ', 'warning');
             }
         });
     }
     
     // Simple toast notification function
-    function showToast(message) {
+    function showToast(message, type = 'info') {
         // Create toast element
         const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
-        toast.textContent = message;
+        toast.className = `cart-toast ${type}`;
+        toast.innerHTML = `
+            <div class="flex items-center gap-2">
+                <i class="fas ${getToastIcon(type)}"></i>
+                <span>${message}</span>
+            </div>
+        `;
         
         // Add to DOM
         document.body.appendChild(toast);
         
-        // Show toast
+        // Trigger slide in animation
         setTimeout(() => {
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
+            toast.classList.add('show');
         }, 10);
         
-        // Hide and remove toast after 3 seconds
+        // Remove notification after 3 seconds
         setTimeout(() => {
-            toast.classList.remove('opacity-100');
-            toast.classList.add('opacity-0');
-            
-            setTimeout(() => {
-                if (document.body.contains(toast)) {
-                    document.body.removeChild(toast);
-                }
-            }, 300);
+            if (document.body.contains(toast)) {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }
         }, 3000);
+    }
+    
+    // Helper function to get icon based on toast type
+    function getToastIcon(type) {
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-exclamation-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+        return icons[type] || icons.info;
+    }
+    
+    // Function to update button states based on stock quantity
+    function updateQuantityButtonStates(cartItem) {
+        const decreaseBtn = cartItem.querySelector('.decrease-quantity');
+        const increaseBtn = cartItem.querySelector('.increase-quantity');
+        const quantityElement = cartItem.querySelector('.item-quantity');
+        const stockQuantity = parseInt(cartItem.getAttribute('data-stock-quantity') || 0);
+        const currentQuantity = parseInt(quantityElement.textContent);
+        
+        // Disable decrease button if quantity is 1
+        if (currentQuantity <= 1) {
+            decreaseBtn.disabled = true;
+            decreaseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            decreaseBtn.disabled = false;
+            decreaseBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        
+        // Disable increase button if quantity reaches stock limit
+        if (currentQuantity >= stockQuantity) {
+            increaseBtn.disabled = true;
+            increaseBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            increaseBtn.disabled = false;
+            increaseBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    
+    // Initialize button states for all cart items
+    function initializeButtonStates() {
+        const cartItems = document.querySelectorAll('.cart-item');
+        cartItems.forEach(item => {
+            updateQuantityButtonStates(item);
+        });
     }
     
     // Mini cart functionality

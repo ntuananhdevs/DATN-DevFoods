@@ -420,6 +420,14 @@ class ProductController extends Controller
         // Always get all active branches for the modal to display all options
         $branches = Branch::where('active', true)->get();
 
+        // Đánh dấu sản phẩm đã yêu thích cho user hiện tại
+        $product->is_favorite = false;
+        if (Auth::check()) {
+            $product->is_favorite = Favorite::where('user_id', Auth::id())
+                ->where('product_id', $product->id)
+                ->exists();
+        }
+
         return view('customer.shop.show', compact(
             'product',
             'variantAttributes',
@@ -450,5 +458,48 @@ class ProductController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Toggle favorite status for a product (AJAX/API)
+     */
+    public function toggleFavorite(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+        ]);
+
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập để sử dụng chức năng này.'], 401);
+        }
+
+        $productId = $request->input('product_id');
+        $favorite = $user->favorites()->where('product_id', $productId)->first();
+        $product = \App\Models\Product::find($productId);
+
+        if ($favorite) {
+            $favorite->delete();
+            $isFavorite = false;
+            // Giảm favorite_count
+            if ($product && $product->favorite_count > 0) {
+                $product->decrement('favorite_count');
+            }
+        } else {
+            $user->favorites()->create(['product_id' => $productId]);
+            $isFavorite = true;
+            // Tăng favorite_count
+            if ($product) {
+                $product->increment('favorite_count');
+            }
+        }
+
+        // Optionally: broadcast event here for real-time update
+        // event(new FavoriteUpdated($user->id, $productId, $isFavorite));
+
+        return response()->json([
+            'success' => true,
+            'is_favorite' => $isFavorite,
+        ]);
     }
 }

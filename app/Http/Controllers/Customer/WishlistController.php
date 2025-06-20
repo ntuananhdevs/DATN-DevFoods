@@ -65,6 +65,11 @@ class WishlistController extends Controller
     public function destroy($id)
     {
         $wishlistItem = WishlistItem::where('user_id', Auth::id())->findOrFail($id);
+        // Giảm favorite_count nếu có
+        $product = $wishlistItem->product;
+        if ($product && $product->favorite_count > 0) {
+            $product->decrement('favorite_count');
+        }
         $wishlistItem->delete();
 
         return response()->json(['message' => 'Đã xóa khỏi danh sách yêu thích'], 200);

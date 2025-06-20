@@ -16,19 +16,67 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
     
-    // Show toast function
+    // Show toast function (custom slide-in right)
     window.showToast = function(message, type = 'info') {
-        if (typeof showNotification === 'function') {
-            const titles = {
-                success: 'Thành công!',
-                error: 'Lỗi!',
-                warning: 'Cảnh báo!', 
-                info: 'Thông báo!'
-            };
-            showNotification(type, titles[type], message);
-        } else {
-            alert(message);
+        // Remove old toast if exists
+        const oldToast = document.querySelector('.custom-toast');
+        if (oldToast) oldToast.remove();
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = 'custom-toast fixed top-8 right-4 z-50 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-toast-in';
+        toast.style.minWidth = '220px';
+        toast.style.maxWidth = '90vw';
+        toast.style.fontSize = '1rem';
+        toast.style.transition = 'transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.3s';
+        toast.style.transform = 'translateX(120%)';
+        toast.style.opacity = '0';
+
+        // Icon
+        const icon = document.createElement('i');
+        icon.className = 'fas';
+        switch(type) {
+            case 'success':
+                toast.classList.add('bg-green-500', 'text-white');
+                icon.classList.add('fa-check-circle');
+                break;
+            case 'error':
+                toast.classList.add('bg-red-500', 'text-white');
+                icon.classList.add('fa-times-circle');
+                break;
+            case 'warning':
+                toast.classList.add('bg-yellow-400', 'text-gray-900');
+                icon.classList.add('fa-exclamation-triangle');
+                break;
+            default:
+                toast.classList.add('bg-gray-800', 'text-white');
+                icon.classList.add('fa-info-circle');
         }
+        icon.style.fontSize = '1.3em';
+        toast.appendChild(icon);
+
+        // Message
+        const msg = document.createElement('span');
+        msg.textContent = message;
+        toast.appendChild(msg);
+
+        // Add to DOM
+        document.body.appendChild(toast);
+
+        // Force reflow for animation
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
+        }, 10);
+
+        // Hide and remove after 2.5s
+        setTimeout(() => {
+            toast.style.transform = 'translateX(120%)';
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 400);
+        }, 2500);
     };
     
     // Product image gallery
@@ -286,6 +334,45 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Initialize
     updatePrice();
+
+    // Favorite button handling
+    const favoriteBtn = document.querySelector('.favorite-btn');
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const productId = this.getAttribute('data-product-id');
+            const icon = this.querySelector('i');
+            if (!productId || !icon) return;
+
+            fetch('/favorite/toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken
+                },
+                body: JSON.stringify({ product_id: productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.is_favorite) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas', 'text-red-500');
+                        showToast('Đã thêm vào yêu thích', 'success');
+                    } else {
+                        icon.classList.remove('fas', 'text-red-500');
+                        icon.classList.add('far');
+                        showToast('Đã xóa khỏi yêu thích', 'info');
+                    }
+                } else {
+                    showToast(data.message || 'Có lỗi xảy ra', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Có lỗi xảy ra khi cập nhật yêu thích', 'error');
+            });
+        });
+    }
 });
 
 // Tab switching functionality

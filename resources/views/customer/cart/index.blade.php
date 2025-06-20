@@ -51,6 +51,44 @@
    .animate-fade-out {
        animation: fadeOut 0.3s ease-out;
    }
+   
+   /* Toast notification styles */
+   .cart-toast {
+       position: fixed;
+       top: 20px;
+       right: 20px;
+       transform: translateX(100%);
+       background: rgba(0, 0, 0, 0.8);
+       color: white;
+       padding: 12px 20px;
+       border-radius: 8px;
+       font-size: 14px;
+       font-weight: 500;
+       z-index: 9999;
+       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+       backdrop-filter: blur(8px);
+       transition: transform 0.3s ease-out;
+   }
+   
+   .cart-toast.show {
+       transform: translateX(0);
+   }
+   
+   .cart-toast.success {
+       background: rgba(34, 197, 94, 0.9);
+   }
+   
+   .cart-toast.error {
+       background: rgba(239, 68, 68, 0.9);
+   }
+   
+   .cart-toast.warning {
+       background: rgba(245, 158, 11, 0.9);
+   }
+   
+   .cart-toast.info {
+       background: rgba(59, 130, 246, 0.9);
+   }
 </style>
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-2">Giỏ Hàng</h1>
@@ -77,7 +115,8 @@
                          data-variant-value-ids="{{ json_encode($item->variant->variantValues->pluck('id')->toArray()) }}"
                          data-variant-adjustment="{{ $item->variant->variantValues->sum('price_adjustment') }}"
                          data-topping-ids="{{ json_encode($item->toppings->pluck('id')->toArray()) }}"
-                         data-topping-price="{{ $item->toppings->sum('price') }}">
+                         data-topping-price="{{ $item->toppings->sum('price') }}"
+                         data-stock-quantity="{{ $item->variant->branchStocks->where('branch_id', $selectedBranchId ?? 1)->first()?->stock_quantity ?? 0 }}">
                         <div class="grid md:grid-cols-12 gap-4 items-center">
                             <div class="md:col-span-6 flex items-center gap-4">
                                 <div class="relative h-20 w-20 flex-shrink-0 rounded overflow-hidden">
@@ -334,7 +373,8 @@
                  data-variant-value-ids="{{ json_encode($item->variant->variantValues->pluck('id')->toArray()) }}"
                  data-variant-adjustment="{{ $item->variant->variantValues->sum('price_adjustment') }}"
                  data-topping-ids="{{ json_encode($item->toppings->pluck('id')->toArray()) }}"
-                 data-topping-price="{{ $item->toppings->sum('price') }}">
+                 data-topping-price="{{ $item->toppings->sum('price') }}"
+                 data-stock-quantity="{{ $item->variant->branchStocks->where('branch_id', $selectedBranchId ?? 1)->first()?->stock_quantity ?? 0 }}">
                 <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
                     @if($item->variant->product->primary_image)
                         <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}" 
