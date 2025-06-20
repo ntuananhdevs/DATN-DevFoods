@@ -43,6 +43,11 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
+    Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
+    
+    // Coupon
+    Route::post('/coupon/apply', [App\Http\Controllers\Customer\CouponController::class, 'apply'])->name('coupon.apply');
 
     // Checkout
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
@@ -88,6 +93,7 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
     Route::put('/profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.password.update');
     Route::patch('/profile/update', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
+    Route::post('/favorite/toggle', [CustomerProductController::class, 'toggleFavorite'])->name('favorite.toggle');
 });
 
 // Phone Required routes (không cần phone.required middleware)

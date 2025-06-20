@@ -224,4 +224,121 @@ class CartController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Update cart item quantity
+     */
+    public function update(Request $request)
+    {
+        try {
+            $request->validate([
+                'cart_item_id' => 'required|exists:cart_items,id',
+                'quantity' => 'required|integer|min:1'
+            ]);
+
+            $userId = Auth::id();
+            $sessionId = session()->getId();
+
+            // Find cart item and ensure it belongs to current user/session
+            $cartItem = CartItem::whereHas('cart', function($query) use ($userId, $sessionId) {
+                $query->where('status', 'active')
+                    ->when($userId, function($q) use ($userId) {
+                        return $q->where('user_id', $userId);
+                    }, function($q) use ($sessionId) {
+                        return $q->where('session_id', $sessionId);
+                    });
+            })->findOrFail($request->cart_item_id);
+
+            // Check stock availability
+            $stock = $cartItem->variant->branchStocks()
+                ->where('branch_id', $cartItem->cart->branch_id ?? 1) // Default branch if not set
+                ->first();
+
+            if (!$stock || $stock->stock_quantity < $request->quantity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Số lượng sản phẩm không đủ'
+                ], 400);
+            }
+
+            // Update quantity
+            $cartItem->update(['quantity' => $request->quantity]);
+
+            // Get updated cart count
+            $cartCount = $cartItem->cart->items()->sum('quantity');
+            session(['cart_count' => $cartCount]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật số lượng thành công',
+                'cart_count' => $cartCount
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Update cart item failed:', [
+                'error' => $e->getMessage(),
+                'cart_item_id' => $request->cart_item_id ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi cập nhật giỏ hàng'
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove item from cart
+     */
+    public function remove(Request $request)
+    {
+        try {
+            $request->validate([
+                'cart_item_id' => 'required|exists:cart_items,id'
+            ]);
+
+            $userId = Auth::id();
+            $sessionId = session()->getId();
+
+            // Find cart item and ensure it belongs to current user/session
+            $cartItem = CartItem::whereHas('cart', function($query) use ($userId, $sessionId) {
+                $query->where('status', 'active')
+                    ->when($userId, function($q) use ($userId) {
+                        return $q->where('user_id', $userId);
+                    }, function($q) use ($sessionId) {
+                        return $q->where('session_id', $sessionId);
+                    });
+            })->findOrFail($request->cart_item_id);
+
+            // Store cart reference before deletion
+            $cart = $cartItem->cart;
+
+            // Remove toppings first
+            $cartItem->toppings()->detach();
+
+            // Delete cart item
+            $cartItem->delete();
+
+            // Get updated cart count
+            $cartCount = $cart->items()->sum('quantity');
+            session(['cart_count' => $cartCount]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sản phẩm đã được xóa khỏi giỏ hàng',
+                'cart_count' => $cartCount
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Remove cart item failed:', [
+                'error' => $e->getMessage(),
+                'cart_item_id' => $request->cart_item_id ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi xóa sản phẩm'
+            ], 500);
+        }
+    }
 }
