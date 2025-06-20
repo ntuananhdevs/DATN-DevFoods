@@ -174,8 +174,6 @@ class DiscountCodeModule {
             containerSelector: '#users_selection .grid',
             countDisplaySelector: '#users_selection .text-xs.text-gray-500'
         });
-        
-        console.log('Rank selection initialized with selector: #users_selection .text-xs.text-gray-500');
     }
     
     // Set up radio button toggle behavior
@@ -219,21 +217,17 @@ class DiscountCodeModule {
             
             if (selectedValue === 'personal') {
                 $('#users_selection').show();
-                console.log('Switching to personal mode, showing users section');
                 
                 // Load user data when showing the section
                 setTimeout(() => {
                     if ($('#users_selection').is(':visible')) {
-                        console.log('Users section is visible, fetching users...');
                         // Try both ways to call fetchUsers
                         try {
                             window.discountCodeModule.users.fetchUsers();
                         } catch (e) {
-                            console.error('Error calling fetchUsers from window.discountCodeModule:', e);
                             try {
                                 fetchUsers();
                             } catch (e2) {
-                                console.error('Error calling fetchUsers directly:', e2);
                             }
                         }
                     }
@@ -405,7 +399,6 @@ class DiscountCodeModule {
         if ($('#usage_type').val() === 'personal' && $('#users_selection').is(':visible')) {
             // Make sure to call fetchUsers with a slight delay to ensure DOM is ready
             setTimeout(() => {
-                console.log('Loading users for personal discount code...');
                 window.discountCodeModule.users.fetchUsers();
             }, 300);
         }

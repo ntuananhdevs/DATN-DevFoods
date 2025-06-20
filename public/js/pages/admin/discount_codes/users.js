@@ -80,28 +80,18 @@ export function initRankSelection(options = {}) {
  * @param {jQuery} $countDisplay - jQuery element for displaying user count
  */
 function fetchUsersByRank($container, $countDisplay) {
-    console.log('fetchUsersByRank called');
-    console.log('Container:', $container);
-    console.log('Count display:', $countDisplay);
-    
     // If count display not found, try to find it again
     if (!$countDisplay || !$countDisplay.length) {
-        console.log('Count display not found, trying to find it again');
         $countDisplay = $('#users_selection .text-xs.text-gray-500');
-        console.log('New count display:', $countDisplay);
     }
     
     // Get all selected ranks
     const selectedRanks = [];
     const rankCheckboxes = $('input[name="applicable_ranks[]"]:checked');
     
-    console.log('Selected rank checkboxes:', rankCheckboxes.length);
-    
     rankCheckboxes.each(function() {
         selectedRanks.push($(this).val());
     });
-    
-    console.log('Selected ranks:', selectedRanks);
     
     // Show loading indicator
     $container.html(`
@@ -145,9 +135,6 @@ function fetchUsersByRank($container, $countDisplay) {
         ranks: selectedRanks,
         discount_code_id: discountCodeId
     };
-    
-    console.log('AJAX request data:', requestData);
-    console.log('CSRF token:', csrfToken);
     
     $.ajax({
         url: "/admin/discount_codes/get-users-by-rank",
@@ -209,7 +196,6 @@ function fetchUsersByRank($container, $countDisplay) {
                     });
                 }
             } else {
-                console.error('Error fetching users:', data.message);
                 $container.html(`
                     <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
                         <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
@@ -272,10 +258,7 @@ export function toggleRankExclusivity(isExclusive) {
  * Export the fetchUsersByRank function for external use
  */
 export function fetchUsers() {
-    console.log('Fetching users...');
     const $container = $('#users_selection .grid');
     const $countDisplay = $('#users_selection .text-xs.text-gray-500');
-    console.log('Container in fetchUsers:', $container.length ? 'found' : 'not found');
-    console.log('Count display in fetchUsers:', $countDisplay.length ? 'found' : 'not found');
     fetchUsersByRank($container, $countDisplay);
 } 

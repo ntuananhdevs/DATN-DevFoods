@@ -1010,10 +1010,9 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="module" src="{{ asset('js/pages/admin/discount_codes/initEdit.js') }}"></script>
 
-    <!-- Add hidden elements to store selected IDs -->
     <script id="selected_products_data" type="application/json">
         @json($selectedProducts)
-</script>
+    </script>
     <script id="selected_categories_data" type="application/json">
         @json($selectedCategories)
     </script>
@@ -1026,6 +1025,5 @@
     <script id="selected_users_data" type="application/json">
         @json($discountCode->users->pluck('user_id')->toArray())
     </script>
-    <!-- Hidden input for discount code ID -->
     <input type="hidden" name="discount_code_id" value="{{ $discountCode->id }}">
 @endsection
