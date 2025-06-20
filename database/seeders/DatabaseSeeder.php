@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             DiscountCodeProductSeeder::class,
             DiscountUsageHistorySeeder::class,
             UserRankHistorySeeder::class,
+            DriverOrderSeeder::class,
         ]);
     }
 }
