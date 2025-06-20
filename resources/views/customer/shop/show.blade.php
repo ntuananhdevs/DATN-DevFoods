@@ -83,6 +83,100 @@
         color: #f97316 !important;
         font-weight: bold;
     }
+    
+    /* Variant price update animation */
+    @keyframes variantPriceUpdate {
+        0% { 
+            opacity: 1; 
+            background-color: rgba(249, 115, 22, 0.1);
+            border-color: #f97316;
+        }
+        50% { 
+            opacity: 0.8; 
+            background-color: rgba(249, 115, 22, 0.2);
+            border-color: #ea580c;
+        }
+        100% { 
+            opacity: 1; 
+            background-color: rgba(249, 115, 22, 0.1);
+            border-color: #f97316;
+        }
+    }
+    
+    .variant-price-updated {
+        animation: variantPriceUpdate 2s ease-in-out;
+    }
+    
+    .topping-price-updated {
+        animation: toppingPriceUpdate 2s ease-in-out;
+    }
+    
+    /* Variant operation animations */
+    @keyframes variantCreated {
+        0% { 
+            opacity: 0; 
+            transform: scale(0.8);
+            background-color: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+        }
+        50% { 
+            opacity: 0.8; 
+            transform: scale(1.05);
+            background-color: rgba(34, 197, 94, 0.2);
+            border-color: #16a34a;
+        }
+        100% { 
+            opacity: 1; 
+            transform: scale(1);
+            background-color: transparent;
+            border-color: #d1d5db;
+        }
+    }
+    
+    @keyframes variantUpdated {
+        0% { 
+            opacity: 1; 
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        50% { 
+            opacity: 0.8; 
+            background-color: rgba(59, 130, 246, 0.2);
+            border-color: #2563eb;
+        }
+        100% { 
+            opacity: 1; 
+            background-color: transparent;
+            border-color: #d1d5db;
+        }
+    }
+    
+    @keyframes variantDeleted {
+        0% { 
+            opacity: 1; 
+            transform: scale(1);
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+        }
+        100% { 
+            opacity: 0; 
+            transform: scale(0.8);
+            background-color: rgba(239, 68, 68, 0.2);
+            border-color: #dc2626;
+        }
+    }
+    
+    .variant-created {
+        animation: variantCreated 2s ease-out;
+    }
+    
+    .variant-updated {
+        animation: variantUpdated 2s ease-out;
+    }
+    
+    .variant-deleted {
+        animation: variantDeleted 0.5s ease-out;
+    }
 </style>
 <div class="container mx-auto px-4 py-8">
     <!-- Product Info Section -->
@@ -130,6 +224,30 @@
                     <div class="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-md border border-orange-200 animate-fade-in">
                         <i class="fas fa-info-circle"></i>
                         <span>Giá sản phẩm vừa được cập nhật</span>
+                    </div>
+                </div>
+                
+                <!-- Variant Price Update Notification -->
+                <div id="variant-price-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-200 animate-fade-in">
+                        <i class="fas fa-tags"></i>
+                        <span>Giá biến thể vừa được cập nhật</span>
+                    </div>
+                </div>
+                
+                <!-- Topping Price Update Notification -->
+                <div id="topping-price-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-purple-600 bg-purple-50 px-3 py-2 rounded-md border border-purple-200 animate-fade-in">
+                        <i class="fas fa-utensils"></i>
+                        <span>Giá topping vừa được cập nhật</span>
+                    </div>
+                </div>
+                
+                <!-- Variant Update Notification -->
+                <div id="variant-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-200 animate-fade-in">
+                        <i class="fas fa-tags"></i>
+                        <span>Biến thể đã được cập nhật</span>
                     </div>
                 </div>
             </div>

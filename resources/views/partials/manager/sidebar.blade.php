@@ -87,7 +87,7 @@
 
                 <!-- Products -->
                 <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Menu Management">
-                    <button type="button" class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.combo.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                    <button type="button" class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.combos.*') || request()->routeIs('admin.toppings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag">
                                 <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -104,10 +104,11 @@
                         <a href="{{ route('admin.products.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Món ăn</span>
                         </a>
-
-                        <a href="{{ ('admin.combo.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.combo.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
-
+                        <a href="{{ route('admin.combos.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.combos.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                             <span class="sidebar-text">Combo</span>
+                        </a>
+                        <a href="{{ route('admin.toppings.index') }}" class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.toppings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Topping</span>
                         </a>
                     </div>
                 </div>

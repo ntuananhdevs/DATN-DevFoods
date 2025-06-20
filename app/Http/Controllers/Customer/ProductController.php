@@ -451,6 +451,14 @@ class ProductController extends Controller
         // Always get all active branches for the modal to display all options
         $branches = Branch::where('active', true)->get();
 
+        // Đánh dấu sản phẩm đã yêu thích cho user hiện tại
+        $product->is_favorite = false;
+        if (Auth::check()) {
+            $product->is_favorite = Favorite::where('user_id', Auth::id())
+                ->where('product_id', $product->id)
+                ->exists();
+        }
+
         return view('customer.shop.show', compact(
             'product',
             'variantAttributes',
@@ -482,70 +490,47 @@ class ProductController extends Controller
     {
         //
     }
-    
+
     /**
-     * Display all discount codes for a product (for debugging)
+     * Toggle favorite status for a product (AJAX/API)
      */
-    public function showProductDiscounts($productId)
+    public function toggleFavorite(Request $request)
     {
-        $product = Product::findOrFail($productId);
-        $now = Carbon::now();
-        
-        // Get all active discount codes
-        $allDiscountCodes = DiscountCode::where('is_active', true)
-            ->where('start_date', '<=', $now)
-            ->where('end_date', '>=', $now)
-            ->with(['products' => function($query) {
-                $query->with(['product', 'category']);
-            }])
-            ->get();
-            
-        // Filter public codes
-        $publicCodes = $allDiscountCodes->where('usage_type', 'public');
-        
-        // Filter codes applicable to this product
-        $applicableCodes = $allDiscountCodes->filter(function($discountCode) use ($product) {
-            // Check global applicability
-            if ($discountCode->applicable_scope === 'all_branches' || $discountCode->applicable_items === 'all_items') {
-                return true;
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+        ]);
+
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập để sử dụng chức năng này.'], 401);
+        }
+
+        $productId = $request->input('product_id');
+        $favorite = $user->favorites()->where('product_id', $productId)->first();
+        $product = \App\Models\Product::find($productId);
+
+        if ($favorite) {
+            $favorite->delete();
+            $isFavorite = false;
+            // Giảm favorite_count
+            if ($product && $product->favorite_count > 0) {
+                $product->decrement('favorite_count');
             }
-            
-            // Check specific applicability
-            return $discountCode->products->contains(function($discountProduct) use ($product) {
-                return $discountProduct->product_id === $product->id || 
-                       $discountProduct->category_id === $product->category_id;
-            });
-        });
-        
+        } else {
+            $user->favorites()->create(['product_id' => $productId]);
+            $isFavorite = true;
+            // Tăng favorite_count
+            if ($product) {
+                $product->increment('favorite_count');
+            }
+        }
+
+        // Optionally: broadcast event here for real-time update
+        // event(new FavoriteUpdated($user->id, $productId, $isFavorite));
+
         return response()->json([
-            'product' => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'category_id' => $product->category_id
-            ],
-            'all_active_codes_count' => $allDiscountCodes->count(),
-            'public_codes_count' => $publicCodes->count(),
-            'applicable_codes_count' => $applicableCodes->count(),
-            'public_codes' => $publicCodes->map(function($code) {
-                return [
-                    'id' => $code->id,
-                    'code' => $code->code,
-                    'name' => $code->name,
-                    'usage_type' => $code->usage_type,
-                    'applicable_scope' => $code->applicable_scope,
-                    'applicable_items' => $code->applicable_items
-                ];
-            }),
-            'applicable_codes' => $applicableCodes->map(function($code) {
-                return [
-                    'id' => $code->id,
-                    'code' => $code->code,
-                    'name' => $code->name,
-                    'usage_type' => $code->usage_type,
-                    'applicable_scope' => $code->applicable_scope,
-                    'applicable_items' => $code->applicable_items
-                ];
-            })
+            'success' => true,
+            'is_favorite' => $isFavorite,
         ]);
     }
 }

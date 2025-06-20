@@ -58,13 +58,16 @@ class FastFoodSeeder extends Seeder
                 'ice' => ['Đá viên'],
                 'additives' => ['Đường', 'Chanh tươi'],
             ],
+            'Combo' => [
+                'components' => ['Món chính', 'Món phụ', 'Đồ uống'],
+                'benefits' => ['Tiết kiệm chi phí', 'Đa dạng hương vị', 'Phù hợp chia sẻ'],
+            ],
         ];
 
         foreach ($commonIngredients as $category => $ingredients) {
             if (str_contains($productName, $category)) {
                 $specificIngredients = [];
                 
-                // Thêm nguyên liệu đặc biệt dựa trên tên sản phẩm
                 if (str_contains($productName, 'Bò')) {
                     $specificIngredients['meat'] = ['Thịt bò Úc', 'Thịt bò xay'];
                 }
@@ -94,7 +97,6 @@ class FastFoodSeeder extends Seeder
             }
         }
 
-        // Đồ uống đặc biệt
         if (str_contains($productName, 'Trà')) {
             return [
                 'base' => ['Trà', 'Nước'],
@@ -121,17 +123,60 @@ class FastFoodSeeder extends Seeder
             ];
         }
 
-        // Mặc định cho các đồ uống có ga
         return [
             'base' => ['Nước có ga'],
             'additives' => ['Đường', 'Đá viên']
         ];
     }
 
+    private function generateSku($category)
+    {
+        static $counters = [];
+        
+        // Mapping Vietnamese category names to safe English abbreviations
+        $categoryMapping = [
+            'Burger' => 'BUR',
+            'Pizza' => 'PIZ',
+            'Gà Rán' => 'CHI',
+            'Cơm' => 'RIC',
+            'Mì' => 'NOO',
+            'Đồ Uống' => 'DRI',
+            'Combo' => 'COM'
+        ];
+        
+        $shortName = $categoryMapping[$category->name] ?? strtoupper(substr($category->name, 0, 3));
+        
+        // Initialize counter for this category if not exists
+        if (!isset($counters[$shortName])) {
+            $counters[$shortName] = 1;
+        } else {
+            $counters[$shortName]++;
+        }
+        
+        $timestamp = now()->format('ymd');
+        $counter = str_pad($counters[$shortName], 3, '0', STR_PAD_LEFT);
+        
+        return $shortName . $timestamp . $counter;
+    }
+
+    private function generateCombinations($arrays)
+    {
+        $result = [[]];
+        foreach ($arrays as $property => $property_values) {
+            $tmp = [];
+            foreach ($result as $result_item) {
+                foreach ($property_values as $property_value) {
+                    $tmp[] = array_merge($result_item, [$property_value]);
+                }
+            }
+            $result = $tmp;
+        }
+        return $result;
+    }
+
     public function run(): void
     {
         try {
-            // Make sure we have the necessary dependencies
             if (!class_exists(\App\Models\Driver::class)) {
                 echo "Error: Driver model not found. Make sure it exists before running this seeder.\n";
                 return;
@@ -210,24 +255,34 @@ class FastFoodSeeder extends Seeder
                         'Cà Phê Sữa', 'Sinh Tố Dâu', 'Sinh Tố Bơ', 'Nước Cam',
                         'Nước Ép Táo', 'Trà Sữa', 'Matcha Đá Xay'
                     ]
+                ],
+                [
+                    'name' => 'Combo',
+                    'description' => 'Combo tiết kiệm với nhiều món ăn hấp dẫn',
+                    'image' => 'categories/combo.jpg',
+                    'status' => true,
+                    'products' => [
+                        'Combo Burger Bò Phô Mai', 'Combo Gà Rán Gia Đình', 'Combo Pizza Hải Sản',
+                        'Combo Mì Ý Đặc Biệt', 'Combo Cơm Sườn BBQ', 'Combo Burger Gà Giòn',
+                        'Combo Pizza Thập Cẩm', 'Combo Gà BBQ Deluxe', 'Combo Burger Bò 2 Lớp',
+                        'Combo Hải Sản Cao Cấp', 'Combo Gia Đình Vui Vẻ', 'Combo Tiệc Nhỏ',
+                        'Combo Cặp Đôi', 'Combo Học Sinh', 'Combo Văn Phòng'
+                    ]
                 ]
             ];
 
-            // Create drivers if needed
             if (\App\Models\Driver::count() === 0) {
                 echo "No drivers found. Creating drivers...\n";
                 \App\Models\Driver::factory(10)->create();
                 echo "Created 10 drivers.\n";
             }
 
-            // Create users if needed
             if (User::count() === 0) {
                 echo "No users found. Creating users...\n";
                 User::factory(20)->create();
                 echo "Created 20 users.\n";
             }
 
-            // Create branches if needed
             if (Branch::count() === 0) {
                 echo "No branches found. Creating branches...\n";
                 Branch::factory(5)->create();
@@ -239,42 +294,48 @@ class FastFoodSeeder extends Seeder
                 $products = $categoryData['products'];
                 unset($categoryData['products']);
                 
-                // Tạo category và lấy short_name từ model
                 $category = new Category($categoryData);
                 $shortName = $category->getShortNameAttribute();
                 $category->save();
                 echo "Created category: {$category->name} with short name: {$shortName}\n";
 
-                // Tạo products cho category
                 foreach ($products as $productName) {
+                    // Xác định giá và thời gian chuẩn bị dựa trên loại sản phẩm
+                    if ($category->name === 'Combo') {
+                        $basePrice = rand(80000, 450000); // Combo có giá cao hơn
+                        $preparationTime = rand(15, 45); // Combo cần thời gian chuẩn bị lâu hơn
+                        $description = "Combo tiết kiệm {$productName} bao gồm nhiều món ăn ngon và đồ uống";
+                        $shortDescription = "Combo {$productName} - Tiết kiệm và ngon miệng";
+                    } else {
+                        $basePrice = rand(30000, 200000);
+                        $preparationTime = rand(10, 30);
+                        $description = "Đây là món {$productName} ngon tuyệt";
+                        $shortDescription = "Món {$productName} đặc biệt";
+                    }
+                    
                     $product = Product::create([
                         'category_id' => $category->id,
                         'name' => $productName,
                         'sku' => $this->generateSku($category),
-                        'description' => "Đây là món {$productName} ngon tuyệt",
-                        'short_description' => "Món {$productName} đặc biệt",
-                        'base_price' => rand(30000, 200000),
-                        'preparation_time' => rand(10, 30),
+                        'description' => $description,
+                        'short_description' => $shortDescription,
+                        'base_price' => $basePrice,
+                        'preparation_time' => $preparationTime,
                         'ingredients' => json_encode($this->getIngredients($productName)),
                         'status' => 'selling',
                         'is_featured' => rand(0, 1) === 1
                     ]);
                     echo "Created product: {$product->name}\n";
-                    
                 }
             }
 
-            // Giảm số lượng variant để tránh tạo quá nhiều tổ hợp
-            // Chỉ sử dụng 2 thuộc tính với 2 giá trị mỗi cái = 2×2 = 4 variant mỗi sản phẩm
             $variantAttributesData = [
                 'Kích thước' => ['Nhỏ', 'Lớn'],
                 'Đường' => ['Ít đường', 'Nhiều đường']
             ];
-            
 
             $variantAttributes = [];
             foreach ($variantAttributesData as $variantName => $values) {
-                // Tìm VariantAttribute đã có thay vì tạo mới
                 $attribute = VariantAttribute::where('name', $variantName)->first();
                 if (!$attribute) {
                     echo "Warning: VariantAttribute '{$variantName}' not found. Creating new one.\n";
@@ -287,11 +348,9 @@ class FastFoodSeeder extends Seeder
                 ];
             }
 
-            // Tạo variants cho mỗi product với VariantValue riêng biệt
             $products = Product::all();
 
             foreach ($products as $product) {
-                // Tạo VariantValue riêng cho từng sản phẩm
                 $productVariantValues = [];
                 
                 foreach ($variantAttributes as $attributeName => $attributeData) {
@@ -301,7 +360,6 @@ class FastFoodSeeder extends Seeder
                     $productVariantValues[$attributeName] = [];
                     
                     foreach ($values as $value) {
-                        // Tạo VariantValue riêng cho từng sản phẩm
                         $variantValue = VariantValue::create([
                             'variant_attribute_id' => $attribute->id,
                             'value' => $value,
@@ -313,18 +371,15 @@ class FastFoodSeeder extends Seeder
                     }
                 }
 
-                // Tạo tất cả các tổ hợp có thể có của variant values cho sản phẩm này
                 $attributeValueIds = array_values($productVariantValues);
                 $combinations = $this->generateCombinations($attributeValueIds);
 
-                // Tạo variant cho mỗi tổ hợp
                 foreach ($combinations as $combination) {
                     $variant = ProductVariant::create([
                         'product_id' => $product->id,
                         'active' => true
                     ]);
 
-                    // Thêm variant values cho variant này
                     foreach ($combination as $valueId) {
                         ProductVariantDetail::create([
                             'product_variant_id' => $variant->id,
@@ -334,38 +389,11 @@ class FastFoodSeeder extends Seeder
                 }
             }
 
-            // Tạo branch stocks riêng biệt
-            $this->createBranchStocks();
-
-            // Tạo toppings
             $this->createToppings();
-            
-            // Tạo product-topping relationships
             $this->createProductToppings();
-
-            // Tạo combos
-            $combos = Combo::factory(10)->create();
-
-            // Tạo combo items
-            foreach ($combos as $combo) {
-                $products = Product::inRandomOrder()->take(rand(2, 4))->get();
-                foreach ($products as $product) {
-                    // Lấy ngẫu nhiên một biến thể của sản phẩm
-                    $variant = $product->variants()->inRandomOrder()->first();
-                    if ($variant) {
-                        ComboItem::create([
-                            'combo_id' => $combo->id,
-                            'product_variant_id' => $variant->id,
-                            'quantity' => rand(1, 3)
-                        ]);
-                    }
-                }
-            }
-
-            // Tạo orders trước
+            $this->createCombos();
+            $this->createBranchStocks();
             $this->createOrders();
-            
-            // Sau đó mới tạo reviews
             $this->createProductReviews();
 
         } catch (\Exception $e) {
@@ -374,509 +402,284 @@ class FastFoodSeeder extends Seeder
         }
     }
     
-    
-    /**
-     * Tạo toppings
-     */
     private function createToppings()
     {
         $toppings = [
-            ['name' => 'Phô Mai Thêm', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1588182728399-a9273235952e?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Thịt Bò Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1603048297172-887328d32e4c?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Thịt Gà Thêm', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1604503468611-191e5b7db3c3?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Bacon', 'price' => 18000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1607016291804-9ab1a12177d3?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Trứng Ốp La', 'price' => 12000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1607103058027-e52cc835f543?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Xà Lách Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1567375698949-27c696aad9f5?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Cà Chua Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Hành Tây Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1580201092675-a0a6a6cafbb1?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Dưa Chuột Thêm', 'price' => 5000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1589621316382-008455b857cd?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Sốt BBQ', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1608651761952-5fdb50ce714c?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Sốt Cay', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1563277552-c7661389502a?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Sốt Mayonnaise', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1554587314-58faae85893e?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Sốt Tỏi', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1594114585641-235ac2abb933?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Nấm Thêm', 'price' => 10000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1555126634-323283e090fa?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Ớt Jalapeño', 'price' => 7000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1563433571751-a4d8e8379aae?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Tôm Thêm', 'price' => 30000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1615666874133-8c93e3d95bcb?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Mực Thêm', 'price' => 25000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1545650029-1c48e347e866?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Xúc Xích', 'price' => 15000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1599900554076-d814055f36e7?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Pepperoni', 'price' => 20000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1627626775846-122b778965ae?q=80&w=1000&auto=format&fit=crop'],
-            ['name' => 'Dứa Thêm', 'price' => 8000, 'active' => true, 'image_url' => 'https://images.unsplash.com/photo-1550258987-190a2d41a8ba?q=80&w=1000&auto=format&fit=crop'],
+            ['name' => 'Phô Mai Thêm', 'price' => 15000, 'active' => true],
+            ['name' => 'Thịt Bò Thêm', 'price' => 25000, 'active' => true],
+            ['name' => 'Thịt Gà Thêm', 'price' => 20000, 'active' => true],
+            ['name' => 'Bacon', 'price' => 18000, 'active' => true],
+            ['name' => 'Trứng Ốp La', 'price' => 12000, 'active' => true],
+            ['name' => 'Xà Lách Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Cà Chua Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Hành Tây Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Dưa Chuột Thêm', 'price' => 5000, 'active' => true],
+            ['name' => 'Sốt BBQ', 'price' => 8000, 'active' => true],
+            ['name' => 'Sốt Cay', 'price' => 8000, 'active' => true],
+            ['name' => 'Sốt Mayonnaise', 'price' => 8000, 'active' => true],
+            ['name' => 'Sốt Tỏi', 'price' => 8000, 'active' => true],
+            ['name' => 'Nấm Thêm', 'price' => 10000, 'active' => true],
+            ['name' => 'Ớt Jalapeño', 'price' => 7000, 'active' => true],
+            ['name' => 'Tôm Thêm', 'price' => 30000, 'active' => true],
+            ['name' => 'Mực Thêm', 'price' => 25000, 'active' => true],
+            ['name' => 'Xúc Xích', 'price' => 15000, 'active' => true],
+            ['name' => 'Pepperoni', 'price' => 20000, 'active' => true],
+            ['name' => 'Ớt Chuông', 'price' => 6000, 'active' => true]
         ];
-        
-        // Lấy tất cả chi nhánh
-        $branches = Branch::all();
-        
-        if ($branches->isEmpty()) {
-            echo "Cannot create topping stocks: No branches found\n";
-            return;
-        }
-        
+
         foreach ($toppings as $toppingData) {
-            try {
-                // Generate unique filename
-                $filename = Str::uuid() . '.jpg';
-                $path = "toppings/{$filename}";
-                
-                // Download image contents
-                $imageContents = file_get_contents($toppingData['image_url']);
-                
-                if ($imageContents) {
-                    // Upload to S3
-                    Storage::disk('s3')->put($path, $imageContents);
-                    
-                    $topping = Topping::create([
-                        'name' => $toppingData['name'],
-                        'price' => $toppingData['price'],
-                        'active' => $toppingData['active'],
-                        'image' => $path
-                    ]);
-                    
-                    echo "Created topping: {$topping->name} with image from {$toppingData['image_url']}\n";
-                    
-                    // Tạo topping_stocks cho mỗi chi nhánh
-                    foreach ($branches as $branch) {
-                        $stockQuantity = rand(0, 100); // Số lượng ngẫu nhiên từ 0-100
-                        
-                        DB::table('topping_stocks')->insert([
-                            'branch_id' => $branch->id,
-                            'topping_id' => $topping->id,
-                            'stock_quantity' => $stockQuantity,
-                            'created_at' => now(),
-                            'updated_at' => now()
-                        ]);
-                        
-                        echo "Created topping stock for {$topping->name} at branch {$branch->name}: {$stockQuantity} items\n";
-                    }
-                }
-            } catch (\Exception $e) {
-                echo "Error creating topping {$toppingData['name']}: {$e->getMessage()}\n";
-                
-                // Fallback to a generated slug if image download fails
-                $imagePath = "toppings/" . Str::slug($toppingData['name']) . ".jpg";
-                
-                $topping = Topping::create([
-                    'name' => $toppingData['name'],
-                    'price' => $toppingData['price'],
-                    'active' => $toppingData['active'],
-                    'image' => $imagePath
-                ]);
-                
-                echo "Created topping: {$topping->name} with fallback image\n";
-                
-                // Tạo topping_stocks cho mỗi chi nhánh ngay cả khi image fail
-                foreach ($branches as $branch) {
-                    $stockQuantity = rand(0, 100);
-                    
-                    DB::table('topping_stocks')->insert([
-                        'branch_id' => $branch->id,
-                        'topping_id' => $topping->id,
-                        'stock_quantity' => $stockQuantity,
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-                    
-                    echo "Created topping stock for {$topping->name} at branch {$branch->name}: {$stockQuantity} items\n";
-                }
-            }
+            Topping::create($toppingData);
+            echo "Created topping: {$toppingData['name']}\n";
         }
     }
-    
-    /**
-     * Tạo mối quan hệ product-topping
-     */
+
     private function createProductToppings()
     {
         $products = Product::all();
         $toppings = Topping::all();
-        
-        if ($products->isEmpty()) {
-            echo "Cannot create product-topping relationships: No products found\n";
-            return;
-        }
-        
-        if ($toppings->isEmpty()) {
-            echo "Cannot create product-topping relationships: No toppings found\n";
-            return;
-        }
-        
+
         foreach ($products as $product) {
-            // Mỗi sản phẩm có 3-8 toppings ngẫu nhiên
-            $toppingCount = min(rand(3, 8), $toppings->count());
-            $productToppings = $toppings->random($toppingCount);
-            
-            foreach ($productToppings as $topping) {
+            $randomToppings = $toppings->random(rand(3, 8));
+            foreach ($randomToppings as $topping) {
                 ProductTopping::create([
                     'product_id' => $product->id,
                     'topping_id' => $topping->id
                 ]);
             }
-            
-            echo "Created toppings for product: {$product->name}\n";
         }
+        echo "Created product-topping relationships\n";
     }
-    
-    
 
-    // Move the helper function outside of run() method
-    private function generateCombinations($arrays) {
-        $result = [[]];
-        foreach ($arrays as $array) {
-            $tmp = [];
-            foreach ($result as $combination) {
-                foreach ($array as $value) {
-                    $tmp[] = array_merge($combination, [$value]);
+    private function createCombos()
+    {
+        $comboData = [
+            [
+                'name' => 'Combo Burger Bò Phô Mai',
+                'description' => 'Burger Bò Phô Mai + Khoai Tây Chiên + Coca Cola',
+                'price' => 120000,
+                'active' => true,
+                'products' => ['Burger Bò Phô Mai', 'Coca Cola']
+            ],
+            [
+                'name' => 'Combo Gà Rán Gia Đình',
+                'description' => '8 miếng Gà Rán + 2 Cơm + 2 Pepsi',
+                'price' => 350000,
+                'active' => true,
+                'products' => ['Gà Rán Giòn', 'Cơm Gà Rán', 'Pepsi']
+            ],
+            [
+                'name' => 'Combo Pizza Hải Sản',
+                'description' => 'Pizza Hải Sản size L + 2 Trà Đào',
+                'price' => 280000,
+                'active' => true,
+                'products' => ['Pizza Hải Sản', 'Trà Đào']
+            ],
+            [
+                'name' => 'Combo Mì Ý Đặc Biệt',
+                'description' => 'Mì Ý Sốt Bò + Gà Rán + Sinh Tố Dâu',
+                'price' => 180000,
+                'active' => true,
+                'products' => ['Mì Ý Sốt Bò', 'Gà Rán Giòn', 'Sinh Tố Dâu']
+            ],
+            [
+                'name' => 'Combo Cơm Sườn BBQ',
+                'description' => 'Cơm Sườn BBQ + Trà Chanh + Bánh Ngọt',
+                'price' => 150000,
+                'active' => true,
+                'products' => ['Cơm Sườn BBQ', 'Trà Chanh']
+            ],
+            [
+                'name' => 'Combo Burger Gà Giòn',
+                'description' => 'Burger Gà Giòn + Khoai Tây + 7 Up',
+                'price' => 110000,
+                'active' => true,
+                'products' => ['Burger Gà Giòn', '7 Up']
+            ],
+            [
+                'name' => 'Combo Pizza Thập Cẩm',
+                'description' => 'Pizza Thập Cẩm + 2 Cà Phê Sữa',
+                'price' => 250000,
+                'active' => true,
+                'products' => ['Pizza Thập Cẩm', 'Cà Phê Sữa']
+            ],
+            [
+                'name' => 'Combo Gà BBQ Deluxe',
+                'description' => 'Gà Sốt BBQ + Cơm + Mì Ý + Fanta',
+                 'price' => 220000,
+                'active' => true,
+                'products' => ['Gà Sốt BBQ', 'Cơm Gà Rán', 'Mì Ý Sốt Cà Chua', 'Fanta']
+            ],
+            [
+                'name' => 'Combo Burger Bò 2 Lớp',
+                'description' => 'Burger Bò 2 Lớp + Gà Rán + Trà Sữa',
+                'price' => 190000,
+                'active' => true,
+                'products' => ['Burger Bò 2 Lớp', 'Gà Rán Original', 'Trà Sữa']
+            ],
+            [
+                'name' => 'Combo Hải Sản Cao Cấp',
+                'description' => 'Pizza Hải Sản Cao Cấp + Mì Ý Hải Sản + 2 Sinh Tố Bơ',
+                'price' => 450000,
+                'active' => true,
+                'products' => ['Pizza Hải Sản Cao Cấp', 'Mì Ý Hải Sản', 'Sinh Tố Bơ']
+            ],
+            [
+                'name' => 'Combo Gia Đình Vui Vẻ',
+                'description' => '2 Burger + 2 Gà Rán + 2 Cơm + 4 Đồ Uống',
+                'price' => 380000,
+                'active' => true,
+                'products' => ['Burger Bò Phô Mai', 'Burger Gà Giòn', 'Gà Rán Giòn', 'Cơm Gà Rán', 'Coca Cola', 'Pepsi']
+            ],
+            [
+                'name' => 'Combo Tiệc Nhỏ',
+                'description' => 'Pizza 5 Loại Thịt + 6 Gà Rán + 3 Đồ Uống',
+                'price' => 420000,
+                'active' => true,
+                'products' => ['Pizza 5 Loại Thịt', 'Gà Rán Giòn', 'Coca Cola', 'Pepsi', '7 Up']
+            ],
+            [
+                'name' => 'Combo Cặp Đôi',
+                'description' => '2 Burger + 2 Mì Ý + 2 Sinh Tố',
+                'price' => 240000,
+                'active' => true,
+                'products' => ['Burger Bò Teriyaki', 'Burger Gà Phô Mai', 'Mì Ý Carbonara', 'Sinh Tố Dâu', 'Sinh Tố Bơ']
+            ],
+            [
+                'name' => 'Combo Học Sinh',
+                'description' => 'Burger + Gà Rán + Đồ Uống (Giá ưu đãi)',
+                'price' => 85000,
+                'active' => true,
+                'products' => ['Burger Phô Mai', 'Gà Rán Original', 'Coca Cola']
+            ],
+            [
+                'name' => 'Combo Văn Phòng',
+                'description' => 'Cơm + Gà + Trà (Giao nhanh trong giờ)',
+                'price' => 95000,
+                'active' => true,
+                'products' => ['Cơm Gà Teriyaki', 'Gà Rán Không Cay', 'Trà Chanh']
+            ]
+        ];
+
+        foreach ($comboData as $data) {
+            try {
+                $productNames = $data['products'];
+                unset($data['products']);
+                
+                $combo = Combo::create($data);
+                echo "Created combo: {$combo->name}\n";
+
+                foreach ($productNames as $productName) {
+                    $product = Product::where('name', $productName)->first();
+                    if ($product) {
+                        $variant = $product->variants()->inRandomOrder()->first();
+                        if ($variant) {
+                            ComboItem::create([
+                                'combo_id' => $combo->id,
+                                'product_variant_id' => $variant->id,
+                                'quantity' => rand(1, 2)
+                            ]);
+                        } else {
+                            echo "Warning: No variant found for product {$productName}\n";
+                        }
+                    } else {
+                        echo "Warning: Product {$productName} not found\n";
+                    }
                 }
+            } catch (\Exception $e) {
+                echo "Error creating combo: " . $e->getMessage() . "\n";
             }
-            $result = $tmp;
-        }
-        return $result;
-    }
-
-    /**
-     * Lấy review ngẫu nhiên với nội dung chi tiết
-     */
-    private function getRandomReview()
-    {
-        $positivePoints = [
-            "hương vị tuyệt vời, đậm đà",
-            "phục vụ chuyên nghiệp, nhanh chóng",
-            "đóng gói cẩn thận, sạch sẽ",
-            "giao hàng đúng giờ, shipper thân thiện",
-            "giá cả phải chăng cho chất lượng này",
-            "phần ăn đầy đặn, nhiều nhân",
-            "nguyên liệu tươi ngon, chọn lọc kỹ",
-            "chất lượng ổn định qua nhiều lần order",
-            "nhân viên nhiệt tình, chu đáo",
-            "đồ ăn nóng hổi khi nhận được"
-        ];
-
-        $negativePoints = [
-            "vị có thể đậm đà hơn một chút",
-            "thời gian chờ hơi lâu vào giờ cao điểm",
-            "giá hơi cao so với portion size",
-            "phần ăn có thể nhiều hơn một chút",
-            "bao bì đóng gói cần cải thiện thêm",
-            "nước chấm hơi ít so với khẩu phần",
-            "đồ ăn hơi nguội khi giao đến",
-            "rau củ garnish có thể tươi hơn",
-            "vị có thể đa dạng hơn",
-            "nên có thêm option về độ cay"
-        ];
-
-        $openings = [
-            "Đây là một trong những món tôi thích nhất ở đây vì",
-            "Tôi đã thử nhiều nơi nhưng vẫn thích ở đây nhất bởi",
-            "Điểm khiến tôi ấn tượng với món này là",
-            "Sau nhiều lần order, tôi vẫn đánh giá cao vì",
-            "Món này luôn là lựa chọn hàng đầu của tôi bởi",
-            "Tôi rất hài lòng với chất lượng món này vì",
-            "Điều làm tôi thích thú với món này là",
-            "Tôi thường xuyên đặt món này vì",
-            "Món ăn để lại ấn tượng tốt nhờ",
-            "Tôi đánh giá rất cao món này vì"
-        ];
-
-        // Tạo review chi tiết
-        $review = $openings[array_rand($openings)] . " " . 
-                 $positivePoints[array_rand($positivePoints)] . ". ";
-
-        // 40% chance để thêm một điểm tích cực khác
-        if (rand(1, 100) <= 40) {
-            $review .= "Không chỉ vậy, " . 
-                      $positivePoints[array_rand($positivePoints)] . ". ";
-        }
-
-        // 30% chance để thêm góp ý cải thiện
-        if (rand(1, 100) <= 30) {
-            $suggestions = [
-                "Tuy nhiên, ",
-                "Điểm cần cải thiện là ",
-                "Góp ý nhỏ là ",
-                "Mong rằng ",
-                "Hy vọng lần sau "
-            ];
-            $review .= $suggestions[array_rand($suggestions)] . 
-                      $negativePoints[array_rand($negativePoints)] . ". ";
-        }
-
-        // Thêm kết luận
-        $conclusions = [
-            "Nhìn chung vẫn rất đáng để thử!",
-            "Chắc chắn sẽ quay lại lần nữa!",
-            "Recommended cho mọi người!",
-            "Rất đáng đồng tiền!",
-            "Sẽ tiếp tục ủng hộ dài dài!"
-        ];
-
-        $review .= $conclusions[array_rand($conclusions)];
-
-        return $review;
-    }
-
-    /**
-     * Tạo orders và order items
-     */
-    private function createOrders()
-    {
-        $users = User::all();
-        $branches = Branch::all();
-        $drivers = \App\Models\Driver::all();
-        $productVariants = ProductVariant::all();
-        $combos = Combo::all();
-        
-        // Check if any required collection is empty
-        if ($users->isEmpty()) {
-            echo "Cannot create orders: No users found\n";
-            return;
-        }
-        
-        if ($branches->isEmpty()) {
-            echo "Cannot create orders: No branches found\n";
-            return;
-        }
-        
-        if ($drivers->isEmpty()) {
-            echo "Cannot create orders: No drivers found\n";
-            return;
-        }
-        
-        if ($productVariants->isEmpty() && $combos->isEmpty()) {
-            echo "Cannot create orders: No product variants or combos found\n";
-            return;
-        }
-        
-        // Tạo 100 orders
-        for ($i = 0; $i < 100; $i++) {
-            $user = $users->random(); // Random user
-            $branch = $branches->random(); // Random branch
-            $driver = $drivers->random(); // Random driver
-            $orderDate = Carbon::now()->subDays(rand(1, 90)); // Random date in last 90 days
-            
-            // Calculate random amounts
-            $subtotal = 0;
-            $deliveryFee = rand(15000, 30000);
-            $discountAmount = rand(0, 50000);
-            $taxAmount = 0;
-            
-            // Create order
-            $order = \App\Models\Order::create([
-                'customer_id' => $user->id,
-                'branch_id' => $branch->id,
-                'driver_id' => $driver->id,
-                'order_date' => $orderDate,
-                'delivery_date' => $orderDate->copy()->addMinutes(rand(30, 120)),
-                'status' => $this->getRandomOrderStatus(),
-                'delivery_fee' => $deliveryFee,
-                'discount_amount' => $discountAmount,
-                'tax_amount' => $taxAmount,
-                'subtotal' => 0, // Will be updated after adding items
-                'total_amount' => 0, // Will be updated after adding items
-                'notes' => $this->getRandomOrderNote(),
-                'points_earned' => rand(10, 100),
-                'estimated_delivery_time' => $orderDate->copy()->addMinutes(45),
-                'actual_delivery_time' => $orderDate->copy()->addMinutes(rand(30, 90))
-            ]);
-            
-            // Add 1-5 items to order
-            $itemCount = rand(1, 5);
-            for ($j = 0; $j < $itemCount; $j++) {
-                // Only add product variants if collection is not empty
-                if (!$productVariants->isEmpty() && (rand(1, 100) <= 80 || $combos->isEmpty())) {
-                    $variant = $productVariants->random();
-                    $quantity = rand(1, 3);
-                    $unitPrice = $variant->product->base_price;
-                    
-                    \App\Models\OrderItem::create([
-                        'order_id' => $order->id,
-                        'product_variant_id' => $variant->id,
-                        'quantity' => $quantity,
-                        'unit_price' => $unitPrice,
-                        'total_price' => $unitPrice * $quantity
-                    ]);
-                    
-                    $subtotal += $unitPrice * $quantity;
-                } 
-                // Only add combos if collection is not empty
-                elseif (!$combos->isEmpty()) {
-                    $combo = $combos->random();
-                    $quantity = rand(1, 2);
-                    $unitPrice = $combo->price;
-                    
-                    \App\Models\OrderItem::create([
-                        'order_id' => $order->id,
-                        'combo_id' => $combo->id,
-                        'quantity' => $quantity,
-                        'unit_price' => $unitPrice,
-                        'total_price' => $unitPrice * $quantity
-                    ]);
-                    
-                    $subtotal += $unitPrice * $quantity;
-                }
-            }
-            
-            // Update order totals
-            $taxAmount = $subtotal * 0.1; // 10% tax
-            $totalAmount = $subtotal + $deliveryFee + $taxAmount - $discountAmount;
-            
-            $order->update([
-                'subtotal' => $subtotal,
-                'tax_amount' => $taxAmount,
-                'total_amount' => $totalAmount
-            ]);
-            
-            echo "Created order #{$order->id} with {$itemCount} items\n";
-        }
-    }
-
-    /**
-     * Get random order status
-     */
-    private function getRandomOrderStatus()
-    {
-        $statuses = [
-            'pending',
-            'confirmed',
-            'preparing',
-            'ready_for_delivery',
-            'delivering',
-            'delivered',
-            'completed',
-            'cancelled'
-        ];
-        
-        return $statuses[array_rand($statuses)];
-    }
-
-    /**
-     * Get random order note
-     */
-    private function getRandomOrderNote()
-    {
-        $notes = [
-            'Không cần ớt',
-            'Giao trong giờ hành chính',
-            'Gọi điện trước khi giao',
-            'Thêm đồ dùng dùng một lần',
-            'Không cần gọi điện',
-            null,
-            null,
-            null
-        ];
-        
-        return $notes[array_rand($notes)];
-    }
-
-    /**
-     * Tạo product reviews với order reference
-     */
-    private function createProductReviews()
-    {
-        $users = User::all();
-        $branches = Branch::all();
-        $products = Product::all();
-        $orders = Order::all(); // Lấy tất cả orders thay vì chỉ lấy completed
-
-        // Check if any required collection is empty
-        if ($users->isEmpty()) {
-            echo "Cannot create reviews: No users found\n";
-            return;
-        }
-        
-        if ($branches->isEmpty()) {
-            echo "Cannot create reviews: No branches found\n";
-            return;
-        }
-        
-        if ($products->isEmpty()) {
-            echo "Cannot create reviews: No products found\n";
-            return;
-        }
-        
-        if ($orders->isEmpty()) {
-            echo "Cannot create reviews: No orders found\n";
-            return;
-        }
-
-        foreach ($products as $product) {
-            // Mỗi sản phẩm có đúng 10 reviews
-            for ($i = 0; $i < 10; $i++) {
-                $user = $users->random();
-                $branch = $branches->random();
-                $order = $orders->random();
-
-                // Tạo review
-                ProductReview::create([
-                    'user_id' => $user->id,
-                    'product_id' => $product->id,
-                    'order_id' => $order->id,
-                    'branch_id' => $branch->id,
-                    'rating' => rand(3, 5), // Bias towards positive reviews
-                    'review' => $this->getRandomReview(),
-                    'review_date' => now()->subDays(rand(1, 30)),
-                    'approved' => true,
-                    'review_image' => rand(0, 1) === 1 ? "reviews/review_" . Str::random(10) . ".jpg" : null,
-                    'is_verified_purchase' => true,
-                    'is_anonymous' => rand(0, 1) === 1,
-                    'helpful_count' => rand(0, 50),
-                    'report_count' => rand(0, 5),
-                    'is_featured' => rand(0, 1) === 1
-                ]);
-            }
-            
-            echo "Created 10 reviews for product: {$product->name}\n";
         }
     }
 
     private function createBranchStocks()
     {
         $branches = Branch::all();
-        $variants = ProductVariant::all();
-        
-        if ($branches->isEmpty()) {
-            echo "Cannot create branch stocks: No branches found\n";
-            return;
-        }
-        
-        if ($variants->isEmpty()) {
-            echo "Cannot create branch stocks: No product variants found\n";
-            return;
-        }
-        
-        echo "Creating branch stocks...\n";
-        
+        $products = Product::all();
+
         foreach ($branches as $branch) {
-            echo "Creating stocks for branch: {$branch->name}\n";
-            
-            foreach ($variants as $variant) {
-                // Tạo stock với số lượng ngẫu nhiên từ 0 đến 100
-                $stockQuantity = rand(0, 100);
-                
-                $branch->stocks()->create([
-                    'product_variant_id' => $variant->id,
-                    'stock_quantity' => $stockQuantity
-                ]);
-                
-                echo "Created stock for variant {$variant->id} with quantity: {$stockQuantity}\n";
+            foreach ($products as $product) {
+                foreach ($product->variants as $variant) {
+                    \App\Models\BranchStock::create([
+                        'branch_id' => $branch->id,
+                        'product_variant_id' => $variant->id,
+                        'stock_quantity' => rand(10, 100)
+                    ]);
+                }
             }
         }
+        echo "Created branch stocks\n";
     }
 
-    /**
-     * Generate SKU with incremental numbering like the controller
-     */
-    private function generateSku($category)
+    private function createOrders()
     {
-        $lastProduct = Product::where('sku', 'like', $category->short_name . '-%')
-            ->orderBy('id', 'desc')
-            ->first();
-        
-        $skuNumber = 1;
-        if ($lastProduct) {
-            $lastNumber = (int) substr($lastProduct->sku, strrpos($lastProduct->sku, '-') + 1);
-            $skuNumber = $lastNumber + 1;
+        $users = User::take(10)->get();
+        $branches = Branch::all();
+        $drivers = \App\Models\Driver::all();
+
+        foreach ($users as $user) {
+            for ($i = 0; $i < rand(1, 3); $i++) {
+                $branch = $branches->random();
+                $driver = $drivers->random();
+                
+                $subtotal = rand(80000, 400000);
+                $deliveryFee = rand(15000, 30000);
+                $totalAmount = $subtotal + $deliveryFee;
+                
+                $order = Order::create([
+                    'customer_id' => $user->id,
+                    'branch_id' => $branch->id,
+                    'driver_id' => $driver->id,
+                    'status' => collect(['pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered'])->random(),
+                    'subtotal' => $subtotal,
+                    'total_amount' => $totalAmount,
+                    'delivery_fee' => $deliveryFee,
+                    'delivery_address' => $user->addresses()->first()?->full_address ?? 'Địa chỉ mặc định',
+                    'notes' => 'Ghi chú đơn hàng',
+                    'created_at' => now()->subDays(rand(0, 30))
+                ]);
+
+                $variants = ProductVariant::inRandomOrder()->take(rand(1, 5))->get();
+                foreach ($variants as $variant) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_variant_id' => $variant->id,
+                        'quantity' => rand(1, 3),
+                        'unit_price' => $variant->product->base_price,
+                        'total_price' => $variant->product->base_price * rand(1, 3)
+                    ]);
+                }
+            }
         }
+        echo "Created orders\n";
+    }
+
+    private function createProductReviews()
+    {
+        $orders = Order::where('status', 'delivered')->get();
         
-        // Format SKU with 5 digits like the controller
-        return $category->short_name . '-' . str_pad($skuNumber, 5, '0', STR_PAD_LEFT);
+        foreach ($orders as $order) {
+            if (rand(1, 100) <= 70) {
+                foreach ($order->orderItems as $orderItem) {
+                    ProductReview::create([
+                        'user_id' => $order->customer_id,
+                        'product_id' => $orderItem->productVariant->product_id,
+                        'order_id' => $order->id,
+                        'branch_id' => $order->branch_id,
+                        'rating' => rand(3, 5),
+                        'review' => collect([
+                            'Sản phẩm rất ngon!',
+                            'Chất lượng tốt, sẽ đặt lại.',
+                            'Giao hàng nhanh, đóng gói cẩn thận.',
+                            'Vị ngon, giá hợp lý.',
+                            'Rất hài lòng với sản phẩm này.'
+                        ])->random(),
+                        'review_date' => $order->created_at->addDays(rand(1, 7)),
+                        'approved' => true,
+                        'created_at' => $order->created_at->addDays(rand(1, 7))
+                    ]);
+                }
+            }
+        }
+        echo "Created product reviews\n";
     }
 }
