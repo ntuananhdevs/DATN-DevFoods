@@ -47,61 +47,40 @@
         z-index: 10;
     }
     
-    /* Discount code pill badges */
-    .discount-code-pill {
-        position: absolute;
-        bottom: 8px;
-        left: 8px;
-        right: 8px;
+    /* Discount code styles */
+    .discount-tag {
+        margin-top: 8px;
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 4px;
-        z-index: 10;
     }
     
-    .discount-code-item {
+    .discount-badge {
         display: inline-flex;
         align-items: center;
-        background-color: rgba(249, 115, 22, 0.9);
-        color: white;
-        padding: 3px 8px;
-        border-radius: 100px;
+        padding: 2px 6px;
+        border-radius: 4px;
         font-size: 10px;
         font-weight: 600;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        color: white;
+        margin-bottom: 2px;
     }
     
-    .discount-code-item i {
-        margin-right: 4px;
+    .discount-badge i {
+        margin-right: 3px;
         font-size: 9px;
     }
     
-    .discount-code-item.free-shipping {
-        background-color: rgba(10, 132, 255, 0.9);
+    .discount-badge.percentage {
+        background-color: #F97316;
     }
     
-    .discount-code-item.fixed-amount {
-        background-color: rgba(130, 32, 246, 0.9);
+    .discount-badge.fixed-amount {
+        background-color: #8B5CF6;
     }
     
-    /* Style for public discount codes */
-    .discount-code-item.public-code {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: rgba(34, 197, 94, 0.9);
-    }
-    
-    .code-badge {
-        margin-left: 6px;
-        background-color: rgba(255, 255, 255, 0.3);
-        padding: 1px 4px;
-        border-radius: 4px;
-        font-size: 8px;
-        font-weight: 700;
+    .discount-badge.free-shipping {
+        background-color: #0EA5E9;
     }
 
     /* Product card styling */
@@ -387,44 +366,7 @@
                         <span class="custom-badge badge-new">Mới</span>
                     @endif
                     
-                    @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
-                        <div class="discount-code-pill">
-                            @foreach($product->applicable_discount_codes as $discountCode)
-                                @php
-                                    $badgeClass = 'discount-code-item';
-                                    $icon = 'fa-percent';
-                                    if($discountCode->discount_type === 'fixed_amount') {
-                                        $badgeClass .= ' fixed-amount';
-                                        $icon = 'fa-money-bill-wave';
-                                    } elseif($discountCode->discount_type === 'free_shipping') {
-                                        $badgeClass .= ' free-shipping';
-                                        $icon = 'fa-shipping-fast';
-                                    }
-                                    
-                                    // Add public badge styling for public discount codes
-                                    if($discountCode->usage_type === 'public') {
-                                        $badgeClass .= ' public-code';
-                                    }
-                                @endphp
-                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
-                                    <div>
-                                        <i class="fas {{ $icon }}"></i>
-                                        @if($discountCode->discount_type === 'percentage')
-                                            Giảm {{ $discountCode->discount_value }}%
-                                        @elseif($discountCode->discount_type === 'fixed_amount')
-                                            Giảm {{ number_format($discountCode->discount_value) }}đ
-                                        @else
-                                            Miễn phí vận chuyển
-                                        @endif
-                                    </div>
-                                    
-                                    @if($discountCode->usage_type === 'public')
-                                        <span class="code-badge">{{ $discountCode->code }}</span>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+
                 </div>
 
                 <div class="p-4">
@@ -472,6 +414,37 @@
                             </button>
                         @endif
                     </div>
+                    
+                    @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
+                        <div class="discount-tag">
+                            @foreach($product->applicable_discount_codes as $discountCode)
+                                @php
+                                    $badgeClass = 'discount-badge';
+                                    $icon = 'fa-percent';
+                                    
+                                    if($discountCode->discount_type === 'fixed_amount') {
+                                        $badgeClass .= ' fixed-amount';
+                                        $icon = 'fa-money-bill-wave';
+                                    } elseif($discountCode->discount_type === 'free_shipping') {
+                                        $badgeClass .= ' free-shipping';
+                                        $icon = 'fa-shipping-fast';
+                                    } else {
+                                        $badgeClass .= ' percentage';
+                                    }
+                                @endphp
+                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
+                                    <i class="fas {{ $icon }}"></i>
+                                    @if($discountCode->discount_type === 'percentage')
+                                        Giảm {{ $discountCode->discount_value }}%
+                                    @elseif($discountCode->discount_type === 'fixed_amount')
+                                        Giảm {{ number_format($discountCode->discount_value) }}đ
+                                    @else
+                                        Miễn phí vận chuyển
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
         @empty

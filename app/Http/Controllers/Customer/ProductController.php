@@ -133,6 +133,21 @@ class ProductController extends Controller
             }])
             ->get();
             
+        // Log discount codes for debugging
+        \Illuminate\Support\Facades\Log::debug('Active Discount Codes in index page:', [
+            'total_codes' => $activeDiscountCodes->count(),
+            'public_codes' => $activeDiscountCodes->where('usage_type', 'public')->count(),
+            'personal_codes' => $activeDiscountCodes->where('usage_type', 'personal')->count(),
+            'codes' => $activeDiscountCodes->map(function($code) {
+                return [
+                    'id' => $code->id,
+                    'code' => $code->code,
+                    'usage_type' => $code->usage_type,
+                    'applicable_scope' => $code->applicable_scope,
+                ];
+            })
+        ]);
+            
         // Obtener favoritos del usuario
         $favorites = [];
         if (Auth::check()) {
@@ -194,7 +209,7 @@ class ProductController extends Controller
             // Lấy các mã giảm giá áp dụng cho sản phẩm này
             $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
                 // Kiểm tra scope của mã giảm giá
-                if ($discountCode->applicable_scope === 'all') {
+                if ($discountCode->applicable_scope === 'all' || $discountCode->applicable_scope === 'all_branches' || $discountCode->applicable_items === 'all_items') {
                     return true; // Áp dụng cho tất cả sản phẩm
                 }
                 
@@ -321,9 +336,25 @@ class ProductController extends Controller
             }])
             ->get();
             
+        // Log discount codes for debugging
+        \Illuminate\Support\Facades\Log::debug('Active Discount Codes in product detail page:', [
+            'product_id' => $product->id,
+            'total_codes' => $activeDiscountCodes->count(),
+            'public_codes' => $activeDiscountCodes->where('usage_type', 'public')->count(),
+            'personal_codes' => $activeDiscountCodes->where('usage_type', 'personal')->count(),
+            'codes' => $activeDiscountCodes->map(function($code) {
+                return [
+                    'id' => $code->id,
+                    'code' => $code->code,
+                    'usage_type' => $code->usage_type,
+                    'applicable_scope' => $code->applicable_scope,
+                ];
+            })
+        ]);
+            
         $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
             // Kiểm tra scope của mã giảm giá
-            if ($discountCode->applicable_scope === 'all') {
+            if ($discountCode->applicable_scope === 'all' || $discountCode->applicable_scope === 'all_branches' || $discountCode->applicable_items === 'all_items') {
                 return true; // Áp dụng cho tất cả sản phẩm
             }
             
@@ -396,7 +427,7 @@ class ProductController extends Controller
             // Lấy các mã giảm giá áp dụng cho sản phẩm liên quan
             $relatedProduct->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($relatedProduct) {
                 // Kiểm tra scope của mã giảm giá
-                if ($discountCode->applicable_scope === 'all') {
+                if ($discountCode->applicable_scope === 'all' || $discountCode->applicable_scope === 'all_branches' || $discountCode->applicable_items === 'all_items') {
                     return true; // Áp dụng cho tất cả sản phẩm
                 }
                 
@@ -412,7 +443,7 @@ class ProductController extends Controller
                     
                     return false;
                 });
-            })->take(2);
+            });
             
             return $relatedProduct;
         });
@@ -450,5 +481,71 @@ class ProductController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+    
+    /**
+     * Display all discount codes for a product (for debugging)
+     */
+    public function showProductDiscounts($productId)
+    {
+        $product = Product::findOrFail($productId);
+        $now = Carbon::now();
+        
+        // Get all active discount codes
+        $allDiscountCodes = DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->with(['products' => function($query) {
+                $query->with(['product', 'category']);
+            }])
+            ->get();
+            
+        // Filter public codes
+        $publicCodes = $allDiscountCodes->where('usage_type', 'public');
+        
+        // Filter codes applicable to this product
+        $applicableCodes = $allDiscountCodes->filter(function($discountCode) use ($product) {
+            // Check global applicability
+            if ($discountCode->applicable_scope === 'all_branches' || $discountCode->applicable_items === 'all_items') {
+                return true;
+            }
+            
+            // Check specific applicability
+            return $discountCode->products->contains(function($discountProduct) use ($product) {
+                return $discountProduct->product_id === $product->id || 
+                       $discountProduct->category_id === $product->category_id;
+            });
+        });
+        
+        return response()->json([
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'category_id' => $product->category_id
+            ],
+            'all_active_codes_count' => $allDiscountCodes->count(),
+            'public_codes_count' => $publicCodes->count(),
+            'applicable_codes_count' => $applicableCodes->count(),
+            'public_codes' => $publicCodes->map(function($code) {
+                return [
+                    'id' => $code->id,
+                    'code' => $code->code,
+                    'name' => $code->name,
+                    'usage_type' => $code->usage_type,
+                    'applicable_scope' => $code->applicable_scope,
+                    'applicable_items' => $code->applicable_items
+                ];
+            }),
+            'applicable_codes' => $applicableCodes->map(function($code) {
+                return [
+                    'id' => $code->id,
+                    'code' => $code->code,
+                    'name' => $code->name,
+                    'usage_type' => $code->usage_type,
+                    'applicable_scope' => $code->applicable_scope,
+                    'applicable_items' => $code->applicable_items
+                ];
+            })
+        ]);
     }
 }

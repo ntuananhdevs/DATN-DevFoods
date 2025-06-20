@@ -1285,23 +1285,44 @@ class DiscountCodeController extends Controller
 
     public function getUsersByRank(Request $request)
     {
+        // Ghi log toàn bộ request để debug
+        Log::info('getUsersByRank request:', [
+            'all' => $request->all(),
+            'headers' => $request->header(),
+            'content-type' => $request->header('Content-Type'),
+            'is_json' => $request->isJson(),
+            'is_ajax' => $request->ajax(),
+        ]);
+        
         // Kiểm tra xem dữ liệu có phải là JSON không
         if ($request->isJson()) {
             $data = $request->json()->all();
+            Log::info('JSON data received:', $data);
             $rankIds = $data['ranks'] ?? [];
             $discountCodeId = $data['discount_code_id'] ?? null;
         } else {
-            $request->validate([
-                'ranks' => 'required|array',
-                'ranks.*' => 'integer|between:1,5',
-                'discount_code_id' => 'nullable|exists:discount_codes,id'
-            ]);
-            $rankIds = $request->ranks;
-            $discountCodeId = $request->discount_code_id;
+            try {
+                $request->validate([
+                    'ranks' => 'required|array',
+                    'ranks.*' => 'integer|between:1,5',
+                    'discount_code_id' => 'nullable|exists:discount_codes,id'
+                ]);
+                $rankIds = $request->ranks;
+                $discountCodeId = $request->discount_code_id;
+            } catch (\Exception $e) {
+                Log::error('Validation error in getUsersByRank: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dữ liệu không hợp lệ: ' . $e->getMessage()
+                ], 422);
+            }
         }
 
         // Ghi log để debug
-        Log::info('getUsersByRank called with ranks: ' . json_encode($rankIds) . ' and discount_code_id: ' . $discountCodeId);
+        Log::info('getUsersByRank parsed data: ', [
+            'rankIds' => $rankIds,
+            'discountCodeId' => $discountCodeId
+        ]);
         
         // Get users with selected ranks
         $users = User::whereIn('user_rank_id', $rankIds)

@@ -1,4 +1,4 @@
-<?php
+<!-- <?php
 
 namespace App\Events\Customer;
 
@@ -58,4 +58,4 @@ class CartUpdated implements ShouldBroadcastNow
             'count' => $this->count
         ];
     }
-} 
+}  -->

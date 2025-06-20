@@ -25,7 +25,9 @@ class ChatMessage extends Model
         'branch_id',
         'status',
         'read_at',
-        'sent_at'
+        'sent_at',
+        'attachment',
+        'attachment_type',
     ];
 
     /**
