@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 // Customer Controllers
 use App\Http\Controllers\Customer\HomeController as CustomerHomeController;
@@ -14,7 +15,7 @@ use App\Http\Controllers\Customer\SupportController as CustomerSupportController
 use App\Http\Controllers\Customer\BranchController as CustomerBranchController;
 use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
-use App\Http\Controllers\Customer\ChatController as CustomerChatController;
+use App\Http\Controllers\Customer\ChatController;
 use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
 use App\Http\Middleware\Customer\CartCountMiddleware;
 use App\Http\Controllers\FirebaseConfigController;
@@ -42,6 +43,11 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
+    Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
+    
+    // Coupon
+    Route::post('/coupon/apply', [App\Http\Controllers\Customer\CouponController::class, 'apply'])->name('coupon.apply');
 
     // Checkout
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');
@@ -52,16 +58,11 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
     Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
     Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
-    Route::get('/branches', [CustomerBranchController::class, 'branchs'])->name('branches.index');
+    Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branches.index');
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 });
 
-// Chat routes (API)
-Route::prefix('api/chat')->group(function () {
-    Route::post('/send-message', [CustomerChatController::class, 'sendMessage'])->name('chat.send');
-    Route::post('/rating', [CustomerChatController::class, 'submitRating'])->name('chat.rating');
-    Route::get('/history', [CustomerChatController::class, 'getChatHistory'])->name('chat.history');
-});
+
 
 // Authentication (login / logout / register)
 Route::middleware('guest')->group(function () {
@@ -92,6 +93,7 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
     Route::put('/profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.password.update');
     Route::patch('/profile/update', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
+    Route::post('/favorite/toggle', [CustomerProductController::class, 'toggleFavorite'])->name('favorite.toggle');
 });
 
 // Phone Required routes (không cần phone.required middleware)
@@ -119,8 +121,8 @@ Route::prefix('api')->group(function () {
 });
 
 Route::prefix('branches')->group(function () {
-        Route::post('/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('branches.set-selected');
-        Route::get('/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('branches.nearest');
+    Route::post('/set-selected', [CustomerBranchController::class, 'setSelectedBranch'])->name('branches.set-selected');
+    Route::get('/nearest', [CustomerBranchController::class, 'findNearestBranch'])->name('branches.nearest');
 });
 // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
 Route::prefix('hiring-driver')->name('driver.')->group(function () {
@@ -132,16 +134,12 @@ Route::prefix('hiring-driver')->name('driver.')->group(function () {
 
 Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::get('/chat', function () {
-        $conversations = \App\Models\Conversation::where('customer_id', auth()->id())
-            ->with(['branch', 'messages.sender'])
-            ->orderBy('updated_at', 'desc')
-            ->get();
-        return view('customer.chat', compact('conversations'));
+        return view('customer.chat');
     })->name('customer.chat.index');
 
-    Route::post('/chat/create', [App\Http\Controllers\Customer\ChatController::class, 'createConversation'])->name('customer.chat.create');
-    Route::post('/chat/send', [App\Http\Controllers\Customer\ChatController::class, 'sendMessage'])->name('customer.chat.send');
-    Route::get('/chat/conversations', [App\Http\Controllers\Customer\ChatController::class, 'getConversations'])->name('customer.chat.conversations');
-    Route::get('/chat/messages', [App\Http\Controllers\Customer\ChatController::class, 'getMessages'])->name('customer.chat.messages');
-    Route::post('/chat/typing', [App\Http\Controllers\Customer\ChatController::class, 'typing'])->name('customer.chat.typing');
+    Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('customer.chat.create');
+    Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
+    Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
+    Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
+    Route::post('/chat/typing', [ChatController::class, 'typing'])->name('customer.chat.typing');
 });

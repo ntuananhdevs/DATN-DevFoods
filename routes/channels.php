@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Broadcast;
 use App\Models\Conversation;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,12 +56,12 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
         ];
     }
 
-    return true; // Hoặc thêm logic kiểm tra quyền truy cập
+    return false; // Hoặc thêm logic kiểm tra quyền truy cập
 });
 
 // Admin conversations channel
 Broadcast::channel('admin.conversations', function ($user) {
-    return $user->role === 'super_admin' ? [
+    return $user->role === 'sp_admin' ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,
@@ -89,4 +90,49 @@ Broadcast::channel('online-users', function ($user) {
 Broadcast::channel('driver.{driverId}', function ($driver, $driverId) {
     // Chỉ tài xế đã đăng nhập và có ID trùng khớp mới có thể nghe kênh này
     return (int) $driver->id === (int) $driverId;
+});
+// Presence chat channel
+Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversationId) {
+    Log::info('[Broadcast] presence-chat', [
+        'user_id' => $user->id,
+        'user_role' => $user->role ?? null,
+        'conversation_id' => $conversationId,
+        'user' => $user,
+    ]);
+    // Kiểm tra quyền truy cập vào conversation này
+    $conversation = Conversation::find($conversationId);
+    if (!$conversation) {
+        Log::warning('[Broadcast] Conversation not found', ['conversation_id' => $conversationId]);
+        return false;
+    }
+    // Super admin có quyền truy cập tất cả
+    if (($user->role ?? null) === 'super_admin') {
+        Log::info('[Broadcast] Super admin truy cập', ['user_id' => $user->id]);
+        return [
+            'id' => $user->id,
+            'name' => $user->name ?? $user->full_name ?? 'User',
+            'role' => $user->role ?? null,
+        ];
+    }
+    // Branch users
+    if (in_array($user->role ?? '', ['branch_manager', 'branch_staff']) && $conversation->branch_id === ($user->branch_id ?? null)) {
+        Log::info('[Broadcast] Branch user truy cập', ['user_id' => $user->id]);
+        return [
+            'id' => $user->id,
+            'name' => $user->name ?? $user->full_name ?? 'User',
+            'role' => $user->role ?? null,
+            'branch_id' => $user->branch_id ?? null,
+        ];
+    }
+    // Customer
+    if (($user->role ?? null) === 'customer' && $conversation->customer_id === $user->id) {
+        Log::info('[Broadcast] Customer truy cập', ['user_id' => $user->id]);
+        return [
+            'id' => $user->id,
+            'name' => $user->name ?? $user->full_name ?? 'User',
+            'role' => $user->role ?? null,
+        ];
+    }
+    Log::warning('[Broadcast] Truy cập bị từ chối', ['user_id' => $user->id, 'role' => $user->role ?? null, 'conversation_id' => $conversationId]);
+    return false;
 });
