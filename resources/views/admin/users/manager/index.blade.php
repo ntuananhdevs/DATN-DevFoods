@@ -12,8 +12,8 @@
                 </svg>
             </div>
             <div>
-                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản người dùng  </h2>
-                <p class="text-muted-foreground">Quản lý tài khoản người dùng của hệ thống</p>
+                <h2 class="text-3xl font-bold tracking-tight">Quản lý tài khoản quản lý   </h2>
+                <p class="text-muted-foreground">Quản lý tài khoản quản lý  của hệ thống</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
@@ -168,7 +168,7 @@
                         <td class="px-4 py-4">{{ $user->phone ?? 'N/A' }}</td>
                         <td class="px-4 py-4">
                             <button type="button"
-                                    class="px-3 py-1.5 rounded-full text-xs whitespace-nowrap {{ $user->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 w-24 transition-opacity duration-200"
+                                    class="px-3 py-1.5 rounded-full text-xs whitespace-nowrap {{ $user->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 w-28 transition-opacity duration-200"
                                     onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }})">
                                 @if($user->active)
                                 <i class="fas fa-check mr-1"></i> Hoạt động

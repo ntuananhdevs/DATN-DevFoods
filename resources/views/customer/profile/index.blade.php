@@ -1,6 +1,6 @@
 @extends('layouts.customer.fullLayoutMaster')
 
-@section('title', 'FastFood - Tài Khoản Của Tôi')
+@section('title', 'FastFood - ' . $user->full_name)
 
 @section('content')
 <style>
@@ -14,28 +14,32 @@
         <div class="flex flex-col md:flex-row items-center">
             <div class="relative mb-6 md:mb-0 md:mr-8">
                 <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white p-1 shadow-lg">
-                    <img src="/placeholder.svg?height=200&width=200" alt="Ảnh đại diện" class="w-full h-full rounded-full object-cover">
+                    {{-- DYNAMIC AVATAR --}}
+                    <img src="{{ $user->avatar ? Storage::disk('s3')->url($user->avatar) : asset('images/default-avatar.png') }}" alt="Ảnh đại diện" class="w-full h-full rounded-full object-cover">
                 </div>
-                <button class="absolute bottom-0 right-0 bg-orange-600 hover:bg-orange-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-colors">
+                <a href="{{ route('customer.profile.edit') }}" class="absolute bottom-0 right-0 bg-orange-600 hover:bg-orange-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-colors">
                     <i class="fas fa-camera"></i>
-                </button>
+                </a>
             </div>
             <div class="text-center md:text-left text-white">
-                <h1 class="text-3xl md:text-4xl font-bold mb-2">Nguyễn Văn A</h1>
-                <p class="text-white/80 mb-4">Thành viên từ Tháng 6, 2023</p>
+                {{-- DYNAMIC USER INFO --}}
+                <h1 class="text-3xl md:text-4xl font-bold mb-2">{{ $user->full_name }}</h1>
+                <p class="text-white/80 mb-4">Thành viên từ {{ $user->created_at->isoFormat('MMMM, YYYY') }}</p>
                 <div class="flex flex-wrap justify-center md:justify-start gap-3">
+                    @if($currentRank)
                     <div class="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full flex items-center">
-                        <i class="fas fa-star text-yellow-300 mr-2"></i>
-                        <span>Thành viên Vàng</span>
+                        <i class="fas fa-star mr-2" style="color: {{ $currentRank->color ?? '#FFD700' }};"></i>
+                        <span>Thành viên {{ $currentRank->name }}</span>
                     </div>
+                    @endif
                     <div class="bg-white/20 backdrop-blur-sm px-4 py-1 rounded-full flex items-center">
                         <i class="fas fa-medal text-yellow-300 mr-2"></i>
-                        <span>120 điểm</span>
+                        <span>{{ number_format($currentPoints, 0, ',', '.') }} điểm</span>
                     </div>
                 </div>
             </div>
             <div class="mt-6 md:mt-0 md:ml-auto">
-                <a href="{{ asset('profile/edit') }}" class="bg-white text-orange-500 hover:bg-orange-50 px-6 py-2 rounded-lg shadow-md transition-colors">
+                <a href="{{ route('customer.profile.edit') }}" class="bg-white text-orange-500 hover:bg-orange-50 px-6 py-2 rounded-lg shadow-md transition-colors">
                     <i class="fas fa-edit mr-2"></i>
                     Chỉnh sửa hồ sơ
                 </a>
@@ -46,7 +50,6 @@
 
 <div class="container mx-auto px-4 py-8">
     <div class="flex flex-col lg:flex-row gap-8">
-        <!-- Sidebar Navigation -->
         <div class="lg:w-1/4">
             <div class="bg-white rounded-xl shadow-sm overflow-hidden sticky top-24">
                 <div class="p-6 border-b border-gray-100">
@@ -54,536 +57,184 @@
                 </div>
                 <nav class="p-2">
                     <ul class="space-y-1">
-                        <li>
-                            <a href="#overview" class="flex items-center px-4 py-3 rounded-lg bg-orange-50 text-orange-500 font-medium">
-                                <i class="fas fa-home mr-3 w-5 text-center"></i>
-                                Tổng quan
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#orders" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-shopping-bag mr-3 w-5 text-center"></i>
-                                Đơn hàng của tôi
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#addresses" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-map-marker-alt mr-3 w-5 text-center"></i>
-                                Địa chỉ đã lưu
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#favorites" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-heart mr-3 w-5 text-center"></i>
-                                Món ăn yêu thích
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#rewards" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-gift mr-3 w-5 text-center"></i>
-                                Điểm thưởng & Ưu đãi
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#payment" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-credit-card mr-3 w-5 text-center"></i>
-                                Phương thức thanh toán
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ asset('profile/setting') }}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-cog mr-3 w-5 text-center"></i>
-                                Cài đặt tài khoản
-                            </a>
-                        </li>
+                        <li><a href="#overview" class="flex items-center px-4 py-3 rounded-lg bg-orange-50 text-orange-500 font-medium"><i class="fas fa-home mr-3 w-5 text-center"></i>Tổng quan</a></li>
+                        <li><a href="#orders" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"><i class="fas fa-shopping-bag mr-3 w-5 text-center"></i>Đơn hàng của tôi</a></li>
+                        <li><a href="#addresses" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"><i class="fas fa-map-marker-alt mr-3 w-5 text-center"></i>Địa chỉ đã lưu</a></li>
+                        <li><a href="#favorites" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"><i class="fas fa-heart mr-3 w-5 text-center"></i>Món ăn yêu thích</a></li>
+                        <li><a href="#rewards" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"><i class="fas fa-gift mr-3 w-5 text-center"></i>Điểm thưởng & Ưu đãi</a></li>
+                        <li><a href="{{ route('customer.profile.setting') }}" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors"><i class="fas fa-cog mr-3 w-5 text-center"></i>Cài đặt tài khoản</a></li>
                         <li class="border-t border-gray-100 mt-2 pt-2">
-                            <a href="/logout" class="flex items-center px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors">
-                                <i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>
-                                Đăng xuất
-                            </a>
+                            <form method="POST" action="{{ route('customer.logout') }}" id="logout-form">
+                                @csrf
+                                <a href="{{ route('customer.logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="flex items-center px-4 py-3 rounded-lg text-red-500 hover:bg-red-50 transition-colors">
+                                    <i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>Đăng xuất
+                                </a>
+                            </form>
                         </li>
                     </ul>
                 </nav>
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="lg:w-3/4">
-            <!-- Overview Section -->
             <section id="overview" class="mb-10">
                 <h2 class="text-2xl font-bold mb-6">Tổng Quan</h2>
-                
-                <!-- Stats Cards -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div class="bg-white rounded-xl shadow-sm p-6 text-center">
-                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-shopping-bag text-blue-500"></i>
-                        </div>
-                        <h3 class="text-3xl font-bold mb-1">12</h3>
-                        <p class="text-gray-500 text-sm">Đơn hàng</p>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm p-6 text-center">
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-medal text-green-500"></i>
-                        </div>
-                        <h3 class="text-3xl font-bold mb-1">120</h3>
-                        <p class="text-gray-500 text-sm">Điểm thưởng</p>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm p-6 text-center">
-                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-ticket-alt text-purple-500"></i>
-                        </div>
-                        <h3 class="text-3xl font-bold mb-1">3</h3>
-                        <p class="text-gray-500 text-sm">Voucher</p>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm p-6 text-center">
-                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-heart text-red-500"></i>
-                        </div>
-                        <h3 class="text-3xl font-bold mb-1">8</h3>
-                        <p class="text-gray-500 text-sm">Yêu thích</p>
-                    </div>
+                    {{-- DYNAMIC STATS --}}
+                    <div class="bg-white rounded-xl shadow-sm p-6 text-center"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-shopping-bag text-blue-500"></i></div><h3 class="text-3xl font-bold mb-1">{{ $user->total_orders }}</h3><p class="text-gray-500 text-sm">Đơn hàng</p></div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 text-center"><div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-medal text-green-500"></i></div><h3 class="text-3xl font-bold mb-1">{{ number_format($currentPoints, 0, ',', '.') }}</h3><p class="text-gray-500 text-sm">Điểm thưởng</p></div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 text-center"><div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-ticket-alt text-purple-500"></i></div><h3 class="text-3xl font-bold mb-1">{{ $vouchers->count() }}</h3><p class="text-gray-500 text-sm">Voucher</p></div>
+                    <div class="bg-white rounded-xl shadow-sm p-6 text-center"><div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-heart text-red-500"></i></div><h3 class="text-3xl font-bold mb-1">{{ $user->favorites->count() }}</h3><p class="text-gray-500 text-sm">Yêu thích</p></div>
                 </div>
                 
-                <!-- Membership Progress -->
+                @if($currentRank)
                 <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+                    {{-- DYNAMIC RANK PROGRESS --}}
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                        <div>
-                            <h3 class="text-lg font-bold mb-1">Thành viên Vàng</h3>
-                            <p class="text-gray-500 text-sm">Còn 80 điểm nữa để lên hạng Bạch Kim</p>
+                        <div><h3 class="text-lg font-bold mb-1">Thành viên {{ $currentRank->name }}</h3>
+                            @if($nextRank)<p class="text-gray-500 text-sm">Còn {{ number_format(max(0, $nextRank->min_spending - $currentPoints), 0, ',', '.') }} điểm nữa để lên hạng {{ $nextRank->name }}</p>
+                            @else<p class="text-gray-500 text-sm">Bạn đã đạt hạng cao nhất!</p>@endif
                         </div>
                         <div class="mt-2 md:mt-0">
-                            <span class="text-sm font-medium">120/200 điểm</span>
+                            @if($nextRank)<span class="text-sm font-medium">{{ number_format($currentPoints, 0, ',', '.') }}/{{ number_format($nextRank->min_spending, 0, ',', '.') }} điểm</span>
+                            @else<span class="text-sm font-medium">{{ number_format($currentPoints, 0, ',', '.') }} điểm</span>@endif
                         </div>
                     </div>
-                    
-                    <div class="relative h-4 bg-gray-100 rounded-full overflow-hidden mb-2">
-                        <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 to-yellow-500" style="width: 60%"></div>
-                    </div>
-                    
+                    <div class="relative h-4 bg-gray-100 rounded-full overflow-hidden mb-2"><div class="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 to-yellow-500" style="width: {{ $progressPercent }}%"></div></div>
                     <div class="flex justify-between text-xs text-gray-500">
-                        <div class="flex flex-col items-center">
-                            <div class="w-4 h-4 rounded-full bg-gray-200 mb-1 flex items-center justify-center">
-                                <div class="w-2 h-2 rounded-full bg-gray-400"></div>
-                            </div>
-                            <span>Bạc</span>
-                            <span>0</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <div class="w-4 h-4 rounded-full bg-yellow-200 mb-1 flex items-center justify-center">
-                                <div class="w-2 h-2 rounded-full bg-yellow-400"></div>
-                            </div>
-                            <span>Vàng</span>
-                            <span>100</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <div class="w-4 h-4 rounded-full bg-gray-200 mb-1 flex items-center justify-center">
-                                <div class="w-2 h-2 rounded-full bg-gray-400"></div>
-                            </div>
-                            <span>Bạch Kim</span>
-                            <span>200</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <div class="w-4 h-4 rounded-full bg-gray-200 mb-1 flex items-center justify-center">
-                                <div class="w-2 h-2 rounded-full bg-gray-400"></div>
-                            </div>
-                            <span>Kim Cương</span>
-                            <span>500</span>
-                        </div>
+                        @foreach($allRanks as $rank)
+                        <div class="flex flex-col items-center"><div class="w-4 h-4 rounded-full mb-1 flex items-center justify-center" style="background-color: {{ $rank->id === $currentRank->id ? ($rank->color ?? '#CCCCCC').'40' : '#E5E7EB' }};"><div class="w-2 h-2 rounded-full" style="background-color: {{ $rank->color ?? '#9CA3AF' }};"></div></div><span>{{ $rank->name }}</span><span>{{ number_format($rank->min_spending, 0, ',', '.') }}</span></div>
+                        @endforeach
                     </div>
                 </div>
+                @endif
                 
-                <!-- Recent Orders -->
-                <div class="bg-white rounded-xl shadow-sm p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold">Đơn Hàng Gần Đây</h3>
-                        <a href="#orders" class="text-orange-500 hover:underline text-sm font-medium">Xem tất cả</a>
-                    </div>
-                    
+                <div id="orders" class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold">Đơn Hàng Gần Đây</h3><a href="#" class="text-orange-500 hover:underline text-sm font-medium">Xem tất cả</a></div>
                     <div class="space-y-4">
+                        {{-- DYNAMIC RECENT ORDERS --}}
+                        @forelse($recentOrders as $order)
                         <div class="border border-gray-100 rounded-lg p-4 hover:shadow-sm transition-shadow">
                             <div class="flex justify-between items-start mb-3">
-                                <div>
-                                    <span class="text-sm text-gray-500">Mã đơn hàng: #FF12345</span>
-                                    <h4 class="font-medium">2 x Burger Gà Cay + 1 x Khoai Tây Chiên</h4>
-                                </div>
-                                <span class="bg-green-100 text-green-600 text-xs font-medium px-2 py-1 rounded-full">Đã giao</span>
+                                <div><span class="text-sm text-gray-500">Mã đơn hàng: #{{ $order->order_code ?? $order->id }}</span><h4 class="font-medium">{{ $order->items->pluck('product.name')->implode(', ') }}</h4></div>
+                                <span class="text-xs font-medium px-2 py-1 rounded-full capitalize" style="background-color: {{ $order->status_color['bg'] ?? '#f3f4f6' }}; color: {{ $order->status_color['text'] ?? '#374151' }};">{{ $order->status_text }}</span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <div class="text-gray-500 text-sm">
-                                    <i class="far fa-calendar-alt mr-1"></i> 15/05/2023
-                                </div>
-                                <div class="font-medium">120.000đ</div>
+                                <div class="text-gray-500 text-sm"><i class="far fa-calendar-alt mr-1"></i> {{ $order->created_at->format('d/m/Y') }}</div>
+                                <div class="font-medium">{{ number_format($order->total_amount, 0, ',', '.') }}đ</div>
                             </div>
                         </div>
-                        
-                        <div class="border border-gray-100 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                            <div class="flex justify-between items-start mb-3">
-                                <div>
-                                    <span class="text-sm text-gray-500">Mã đơn hàng: #FF12344</span>
-                                    <h4 class="font-medium">1 x Pizza Hải Sản + 2 x Coca Cola</h4>
-                                </div>
-                                <span class="bg-green-100 text-green-600 text-xs font-medium px-2 py-1 rounded-full">Đã giao</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <div class="text-gray-500 text-sm">
-                                    <i class="far fa-calendar-alt mr-1"></i> 10/05/2023
-                                </div>
-                                <div class="font-medium">185.000đ</div>
-                            </div>
-                        </div>
-                        
-                        <div class="border border-gray-100 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                            <div class="flex justify-between items-start mb-3">
-                                <div>
-                                    <span class="text-sm text-gray-500">Mã đơn hàng: #FF12343</span>
-                                    <h4 class="font-medium">2 x Mì Ý Sốt Bò Bằm + 1 x Salad</h4>
-                                </div>
-                                <span class="bg-green-100 text-green-600 text-xs font-medium px-2 py-1 rounded-full">Đã giao</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <div class="text-gray-500 text-sm">
-                                    <i class="far fa-calendar-alt mr-1"></i> 05/05/2023
-                                </div>
-                                <div class="font-medium">150.000đ</div>
-                            </div>
-                        </div>
+                        @empty
+                        <p class="text-gray-500 text-center py-4">Bạn chưa có đơn hàng nào gần đây.</p>
+                        @endforelse
                     </div>
                 </div>
             </section>
             
-            <!-- Personal Information Section -->
             <section id="personal-info" class="mb-10">
+                {{-- DYNAMIC PERSONAL INFO --}}
                 <h2 class="text-2xl font-bold mb-6">Thông Tin Cá Nhân</h2>
-                
                 <div class="bg-white rounded-xl shadow-sm p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold">Thông tin chi tiết</h3>
-                        <button class="text-orange-500 hover:underline text-sm font-medium flex items-center">
-                            <i class="fas fa-edit mr-1"></i> Chỉnh sửa
-                        </button>
-                    </div>
-                    
+                    <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold">Thông tin chi tiết</h3><a href="{{ route('customer.profile.edit') }}" class="text-orange-500 hover:underline text-sm font-medium flex items-center"><i class="fas fa-edit mr-1"></i> Chỉnh sửa</a></div>
                     <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <h4 class="text-sm text-gray-500 mb-1">Họ và tên</h4>
-                            <p class="font-medium">Nguyễn Văn A</p>
-                        </div>
-                        
-                        <div>
-                            <h4 class="text-sm text-gray-500 mb-1">Email</h4>
-                            <p class="font-medium">nguyenvana@example.com</p>
-                        </div>
-                        
-                        <div>
-                            <h4 class="text-sm text-gray-500 mb-1">Số điện thoại</h4>
-                            <p class="font-medium">0987654321</p>
-                        </div>
-                        
-                        <div>
-                            <h4 class="text-sm text-gray-500 mb-1">Ngày sinh</h4>
-                            <p class="font-medium">01/01/1990</p>
-                        </div>
-                        
-                        <div>
-                            <h4 class="text-sm text-gray-500 mb-1">Giới tính</h4>
-                            <p class="font-medium">Nam</p>
-                        </div>
+                        <div><h4 class="text-sm text-gray-500 mb-1">Họ và tên</h4><p class="font-medium">{{ $user->full_name }}</p></div>
+                        <div><h4 class="text-sm text-gray-500 mb-1">Email</h4><p class="font-medium">{{ $user->email }}</p></div>
+                        <div><h4 class="text-sm text-gray-500 mb-1">Số điện thoại</h4><p class="font-medium">{{ $user->phone }}</p></div>
+                        <div><h4 class="text-sm text-gray-500 mb-1">Ngày sinh</h4><p class="font-medium">{{ $user->birthday ? $user->birthday->format('d/m/Y') : 'Chưa cập nhật' }}</p></div>
+                        <div><h4 class="text-sm text-gray-500 mb-1">Giới tính</h4><p class="font-medium">{{ $user->gender ? ucfirst($user->gender) : 'Chưa cập nhật' }}</p></div>
                     </div>
                 </div>
             </section>
             
-            <!-- Saved Addresses Section -->
             <section id="addresses" class="mb-10">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Địa Chỉ Đã Lưu</h2>
-                    <button class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center">
-                        <i class="fas fa-plus mr-2"></i> Thêm địa chỉ mới
-                    </button>
-                </div>
-                
+                <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold">Địa Chỉ Đã Lưu</h2><button class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center"><i class="fas fa-plus mr-2"></i> Thêm địa chỉ mới</button></div>
                 <div class="grid md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
+                    {{-- DYNAMIC ADDRESSES --}}
+                    @forelse($user->addresses as $address)
+                    <div class="bg-white rounded-xl shadow-sm p-6 @if($address->is_default) border-l-4 border-orange-500 @endif">
                         <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="font-bold mb-1">Nhà riêng</h3>
-                                <p class="text-gray-500 text-sm">Mặc định</p>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="text-gray-500 hover:text-orange-500 transition-colors">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-gray-500 hover:text-red-500 transition-colors">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
+                            <div><h3 class="font-bold mb-1">{{ $address->type === 'home' ? 'Nhà riêng' : ($address->type === 'office' ? 'Văn phòng' : 'Khác') }}</h3>@if($address->is_default)<p class="text-gray-500 text-sm">Mặc định</p>@endif</div>
+                            <div class="flex space-x-2"><button class="text-gray-500 hover:text-orange-500 transition-colors"><i class="fas fa-edit"></i></button><button class="text-gray-500 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button></div>
                         </div>
-                        
-                        <div class="space-y-2">
-                            <p class="font-medium">Nguyễn Văn A</p>
-                            <p class="text-gray-600">0987654321</p>
-                            <p class="text-gray-600">123 Đường ABC, Phường XYZ, Quận 1, TP. Hồ Chí Minh</p>
-                        </div>
+                        <div class="space-y-2"><p class="font-medium">{{ $address->recipient_name ?? $user->full_name }}</p><p class="text-gray-600">{{ $address->recipient_phone ?? $user->phone }}</p><p class="text-gray-600">{{ $address->full_address }}</p></div>
                     </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm p-6">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="font-bold mb-1">Văn phòng</h3>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="text-gray-500 hover:text-orange-500 transition-colors">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-gray-500 hover:text-red-500 transition-colors">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-2">
-                            <p class="font-medium">Nguyễn Văn A</p>
-                            <p class="text-gray-600">0987654321</p>
-                            <p class="text-gray-600">456 Đường DEF, Phường UVW, Quận 2, TP. Hồ Chí Minh</p>
-                        </div>
-                    </div>
+                    @empty
+                    <p class="md:col-span-2 text-gray-500 text-center py-4">Bạn chưa có địa chỉ nào được lưu.</p>
+                    @endforelse
                 </div>
             </section>
             
-            <!-- Favorite Items Section -->
             <section id="favorites" class="mb-10">
                 <h2 class="text-2xl font-bold mb-6">Món Ăn Yêu Thích</h2>
-                
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {{-- DYNAMIC FAVORITES --}}
+                    @forelse($favoriteProducts as $favorite)
+                    @if($favorite->product) {{-- Ensure product exists --}}
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden group">
-                        <div class="relative h-48">
-                            <img src="/placeholder.svg?height=400&width=600" alt="Burger Gà Cay" class="w-full h-full object-cover">
-                            <button class="absolute top-3 right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-red-500 shadow-md">
-                                <i class="fas fa-heart"></i>
-                            </button>
-                        </div>
+                        <a href="{{ route('products.show', $favorite->product->id) }}" class="block relative h-48"><img src="{{ $favorite->product->primaryImage ? Storage::disk('s3')->url($favorite->product->primaryImage->img) : asset('images/default-product.png') }}" alt="{{ $favorite->product->name }}" class="w-full h-full object-cover"></a>
                         <div class="p-4">
-                            <h3 class="font-bold mb-1">Burger Gà Cay</h3>
-                            <p class="text-gray-500 text-sm mb-2">Burger với thịt gà cay, rau xà lách và sốt đặc biệt</p>
+                            <h3 class="font-bold mb-1"><a href="{{ route('products.show', $favorite->product->id) }}" class="hover:text-orange-500">{{ $favorite->product->name }}</a></h3>
+                            <p class="text-gray-500 text-sm mb-2 h-10">{{ Str::limit($favorite->product->short_description, 60) }}</p>
                             <div class="flex justify-between items-center">
-                                <span class="font-bold text-orange-500">65.000đ</span>
-                                <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">
-                                    Thêm vào giỏ
-                                </button>
+                                <span class="font-bold text-orange-500">{{ number_format($favorite->product->base_price, 0, ',', '.') }}đ</span>
+                                <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">Thêm vào giỏ</button>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm overflow-hidden group">
-                        <div class="relative h-48">
-                            <img src="/placeholder.svg?height=400&width=600" alt="Pizza Hải Sản" class="w-full h-full object-cover">
-                            <button class="absolute top-3 right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-red-500 shadow-md">
-                                <i class="fas fa-heart"></i>
-                            </button>
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-bold mb-1">Pizza Hải Sản</h3>
-                            <p class="text-gray-500 text-sm mb-2">Pizza với hải sản tươi ngon, phô mai và sốt cà chua</p>
-                            <div class="flex justify-between items-center">
-                                <span class="font-bold text-orange-500">150.000đ</span>
-                                <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">
-                                    Thêm vào giỏ
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white rounded-xl shadow-sm overflow-hidden group">
-                        <div class="relative h-48">
-                            <img src="/placeholder.svg?height=400&width=600" alt="Mì Ý Sốt Bò Bằm" class="w-full h-full object-cover">
-                            <button class="absolute top-3 right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-red-500 shadow-md">
-                                <i class="fas fa-heart"></i>
-                            </button>
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-bold mb-1">Mì Ý Sốt Bò Bằm</h3>
-                            <p class="text-gray-500 text-sm mb-2">Mì Ý với sốt bò bằm đậm đà và phô mai Parmesan</p>
-                            <div class="flex justify-between items-center">
-                                <span class="font-bold text-orange-500">85.000đ</span>
-                                <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">
-                                    Thêm vào giỏ
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    @endif
+                    @empty
+                    <p class="md:col-span-2 lg:col-span-3 text-gray-500 text-center py-4">Bạn chưa yêu thích món ăn nào.</p>
+                    @endforelse
                 </div>
             </section>
             
-            <!-- Rewards Section -->
             <section id="rewards" class="mb-10">
                 <h2 class="text-2xl font-bold mb-6">Điểm Thưởng & Ưu Đãi</h2>
-                
+                {{-- DYNAMIC REWARDS --}}
                 <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-                        <div>
-                            <h3 class="text-lg font-bold mb-1">Điểm thưởng của bạn</h3>
-                            <p class="text-gray-500">Sử dụng điểm để đổi lấy ưu đãi hấp dẫn</p>
-                        </div>
-                        <div class="mt-4 md:mt-0">
-                            <div class="flex items-center bg-orange-50 px-4 py-2 rounded-lg">
-                                <i class="fas fa-medal text-orange-500 mr-2"></i>
-                                <span class="text-2xl font-bold text-orange-500">120</span>
-                                <span class="text-gray-500 ml-2">điểm</span>
-                            </div>
-                        </div>
+                        <div><h3 class="text-lg font-bold mb-1">Điểm thưởng của bạn</h3><p class="text-gray-500">Sử dụng điểm để đổi lấy ưu đãi hấp dẫn</p></div>
+                        <div class="mt-4 md:mt-0"><div class="flex items-center bg-orange-50 px-4 py-2 rounded-lg"><i class="fas fa-medal text-orange-500 mr-2"></i><span class="text-2xl font-bold text-orange-500">{{ number_format($currentPoints, 0, ',', '.') }}</span><span class="text-gray-500 ml-2">điểm</span></div></div>
                     </div>
-                    
                     <div class="border-t border-gray-100 pt-6">
                         <h4 class="font-bold mb-4">Lịch sử điểm thưởng</h4>
                         <div class="space-y-4">
+                            @forelse($pointHistory as $history)
                             <div class="flex justify-between items-center">
-                                <div>
-                                    <p class="font-medium">Đơn hàng #FF12345</p>
-                                    <p class="text-sm text-gray-500">15/05/2023</p>
-                                </div>
-                                <span class="text-green-500 font-medium">+12 điểm</span>
+                                <div><p class="font-medium">{{ $history->reason }}</p><p class="text-sm text-gray-500">{{ $history->created_at->format('d/m/Y') }}</p></div>
+                                @if($history->points > 0)
+                                <span class="text-green-500 font-medium">+{{ $history->points }} điểm</span>
+                                @else
+                                <span class="text-red-500 font-medium">{{ $history->points }} điểm</span>
+                                @endif
                             </div>
-                            
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <p class="font-medium">Đơn hàng #FF12344</p>
-                                    <p class="text-sm text-gray-500">10/05/2023</p>
-                                </div>
-                                <span class="text-green-500 font-medium">+18 điểm</span>
-                            </div>
-                            
-                            <div class="flex justify-between items-center">
-                                <div>
-                                    <p class="font-medium">Đổi voucher giảm giá 50.000đ</p>
-                                    <p class="text-sm text-gray-500">01/05/2023</p>
-                                </div>
-                                <span class="text-red-500 font-medium">-50 điểm</span>
-                            </div>
+                            @empty
+                            <p class="text-gray-500 text-center py-2">Chưa có lịch sử điểm thưởng.</p>
+                            @endforelse
                         </div>
                     </div>
                 </div>
-                
                 <div class="bg-white rounded-xl shadow-sm p-6">
                     <h3 class="text-lg font-bold mb-6">Voucher của bạn</h3>
-                    
                     <div class="space-y-4">
+                        @forelse($vouchers as $voucher)
                         <div class="border border-dashed border-orange-200 rounded-lg p-4 bg-orange-50">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                                 <div class="mb-4 md:mb-0">
-                                    <h4 class="font-bold text-lg mb-1">Giảm 50.000đ</h4>
-                                    <p class="text-gray-600 text-sm">Áp dụng cho đơn hàng từ 200.000đ</p>
-                                    <p class="text-gray-500 text-xs mt-2">Hết hạn: 30/06/2023</p>
+                                    <h4 class="font-bold text-lg mb-1">{{ $voucher->name }}</h4>
+                                    <p class="text-gray-600 text-sm">{{ $voucher->description }}</p>
+                                    @if($voucher->end_date)<p class="text-gray-500 text-xs mt-2">Hết hạn: {{ $voucher->end_date->format('d/m/Y') }}</p>@endif
                                 </div>
-                                <div class="flex flex-col items-center">
-                                    <span class="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">FAST50K</span>
-                                    <button class="text-orange-500 border border-orange-500 hover:bg-orange-50 px-4 py-1 rounded-lg text-sm transition-colors">
-                                        Sử dụng ngay
-                                    </button>
-                                </div>
+                                <div class="flex flex-col items-center"><span class="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">{{ $voucher->code }}</span><button class="text-orange-500 border border-orange-500 hover:bg-orange-50 px-4 py-1 rounded-lg text-sm transition-colors">Sử dụng ngay</button></div>
                             </div>
                         </div>
-                        
-                        <div class="border border-dashed border-orange-200 rounded-lg p-4 bg-orange-50">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                                <div class="mb-4 md:mb-0">
-                                    <h4 class="font-bold text-lg mb-1">Freeship</h4>
-                                    <p class="text-gray-600 text-sm">Miễn phí giao hàng cho đơn từ 100.000đ</p>
-                                    <p class="text-gray-500 text-xs mt-2">Hết hạn: 15/06/2023</p>
-                                </div>
-                                <div class="flex flex-col items-center">
-                                    <span class="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">FREESHIP</span>
-                                    <button class="text-orange-500 border border-orange-500 hover:bg-orange-50 px-4 py-1 rounded-lg text-sm transition-colors">
-                                        Sử dụng ngay
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="border border-dashed border-orange-200 rounded-lg p-4 bg-orange-50">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                                <div class="mb-4 md:mb-0">
-                                    <h4 class="font-bold text-lg mb-1">Giảm 15%</h4>
-                                    <p class="text-gray-600 text-sm">Áp dụng cho tất cả các loại pizza</p>
-                                    <p class="text-gray-500 text-xs mt-2">Hết hạn: 20/06/2023</p>
-                                </div>
-                                <div class="flex flex-col items-center">
-                                    <span class="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-2">PIZZA15</span>
-                                    <button class="text-orange-500 border border-orange-500 hover:bg-orange-50 px-4 py-1 rounded-lg text-sm transition-colors">
-                                        Sử dụng ngay
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        @empty
+                        <p class="text-gray-500 text-center py-4">Bạn không có voucher nào khả dụng.</p>
+                        @endforelse
                     </div>
                 </div>
             </section>
         </div>
-    </div>
-</div>
-
-<!-- Edit Profile Modal -->
-<div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center" id="edit-profile-modal">
-    <div class="bg-white rounded-lg p-8 max-w-2xl w-full">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold">Chỉnh Sửa Hồ Sơ</h2>
-            <button id="close-modal" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        
-        <form id="edit-profile-form" class="space-y-6">
-            <div class="flex flex-col items-center mb-6">
-                <div class="relative mb-4">
-                    <div class="w-24 h-24 rounded-full bg-gray-200 overflow-hidden">
-                        <img src="/placeholder.svg?height=200&width=200" alt="Ảnh đại diện" class="w-full h-full object-cover">
-                    </div>
-                    <button class="absolute bottom-0 right-0 bg-orange-500 hover:bg-orange-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-colors">
-                        <i class="fas fa-camera"></i>
-                    </button>
-                </div>
-                <p class="text-sm text-gray-500">Nhấn vào biểu tượng máy ảnh để thay đổi ảnh đại diện</p>
-            </div>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                <div>
-                    <label for="full_name" class="block text-sm font-medium mb-2">Họ và tên</label>
-                    <input type="text" id="full_name" name="full_name" value="Nguyễn Văn A" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                </div>
-                
-                <div>
-                    <label for="email" class="block text-sm font-medium mb-2">Email</label>
-                    <input type="email" id="email" name="email" value="nguyenvana@example.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                </div>
-                
-                <div>
-                    <label for="phone" class="block text-sm font-medium mb-2">Số điện thoại</label>
-                    <input type="tel" id="phone" name="phone" value="0987654321" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                </div>
-                
-                <div>
-                    <label for="birthday" class="block text-sm font-medium mb-2">Ngày sinh</label>
-                    <input type="date" id="birthday" name="birthday" value="1990-01-01" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                </div>
-                
-                <div>
-                    <label for="gender" class="block text-sm font-medium mb-2">Giới tính</label>
-                    <select id="gender" name="gender" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        <option value="male" selected>Nam</option>
-                        <option value="female">Nữ</option>
-                        <option value="other">Khác</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="border-t border-gray-200 pt-6">
-                <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
-                    Lưu thay đổi
-                </button>
-            </div>
-        </form>
     </div>
 </div>
 @endsection

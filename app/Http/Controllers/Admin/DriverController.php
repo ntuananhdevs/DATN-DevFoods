@@ -147,22 +147,17 @@ class DriverController extends Controller
             // Tạo tài khoản tài xế mới
             $password = Str::random(8) . rand(0, 9) . chr(rand(65, 90)) . chr(rand(97, 122)) . '!@#&*)(^';
             $hashedPassword = Hash::make($password);
-            
+
             Log::info('Tạo tài khoản tài xế mới', [
                 'application_id' => $application->id,
                 'email' => $application->email
             ]);
 
+            // 1. Tạo driver
             $driver = Driver::create([
                 'application_id' => $application->id,
-                'license_number' => $application->driver_license_number,
-                'vehicle_type' => $application->vehicle_type,
-                'vehicle_registration' => $application->vehicle_registration,
-                'vehicle_color' => $application->vehicle_color,
                 'status' => 'active',
                 'is_available' => true,
-                'current_latitude' => 0,
-                'current_longitude' => 0,
                 'balance' => 0,
                 'rating' => 5.00,
                 'cancellation_count' => 0,
@@ -172,7 +167,42 @@ class DriverController extends Controller
                 'email' => $application->email,
                 'password' => $hashedPassword,
                 'phone_number' => $application->phone_number,
-                'full_name' => $application->full_name
+                'full_name' => $application->full_name,
+                'address' => $application->address,
+                'profile_image' => $application->profile_image,
+                'bank_account_number' => $application->bank_account_number,
+                'bank_account_name' => $application->bank_account_name,
+                'bank_name' => $application->bank_name,
+                'emergency_contact_name' => $application->emergency_contact_name,
+                'emergency_contact_phone' => $application->emergency_contact_phone,
+                'note' => $application->note,
+            ]);
+
+            // 2. Tạo driver_documents
+            $driver->documents()->create([
+                'license_number' => $application->driver_license_number,
+                'license_class' => $application->license_class,
+                'license_expiry' => $application->license_expiry,
+                'license_front' => $application->license_front,
+                'license_back' => $application->license_back,
+                'id_card_front' => $application->id_card_front,
+                'id_card_back' => $application->id_card_back,
+                'vehicle_type' => $application->vehicle_type,
+                'vehicle_registration' => $application->vehicle_registration,
+                'vehicle_color' => $application->vehicle_color,
+                'license_plate' => $application->license_plate,
+                'vehicle_brand' => $application->vehicle_brand,
+                'vehicle_model' => $application->vehicle_model,
+                'vehicle_year' => $application->vehicle_year,
+                'vehicle_image' => $application->vehicle_image,
+            ]);
+
+            // 3. Tạo driver_locations (nếu có thông tin vị trí ban đầu)
+            $driver->location()->create([
+                'latitude' => $application->latitude ?? 0,
+                'longitude' => $application->longitude ?? 0,
+                'updated_at' => now(),
+                'address' => $application->address,
             ]);
 
             Log::info('Gửi email thông báo chấp nhận', [
@@ -185,7 +215,6 @@ class DriverController extends Controller
 
             DB::commit();
 
-            // Hiển thị thông báo thành công
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công!',
@@ -268,23 +297,17 @@ class DriverController extends Controller
         }
     }
 
-    public function show(Driver $driver)
+    public function show($id)
     {
-        // Load additional data for comprehensive driver profile
-        $driver->load(['application', 'violations', 'orders']);
-        
-        // Calculate statistics
+        $driver = Driver::with(['documents', 'location', 'violations', 'orders'])->findOrFail($id);
+        // Thống kê, nếu có
         $stats = [
-            'total_orders' => $driver->orders()->count(),
-            'completed_orders' => $driver->orders()->where('status', 'completed')->count(),
-            'cancelled_orders' => $driver->orders()->where('status', 'cancelled')->count(),
-            'total_earnings' => $driver->orders()->where('status', 'completed')->sum('driver_earning'),
-            'average_rating' => $driver->rating,
-            'total_violations' => $driver->violations()->count(),
-            'recent_orders' => $driver->orders()->latest()->take(10)->get(),
-            'recent_violations' => $driver->violations()->latest()->take(5)->get(),
+            'total_orders' => $driver->orders->count(),
+            'completed_orders' => $driver->orders->where('status', 'completed')->count(),
+            'cancelled_orders' => $driver->orders->where('status', 'cancelled')->count(),
+            'total_earnings' => $driver->orders->sum('driver_earning'),
+            'total_violations' => $driver->violations->count(),
         ];
-        
         return view('admin.driver.show', compact('driver', 'stats'));
     }
 
@@ -350,7 +373,27 @@ class DriverController extends Controller
      */
     public function edit(Driver $driver)
     {
-        return view('admin.driver.edit', compact('driver'));
+        // Load related data
+        $driver->load([
+            'documents',
+            'location',
+            'violations',
+            'orders',
+            'earnings',
+            'reviews'
+        ]);
+
+        // Get driver statistics
+        $stats = [
+            'total_orders' => $driver->orders->count(),
+            'completed_orders' => $driver->orders->where('status', 'completed')->count(),
+            'cancelled_orders' => $driver->orders->where('status', 'cancelled')->count(),
+            'total_earnings' => $driver->earnings->sum('amount'),
+            'average_rating' => $driver->reviews->avg('rating'),
+            'total_violations' => $driver->violations->count()
+        ];
+
+        return view('admin.driver.edit', compact('driver', 'stats'));
     }
 
     /**

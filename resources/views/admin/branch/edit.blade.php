@@ -281,6 +281,6 @@
     <script src="{{ asset('js/admin/branchs/branch-edit.js') }}"></script>
     <script>
         // Set Mapbox API key for the external JavaScript file
-        setMapboxApiKey("{{ env('MAPBOX_API_KEY') }}");
+        setMapboxApiKey("{{ config('services.mapbox.access_token') }}");
     </script>
 @endsection

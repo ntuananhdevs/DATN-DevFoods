@@ -1,242 +1,203 @@
-@extends('layouts/admin/contentLayoutMaster')
+@extends('layouts.admin.contentLayoutMaster')
 
-@section('title', 'Chi tiết đơn đăng ký tài xế')
-
-@section('content')
-<div class="data-table-wrapper">
-    <!-- Header -->
-    <div class="data-table-main-header">
-        <div class="data-table-brand">
-            <div class="data-table-logo">
-                <i class="fas fa-user-check"></i>
-            </div>
-            <h1 class="data-table-title">Chi tiết đơn đăng ký tài xế #{{ $application->id }}</h1>
-        </div>
-        <div class="data-table-header-actions">
-            <a href="{{ route('admin.drivers.applications.index') }}" class="data-table-btn data-table-btn-outline">
-                <i class="fas fa-arrow-left"></i> Quay lại
-            </a>
-        </div>
-    </div>
-
-    <!-- Status Update Form -->
-    @if($application->status === 'pending')
-    <div class="data-table-card mb-4">
-        <div class="data-table-header">
-            <h2 class="data-table-card-title">Cập nhật trạng thái</h2>
-        </div>
-        <div class="p-4">
-            <form action="{{ route('admin.drivers.applications.update-status', $application) }}" method="POST">
-                @csrf
-                @method('PATCH')
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="status">Trạng thái:</label>
-                            <select name="status" id="status" class="form-control" required>
-                                <option value="">-- Chọn trạng thái --</option>
-                                <option value="approved">Duyệt</option>
-                                <option value="rejected">Từ chối</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="notes">Ghi chú:</label>
-                            <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Ghi chú về quyết định..."></textarea>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="data-table-btn data-table-btn-primary">
-                    <i class="fas fa-save"></i> Cập nhật
-                </button>
-            </form>
-        </div>
-    </div>
-    @endif
-
-    <div class="row">
-        <!-- Thông tin cá nhân -->
-        <div class="col-md-6">
-            <div class="data-table-card">
-                <div class="data-table-header">
-                    <h2 class="data-table-card-title">Thông tin cá nhân</h2>
-                </div>
-                <div class="p-4">
-                    <div class="text-center mb-4">
-                        @if($imageUrls['profile_image'])
-                            <img src="{{ $imageUrls['profile_image'] }}" alt="Ảnh chân dung" class="profile-image mb-3" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #007bff;">
-                        @else
-                            <div class="profile-placeholder mb-3" style="width: 120px; height: 120px; border-radius: 50%; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0 auto; border: 3px solid #dee2e6;">
-                                <i class="fas fa-user fa-3x text-muted"></i>
-                            </div>
-                        @endif
-                        <h4>{{ $application->full_name }}</h4>
-                        <span class="data-table-status 
-                            @if($application->status === 'approved') data-table-status-success
-                            @elseif($application->status === 'rejected') data-table-status-failed
-                            @else data-table-status-warning @endif">
-                            @if($application->status === 'approved') 
-                                <i class="fas fa-check"></i> Đã duyệt
-                            @elseif($application->status === 'rejected') 
-                                <i class="fas fa-times"></i> Đã từ chối
-                            @else 
-                                <i class="fas fa-clock"></i> Chờ xử lý
-                            @endif
-                        </span>
 @section('title', 'Chi tiết tài xế')
 @section('description', 'Xem thông tin chi tiết tài xế')
 
 @section('content')
 <style>
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Base styles with consistent font */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
     .profile-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 15px;
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        border-radius: 16px;
         color: white;
         padding: 2rem;
         margin-bottom: 2rem;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
     }
     
     .profile-avatar {
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        border: 4px solid rgba(255, 255, 255, 0.3);
+        border: 4px solid rgba(255, 255, 255, 0.2);
         object-fit: cover;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
     }
     
     .info-card {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #f1f5f9;
+        transition: box-shadow 0.2s ease;
+    }
+    
+    .info-card:hover {
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
     }
     
     .info-card h5 {
-        color: #374151;
+        color: #1e293b;
         font-weight: 600;
+        font-size: 1.125rem;
         margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #3b82f6;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #4f46e5;
         display: inline-block;
     }
     
     .stat-card {
         background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         color: white;
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 1.5rem;
         text-align: center;
-        transition: transform 0.2s ease;
+        transition: all 0.3s ease;
         height: 100%;
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.2);
     }
     
     .stat-card:hover {
-        transform: translateY(-2px);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
     }
     
     .stat-number {
         font-size: 2rem;
-        font-weight: bold;
+        font-weight: 700;
         margin-bottom: 0.5rem;
+        line-height: 1;
     }
     
     .stat-label {
         font-size: 0.875rem;
         opacity: 0.9;
+        font-weight: 500;
     }
     
     .status-badge {
         padding: 0.5rem 1rem;
-        border-radius: 25px;
+        border-radius: 20px;
         font-weight: 500;
         font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
     }
     
     .status-active {
         background-color: #dcfce7;
-        color: #15803d;
+        color: #166534;
+        border: 1px solid #bbf7d0;
     }
     
     .status-inactive {
         background-color: #fee2e2;
-        color: #b91c1c;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
     
     .status-locked {
         background-color: #fef3c7;
-        color: #d97706;
+        color: #92400e;
+        border: 1px solid #fde68a;
     }
     
     .available-badge {
         background-color: #d1fae5;
-        color: #059669;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
     }
     
     .unavailable-badge {
         background-color: #fef3c7;
-        color: #d97706;
+        color: #92400e;
+        border: 1px solid #fde68a;
     }
     
     .info-table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 0.9rem;
     }
     
     .info-table th {
-        background-color: #f9fafb;
-        padding: 0.75rem;
-        font-weight: 500;
+        background-color: #f8fafc;
+        padding: 0.875rem;
+        font-weight: 600;
         color: #374151;
-        border-bottom: 1px solid #e5e7eb;
-        width: 30%;
+        border-bottom: 1px solid #e2e8f0;
+        width: 35%;
+        text-align: left;
     }
     
     .info-table td {
-        padding: 0.75rem;
-        border-bottom: 1px solid #e5e7eb;
-        color: #6b7280;
+        padding: 0.875rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: #64748b;
+        font-weight: 400;
+    }
+    
+    .info-table tr:last-child th,
+    .info-table tr:last-child td {
+        border-bottom: none;
     }
     
     .document-image {
         max-width: 200px;
         border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         cursor: pointer;
-        transition: transform 0.2s ease;
+        transition: all 0.2s ease;
+        border: 2px solid #f1f5f9;
     }
     
     .document-image:hover {
         transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border-color: #4f46e5;
     }
     
     .rating-stars {
-        color: #fbbf24;
+        color: #f59e0b;
         margin-left: 0.5rem;
     }
     
     .back-btn {
-        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
         color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
+        padding: 0.625rem 1.25rem;
+        border-radius: 10px;
         text-decoration: none;
         font-size: 0.875rem;
+        font-weight: 500;
         transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 2px 8px rgba(100, 116, 139, 0.2);
     }
     
     .back-btn:hover {
-        background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+        background: linear-gradient(135deg, #475569 0%, #334155 100%);
         color: white;
         text-decoration: none;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
     }
     
     .action-btn {
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
+        padding: 0.625rem 1.25rem;
+        border-radius: 10px;
         font-size: 0.875rem;
         font-weight: 500;
         text-decoration: none;
@@ -247,18 +208,20 @@
         margin: 0.25rem;
         border: none;
         cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     
     .btn-edit {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
     }
     
     .btn-edit:hover {
-        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: white;
         text-decoration: none;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
     
     .btn-danger {
@@ -269,7 +232,8 @@
     .btn-danger:hover {
         background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
         color: white;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
     }
     
     .btn-warning {
@@ -280,7 +244,8 @@
     .btn-warning:hover {
         background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
         color: white;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
     }
     
     .btn-success {
@@ -291,7 +256,8 @@
     .btn-success:hover {
         background: linear-gradient(135deg, #059669 0%, #047857 100%);
         color: white;
-        transform: translateY(-1px);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
     
     .btn-secondary {
@@ -302,140 +268,8 @@
     .btn-secondary:hover {
         background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
         color: white;
-        transform: translateY(-1px);
-    }
-    
-    .timeline {
-        position: relative;
-        padding-left: 2rem;
-    }
-    
-    .timeline::before {
-        content: '';
-        position: absolute;
-        left: 0.5rem;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: #e5e7eb;
-    }
-    
-    .timeline-item {
-        position: relative;
-        margin-bottom: 1.5rem;
-        background: white;
-        padding: 1rem;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-    
-    .timeline-item::before {
-        content: '';
-        position: absolute;
-        left: -1.75rem;
-        top: 1.25rem;
-        width: 0.75rem;
-        height: 0.75rem;
-        background: #3b82f6;
-        border-radius: 50%;
-        border: 2px solid white;
-    }
-    
-    .timeline-date {
-        font-size: 0.75rem;
-        color: #6b7280;
-        margin-bottom: 0.25rem;
-    }
-    
-    .timeline-title {
-        font-weight: 600;
-        color: #374151;
-        margin-bottom: 0.25rem;
-    }
-    
-    .timeline-content {
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-    
-    .nav-tabs .nav-link {
-        border: none;
-        border-bottom: 2px solid transparent;
-        border-radius: 0;
-        color: #6b7280;
-        padding: 0.75rem 1rem;
-    }
-    
-    .nav-tabs .nav-link.active {
-        border-bottom-color: #3b82f6;
-        color: #3b82f6;
-        background: none;
-    }
-    
-    .tab-content {
-        padding: 1.5rem 0;
-    }
-    
-    .modal-header {
-        border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .modal-footer {
-        border-top: 1px solid #e5e7eb;
-    }
-    
-    .violation-badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.375rem;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-    
-    .violation-low {
-        background-color: #fef3c7;
-        color: #d97706;
-    }
-    
-    .violation-medium {
-        background-color: #fed7d7;
-        color: #d69e2e;
-    }
-    
-    .violation-high {
-        background-color: #fee2e2;
-        color: #e53e3e;
-    }
-    
-    .violation-critical {
-        background-color: #fed7d7;
-        color: #b91c1c;
-    }
-    
-    .order-status {
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 500;
-    }
-    
-    .order-status.completed {
-        background-color: #dcfce7;
-        color: #15803d;
-    }
-    
-    .order-status.cancelled {
-        background-color: #fee2e2;
-        color: #b91c1c;
-    }
-    
-    .order-status.pending {
-        background-color: #fef3c7;
-        color: #d97706;
-    }
-    
-    .order-status.in_delivery {
-        background-color: #ddd6fe;
-        color: #7c3aed;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
     }
     
     .quick-action-cards {
@@ -447,16 +281,26 @@
     
     .quick-action-card {
         background: white;
-        border-radius: 10px;
+        border-radius: 12px;
         padding: 1.5rem;
         text-align: center;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
         cursor: pointer;
+        border: 1px solid #f1f5f9;
     }
     
     .quick-action-card:hover {
-        transform: translateY(-2px);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        border-color: #e2e8f0;
+    }
+    
+    .quick-action-card h6 {
+        color: #1e293b;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
     }
     
     .quick-action-icon {
@@ -467,20 +311,165 @@
         align-items: center;
         justify-content: center;
         margin: 0 auto 1rem;
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     
-    .progress-bar-custom {
-        height: 8px;
-        border-radius: 4px;
-        background: #e5e7eb;
-        overflow: hidden;
+    .nav-tabs {
+        border-bottom: 2px solid #f1f5f9;
+        margin-bottom: 0;
     }
     
-    .progress-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.3s ease;
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        color: #64748b;
+        padding: 1rem 1.5rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        color: #4f46e5;
+        border-bottom-color: #c7d2fe;
+    }
+    
+    .nav-tabs .nav-link.active {
+        border-bottom-color: #4f46e5;
+        color: #4f46e5;
+        background: none;
+        font-weight: 600;
+    }
+    
+    .tab-content {
+        padding: 2rem 0;
+    }
+    
+    .violation-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    
+    .violation-low {
+        background-color: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+    }
+    
+    .violation-medium {
+        background-color: #fed7d7;
+        color: #c53030;
+        border: 1px solid #feb2b2;
+    }
+    
+    .violation-high {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+    
+    .violation-critical {
+        background-color: #fecaca;
+        color: #7f1d1d;
+        border: 1px solid #f87171;
+    }
+    
+    .order-status {
+        padding: 0.375rem 0.875rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    
+    .order-status.completed {
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+    
+    .order-status.cancelled {
+        background-color: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+    
+    .order-status.pending {
+        background-color: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+    }
+    
+    .order-status.in_delivery {
+        background-color: #e0e7ff;
+        color: #3730a3;
+        border: 1px solid #c7d2fe;
+    }
+    
+    /* Typography improvements */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        line-height: 1.2;
+        color: #1e293b;
+    }
+    
+    .text-muted {
+        color: #64748b !important;
+        font-weight: 400;
+    }
+    
+    .small {
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .profile-card {
+            padding: 1.5rem;
+        }
+        
+        .quick-action-cards {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .stat-card {
+            padding: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 1.5rem;
+        }
+        
+        .nav-tabs .nav-link {
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+        }
+    }
+    
+    /* Animation for fade-in */
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
 
@@ -510,8 +499,8 @@
                 <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ $driver->address ?? 'Chưa cập nhật' }}</p>
                 <p class="mb-0">
                     <i class="fas fa-star rating-stars"></i>
-                    <span class="ms-1">{{ number_format($driver->rating, 1) }}/5.0</span>
-                    <span class="ms-2 text-sm opacity-75">({{ $stats['total_orders'] }} đơn hàng)</span>
+                    <span class="ms-1">{{ number_format($driver->rating ?? 0, 1) }}/5.0</span>
+                    <span class="ms-2 text-sm opacity-75">({{ $stats['total_orders'] ?? 0 }} đơn hàng)</span>
                 </p>
             </div>
             <div class="col-md-3 text-center">
@@ -528,7 +517,7 @@
                     </span>
                 </div>
                 <div class="small text-muted">
-                    Điểm tin cậy: {{ $driver->reliability_score }}/100
+                    Điểm tin cậy: {{ $driver->reliability_score ?? 0 }}/100
                 </div>
             </div>
         </div>
@@ -581,37 +570,37 @@
     <div class="row mb-4">
         <div class="col-md-2">
             <div class="stat-card">
-                <div class="stat-number">{{ $stats['total_orders'] }}</div>
+                <div class="stat-number">{{ $stats['total_orders'] ?? 0 }}</div>
                 <div class="stat-label">Tổng đơn hàng</div>
             </div>
         </div>
         <div class="col-md-2">
             <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                <div class="stat-number">{{ $stats['completed_orders'] }}</div>
+                <div class="stat-number">{{ $stats['completed_orders'] ?? 0 }}</div>
                 <div class="stat-label">Hoàn thành</div>
             </div>
         </div>
         <div class="col-md-2">
             <div class="stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
-                <div class="stat-number">{{ $stats['cancelled_orders'] }}</div>
+                <div class="stat-number">{{ $stats['cancelled_orders'] ?? 0 }}</div>
                 <div class="stat-label">Đã hủy</div>
             </div>
         </div>
         <div class="col-md-2">
             <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                <div class="stat-number">{{ number_format($stats['total_earnings']) }}đ</div>
+                <div class="stat-number">{{ number_format($stats['total_earnings'] ?? 0) }}đ</div>
                 <div class="stat-label">Tổng thu nhập</div>
             </div>
         </div>
         <div class="col-md-2">
             <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                <div class="stat-number">{{ $stats['total_violations'] }}</div>
+                <div class="stat-number">{{ $stats['total_violations'] ?? 0 }}</div>
                 <div class="stat-label">Vi phạm</div>
             </div>
         </div>
         <div class="col-md-2">
             <div class="stat-card" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">
-                <div class="stat-number">{{ $driver->reliability_score }}/100</div>
+                <div class="stat-number">{{ $driver->reliability_score ?? 0 }}/100</div>
                 <div class="stat-label">Điểm tin cậy</div>
             </div>
         </div>
@@ -681,6 +670,35 @@
                             </tr>
                         </table>
                     </div>
+
+                    <!-- Thông tin vị trí -->
+                    @if($driver->location)
+                        <div class="info-card">
+                            <h5><i class="fas fa-map-marker-alt me-2"></i>Vị trí hiện tại</h5>
+                            <table class="info-table">
+                                <tr><th>Latitude</th><td>{{ $driver->location->latitude }}</td></tr>
+                                <tr><th>Longitude</th><td>{{ $driver->location->longitude }}</td></tr>
+                                <tr><th>Địa chỉ</th><td>{{ $driver->location->address ?? $driver->address }}</td></tr>
+                            </table>
+                        </div>
+                    @endif
+
+                    <!-- Thông tin vi phạm -->
+                    @if($driver->violations && $driver->violations->count())
+                        <div class="info-card">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Vi phạm</h5>
+                            <table class="info-table">
+                                <tr><th>Ngày</th><th>Nội dung</th><th>Mức độ</th></tr>
+                                @foreach($driver->violations as $violation)
+                                    <tr>
+                                        <td>{{ $violation->created_at->format('d/m/Y') }}</td>
+                                        <td>{{ $violation->content }}</td>
+                                        <td><span class="violation-badge violation-{{ $violation->level }}">{{ ucfirst($violation->level) }}</span></td>
+                                    </tr>
+                                @endforeach
+                            </table>
+                        </div>
+                    @endif
                 </div>
                 
                 <div class="col-md-6">
@@ -713,55 +731,16 @@
                             </tr>
                         </table>
                     </div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
+
+                    @if($driver->admin_notes)
                     <div class="info-card">
-                        <h5><i class="fas fa-chart-bar me-2"></i>Thống kê hoạt động</h5>
-                        <table class="info-table">
-                            <tr>
-                                <th>Đánh giá trung bình</th>
-                                <td>
-                                    {{ number_format($driver->rating, 1) }}/5.0
-                                    <div class="progress-bar-custom mt-1">
-                                        <div class="progress-fill" style="width: {{ ($driver->rating / 5) * 100 }}%; background: linear-gradient(90deg, #fbbf24, #f59e0b);"></div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Điểm tin cậy</th>
-                                <td>
-                                    {{ $driver->reliability_score }}/100
-                                    <div class="progress-bar-custom mt-1">
-                                        <div class="progress-fill" style="width: {{ $driver->reliability_score }}%; background: linear-gradient(90deg, #10b981, #059669);"></div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Số đơn đã hủy</th>
-                                <td>{{ $driver->cancellation_count ?? 0 }}</td>
-                            </tr>
-                            <tr>
-                                <th>Số lần vi phạm</th>
-                                <td>{{ $driver->penalty_count ?? 0 }}</td>
-                            </tr>
-                            <tr>
-                                <th>Số dư tài khoản</th>
-                                <td>{{ number_format($driver->balance ?? 0) }}đ</td>
-                            </tr>
-                            <tr>
-                                <th>Tự động nạp tiền</th>
-                                <td>{{ $driver->auto_deposit_earnings ? 'Có' : 'Không' }}</td>
-                            </tr>
-                        </table>
+                        <h5><i class="fas fa-sticky-note me-2"></i>Ghi chú của admin</h5>
+                        <p class="mb-0">{{ $driver->admin_notes }}</p>
                     </div>
-                </div>
-                
-                <div class="col-md-6">
+                    @endif
+
                     <div class="info-card">
-                        <h5><i class="fas fa-shield-alt me-2"></i>Trạng thái tài khoản</h5>
+                        <h5><i class="fas fa-cog me-2"></i>Trạng thái tài khoản</h5>
                         <table class="info-table">
                             <tr>
                                 <th>Trạng thái</th>
@@ -778,6 +757,14 @@
                                         {{ $driver->is_available ? 'Sẵn sàng' : 'Bận' }}
                                     </span>
                                 </td>
+                            </tr>
+                            <tr>
+                                <th>Điểm tin cậy</th>
+                                <td>{{ $driver->reliability_score ?? 0 }}/100</td>
+                            </tr>
+                            <tr>
+                                <th>Đánh giá</th>
+                                <td>{{ number_format($driver->rating ?? 0, 1) }}/5.0</td>
                             </tr>
                             @if($driver->locked_at)
                             <tr>
@@ -807,305 +794,47 @@
                     </div>
                 </div>
             </div>
-            
-            @if($driver->admin_notes)
-            <div class="info-card">
-                <h5><i class="fas fa-sticky-note me-2"></i>Ghi chú của admin</h5>
-                <p class="mb-0">{{ $driver->admin_notes }}</p>
-            </div>
-            @endif
         </div>
 
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Email:</strong></td>
-                            <td>{{ $application->email }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Số điện thoại:</strong></td>
-                            <td>{{ $application->phone_number }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Ngày sinh:</strong></td>
-                            <td>{{ Carbon\Carbon::parse($application->date_of_birth)->format('d/m/Y') }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Giới tính:</strong></td>
-                            <td>
-                                @if($application->gender === 'male') Nam
-                                @elseif($application->gender === 'female') Nữ
-                                @else Khác @endif
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Địa chỉ:</strong></td>
-                            <td>{{ $application->address }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Thành phố:</strong></td>
-                            <td>{{ $application->city }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Quận/Huyện:</strong></td>
-                            <td>{{ $application->district }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Thông tin CMND/CCCD -->
-        <div class="col-md-6">
-            <div class="data-table-card">
-                <div class="data-table-header">
-                    <h2 class="data-table-card-title">Thông tin CMND/CCCD</h2>
-                </div>
-                <div class="p-4">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Số CMND/CCCD:</strong></td>
-                            <td>{{ $application->id_card_number }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Ngày cấp:</strong></td>
-                            <td>{{ Carbon\Carbon::parse($application->id_card_issue_date)->format('d/m/Y') }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Nơi cấp:</strong></td>
-                            <td>{{ $application->id_card_issue_place }}</td>
-                        </tr>
-                    </table>
-
-                    <div class="row mt-3">
-                        <div class="col-6">
-                            <h6>Mặt trước CMND/CCCD:</h6>
-                            @if($imageUrls['id_card_front_image'])
-                                <img src="{{ $imageUrls['id_card_front_image'] }}" alt="CMND/CCCD mặt trước" class="img-thumbnail document-image" data-toggle="modal" data-target="#imageModal" data-image-src="{{ $imageUrls['id_card_front_image'] }}" data-image-title="CMND/CCCD mặt trước">
-                            @else
-                                <div class="document-placeholder">
-                                    <i class="fas fa-image"></i>
-                                    <p>Không có ảnh</p>
-                                </div>
-                            @endif
-                        </div>
-                        <div class="col-6">
-                            <h6>Mặt sau CMND/CCCD:</h6>
-                            @if($imageUrls['id_card_back_image'])
-                                <img src="{{ $imageUrls['id_card_back_image'] }}" alt="CMND/CCCD mặt sau" class="img-thumbnail document-image" data-toggle="modal" data-target="#imageModal" data-image-src="{{ $imageUrls['id_card_back_image'] }}" data-image-title="CMND/CCCD mặt sau">
-                            @else
-                                <div class="document-placeholder">
-                                    <i class="fas fa-image"></i>
-                                    <p>Không có ảnh</p>
-                                </div>
-                            @endif
         <!-- Documents Tab -->
         <div class="tab-pane fade" id="documents" role="tabpanel">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="info-card">
-                        <h5><i class="fas fa-id-card me-2"></i>Bằng lái xe</h5>
-                        <table class="info-table">
-                            <tr>
-                                <th>Số bằng lái</th>
-                                <td>{{ $driver->license_number ?? 'Chưa cập nhật' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Hạng bằng lái</th>
-                                <td>{{ $driver->license_class ?? 'Chưa cập nhật' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Ngày hết hạn</th>
-                                <td>
-                                    @if($driver->license_expiry)
-                                        {{ \Carbon\Carbon::parse($driver->license_expiry)->format('d/m/Y') }}
-                                        @if(\Carbon\Carbon::parse($driver->license_expiry)->isPast())
-                                            <span class="badge bg-danger ms-2">Đã hết hạn</span>
-                                        @elseif(\Carbon\Carbon::parse($driver->license_expiry)->diffInDays() <= 30)
-                                            <span class="badge bg-warning ms-2">Sắp hết hạn</span>
-                                        @endif
-                                    @else
-                                        Chưa cập nhật
-                                    @endif
-                                </td>
-                            </tr>
-                        </table>
-                        
-                        @if($driver->license_image)
-                        <div class="mt-3">
-                            <h6>Hình ảnh bằng lái:</h6>
-                            <img src="{{ $driver->license_image }}" class="document-image" alt="Bằng lái xe" onclick="showImageModal(this.src)">
-                        </div>
-                        @endif
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="info-card">
-                        <h5><i class="fas fa-car-alt me-2"></i>Đăng ký xe</h5>
-                        <table class="info-table">
-                            <tr>
-                                <th>Số đăng ký</th>
-                                <td>{{ $driver->vehicle_registration ?? 'Chưa cập nhật' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Biển số xe</th>
-                                <td>{{ $driver->license_plate ?? 'Chưa cập nhật' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Loại xe</th>
-                                <td>{{ $driver->vehicle_type ?? 'Chưa cập nhật' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Màu xe</th>
-                                <td>{{ $driver->vehicle_color ?? 'Chưa cập nhật' }}</td>
-                            </tr>
-                        </table>
-                        
-                        @if($driver->vehicle_registration_image)
-                        <div class="mt-3">
-                            <h6>Hình ảnh đăng ký xe:</h6>
-                            <img src="{{ $driver->vehicle_registration_image }}" class="document-image" alt="Đăng ký xe" onclick="showImageModal(this.src)">
-                        </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="info-card">
-                        <h5><i class="fas fa-id-card-alt me-2"></i>CMND/CCCD</h5>
-                        @if($driver->identity_card_number)
-                        <table class="info-table">
-                            <tr>
-                                <th>Số CMND/CCCD</th>
-                                <td>{{ $driver->identity_card_number }}</td>
-                            </tr>
-                            <tr>
-                                <th>Ngày cấp</th>
-                                <td>{{ $driver->identity_card_date ? \Carbon\Carbon::parse($driver->identity_card_date)->format('d/m/Y') : 'Chưa cập nhật' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Nơi cấp</th>
-                                <td>{{ $driver->identity_card_place ?? 'Chưa cập nhật' }}</td>
-                            </tr>
-                        </table>
-                        @else
-                        <p class="text-muted">Chưa cập nhật thông tin CMND/CCCD</p>
-                        @endif
-                        
-                        @if($driver->identity_card_front_image || $driver->identity_card_back_image)
-                        <div class="mt-3">
-                            <h6>Hình ảnh CMND/CCCD:</h6>
-                            <div class="row">
-                                @if($driver->identity_card_front_image)
-                                <div class="col-6">
-                                    <p class="small text-muted">Mặt trước:</p>
-                                    <img src="{{ $driver->identity_card_front_image }}" class="document-image w-100" alt="CMND mặt trước" onclick="showImageModal(this.src)">
-                                </div>
-                                @endif
-                                @if($driver->identity_card_back_image)
-                                <div class="col-6">
-                                    <p class="small text-muted">Mặt sau:</p>
-                                    <img src="{{ $driver->identity_card_back_image }}" class="document-image w-100" alt="CMND mặt sau" onclick="showImageModal(this.src)">
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                        @endif
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="info-card">
-                        <h5><i class="fas fa-camera me-2"></i>Ảnh chân dung</h5>
-                        @if($driver->profile_image)
-                        <div class="text-center">
-                            <img src="{{ $driver->profile_image }}" class="document-image" alt="Ảnh chân dung" onclick="showImageModal(this.src)" style="max-width: 250px;">
-                        </div>
-                        @else
-                        <p class="text-muted">Chưa có ảnh chân dung</p>
-                        @endif
-                    </div>
-                </div>
+            <div class="info-card text-center">
+                <a href="{{ route('admin.drivers.edit', ['driver' => $driver->id]) }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-file-alt me-2"></i> Xem đầy đủ giấy tờ & chỉnh sửa
+                </a>
             </div>
         </div>
 
         <!-- Activity Tab -->
         <div class="tab-pane fade" id="activity" role="tabpanel">
             <div class="row">
-                <div class="col-md-8">
+                <div class="col-md-12">
                     <div class="info-card">
-                        <h5><i class="fas fa-shopping-bag me-2"></i>Đơn hàng gần đây</h5>
-                        @if($stats['recent_orders']->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Mã đơn</th>
-                                        <th>Khách hàng</th>
-                                        <th>Trạng thái</th>
-                                        <th>Thu nhập</th>
-                                        <th>Thời gian</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($stats['recent_orders'] as $order)
-                                    <tr>
-                                        <td><strong>#{{ $order->id }}</strong></td>
-                                        <td>{{ $order->customer_name ?? 'N/A' }}</td>
-                                        <td>
-                                            <span class="order-status {{ $order->status }}">
-                                                {{ ucfirst($order->status) }}
-                                            </span>
-                                        </td>
-                                        <td>{{ number_format($order->driver_earning ?? 0) }}đ</td>
-                                        <td>{{ $order->created_at->format('d/m H:i') }}</td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                        @else
-                        <p class="text-muted">Chưa có đơn hàng nào</p>
-                        @endif
-                    </div>
-                </div>
-                
-                <div class="col-md-4">
-                    <div class="info-card">
-                        <h5><i class="fas fa-chart-pie me-2"></i>Thống kê đơn hàng</h5>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>Hoàn thành:</span>
-                                <strong>{{ $stats['completed_orders'] }}</strong>
+                        <h5><i class="fas fa-chart-bar me-2"></i>Thống kê hoạt động</h5>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-primary">{{ $stats['total_orders'] ?? 0 }}</h3>
+                                    <p class="text-muted">Tổng đơn hàng</p>
+                                </div>
                             </div>
-                            <div class="progress-bar-custom">
-                                <div class="progress-fill" style="width: {{ $stats['total_orders'] > 0 ? ($stats['completed_orders'] / $stats['total_orders']) * 100 : 0 }}%; background: linear-gradient(90deg, #10b981, #059669);"></div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-success">{{ $stats['completed_orders'] ?? 0 }}</h3>
+                                    <p class="text-muted">Đơn hoàn thành</p>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>Đã hủy:</span>
-                                <strong>{{ $stats['cancelled_orders'] }}</strong>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-danger">{{ $stats['cancelled_orders'] ?? 0 }}</h3>
+                                    <p class="text-muted">Đơn hủy</p>
+                                </div>
                             </div>
-                            <div class="progress-bar-custom">
-                                <div class="progress-fill" style="width: {{ $stats['total_orders'] > 0 ? ($stats['cancelled_orders'] / $stats['total_orders']) * 100 : 0 }}%; background: linear-gradient(90deg, #ef4444, #dc2626);"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <span>Tỷ lệ hoàn thành:</span>
-                                <strong>{{ $stats['total_orders'] > 0 ? number_format(($stats['completed_orders'] / $stats['total_orders']) * 100, 1) : 0 }}%</strong>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-0">
-                            <div class="d-flex justify-content-between">
-                                <span>Tổng thu nhập:</span>
-                                <strong class="text-success">{{ number_format($stats['total_earnings']) }}đ</strong>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-warning">{{ number_format($stats['total_earnings'] ?? 0) }}đ</h3>
+                                    <p class="text-muted">Tổng thu nhập</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1116,52 +845,53 @@
         <!-- History Tab -->
         <div class="tab-pane fade" id="history" role="tabpanel">
             <div class="info-card">
-                <h5><i class="fas fa-cogs me-2"></i>Lịch sử thay đổi tài khoản</h5>
-                <div class="timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-date">{{ $driver->created_at->format('d/m/Y H:i:s') }}</div>
-                        <div class="timeline-title">Tài khoản được tạo</div>
-                        <div class="timeline-content">Tài khoản tài xế được tạo trong hệ thống</div>
-                    </div>
-                    
-                    @if($driver->password_reset_at)
-                    <div class="timeline-item">
-                        <div class="timeline-date">{{ $driver->password_reset_at->format('d/m/Y H:i:s') }}</div>
-                        <div class="timeline-title">Reset mật khẩu</div>
-                        <div class="timeline-content">Mật khẩu được reset bởi admin</div>
-                    </div>
-                    @endif
-                    
-                    @if($driver->locked_at)
-                    <div class="timeline-item">
-                        <div class="timeline-date">{{ $driver->locked_at->format('d/m/Y H:i:s') }}</div>
-                        <div class="timeline-title">Tài khoản bị khóa</div>
-                        <div class="timeline-content">{{ $driver->lock_reason ?? 'Không có lý do cụ thể' }}</div>
-                    </div>
-                    @endif
-                    
-                    <div class="timeline-item">
-                        <div class="timeline-date">{{ $driver->updated_at->format('d/m/Y H:i:s') }}</div>
-                        <div class="timeline-title">Cập nhật thông tin</div>
-                        <div class="timeline-content">Thông tin tài xế được cập nhật lần cuối</div>
-                    </div>
+                <h5><i class="fas fa-history me-2"></i>Lịch sử đơn hàng gần đây</h5>
+                @if(isset($recentOrders) && $recentOrders->count() > 0)
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Trạng thái</th>
+                                <th>Tổng tiền</th>
+                                <th>Thời gian</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($recentOrders as $order)
+                            <tr>
+                                <td>#{{ $order->id }}</td>
+                                <td>{{ $order->customer_name ?? 'N/A' }}</td>
+                                <td>
+                                    <span class="order-status {{ $order->status }}">
+                                        {{ $order->status_text ?? $order->status }}
+                                    </span>
+                                </td>
+                                <td>{{ number_format($order->total_amount) }}đ</td>
+                                <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
+                @else
+                <div class="text-center py-4">
+                    <i class="fas fa-box-open text-muted" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3">Chưa có đơn hàng nào</h6>
+                    <p class="text-muted">Tài xế này chưa thực hiện đơn hàng nào</p>
+                </div>
+                @endif
             </div>
         </div>
 
         <!-- Violations Tab -->
         <div class="tab-pane fade" id="violations" role="tabpanel">
             <div class="info-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Lịch sử vi phạm</h5>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="showViolationModal()">
-                        <i class="fas fa-plus me-1"></i> Thêm vi phạm
-                    </button>
-                </div>
-                
-                @if($stats['recent_violations']->count() > 0)
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Lịch sử vi phạm</h5>
+                @if(isset($violations) && $violations->count() > 0)
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Loại vi phạm</th>
@@ -1173,10 +903,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($stats['recent_violations'] as $violation)
+                            @foreach($violations as $violation)
                             <tr>
-                                <td><strong>{{ $violation->violation_type }}</strong></td>
-                                <td>{{ Str::limit($violation->description, 50) }}</td>
+                                <td>{{ $violation->type }}</td>
+                                <td>{{ $violation->description }}</td>
                                 <td>
                                     <span class="violation-badge violation-{{ $violation->severity }}">
                                         {{ ucfirst($violation->severity) }}
@@ -1238,174 +968,8 @@
             </button>
         </div>
     </div>
-
-    <div class="row mt-4">
-        <!-- Thông tin phương tiện -->
-        <div class="col-md-6">
-            <div class="data-table-card">
-                <div class="data-table-header">
-                    <h2 class="data-table-card-title">Thông tin phương tiện</h2>
-                </div>
-                <div class="p-4">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Loại phương tiện:</strong></td>
-                            <td>
-                                @if($application->vehicle_type === 'motorcycle') Xe máy
-                                @elseif($application->vehicle_type === 'car') Ô tô
-                                @else Xe đạp @endif
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Dòng xe:</strong></td>
-                            <td>{{ $application->vehicle_model }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Màu xe:</strong></td>
-                            <td>{{ $application->vehicle_color }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Biển số xe:</strong></td>
-                            <td><strong class="text-primary">{{ $application->license_plate }}</strong></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Số GPLX:</strong></td>
-                            <td>{{ $application->driver_license_number }}</td>
-                        </tr>
-                    </table>
-
-                    <div class="row mt-3">
-                        <div class="col-6">
-                            <h6>Giấy phép lái xe:</h6>
-                            @if($imageUrls['driver_license_image'])
-                                <img src="{{ $imageUrls['driver_license_image'] }}" alt="Giấy phép lái xe" class="img-thumbnail document-image" data-toggle="modal" data-target="#imageModal" data-image-src="{{ $imageUrls['driver_license_image'] }}" data-image-title="Giấy phép lái xe">
-                            @else
-                                <div class="document-placeholder">
-                                    <i class="fas fa-image"></i>
-                                    <p>Không có ảnh</p>
-                                </div>
-                            @endif
-                        </div>
-                        <div class="col-6">
-                            <h6>Đăng ký xe:</h6>
-                            @if($imageUrls['vehicle_registration_image'])
-                                <img src="{{ $imageUrls['vehicle_registration_image'] }}" alt="Đăng ký xe" class="img-thumbnail document-image" data-toggle="modal" data-target="#imageModal" data-image-src="{{ $imageUrls['vehicle_registration_image'] }}" data-image-title="Đăng ký xe">
-                            @else
-                                <div class="document-placeholder">
-                                    <i class="fas fa-image"></i>
-                                    <p>Không có ảnh</p>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Thông tin ngân hàng và liên hệ khẩn cấp -->
-        <div class="col-md-6">
-            <div class="data-table-card">
-                <div class="data-table-header">
-                    <h2 class="data-table-card-title">Thông tin ngân hàng</h2>
-                </div>
-                <div class="p-4">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Ngân hàng:</strong></td>
-                            <td>{{ $application->bank_name }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Số tài khoản:</strong></td>
-                            <td>{{ $application->bank_account_number }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Tên chủ tài khoản:</strong></td>
-                            <td>{{ $application->bank_account_name }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <div class="data-table-card mt-3">
-                <div class="data-table-header">
-                    <h2 class="data-table-card-title">Liên hệ khẩn cấp</h2>
-                </div>
-                <div class="p-4">
-                    <table class="table table-borderless">
-                        <tr>
-                            <td><strong>Tên:</strong></td>
-                            <td>{{ $application->emergency_contact_name }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Số điện thoại:</strong></td>
-                            <td>{{ $application->emergency_contact_phone }}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Mối quan hệ:</strong></td>
-                            <td>{{ $application->emergency_contact_relationship }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Thông tin admin notes nếu có -->
-            @if($application->admin_notes)
-            <div class="data-table-card mt-3">
-                <div class="data-table-header">
-                    <h2 class="data-table-card-title">Ghi chú của Admin</h2>
-                </div>
-                <div class="p-4">
-                    <p class="mb-0">{{ $application->admin_notes }}</p>
-                </div>
-            </div>
-            @endif
-        </div>
-    </div>
-
-    <!-- Timeline -->
-    <div class="data-table-card mt-4">
-        <div class="data-table-header">
-            <h2 class="data-table-card-title">Lịch sử xử lý</h2>
-        </div>
-        <div class="p-4">
-            <div class="timeline">
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <h6>Nộp đơn đăng ký</h6>
-                        <p class="text-muted">{{ $application->created_at->format('d/m/Y H:i:s') }}</p>
-                    </div>
-                </div>
-                
-                @if($application->reviewed_at)
-                <div class="timeline-item">
-                    <div class="timeline-marker timeline-marker-success"></div>
-                    <div class="timeline-content">
-                        <h6>
-                            @if($application->status === 'approved') Đã duyệt đơn
-                            @else Đã từ chối đơn @endif
-                        </h6>
-                        <p class="text-muted">{{ Carbon\Carbon::parse($application->reviewed_at)->format('d/m/Y H:i:s') }}</p>
-                    </div>
-                </div>
-                @endif
-            </div>
-        </div>
-    </div>
 </div>
 
-<!-- Image Modal -->
-<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="imageModalLabel">Xem ảnh</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <img id="modalImage" src="" alt="" class="img-fluid">
 <!-- Modals -->
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
@@ -1426,155 +990,47 @@
     </div>
 </div>
 
-<style>
-.document-image {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.document-image:hover {
-    transform: scale(1.05);
-}
-
-.document-placeholder {
-    width: 100%;
-    height: 120px;
-    background-color: #f8f9fa;
-    border: 2px dashed #dee2e6;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #6c757d;
-}
-
-.document-placeholder i {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.timeline {
-    position: relative;
-    padding-left: 2rem;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 1.5rem;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -2.25rem;
-    top: 0.25rem;
-    width: 1rem;
-    height: 1rem;
-    background-color: #007bff;
-    border-radius: 50%;
-    border: 3px solid #fff;
-    box-shadow: 0 0 0 3px #e9ecef;
-}
-
-.timeline-marker-success {
-    background-color: #28a745;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: -1.75rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: #e9ecef;
-}
-</style>
-
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle image modal
-    $('#imageModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget);
-        var imageSrc = button.data('image-src');
-        var imageTitle = button.data('image-title');
-        
-        var modal = $(this);
-        modal.find('.modal-title').text(imageTitle);
-        modal.find('#modalImage').attr('src', imageSrc);
-    });
-});
-</script>
-@endpush
-<!-- Status Toggle Modal -->
+<!-- Status Modal -->
 <div class="modal fade" id="statusModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ $driver->status === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt' }} tài khoản</h5>
+                <h5 class="modal-title">Thay đổi trạng thái tài xế</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="statusForm">
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Bạn có chắc muốn {{ $driver->status === 'active' ? 'vô hiệu hóa' : 'kích hoạt' }} tài khoản này?
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Lý do <span class="required">*</span></label>
-                        <textarea class="form-control" name="reason" rows="3" required 
-                                  placeholder="Nhập lý do {{ $driver->status === 'active' ? 'vô hiệu hóa' : 'kích hoạt' }}..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn {{ $driver->status === 'active' ? 'btn-danger' : 'btn-success' }}">
-                        {{ $driver->status === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt' }}
-                    </button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn thay đổi trạng thái của tài xế này?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="confirmStatusChange()">Xác nhận</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Lock Account Modal -->
+<!-- Lock Modal -->
 <div class="modal fade" id="lockModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{{ $driver->status === 'locked' ? 'Mở khóa' : 'Khóa' }} tài khoản</h5>
+                <h5 class="modal-title">Khóa/Mở khóa tài xế</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="lockForm">
-                <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        {{ $driver->status === 'locked' ? 'Mở khóa tài khoản sẽ cho phép tài xế đăng nhập lại.' : 'Khóa tài khoản sẽ ngăn tài xế đăng nhập vào hệ thống.' }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Lý do <span class="required">*</span></label>
-                        <textarea class="form-control" name="reason" rows="3" required 
-                                  placeholder="Nhập lý do {{ $driver->status === 'locked' ? 'mở khóa' : 'khóa' }}..."></textarea>
-                    </div>
-                    @if($driver->status !== 'locked')
-                    <div class="mb-3">
-                        <label class="form-label">Khóa đến (tùy chọn)</label>
-                        <input type="datetime-local" class="form-control" name="lock_until" 
-                               min="{{ now()->format('Y-m-d\TH:i') }}">
-                        <small class="form-text text-muted">Để trống nếu khóa vô thời hạn</small>
-                    </div>
-                    @endif
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="lockReason" class="form-label">Lý do khóa:</label>
+                    <textarea class="form-control" id="lockReason" rows="3" placeholder="Nhập lý do khóa tài khoản..."></textarea>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn {{ $driver->status === 'locked' ? 'btn-success' : 'btn-warning' }}">
-                        {{ $driver->status === 'locked' ? 'Mở khóa' : 'Khóa tài khoản' }}
-                    </button>
+                <div class="mb-3">
+                    <label for="lockUntil" class="form-label">Khóa đến ngày (tùy chọn):</label>
+                    <input type="datetime-local" class="form-control" id="lockUntil">
                 </div>
-            </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning" onclick="confirmLockAction()">Xác nhận</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1587,28 +1043,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h5 class="modal-title">Reset mật khẩu</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="resetPasswordForm">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Mật khẩu mới sẽ được tạo tự động và gửi qua email cho tài xế.
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Lý do reset mật khẩu <span class="required">*</span></label>
-                        <textarea class="form-control" name="reason" rows="3" required 
-                                  placeholder="Nhập lý do reset mật khẩu..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Reset mật khẩu</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn reset mật khẩu cho tài xế này? Mật khẩu mới sẽ được gửi qua email.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="confirmResetPassword()">Reset mật khẩu</button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Add Violation Modal -->
+<!-- Violation Modal -->
 <div class="modal fade" id="violationModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -1616,72 +1062,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h5 class="modal-title">Thêm vi phạm</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="violationForm">
-                <div class="modal-body">
+            <div class="modal-body">
+                <form id="violationForm">
                     <div class="mb-3">
-                        <label class="form-label">Loại vi phạm <span class="required">*</span></label>
-                        <select class="form-control" name="violation_type" required>
+                        <label for="violationType" class="form-label">Loại vi phạm:</label>
+                        <select class="form-control" id="violationType" required>
                             <option value="">Chọn loại vi phạm</option>
                             <option value="late_delivery">Giao hàng trễ</option>
-                            <option value="customer_complaint">Khiếu nại của khách hàng</option>
-                            <option value="traffic_violation">Vi phạm giao thông</option>
-                            <option value="inappropriate_behavior">Hành vi không phù hợp</option>
-                            <option value="fraud">Gian lận</option>
+                            <option value="customer_complaint">Khiếu nại từ khách hàng</option>
+                            <option value="policy_violation">Vi phạm chính sách</option>
                             <option value="other">Khác</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Mô tả chi tiết <span class="required">*</span></label>
-                        <textarea class="form-control" name="description" rows="4" required 
-                                  placeholder="Mô tả chi tiết về vi phạm..."></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Mức độ nghiêm trọng <span class="required">*</span></label>
-                        <select class="form-control" name="severity" required>
+                        <label for="violationSeverity" class="form-label">Mức độ:</label>
+                        <select class="form-control" id="violationSeverity" required>
                             <option value="">Chọn mức độ</option>
-                            <option value="low">Nhẹ</option>
+                            <option value="low">Thấp</option>
                             <option value="medium">Trung bình</option>
-                            <option value="high">Nghiêm trọng</option>
-                            <option value="critical">Rất nghiêm trọng</option>
+                            <option value="high">Cao</option>
+                            <option value="critical">Nghiêm trọng</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Số tiền phạt (VNĐ)</label>
-                        <input type="number" class="form-control" name="penalty_amount" min="0" 
-                               placeholder="Nhập số tiền phạt (nếu có)">
+                        <label for="violationDescription" class="form-label">Mô tả:</label>
+                        <textarea class="form-control" id="violationDescription" rows="3" required placeholder="Mô tả chi tiết vi phạm..."></textarea>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-danger">Thêm vi phạm</button>
-                </div>
-            </form>
+                    <div class="mb-3">
+                        <label for="penaltyAmount" class="form-label">Số tiền phạt (VNĐ):</label>
+                        <input type="number" class="form-control" id="penaltyAmount" min="0" placeholder="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" onclick="confirmAddViolation()">Thêm vi phạm</button>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Image Modal -->
 <div class="modal fade" id="imageModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="imageModalTitle">Xem ảnh</h5>
+                <h5 class="modal-title">Xem ảnh</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="imageModalImg" src="" class="img-fluid" alt="Image">
+                <img id="modalImage" src="" alt="" class="img-fluid">
             </div>
         </div>
     </div>
 </div>
 
 <script>
-function showImageModal(imageSrc, title = 'Xem ảnh') {
-    document.getElementById('imageModalImg').src = imageSrc;
-    document.getElementById('imageModalTitle').textContent = title;
-    new bootstrap.Modal(document.getElementById('imageModal')).show();
-}
-
+// Modal functions
 function showEditModal() {
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
@@ -1702,189 +1139,55 @@ function showViolationModal() {
     new bootstrap.Modal(document.getElementById('violationModal')).show();
 }
 
-// Status toggle form submission
-document.getElementById('statusForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-    
-    fetch('{{ route("admin.drivers.toggle-status", $driver) }}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            toastr.success(data.message);
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            toastr.error(data.message || 'Có lỗi xảy ra');
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        toastr.error('Có lỗi xảy ra khi xử lý yêu cầu');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-});
+function showImageModal(src) {
+    document.getElementById('modalImage').src = src;
+    new bootstrap.Modal(document.getElementById('imageModal')).show();
+}
 
-// Lock account form submission
-document.getElementById('lockForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    const isLocked = {{ $driver->status === 'locked' ? 'true' : 'false' }};
-    
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-    
-    const url = isLocked ? 
-        '{{ route("admin.drivers.unlock-account", $driver) }}' : 
-        '{{ route("admin.drivers.lock-account", $driver) }}';
-    
-    fetch(url, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            toastr.success(data.message);
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            toastr.error(data.message || 'Có lỗi xảy ra');
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        toastr.error('Có lỗi xảy ra khi xử lý yêu cầu');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-});
+// Action functions
+function toggleDriverStatus(status) {
+    // Implementation for status toggle
+    console.log('Toggle status to:', status);
+}
 
-// Reset password form submission
-document.getElementById('resetPasswordForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-    
-    fetch('{{ route("admin.drivers.reset-password", $driver) }}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            toastr.success(data.message);
-            bootstrap.Modal.getInstance(document.getElementById('resetPasswordModal')).hide();
-            this.reset();
-        } else {
-            toastr.error(data.message || 'Có lỗi xảy ra');
-        }
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        toastr.error('Có lỗi xảy ra khi xử lý yêu cầu');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-});
+function confirmStatusChange() {
+    // Implementation for status change confirmation
+    console.log('Status change confirmed');
+}
 
-// Add violation form submission
-document.getElementById('violationForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-    
-    fetch('{{ route("admin.drivers.add-violation", $driver) }}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            toastr.success(data.message);
-            setTimeout(() => {
-                location.reload();
-            }, 1500);
-        } else {
-            toastr.error(data.message || 'Có lỗi xảy ra');
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        toastr.error('Có lỗi xảy ra khi xử lý yêu cầu');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    });
-});
+function lockDriver() {
+    showLockModal();
+}
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-hide alerts after 5 seconds
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-        alerts.forEach(alert => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        });
-    }, 5000);
-    
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Initialize Bootstrap tabs
-    const tabTriggerEl = document.querySelector('#driverDetailTabs button[data-bs-toggle="tab"]');
-    if (tabTriggerEl) {
-        bootstrap.Tab.getOrCreateInstance(tabTriggerEl);
+function unlockDriver() {
+    // Implementation for unlock
+    console.log('Unlock driver');
+}
+
+function confirmLockAction() {
+    // Implementation for lock action
+    console.log('Lock action confirmed');
+}
+
+function resetPassword() {
+    showResetPasswordModal();
+}
+
+function confirmResetPassword() {
+    // Implementation for reset password
+    console.log('Reset password confirmed');
+}
+
+function confirmDelete() {
+    if (confirm('Bạn có chắc chắn muốn xóa tài xế này? Hành động này không thể hoàn tác.')) {
+        // Implementation for delete
+        console.log('Delete confirmed');
     }
-});
-</script>
+}
 
+function confirmAddViolation() {
+    // Implementation for add violation
+    console.log('Add violation confirmed');
+}
+</script>
 @endsection

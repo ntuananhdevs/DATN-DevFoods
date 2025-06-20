@@ -12,7 +12,7 @@
 <div class="bg-gradient-to-r from-orange-500 to-red-500 py-8">
     <div class="container mx-auto px-4">
         <div class="flex items-center">
-            <a href="/profile" class="text-white hover:text-white/80 mr-2">
+            <a href="{{ route('customer.profile') }}" class="text-white hover:text-white/80 mr-2">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <h1 class="text-2xl md:text-3xl font-bold text-white">Chỉnh Sửa Hồ Sơ</h1>
@@ -23,12 +23,15 @@
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
         <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-            <form id="edit-profile-form" class="p-6">
-                <!-- Avatar Section -->
+            <form id="edit-profile-form" action="{{ route('customer.profile.update') }}" method="POST" enctype="multipart/form-data" class="p-6">
+            @csrf
+            @method('PATCH')
+
                 <div class="flex flex-col items-center mb-8">
                     <div class="relative mb-4">
                         <div class="w-32 h-32 rounded-full bg-gray-200 overflow-hidden border-4 border-white shadow-md">
-                            <img src="/placeholder.svg?height=200&width=200" alt="Ảnh đại diện" class="w-full h-full object-cover">
+                            {{-- LẤY AVATAR TỪ USER --}}
+                            <img src="{{ Storage::disk('s3')->url($user->avatar ?? 'avatars/default.jpg') }}" alt="Ảnh đại diện" class="w-full h-full object-cover" id="avatar-preview">
                         </div>
                         <label for="avatar-upload" class="absolute bottom-0 right-0 bg-orange-500 hover:bg-orange-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md transition-colors cursor-pointer">
                             <i class="fas fa-camera"></i>
@@ -39,141 +42,66 @@
                     <p class="text-xs text-gray-400 mt-1">Kích thước tối đa: 5MB. Định dạng: JPG, PNG</p>
                 </div>
 
-                <!-- Personal Information -->
                 <div class="mb-8">
                     <h2 class="text-xl font-bold mb-4 pb-2 border-b border-gray-100">Thông Tin Cá Nhân</h2>
                     
+                    {{-- TÁCH HỌ VÀ TÊN TỪ full_name --}}
+                    @php
+                        $nameParts = explode(' ', $user->full_name, 2);
+                        $firstName = $nameParts[0];
+                        $lastName = $nameParts[1] ?? '';
+                    @endphp
+
                     <div class="grid md:grid-cols-2 gap-6">
                         <div>
                             <label for="first_name" class="block text-sm font-medium mb-2">Họ <span class="text-red-500">*</span></label>
-                            <input type="text" id="first_name" name="first_name" value="Nguyễn" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $firstName) }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         
                         <div>
                             <label for="last_name" class="block text-sm font-medium mb-2">Tên <span class="text-red-500">*</span></label>
-                            <input type="text" id="last_name" name="last_name" value="Văn A" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $lastName) }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         
                         <div>
                             <label for="email" class="block text-sm font-medium mb-2">Email <span class="text-red-500">*</span></label>
-                            <input type="email" id="email" name="email" value="nguyenvana@example.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         
                         <div>
                             <label for="phone" class="block text-sm font-medium mb-2">Số điện thoại <span class="text-red-500">*</span></label>
-                            <input type="tel" id="phone" name="phone" value="0987654321" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <input type="tel" id="phone" name="phone" value="{{ old('phone', $user->phone) }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         
                         <div>
                             <label for="birthday" class="block text-sm font-medium mb-2">Ngày sinh</label>
-                            <input type="date" id="birthday" name="birthday" value="1990-01-01" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            {{-- Định dạng ngày tháng cho input type="date" --}}
+                            <input type="date" id="birthday" name="birthday" value="{{ old('birthday', $user->birthday ? $user->birthday->format('Y-m-d') : '') }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                         </div>
                         
                         <div>
                             <label for="gender" class="block text-sm font-medium mb-2">Giới tính</label>
                             <select id="gender" name="gender" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                <option value="male" selected>Nam</option>
-                                <option value="female">Nữ</option>
-                                <option value="other">Khác</option>
+                                {{-- Lựa chọn giới tính động --}}
+                                <option value="male" @if($user->gender == 'male') selected @endif>Nam</option>
+                                <option value="female" @if($user->gender == 'female') selected @endif>Nữ</option>
+                                <option value="other" @if($user->gender == 'other') selected @endif>Khác</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Additional Information -->
-                <div class="mb-8">
-                    <h2 class="text-xl font-bold mb-4 pb-2 border-b border-gray-100">Thông Tin Bổ Sung</h2>
-                    
-                    <div class="space-y-6">
-                        <div>
-                            <label for="bio" class="block text-sm font-medium mb-2">Giới thiệu bản thân</label>
-                            <textarea id="bio" name="bio" rows="4" placeholder="Viết một vài điều về bản thân..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">Tôi là một người yêu thích ẩm thực và thường xuyên sử dụng dịch vụ của FastFood.</textarea>
-                            <p class="text-xs text-gray-500 mt-1">Tối đa 200 ký tự</p>
-                        </div>
-                        
-                        <div>
-                            <label for="dietary_preferences" class="block text-sm font-medium mb-2">Sở thích ẩm thực</label>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="dietary_preferences[]" value="vegetarian" class="mr-2">
-                                    <span>Ăn chay</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="dietary_preferences[]" value="vegan" class="mr-2">
-                                    <span>Ăn thuần chay</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="dietary_preferences[]" value="gluten_free" class="mr-2">
-                                    <span>Không gluten</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="dietary_preferences[]" value="dairy_free" class="mr-2">
-                                    <span>Không sữa</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="dietary_preferences[]" value="spicy" class="mr-2" checked>
-                                    <span>Thích đồ cay</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="dietary_preferences[]" value="seafood" class="mr-2" checked>
-                                    <span>Thích hải sản</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label for="favorite_cuisine" class="block text-sm font-medium mb-2">Ẩm thực yêu thích</label>
-                            <select id="favorite_cuisine" name="favorite_cuisine" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                <option value="">Chọn ẩm thực yêu thích</option>
-                                <option value="vietnamese" selected>Việt Nam</option>
-                                <option value="italian">Ý</option>
-                                <option value="japanese">Nhật Bản</option>
-                                <option value="korean">Hàn Quốc</option>
-                                <option value="chinese">Trung Quốc</option>
-                                <option value="thai">Thái Lan</option>
-                                <option value="american">Mỹ</option>
-                                <option value="mexican">Mexico</option>
-                                <option value="indian">Ấn Độ</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
+                {{-- Các phần thông tin bổ sung, mạng xã hội có thể làm tương tự nếu bạn đã lưu trong DB --}}
+                {{-- Ví dụ: --}}
+                {{-- <textarea ...>{{ old('bio', $user->bio) }}</textarea> --}}
 
-                <!-- Social Media Links -->
-                <div class="mb-8">
-                    <h2 class="text-xl font-bold mb-4 pb-2 border-b border-gray-100">Liên Kết Mạng Xã Hội</h2>
-                    
-                    <div class="space-y-6">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fab fa-facebook-f text-blue-600"></i>
-                            </div>
-                            <input type="text" name="facebook" placeholder="Liên kết Facebook của bạn" value="https://facebook.com/nguyenvana" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fab fa-instagram text-pink-600"></i>
-                            </div>
-                            <input type="text" name="instagram" placeholder="Liên kết Instagram của bạn" value="" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                                <i class="fab fa-twitter text-blue-400"></i>
-                            </div>
-                            <input type="text" name="twitter" placeholder="Liên kết Twitter của bạn" value="" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Form Actions -->
                 <div class="flex flex-col md:flex-row gap-4 pt-4 border-t border-gray-100">
                     <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-6 rounded-lg transition-colors flex-1 flex items-center justify-center">
                         <i class="fas fa-save mr-2"></i>
                         Lưu thay đổi
                     </button>
-                    <a href="/profile" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors flex-1 flex items-center justify-center">
+                    {{-- SỬA LẠI LINK ĐỂ DÙNG ROUTE --}}
+                    <a href="{{ route('customer.profile') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors flex-1 flex items-center justify-center">
                         <i class="fas fa-times mr-2"></i>
                         Hủy
                     </a>
@@ -212,56 +140,82 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Avatar preview
     const avatarUpload = document.getElementById('avatar-upload');
-    const avatarPreview = avatarUpload.closest('.relative').querySelector('img');
+    const avatarPreview = document.getElementById('avatar-preview');
     
-    avatarUpload.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                avatarPreview.src = e.target.result;
+    if (avatarUpload && avatarPreview) {
+        avatarUpload.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    avatarPreview.src = e.target.result;
+                }
+                
+                reader.readAsDataURL(this.files[0]);
             }
-            
-            reader.readAsDataURL(this.files[0]);
-        }
-    });
+        });
+    }
     
     // Form submission
+    
     const editProfileForm = document.getElementById('edit-profile-form');
     const successModal = document.getElementById('success-modal');
     const closeModalButton = document.getElementById('close-modal');
     
-    editProfileForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Basic form validation
-        const firstName = document.getElementById('first_name').value;
-        const lastName = document.getElementById('last_name').value;
-        const email = document.getElementById('email').value;
-        const phone = document.getElementById('phone').value;
-        
-        if (!firstName || !lastName || !email || !phone) {
-            showToast('Vui lòng điền đầy đủ thông tin bắt buộc');
-            return;
-        }
-        
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            showToast('Email không hợp lệ');
-            return;
-        }
-        
-        // Phone validation
-        const phoneRegex = /^[0-9]{10,11}$/;
-        if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
-            showToast('Số điện thoại không hợp lệ');
-            return;
-        }
-        
-        // Show success modal
-        successModal.classList.remove('hidden');
-    });
+    if (editProfileForm) {
+        editProfileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const firstName = document.getElementById('first_name').value;
+            const lastName = document.getElementById('last_name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            
+            if (!firstName || !lastName || !email || !phone) {
+                showToast('Vui lòng điền đầy đủ các trường bắt buộc.');
+                return; 
+            }
+            
+            const formData = new FormData(this);
+            const actionUrl = this.action;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+            showToast('Đang cập nhật...');
+
+            fetch(actionUrl, {
+                method: 'POST', 
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(response => {
+                return response.json().then(data => ({ status: response.status, body: data }));
+            })
+            .then(({ status, body }) => {
+                if (status === 200 && body.success) {
+                    showToast(body.message || 'Cập nhật thành công!');
+                    successModal.classList.remove('hidden');
+
+                    if (body.avatar_url) {
+                        avatarPreview.src = body.avatar_url;
+                    }
+                } else {
+                    if (body.errors) {
+                        let firstError = Object.values(body.errors)[0][0];
+                        showToast(firstError);
+                    } else {
+                        showToast(body.message || 'Đã có lỗi xảy ra.');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                showToast('Lỗi kết nối. Vui lòng kiểm tra lại mạng.');
+            });
+        });
+    }
     
     // Close modal
     closeModalButton.addEventListener('click', function() {

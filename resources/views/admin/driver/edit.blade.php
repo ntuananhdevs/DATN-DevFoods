@@ -615,4 +615,50 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-@endsection 
+<!-- Driver Documents Section -->
+<div class="edit-form-card">
+    <div class="edit-form-header">
+        <h5><i class="fas fa-file-alt"></i>Giấy tờ tuỳ thân & Giấy phép</h5>
+        <p class="text-muted mb-0">Xem và cập nhật giấy tờ của tài xế</p>
+    </div>
+    <div class="row">
+        @if($driver->documents)
+            @foreach($driver->documents as $doc)
+            <div class="col-md-4 mb-4">
+                <div class="form-group text-center">
+                    <label class="form-label">{{ $doc->type_label }}</label>
+                    <!-- Các trường khác -->
+                    <div>
+                        @if($doc->url)
+                            <img src="{{ $doc->url }}" alt="{{ $doc->type_label }}" class="current-image mb-2" style="max-width:180px;cursor:pointer" onclick="showImageModal('{{ $doc->url }}')">
+                        @else
+                            <span class="text-muted">Chưa có ảnh</span>
+                        @endif
+                    </div>
+                    <input type="file" name="documents[{{ $doc->id }}]" class="form-control mt-2">
+                    <small class="form-text">Chọn ảnh mới để cập nhật</small>
+                </div>
+            </div>
+            @endforeach
+        @endif
+    </div>
+</div>
+<!-- Modal xem ảnh giấy tờ -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-0">
+        <img id="modalImage" src="" alt="Document Image" style="width:100%;border-radius:8px;">
+      </div>
+      <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+<script>
+function showImageModal(url) {
+    document.getElementById('modalImage').src = url;
+    var modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    modal.show();
+}
+</script>
+@endsection

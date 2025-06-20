@@ -22,8 +22,8 @@ return new class extends Migration
             $table->date('id_card_issue_date');
             $table->string('id_card_issue_place', 100);
             $table->text('address');
-            $table->string('city', 50);
-            $table->string('district', 50);
+            // $table->string('city', 50);
+            // $table->string('district', 50);
             $table->enum('vehicle_type', ['motorcycle', 'car', 'bicycle']);
             $table->string('vehicle_model', 50);
             $table->string('vehicle_color', 50);
