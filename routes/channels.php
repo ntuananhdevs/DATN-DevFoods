@@ -24,12 +24,24 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     $conversation = Conversation::find($conversationId);
 
+    // Thêm log chi tiết
+    Log::info('[Broadcast] Đăng ký channel chat.' . $conversationId, [
+        'user_id' => $user->id,
+        'user_role' => $user->role ?? null,
+        'conversation_id' => $conversationId,
+        'conversation_customer_id' => $conversation ? $conversation->customer_id : null,
+        'conversation_branch_id' => $conversation ? $conversation->branch_id : null,
+        'user_branch_id' => $user->branch_id ?? null,
+    ]);
+
     if (!$conversation) {
+        Log::warning('[Broadcast] Conversation not found', ['conversation_id' => $conversationId]);
         return false;
     }
 
     // Super admin can access all conversations
-    if ($user->role === 'super_admin') {
+    if ($user->role === 'super_admin' || $user->role === 'sp_admin') {
+        Log::info('[Broadcast] Super admin truy cập', ['user_id' => $user->id]);
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -38,7 +50,8 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Branch users can access conversations assigned to their branch
-    if (in_array($user->role, ['branch_manager', 'branch_staff']) && $conversation->branch_id === $user->branch_id) {
+    if (in_array($user->role, ['branch_manager', 'branch_staff']) && $conversation->branch_id == ($user->branch_id ?? null)) {
+        Log::info('[Broadcast] Branch user truy cập', ['user_id' => $user->id]);
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -48,7 +61,8 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Customers can only access their own conversations
-    if ($user->role === 'customer' && $conversation->customer_id === $user->id) {
+    if ($user->role === 'customer' && $conversation->customer_id == $user->id) {
+        Log::info('[Broadcast] Customer truy cập', ['user_id' => $user->id]);
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -56,7 +70,12 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
         ];
     }
 
-    return false; // Hoặc thêm logic kiểm tra quyền truy cập
+    Log::warning('[Broadcast] Truy cập bị từ chối', [
+        'user_id' => $user->id,
+        'role' => $user->role ?? null,
+        'conversation_id' => $conversationId
+    ]);
+    return false;
 });
 
 // Admin conversations channel

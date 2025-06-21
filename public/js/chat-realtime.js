@@ -2102,6 +2102,7 @@ class BranchChat {
         });
 
         channel.bind("UserTyping", (data) => {
+            console.log("[BranchChat] Nhận event UserTyping:", data);
             if (data.user_id !== this.userId && data.is_typing) {
                 this.showTypingIndicator(data.user_name);
             } else {
@@ -2559,6 +2560,10 @@ class BranchChat {
     }
 
     async sendTypingIndicator(isTyping) {
+        console.log("[BranchChat] Gửi typing:", {
+            conversation_id: this.conversationId,
+            is_typing: isTyping,
+        });
         try {
             await fetch("/branch/chat/typing", {
                 method: "POST",

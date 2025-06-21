@@ -333,6 +333,13 @@ class BranchChatController extends Controller
 
     public function typing(Request $request)
     {
+        Log::info('[BRANCH] typing', [
+            'user_id' => Auth::id(),
+            'conversation_id' => $request->conversation_id,
+            'is_typing' => $request->is_typing,
+            'request_data' => $request->all(),
+            'ip' => $request->ip(),
+        ]);
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
             'is_typing' => 'required|boolean'
@@ -342,6 +349,13 @@ class BranchChatController extends Controller
         $user = Auth::user();
         $userType = 'branch';
         $userName = $user->name ?? 'Nhân viên chi nhánh';
+        Log::info('[BRANCH] Broadcasting TypingStatus', [
+            'conversation_id' => $request->conversation_id,
+            'user_id' => $userId,
+            'is_typing' => $request->is_typing,
+            'user_type' => $userType,
+            'user_name' => $userName
+        ]);
         broadcast(new TypingStatus(
             $request->conversation_id,
             $userId,

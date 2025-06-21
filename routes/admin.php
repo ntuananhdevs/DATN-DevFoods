@@ -288,5 +288,3 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         // ... các route khác nếu có
     });
 });
-
-Broadcast::routes(['middleware' => ['auth:sp_admin,customer,branch']]);

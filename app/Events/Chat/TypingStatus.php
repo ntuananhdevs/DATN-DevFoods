@@ -2,11 +2,12 @@
 
 namespace App\Events\Chat;
 
-use Illuminate\Broadcasting\Channel;
+
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Support\Facades\Log;
 
 class TypingStatus implements ShouldBroadcast
 {
@@ -29,11 +30,23 @@ class TypingStatus implements ShouldBroadcast
 
     public function broadcastOn()
     {
+        Log::info('[EVENT] TypingStatus broadcastOn', [
+            'conversationId' => $this->conversationId
+        ]);
         return new PresenceChannel('chat.' . $this->conversationId);
     }
 
     public function broadcastWith()
     {
+        Log::info('[EVENT] TypingStatus broadcastWith', [
+            'data' => [
+                'conversation_id' => $this->conversationId,
+                'user_id' => $this->userId,
+                'is_typing' => $this->isTyping,
+                'user_type' => $this->userType,
+                'user_name' => $this->userName,
+            ]
+        ]);
         return [
             'conversation_id' => $this->conversationId,
             'user_id' => $this->userId,
@@ -45,6 +58,9 @@ class TypingStatus implements ShouldBroadcast
 
     public function broadcastAs()
     {
+        Log::info('[EVENT] TypingStatus broadcastAs', [
+            'event' => 'UserTyping'
+        ]);
         return 'UserTyping';
     }
 }

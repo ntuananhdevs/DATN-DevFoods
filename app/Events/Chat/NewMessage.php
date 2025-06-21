@@ -8,6 +8,7 @@ use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class NewMessage implements ShouldBroadcast
 {
@@ -34,6 +35,10 @@ class NewMessage implements ShouldBroadcast
 
     public function broadcastWith()
     {
+        Log::info('[NewMessage] broadcastWith', [
+            'conversationId' => $this->conversationId,
+            'message' => $this->message,
+        ]);
         return [
             'message' => [
                 'id' => $this->message->id,
