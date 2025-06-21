@@ -390,10 +390,9 @@
                         </div>
                     </td>
                 </tr>
-            @endforeach
+            @if($loop->last)
                         </tbody>
                     </table>
-                @if($loop->last)
                     </div>
                     
                     <!-- Pagination -->

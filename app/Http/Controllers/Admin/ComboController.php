@@ -99,12 +99,12 @@ class ComboController extends Controller
 
             // Attach products to combo with quantities
             $productData = [];
-            foreach ($request->products as $index => $productId) {
-                $productData[$productId] = [
+            foreach ($request->products as $index => $productVariantId) {
+                $productData[$productVariantId] = [
                     'quantity' => $request->quantities[$index] ?? 1
                 ];
             }
-            $combo->products()->attach($productData);
+            $combo->productVariants()->attach($productData);
 
             // Handle image upload
             if ($request->hasFile('image')) {
@@ -186,12 +186,12 @@ class ComboController extends Controller
 
             // Sync products with quantities
             $productData = [];
-            foreach ($request->products as $index => $productId) {
-                $productData[$productId] = [
+            foreach ($request->products as $index => $productVariantId) {
+                $productData[$productVariantId] = [
                     'quantity' => $request->quantities[$index] ?? 1
                 ];
             }
-            $combo->products()->sync($productData);
+            $combo->productVariants()->sync($productData);
 
             // Handle image upload
             if ($request->hasFile('image')) {
@@ -229,7 +229,7 @@ class ComboController extends Controller
             DB::beginTransaction();
 
             // Detach all products
-            $combo->products()->detach();
+            $combo->productVariants()->detach();
 
             // Delete image if exists
             if ($combo->image) {
@@ -298,7 +298,7 @@ class ComboController extends Controller
             $combo = Combo::withTrashed()->findOrFail($id);
 
             // Detach all products
-            $combo->products()->detach();
+            $combo->productVariants()->detach();
 
             // Delete image if exists
             if ($combo->image) {
