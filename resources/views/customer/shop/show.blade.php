@@ -872,7 +872,11 @@
 
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="font-bold text-lg product-price">{{ number_format($relatedProduct->base_price, 0, ',', '.') }}đ</span>
+                            @if($relatedProduct->min_price != $relatedProduct->max_price)
+                                <span class="font-bold text-lg product-price">{{ number_format($relatedProduct->min_price, 0, ',', '.') }}đ - {{ number_format($relatedProduct->max_price, 0, ',', '.') }}đ</span>
+                            @else
+                                <span class="font-bold text-lg product-price">{{ number_format($relatedProduct->min_price, 0, ',', '.') }}đ</span>
+                            @endif
                         </div>
 
                         <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
@@ -927,5 +931,6 @@
     window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
 </script>
 <script src="{{ asset('js/Customer/Shop/shop.js') }}"></script>
+<script src="{{ asset('js/Customer/discount-updates.js') }}"></script>
 @include('partials.customer.branch-check')
 @endsection

@@ -27,9 +27,19 @@ class ProductController extends Controller
      */
     public function index(Request $request) {
         try {
-            $query = Product::with('category');
+            $query = Product::with(['category', 'variants.branchStocks', 'images']);
 
-            if ($request->has('category_id') && $request->category_id) {
+            // Tìm kiếm theo tên hoặc mã sản phẩm (ưu tiên cao nhất)
+            $hasSearch = $request->has('search') && $request->search;
+            if ($hasSearch) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->search . '%')
+                        ->orWhere('sku', 'like', '%' . $request->search . '%');
+                });
+            }
+
+            // Chỉ áp dụng bộ lọc danh mục khi KHÔNG có tìm kiếm
+            if (!$hasSearch && $request->has('category_id') && $request->category_id) {
                 $query->where('category_id', $request->category_id);
             }
 
@@ -46,14 +56,35 @@ class ProductController extends Controller
             // Lọc theo tình trạng kho
             if ($request->has('stock_status') && !empty($request->stock_status)) {
                 $query->where(function ($q) use ($request) {
-                    if (in_array('in_stock', $request->stock_status)) {
-                        $q->orWhere('stock', '>', 0);
+                    foreach ($request->stock_status as $status) {
+                        if ($status === 'in_stock') {
+                            $q->orWhereHas('variants.branchStocks', function ($subQuery) {
+                                $subQuery->where('stock_quantity', '>', 10);
+                            });
+                        } elseif ($status === 'out_of_stock') {
+                            $q->orWhereDoesntHave('variants.branchStocks')
+                              ->orWhereHas('variants.branchStocks', function ($subQuery) {
+                                  $subQuery->where('stock_quantity', '=', 0);
+                              });
+                        } elseif ($status === 'low_stock') {
+                            $q->orWhereHas('variants.branchStocks', function ($subQuery) {
+                                $subQuery->whereBetween('stock_quantity', [1, 10]);
+                            });
+                        }
                     }
-                    if (in_array('out_of_stock', $request->stock_status)) {
-                        $q->orWhere('stock', '=', 0);
-                    }
-                    if (in_array('low_stock', $request->stock_status)) {
-                        $q->orWhereBetween('stock', [1, 9]);
+                });
+            }
+
+            // Filter by product status
+            if ($request->has('status') && !empty($request->status)) {
+                $statuses = $request->status;
+                $query->where(function ($q) use ($statuses) {
+                    foreach ($statuses as $status) {
+                        if ($status === 'available') {
+                            $q->orWhere('status', 'selling');
+                        } elseif ($status === 'unavailable') {
+                            $q->orWhereIn('status', ['coming_soon', 'discontinued']);
+                        }
                     }
                 });
             }
@@ -63,22 +94,58 @@ class ProductController extends Controller
                 $query->whereDate('created_at', $request->date_added);
             }
 
-            // Tìm kiếm theo tên hoặc mã sản phẩm
-            if ($request->has('search') && $request->search) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%')
-                        ->orWhere('id', 'like', '%' . $request->search . '%');
-                });
-            }
+            // Phần tìm kiếm đã được di chuyển lên trên để ưu tiên cao hơn bộ lọc danh mục
 
             $products = $query->latest()->paginate(10);
             $categories = Category::all();
-            $minPrice = Product::min('base_price') ?? 0;
-            $maxPrice = Product::max('base_price') ?? 10000000;
+            $branches = Branch::where('active', true)->get();
+            
+            // Tính giá min/max dựa trên filter category hiện tại
+            $priceQuery = Product::query();
+            if ($request->has('category_id') && $request->category_id) {
+                $priceQuery->where('category_id', $request->category_id);
+            }
+            $minPrice = $priceQuery->min('base_price') ?? 0;
+            $maxPrice = $priceQuery->max('base_price') ?? 10000000;
 
-            return view('admin.menu.product.index', compact('products', 'categories', 'minPrice', 'maxPrice'));
+            // Handle AJAX requests
+            if ($request->ajax()) {
+                $html = view('admin.menu.product.partials.product-table', compact('products'))->render();
+                
+                // Create custom pagination HTML to match the design
+                $paginationHtml = $this->generateCustomPagination($products);
+                
+                return response()->json([
+                    'html' => $html,
+                    'pagination' => $paginationHtml,
+                    'total' => $products->total(),
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'first_item' => $products->firstItem(),
+                    'last_item' => $products->lastItem(),
+                    'min_price' => $minPrice,
+                    'max_price' => $maxPrice,
+                    'filters_applied' => [
+                        'category_id' => $request->category_id,
+                        'price_min' => $request->price_min,
+                        'price_max' => $request->price_max,
+                        'stock_status' => $request->stock_status,
+                        'status' => $request->status,
+                        'date_added' => $request->date_added,
+                        'search' => $request->search
+                    ]
+                ]);
+            }
+
+            return view('admin.menu.product.index', compact('products', 'categories', 'branches', 'minPrice', 'maxPrice'));
 
         } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+                ], 500);
+            }
 
             session()->flash('toast', [
                 'type' => 'error',
@@ -88,6 +155,36 @@ class ProductController extends Controller
             ]);
 
             return redirect()->back();
+        }
+    }
+
+    /**
+     * Get price range for a specific category
+     */
+    public function getPriceRange(Request $request)
+    {
+        try {
+            $categoryId = $request->get('category_id');
+            
+            $query = Product::query();
+            
+            if ($categoryId) {
+                $query->where('category_id', $categoryId);
+            }
+            
+            $minPrice = $query->min('base_price') ?? 0;
+            $maxPrice = $query->max('base_price') ?? 10000000;
+            
+            return response()->json([
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice,
+                'category_id' => $categoryId
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => 'Có lỗi xảy ra khi lấy khoảng giá'
+            ], 500);
         }
     }
 
@@ -1102,51 +1199,165 @@ class ProductController extends Controller
     public function export(Request $request)
     {
         try {
-            $type = $request->type ?? 'excel';
-            $query = Product::with('category');
+            $type = $request->get('type', 'excel');
+            $query = Product::with(['category', 'branchStocks.branch']);
 
-            if ($request->has('category_id') && $request->category_id) {
+            // Lọc theo danh mục
+            if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
             }
 
-            if ($request->has('price_min') && $request->price_min) {
+            // Lọc theo giá tối thiểu
+            if ($request->filled('price_min')) {
                 $query->where('base_price', '>=', $request->price_min);
             }
 
-            if ($request->has('price_max') && $request->price_max) {
+            // Lọc theo giá tối đa
+            if ($request->filled('price_max')) {
                 $query->where('base_price', '<=', $request->price_max);
             }
 
-            if ($request->has('stock_status')) {
-                if ($request->stock_status == 'in_stock') {
-                    $query->where('stock', '>', 0);
-                } elseif ($request->stock_status == 'out_of_stock') {
-                    $query->where('stock', '<=', 0);
+            // Lọc theo chi nhánh
+            if ($request->filled('branch_id')) {
+                $query->whereHas('branchStocks', function ($subQuery) use ($request) {
+                    $subQuery->where('branch_id', $request->branch_id);
+                });
+            }
+
+            // Lọc theo tình trạng kho
+            if ($request->filled('stock_status')) {
+                $stockStatus = $request->stock_status;
+                if ($stockStatus === 'in_stock') {
+                    $query->whereHas('variants.branchStocks', function ($subQuery) {
+                        $subQuery->where('stock_quantity', '>', 0);
+                    });
+                } elseif ($stockStatus === 'out_of_stock') {
+                    $query->whereDoesntHave('variants.branchStocks')
+                          ->orWhereHas('variants.branchStocks', function ($subQuery) {
+                              $subQuery->where('stock_quantity', '=', 0);
+                          });
+                } elseif ($stockStatus === 'low_stock') {
+                    $query->whereHas('variants.branchStocks', function ($subQuery) {
+                        $subQuery->whereBetween('stock_quantity', [1, 10]);
+                    });
                 }
             }
 
             $products = $query->latest()->get();
 
+            // Tạo tên file với thông tin bộ lọc
+            $filename = 'products';
+            if ($request->filled('category_id')) {
+                $category = \App\Models\Category::find($request->category_id);
+                if ($category) {
+                    $filename .= '_' . \Str::slug($category->name);
+                }
+            }
+            if ($request->filled('branch_id')) {
+                $branch = \App\Models\Branch::find($request->branch_id);
+                if ($branch) {
+                    $filename .= '_' . \Str::slug($branch->name);
+                }
+            }
+            $filename .= '_' . date('Y-m-d_H-i-s');
+
             // Xử lý xuất dữ liệu theo định dạng
             switch ($type) {
                 case 'excel':
-                    return Excel::download(new \App\Exports\ProductsExport($products), 'products.xlsx');
+                    return \Maatwebsite\Excel\Facades\Excel::download(
+                        new \App\Exports\ProductsExport($products, $request->branch_id), 
+                        $filename . '.xlsx'
+                    );
 
                 case 'pdf':
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.products', compact('products'));
-                    return $pdf->download('products.pdf');
+                    // Format data for PDF export with proper formatting
+                    $exportData = collect();
+                    $selectedBranch = null;
+                    
+                    if ($request->filled('branch_id')) {
+                        $selectedBranch = \App\Models\Branch::find($request->branch_id);
+                    }
+                    
+                    foreach ($products as $product) {
+                        $branchStocks = $product->branchStocks;
+                        
+                        if ($request->filled('branch_id')) {
+                            // Nếu chọn chi nhánh cụ thể, chỉ hiển thị dữ liệu của chi nhánh đó
+                            $branchStock = $branchStocks->where('branch_id', $request->branch_id)->first();
+                            if ($branchStock) {
+                                $exportData->push([
+                                    'sku' => $product->sku,
+                                    'name' => $product->name,
+                                    'category' => $product->category ? $product->category->name : 'N/A',
+                                    'base_price' => number_format($product->base_price, 0, ',', '.') . ' VNĐ',
+                                    'branch_name' => $branchStock->branch ? $branchStock->branch->name : 'N/A',
+                                    'stock_quantity' => $branchStock->stock_quantity,
+                                    'status' => $branchStock->stock_quantity > 0 ? 'Còn hàng' : 'Hết hàng',
+                                    'created_at' => $product->created_at->format('d/m/Y H:i:s'),
+                                    'updated_at' => $product->updated_at->format('d/m/Y H:i:s'),
+                                ]);
+                            }
+                        } else {
+                            // Hiển thị tất cả chi nhánh như trước
+                            if ($branchStocks->isEmpty()) {
+                                $exportData->push([
+                                    'sku' => $product->sku,
+                                    'name' => $product->name,
+                                    'category' => $product->category ? $product->category->name : 'N/A',
+                                    'base_price' => number_format($product->base_price, 0, ',', '.') . ' VNĐ',
+                                    'branch_name' => 'Chưa phân bổ chi nhánh',
+                                    'stock_quantity' => 0,
+                                    'status' => 'Chưa phân bổ',
+                                    'created_at' => $product->created_at->format('d/m/Y H:i:s'),
+                                    'updated_at' => $product->updated_at->format('d/m/Y H:i:s'),
+                                ]);
+                            } else {
+                                foreach ($branchStocks as $branchStock) {
+                                    $exportData->push([
+                                        'sku' => $product->sku,
+                                        'name' => $product->name,
+                                        'category' => $product->category ? $product->category->name : 'N/A',
+                                        'base_price' => number_format($product->base_price, 0, ',', '.') . ' VNĐ',
+                                        'branch_name' => $branchStock->branch ? $branchStock->branch->name : 'N/A',
+                                        'stock_quantity' => $branchStock->stock_quantity,
+                                        'status' => $branchStock->stock_quantity > 0 ? 'Còn hàng' : 'Hết hàng',
+                                        'created_at' => $product->created_at->format('d/m/Y H:i:s'),
+                                        'updated_at' => $product->updated_at->format('d/m/Y H:i:s'),
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $pdfData = [
+                        'products' => $exportData->toArray(),
+                        'selectedBranch' => $selectedBranch
+                    ];
+                    
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.products', $pdfData);
+                    $pdf->setPaper('A4', 'landscape'); // Set landscape orientation for better table display
+                    return $pdf->download($filename . '.pdf');
+                    
                 case 'csv':
-                    return Excel::download(new \App\Exports\ProductsExport($products), 'products.csv', \Maatwebsite\Excel\Excel::CSV);
+                    return \Maatwebsite\Excel\Facades\Excel::download(
+                        new \App\Exports\ProductsExport($products, $request->branch_id), 
+                        $filename . '.csv', 
+                        \Maatwebsite\Excel\Excel::CSV
+                    );
+                    
                 default:
-                    return $this->exportJson($products, 'products.json');
+                    return $this->exportJson($products, $filename . '.json');
             }
         } catch (\Exception $e) {
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xuất dữ liệu: ' . $e->getMessage()
+            \Log::error('Export error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
             ]);
-            return redirect()->back();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi xuất dữ liệu: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -1175,5 +1386,52 @@ class ProductController extends Controller
         file_put_contents($file, $json);
 
         return Response::download($file, $filename);
+    }
+
+    /**
+     * Generate custom pagination HTML to match the design
+     */
+    private function generateCustomPagination($products)
+    {
+        $html = '<div class="pagination-container flex items-center justify-between px-4 py-4 border-t">';
+        
+        // Left side - showing items info
+        $html .= '<div class="text-sm text-muted-foreground">';
+        $html .= 'Hiển thị <span id="paginationStart">' . $products->firstItem() . '</span> đến <span id="paginationEnd">' . $products->lastItem() . '</span> của <span id="paginationTotal">' . $products->total() . '</span> mục';
+        $html .= '</div>';
+        
+        // Right side - pagination controls
+        $html .= '<div class="flex items-center justify-end space-x-2 ml-auto" id="paginationControls">';
+        
+        // Previous button
+        if (!$products->onFirstPage()) {
+            $html .= '<button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage(' . ($products->currentPage() - 1) . ')">';
+            $html .= '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">';
+            $html .= '<path d="m15 18-6-6 6-6"></path>';
+            $html .= '</svg>';
+            $html .= '</button>';
+        }
+        
+        // Page numbers
+        foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url) {
+            $activeClass = $products->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted';
+            $html .= '<button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium ' . $activeClass . '" onclick="changePage(' . $page . ')">';
+            $html .= $page;
+            $html .= '</button>';
+        }
+        
+        // Next button
+        if ($products->currentPage() !== $products->lastPage()) {
+            $html .= '<button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage(' . ($products->currentPage() + 1) . ')">';
+            $html .= '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">';
+            $html .= '<path d="m9 18 6-6-6-6"></path>';
+            $html .= '</svg>';
+            $html .= '</button>';
+        }
+        
+        $html .= '</div>';
+        $html .= '</div>';
+        
+        return $html;
     }
 }

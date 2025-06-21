@@ -56,7 +56,8 @@ class ProductController extends Controller
                 if ($selectedBranchId) {
                     $query->where('branch_id', $selectedBranchId);
                 }
-            }
+            },
+            'variants.variantValues'
         ])
         ->where('status', 'selling');
         
@@ -226,6 +227,28 @@ class ProductController extends Controller
                                         ->first();
             }
             
+            // Tính giá thấp nhất bao gồm cả biến thể
+            $product->min_price = $product->base_price;
+            $product->max_price = $product->base_price;
+            
+            if ($product->variants && $product->variants->count() > 0) {
+                $variantPrices = [];
+                
+                foreach ($product->variants as $variant) {
+                    // Tính giá của biến thể này
+                    $variantPrice = $product->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
+                }
+                
+                if (!empty($variantPrices)) {
+                    $product->min_price = min($variantPrices);
+                    $product->max_price = max($variantPrices);
+                }
+            }
+            
             // Lấy các mã giảm giá áp dụng cho sản phẩm này
             $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
                 // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
@@ -236,8 +259,8 @@ class ProductController extends Controller
                             // Không kiểm tra ở đây, chỉ kiểm tra khi checkout
                             return true;
                         } elseif ($discountCode->min_requirement_type === 'product_price') {
-                            // Nếu giá sản phẩm nhỏ hơn min_requirement_value thì không áp dụng
-                            if ($product->base_price < $discountCode->min_requirement_value) {
+                            // Sử dụng giá thấp nhất để kiểm tra điều kiện
+                            if ($product->min_price < $discountCode->min_requirement_value) {
                                 return false;
                             }
                         }
@@ -255,7 +278,7 @@ class ProductController extends Controller
                     return false;
                 });
                 if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
-                    if ($product->base_price < $discountCode->min_requirement_value) {
+                    if ($product->min_price < $discountCode->min_requirement_value) {
                         return false;
                     }
                 }
@@ -445,7 +468,8 @@ class ProductController extends Controller
             },
             'reviews' => function($query) {
                 $query->where('approved', true);
-            }
+            },
+            'variants.variantValues'
         ])
         ->where('category_id', $product->category_id)
         ->where('id', '!=', $product->id)
@@ -474,6 +498,28 @@ class ProductController extends Controller
             
             if ($relatedProduct->primary_image) {
                 $relatedProduct->primary_image->s3_url = asset('storage/' . $relatedProduct->primary_image->img);
+            }
+            
+            // Tính giá thấp nhất và cao nhất bao gồm cả biến thể
+            $relatedProduct->min_price = $relatedProduct->base_price;
+            $relatedProduct->max_price = $relatedProduct->base_price;
+            
+            if ($relatedProduct->variants && $relatedProduct->variants->count() > 0) {
+                $variantPrices = [];
+                
+                foreach ($relatedProduct->variants as $variant) {
+                    // Tính giá của biến thể này
+                    $variantPrice = $relatedProduct->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
+                }
+                
+                if (!empty($variantPrices)) {
+                    $relatedProduct->min_price = min($variantPrices);
+                    $relatedProduct->max_price = max($variantPrices);
+                }
             }
             
             // Lấy các mã giảm giá áp dụng cho sản phẩm liên quan
