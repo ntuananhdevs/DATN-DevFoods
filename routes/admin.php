@@ -315,3 +315,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 });
 
 Broadcast::routes(['middleware' => ['auth:sp_admin,customer,branch']]);
+
+// Add public broadcast routes for discount updates
+Route::post('/broadcasting/auth', function () {
+    return Broadcast::auth(request());
+})->middleware('web');

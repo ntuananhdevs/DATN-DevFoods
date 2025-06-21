@@ -136,3 +136,9 @@ Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversat
     Log::warning('[Broadcast] Truy cập bị từ chối', ['user_id' => $user->id, 'role' => $user->role ?? null, 'conversation_id' => $conversationId]);
     return false;
 });
+
+// Discount codes channel - public channel for all users
+Broadcast::channel('discounts', function ($user = null) {
+    // Allow all users (including unauthenticated) to listen to discount updates
+    return true;
+});
