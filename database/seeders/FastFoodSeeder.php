@@ -9,12 +9,14 @@ use App\Models\ComboItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductImg;
+use App\Models\ProductReview;
 use App\Models\ProductTopping;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantDetail;
-use App\Models\ProductReview;
-use App\Models\ProductImg;
+use App\Models\Role;
 use App\Models\Topping;
+use App\Models\ToppingStock;
 use App\Models\User;
 use App\Models\VariantAttribute;
 use App\Models\VariantValue;
@@ -391,6 +393,7 @@ class FastFoodSeeder extends Seeder
 
             $this->createToppings();
             $this->createProductToppings();
+            $this->createToppingStocks();
             $this->createCombos();
             $this->createBranchStocks();
             $this->createOrders();
@@ -448,6 +451,26 @@ class FastFoodSeeder extends Seeder
             }
         }
         echo "Created product-topping relationships\n";
+    }
+
+    /**
+     * Tạo kho topping cho từng chi nhánh
+     */
+    private function createToppingStocks()
+    {
+        $branches = Branch::all();
+        $toppings = Topping::all();
+
+        foreach ($branches as $branch) {
+            foreach ($toppings as $topping) {
+                \App\Models\ToppingStock::create([
+                    'branch_id' => $branch->id,
+                    'topping_id' => $topping->id,
+                    'stock_quantity' => rand(20, 100), // Số lượng ngẫu nhiên từ 20-100
+                ]);
+            }
+        }
+        echo "Created topping stocks for all branches\n";
     }
 
     private function createCombos()
@@ -653,26 +676,53 @@ class FastFoodSeeder extends Seeder
         echo "Created orders\n";
     }
 
+    /**
+     * Tạo đánh giá sản phẩm cho các sản phẩm
+     */
     private function createProductReviews()
     {
-        $orders = Order::where('status', 'delivered')->get();
+        $users = User::all();
+        $products = Product::all();
+        $branches = Branch::all();
+
+        // Danh sách comment mẫu cho đánh giá
+        $reviewComments = [
+            'Sản phẩm rất ngon, tôi sẽ đặt lại!',
+            'Chất lượng tốt, giao hàng nhanh.',
+            'Vị rất đậm đà, phù hợp khẩu vị.',
+            'Giá cả hợp lý, chất lượng ổn.',
+            'Sản phẩm tươi ngon, đóng gói cẩn thận.',
+            'Rất hài lòng với dịch vụ.',
+            'Sẽ giới thiệu cho bạn bè.',
+            'Đúng như mong đợi.',
+            'Món ăn ngon, phục vụ tốt.',
+            'Đóng gói cẩn thận, giao đúng giờ.',
+            'Vị rất đặc biệt, sẽ quay lại.',
+            'Giá hợp lý so với chất lượng.',
+        ];
         
-        foreach ($orders as $order) {
-            if (rand(1, 100) <= 70) {
-                foreach ($order->orderItems as $orderItem) {
+        // Lấy tất cả đơn hàng để tạo reviews dựa trên đơn hàng thực tế
+        $allOrders = Order::all();
+        
+        // Tạo 3-5 reviews cho mỗi sản phẩm dựa trên đơn hàng có sẵn
+        foreach ($products as $product) {
+            $reviewCount = rand(3, 5);
+            $availableOrders = $allOrders->where('status', '!=', 'cancelled')->random(min($reviewCount, $allOrders->count()));
+            
+            foreach ($availableOrders as $order) {
+                // Kiểm tra xem đã có review cho sản phẩm này từ user này chưa
+                $existingReview = ProductReview::where('user_id', $order->customer_id)
+                    ->where('product_id', $product->id)
+                    ->first();
+                
+                if (!$existingReview) {
                     ProductReview::create([
                         'user_id' => $order->customer_id,
-                        'product_id' => $orderItem->productVariant->product_id,
-                        'order_id' => $order->id,
+                        'product_id' => $product->id,
+                        'order_id' => $order->id, // Sử dụng order_id thực tế
                         'branch_id' => $order->branch_id,
                         'rating' => rand(3, 5),
-                        'review' => collect([
-                            'Sản phẩm rất ngon!',
-                            'Chất lượng tốt, sẽ đặt lại.',
-                            'Giao hàng nhanh, đóng gói cẩn thận.',
-                            'Vị ngon, giá hợp lý.',
-                            'Rất hài lòng với sản phẩm này.'
-                        ])->random(),
+                        'review' => collect($reviewComments)->random(),
                         'review_date' => $order->created_at->addDays(rand(1, 7)),
                         'approved' => true,
                         'created_at' => $order->created_at->addDays(rand(1, 7))
@@ -680,6 +730,34 @@ class FastFoodSeeder extends Seeder
                 }
             }
         }
+        
+        // Tạo thêm reviews từ đơn hàng đã giao (nếu có)
+        $deliveredOrders = Order::where('status', 'delivered')->get();
+        foreach ($deliveredOrders as $order) {
+            if (rand(1, 100) <= 50) { // 50% đơn hàng có review
+                foreach ($order->orderItems as $orderItem) {
+                    // Kiểm tra xem đã có review cho sản phẩm này từ user này chưa
+                    $existingReview = ProductReview::where('user_id', $order->customer_id)
+                        ->where('product_id', $orderItem->productVariant->product_id)
+                        ->first();
+                    
+                    if (!$existingReview) {
+                        ProductReview::create([
+                            'user_id' => $order->customer_id,
+                            'product_id' => $orderItem->productVariant->product_id,
+                            'order_id' => $order->id,
+                            'branch_id' => $order->branch_id,
+                            'rating' => rand(3, 5),
+                            'review' => collect($reviewComments)->random(),
+                            'review_date' => $order->created_at->addDays(rand(1, 7)),
+                            'approved' => true,
+                            'created_at' => $order->created_at->addDays(rand(1, 7))
+                        ]);
+                    }
+                }
+            }
+        }
+        
         echo "Created product reviews\n";
     }
 }

@@ -576,7 +576,7 @@ function updateSelectedStatus(status) {
 
 function confirmDelete(id, name) {
     document.getElementById('toppingName').textContent = name;
-    document.getElementById('deleteForm').action = `{{ route('admin.toppings.destroy', '') }}/${id}`;
+    document.getElementById('deleteForm').action = `{{ url('admin/toppings/delete') }}/${id}`;
     toggleModal('deleteModal');
 }
 

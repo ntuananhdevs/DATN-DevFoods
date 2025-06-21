@@ -19,6 +19,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->decimal('price', 12, 2); // Giá combo ưu đãi
             $table->boolean('active')->default(true);
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
 
