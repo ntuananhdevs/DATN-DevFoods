@@ -58,13 +58,21 @@ Route::prefix('driver')->name('driver.')->group(function () {
         Route::post('/orders/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirm_delivery');
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
         Route::get('orders/{orderId}/navigate', [OrderController::class, 'navigate'])->name('orders.navigate');
-        
+         // --- CÁC HÀNH ĐỘNG POST ĐỂ XÁC NHẬN ---
+        // Đây là các route mà JavaScript sẽ gọi đến
+        Route::post('/{order}/accept', [OrderController::class, 'accept'])->name('accept');
+        Route::post('/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('confirm_pickup');
+        Route::post('/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('confirm_delivery');
+        Route::post('/{order}/cancel', [OrderController::class, 'cancel'])->name('cancel');
+    
         // Driver profile and history
         Route::get('/profile', [DriverController::class, 'profile'])->name('profile');
         Route::put('/profile', [DriverController::class, 'updateProfile'])->name('profile.update');
         Route::get('/history', [DriverController::class, 'history'])->name('history');
         Route::get('/earnings', [DriverController::class, 'earnings'])->name('earnings');
         Route::get('/notifications', [DriverController::class, 'notifications'])->name('notifications');
+        Route::post('/status/toggle', [DriverController::class, 'toggleStatus'])->name('status.toggle');
+        Route::get('/earnings/query', [DriverController::class, 'queryEarnings'])->name('earnings.query');
         
         // API routes for mobile app
         Route::prefix('api')->name('api.')->group(function () {
