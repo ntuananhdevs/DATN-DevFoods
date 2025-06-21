@@ -135,7 +135,8 @@ class DiscountCodeController extends Controller
             'name' => 'required',
             'discount_type' => 'required|in:percentage,fixed_amount,free_shipping',
             'discount_value' => 'required|numeric|min:0',
-            'min_order_amount' => 'nullable|numeric|min:0',
+            'min_requirement_type' => 'nullable|string',
+            'min_requirement_value' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
             'applicable_items' => 'nullable|string',
             'applicable_scope' => 'nullable|string',
@@ -167,7 +168,8 @@ class DiscountCodeController extends Controller
                 'image' => $request->image, 
                 'discount_type' => $request->discount_type,
                 'discount_value' => $request->discount_value,
-                'min_order_amount' => $request->min_order_amount ?? 0,
+                'min_requirement_type' => $request->min_requirement_type,
+                'min_requirement_value' => $request->min_requirement_value,
                 'max_discount_amount' => $request->max_discount_amount,
                 'applicable_scope' => $request->applicable_scope ?? 'all_branches',
                 'applicable_items' => $request->applicable_items ?? 'all_items',
@@ -532,7 +534,8 @@ class DiscountCodeController extends Controller
             'name' => 'required',
             'discount_type' => 'required|in:percentage,fixed_amount,free_shipping',
             'discount_value' => 'required|numeric|min:0',
-            'min_order_amount' => 'nullable|numeric|min:0',
+            'min_requirement_type' => 'nullable|string',
+            'min_requirement_value' => 'nullable|numeric|min:0',
             'max_discount_amount' => 'nullable|numeric|min:0',
             'applicable_items' => 'nullable|string',
             'applicable_scope' => 'nullable|string',
@@ -564,7 +567,8 @@ class DiscountCodeController extends Controller
                 'image' => $request->image,
                 'discount_type' => $request->discount_type,
                 'discount_value' => $request->discount_value,
-                'min_order_amount' => $request->min_order_amount ?? 0,
+                'min_requirement_type' => $request->min_requirement_type,
+                'min_requirement_value' => $request->min_requirement_value,
                 'max_discount_amount' => $request->max_discount_amount,
                 'applicable_scope' => $request->applicable_scope ?? 'all_branches',
                 'applicable_items' => $request->applicable_items ?? 'all_items',
@@ -1285,23 +1289,44 @@ class DiscountCodeController extends Controller
 
     public function getUsersByRank(Request $request)
     {
+        // Ghi log toàn bộ request để debug
+        Log::info('getUsersByRank request:', [
+            'all' => $request->all(),
+            'headers' => $request->header(),
+            'content-type' => $request->header('Content-Type'),
+            'is_json' => $request->isJson(),
+            'is_ajax' => $request->ajax(),
+        ]);
+        
         // Kiểm tra xem dữ liệu có phải là JSON không
         if ($request->isJson()) {
             $data = $request->json()->all();
+            Log::info('JSON data received:', $data);
             $rankIds = $data['ranks'] ?? [];
             $discountCodeId = $data['discount_code_id'] ?? null;
         } else {
-            $request->validate([
-                'ranks' => 'required|array',
-                'ranks.*' => 'integer|between:1,5',
-                'discount_code_id' => 'nullable|exists:discount_codes,id'
-            ]);
-            $rankIds = $request->ranks;
-            $discountCodeId = $request->discount_code_id;
+            try {
+                $request->validate([
+                    'ranks' => 'required|array',
+                    'ranks.*' => 'integer|between:1,5',
+                    'discount_code_id' => 'nullable|exists:discount_codes,id'
+                ]);
+                $rankIds = $request->ranks;
+                $discountCodeId = $request->discount_code_id;
+            } catch (\Exception $e) {
+                Log::error('Validation error in getUsersByRank: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dữ liệu không hợp lệ: ' . $e->getMessage()
+                ], 422);
+            }
         }
 
         // Ghi log để debug
-        Log::info('getUsersByRank called with ranks: ' . json_encode($rankIds) . ' and discount_code_id: ' . $discountCodeId);
+        Log::info('getUsersByRank parsed data: ', [
+            'rankIds' => $rankIds,
+            'discountCodeId' => $discountCodeId
+        ]);
         
         // Get users with selected ranks
         $users = User::whereIn('user_rank_id', $rankIds)

@@ -23,6 +23,12 @@
        }
    }
    
+   /* Style for public discount codes */
+   .public-code {
+       background-color: rgba(34, 197, 94, 0.9) !important;
+       border: 1px dashed rgba(255, 255, 255, 0.5);
+   }
+   
    .copy-code:active {
        transform: scale(0.95);
    }
@@ -266,6 +272,11 @@
                                 $bgColor = 'bg-blue-500';
                                 $icon = 'fa-shipping-fast';
                             }
+                            
+                            // Add special styling for public discount codes
+                            if($discountCode->usage_type === 'public') {
+                                $bgColor = 'bg-green-500';
+                            }
                         @endphp
                         <div class="flex items-center gap-3 p-2 rounded-md bg-white hover:bg-orange-50 transition-colors cursor-pointer relative group shadow-sm">
                             <div class="flex-shrink-0 w-10 h-10 {{ $bgColor }} rounded-full flex items-center justify-center discount-code-animation">
@@ -274,6 +285,11 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
                                     <span class="font-medium text-gray-900">{{ $discountCode->code }}</span>
+                                    @if($discountCode->usage_type === 'public')
+                                        <span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-sm">
+                                            Mã công khai
+                                        </span>
+                                    @endif
                                     @if($discountCode->end_date->diffInDays(now()) <= 3)
                                         <span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded-sm">
                                             Sắp hết hạn
@@ -805,15 +821,26 @@
                                         $bgColor = 'bg-blue-500';
                                         $icon = 'fa-shipping-fast';
                                     }
+                                    
+                                    // Add special styling for public discount codes
+                                    if($discountCode->usage_type === 'public') {
+                                        $bgColor = 'bg-green-500';
+                                    }
                                 @endphp
-                                <div class="inline-flex items-center {{ $bgColor }} bg-opacity-90 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm discount-pill">
-                                    <i class="fas {{ $icon }} mr-1 text-xs"></i>
-                                    @if($discountCode->discount_type === 'percentage')
-                                        Giảm {{ $discountCode->discount_value }}%
-                                    @elseif($discountCode->discount_type === 'fixed_amount')
-                                        Giảm {{ number_format($discountCode->discount_value) }}đ
-                                    @else
-                                        Miễn phí vận chuyển
+                                <div class="inline-flex items-center justify-between {{ $bgColor }} bg-opacity-90 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm discount-pill w-full">
+                                    <div class="flex items-center">
+                                        <i class="fas {{ $icon }} mr-1 text-xs"></i>
+                                        @if($discountCode->discount_type === 'percentage')
+                                            Giảm {{ $discountCode->discount_value }}%
+                                        @elseif($discountCode->discount_type === 'fixed_amount')
+                                            Giảm {{ number_format($discountCode->discount_value) }}đ
+                                        @else
+                                            Miễn phí vận chuyển
+                                        @endif
+                                    </div>
+                                    
+                                    @if($discountCode->usage_type === 'public')
+                                        <span class="ml-1 bg-white bg-opacity-20 px-1 rounded-sm">{{ $discountCode->code }}</span>
                                     @endif
                                 </div>
                             @endforeach

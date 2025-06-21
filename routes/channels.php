@@ -87,7 +87,10 @@ Broadcast::channel('online-users', function ($user) {
         'avatar' => $user->avatar ?? null,
     ];
 });
-
+Broadcast::channel('driver.{driverId}', function ($driver, $driverId) {
+    // Chỉ tài xế đã đăng nhập và có ID trùng khớp mới có thể nghe kênh này
+    return (int) $driver->id === (int) $driverId;
+});
 // Presence chat channel
 Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversationId) {
     Log::info('[Broadcast] presence-chat', [
