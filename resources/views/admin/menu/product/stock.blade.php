@@ -191,7 +191,7 @@
             </div>
         </div>
 
-        <form id="topping-stock-form" action="{{ route('admin.products.update-topping-stocks') }}" method="POST">
+        <form id="topping-stock-form" action="{{ route('admin.toppings.update-stock', 0) }}" method="POST">
             @csrf
             @method('POST')
             <input type="hidden" name="product_id" value="{{ $product->id }}">

@@ -248,13 +248,15 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(data => {
             if (data.success) {
                 showToast(data.message, 'success');
-                
-                // Update cart counter if needed
-                if (typeof window.updateCartCount === 'function' && data.count) {
-                    window.updateCartCount(data.count);
+                // Cập nhật số lượng giỏ hàng trên header
+                const cartCounter = document.getElementById('cart-counter');
+                if (cartCounter) {
+                    cartCounter.textContent = data.cart_count;
                 }
+                // Chuyển hướng đến trang giỏ hàng
+                window.location.href = '/cart';
             } else {
-                showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
+                showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
         .catch(error => {

@@ -387,13 +387,56 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add suggested product
     addSuggestedButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const productName = this.closest('.bg-white').querySelector('h3').textContent.trim();
-            
-            // Show toast notification
-            showToast(`Đã thêm ${productName} vào giỏ hàng`, 'success');
-            
-            // In a real application, you would add the product to the cart
-            // and update the cart UI
+            const productId = this.getAttribute('data-product-id');
+            const variantId = this.getAttribute('data-variant-id');
+            const branchId = this.getAttribute('data-branch-id');
+            const variantValuesRaw = this.getAttribute('data-variant-values');
+            let variantValues = [];
+            try {
+                variantValues = JSON.parse(variantValuesRaw);
+            } catch (e) {
+                variantValues = [];
+            }
+            const quantity = 1;
+            const btn = this;
+
+            // Disable button to prevent multiple clicks
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            // Gửi request thêm vào giỏ hàng
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    variant_values: variantValues,
+                    branch_id: branchId,
+                    quantity: quantity,
+                    toppings: []
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Đã thêm sản phẩm vào giỏ hàng', 'success');
+                    if (window.updateCartCount && data.count) {
+                        window.updateCartCount(data.count);
+                    }
+                } else {
+                    showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
+                }
+            })
+            .catch(error => {
+                showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            });
         });
     });
     

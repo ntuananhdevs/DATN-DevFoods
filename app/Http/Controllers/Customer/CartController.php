@@ -70,10 +70,30 @@ class CartController extends Controller
         }
         
         // Store cart count in session
-        $cartCount = $cartItems->sum('quantity');
+        $cartCount = $cartItems->count();
         session(['cart_count' => $cartCount]);
-        
-        return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart'));
+
+        // === SUGGESTED PRODUCTS LOGIC ===
+        $suggestedProducts = collect();
+        $cartProductIds = $cartItems->pluck('variant.product.id')->unique()->toArray();
+        $cartCategoryIds = $cartItems->pluck('variant.product.category_id')->unique()->toArray();
+
+        foreach ($cartCategoryIds as $categoryId) {
+            $product = Product::with(['primaryImage', 'images'])
+                ->where('category_id', $categoryId)
+                ->where('status', 'selling')
+                ->whereNotIn('id', $cartProductIds)
+                ->whereHas('variants.branchStocks', function($q) {
+                    $q->where('stock_quantity', '>', 0);
+                })
+                ->orderByDesc('favorite_count')
+                ->first();
+            if ($product) {
+                $suggestedProducts->push($product);
+            }
+        }
+
+        return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart', 'suggestedProducts'));
     }
     
     /**
@@ -165,27 +185,56 @@ class CartController extends Controller
             // Begin transaction
             DB::beginTransaction();
             try {
-                // Create cart item
-                $cartItem = CartItem::create([
-                    'cart_id' => $cart->id,
-                    'product_variant_id' => $variant->id,
-                    'quantity' => $request->quantity,
-                    'notes' => $request->notes
-                ]);
+                // Get the array of topping IDs from the request, sort them for consistent comparison
+                $requestToppingIds = $request->input('toppings', []);
+                sort($requestToppingIds);
 
-                // Add toppings if any
-                if ($request->has('toppings') && !empty($request->toppings)) {
-                    $toppings = collect($request->toppings)->mapWithKeys(function($toppingId) {
-                        return [$toppingId => ['quantity' => 1]];
-                    })->all();
+                // Find all existing cart items for the same product variant
+                $existingCartItems = CartItem::where('cart_id', $cart->id)
+                    ->where('product_variant_id', $variant->id)
+                    ->with('toppings')
+                    ->get();
+
+                $matchingCartItem = null;
+
+                // Loop through existing items to find an exact match (including toppings)
+                foreach ($existingCartItems as $item) {
+                    $itemToppingIds = $item->toppings->pluck('id')->sort()->values()->all();
                     
-                    $cartItem->toppings()->attach($toppings);
+                    if ($itemToppingIds == $requestToppingIds) {
+                        $matchingCartItem = $item;
+                        break;
+                    }
+                }
+
+                if ($matchingCartItem) {
+                    // If a match is found, update the quantity
+                    $matchingCartItem->quantity += $request->quantity;
+                    $matchingCartItem->save();
+                    $cartItem = $matchingCartItem;
+                } else {
+                    // If no match is found, create a new cart item
+                    $cartItem = CartItem::create([
+                        'cart_id' => $cart->id,
+                        'product_variant_id' => $variant->id,
+                        'quantity' => $request->quantity,
+                        'notes' => $request->notes,
+                    ]);
+
+                    // Attach toppings if they exist in the request
+                    if (!empty($requestToppingIds)) {
+                        $toppings = collect($requestToppingIds)->mapWithKeys(function ($toppingId) {
+                            return [$toppingId => ['quantity' => 1]];
+                        })->all();
+                        
+                        $cartItem->toppings()->attach($toppings);
+                    }
                 }
 
                 DB::commit();
 
                 // Log success
-                Log::info('Product added to cart successfully:', [
+                Log::info('Product added/updated in cart successfully:', [
                     'cart_id' => $cart->id,
                     'cart_item_id' => $cartItem->id,
                     'product_id' => $request->product_id,
@@ -195,12 +244,12 @@ class CartController extends Controller
                 ]);
 
                 // Get updated cart count
-                $cartCount = $cart->items()->sum('quantity');
+                $cartCount = $cart->items()->count();
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Sản phẩm đã được thêm vào giỏ hàng',
-                    'count' => $cartCount
+                    'cart_count' => $cartCount
                 ]);
 
             } catch (\Exception $e) {
@@ -265,7 +314,7 @@ class CartController extends Controller
             $cartItem->update(['quantity' => $request->quantity]);
 
             // Get updated cart count
-            $cartCount = $cartItem->cart->items()->sum('quantity');
+            $cartCount = $cartItem->cart->items()->count();
             session(['cart_count' => $cartCount]);
 
             return response()->json([
@@ -320,7 +369,7 @@ class CartController extends Controller
             $cartItem->delete();
 
             // Get updated cart count
-            $cartCount = $cart->items()->sum('quantity');
+            $cartCount = $cart->items()->count();
             session(['cart_count' => $cartCount]);
 
             return response()->json([

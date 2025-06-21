@@ -235,61 +235,35 @@
             <div class="mt-12">
                 <h2 class="text-xl font-bold mb-6">Có Thể Bạn Cũng Thích</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- Suggested Product 1 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Gà Rán Giòn Cay" class="object-cover w-full h-full">
+                    @forelse($suggestedProducts as $product)
+                        @php
+                            $primaryImage = $product->primaryImage ? $product->primaryImage : $product->images->first();
+                            $imgUrl = $primaryImage && $primaryImage->img ? (Storage::disk('s3')->url($primaryImage->img)) : asset('images/default-placeholder.png');
+                            $firstVariant = $product->variants->first();
+                            $branchId = $cart && $cart->branch_id ? $cart->branch_id : 1;
+                        @endphp
+                        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                            <div class="relative h-40">
+                                <img src="{{ $imgUrl }}" alt="{{ $product->name }}" class="object-cover w-full h-full">
+                                @if(isset($product->is_favorite) && $product->is_favorite)
+                                    <span class="absolute top-2 right-2 text-red-500"><i class="fas fa-heart"></i></span>
+                                @endif
+                            </div>
+                            <div class="p-3">
+                                <h3 class="font-medium text-sm mb-1 line-clamp-1">{{ $product->name }}</h3>
+                                <p class="text-orange-500 font-bold text-sm mb-2">{{ number_format($product->base_price) }}đ</p>
+                                <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested"
+                                    data-product-id="{{ $product->id }}"
+                                    data-variant-id="{{ $firstVariant ? $firstVariant->id : '' }}"
+                                    data-branch-id="{{ $branchId }}"
+                                    data-variant-values='@json($firstVariant ? $firstVariant->variantValues->pluck("id") : [])'>
+                                    Thêm vào giỏ
+                                </button>
+                            </div>
                         </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Gà Rán Giòn Cay</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">55.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Suggested Product 2 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Khoai Tây Chiên" class="object-cover w-full h-full">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Khoai Tây Chiên</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">25.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Suggested Product 3 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Nước Cam Tươi" class="object-cover w-full h-full">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Nước Cam Tươi</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">35.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Suggested Product 4 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Bánh Chocolate Nóng" class="object-cover w-full h-full">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Bánh Chocolate Nóng</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">39.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
+                    @empty
+                        <div class="col-span-4 text-center text-gray-400">Không có sản phẩm gợi ý</div>
+                    @endforelse
                 </div>
             </div>
         </div>

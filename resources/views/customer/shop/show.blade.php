@@ -394,13 +394,6 @@
                                         {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, ',', '.') }}đ
                                     </span>
                                 @endif
-                                <span class="text-xs ml-1 {{ $stockQuantity <= 5 ? 'text-orange-500' : 'text-gray-500' }} stock-display">
-                                    @if($stockQuantity > 0)
-                                        (Còn {{ $stockQuantity }})
-                                    @else
-                                        (Hết hàng)
-                                    @endif
-                                </span>
                             </span>
                         </label>
                         @endforeach
