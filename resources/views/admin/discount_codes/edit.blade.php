@@ -369,9 +369,19 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="min_order_amount" class="form-label">Số tiền đơn hàng tối thiểu</label>
-                            <input type="number" name="min_order_amount" id="min_order_amount" class="form-control" step="0.01" min="0" value="{{ old('min_order_amount', $discountCode->min_order_amount) }}">
-                            @error('min_order_amount')
+                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu</label>
+                            <div class="flex gap-2">
+                                <select name="min_requirement_type" id="min_requirement_type" class="form-control w-1/2">
+                                    <option value="" {{ old('min_requirement_type', $discountCode->min_requirement_type) == '' ? 'selected' : '' }}>Không áp dụng</option>
+                                    <option value="order_amount" {{ old('min_requirement_type', $discountCode->min_requirement_type) == 'order_amount' ? 'selected' : '' }}>Đơn hàng tối thiểu</option>
+                                    <option value="product_price" {{ old('min_requirement_type', $discountCode->min_requirement_type) == 'product_price' ? 'selected' : '' }}>Giá sản phẩm tối thiểu</option>
+                                </select>
+                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0" value="{{ old('min_requirement_value', $discountCode->min_requirement_value) }}" placeholder="Nhập giá trị...">
+                            </div>
+                            @error('min_requirement_type')
+                            <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                            @error('min_requirement_value')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
@@ -396,6 +406,60 @@
                             </svg>
                             Phạm vi áp dụng
                         </h3>
+                        
+                        <div class="form-group mb-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_scope" id="applicable_scope_all" value="all_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'all_branches' ? 'checked' : '' }}>
+                                    <label for="applicable_scope_all">Tất cả chi nhánh</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="radio" name="applicable_scope" id="applicable_scope_specific" value="specific_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'specific_branches' ? 'checked' : '' }}>
+                                    <label for="applicable_scope_specific">Chi nhánh cụ thể</label>
+                                </div>
+                            </div>
+                            @error('applicable_scope')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group mb-3" id="branch_selection" @if(old('applicable_scope', $discountCode->applicable_scope) != 'specific_branches') style="display: none;" @endif>
+                            <label class="form-label font-medium">Chọn chi nhánh</label>
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p>
+                                            <strong>Mẹo:</strong> Nếu bạn chọn tất cả chi nhánh, hệ thống sẽ tự động chuyển sang chế độ "Tất cả chi nhánh".
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
+                                    @foreach($branches as $branch)
+                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
+                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
+                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                </svg>
+                                                CN
+                                            </span>
+                                            <input type="checkbox" name="branch_ids[]" id="branch_{{ $branch->id }}" value="{{ $branch->id }}" 
+                                                {{ in_array($branch->id, $selectedBranches ?? []) ? 'checked' : '' }}>
+                                            <label for="branch_{{ $branch->id }}">
+                                                {{ $branch->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="text-right mt-2">
+                                    <span class="text-sm text-blue-600 cursor-pointer select-all-branches">Chọn tất cả</span> | 
+                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-branches">Bỏ chọn tất cả</span>
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="form-group mb-3">
                             <label class="form-label">Áp dụng cho</label>
@@ -599,61 +663,19 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="form-group mb-3">
-                            <label class="form-label">Phạm vi áp dụng</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                                <div class="checkbox-group">
-                                    <input type="radio" name="applicable_scope" id="applicable_scope_all" value="all_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'all_branches' ? 'checked' : '' }}>
-                                    <label for="applicable_scope_all">Tất cả chi nhánh</label>
-                                </div>
-                                <div class="checkbox-group">
-                                    <input type="radio" name="applicable_scope" id="applicable_scope_specific" value="specific_branches" {{ old('applicable_scope', $discountCode->applicable_scope) == 'specific_branches' ? 'checked' : '' }}>
-                                    <label for="applicable_scope_specific">Chi nhánh cụ thể</label>
-                                </div>
-                            </div>
-                            @error('applicable_scope')
-                                <div class="text-danger">{{ $message }}</div>
-                            @enderror
                         </div>
 
-                        <div class="form-group mb-3" id="branch_selection" @if(old('applicable_scope', $discountCode->applicable_scope) != 'specific_branches') style="display: none;" @endif>
-                            <label class="form-label font-medium">Chọn chi nhánh</label>
-                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 dark:bg-yellow-950/20 dark:border-yellow-900 dark:text-yellow-200 p-3 rounded mb-3">
-                                    <div class="flex items-center">
-                                        <svg class="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <!-- Usage Settings -->
+                    <div class="form-section">
+                        <h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                         </svg>
-                                        <p>
-                                            <strong>Mẹo:</strong> Nếu bạn chọn tất cả chi nhánh, hệ thống sẽ tự động chuyển sang chế độ "Tất cả chi nhánh".
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
-                                    @foreach($branches as $branch)
-                                        <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
-                                            <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                </svg>
-                                                CN
-                                            </span>
-                                            <input type="checkbox" name="branch_ids[]" id="branch_{{ $branch->id }}" value="{{ $branch->id }}" 
-                                                {{ in_array($branch->id, $selectedBranches ?? []) ? 'checked' : '' }}>
-                                            <label for="branch_{{ $branch->id }}">
-                                                {{ $branch->name }}
-                                            </label>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                <div class="text-right mt-2">
-                                    <span class="text-sm text-blue-600 cursor-pointer select-all-branches">Chọn tất cả</span> | 
-                                    <span class="text-sm text-red-600 cursor-pointer unselect-all-branches">Bỏ chọn tất cả</span>
-                                </div>
-                            </div>
-                        </div>
+                            Cài đặt sử dụng
+                        </h3>
 
                         <div class="form-group mb-3">
                             <label class="form-label font-medium">Hạng thành viên áp dụng</label>
@@ -708,20 +730,7 @@
                             @error('applicable_ranks')
                                 <div class="text-danger">{{ $message }}</div>
                             @enderror
-                        </div>
                     </div>
-
-                    <!-- Usage Settings -->
-                    <div class="form-section">
-                        <h3>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                            </svg>
-                            Cài đặt sử dụng
-                        </h3>
 
                         <div class="form-group mb-3">
                             <label for="usage_type" class="form-label">Loại sử dụng</label>
@@ -1009,1030 +1018,22 @@
 
 @section('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Lưu trữ các sản phẩm, danh mục, combo đã chọn
-        var selectedProductIds = JSON.parse('@json($selectedProducts)');
-        var selectedCategoryIds = JSON.parse('@json($selectedCategories)');
-        var selectedComboIds = JSON.parse('@json($selectedCombos)');
-        
-        // Convert IDs to integers to ensure proper comparison
-        selectedProductIds = selectedProductIds.map(id => parseInt(id));
-        selectedCategoryIds = selectedCategoryIds.map(id => parseInt(id));
-        selectedComboIds = selectedComboIds.map(id => parseInt(id));
-        
-        // Flag to track initial load
-        window.initialLoadComplete = false;
-        
-        console.log('Selected Products:', selectedProductIds);
-        console.log('Selected Categories:', selectedCategoryIds);
-        console.log('Selected Combos:', selectedComboIds);
-        
-        // Kiểm tra CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        console.log('CSRF Token:', csrfToken ? 'Available' : 'Missing');
-        
-        // Setup jQuery AJAX with CSRF token
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            }
-        });
-        
-        // Branch selection toggle
-        const branchSelectionDiv = document.getElementById('branch_selection');
-        const branchRadios = document.querySelectorAll('input[name="applicable_scope"]');
-        
-        // Items selection toggle
-        const productsSelectionDiv = document.getElementById('products_selection');
-        const categoriesSelectionDiv = document.getElementById('categories_selection');
-        const combosSelectionDiv = document.getElementById('combos_selection');
-        const variantsSelectionDiv = document.getElementById('variants_selection');
-        const itemRadios = document.querySelectorAll('input[name="applicable_items"]');
-        
-        // Branch checkboxes
-        const branchCheckboxes = document.querySelectorAll('input[name="branch_ids[]"]');
-        
-        // Product containers
-        const productContainer = document.querySelector('#products_selection .grid');
-        const categoryContainer = document.querySelector('#categories_selection .grid');
-        const comboContainer = document.querySelector('#combos_selection .grid');
-        
-        // Select/Unselect all buttons
-        const selectAllProducts = document.querySelector('.select-all-products');
-        const unselectAllProducts = document.querySelector('.unselect-all-products');
-        const selectAllCategories = document.querySelector('.select-all-categories');
-        const unselectAllCategories = document.querySelector('.unselect-all-categories');
-        const selectAllCombos = document.querySelector('.select-all-combos');
-        const unselectAllCombos = document.querySelector('.unselect-all-combos');
-        const selectAllBranches = document.querySelector('.select-all-branches');
-        const unselectAllBranches = document.querySelector('.unselect-all-branches');
-        
-        // Product search
-        const productSearch = document.getElementById('product_search');
-        const categorySearch = document.getElementById('category_search');
-        const comboSearch = document.getElementById('combo_search');
-        
-        // Date fields
-        const startDateField = document.getElementById('start_date');
-        const endDateField = document.getElementById('end_date');
-        
-        // Rank checkboxes
-        const rankCheckboxes = document.querySelectorAll('input[name="applicable_ranks[]"]');
-        
-        // User container div
-        const userContainer = document.querySelector('#users_selection .grid');
-        const userCountDisplay = document.querySelector('#users_selection .text-xs.text-gray-500');
-        
-        // Initial state check
-        toggleBranchSelection();
-        toggleItemsSelection();
-        validateDates();
-        
-        // Log selected items after initial load
-        setTimeout(logSelectedItems, 500); // Delay to ensure all items are loaded
-        
-        console.log('Initial applicable_items value:', '{{ $discountCode->applicable_items }}');
-        console.log('Initial selectedComboIds:', selectedComboIds);
-        
-        // Special handling for combos - ensure they're visible if applicable_items is specific_combos
-        if ('{{ $discountCode->applicable_items }}' === 'specific_combos') {
-            if (combosSelectionDiv) {
-                combosSelectionDiv.style.display = 'block';
-                console.log('Forcing display of combos selection div');
-            }
-            
-            // Force check the combos radio button
-            const combosRadio = document.getElementById('applicable_items_combos');
-            if (combosRadio) {
-                combosRadio.checked = true;
-                console.log('Forcing combos radio button to be checked');
-            }
-        }
-        
-        // Special handling for variants - ensure they're visible if applicable_items is specific_variants
-        if ('{{ $discountCode->applicable_items }}' === 'specific_variants') {
-            if (variantsSelectionDiv) {
-                variantsSelectionDiv.style.display = 'block';
-                console.log('Forcing display of variants selection div');
-            }
-            
-            // Force check the variants radio button
-            const variantsRadio = document.getElementById('applicable_items_variants');
-            if (variantsRadio) {
-                variantsRadio.checked = true;
-                console.log('Forcing variants radio button to be checked');
-            }
-        }
-        
-        // Load data for all item types to ensure they're available when needed
-        fetchItemsByType('products');
-        fetchItemsByType('categories');
-        fetchItemsByType('combos');
-        fetchProductVariants();
-        
-        // Set the flag to indicate initial loading is complete
-        setTimeout(() => {
-            window.initialLoadComplete = true;
-            console.log('Initial load complete');
-        }, 1000);
-        
-        // Add event listeners for changes
-        branchRadios.forEach(radio => {
-            radio.addEventListener('change', toggleBranchSelection);
-        });
-        
-        itemRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                toggleItemsSelection();
-                
-                // Based on the selected value, ensure the correct data is loaded
-                const selectedValue = this.value;
-                
-                if (selectedValue === 'specific_products') {
-                    // Ensure products are loaded
-                    fetchItemsByType('products');
-                } else if (selectedValue === 'specific_categories') {
-                    // Ensure categories are loaded
-                    fetchItemsByType('categories');
-                } else if (selectedValue === 'specific_combos') {
-                    // Ensure combos are loaded
-                    fetchItemsByType('combos');
-                } else if (selectedValue === 'specific_variants') {
-                    // Ensure variants are loaded
-                    fetchProductVariants();
-                }
-            });
-        });
-        
-        // Add event listeners for rank checkboxes to fetch users
-        rankCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', fetchUsersByRank);
-        });
-        
-        // Add event listeners for date validation
-        if (startDateField && endDateField) {
-            startDateField.addEventListener('change', validateDates);
-            endDateField.addEventListener('change', validateDates);
-        }
-        
-        // Add event listeners for select/unselect all buttons
-        if (selectAllProducts) {
-            selectAllProducts.addEventListener('click', function() {
-                const checkboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = true);
-            });
-        }
-        
-        if (unselectAllProducts) {
-            unselectAllProducts.addEventListener('click', function() {
-                const checkboxes = productsSelectionDiv.querySelectorAll('input[name="product_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-            });
-        }
-        
-        if (selectAllCategories) {
-            selectAllCategories.addEventListener('click', function() {
-                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = true);
-            });
-        }
-        
-        if (unselectAllCategories) {
-            unselectAllCategories.addEventListener('click', function() {
-                const checkboxes = categoriesSelectionDiv.querySelectorAll('input[name="category_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-            });
-        }
-        
-        if (selectAllCombos) {
-            selectAllCombos.addEventListener('click', function() {
-                const checkboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = true);
-            });
-        }
-        
-        if (unselectAllCombos) {
-            unselectAllCombos.addEventListener('click', function() {
-                const checkboxes = combosSelectionDiv.querySelectorAll('input[name="combo_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-            });
-        }
-        
-        if (unselectAllBranches) {
-            unselectAllBranches.addEventListener('click', function() {
-                const checkboxes = branchSelectionDiv.querySelectorAll('input[type="checkbox"]');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-            });
-        }
-        
-        // Add debounce function for search
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                const context = this;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), wait);
-            };
-        }
-        
-        // Product search with debounce
-        if (productSearch) {
-            productSearch.addEventListener('input', debounce(function() {
-                const searchTerm = this.value.toLowerCase();
-                
-                // Show loading indicator
-                if (productContainer) {
-                    productContainer.innerHTML = `
-                        <div class="col-span-full p-4 text-center">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm sản phẩm...</p>
-                        </div>
-                    `;
-                }
-                
-                // Make AJAX request to search products
-                $.ajax({
-                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        type: 'products',
-                        search: searchTerm,
-                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    success: function(data) {
-                        if (data.success) {
-                            fetchItemsByType('products');
-                    } else {
-                            console.error('Error searching products:', data.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX error:', error);
-                    }
-                });
-            }, 500));
-        }
-        
-        // Category search with debounce
-        if (categorySearch) {
-            categorySearch.addEventListener('input', debounce(function() {
-                const searchTerm = this.value.toLowerCase();
-                
-                // Show loading indicator
-                if (categoryContainer) {
-                    categoryContainer.innerHTML = `
-                        <div class="col-span-full p-4 text-center">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm danh mục...</p>
-                        </div>
-                    `;
-                }
-                
-                // Make AJAX request to search categories
-                $.ajax({
-                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        type: 'categories',
-                        search: searchTerm,
-                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    success: function(data) {
-                        if (data.success) {
-                            fetchItemsByType('categories');
-                        } else {
-                            console.error('Error searching categories:', data.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX error:', error);
-                    }
-                });
-            }, 500));
-        }
-        
-        // Combo search with debounce
-        if (comboSearch) {
-            comboSearch.addEventListener('input', debounce(function() {
-                const searchTerm = this.value.toLowerCase();
-                
-                // Show loading indicator
-                if (comboContainer) {
-                    comboContainer.innerHTML = `
-                        <div class="col-span-full p-4 text-center">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm combo...</p>
-                        </div>
-                    `;
-                }
-                
-                // Make AJAX request to search combos
-                $.ajax({
-                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        type: 'combos',
-                        search: searchTerm,
-                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    success: function(data) {
-                        if (data.success) {
-                            fetchItemsByType('combos');
-                        } else {
-                            console.error('Error searching combos:', data.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX error:', error);
-                    }
-                });
-            }, 500));
-        }
-        
-        function toggleBranchSelection() {
-            const selectedScope = document.querySelector('input[name="applicable_scope"]:checked').value;
-            console.log('Selected scope:', selectedScope);
-            
-            if (branchSelectionDiv) {
-                if (selectedScope === 'specific_branches') {
-                    branchSelectionDiv.style.display = 'block';
-                } else {
-                    branchSelectionDiv.style.display = 'none';
-                    // Bỏ chọn tất cả các checkbox chi nhánh khi chọn "Tất cả chi nhánh"
-                    const branchCheckboxes = document.querySelectorAll('input[name="branch_ids[]"]');
-                    branchCheckboxes.forEach(checkbox => checkbox.checked = false);
-                }
-            }
-        }
-        
-        function toggleItemsSelection() {
-            const selectedItems = document.querySelector('input[name="applicable_items"]:checked').value;
-            console.log('toggleItemsSelection called with value:', selectedItems);
-            
-            // Ẩn tất cả các phần chọn trước
-            if (productsSelectionDiv) productsSelectionDiv.style.display = 'none';
-            if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'none';
-            if (combosSelectionDiv) combosSelectionDiv.style.display = 'none';
-            if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'none';
-            
-            // Hiển thị phần chọn tương ứng với lựa chọn
-            switch (selectedItems) {
-                case 'specific_products':
-                    if (productsSelectionDiv) productsSelectionDiv.style.display = 'block';
-                    break;
-                case 'specific_categories':
-                    if (categoriesSelectionDiv) categoriesSelectionDiv.style.display = 'block';
-                    break;
-                case 'specific_combos':
-                    if (combosSelectionDiv) combosSelectionDiv.style.display = 'block';
-                    break;
-                case 'specific_variants':
-                    if (variantsSelectionDiv) variantsSelectionDiv.style.display = 'block';
-                    break;
-            }
-        }
-        
-        function validateDates() {
-            const startDate = new Date(startDateField.value);
-            const endDate = new Date(endDateField.value);
-            
-            if (startDate > endDate) {
-                alert('Ngày kết thúc phải sau ngày bắt đầu');
-                endDateField.value = startDate.toISOString().split('T')[0];
-            }
-        }
+    <script type="module" src="{{ asset('js/pages/admin/discount_codes/initEdit.js') }}"></script>
 
-        // Usage Type and User Selection
-        const usageTypeSelect = document.getElementById('usage_type');
-        const usersSelectionDiv = document.getElementById('users_selection');
-        const userSearchInput = document.getElementById('user_search');
-        const selectAllUsers = document.querySelector('.select-all-users');
-        const unselectAllUsers = document.querySelector('.unselect-all-users');
-        
-        // Initial state check for user selection
-        toggleUserSelection();
-        
-        // Initial load of users based on selected ranks
-        fetchUsersByRank();
-        
-        // Add event listener for usage type change
-        if (usageTypeSelect) {
-            usageTypeSelect.addEventListener('change', toggleUserSelection);
-        }
-        
-        // Add event listeners for user search
-        if (userSearchInput) {
-            userSearchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const userItems = usersSelectionDiv.querySelectorAll('.user-item');
-                
-                userItems.forEach(item => {
-                    const fullName = item.querySelector('label .font-medium').textContent.toLowerCase();
-                    const email = item.querySelector('label .text-gray-500:nth-child(2)').textContent.toLowerCase();
-                    const phone = item.querySelector('label .text-gray-500:nth-child(3)').textContent.toLowerCase();
-                    
-                    if (fullName.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm)) {
-                        item.style.display = '';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-            });
-        }
-        
-        // Add event listeners for select/unselect all users
-        if (selectAllUsers) {
-            selectAllUsers.addEventListener('click', function() {
-                const checkboxes = usersSelectionDiv.querySelectorAll('input[type="checkbox"]:not([disabled])');
-                checkboxes.forEach(checkbox => checkbox.checked = true);
-            });
-        }
-        
-        if (unselectAllUsers) {
-            unselectAllUsers.addEventListener('click', function() {
-                const checkboxes = usersSelectionDiv.querySelectorAll('input[type="checkbox"]:not([disabled])');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-            });
-        }
-
-        function toggleUserSelection() {
-            if (!usersSelectionDiv || !usageTypeSelect) return;
-            
-            const selectedType = usageTypeSelect.value;
-            if (selectedType === 'personal') {
-                usersSelectionDiv.style.display = 'block';
-            } else {
-                usersSelectionDiv.style.display = 'none';
-            }
-        }
-        
-        /**
-         * Fetch users by selected ranks via AJAX
-         */
-        function fetchUsersByRank() {
-            // Get all selected ranks
-            const selectedRanks = [];
-            rankCheckboxes.forEach(checkbox => {
-                if (checkbox.checked) {
-                    selectedRanks.push(checkbox.value);
-                }
-            });
-            
-            // If no ranks selected, clear user list
-            if (selectedRanks.length === 0) {
-                if (userContainer) {
-                    userContainer.innerHTML = `
-                        <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
-                            <p class="text-gray-500 dark:text-muted-foreground">Vui lòng chọn ít nhất một hạng thành viên để hiển thị danh sách người dùng.</p>
-                        </div>
-                    `;
-                }
-                if (userCountDisplay) {
-                    userCountDisplay.textContent = 'Đang hiển thị 0 người dùng hợp lệ';
-                }
-                return;
-            }
-            
-            // Show loading indicator
-            if (userContainer) {
-                userContainer.innerHTML = `
-                    <div class="col-span-full p-4 text-center">
-                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách người dùng...</p>
-                    </div>
-                `;
-            }
-            
-            // Get the current discount code ID
-            const discountCodeId = "{{ isset($discountCode->id) ? $discountCode->id : 'null' }}";
-            
-            // Make AJAX request using jQuery
-            $.ajax({
-                url: "{{ route('admin.discount_codes.users-by-rank') }}",
-                type: 'POST',
-                dataType: 'json',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    ranks: selectedRanks,
-                    discount_code_id: discountCodeId
-                }),
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                success: function(data) {
-                    console.log('User data received:', data);
-                    if (data.success) {
-                    // Update user count display
-                    if (userCountDisplay) {
-                        userCountDisplay.textContent = `Đang hiển thị ${data.count} người dùng hợp lệ`;
-                    }
-                    
-                    // Generate HTML for users
-                    if (userContainer) {
-                        if (data.users.length === 0) {
-                            userContainer.innerHTML = `
-                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
-                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy người dùng nào với hạng đã chọn.</p>
-                                </div>
-                            `;
-                        } else {
-                            let usersHtml = '';
-                            
-                            data.users.forEach(user => {
-                                usersHtml += `
-                                    <div class="user-item checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
-                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${user.rank_class}">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                            </svg>
-                                            ${user.rank_name || 'Chưa xếp hạng'}
-                                        </span>
-                                        <input type="checkbox" name="assigned_users[]" id="user_${user.id}" value="${user.id}" ${user.is_assigned ? 'checked' : ''}>
-                                        <label for="user_${user.id}" class="flex flex-col">
-                                            <span class="font-medium">${user.full_name}</span>
-                                            <span class="text-xs text-gray-500">${user.email}</span>
-                                            <span class="text-xs text-gray-500">${user.phone}</span>
-                                        </label>
-                                    </div>
-                                `;
-                            });
-                            
-                            userContainer.innerHTML = usersHtml;
-                        }
-                    }
-                } else {
-                    console.error('Error fetching users:', data.message);
-                    if (userContainer) {
-                        userContainer.innerHTML = `
-                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                                <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
-                            </div>
-                        `;
-                    }
-                }
-                },
-                error: function(xhr, status, error) {
-                    console.error('AJAX error:', error);
-                    console.error('Status:', status);
-                    console.error('Response:', xhr.responseText);
-                    if (userContainer) {
-                        userContainer.innerHTML = `
-                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                                <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách người dùng.</p>
-                                <p class="text-red-500 text-sm mt-2">${error}</p>
-                            </div>
-                        `;
-                    }
-                }
-            });
-        }
-        
-        /**
-         * Fetch items by type via AJAX
-         */
-        function fetchItemsByType(type) {
-            const containerMap = {
-                'products': productContainer,
-                'categories': categoryContainer,
-                'combos': comboContainer
-            };
-            
-            const container = containerMap[type];
-            
-            if (!container) {
-                console.error(`Container for ${type} not found!`);
-                return;
-            }
-            
-            // Show loading indicator
-            container.innerHTML = `
-                <div class="col-span-full p-4 text-center">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách...</p>
-                </div>
-            `;
-            
-            console.log(`Fetching ${type} data...`);
-            
-            // Make AJAX request using jQuery
-            $.ajax({
-                url: "{{ route('admin.discount_codes.get-items-by-type') }}",
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    type: type,
-                    search: '',
-                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                beforeSend: function() {
-                    console.log(`Sending request for ${type}...`);
-                },
-                success: function(data) {
-                    console.log(`${type} data received:`, data);
-                    if (data && data.success) {
-                        if (data.items && data.items.length === 0) {
-                            container.innerHTML = `
-                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
-                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy dữ liệu.</p>
-                                </div>
-                            `;
-                        } else if (data.items && data.items.length > 0) {
-                            let itemsHtml = '';
-                            
-                            data.items.forEach(item => {
-                                let badgeClass, badgeIcon, badgeText;
-                                
-                                switch (type) {
-                                    case 'products':
-                                        badgeClass = 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200';
-                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
-                                        badgeText = 'SP';
-                                        break;
-                                    case 'categories':
-                                        badgeClass = 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200';
-                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>';
-                                        badgeText = 'DM';
-                                        break;
-                                    case 'combos':
-                                        badgeClass = 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200';
-                                        badgeIcon = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>';
-                                        badgeText = 'Combo';
-                                        break;
-                                }
-                                
-                                const fieldName = type === 'products' ? 'product_ids' : (type === 'categories' ? 'category_ids' : 'combo_ids');
-                                
-                                // Kiểm tra xem item đã được chọn chưa
-                                let selectedItems;
-                                if (type === 'products') {
-                                    selectedItems = selectedProductIds || [];
-                                } else if (type === 'categories') {
-                                    selectedItems = selectedCategoryIds || [];
-                                } else {
-                                    selectedItems = selectedComboIds || [];
-                                    console.log(`Loading combos with selectedComboIds:`, selectedComboIds);
-                                }
-                                
-                                // Convert item.id to integer for comparison
-                                const itemId = parseInt(item.id);
-                                const isChecked = selectedItems.includes(itemId) ? 'checked' : '';
-                                console.log(`Item ${itemId} (${item.name}) is ${isChecked ? 'checked' : 'not checked'}`);
-                                
-                                itemsHtml += `
-                                    <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
-                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium ${badgeClass}">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                ${badgeIcon}
-                                            </svg>
-                                            ${badgeText}
-                                        </span>
-                                        <input type="checkbox" name="${fieldName}[]" id="${type}_${item.id}" value="${item.id}" ${isChecked}>
-                                        <label for="${type}_${item.id}">
-                                            ${item.name}
-                                            ${type === 'products' ? 
-                                                `<div class="flex items-center justify-between">
-                                                    <span class="text-xs text-gray-500 block">${parseFloat(item.price || 0).toLocaleString()} đ</span>
-                                                    ${item.variant_count !== undefined ? 
-                                                        `<span class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                                                            ${item.variant_count} biến thể
-                                                        </span>` : ''
-                                                    }
-                                                </div>
-                                                ${item.short_description ? `<span class="text-xs text-gray-500 block mt-1 italic">${item.short_description}</span>` : ''}` 
-                                            : (item.price ? `<span class="text-xs text-gray-500 block">${parseFloat(item.price).toLocaleString()} đ</span>` : '')}
-                                        </label>
-                                    </div>
-                                `;
-                            });
-                            
-                            container.innerHTML = itemsHtml;
-                            
-                            // Add change event listeners to the newly created checkboxes
-                            container.querySelectorAll(`input[name="${fieldName}[]"]`).forEach(checkbox => {
-                                checkbox.addEventListener('change', logSelectedItems);
-                            });
-                            
-                            // Log selected items after loading
-                            logSelectedItems();
-                        } else {
-                            console.error(`Invalid data format for ${type}:`, data);
-                            container.innerHTML = `
-                                <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                                    <p class="text-red-500">Lỗi: Định dạng dữ liệu không hợp lệ</p>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        console.error(`Error fetching ${type}:`, data ? data.message : 'No data received');
-                        container.innerHTML = `
-                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                                <p class="text-red-500">Lỗi: Không thể tải danh sách.</p>
-                                <p class="text-red-500">${data && data.message ? data.message : 'Không có thông tin lỗi'}</p>
-                            </div>
-                        `;
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error(`AJAX error for ${type}:`, error);
-                    console.error('Status:', status);
-                    console.error('Response:', xhr.responseText);
-                    
-                    // Hiển thị thông tin lỗi chi tiết
-                    let errorMessage = 'Lỗi kết nối không xác định';
-                    
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.message) {
-                            errorMessage = response.message;
-                        } else if (response.error) {
-                            errorMessage = response.error;
-                        }
-                    } catch (e) {
-                        errorMessage = xhr.responseText || error || 'Lỗi kết nối không xác định';
-                    }
-                    
-                    container.innerHTML = `
-                        <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                            <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách ${type}.</p>
-                            <p class="text-red-500 text-sm mt-2">${errorMessage}</p>
-                            <p class="text-red-500 text-xs mt-1">Status: ${status}</p>
-                            <button class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="fetchItemsByType('${type}')">
-                                Thử lại
-                            </button>
-                        </div>
-                    `;
-                }
-            });
-        }
-        
-        /**
-         * Fetch product variants for the variants selection
-         */
-        function fetchProductVariants() {
-            const variantContainer = document.getElementById('variants_container');
-            const variantSearch = document.getElementById('variant_search');
-            const selectAllVariants = document.querySelector('.select-all-variants');
-            const unselectAllVariants = document.querySelector('.unselect-all-variants');
-            
-            if (!variantContainer) {
-                console.error('Variant container not found!');
-                return;
-            }
-            
-            // Show loading indicator
-            variantContainer.innerHTML = `
-                <div class="col-span-full p-4 text-center">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tải danh sách biến thể sản phẩm...</p>
-                </div>
-            `;
-            
-            // Get selected variants from the hidden data element
-            let selectedVariantIds = [];
-            try {
-                const selectedVariantsData = document.getElementById('selected_variants_data');
-                if (selectedVariantsData) {
-                    selectedVariantIds = JSON.parse(selectedVariantsData.textContent) || [];
-                }
-            } catch (e) {
-                console.error('Error parsing selected variants:', e);
-                selectedVariantIds = [];
-            }
-            
-            console.log('Selected Variants:', selectedVariantIds);
-            
-            // Make AJAX request to get product variants
-            $.ajax({
-                url: "{{ route('admin.discount_codes.get-items-by-type') }}",
-                type: 'POST',
-                dataType: 'json',
-                data: {
-                    type: 'variants',
-                    search: variantSearch ? variantSearch.value : '',
-                    _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                success: function(data) {
-                    console.log('Variants data received:', data);
-                    
-                    if (data && data.success) {
-                        if (!data.items || data.items.length === 0) {
-                            variantContainer.innerHTML = `
-                                <div class="col-span-full p-4 text-center bg-gray-50 dark:bg-card rounded-lg">
-                                    <p class="text-gray-500 dark:text-muted-foreground">Không tìm thấy biến thể sản phẩm nào.</p>
-                                </div>
-                            `;
-                        } else {
-                            let variantsHtml = '';
-                            
-                            data.items.forEach(variant => {
-                                const isChecked = selectedVariantIds.includes(parseInt(variant.id)) ? 'checked' : '';
-                                const variantPrice = parseFloat(variant.price).toLocaleString();
-                                
-                                variantsHtml += `
-                                    <div class="checkbox-group hover:border-blue-500 hover:bg-blue-50 dark:hover:border-primary dark:hover:bg-primary/10 transition-colors relative">
-                                        <span class="absolute top-0 right-0 inline-flex items-center px-2 py-1 rounded-bl text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
-                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
-                                            </svg>
-                                            BT
-                                        </span>
-                                        <input type="checkbox" name="variant_ids[]" id="variant_${variant.id}" value="${variant.id}" ${isChecked}>
-                                        <label for="variant_${variant.id}" class="flex flex-col">
-                                            <span class="font-medium">${variant.product_name}</span>
-                                            <span class="text-xs text-blue-600">${variant.variant_description}</span>
-                                            <div class="flex items-center justify-between mt-1">
-                                                <span class="text-xs text-gray-500">${variantPrice} đ</span>
-                                            </div>
-                                        </label>
-                                    </div>
-                                `;
-                            });
-                            
-                            variantContainer.innerHTML = variantsHtml;
-                            
-                            // Add change event listeners to the newly created variant checkboxes
-                            variantContainer.querySelectorAll('input[name="variant_ids[]"]').forEach(checkbox => {
-                                checkbox.addEventListener('change', logSelectedItems);
-                            });
-                            
-                            // Log selected items after loading variants
-                            logSelectedItems();
-                        }
-                    } else {
-                        console.error('Error fetching variants:', data ? data.message : 'No data received');
-                        variantContainer.innerHTML = `
-                            <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                                <p class="text-red-500">Lỗi: Không thể tải danh sách biến thể sản phẩm.</p>
-                                <p class="text-red-500">${data && data.message ? data.message : 'Không có thông tin lỗi'}</p>
-                            </div>
-                        `;
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('AJAX error:', error);
-                    console.error('Status:', status);
-                    console.error('Response:', xhr.responseText);
-                    
-                    variantContainer.innerHTML = `
-                        <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                            <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách biến thể sản phẩm.</p>
-                            <p class="text-red-500 text-sm mt-2">${error}</p>
-                            <button class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="fetchProductVariants()">
-                                Thử lại
-                            </button>
-                        </div>
-                    `;
-                }
-            });
-        }
-        
-        // Add event listeners for search
-        if (variantSearch) {
-            variantSearch.addEventListener('input', debounce(function() {
-                const searchTerm = this.value.toLowerCase();
-                
-                // Show loading indicator
-                if (variantContainer) {
-                    variantContainer.innerHTML = `
-                        <div class="col-span-full p-4 text-center">
-                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                            <p class="mt-2 text-gray-500 dark:text-muted-foreground">Đang tìm kiếm biến thể sản phẩm...</p>
-                        </div>
-                    `;
-                }
-                
-                // Make AJAX request to search variants
-                $.ajax({
-                    url: "{{ route('admin.discount_codes.get-items-by-type') }}",
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        type: 'variants',
-                        search: searchTerm,
-                        _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    success: function(data) {
-                        if (data.success) {
-                            fetchProductVariants();
-                        } else {
-                            console.error('Error searching variants:', data.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX error:', error);
-                    }
-                });
-            }, 500));
-        }
-        
-        // Add event listeners for select/unselect all variants
-        if (selectAllVariants) {
-            selectAllVariants.addEventListener('click', function() {
-                const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = true);
-            });
-        }
-        
-        if (unselectAllVariants) {
-            unselectAllVariants.addEventListener('click', function() {
-                const checkboxes = variantContainer.querySelectorAll('input[name="variant_ids[]"]');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-            });
-        }
-        
-        // Function for logging selected items (for debugging)
-        function logSelectedItems() {
-            const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
-            let selectedIds = [];
-            
-            // Get the selected IDs based on the applicable_items type
-            switch (applicableItemsValue) {
-                case 'specific_products':
-                    const productCheckboxes = document.querySelectorAll('input[name="product_ids[]"]:checked');
-                    selectedIds = Array.from(productCheckboxes).map(cb => cb.value);
-                    console.log('Selected products:', selectedIds);
-                    break;
-                    
-                case 'specific_categories':
-                    const categoryCheckboxes = document.querySelectorAll('input[name="category_ids[]"]:checked');
-                    selectedIds = Array.from(categoryCheckboxes).map(cb => cb.value);
-                    console.log('Selected categories:', selectedIds);
-                    break;
-                    
-                case 'specific_combos':
-                    const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');
-                    selectedIds = Array.from(comboCheckboxes).map(cb => cb.value);
-                    console.log('Selected combos:', selectedIds);
-                    break;
-                    
-                case 'specific_variants':
-                    const variantCheckboxes = document.querySelectorAll('input[name="variant_ids[]"]:checked');
-                    selectedIds = Array.from(variantCheckboxes).map(cb => cb.value);
-                    console.log('Selected variants:', selectedIds);
-                    break;
-            }
-        }
-        
-        // Add event listeners to all checkboxes to log selected items when selection changes
-        const allCheckboxSelectors = [
-            'input[name="product_ids[]"]',
-            'input[name="category_ids[]"]',
-            'input[name="combo_ids[]"]',
-            'input[name="variant_ids[]"]'
-        ];
-        
-        allCheckboxSelectors.forEach(selector => {
-            document.querySelectorAll(selector).forEach(checkbox => {
-                checkbox.addEventListener('change', logSelectedItems);
-            });
-        });
-        
-        // Also log selected items when the applicable_items radio buttons change
-        document.querySelectorAll('input[name="applicable_items"]').forEach(radio => {
-            radio.addEventListener('change', logSelectedItems);
-        });
-        
-        // Add form submission handler to log data
-        const form = document.querySelector('form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                // Get the currently selected radio button
-                const applicableItemsValue = document.querySelector('input[name="applicable_items"]:checked').value;
-                console.log('Form is being submitted with applicable_items:', applicableItemsValue);
-                
-                // Log selected items one last time before submission
-                logSelectedItems();
-                
-                // Check for combo checkboxes
-                const comboCheckboxes = document.querySelectorAll('input[name="combo_ids[]"]:checked');
-                if (comboCheckboxes.length > 0) {
-                    console.log('Selected combo checkboxes:', comboCheckboxes.length);
-                    
-                    // Log each selected combo ID
-                    const selectedComboIds = Array.from(comboCheckboxes).map(cb => cb.value);
-                    console.log('Selected combo IDs:', selectedComboIds);
-                    
-                    // If combos are selected, ensure the combos radio button is checked
-                    const combosRadio = document.getElementById('applicable_items_combos');
-                    if (combosRadio) {
-                        combosRadio.checked = true;
-                        console.log('Forcing combos radio button to be checked before submission');
-                    }
-                }
-                
-                // If specific_combos is selected but no combos are checked, prevent submission
-                if (document.querySelector('input[name="applicable_items"]:checked').value === 'specific_combos' && 
-                    document.querySelectorAll('input[name="combo_ids[]"]:checked').length === 0) {
-                    e.preventDefault();
-                    alert('Vui lòng chọn ít nhất một combo.');
-                    return false;
-                }
-            });
-        }
-    });
-</script>
+    <script id="selected_products_data" type="application/json">
+        @json($selectedProducts)
+    </script>
+    <script id="selected_categories_data" type="application/json">
+        @json($selectedCategories)
+    </script>
+    <script id="selected_combos_data" type="application/json">
+        @json($selectedCombos)
+    </script>
+    <script id="selected_variants_data" type="application/json">
+        @json($selectedVariants)
+    </script>
+    <script id="selected_users_data" type="application/json">
+        @json($discountCode->users->pluck('user_id')->toArray())
+    </script>
+    <input type="hidden" name="discount_code_id" value="{{ $discountCode->id }}">
 @endsection

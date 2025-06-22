@@ -4,138 +4,198 @@ namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Data\MockDriverData; // Import our mock data class
-use Carbon\Carbon; // Import Carbon for date/time handling
+use App\Models\Order;
+use App\Models\Driver;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class DriverController extends Controller
 {
+    /**
+     * Hiển thị trang dashboard chính của tài xế.
+     */
     public function home()
     {
-        $driver = (object) MockDriverData::$mockDriverProfile;
-        $mockOrders = MockDriverData::getMockOrders();
+        // 1. Lấy thông tin tài xế đang đăng nhập
+        $driver = Auth::guard('driver')->user();
 
-        $today = Carbon::now()->locale('vi')->isoFormat('DD/MM/YYYY');
+        // 2. Lấy thu nhập từ các đơn đã giao thành công TRONG NGÀY
+        $ordersDeliveredToday = Order::where('driver_id', $driver->id)
+            ->where('status', 'delivered')
+            ->whereDate('delivery_date', Carbon::today())
+            ->get();
+        $totalEarnedToday = $ordersDeliveredToday->sum('driver_earning');
 
-        $ordersToday = array_filter($mockOrders, function($order) use ($today) {
-            return Carbon::parse($order['orderTime'])->locale('vi')->isoFormat('DD/MM/YYYY') === $today &&
-                   ($order['status'] === "Đã hoàn thành" || $order['status'] === "Đang giao");
-        });
-        $totalEarnedToday = array_reduce($ordersToday, function($sum, $order) {
-            return $sum + $order['driverEarnings'];
-        }, 0);
-        $totalKmToday = array_reduce($ordersToday, function($sum, $order) {
-            return $sum + $order['distanceKm'];
-        }, 0);
+        // 3. Lấy các đơn hàng tài xế đang xử lý (đang chuẩn bị hoặc đang giao)
+        $processingOrders = Order::where('driver_id', $driver->id)
+            ->whereIn('status', ['processing', 'delivering'])
+            ->latest()->get();
+            
+        // 4. Lấy 5 đơn hàng mới có sẵn cho tất cả tài xế
+        $availableOrders = Order::whereNull('driver_id')
+            ->where('status', 'pending')
+            ->latest()->take(5)->get();
 
-        $pendingOrders = array_filter($mockOrders, function($order) {
-            return $order['status'] === "Chờ nhận";
-        });
-        $allPendingOrders = $pendingOrders; // For count
-        $pendingOrders = array_slice($pendingOrders, 0, 3); // For display
+        // 5. Lấy số thông báo chưa đọc (nếu có)
+        // $unreadNotificationsCount = $driver->unreadNotifications()->count();
 
-        $allDeliveringOrders = array_filter($mockOrders, function($order) {
-            return $order['status'] === "Đang giao";
-        });
-
-        return view('driver.dashboard', compact('driver', 'ordersToday', 'totalEarnedToday', 'totalKmToday', 'pendingOrders', 'allPendingOrders', 'allDeliveringOrders'));
+        // 6. Gửi tất cả dữ liệu đến view
+        return view('driver.dashboard', compact(
+            'driver',
+            'ordersDeliveredToday',
+            'totalEarnedToday',
+            'processingOrders',
+            'availableOrders',
+            // 'unreadNotificationsCount'
+        ));
     }
 
+
+    /**
+     * Hiển thị trang hồ sơ tài xế.
+     */
     public function profile()
     {
-        $driver = (object) MockDriverData::$mockDriverProfile;
-        return view('driver.profile', compact('driver'));
+        return view('driver.profile', ['driver' => Auth::guard('driver')->user()]);
     }
 
+    /**
+     * Xử lý cập nhật hồ sơ.
+     */
     public function updateProfile(Request $request)
     {
-        // In a real application, you would validate and save to a database.
-        // For mock data, we can simulate an update (won't persist across requests).
-        // For this example, we'll just return a success response.
-        return response()->json(['message' => 'Profile updated successfully (mocked).']);
+        // (Bạn sẽ thêm logic validate và cập nhật ở đây)
+        return response()->json(['message' => 'Hồ sơ đã được cập nhật.']);
     }
 
+    /**
+     * Hiển thị lịch sử đơn hàng đã hoàn thành.
+     */
     public function history(Request $request)
     {
-        $mockDeliveryHistory = MockDriverData::getMockDeliveryHistory();
-        $filter = $request->query('filter', 'all'); // Đổi tên biến từ initialFilter thành filter
+        $driverId = Auth::guard('driver')->id();
+        $filter = $request->query('filter', 'all');
 
-        $filteredHistory = collect($mockDeliveryHistory)->filter(function($entry) use ($filter) {
-            $entryDate = Carbon::parse($entry['orderTime']);
-            $now = Carbon::now();
+        $query = Order::where('driver_id', $driverId)
+                      ->where('status', 'delivered');
 
-            if ($filter === "today") {
-                return $entryDate->isSameDay($now);
-            }
-            if ($filter === "week") {
-                return $entryDate->between($now->startOfWeek(), $now->endOfWeek());
-            }
-            if ($filter === "month") {
-                return $entryDate->isSameMonth($now) && $entryDate->isSameYear($now);
-            }
-            return true; // 'all'
-        })->sortByDesc(function($entry) {
-            return Carbon::parse($entry['orderTime'])->timestamp;
-        })->values()->all(); // Sắp xếp và reset keys
+        switch ($filter) {
+            case 'today':
+                $query->whereDate('delivery_date', Carbon::today());
+                break;
+            case 'week':
+                $query->whereBetween('delivery_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                break;
+            case 'month':
+                $query->whereMonth('delivery_date', Carbon::now()->month);
+                break;
+        }
 
-        $totalEarnings = array_reduce($filteredHistory, function($sum, $entry) {
-            return $sum + $entry['driverEarnings'];
-        }, 0);
+        $filteredHistory = $query->latest('delivery_date')->get();
+        
+        $totalEarnings = $filteredHistory->sum('driver_earning');
+        $totalOrders = $filteredHistory->count();
+        // Giả sử đơn hàng có rating từ khách hàng
+        // $averageRating = $filteredHistory->avg('rating'); 
 
-        $totalOrders = count($filteredHistory);
-
-        $ratings = array_filter(array_column($filteredHistory, 'rating'));
-        $averageRating = count($ratings) > 0 ? number_format(array_sum($ratings) / count($ratings), 1) : 'N/A';
-
-        return view('driver.history', compact('filteredHistory', 'filter', 'totalEarnings', 'totalOrders', 'averageRating'));
+        return view('driver.history', compact('filteredHistory', 'filter', 'totalEarnings', 'totalOrders'));
     }
 
-    public function earnings()
+    /**
+     * Hiển thị trang thu nhập.
+     */
+    public function earnings(Request $request)
     {
-        // This would typically fetch real earnings data
-        return view('driver.earnings'); // Assuming you have an earnings view
+        $driverId = Auth::guard('driver')->id();
+        $filter = $request->query('filter', 'today');
+
+        $query = Order::where('driver_id', $driverId)->where('status', 'delivered');
+        $label = 'hôm nay';
+
+        switch ($filter) {
+            case 'week':
+                $query->whereBetween('delivery_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $label = 'tuần này';
+                break;
+            case 'month':
+                $query->whereMonth('delivery_date', Carbon::now()->month);
+                $label = 'tháng này';
+                break;
+            default: // today
+                $query->whereDate('delivery_date', Carbon::today());
+                break;
+        }
+
+        $completedOrders = $query->get();
+
+        $stats = [
+            'total_earnings' => $completedOrders->sum('driver_earning'),
+            'total_orders' => $completedOrders->count(),
+            'total_tips' => $completedOrders->sum('tip_amount'), // Giả sử có cột tip_amount
+            'avg_per_order' => $completedOrders->count() > 0 ? $completedOrders->sum('driver_earning') / $completedOrders->count() : 0,
+        ];
+
+        return view('driver.earnings', compact('stats', 'filter', 'label'));
     }
 
+    /**
+     * Hiển thị thông báo.
+     */
     public function notifications()
     {
-        $notifications = MockDriverData::getMockNotifications();
-        // Sắp xếp thông báo theo thời gian mới nhất
-        usort($notifications, function($a, $b) {
-            return strtotime($b['timestamp']) - strtotime($a['timestamp']);
-        });
-
-        $unreadCount = count(array_filter($notifications, function($notif) {
-            return !$notif['read'];
-        }));
+        $driver = Auth::guard('driver')->user();
+        $notifications = $driver->notifications()->get();
+        $unreadCount = $driver->unreadNotifications()->count();
 
         return view('driver.notifications', compact('notifications', 'unreadCount'));
     }
 
-    // API methods (would return JSON)
-    public function getProfile()
-    {
-        return response()->json(MockDriverData::$mockDriverProfile);
-    }
+    // --- Các phương thức API ---
 
-    public function getStats()
+    /**
+     * API để bật/tắt trạng thái hoạt động.
+     */
+    // Phương thức để bật/tắt trạng thái
+    public function toggleStatus(Request $request)
     {
-        $mockOrders = MockDriverData::getMockOrders();
-        $today = Carbon::now()->locale('vi')->isoFormat('DD/MM/YYYY');
-
-        $ordersToday = array_filter($mockOrders, function($order) use ($today) {
-            return Carbon::parse($order['orderTime'])->locale('vi')->isoFormat('DD/MM/YYYY') === $today &&
-                   ($order['status'] === "Đã hoàn thành" || $order['status'] === "Đang giao");
-        });
-        $totalEarnedToday = array_reduce($ordersToday, function($sum, $order) {
-            return $sum + $order['driverEarnings'];
-        }, 0);
-        $totalKmToday = array_reduce($ordersToday, function($sum, $order) {
-            return $sum + $order['distanceKm'];
-        }, 0);
+        $request->validate(['is_available' => 'required|boolean']);
+        $driver = $request->user('driver'); // Lấy driver đang đăng nhập
+        $driver->is_available = $request->is_available;
+        $driver->save();
 
         return response()->json([
-            'ordersTodayCount' => count($ordersToday),
-            'totalEarnedToday' => $totalEarnedToday,
-            'totalKmToday' => $totalKmToday,
+            'success' => true,
+            'is_available' => (bool)$driver->is_available,
+            'message' => $driver->is_available ? 'Bạn đã Online.' : 'Bạn đã Offline.',
+        ]);
+    }
+
+    // Phương thức để lấy thu nhập
+    public function queryEarnings(Request $request)
+    {
+        $driverId = $request->user('driver')->id;
+        $period = $request->query('period', 'today');
+
+        $query = Order::where('driver_id', $driverId)->where('status', 'delivered');
+        
+        switch ($period) {
+            case 'week':
+                $query->whereBetween('delivery_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                break;
+            case 'month':
+                $query->whereMonth('delivery_date', Carbon::now()->month);
+                break;
+            default: // today
+                $query->whereDate('delivery_date', Carbon::today());
+                break;
+        }
+
+        $totalEarnings = $query->sum('driver_earning');
+        $orderCount = $query->count();
+
+        return response()->json([
+            'earnings' => number_format($totalEarnings, 0, ',', '.') . ' đ',
+            'order_count' => $orderCount . ' đơn đã giao',
         ]);
     }
 }

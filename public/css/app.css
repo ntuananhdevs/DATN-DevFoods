@@ -1,213 +1,98 @@
-/* Custom CSS for FoodDriver App */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Navigation Items */
-.nav-item {
-    @apply flex flex-col items-center py-2 px-1 text-gray-500 hover:text-blue-600 transition-colors;
-  }
-
-  .nav-item.active {
-    @apply text-blue-600;
-  }
-
-  .nav-item i {
-    @apply mb-1;
-  }
-
-  .nav-item.active i {
-    @apply text-blue-600;
-  }
-
-  /* Custom Toggle Switch */
-  .toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 44px;
-    height: 24px;
-  }
-
-  .toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 24px;
-  }
-
-  .toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-  }
-
-  input:checked + .toggle-slider {
-    background-color: #3b82f6;
-  }
-
-  input:checked + .toggle-slider:before {
-    transform: translateX(20px);
-  }
-
-  /* Status Badges */
-  .status-badge {
-    @apply px-2 py-1 text-xs font-medium rounded-full;
-  }
-
-  .status-assigned {
-    @apply bg-blue-100 text-blue-800;
-  }
-
-  .status-picked-up {
-    @apply bg-orange-100 text-orange-800;
-  }
-
-  .status-delivering {
-    @apply bg-purple-100 text-purple-800;
-  }
-
-  .status-delivered {
-    @apply bg-green-100 text-green-800;
-  }
-
-  .status-cancelled {
-    @apply bg-red-100 text-red-800;
-  }
-
-  /* Card Hover Effects */
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-md hover:scale-105;
-  }
-
-  /* Loading Spinner */
-  .spinner {
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3b82f6;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Toast Notifications */
-  .toast {
-    @apply bg-white border border-gray-200 rounded-lg shadow-lg p-4 mb-2 transform transition-all duration-300;
-  }
-
-  .toast.success {
-    @apply border-green-200 bg-green-50;
-  }
-
-  .toast.error {
-    @apply border-red-200 bg-red-50;
-  }
-
-  .toast.warning {
-    @apply border-yellow-200 bg-yellow-50;
-  }
-
-  .toast.info {
-    @apply border-blue-200 bg-blue-50;
-  }
-
-  /* Map Container */
-  .map-container {
-    @apply w-full h-full relative overflow-hidden;
-  }
-
-  .map-overlay {
-    @apply absolute inset-0 bg-gradient-to-b from-blue-900 to-blue-700 flex items-center justify-center;
-  }
-
-  /* Custom Scrollbar */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 2px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 2px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 640px) {
-    .container {
-      @apply px-2;
+/* Custom styles from your previous style.css */
+@layer components {
+    .badge-success {
+        @apply bg-success text-success-foreground hover: bg-success/80;
     }
 
-    .card {
-      @apply mx-2;
+    .badge-warning {
+        @apply bg-warning text-warning-foreground hover: bg-warning/80;
     }
-  }
 
-  /* Animation Classes */
-  .fade-in {
-    animation: fadeIn 0.3s ease-in-out;
-  }
-
-  .slide-up {
-    animation: slideUp 0.3s ease-in-out;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
+    .badge-info {
+        @apply bg-info text-info-foreground hover: bg-info/80;
     }
-    to {
-      opacity: 1;
-    }
-  }
+}
 
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+@layer base {
 
-  /* Print Styles */
-  @media print {
-    .no-print {
-      display: none !important;
+    /* Your custom CSS variables */
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 222.2 47.4% 11.2%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --success: 142.1 76.2% 36.3%;
+        --success-foreground: 210 40% 98%;
+        --warning: 47.9 95.8% 53.1%;
+        --warning-foreground: 222.2 47.4% 11.2%;
+        --info: 200.0 95.8% 53.1%;
+        --info-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 222.2 84% 4.9%;
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 210 40% 98%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --success: 142.1 70.2% 28.3%;
+        --success-foreground: 210 40% 98%;
+        --warning: 47.9 90.8% 43.1%;
+        --warning-foreground: 222.2 47.4% 11.2%;
+        --info: 200.0 90.8% 43.1%;
+        --info-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 210 40% 98%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
     }
 
     body {
-      @apply text-black bg-white;
+        @apply bg-background text-foreground;
     }
-  }
+}
+
+.driver-marker {
+    background-size: 100%;
+    width: 32px;
+    height: 32px;
+    display: block;
+    cursor: pointer;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}

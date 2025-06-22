@@ -129,6 +129,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::patch('/restore/{id}', [ProductController::class, 'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
+        Route::get('/price-range', [ProductController::class, 'getPriceRange'])->name('price-range');
 
         // Stock management
         Route::get('{product}/stock', [ProductController::class, 'stock'])->name('stock');
@@ -257,29 +258,20 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::patch('/{id}/toggle-status', [DiscountCodeController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/bulk-status-update', [DiscountCodeController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
         Route::get('/export', [DiscountCodeController::class, 'export'])->name('export');
-        // Liên kết chi nhánh
         Route::post('/{id}/branches', [DiscountCodeController::class, 'linkBranch'])->name('link-branch');
         Route::delete('/{id}/branches/{branch}', [DiscountCodeController::class, 'unlinkBranch'])->name('unlink-branch');
-        // Liên kết sản phẩm/danh mục/combo
         Route::post('/{id}/products', [DiscountCodeController::class, 'linkProduct'])->name('link-product');
         Route::delete('/{id}/products/{product}', [DiscountCodeController::class, 'unlinkProduct'])->name('unlink-product');
-        // Liên kết combo
         Route::post('/{id}/combos', [DiscountCodeController::class, 'linkCombo'])->name('link-combo');
         Route::delete('/{id}/combos/{combo}', [DiscountCodeController::class, 'unlinkCombo'])->name('unlink-combo');
-        // Liên kết biến thể sản phẩm
         Route::post('/{id}/product-variants', [DiscountCodeController::class, 'linkProductVariant'])->name('link-product-variant');
         Route::delete('/{id}/product-variants/{variant}', [DiscountCodeController::class, 'unlinkProductVariant'])->name('unlink-product-variant');
-        // Gán mã cho người dùng
         Route::post('/{id}/assign-users', [DiscountCodeController::class, 'assignUsers'])->name('assign-users');
         Route::delete('/{id}/users/{user}', [DiscountCodeController::class, 'unassignUser'])->name('unassign-user');
-        // Lịch sử sử dụng
         Route::get('/{id}/usage-history', [DiscountCodeController::class, 'usageHistory'])->name('usage-history');
-        // Ajax endpoint to get users by rank
-        Route::post('/get-users-by-rank', [DiscountCodeController::class, 'getUsersByRank'])->name('users-by-rank');
-        // Lấy sản phẩm/danh mục/combo theo chi nhánh
+        Route::match(['post', 'get'], '/get-users-by-rank', [DiscountCodeController::class, 'getUsersByRank'])->name('users-by-rank');
         Route::get('/products-by-branch', [DiscountCodeController::class, 'getProductsByBranch'])->name('products-by-branch');
         Route::get('/variants-by-branch', [DiscountCodeController::class, 'getVariantsByBranch'])->name('variants-by-branch');
-        // Lấy danh sách sản phẩm, danh mục, combo theo loại
         Route::post('/get-items-by-type', [DiscountCodeController::class, 'getItemsByType'])->name('get-items-by-type');
     });
 
@@ -291,8 +283,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
     });
-
-
 
     // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
     Route::prefix('hiring-driver')->name('driver.')->group(function () {
@@ -320,8 +310,13 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
         Route::post('/typing', [ChatController::class, 'handleTyping'])->name('typing');
-        // ... các route khác nếu có
     });
+    
 });
 
 Broadcast::routes(['middleware' => ['auth:sp_admin,customer,branch']]);
+
+// Add public broadcast routes for discount updates
+Route::post('/broadcasting/auth', function () {
+    return Broadcast::auth(request());
+})->middleware('web');

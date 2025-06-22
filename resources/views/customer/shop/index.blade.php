@@ -8,14 +8,13 @@
 <meta name="selected-branch" content="{{ $currentBranch->id }}">
 @endif
 
-<script>
-    // Add authentication class to body
-    document.addEventListener('DOMContentLoaded', function() {
-        @if(Auth::check())
+@if(Auth::check())
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('user-authenticated');
-        @endif
-    });
-</script>
+        });
+    </script>
+@endif
 <style>
     .container {
       max-width: 1280px;
@@ -47,44 +46,53 @@
         z-index: 10;
     }
     
-    /* Discount code pill badges */
-    .discount-code-pill {
-        position: absolute;
-        bottom: 8px;
-        left: 8px;
-        right: 8px;
+    /* Discount code styles */
+    .discount-tag {
+        margin-top: 8px;
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 4px;
-        z-index: 10;
     }
     
-    .discount-code-item {
+    .discount-badge {
         display: inline-flex;
         align-items: center;
-        background-color: rgba(249, 115, 22, 0.9);
-        color: white;
-        padding: 3px 8px;
-        border-radius: 100px;
+        padding: 2px 6px;
+        border-radius: 4px;
         font-size: 10px;
         font-weight: 600;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        color: white;
+        margin-bottom: 2px;
     }
     
-    .discount-code-item i {
-        margin-right: 4px;
+    .discount-badge i {
+        margin-right: 3px;
         font-size: 9px;
     }
     
-    .discount-code-item.free-shipping {
-        background-color: rgba(10, 132, 255, 0.9);
+    .discount-badge.percentage {
+        background-color: #F97316;
     }
     
-    .discount-code-item.fixed-amount {
-        background-color: rgba(130, 32, 246, 0.9);
+    .discount-badge.fixed-amount {
+        background-color: #8B5CF6;
+    }
+    
+    .discount-badge.free-shipping {
+        background-color: #0EA5E9;
+    }
+
+    /* Animation for discount badges */
+    .discount-badge.fade-out {
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    
+    .discount-badge.fade-in {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.5s ease, transform 0.5s ease;
     }
 
     /* Product card styling */
@@ -370,33 +378,7 @@
                         <span class="custom-badge badge-new">Mới</span>
                     @endif
                     
-                    @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
-                        <div class="discount-code-pill">
-                            @foreach($product->applicable_discount_codes as $discountCode)
-                                @php
-                                    $badgeClass = 'discount-code-item';
-                                    $icon = 'fa-percent';
-                                    if($discountCode->discount_type === 'fixed_amount') {
-                                        $badgeClass .= ' fixed-amount';
-                                        $icon = 'fa-money-bill-wave';
-                                    } elseif($discountCode->discount_type === 'free_shipping') {
-                                        $badgeClass .= ' free-shipping';
-                                        $icon = 'fa-shipping-fast';
-                                    }
-                                @endphp
-                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
-                                    <i class="fas {{ $icon }}"></i>
-                                    @if($discountCode->discount_type === 'percentage')
-                                        Giảm {{ $discountCode->discount_value }}%
-                                    @elseif($discountCode->discount_type === 'fixed_amount')
-                                        Giảm {{ number_format($discountCode->discount_value) }}đ
-                                    @else
-                                        Miễn phí vận chuyển
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+
                 </div>
 
                 <div class="p-4">
@@ -429,7 +411,9 @@
                                 <span class="product-price">{{ number_format($product->discount_price) }}đ</span>
                                 <span class="product-original-price">{{ number_format($product->base_price) }}đ</span>
                             @else
-                                <span class="product-price">{{ number_format($product->base_price) }}đ</span>
+                                @if($product->min_price != $product->max_price)
+                                    <span class="product-price">{{ number_format($product->min_price) }}đ</span>
+                                @endif
                             @endif
                         </div>
                         @if(isset($product->has_stock) && $product->has_stock)
@@ -444,6 +428,44 @@
                             </button>
                         @endif
                     </div>
+                    
+                    @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
+                        <div class="discount-tag">
+                            @foreach($product->applicable_discount_codes as $discountCode)
+                                @php
+                                    $badgeClass = 'discount-badge';
+                                    $icon = 'fa-percent';
+                                    $minText = '';
+                                    if($discountCode->discount_type === 'fixed_amount') {
+                                        $badgeClass .= ' fixed-amount';
+                                        $icon = 'fa-money-bill-wave';
+                                    } elseif($discountCode->discount_type === 'free_shipping') {
+                                        $badgeClass .= ' free-shipping';
+                                        $icon = 'fa-shipping-fast';
+                                    } else {
+                                        $badgeClass .= ' percentage';
+                                    }
+                                    if(isset($discountCode->min_requirement_type) && $discountCode->min_requirement_value > 0) {
+                                        if($discountCode->min_requirement_type === 'order_amount') {
+                                            $minText = 'Đơn từ '.number_format($discountCode->min_requirement_value/1000,0).'K';
+                                        } elseif($discountCode->min_requirement_type === 'product_price') {
+                                            $minText = 'Sản phẩm từ '.number_format($discountCode->min_requirement_value/1000,0).'K';
+                                        }
+                                    }
+                                @endphp
+                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}" data-discount-code="{{ $discountCode->code }}">
+                                    <i class="fas {{ $icon }}"></i>
+                                    @if($discountCode->discount_type === 'percentage')
+                                        Giảm {{ $discountCode->discount_value }}%
+                                    @elseif($discountCode->discount_type === 'fixed_amount')
+                                        Giảm {{ number_format($discountCode->discount_value) }}đ
+                                    @else
+                                        Miễn phí vận chuyển
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
         @empty
@@ -542,6 +564,7 @@
     window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
 </script>
 <script src="{{ asset('js/Customer/Shop/index.js') }}"></script>
+<script src="{{ asset('js/Customer/discount-updates.js') }}"></script>
 @include('partials.customer.branch-check')
 <!-- Branch Selector Modal -->
 @endsection

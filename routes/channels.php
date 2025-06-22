@@ -87,7 +87,10 @@ Broadcast::channel('online-users', function ($user) {
         'avatar' => $user->avatar ?? null,
     ];
 });
-
+Broadcast::channel('driver.{driverId}', function ($driver, $driverId) {
+    // Chỉ tài xế đã đăng nhập và có ID trùng khớp mới có thể nghe kênh này
+    return (int) $driver->id === (int) $driverId;
+});
 // Presence chat channel
 Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversationId) {
     Log::info('[Broadcast] presence-chat', [
@@ -132,4 +135,10 @@ Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversat
     }
     Log::warning('[Broadcast] Truy cập bị từ chối', ['user_id' => $user->id, 'role' => $user->role ?? null, 'conversation_id' => $conversationId]);
     return false;
+});
+
+// Discount codes channel - public channel for all users
+Broadcast::channel('discounts', function ($user = null) {
+    // Allow all users (including unauthenticated) to listen to discount updates
+    return true;
 });

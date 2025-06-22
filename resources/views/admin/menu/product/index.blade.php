@@ -49,6 +49,98 @@
         color: #15803d;
     }
 
+    /* Stock badge styling */
+    .stock-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .stock-badge.out-of-stock {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+
+    .stock-badge.low-stock {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+
+    .stock-badge.in-stock {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .product-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .product-status.selling {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+
+    .product-status.coming-soon {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+
+    .product-status.discontinued {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+
+    /* Loading states for AJAX search */
+    .loading {
+        position: relative;
+    }
+
+    .loading::after {
+        content: '';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: translateY(-50%) rotate(0deg); }
+        100% { transform: translateY(-50%) rotate(360deg); }
+    }
+
+    .search-error {
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .status-tag.failed {
         background-color: #fee2e2;
         color: #b91c1c;
@@ -145,35 +237,60 @@
                         <path d="m6 9 6 6 6-6"></path>
                     </svg>
                 </button>
-                <div id="exportMenu" class="hidden absolute right-0 mt-2 w-48 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
-                    <div class="p-2">
-                        <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <path d="M8 13h2"></path>
-                                <path d="M8 17h2"></path>
-                                <path d="M14 13h2"></path>
-                                <path d="M14 17h2"></path>
-                            </svg>
-                            Xuất Excel
-                        </a>
-                        <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                            </svg>
-                            Xuất PDF
-                        </a>
-                        <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <path d="M8 13h8"></path>
-                                <path d="M8 17h8"></path>
-                            </svg>
-                            Xuất CSV
-                        </a>
+                <div id="exportMenu" class="hidden absolute right-0 mt-2 w-64 rounded-md border bg-popover text-popover-foreground shadow-md z-10">
+                    <div class="p-3">
+                        <!-- Category Selection -->
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium mb-2">Chọn danh mục:</label>
+                            <select id="exportCategorySelect" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Tất cả danh mục</option>
+                                @foreach($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <!-- Branch Selection -->
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium mb-2">Chọn chi nhánh:</label>
+                            <select id="exportBranchSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Tất cả chi nhánh</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <!-- Export Options -->
+                        <div class="border-t pt-2">
+                            <button onclick="exportProducts('excel')" class="flex items-center w-full rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <path d="M8 13h2"></path>
+                                    <path d="M8 17h2"></path>
+                                    <path d="M14 13h2"></path>
+                                    <path d="M14 17h2"></path>
+                                </svg>
+                                Xuất Excel
+                            </button>
+                            <button onclick="exportProducts('pdf')" class="flex items-center w-full rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                                Xuất PDF
+                            </button>
+                            <button onclick="exportProducts('csv')" class="flex items-center w-full rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <path d="M8 13h8"></path>
+                                    <path d="M8 17h8"></path>
+                                </svg>
+                                Xuất CSV
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -303,17 +420,17 @@
                                     $totalStock += $variant->branchStocks->sum('stock_quantity');
                                 }
                                 if ($totalStock == 0) {
-                                    $stockClass = 'background:#ef4444;color:#fff;';
+                                    $stockClass = 'out-of-stock';
                                     $stockText = 'Hết hàng';
                                 } elseif ($totalStock > 0 && $totalStock < 10) {
-                                    $stockClass = 'background:#facc15;color:#222;';
+                                    $stockClass = 'low-stock';
                                     $stockText = 'Sắp hết ('.$totalStock.')';
                                 } else {
-                                    $stockClass = 'background:#22c55e;color:#fff;';
+                                    $stockClass = 'in-stock';
                                     $stockText = $totalStock;
                                 }
                             @endphp
-                            <span style="display:inline-block; border-radius:7px; {{ $stockClass }} padding:4px 16px; font-size:13px; font-weight:600; white-space:nowrap;">
+                            <span class="stock-badge {{ $stockClass }}">
                                 {{ $stockText }}
                             </span>
                         </td>
@@ -322,20 +439,20 @@
                                 switch ($product->status) {
                                     case 'selling':
                                         $statusText = 'Đang bán';
-                                        $badgeStyle = 'background:#16a34a;color:#fff;';
+                                        $statusClass = 'selling';
                                         break;
                                     case 'coming_soon':
                                         $statusText = 'Sắp ra mắt';
-                                        $badgeStyle = 'background:#fb923c;color:#fff;';
+                                        $statusClass = 'coming-soon';
                                         break;
                                     case 'discontinued':
                                     default:
                                         $statusText = 'Ngừng bán';
-                                        $badgeStyle = 'background:#ef4444;color:#fff;';
+                                        $statusClass = 'discontinued';
                                         break;
                                 }
                             @endphp
-                            <span style="display:inline-block; border-radius:7px; {{ $badgeStyle }} padding:4px 16px; font-size:13px; font-weight:600; white-space:nowrap;">
+                            <span class="product-status {{ $statusClass }}">
                                 {{ $statusText }}
                             </span>
                         </td>
@@ -391,11 +508,11 @@
         </div>
 
         <!-- Pagination -->
-        <div class="flex items-center justify-between px-4 py-4 border-t">
+        <div class="pagination-container flex items-center justify-between px-4 py-4 border-t">
             <div class="text-sm text-muted-foreground">
                 Hiển thị <span id="paginationStart">{{ $products->firstItem() }}</span> đến <span id="paginationEnd">{{ $products->lastItem() }}</span> của <span id="paginationTotal">{{ $products->total() }}</span> mục
             </div>
-            <div class="flex items-center space-x-2" id="paginationControls">
+            <div class="flex items-center justify-end space-x-2 ml-auto" id="paginationControls">
                 @unless($products->onFirstPage())
                 <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $products->currentPage() - 1 }})">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
@@ -424,32 +541,43 @@
 
 <!-- Filter Modal -->
 <div id="filterModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-    <div class="bg-background rounded-lg shadow-lg w-full max-w-lg mx-4">
-        <div class="flex items-center justify-between p-4 border-b">
+    <div class="bg-background rounded-lg shadow-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-3 border-b">
             <h3 class="text-lg font-medium">Lọc sản phẩm</h3>
             <button type="button" class="text-muted-foreground hover:text-foreground" onclick="toggleModal('filterModal')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 6 6 18"></path>
                     <path d="m6 6 12 12"></path>
                 </svg>
             </button>
         </div>
         <form id="filterForm">
-            <div class="p-4 space-y-6">
-                <!-- Category Filter -->
-                <div class="space-y-2">
-                    <label for="filter_category" class="text-sm font-medium">Danh mục</label>
-                    <select id="filter_category" name="category_id" class="w-full border rounded-md px-3 py-2 bg-background text-sm">
-                        <option value="">Tất cả danh mục</option>
-                        @foreach($categories as $category)
-                        <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
+            <div class="p-4">
+                <!-- Row 1: Category and Date -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="filter_category" class="text-sm font-medium block mb-1">Danh mục</label>
+                        <select id="filter_category" name="category_id" class="w-full border rounded-md px-3 py-2 bg-background text-sm">
+                            <option value="">Tất cả danh mục</option>
+                            @foreach($categories as $category)
+                            <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_date_added" class="text-sm font-medium block mb-1">Ngày thêm</label>
+                        <select id="filter_date_added" name="date_added" class="w-full border rounded-md px-3 py-2 bg-background text-sm">
+                            <option value="">Tất cả</option>
+                            <option value="today" {{ request('date_added') == 'today' ? 'selected' : '' }}>Hôm nay</option>
+                            <option value="week" {{ request('date_added') == 'week' ? 'selected' : '' }}>Tuần này</option>
+                            <option value="month" {{ request('date_added') == 'month' ? 'selected' : '' }}>Tháng này</option>
+                        </select>
+                    </div>
                 </div>
 
-                <!-- Price Range -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Khoảng giá</label>
+                <!-- Row 2: Price Range -->
+                <div class="mb-4">
+                    <label class="text-sm font-medium block mb-2">Khoảng giá</label>
                     <div class="price-range-container">
                         <div class="price-slider" id="priceSlider">
                             <div class="price-slider-track" id="priceTrack"></div>
@@ -461,7 +589,7 @@
                             <span id="maxPriceDisplay">{{ number_format($maxPrice, 0, ',', '.') }} đ</span>
                         </div>
                     </div>
-                    <div class="price-inputs">
+                    <div class="price-inputs mt-2">
                         <input type="text" id="minPriceInput" class="price-input" placeholder="Giá tối thiểu">
                         <input type="text" id="maxPriceInput" class="price-input" placeholder="Giá tối đa">
                     </div>
@@ -469,25 +597,44 @@
                     <input type="hidden" name="price_max" id="price_max" value="{{ $maxPrice }}">
                 </div>
 
-                <!-- Status -->
-                <div class="space-y-2">
-                    <label class="text-sm font-medium">Trạng thái</label>
-                    <div class="flex flex-col gap-2">
-                        <label class="flex items-center">
-                            <input type="checkbox" name="status[]" value="available" class="rounded border-gray-300 mr-2">
-                            Đang bán
-                        </label>
-                        <label class="flex items-center">
-                            <input type="checkbox" name="status[]" value="unavailable" class="rounded border-gray-300 mr-2">
-                            Không bán
-                        </label>
+                <!-- Row 3: Status Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-medium block mb-2">Tình trạng kho</label>
+                        <div class="space-y-1">
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="stock_status[]" value="in_stock" class="rounded border-gray-300 mr-2" {{ in_array('in_stock', request('stock_status', [])) ? 'checked' : '' }}>
+                                Còn hàng
+                            </label>
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="stock_status[]" value="low_stock" class="rounded border-gray-300 mr-2" {{ in_array('low_stock', request('stock_status', [])) ? 'checked' : '' }}>
+                                Sắp hết hàng
+                            </label>
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="stock_status[]" value="out_of_stock" class="rounded border-gray-300 mr-2" {{ in_array('out_of_stock', request('stock_status', [])) ? 'checked' : '' }}>
+                                Hết hàng
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium block mb-2">Trạng thái sản phẩm</label>
+                        <div class="space-y-1">
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="status[]" value="available" class="rounded border-gray-300 mr-2" {{ in_array('available', request('status', [])) ? 'checked' : '' }}>
+                                Đang bán
+                            </label>
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="status[]" value="unavailable" class="rounded border-gray-300 mr-2" {{ in_array('unavailable', request('status', [])) ? 'checked' : '' }}>
+                                Không bán
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="flex items-center justify-end p-4 border-t space-x-2">
-                <button type="button" class="btn btn-outline" onclick="resetFilters()">Xóa bộ lọc</button>
-                <button type="button" class="btn btn-outline" onclick="toggleModal('filterModal')">Đóng</button>
-                <button type="submit" class="btn btn-primary">Áp dụng</button>
+            <div class="flex items-center justify-end p-3 border-t space-x-2 bg-gray-50">
+                <button type="button" id="resetFilters" class="btn btn-outline text-sm px-3 py-1.5">Xóa bộ lọc</button>
+                <button type="button" class="btn btn-outline text-sm px-3 py-1.5" onclick="toggleModal('filterModal')">Đóng</button>
+                <button type="button" id="applyFilters" class="btn btn-primary text-sm px-3 py-1.5">Áp dụng</button>
             </div>
         </form>
     </div>
@@ -512,31 +659,7 @@
         }
     }
     
-    // ----- Reset Filters -----
-    function resetFilters() {
-        const form = document.getElementById('filterForm');
-        form.reset();
-        
-        // Reset price slider
-        const minPrice = {{ $minPrice }};
-        const maxPrice = {{ $maxPrice }};
-        
-        if (window.priceSlider) {
-            window.priceSlider.minValue = minPrice;
-            window.priceSlider.maxValue = maxPrice;
-            window.priceSlider.updateVisual();
-        }
-        
-        // Reset hidden inputs
-        document.getElementById('price_min').value = minPrice;
-        document.getElementById('price_max').value = maxPrice;
-        
-        // Close the filter modal
-        toggleModal('filterModal');
-        
-        // Reload the page with default filters
-        window.location.href = '{{ route("admin.products.index") }}';
-    }
+    // Reset filters function is now handled by FilterManager class
     
     // ----- Price Range Slider -----
     class PriceRangeSlider {
@@ -557,7 +680,7 @@
         }
         
         init() {
-            this.updateVisual();
+            this.updateVisual(false);
             this.attachEvents();
         }
         
@@ -565,7 +688,7 @@
             return new Intl.NumberFormat('vi-VN').format(price) + ' đ';
         }
         
-        updateVisual() {
+        updateVisual(triggerEvent = false) {
             const range = this.max - this.min;
             const minPct = ((this.minValue - this.min) / range) * 100;
             const maxPct = ((this.maxValue - this.min) / range) * 100;
@@ -590,6 +713,11 @@
             
             if (maxInput) {
                 maxInput.value = this.formatPrice(this.maxValue);
+            }
+            
+            // Only trigger change event when explicitly requested
+            if (triggerEvent) {
+                this.triggerChangeEvent();
             }
         }
         
@@ -636,7 +764,7 @@
                     this.maxValue = Math.max(val, this.minValue + this.step);
                 }
                 
-                this.updateVisual();
+                this.updateVisual(true);
             });
             
             // Manual inputs
@@ -648,7 +776,7 @@
                     const v = this.parsePrice(e.target.value);
                     if (!isNaN(v)) {
                         this.minValue = Math.max(this.min, Math.min(v, this.maxValue - this.step));
-                        this.updateVisual();
+                        this.updateVisual(true);
                     }
                 });
             }
@@ -658,7 +786,7 @@
                     const v = this.parsePrice(e.target.value);
                     if (!isNaN(v)) {
                         this.maxValue = Math.min(this.max, Math.max(v, this.minValue + this.step));
-                        this.updateVisual();
+                        this.updateVisual(true);
                     }
                 });
             }
@@ -681,7 +809,8 @@
                 this.maxValue = Math.max(Math.min(val, this.max), this.minValue + this.step);
             }
             
-            this.updateVisual();
+            // Don't trigger events during drag
+            this.updateVisual(false);
         }
         
         handleMouseUp() {
@@ -689,6 +818,9 @@
                 this.isDragging = false;
                 this.activeHandle = null;
                 document.body.style.cursor = 'default';
+                
+                // Trigger event only when drag ends
+                this.triggerChangeEvent();
             }
         }
         
@@ -712,7 +844,50 @@
         reset() {
             this.minValue = this.min;
             this.maxValue = this.max;
-            this.updateVisual();
+            this.updateVisual(true);
+        }
+        
+        setValue(min, max) {
+            this.minValue = Math.max(this.min, Math.min(min, this.max));
+            this.maxValue = Math.min(this.max, Math.max(max, this.min));
+            this.updateVisual(true);
+        }
+        
+        updateRange(newMin, newMax) {
+            // Validate input values
+            const validMin = (newMin !== null && newMin !== undefined && !isNaN(newMin)) ? newMin : 0;
+            const validMax = (newMax !== null && newMax !== undefined && !isNaN(newMax)) ? newMax : 1000000;
+            
+            // Ensure min is not greater than max
+            const finalMin = Math.min(validMin, validMax);
+            const finalMax = Math.max(validMin, validMax);
+            
+            // Update range boundaries
+            this.min = finalMin;
+            this.max = finalMax;
+            
+            // Only reset current values if they are outside the new range
+            // This preserves user's current selection when possible
+            if (this.minValue < finalMin) {
+                this.minValue = finalMin;
+            }
+            if (this.maxValue > finalMax) {
+                this.maxValue = finalMax;
+            }
+            
+            // Ensure current values are within bounds
+            this.minValue = Math.max(finalMin, Math.min(this.minValue, finalMax));
+            this.maxValue = Math.min(finalMax, Math.max(this.maxValue, finalMin));
+            
+            this.updateVisual(false);
+        }
+        
+        triggerChangeEvent() {
+            // Dispatch custom event for filter manager
+            const event = new CustomEvent('priceRangeChanged', {
+                detail: { min: this.minValue, max: this.maxValue }
+            });
+            document.dispatchEvent(event);
         }
     }
     
@@ -782,7 +957,111 @@
         window.location.href = url.toString();
     }
 
+    // Function to handle export
+    function exportProducts(type) {
+        try {
+            const categorySelect = document.getElementById('exportCategorySelect');
+            const selectedCategory = categorySelect ? categorySelect.value : '';
+            
+            const branchSelect = document.getElementById('exportBranchSelect');
+            const selectedBranch = branchSelect ? branchSelect.value : '';
+            
+            // Get current filter values
+            const urlParams = new URLSearchParams(window.location.search);
+            const priceMin = urlParams.get('price_min') || '';
+            const priceMax = urlParams.get('price_max') || '';
+            const stockStatus = urlParams.get('stock_status') || '';
+            
+            // Build export URL
+            const exportUrl = new URL('{{ route("admin.products.export") }}', window.location.origin);
+            exportUrl.searchParams.set('type', type);
+            
+            if (selectedCategory) {
+                exportUrl.searchParams.set('category_id', selectedCategory);
+            }
+            
+            if (selectedBranch) {
+                exportUrl.searchParams.set('branch_id', selectedBranch);
+            }
+            
+            if (priceMin) {
+                exportUrl.searchParams.set('price_min', priceMin);
+            }
+            
+            if (priceMax) {
+                exportUrl.searchParams.set('price_max', priceMax);
+            }
+            
+            if (stockStatus) {
+                exportUrl.searchParams.set('stock_status', stockStatus);
+            }
+            
+            // Hide export menu
+            const exportMenu = document.getElementById('exportMenu');
+            if (exportMenu) {
+                exportMenu.classList.add('hidden');
+            }
+            
+            // Show loading message
+            dtmodalShowToast('info', {
+                title: 'Đang xử lý...',
+                message: `Đang chuẩn bị file ${type.toUpperCase()} để tải xuống...`
+            });
+            
+            // Use fetch to check for errors first
+            fetch(exportUrl.toString(), {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Có lỗi xảy ra khi xuất dữ liệu');
+                    });
+                }
+                
+                // If successful, trigger download
+                const link = document.createElement('a');
+                link.href = exportUrl.toString();
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                dtmodalShowToast('success', {
+                    title: 'Thành công!',
+                    message: `File ${type.toUpperCase()} đã được tải xuống.`
+                });
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                dtmodalShowToast('error', {
+                    title: 'Lỗi!',
+                    message: error.message || 'Có lỗi xảy ra khi xuất dữ liệu.'
+                });
+            });
+            
+        } catch (error) {
+            console.error('Export error:', error);
+            dtmodalShowToast('error', {
+                title: 'Lỗi!',
+                message: 'Có lỗi xảy ra khi xuất dữ liệu.'
+            });
+        }
+    }
+    
+
+
     // ----- Update Selected Status -----
    
 </script>
+
+<!-- Include AJAX Search JavaScript -->
+<script src="{{ asset('js/admin/menu/product.js') }}"></script>
+
+<!-- Include AJAX Filter JavaScript -->
+<script src="{{ asset('js/admin/menu/filter.js') }}"></script>
 @endsection

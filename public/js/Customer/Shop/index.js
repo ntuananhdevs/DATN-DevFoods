@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Khai báo biến channel
-    let productsChannel, favoritesChannel, cartChannel, branchStockChannel;
+    let productsChannel, favoritesChannel, cartChannel, branchStockChannel, discountsChannel;
     
     // Khởi tạo Pusher với key và cluster từ window object
     const pusher = new Pusher(window.pusherKey, {
@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
         encrypted: true,
         enabledTransports: ['ws', 'wss'] // Force WebSocket transport
     });
+
+    // Expose Pusher instance for other scripts to use
+    window.existingPusher = pusher;
 
     // Enable Pusher logging
     Pusher.logToConsole = true;
@@ -33,36 +36,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // Subscribe to cart channel
         cartChannel = pusher.subscribe('user-cart-channel');
         
+        // Subscribe to discounts channel
+        discountsChannel = pusher.subscribe('discounts');
+        
         // Get current branch ID
         const urlParams = new URLSearchParams(window.location.search);
         const currentBranchId = urlParams.get('branch_id') || document.querySelector('meta[name="selected-branch"]')?.content;
         
         // Listen for stock update events
         branchStockChannel.bind('stock-updated', function(data) {
-            console.log('Stock update received:', data);
-            
             // Get current branch ID from multiple possible sources
             const urlParams = new URLSearchParams(window.location.search);
             const branchIdFromUrl = urlParams.get('branch_id');
             const branchIdFromMeta = document.querySelector('meta[name="selected-branch"]')?.content;
             const currentBranchId = branchIdFromUrl || branchIdFromMeta || '1'; // Default to branch 1 if not specified
             
-            console.log('Current branch ID:', currentBranchId);
-            console.log('Event branch ID:', data.branchId);
-            
             // Only update if the stock change is for the current branch
             if (data.branchId == currentBranchId) {
-                console.log('Updating UI for current branch');
                 const productCards = document.querySelectorAll('.product-card');
-                console.log('Found product cards:', productCards.length);
                 
                 productCards.forEach(card => {
                     try {
                         const variants = JSON.parse(card.dataset.variants);
-                        console.log('Product variants:', variants);
                         
                         const variant = variants.find(v => v.id == data.productVariantId);
-                        console.log('Found variant:', variant);
                         
                         if (variant) {
                             // Update stock for the variant
@@ -70,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             // Check if any variant has stock
                             const hasStock = variants.some(v => v.stock > 0);
-                            console.log('Has stock:', hasStock);
                             
                             card.dataset.hasStock = hasStock.toString();
                             
@@ -111,33 +107,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             setTimeout(() => {
                                 card.classList.remove('highlight-update');
                             }, 1000);
-                            
-                            console.log('Updated product card:', card.dataset.productId);
                         }
                     } catch (error) {
                         console.error('Error updating product stock:', error);
                     }
                 });
-            } else {
-                console.log('Skipping update - different branch');
             }
         });
 
         // Listen for product update events
         productsChannel.bind('product-updated', function(data) {
-            console.log('Product update received:', data);
             // Reload page to show updated product
             window.location.reload();
         });
         
         productsChannel.bind('product-created', function(data) {
-            console.log('Product created:', data);
             // Reload page to show new product
             window.location.reload();
         });
 
         productsChannel.bind('product-deleted', function(data) {
-            console.log('Product deleted:', data);
             // Remove the deleted product from the grid
             const productCard = document.querySelector(`.product-card[data-product-id="${data.product_id}"]`);
             if (productCard) {
@@ -148,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Listen for favorite updates if user is authenticated
         if (favoritesChannel) {
             favoritesChannel.bind('favorite-updated', function(data) {
-                console.log('Favorite update received:', data);
                 if (data.product_id) {
                     const favoriteButtons = document.querySelectorAll(`.favorite-btn[data-product-id="${data.product_id}"]`);
                     favoriteButtons.forEach(button => {
@@ -167,13 +155,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Listen for cart events
         cartChannel.bind('cart-updated', function(data) {
-            console.log('Cart update received:', data);
             updateCartCount(data.count);
         });
 
+        // Listen for discount updates
+        discountsChannel.bind('discount-updated', function(data) {
+            handleDiscountUpdate(data);
+        });
+        
+        // Listen for subscription success
+        discountsChannel.bind('pusher:subscription_succeeded', () => {
+            console.log('✅ Successfully subscribed to discounts channel');
+        });
+
+        // Listen for subscription error
+        discountsChannel.bind('pusher:subscription_error', (error) => {
+            console.error('❌ Failed to subscribe to discounts channel:', error);
+        });
+
+        console.log('🔧 All channels subscribed successfully');
+
         // Handle connection state changes
         pusher.connection.bind('state_change', function(states) {
-            console.log('Pusher connection state changed:', states);
+            // Connection state changed
         });
 
         pusher.connection.bind('error', function(err) {
@@ -196,6 +200,122 @@ document.addEventListener('DOMContentLoaded', function() {
                 cartCounter.classList.remove('animate-bounce');
             }, 1000);
         }
+    }
+    
+    // Function to handle discount updates
+    function handleDiscountUpdate(data) {
+        // Check if data has the expected structure
+        if (!data) {
+            console.error('No data received in discount update');
+            return;
+        }
+
+        // Handle data structure from DiscountUpdated event
+        let action, discountData;
+        
+        if (data.action && data.discountData) {
+            // Event structure: { action: 'created', discountData: {...} }
+            action = data.action;
+            discountData = data.discountData;
+        } else if (data.action) {
+            // Direct action structure
+            action = data.action;
+            discountData = data;
+        } else {
+            console.error('Invalid data structure:', data);
+            return;
+        }
+        
+        switch (action) {
+            case 'created':
+                handleDiscountCreated(discountData);
+                break;
+            case 'updated':
+                handleDiscountUpdated(discountData);
+                break;
+            case 'deleted':
+                handleDiscountDeleted(discountData);
+                break;
+            default:
+                // Unknown action
+        }
+    }
+    
+    function handleDiscountCreated(discountData) {
+        refreshDiscountCodes();
+        updateDiscountBadges(discountData);
+    }
+
+    function handleDiscountUpdated(discountData) {
+        refreshDiscountCodes();
+        updateDiscountBadges(discountData);
+    }
+
+    function handleDiscountDeleted(discountData) {
+        showToast(`Xóa mã giảm giá: ${discountData.code}`, 'warning');
+        refreshDiscountCodes();
+        updateDiscountBadges(discountData);
+    }
+
+    function refreshDiscountCodes() {
+        // Find all product cards with discount codes
+        const productCards = document.querySelectorAll('.product-card');
+        
+        productCards.forEach((card, index) => {
+            const discountTags = card.querySelectorAll('.discount-badge');
+            if (discountTags.length > 0) {
+                // Add a subtle animation to indicate update
+                card.classList.add('animate-pulse');
+                setTimeout(() => {
+                    card.classList.remove('animate-pulse');
+                }, 2000);
+            }
+        });
+    }
+    
+    function updateDiscountBadges(discountData) {
+        const productCards = document.querySelectorAll('.product-card');
+        
+        productCards.forEach((card, index) => {
+            const discountTags = card.querySelectorAll('.discount-badge');
+            
+            discountTags.forEach(tag => {
+                // Try to get discount code from data attribute or text content
+                let discountCode = tag.getAttribute('data-discount-code');
+                
+                // If no data attribute, try to extract from text content
+                if (!discountCode) {
+                    const text = tag.textContent.trim();
+                    // Try to extract code from text like "Giảm 10%" or "Miễn phí vận chuyển"
+                    if (text.includes('Giảm') || text.includes('Miễn phí')) {
+                        // For now, we'll use a more generic approach
+                        discountCode = 'MATCH_ALL'; // This will match all discount badges
+                    }
+                }
+                
+                // If we found a matching discount or it's a general update
+                if (discountCode === discountData.code || discountCode === 'MATCH_ALL') {
+                    if (!discountData.is_active) {
+                        // Hide the discount badge if discount is inactive
+                        // Add animation for hiding
+                        tag.classList.add('fade-out');
+                        setTimeout(() => {
+                            tag.style.display = 'none';
+                            tag.classList.remove('fade-out');
+                        }, 500);
+                    } else {
+                        // Show the discount badge if discount is active
+                        tag.style.display = 'inline-flex';
+                        
+                        // Add animation for showing
+                        tag.classList.add('fade-in');
+                        setTimeout(() => {
+                            tag.classList.remove('fade-in');
+                        }, 500);
+                    }
+                }
+            });
+        });
     }
     
     // Function to attach event listeners to newly rendered products

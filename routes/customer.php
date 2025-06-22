@@ -34,6 +34,23 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
+    
+    // Debug routes for discount codes
+    Route::get('/debug/discount-codes', function() {
+        $now = \Carbon\Carbon::now();
+        $publicCodes = \App\Models\DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where('usage_type', 'public')
+            ->get();
+            
+        return response()->json([
+            'count' => $publicCodes->count(),
+            'codes' => $publicCodes
+        ]);
+    });
+    
+    Route::get('/debug/product/{id}/discount-codes', [CustomerProductController::class, 'showProductDiscounts']);
 
     // Wishlist
     Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');

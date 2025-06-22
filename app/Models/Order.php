@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -123,37 +124,99 @@ class Order extends Model
     /**
      * Get the customer name (either from User or guest_name)
      */
-    public function getCustomerNameAttribute()
+    private static array $statusAttributes = [
+        'pending' => [
+            'text' => 'Chờ nhận',
+            'color' => '#f59e0b', // amber-500
+            'icon' => 'fas fa-receipt',
+        ],
+        'processing' => [
+            'text' => 'Đang chuẩn bị',
+            'color' => '#3B82F6', // blue-500
+            'icon' => 'fas fa-box',
+        ],
+        'delivering' => [
+            'text' => 'Đang giao',
+            'color' => '#EA580C', // orange-600
+            'icon' => 'fas fa-truck',
+        ],
+        'shipping' => [
+            'text' => 'Đang giao',
+            'color' => '#8B5CF6', // violet-500
+            'icon' => 'fas fa-shipping-fast',
+        ],
+        'delivered' => [
+            'text' => 'Đã giao',
+            'color' => '#16A34A', // green-600
+            'icon' => 'fas fa-check-circle',
+        ],
+        'cancelled' => [
+            'text' => 'Đã hủy',
+            'color' => '#DC2626', // red-600
+            'icon' => 'fas fa-times-circle',
+        ],
+        'default' => [
+            'text' => 'Không xác định',
+            'color' => '#6B7280', // gray-500
+            'icon' => 'fas fa-question-circle',
+        ],
+    ];
+
+    /**
+     * Lấy text trạng thái Tiếng Việt.
+     */
+    protected function statusText(): Attribute
     {
-        if ($this->customer) {
-            return $this->customer->name;
-        }
-        return $this->guest_name ?? 'Khách vãng lai';
+        return Attribute::make(
+            get: fn () => self::$statusAttributes[$this->status]['text'] ?? self::$statusAttributes['default']['text'],
+        );
     }
 
-    public function getStatusTextAttribute()
+    /**
+     * Lấy MÀU HEX (string) cho từng trạng thái.
+     */
+    protected function statusColor(): Attribute
     {
-        // Chuyển đổi status từ 'delivered' -> 'Đã giao'
-        return match ($this->status) {
-            'pending' => 'Đang chờ xử lý',
-            'processing' => 'Đang chuẩn bị',
-            'shipping' => 'Đang giao hàng',
-            'delivered' => 'Đã giao',
-            'cancelled' => 'Đã hủy',
-            default => 'Không xác định',
-        };
+        return Attribute::make(
+            get: fn () => self::$statusAttributes[$this->status]['color'] ?? self::$statusAttributes['default']['color'],
+        );
     }
 
-    public function getStatusColorAttribute()
+    /**
+     * Lấy class ICON (string) cho từng trạng thái.
+     */
+    protected function statusIcon(): Attribute
     {
-        // Trả về màu nền và màu chữ cho từng trạng thái
-        return match ($this->status) {
-            'pending' => ['bg' => '#fef3c7', 'text' => '#b45309'], // yellow
-            'processing' => ['bg' => '#dbeafe', 'text' => '#1d4ed8'], // blue
-            'shipping' => ['bg' => '#e0e7ff', 'text' => '#4338ca'], // indigo
-            'delivered' => ['bg' => '#d1fae5', 'text' => '#065f46'], // green
-            'cancelled' => ['bg' => '#fee2e2', 'text' => '#991b1b'], // red
-            default => ['bg' => '#f3f4f6', 'text' => '#374151'], // gray
-        };
+        return Attribute::make(
+            get: fn () => self::$statusAttributes[$this->status]['icon'] ?? self::$statusAttributes['default']['icon'],
+        );
+    }
+
+    /**
+     * Lấy tên khách hàng (từ User hoặc guest_name)
+     */
+    protected function customerName(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->customer->full_name ?? $this->guest_name ?? 'Khách vãng lai',
+        );
+    }
+
+    /**
+     * Lấy SĐT khách hàng (từ user hoặc guest).
+     */
+    protected function customerPhone(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->customer->phone ?? $this->guest_phone ?? 'Không có',
+        );
+    }
+
+    /**
+    * Lấy text trạng thái tĩnh cho các tab
+    */
+    public static function getStatusText(string $status): string
+    {
+        return self::$statusAttributes[$status]['text'] ?? ucfirst($status);
     }
 }
