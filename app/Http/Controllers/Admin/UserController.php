@@ -191,12 +191,7 @@ class UserController extends Controller
                 }
             }
     
-            // Gửi email chào mừng
-            try {
-                $user->notify(new NewUserWelcomeNotification());
-            } catch (\Exception $e) {
-                Log::error('Lỗi gửi email chào mừng: ' . $e->getMessage());
-            }
+          
     
             DB::commit();
             
