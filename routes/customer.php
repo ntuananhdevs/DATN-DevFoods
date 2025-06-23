@@ -34,6 +34,7 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
+    Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
     
     // Debug routes for discount codes
     Route::get('/debug/discount-codes', function() {
@@ -160,3 +161,6 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
     Route::post('/chat/typing', [ChatController::class, 'typing'])->name('customer.chat.typing');
 });
+
+// Add new route for discount badge partial
+Route::post('/partial/discount-badge', [CustomerProductController::class, 'getDiscountBadges'])->name('products.discount-badges');
