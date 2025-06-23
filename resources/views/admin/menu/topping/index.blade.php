@@ -1,4 +1,4 @@
-@extends('layouts/admin/contentLayoutMaster')
+@extends('layouts.admin.contentLayoutMaster')
 
 @section('title', 'Quản lý Topping')
 @section('description', 'Quản lý danh sách topping của bạn')
@@ -177,7 +177,7 @@
                     </div>
                 </div>
             </div>
-            <a href="{{ route('admin.toppings.create') }}" class="btn btn-primary flex items-center">
+            <a href="{{ route('admin.toppings.create') }}" class="btn btn-primary flex items-center mr-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                     <path d="M5 12h14"></path>
                     <path d="M12 5v14"></path>
@@ -278,15 +278,15 @@
                         <input type="checkbox" class="rounded border-gray-300 row-checkbox" value="{{ $topping->id }}">
                     </td>
                     <td class="p-4">
-                        <div class="font-mono text-sm">#{{ str_pad($topping->id, 4, '0', STR_PAD_LEFT) }}</div>
+                        <div class="font-mono text-sm">{{ $topping->sku ?? 'N/A' }}</div>
                     </td>
                     <td class="p-4">
                         <div class="flex items-center">
                             @if($topping->image)
-                                <img src="{{ asset('storage/' . $topping->image) }}" alt="{{ $topping->name }}" class="w-12 h-12 rounded-lg object-cover border">
+                                <img src="{{ Storage::disk('s3')->url($topping->image) }}" alt="{{ $topping->name }}" class="w-20 h-20 rounded-lg object-cover border">
                             @else
-                                <div class="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground">
+                                <div class="w-20 h-20 rounded-lg bg-muted flex items-center justify-center border">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground">
                                         <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
                                         <circle cx="9" cy="9" r="2"></circle>
                                         <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
@@ -305,7 +305,7 @@
                         <div class="text-sm text-muted-foreground max-w-xs truncate">{{ $topping->description ?? 'Không có mô tả' }}</div>
                     </td>
                     <td class="p-4">
-                        @if($topping->status == 1)
+                        @if($topping->active == 1)
                             <span class="status-tag success">Hoạt động</span>
                         @else
                             <span class="status-tag failed">Không hoạt động</span>
@@ -367,16 +367,34 @@
         </div>
 
         <!-- Pagination -->
-        @if($toppings->hasPages())
-            <div class="p-4 border-t flex items-center justify-between">
-                <div class="text-sm text-muted-foreground">
-                    Hiển thị {{ $toppings->firstItem() }} đến {{ $toppings->lastItem() }} trong tổng số {{ $toppings->total() }} kết quả
-                </div>
-                <div>
-                    {{ $toppings->appends(request()->query())->links() }}
-                </div>
+        <div class="pagination-container flex items-center justify-between px-4 py-4 border-t">
+            <div class="text-sm text-muted-foreground">
+                Hiển thị <span id="paginationStart">{{ $toppings->firstItem() }}</span> đến <span id="paginationEnd">{{ $toppings->lastItem() }}</span> của <span id="paginationTotal">{{ $toppings->total() }}</span> mục
             </div>
-        @endif
+            <div class="flex items-center justify-end space-x-2 ml-auto" id="paginationControls">
+                @unless($toppings->onFirstPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $toppings->currentPage() - 1 }})">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
+                        <path d="m15 18-6-6 6-6"></path>
+                    </svg>
+                </button>
+                @endunless
+
+                @foreach ($toppings->getUrlRange(1, $toppings->lastPage()) as $page => $url)
+                <button class="h-8 min-w-8 rounded-md px-2 text-xs font-medium {{ $toppings->currentPage() == $page ? 'bg-primary text-primary-foreground' : 'hover:bg-muted' }}" onclick="changePage({{ $page }})">
+                    {{ $page }}
+                </button>
+                @endforeach
+
+                @unless($toppings->currentPage() === $toppings->lastPage())
+                <button class="h-8 w-8 rounded-md p-0 text-muted-foreground hover:bg-muted" onclick="changePage({{ $toppings->currentPage() + 1 }})">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 mx-auto">
+                        <path d="m9 18 6-6-6-6"></path>
+                    </svg>
+                </button>
+                @endunless
+            </div>
+        </div>
     </div>
 </div>
 

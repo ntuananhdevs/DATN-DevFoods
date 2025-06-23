@@ -12,11 +12,14 @@ class Topping extends Model
     use HasFactory;
 
     protected $fillable = [
+        'sku',
         'name',
         'price',
         'active',
         'image',
-        'description'
+        'description',
+        'created_by',
+        'updated_by'
     ];
 
     public function products(): BelongsToMany
@@ -53,4 +56,20 @@ class Topping extends Model
             ->where('branch_id', $branchId)
             ->value('stock_quantity') ?? 0;
     }
-} 
+    
+    /**
+     * Người tạo topping
+     */
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Người cập nhật topping
+     */
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+}
