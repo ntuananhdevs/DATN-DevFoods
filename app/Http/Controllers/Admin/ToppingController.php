@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Admin\Product\ToppingRequest;
 
 class ToppingController extends Controller
 {
+    // ==================== CRUD OPERATIONS ====================
+    
     /**
      * Display a listing of the resource.
      */
@@ -20,38 +23,18 @@ class ToppingController extends Controller
         try {
             $query = Topping::query();
 
-            // Search functionality
-            if ($request->has('search') && $request->search) {
-                $query->where('name', 'like', '%' . $request->search . '%');
-            }
-
-            // Filter by status
-            if ($request->has('status') && $request->status !== '') {
-                $query->where('active', $request->status);
-            }
-
-            // Filter by price range
-            if ($request->has('price_min') && $request->price_min) {
-                $query->where('price', '>=', $request->price_min);
-            }
-
-            if ($request->has('price_max') && $request->price_max) {
-                $query->where('price', '<=', $request->price_max);
-            }
+            // Apply filters
+            $this->applyFilters($query, $request);
 
             $toppings = $query->latest()->paginate(10);
-            $minPrice = Topping::min('price') ?? 0;
-            $maxPrice = Topping::max('price') ?? 100000;
+            $priceRange = $this->getPriceRange();
 
-            return view('admin.menu.topping.index', compact('toppings', 'minPrice', 'maxPrice'));
+            return view('admin.menu.topping.index', array_merge(
+                compact('toppings'),
+                $priceRange
+            ));
         } catch (\Exception $e) {
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-
-            return redirect()->back();
+            return $this->handleError($e, 'Không thể tải danh sách topping');
         }
     }
 
@@ -66,26 +49,13 @@ class ToppingController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ToppingRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255|unique:toppings,name',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'active' => 'boolean'
-        ]);
-
         try {
             DB::beginTransaction();
 
-            $topping = Topping::create([
-                'name' => $request->name,
-                'price' => $request->price,
-                'description' => $request->description,
-                'active' => $request->has('active')
-            ]);
-
+            $topping = $this->createTopping($request);
+            
             // Handle image upload
             if ($request->hasFile('image')) {
                 $this->handleImageUpload($topping, $request->file('image'));
@@ -93,23 +63,14 @@ class ToppingController extends Controller
 
             DB::commit();
 
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => 'Topping đã được tạo thành công'
-            ]);
-
-            return redirect()->route('admin.toppings.index');
+            return $this->successResponse(
+                'Topping đã được tạo thành công',
+                route('admin.toppings.stock', $topping->id),
+                'Topping đã được tạo thành công! Vui lòng cập nhật tồn kho cho các chi nhánh.'
+            );
         } catch (\Exception $e) {
             DB::rollBack();
-
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-
-            return redirect()->back()->withInput();
+            return $this->handleError($e, 'Không thể tạo topping', true);
         }
     }
 
@@ -118,6 +79,7 @@ class ToppingController extends Controller
      */
     public function show(Topping $topping)
     {
+        $topping->load(['toppingStocks.branch', 'createdBy', 'updatedBy']);
         return view('admin.menu.topping.show', compact('topping'));
     }
 
@@ -126,31 +88,21 @@ class ToppingController extends Controller
      */
     public function edit(Topping $topping)
     {
+        $topping->load('toppingStocks.branch');
         return view('admin.menu.topping.edit', compact('topping'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Topping $topping)
+    public function update(ToppingRequest $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:255|unique:toppings,name,' . $topping->id,
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'active' => 'boolean'
-        ]);
-
         try {
+            $topping = Topping::findOrFail($id);
+            
             DB::beginTransaction();
 
-            $topping->update([
-                'name' => $request->name,
-                'price' => $request->price,
-                'description' => $request->description,
-                'active' => $request->has('active')
-            ]);
+            $this->updateTopping($topping, $request);
 
             // Handle image upload
             if ($request->hasFile('image')) {
@@ -159,23 +111,13 @@ class ToppingController extends Controller
 
             DB::commit();
 
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => 'Topping đã được cập nhật thành công'
-            ]);
-
-            return redirect()->route('admin.toppings.index');
+            return $this->successResponse(
+                'Topping đã được cập nhật thành công',
+                route('admin.toppings.index')
+            );
         } catch (\Exception $e) {
             DB::rollBack();
-
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-
-            return redirect()->back()->withInput();
+            return $this->handleError($e, 'Không thể cập nhật topping', true);
         }
     }
 
@@ -187,45 +129,30 @@ class ToppingController extends Controller
         try {
             DB::beginTransaction();
 
-            // Check if topping is being used by any products
-            if ($topping->products()->count() > 0) {
-                session()->flash('toast', [
-                    'type' => 'error',
-                    'title' => 'Lỗi!',
-                    'message' => 'Không thể xóa topping này vì đang được sử dụng bởi một số sản phẩm'
-                ]);
-
-                return redirect()->back();
+            // Check if topping is being used
+            if ($this->isToppingInUse($topping)) {
+                return $this->errorResponse(
+                    'Không thể xóa topping này vì đang được sử dụng bởi một số sản phẩm'
+                );
             }
 
             // Delete image if exists
-            if ($topping->image) {
-                Storage::disk('s3')->delete($topping->image);
-            }
-
+            $this->deleteImage($topping);
+            
             $topping->delete();
-
             DB::commit();
 
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => 'Topping đã được xóa thành công'
-            ]);
-
-            return redirect()->route('admin.toppings.index');
+            return $this->successResponse(
+                'Topping đã được xóa thành công',
+                route('admin.toppings.index')
+            );
         } catch (\Exception $e) {
             DB::rollBack();
-
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-
-            return redirect()->back();
+            return $this->handleError($e, 'Không thể xóa topping');
         }
     }
+    
+    // ==================== STATUS MANAGEMENT ====================
 
     /**
      * Toggle topping status
@@ -233,27 +160,15 @@ class ToppingController extends Controller
     public function toggleStatus(Topping $topping)
     {
         try {
-            $topping->update([
-                'active' => !$topping->active
-            ]);
-
+            $topping->update(['active' => !$topping->active]);
+            
             $status = $topping->active ? 'kích hoạt' : 'vô hiệu hóa';
-
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => "Topping đã được {$status} thành công"
-            ]);
-
-            return redirect()->back();
+            
+            return $this->successResponse(
+                "Topping đã được {$status} thành công"
+            );
         } catch (\Exception $e) {
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-
-            return redirect()->back();
+            return $this->handleError($e, 'Không thể thay đổi trạng thái topping');
         }
     }
 
@@ -262,13 +177,13 @@ class ToppingController extends Controller
      */
     public function bulkUpdateStatus(Request $request)
     {
-        try {
-            $request->validate([
-                'ids' => 'required|array',
-                'ids.*' => 'exists:toppings,id',
-                'status' => 'required|boolean'
-            ]);
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:toppings,id',
+            'status' => 'required|boolean'
+        ]);
 
+        try {
             DB::beginTransaction();
 
             $updatedCount = Topping::whereIn('id', $request->ids)
@@ -277,25 +192,185 @@ class ToppingController extends Controller
             DB::commit();
 
             $statusText = $request->status ? 'kích hoạt' : 'vô hiệu hóa';
-
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => "Đã {$statusText} {$updatedCount} topping thành công"
-            ]);
-
-            return redirect()->back();
+            
+            return $this->successResponse(
+                "Đã {$statusText} {$updatedCount} topping thành công"
+            );
         } catch (\Exception $e) {
             DB::rollBack();
-
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-
-            return redirect()->back();
+            return $this->handleError($e, 'Không thể cập nhật trạng thái hàng loạt');
         }
+    }
+    
+    // ==================== API METHODS ====================
+
+    /**
+     * Get active toppings for AJAX requests
+     */
+    public function getToppings(Request $request)
+    {
+        try {
+            $query = Topping::where('active', true);
+
+            if ($request->has('search') && $request->search) {
+                $query->where('name', 'like', '%' . $request->search . '%');
+            }
+
+            $toppings = $query->select('id', 'name', 'price', 'image')
+                             ->orderBy('name')
+                             ->get()
+                             ->map(function ($topping) {
+                                 return [
+                                     'id' => $topping->id,
+                                     'name' => $topping->name,
+                                     'price' => $topping->price,
+                                     'formatted_price' => number_format($topping->price, 0, ',', '.') . ' VNĐ',
+                                     'image_url' => $topping->image ? asset('storage/' . $topping->image) : null
+                                 ];
+                             });
+
+            return response()->json([
+                'success' => true,
+                'data' => $toppings
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    // ==================== HELPER METHODS ====================
+    
+    /**
+     * Apply filters to query
+     */
+    private function applyFilters($query, Request $request)
+    {
+        // Search functionality
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('active', $request->status);
+        }
+
+        // Filter by price range
+        if ($request->filled('price_min')) {
+            $query->where('price', '>=', $request->price_min);
+        }
+
+        if ($request->filled('price_max')) {
+            $query->where('price', '<=', $request->price_max);
+        }
+    }
+    
+    /**
+     * Get price range for filters
+     */
+    private function getPriceRange()
+    {
+        return [
+            'minPrice' => Topping::min('price') ?? 0,
+            'maxPrice' => Topping::max('price') ?? 100000
+        ];
+    }
+    
+    /**
+     * Create new topping
+     */
+    private function createTopping(ToppingRequest $request)
+    {
+        $data = $request->validated();
+        
+        // Convert status to active boolean
+        $data['active'] = $data['status'] === 'active';
+        unset($data['status']);
+        
+        // Add SKU
+        $data['sku'] = $this->generateToppingSku();
+        
+        // Add created_by and updated_by
+        $data['created_by'] = auth()->id();
+        $data['updated_by'] = auth()->id();
+        
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $data['image'] = $this->uploadImage($request->file('image'));
+        }
+        
+        return Topping::create($data);
+    }
+    
+    /**
+     * Update existing topping
+     */
+    private function updateTopping(Topping $topping, ToppingRequest $request)
+    {
+        $data = $request->validated();
+        
+        // Convert status to active boolean
+        $data['active'] = $data['status'] === 'active';
+        unset($data['status']);
+        
+        // Add updated_by
+        $data['updated_by'] = auth()->id();
+        
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($topping->image) {
+                $this->deleteImage($topping->image);
+            }
+            $data['image'] = $this->uploadImage($request->file('image'));
+        }
+        
+        $topping->update($data);
+        return $topping;
+    }
+    
+    /**
+     * Check if topping is being used by products
+     */
+    private function isToppingInUse(Topping $topping)
+    {
+        return $topping->products()->count() > 0;
+    }
+    
+    /**
+     * Delete topping image
+     */
+    private function deleteImage(Topping $topping)
+    {
+        if ($topping->image) {
+            Storage::disk('s3')->delete($topping->image);
+        }
+    }
+
+    /**
+     * Upload image and return the path
+     */
+    private function uploadImage($image)
+    {
+        Log::info('Uploading topping image', [
+            'original_name' => $image->getClientOriginalName(),
+            'size' => $image->getSize(),
+            'mime' => $image->getMimeType()
+        ]);
+
+        $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
+        $path = 'toppings/' . $filename;
+        
+        $putResult = Storage::disk('s3')->put($path, file_get_contents($image));
+        
+        if ($putResult) {
+            return $path;
+        }
+        
+        throw new \Exception('Failed to upload image');
     }
 
     /**
@@ -311,44 +386,88 @@ class ToppingController extends Controller
 
         // Delete old image if exists (only for updates)
         if ($isUpdate && $topping->image) {
-            Storage::disk('s3')->delete($topping->image);
+            $this->deleteImage($topping);
         }
 
         $filename = Str::uuid() . '.' . $image->getClientOriginalExtension();
         $path = Storage::disk('s3')->put('toppings/' . $filename, file_get_contents($image));
 
         if ($path) {
-            $topping->update([
-                'image' => 'toppings/' . $filename
-            ]);
+            $topping->update(['image' => 'toppings/' . $filename]);
         }
     }
 
     /**
-     * Get toppings for AJAX requests
+     * Generate unique SKU for topping
      */
-    public function getToppings(Request $request)
+    private function generateToppingSku()
     {
-        try {
-            $query = Topping::where('active', true);
+        do {
+            $timestamp = now()->format('ymd');
+            $random = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+            $sku = 'TP' . $timestamp . $random;
+        } while (Topping::where('sku', $sku)->exists());
 
-            if ($request->has('search') && $request->search) {
-                $query->where('name', 'like', '%' . $request->search . '%');
-            }
-
-            $toppings = $query->select('id', 'name', 'price', 'image')
-                             ->orderBy('name')
-                             ->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => $toppings
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ], 500);
+        return $sku;
+    }
+    
+    // ==================== RESPONSE HELPERS ====================
+    
+    /**
+     * Handle success response
+     */
+    private function successResponse($message, $redirectTo = null, $flashMessage = null)
+    {
+        session()->flash('toast', [
+            'type' => 'success',
+            'title' => 'Thành công!',
+            'message' => $message
+        ]);
+        
+        $redirect = redirect($redirectTo ?: back());
+        
+        if ($flashMessage) {
+            $redirect->with('success', $flashMessage);
         }
+        
+        return $redirect;
+    }
+    
+    /**
+     * Handle error response
+     */
+    private function errorResponse($message)
+    {
+        session()->flash('toast', [
+            'type' => 'error',
+            'title' => 'Lỗi!',
+            'message' => $message
+        ]);
+        
+        return redirect()->back();
+    }
+    
+    /**
+     * Handle exception and return error response
+     */
+    private function handleError(\Exception $e, $message, $withInput = false)
+    {
+        Log::error('ToppingController Error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        session()->flash('toast', [
+            'type' => 'error',
+            'title' => 'Lỗi!',
+            'message' => $message . ': ' . $e->getMessage()
+        ]);
+        
+        $redirect = redirect()->back();
+        
+        if ($withInput) {
+            $redirect->withInput();
+        }
+        
+        return $redirect;
     }
 }

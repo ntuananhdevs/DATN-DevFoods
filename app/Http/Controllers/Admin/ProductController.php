@@ -108,32 +108,15 @@ class ProductController extends Controller
             $minPrice = $priceQuery->min('base_price') ?? 0;
             $maxPrice = $priceQuery->max('base_price') ?? 10000000;
 
-            // Handle AJAX requests
+            // Handle AJAX requests (both GET and POST)
             if ($request->ajax()) {
                 $html = view('admin.menu.product.partials.product-table', compact('products'))->render();
                 
-                // Create custom pagination HTML to match the design
-                $paginationHtml = $this->generateCustomPagination($products);
-                
                 return response()->json([
+                    'success' => true,
                     'html' => $html,
-                    'pagination' => $paginationHtml,
                     'total' => $products->total(),
-                    'current_page' => $products->currentPage(),
-                    'last_page' => $products->lastPage(),
-                    'first_item' => $products->firstItem(),
-                    'last_item' => $products->lastItem(),
-                    'min_price' => $minPrice,
-                    'max_price' => $maxPrice,
-                    'filters_applied' => [
-                        'category_id' => $request->category_id,
-                        'price_min' => $request->price_min,
-                        'price_max' => $request->price_max,
-                        'stock_status' => $request->stock_status,
-                        'status' => $request->status,
-                        'date_added' => $request->date_added,
-                        'search' => $request->search
-                    ]
+                    'message' => 'Tìm kiếm thành công'
                 ]);
             }
 
@@ -142,7 +125,7 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             if ($request->ajax()) {
                 return response()->json([
-                    'error' => true,
+                    'success' => false,
                     'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
                 ], 500);
             }

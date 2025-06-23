@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('combos', function (Blueprint $table) {
             $table->id();
+            $table->string('sku')->unique();
             $table->string('name');
             $table->string('image')->nullable();
 
