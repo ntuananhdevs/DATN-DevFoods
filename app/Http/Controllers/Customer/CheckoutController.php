@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Events\NewOrderAvailable;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\CartItem;
@@ -189,6 +190,10 @@ class CheckoutController extends Controller
             $order->notes = $request->notes;
             $order->delivery_address = $request->address . ', ' . $request->ward . ', ' . $request->district . ', ' . $request->city;
             $order->save();
+
+            if ($order->status === 'pending' && is_null($order->driver_id)) {
+                \App\Events\NewOrderAvailable::dispatch($order);
+            }
             
             // Create order items
             foreach ($cartItems as $cartItem) {

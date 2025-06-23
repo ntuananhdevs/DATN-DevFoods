@@ -135,5 +135,4 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
-    Route::post('/chat/typing', [ChatController::class, 'typing'])->name('customer.chat.typing');
 });

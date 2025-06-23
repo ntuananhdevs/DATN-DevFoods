@@ -19,7 +19,7 @@ class BranchStockController extends Controller
         $product->load(['variants.variantValues.attribute', 'variants.branchStocks']);
         $branches = Branch::where('active', true)->get();
         
-        return view('admin.products.stock', compact('product', 'branches'));
+        return view('admin.menu.product.stock', compact('product', 'branches'));
     }
 
     /**
@@ -124,4 +124,4 @@ class BranchStockController extends Controller
 
         return response()->json($outOfStockItems);
     }
-} 
+}

@@ -24,24 +24,12 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     $conversation = Conversation::find($conversationId);
 
-    // Thêm log chi tiết
-    Log::info('[Broadcast] Đăng ký channel chat.' . $conversationId, [
-        'user_id' => $user->id,
-        'user_role' => $user->role ?? null,
-        'conversation_id' => $conversationId,
-        'conversation_customer_id' => $conversation ? $conversation->customer_id : null,
-        'conversation_branch_id' => $conversation ? $conversation->branch_id : null,
-        'user_branch_id' => $user->branch_id ?? null,
-    ]);
-
     if (!$conversation) {
-        Log::warning('[Broadcast] Conversation not found', ['conversation_id' => $conversationId]);
         return false;
     }
 
     // Super admin can access all conversations
-    if ($user->role === 'super_admin' || $user->role === 'sp_admin') {
-        Log::info('[Broadcast] Super admin truy cập', ['user_id' => $user->id]);
+    if ($user->role === 'super_admin') {
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -50,8 +38,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Branch users can access conversations assigned to their branch
-    if (in_array($user->role, ['branch_manager', 'branch_staff']) && $conversation->branch_id == ($user->branch_id ?? null)) {
-        Log::info('[Broadcast] Branch user truy cập', ['user_id' => $user->id]);
+    if (in_array($user->role, ['branch_manager', 'branch_staff']) && $conversation->branch_id === $user->branch_id) {
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -61,8 +48,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Customers can only access their own conversations
-    if ($user->role === 'customer' && $conversation->customer_id == $user->id) {
-        Log::info('[Broadcast] Customer truy cập', ['user_id' => $user->id]);
+    if ($user->role === 'customer' && $conversation->customer_id === $user->id) {
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -70,17 +56,12 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
         ];
     }
 
-    Log::warning('[Broadcast] Truy cập bị từ chối', [
-        'user_id' => $user->id,
-        'role' => $user->role ?? null,
-        'conversation_id' => $conversationId
-    ]);
-    return false;
+    return false; // Hoặc thêm logic kiểm tra quyền truy cập
 });
 
 // Admin conversations channel
 Broadcast::channel('admin.conversations', function ($user) {
-    return $user->role === 'sp_admin' ? [
+    return in_array($user->role, ['admin', 'super_admin', 'sp_admin']) ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,
@@ -89,7 +70,7 @@ Broadcast::channel('admin.conversations', function ($user) {
 
 // Branch conversations channel
 Broadcast::channel('branch.{branchId}.conversations', function ($user, $branchId) {
-    return (in_array($user->role, ['branch_manager', 'branch_staff']) && $user->branch_id == $branchId) ? [
+    return (in_array($user->role, ['branch_staff', 'branch_admin']) && $user->branch_id == $branchId) ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,
@@ -105,50 +86,4 @@ Broadcast::channel('online-users', function ($user) {
         'role' => $user->role,
         'avatar' => $user->avatar ?? null,
     ];
-});
-
-// Presence chat channel
-Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversationId) {
-    Log::info('[Broadcast] presence-chat', [
-        'user_id' => $user->id,
-        'user_role' => $user->role ?? null,
-        'conversation_id' => $conversationId,
-        'user' => $user,
-    ]);
-    // Kiểm tra quyền truy cập vào conversation này
-    $conversation = Conversation::find($conversationId);
-    if (!$conversation) {
-        Log::warning('[Broadcast] Conversation not found', ['conversation_id' => $conversationId]);
-        return false;
-    }
-    // Super admin có quyền truy cập tất cả
-    if (($user->role ?? null) === 'super_admin') {
-        Log::info('[Broadcast] Super admin truy cập', ['user_id' => $user->id]);
-        return [
-            'id' => $user->id,
-            'name' => $user->name ?? $user->full_name ?? 'User',
-            'role' => $user->role ?? null,
-        ];
-    }
-    // Branch users
-    if (in_array($user->role ?? '', ['branch_manager', 'branch_staff']) && $conversation->branch_id === ($user->branch_id ?? null)) {
-        Log::info('[Broadcast] Branch user truy cập', ['user_id' => $user->id]);
-        return [
-            'id' => $user->id,
-            'name' => $user->name ?? $user->full_name ?? 'User',
-            'role' => $user->role ?? null,
-            'branch_id' => $user->branch_id ?? null,
-        ];
-    }
-    // Customer
-    if (($user->role ?? null) === 'customer' && $conversation->customer_id === $user->id) {
-        Log::info('[Broadcast] Customer truy cập', ['user_id' => $user->id]);
-        return [
-            'id' => $user->id,
-            'name' => $user->name ?? $user->full_name ?? 'User',
-            'role' => $user->role ?? null,
-        ];
-    }
-    Log::warning('[Broadcast] Truy cập bị từ chối', ['user_id' => $user->id, 'role' => $user->role ?? null, 'conversation_id' => $conversationId]);
-    return false;
 });

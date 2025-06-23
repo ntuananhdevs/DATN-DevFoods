@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Branch;
 
-use App\Events\Chat\TypingStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
@@ -195,19 +194,21 @@ class BranchChatController extends Controller
                 ], 422);
             }
 
-            $messageData = [
-                'conversation_id' => $request->conversation_id,
-                'sender_id' => $user->id,
-                'receiver_id' => $customerId,
-                'sender_type' => 'branch_staff',
+            $senderId = Auth::id();
+
+
+            $message = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $senderId,
+                'receiver_id' => $conversation->customer_id,
+                'sender_type' => 'branch_admin',
                 'message' => $messageText,
                 'attachment' => $attachmentPath,
                 'attachment_type' => $attachmentType,
                 'sent_at' => now(),
-                'status' => 'sent'
-            ];
-
-            $message = ChatMessage::create($messageData);
+                'status' => 'sent',
+                'branch_id' => $conversation->branch_id, // <--- THÊM DÒNG NÀY
+            ]);
 
             if ($conversation->status === 'distributed') {
                 $conversation->update([
@@ -300,11 +301,11 @@ class BranchChatController extends Controller
                 'closed' => '🔒 Cuộc trò chuyện đã được đóng'
             ];
 
-            $systemMessage = \App\Models\ChatMessage::create([
+            $systemMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $userId,
                 'receiver_id' => $conversation->customer_id,
-                'sender_type' => 'branch_staff',
+                'sender_type' => 'branch_admin',
                 'message' => $statusMessages[$newStatus] . ' bởi nhân viên chi nhánh',
                 'sent_at' => now(),
                 'status' => 'sent',
@@ -329,40 +330,5 @@ class BranchChatController extends Controller
                 'message' => 'Lỗi cập nhật trạng thái: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    public function typing(Request $request)
-    {
-        Log::info('[BRANCH] typing', [
-            'user_id' => Auth::id(),
-            'conversation_id' => $request->conversation_id,
-            'is_typing' => $request->is_typing,
-            'request_data' => $request->all(),
-            'ip' => $request->ip(),
-        ]);
-        $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
-            'is_typing' => 'required|boolean'
-        ]);
-        $conversation = Conversation::findOrFail($request->conversation_id);
-        $userId = Auth::id();
-        $user = Auth::user();
-        $userType = 'branch';
-        $userName = $user->name ?? 'Nhân viên chi nhánh';
-        Log::info('[BRANCH] Broadcasting TypingStatus', [
-            'conversation_id' => $request->conversation_id,
-            'user_id' => $userId,
-            'is_typing' => $request->is_typing,
-            'user_type' => $userType,
-            'user_name' => $userName
-        ]);
-        broadcast(new TypingStatus(
-            $request->conversation_id,
-            $userId,
-            $request->is_typing,
-            $userType,
-            $userName
-        ))->toOthers();
-        return response()->json(['success' => true]);
     }
 }

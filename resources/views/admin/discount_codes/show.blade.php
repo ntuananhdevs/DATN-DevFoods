@@ -419,8 +419,26 @@
                 </div>
                 
                 <div class="info-item">
-                    <span class="info-label">Số tiền đơn hàng tối thiểu</span>
-                    <span class="info-value">{{ number_format($discountCode->min_order_amount) }} đ</span>
+                    @php
+                        $minType = $discountCode->min_requirement_type;
+                        $minValue = $discountCode->min_requirement_value;
+                    @endphp
+                    <span class="info-label">
+                        @if($minType === 'order_amount')
+                            Số tiền đơn hàng tối thiểu
+                        @elseif($minType === 'product_price')
+                            Giá tiền sản phẩm tối thiểu
+                        @else
+                            Điều kiện tối thiểu
+                        @endif
+                    </span>
+                    <span class="info-value">
+                        @if($minType && $minValue > 0)
+                            {{ number_format($minValue) }} đ
+                        @else
+                            Không có điều kiện tối thiểu
+                        @endif
+                    </span>
                 </div>
                 
                 <div class="info-item">

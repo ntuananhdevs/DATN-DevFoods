@@ -23,6 +23,12 @@
        }
    }
    
+   /* Style for public discount codes */
+   .public-code {
+       background-color: rgba(34, 197, 94, 0.9) !important;
+       border: 1px dashed rgba(255, 255, 255, 0.5);
+   }
+   
    .copy-code:active {
        transform: scale(0.95);
    }
@@ -77,6 +83,100 @@
         color: #f97316 !important;
         font-weight: bold;
     }
+    
+    /* Variant price update animation */
+    @keyframes variantPriceUpdate {
+        0% { 
+            opacity: 1; 
+            background-color: rgba(249, 115, 22, 0.1);
+            border-color: #f97316;
+        }
+        50% { 
+            opacity: 0.8; 
+            background-color: rgba(249, 115, 22, 0.2);
+            border-color: #ea580c;
+        }
+        100% { 
+            opacity: 1; 
+            background-color: rgba(249, 115, 22, 0.1);
+            border-color: #f97316;
+        }
+    }
+    
+    .variant-price-updated {
+        animation: variantPriceUpdate 2s ease-in-out;
+    }
+    
+    .topping-price-updated {
+        animation: toppingPriceUpdate 2s ease-in-out;
+    }
+    
+    /* Variant operation animations */
+    @keyframes variantCreated {
+        0% { 
+            opacity: 0; 
+            transform: scale(0.8);
+            background-color: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+        }
+        50% { 
+            opacity: 0.8; 
+            transform: scale(1.05);
+            background-color: rgba(34, 197, 94, 0.2);
+            border-color: #16a34a;
+        }
+        100% { 
+            opacity: 1; 
+            transform: scale(1);
+            background-color: transparent;
+            border-color: #d1d5db;
+        }
+    }
+    
+    @keyframes variantUpdated {
+        0% { 
+            opacity: 1; 
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+        }
+        50% { 
+            opacity: 0.8; 
+            background-color: rgba(59, 130, 246, 0.2);
+            border-color: #2563eb;
+        }
+        100% { 
+            opacity: 1; 
+            background-color: transparent;
+            border-color: #d1d5db;
+        }
+    }
+    
+    @keyframes variantDeleted {
+        0% { 
+            opacity: 1; 
+            transform: scale(1);
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+        }
+        100% { 
+            opacity: 0; 
+            transform: scale(0.8);
+            background-color: rgba(239, 68, 68, 0.2);
+            border-color: #dc2626;
+        }
+    }
+    
+    .variant-created {
+        animation: variantCreated 2s ease-out;
+    }
+    
+    .variant-updated {
+        animation: variantUpdated 2s ease-out;
+    }
+    
+    .variant-deleted {
+        animation: variantDeleted 0.5s ease-out;
+    }
 </style>
 <div class="container mx-auto px-4 py-8">
     <!-- Product Info Section -->
@@ -126,6 +226,30 @@
                         <span>Giá sản phẩm vừa được cập nhật</span>
                     </div>
                 </div>
+                
+                <!-- Variant Price Update Notification -->
+                <div id="variant-price-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-200 animate-fade-in">
+                        <i class="fas fa-tags"></i>
+                        <span>Giá biến thể vừa được cập nhật</span>
+                    </div>
+                </div>
+                
+                <!-- Topping Price Update Notification -->
+                <div id="topping-price-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-purple-600 bg-purple-50 px-3 py-2 rounded-md border border-purple-200 animate-fade-in">
+                        <i class="fas fa-utensils"></i>
+                        <span>Giá topping vừa được cập nhật</span>
+                    </div>
+                </div>
+                
+                <!-- Variant Update Notification -->
+                <div id="variant-update-notification" class="hidden">
+                    <div class="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-200 animate-fade-in">
+                        <i class="fas fa-tags"></i>
+                        <span>Biến thể đã được cập nhật</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Discount Codes Section -->
@@ -148,6 +272,11 @@
                                 $bgColor = 'bg-blue-500';
                                 $icon = 'fa-shipping-fast';
                             }
+                            
+                            // Add special styling for public discount codes
+                            if($discountCode->usage_type === 'public') {
+                                $bgColor = 'bg-green-500';
+                            }
                         @endphp
                         <div class="flex items-center gap-3 p-2 rounded-md bg-white hover:bg-orange-50 transition-colors cursor-pointer relative group shadow-sm">
                             <div class="flex-shrink-0 w-10 h-10 {{ $bgColor }} rounded-full flex items-center justify-center discount-code-animation">
@@ -156,6 +285,11 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
                                     <span class="font-medium text-gray-900">{{ $discountCode->code }}</span>
+                                    @if($discountCode->usage_type === 'public')
+                                        <span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded-sm">
+                                            Mã công khai
+                                        </span>
+                                    @endif
                                     @if($discountCode->end_date->diffInDays(now()) <= 3)
                                         <span class="text-xs px-1.5 py-0.5 bg-red-100 text-red-700 rounded-sm">
                                             Sắp hết hạn
@@ -694,15 +828,26 @@
                                         $bgColor = 'bg-blue-500';
                                         $icon = 'fa-shipping-fast';
                                     }
+                                    
+                                    // Add special styling for public discount codes
+                                    if($discountCode->usage_type === 'public') {
+                                        $bgColor = 'bg-green-500';
+                                    }
                                 @endphp
-                                <div class="inline-flex items-center {{ $bgColor }} bg-opacity-90 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm discount-pill">
-                                    <i class="fas {{ $icon }} mr-1 text-xs"></i>
-                                    @if($discountCode->discount_type === 'percentage')
-                                        Giảm {{ $discountCode->discount_value }}%
-                                    @elseif($discountCode->discount_type === 'fixed_amount')
-                                        Giảm {{ number_format($discountCode->discount_value) }}đ
-                                    @else
-                                        Miễn phí vận chuyển
+                                <div class="inline-flex items-center justify-between {{ $bgColor }} bg-opacity-90 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm discount-pill w-full">
+                                    <div class="flex items-center">
+                                        <i class="fas {{ $icon }} mr-1 text-xs"></i>
+                                        @if($discountCode->discount_type === 'percentage')
+                                            Giảm {{ $discountCode->discount_value }}%
+                                        @elseif($discountCode->discount_type === 'fixed_amount')
+                                            Giảm {{ number_format($discountCode->discount_value) }}đ
+                                        @else
+                                            Miễn phí vận chuyển
+                                        @endif
+                                    </div>
+                                    
+                                    @if($discountCode->usage_type === 'public')
+                                        <span class="ml-1 bg-white bg-opacity-20 px-1 rounded-sm">{{ $discountCode->code }}</span>
                                     @endif
                                 </div>
                             @endforeach

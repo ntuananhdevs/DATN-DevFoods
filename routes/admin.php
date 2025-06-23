@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ManagerController; // This one is not used in the provided web.php but is listed in the original uses
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ToppingController;
+use App\Http\Controllers\Admin\ComboController;
 use App\Http\Controllers\Admin\Auth\AuthController;
 use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\UserController;
@@ -130,8 +132,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
         // Stock management
         Route::get('{product}/stock', [ProductController::class, 'stock'])->name('stock');
-        Route::post('{product}/update-stocks', [ProductController::class, 'updateStocks'])->name('update-stocks');
-        Route::post('/update-topping-stocks', [ProductController::class, 'updateToppingStocks'])->name('update-topping-stocks');
+        Route::post('{product}/update-stocks', [ProductController::class, 'updateProductStocks'])->name('update-stocks');
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
@@ -140,6 +141,40 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
         Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
         Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
+    });
+
+    // Toppings Management
+    Route::prefix('toppings')->name('toppings.')->group(function () {
+        Route::get('/', [ToppingController::class, 'index'])->name('index');
+        Route::get('/create', [ToppingController::class, 'create'])->name('create');
+        Route::post('/store', [ToppingController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [ToppingController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [ToppingController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [ToppingController::class, 'show'])->name('show');
+        Route::delete('/delete/{id}', [ToppingController::class, 'destroy'])->name('destroy');
+
+        // Status management
+        Route::patch('/{id}/toggle-status', [ToppingController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/bulk-update-status', [ToppingController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
+
+        // Stock management for toppings
+        Route::get('/{id}/stock', [ToppingController::class, 'stock'])->name('stock');
+        Route::post('/{id}/update-stock', [ToppingController::class, 'updateStock'])->name('update-stock');
+    });
+
+    // Combos Management
+    Route::prefix('combos')->name('combos.')->group(function () {
+        Route::get('/', [ComboController::class, 'index'])->name('index');
+        Route::get('/create', [ComboController::class, 'create'])->name('create');
+        Route::post('/store', [ComboController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [ComboController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [ComboController::class, 'update'])->name('update');
+        Route::get('/show/{id}', [ComboController::class, 'show'])->name('show');
+        Route::delete('/delete/{id}', [ComboController::class, 'destroy'])->name('destroy');
+
+        // Status management
+        Route::patch('/{id}/toggle-status', [ComboController::class, 'toggleStatus'])->name('toggle-status');
+        Route::patch('/{id}/toggle-featured', [ComboController::class, 'toggleFeatured'])->name('toggle-featured');
     });
 
     // Driver Application Management
@@ -222,29 +257,20 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::patch('/{id}/toggle-status', [DiscountCodeController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/bulk-status-update', [DiscountCodeController::class, 'bulkStatusUpdate'])->name('bulk-status-update');
         Route::get('/export', [DiscountCodeController::class, 'export'])->name('export');
-        // Liên kết chi nhánh
         Route::post('/{id}/branches', [DiscountCodeController::class, 'linkBranch'])->name('link-branch');
         Route::delete('/{id}/branches/{branch}', [DiscountCodeController::class, 'unlinkBranch'])->name('unlink-branch');
-        // Liên kết sản phẩm/danh mục/combo
         Route::post('/{id}/products', [DiscountCodeController::class, 'linkProduct'])->name('link-product');
         Route::delete('/{id}/products/{product}', [DiscountCodeController::class, 'unlinkProduct'])->name('unlink-product');
-        // Liên kết combo
         Route::post('/{id}/combos', [DiscountCodeController::class, 'linkCombo'])->name('link-combo');
         Route::delete('/{id}/combos/{combo}', [DiscountCodeController::class, 'unlinkCombo'])->name('unlink-combo');
-        // Liên kết biến thể sản phẩm
         Route::post('/{id}/product-variants', [DiscountCodeController::class, 'linkProductVariant'])->name('link-product-variant');
         Route::delete('/{id}/product-variants/{variant}', [DiscountCodeController::class, 'unlinkProductVariant'])->name('unlink-product-variant');
-        // Gán mã cho người dùng
         Route::post('/{id}/assign-users', [DiscountCodeController::class, 'assignUsers'])->name('assign-users');
         Route::delete('/{id}/users/{user}', [DiscountCodeController::class, 'unassignUser'])->name('unassign-user');
-        // Lịch sử sử dụng
         Route::get('/{id}/usage-history', [DiscountCodeController::class, 'usageHistory'])->name('usage-history');
-        // Ajax endpoint to get users by rank
-        Route::post('/get-users-by-rank', [DiscountCodeController::class, 'getUsersByRank'])->name('users-by-rank');
-        // Lấy sản phẩm/danh mục/combo theo chi nhánh
+        Route::match(['post', 'get'], '/get-users-by-rank', [DiscountCodeController::class, 'getUsersByRank'])->name('users-by-rank');
         Route::get('/products-by-branch', [DiscountCodeController::class, 'getProductsByBranch'])->name('products-by-branch');
         Route::get('/variants-by-branch', [DiscountCodeController::class, 'getVariantsByBranch'])->name('variants-by-branch');
-        // Lấy danh sách sản phẩm, danh mục, combo theo loại
         Route::post('/get-items-by-type', [DiscountCodeController::class, 'getItemsByType'])->name('get-items-by-type');
     });
 
@@ -256,8 +282,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
     });
-
-
 
     // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
     Route::prefix('hiring-driver')->name('driver.')->group(function () {
@@ -285,6 +309,5 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
         Route::post('/typing', [ChatController::class, 'handleTyping'])->name('typing');
-        // ... các route khác nếu có
     });
 });

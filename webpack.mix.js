@@ -91,8 +91,13 @@ mixAssetsDir("vendors/css/**/*.css", (src, dest) => mix.copy(src, dest));
 mixAssetsDir("vendors/css/editors/quill/fonts/", (src, dest) =>
     mix.copy(src, dest)
 );
-mix.copyDirectory("resources/images", "public/images");
-mix.copyDirectory("resources/fonts", "public/fonts");
+// mix.copyDirectory("resources/images", "public/images");
+// mix.copyDirectory("resources/fonts", "public/fonts");
+
+mix.js('resources/js/app.js', 'public/js')
+   .postCss('resources/css/app.css', 'public/css', [
+       // Để trống ở đây, Laravel Mix sẽ tự động đọc file postcss.config.js
+   ]);
 
 mix.then(() => {
     if (process.env.MIX_CONTENT_DIRECTION === "rtl") {

@@ -229,7 +229,7 @@
 
     <script>
         // Expose mapbox API key to JavaScript
-        window.mapboxApiKey = "{{ env('MAPBOX_API_KEY') }}";
+        window.mapboxApiKey = "{{ config('services.mapbox.access_token') }}";
     </script>
 @endsection
 

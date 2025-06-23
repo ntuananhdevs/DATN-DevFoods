@@ -207,9 +207,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const productCard = this.closest('.product-card');
                 const productId = productCard.dataset.productId;
                 const icon = this.querySelector('i');
+                if (!productId || !icon) return;
                 const isFavorite = icon.classList.contains('far');
-                
-                // Immediate visual effect
+
+                // Giao diện ngay lập tức
                 if (isFavorite) {
                     icon.classList.remove('far');
                     icon.classList.add('fas', 'text-red-500');
@@ -217,23 +218,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon.classList.remove('fas', 'text-red-500');
                     icon.classList.add('far');
                 }
-                
-                // AJAX call to update favorites
-                axios.post('/api/favorites/toggle', {
-                    product_id: productId,
-                    is_favorite: isFavorite
+
+                // Gọi API toggle yêu thích
+                fetch('/favorite/toggle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ product_id: productId })
                 })
-                .then(response => {
-                    if (response.data.success) {
-                        // Update wishlist counter if function exists
-                        if (typeof window.updateWishlistCount === 'function') {
-                            window.updateWishlistCount(response.data.count);
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.is_favorite) {
+                            icon.classList.remove('far');
+                            icon.classList.add('fas', 'text-red-500');
+                            showToast('Đã thêm vào yêu thích', 'success');
+                        } else {
+                            icon.classList.remove('fas', 'text-red-500');
+                            icon.classList.add('far');
+                            showToast('Đã xóa khỏi yêu thích', 'info');
                         }
-                        showToast(response.data.message);
+                    } else {
+                        showToast(data.message || 'Có lỗi xảy ra', 'error');
                     }
                 })
                 .catch(error => {
-                    // Revert visual change if error
+                    // Revert visual nếu lỗi
                     if (isFavorite) {
                         icon.classList.remove('fas', 'text-red-500');
                         icon.classList.add('far');
@@ -241,8 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         icon.classList.remove('far');
                         icon.classList.add('fas', 'text-red-500');
                     }
-                    console.error('Error updating favorites:', error);
-                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
+                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
                 });
             });
         });
@@ -262,29 +273,65 @@ document.addEventListener('DOMContentLoaded', function() {
     attachEventListeners();
     
     // Toast notification function
-    function showToast(message) {
+    function showToast(message, type = 'info') {
+        // Remove old toast if exists
+        const oldToast = document.querySelector('.custom-toast');
+        if (oldToast) oldToast.remove();
+
         // Create toast element
         const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
-        toast.textContent = message;
-        
+        toast.className = 'custom-toast fixed top-8 right-4 z-50 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-toast-in';
+        toast.style.minWidth = '220px';
+        toast.style.maxWidth = '90vw';
+        toast.style.fontSize = '1rem';
+        toast.style.transition = 'transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.3s';
+        toast.style.transform = 'translateX(120%)';
+        toast.style.opacity = '0';
+
+        // Icon
+        const icon = document.createElement('i');
+        icon.className = 'fas';
+        switch(type) {
+            case 'success':
+                toast.classList.add('bg-green-500', 'text-white');
+                icon.classList.add('fa-check-circle');
+                break;
+            case 'error':
+                toast.classList.add('bg-red-500', 'text-white');
+                icon.classList.add('fa-times-circle');
+                break;
+            case 'warning':
+                toast.classList.add('bg-yellow-400', 'text-gray-900');
+                icon.classList.add('fa-exclamation-triangle');
+                break;
+            default:
+                toast.classList.add('bg-gray-800', 'text-white');
+                icon.classList.add('fa-info-circle');
+        }
+        icon.style.fontSize = '1.3em';
+        toast.appendChild(icon);
+
+        // Message
+        const msg = document.createElement('span');
+        msg.textContent = message;
+        toast.appendChild(msg);
+
         // Add to DOM
         document.body.appendChild(toast);
-        
-        // Show toast
+
+        // Force reflow for animation
         setTimeout(() => {
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
         }, 10);
-        
-        // Hide and remove toast after 3 seconds
+
+        // Hide and remove after 2.5s
         setTimeout(() => {
-            toast.classList.remove('opacity-100');
-            toast.classList.add('opacity-0');
-            
+            toast.style.transform = 'translateX(120%)';
+            toast.style.opacity = '0';
             setTimeout(() => {
-                document.body.removeChild(toast);
-            }, 300);
-        }, 3000);
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 400);
+        }, 2500);
     }
 });
