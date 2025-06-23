@@ -309,7 +309,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
-        Route::post('/typing', [ChatController::class, 'handleTyping'])->name('typing');
     });
 });
 
