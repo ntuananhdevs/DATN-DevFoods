@@ -82,6 +82,19 @@
         background-color: #0EA5E9;
     }
 
+    /* Animation for discount badges */
+    .discount-badge.fade-out {
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    
+    .discount-badge.fade-in {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
     /* Product card styling */
     .product-card {
         border: 1px solid #E5E7EB;
@@ -398,7 +411,9 @@
                                 <span class="product-price">{{ number_format($product->discount_price) }}đ</span>
                                 <span class="product-original-price">{{ number_format($product->base_price) }}đ</span>
                             @else
-                                <span class="product-price">{{ number_format($product->base_price) }}đ</span>
+                                @if($product->min_price != $product->max_price)
+                                    <span class="product-price">{{ number_format($product->min_price) }}đ</span>
+                                @endif
                             @endif
                         </div>
                         @if(isset($product->has_stock) && $product->has_stock)
@@ -438,7 +453,7 @@
                                         }
                                     }
                                 @endphp
-                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
+                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}" data-discount-code="{{ $discountCode->code }}">
                                     <i class="fas {{ $icon }}"></i>
                                     @if($discountCode->discount_type === 'percentage')
                                         Giảm {{ $discountCode->discount_value }}%
@@ -549,6 +564,7 @@
     window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
 </script>
 <script src="{{ asset('js/Customer/Shop/index.js') }}"></script>
+<script src="{{ asset('js/Customer/discount-updates.js') }}"></script>
 @include('partials.customer.branch-check')
 <!-- Branch Selector Modal -->
 @endsection

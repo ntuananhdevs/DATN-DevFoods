@@ -129,6 +129,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::patch('/restore/{id}', [ProductController::class, 'restore'])->name('restore');
         Route::delete('/force-delete/{id}', [ProductController::class, 'forceDelete'])->name('forceDelete');
         Route::get('/export', [ProductController::class, 'export'])->name('export');
+        Route::get('/price-range', [ProductController::class, 'getPriceRange'])->name('price-range');
 
         // Stock management
         Route::get('{product}/stock', [ProductController::class, 'stock'])->name('stock');
@@ -311,3 +312,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/typing', [ChatController::class, 'handleTyping'])->name('typing');
     });
 });
+
+
+
+// Add public broadcast routes for discount updates
+Route::post('/broadcasting/auth', function () {
+    return Broadcast::auth(request());
+})->middleware('web');
