@@ -58,4 +58,4 @@ class CartUpdated implements ShouldBroadcastNow
             'count' => $this->count
         ];
     }
-}  -->
+}

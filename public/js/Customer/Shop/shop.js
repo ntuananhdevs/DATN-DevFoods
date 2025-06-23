@@ -16,69 +16,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
     
-    // Show toast function (custom slide-in right)
-    window.showToast = function(message, type = 'info') {
-        // Remove old toast if exists
-        const oldToast = document.querySelector('.custom-toast');
-        if (oldToast) oldToast.remove();
-
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = 'custom-toast fixed top-8 right-4 z-50 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-toast-in';
-        toast.style.minWidth = '220px';
-        toast.style.maxWidth = '90vw';
-        toast.style.fontSize = '1rem';
-        toast.style.transition = 'transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.3s';
-        toast.style.transform = 'translateX(120%)';
-        toast.style.opacity = '0';
-
-        // Icon
-        const icon = document.createElement('i');
-        icon.className = 'fas';
-        switch(type) {
-            case 'success':
-                toast.classList.add('bg-green-500', 'text-white');
-                icon.classList.add('fa-check-circle');
-                break;
-            case 'error':
-                toast.classList.add('bg-red-500', 'text-white');
-                icon.classList.add('fa-times-circle');
-                break;
-            case 'warning':
-                toast.classList.add('bg-yellow-400', 'text-gray-900');
-                icon.classList.add('fa-exclamation-triangle');
-                break;
-            default:
-                toast.classList.add('bg-gray-800', 'text-white');
-                icon.classList.add('fa-info-circle');
-        }
-        icon.style.fontSize = '1.3em';
-        toast.appendChild(icon);
-
-        // Message
-        const msg = document.createElement('span');
-        msg.textContent = message;
-        toast.appendChild(msg);
-
-        // Add to DOM
-        document.body.appendChild(toast);
-
-        // Force reflow for animation
-        setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-            toast.style.opacity = '1';
-        }, 10);
-
-        // Hide and remove after 2.5s
-        setTimeout(() => {
-            toast.style.transform = 'translateX(120%)';
-            toast.style.opacity = '0';
-            setTimeout(() => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 400);
-        }, 2500);
-    };
-    
     // Product image gallery
     const mainImage = document.getElementById('main-product-image');
     const thumbnails = document.querySelectorAll('.product-thumbnail');
@@ -199,7 +136,10 @@ document.addEventListener("DOMContentLoaded", function() {
         // Get selected branch
         const branchId = document.getElementById('branch-select').value;
         if (!branchId) {
-            showToast('Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng', 'warning');
+            dtmodalShowToast('warning', {
+                title: 'Chọn chi nhánh',
+                message: 'Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng'
+            });
             return null;
         }
         
@@ -247,21 +187,32 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showToast(data.message, 'success');
+                dtmodalShowToast('success', {
+                    title: 'Thành công',
+                    message: data.message
+                });
                 // Cập nhật số lượng giỏ hàng trên header
                 const cartCounter = document.getElementById('cart-counter');
                 if (cartCounter) {
                     cartCounter.textContent = data.cart_count;
                 }
-                // Chuyển hướng đến trang giỏ hàng
-                window.location.href = '/cart';
+                // Chờ toast biến mất (5 giây) rồi chuyển hướng đến trang giỏ hàng
+                setTimeout(() => {
+                    window.location.href = '/cart';
+                }, 5000);
             } else {
-                showToast(data.message || 'Có lỗi xảy ra', 'error');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: data.message || 'Có lỗi xảy ra'
+                });
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
+            dtmodalShowToast('error', {
+                title: 'Lỗi',
+                message: 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
+            });
         });
     });
 
@@ -288,12 +239,18 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Redirect to checkout page
                 window.location.href = '/checkout';
             } else {
-                showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng'
+                });
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
+            dtmodalShowToast('error', {
+                title: 'Lỗi',
+                message: 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
+            });
         });
     });
     
@@ -330,7 +287,10 @@ document.addEventListener("DOMContentLoaded", function() {
             }, 2000);
             
             // Show toast notification
-            showToast(`Đã sao chép mã "${code}" vào clipboard`, 'success');
+            dtmodalShowToast('success', {
+                title: 'Đã sao chép',
+                message: `Mã "${code}" đã được sao chép vào clipboard`
+            });
         });
     });
 
@@ -360,18 +320,30 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (data.is_favorite) {
                         icon.classList.remove('far');
                         icon.classList.add('fas', 'text-red-500');
-                        showToast('Đã thêm vào yêu thích', 'success');
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: 'Đã thêm vào yêu thích'
+                        });
                     } else {
                         icon.classList.remove('fas', 'text-red-500');
                         icon.classList.add('far');
-                        showToast('Đã xóa khỏi yêu thích', 'info');
+                        dtmodalShowToast('info', {
+                            title: 'Thông báo',
+                            message: 'Đã xóa khỏi yêu thích'
+                        });
                     }
                 } else {
-                    showToast(data.message || 'Có lỗi xảy ra', 'error');
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: data.message || 'Có lỗi xảy ra'
+                    });
                 }
             })
             .catch(error => {
-                showToast('Có lỗi xảy ra khi cập nhật yêu thích', 'error');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi xảy ra khi cập nhật yêu thích'
+                });
             });
         });
     }
@@ -1259,4 +1231,10 @@ function showVariantNotification(message, type) {
             notification.classList.add('hidden');
         }, 5000);
     }
+    
+    // Also show modal toast for better user experience
+    dtmodalShowToast(type, {
+        title: type === 'success' ? 'Thành công' : type === 'warning' ? 'Cảnh báo' : 'Thông báo',
+        message: message
+    });
 }

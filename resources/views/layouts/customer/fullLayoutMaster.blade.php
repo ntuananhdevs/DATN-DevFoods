@@ -38,6 +38,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.css" />
     <!-- Notification Styles -->
     <link rel="stylesheet" href="{{ asset('css/customer/app.css') }}">
+    <!-- Modal Styles -->
+    <link rel="stylesheet" href="{{ asset('css/modal.css') }}">
 
     <!-- Custom CSS -->
     @yield('styles')
@@ -192,6 +194,7 @@
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <script src="{{ asset('js/modal.js') }}"></script>
 
     <script>
         // Function to show notifications programmatically

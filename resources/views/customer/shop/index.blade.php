@@ -568,3 +568,5 @@
 @include('partials.customer.branch-check')
 <!-- Branch Selector Modal -->
 @endsection
+
+@include('components.modal')
