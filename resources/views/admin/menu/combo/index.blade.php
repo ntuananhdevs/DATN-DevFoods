@@ -280,13 +280,11 @@
                                 <th class="p-4 font-medium text-muted-foreground">
                                     <input type="checkbox" class="rounded border-gray-300" id="selectAll">
                                 </th>
-                                <th class="p-4 font-medium text-muted-foreground">Mã combo</th>
+                                <th class="p-4 font-medium text-muted-foreground">SKU</th>
                                 <th class="p-4 font-medium text-muted-foreground">Hình ảnh</th>
                                 <th class="p-4 font-medium text-muted-foreground">Tên combo</th>
-                                <th class="p-4 font-medium text-muted-foreground">Danh mục</th>
                                 <th class="p-4 font-medium text-muted-foreground">Giá</th>
                                 <th class="p-4 font-medium text-muted-foreground">Trạng thái</th>
-                                <th class="p-4 font-medium text-muted-foreground">Nổi bật</th>
                                 <th class="p-4 font-medium text-muted-foreground">Thao tác</th>
                             </tr>
                         </thead>
@@ -296,7 +294,7 @@
                     <td class="p-4">
                         <input type="checkbox" class="rounded border-gray-300 combo-checkbox" value="{{ $combo->id }}">
                     </td>
-                    <td class="p-4 font-mono text-sm text-muted-foreground">CB{{ str_pad($combo->id, 4, '0', STR_PAD_LEFT) }}</td>
+                    <td class="p-4 font-mono text-sm text-muted-foreground">{{ $combo->sku }}</td>
                     <td class="p-4">
                         @if($combo->image)
                             <img src="{{ asset('storage/' . $combo->image) }}" 
@@ -314,41 +312,17 @@
                     </td>
                     <td class="p-4">
                         <div class="font-medium">{{ $combo->name }}</div>
-                        @if($combo->short_description)
-                            <div class="text-sm text-muted-foreground mt-1">{{ Str::limit($combo->short_description, 40) }}</div>
-                        @endif
-                    </td>
-                    <td class="p-4">
-                        @if($combo->category)
-                            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                                {{ $combo->category->name }}
-                            </span>
-                        @else
-                            <span class="text-muted-foreground">-</span>
+                        @if($combo->description)
+                            <div class="text-sm text-muted-foreground mt-1">{{ Str::limit($combo->description, 40) }}</div>
                         @endif
                     </td>
                     <td class="p-4">
                         <div class="font-medium text-green-600">{{ number_format($combo->price) }}đ</div>
-                        @if($combo->original_price && $combo->original_price > $combo->price)
-                            <div class="text-sm text-muted-foreground line-through">{{ number_format($combo->original_price) }}đ</div>
-                        @endif
                     </td>
                     <td class="p-4">
-                        <span class="status-tag {{ $combo->status === 'active' ? 'success' : 'failed' }}">
-                            {{ $combo->status === 'active' ? 'Hoạt động' : 'Không hoạt động' }}
+                        <span class="status-tag {{ $combo->active ? 'success' : 'failed' }}">
+                            {{ $combo->active ? 'Hoạt động' : 'Không hoạt động' }}
                         </span>
-                    </td>
-                    <td class="p-4">
-                        @if($combo->is_featured)
-                            <span class="status-tag featured">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                </svg>
-                                Nổi bật
-                            </span>
-                        @else
-                            <span class="text-muted-foreground">-</span>
-                        @endif
                     </td>
                     <td class="p-4">
                         <div class="flex items-center gap-2">

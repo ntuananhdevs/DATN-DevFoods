@@ -6,6 +6,158 @@
 
 @section('page-style-prd-edit')
     <link rel="stylesheet" href="{{ asset('css/admin/product.css') }}">
+    <style>
+        /* Topping Selection Styles */
+        .topping-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .topping-card:hover {
+            border-color: #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .topping-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .topping-card.selected:hover {
+            border-color: #2563eb;
+        }
+        
+        .topping-checkbox {
+            transform: scale(1.2);
+        }
+        
+        .topping-image img {
+            object-fit: cover;
+        }
+        
+        #toppings-list .col-md-6 {
+            margin-bottom: 1rem;
+        }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+
+        /* Topping Tags Styles */
+        .topping-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #3b82f6;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .topping-tag:hover {
+            background-color: #2563eb;
+        }
+
+        .topping-tag .remove-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .topping-tag .remove-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .topping-tag .remove-btn i {
+            font-size: 10px;
+        }
+
+        /* Modal Animation */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        /* Line clamp utility */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Enhanced topping card styles */
+        .topping-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topping-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .topping-card.selected::before {
+            opacity: 1;
+        }
+
+        .topping-card:hover::before {
+            opacity: 0.5;
+        }
+
+        /* Search input improvements */
+        #topping-search {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>');
+            background-repeat: no-repeat;
+            background-position: 12px center;
+            background-size: 16px 16px;
+            padding-left: 40px;
+        }
+
+        #topping-search:focus {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%233b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>');
+            outline: none;
+            box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5);
+            border-color: #3b82f6;
+        }
+    </style>
 @endsection
 
 <main class="container">
@@ -30,7 +182,7 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm"
                             value="{{ old('name') }}"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-500 @enderror" />
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-500 @enderror" />
                         @error('name')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -41,7 +193,7 @@
                             <label for="category_id" class="block text-sm font-medium text-gray-700">Danh mục <span
                                     class="text-red-500">*</span></label>
                             <select id="category_id" name="category_id"
-                                class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('category_id') border-red-500 @enderror">
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white sm:text-sm @error('category_id') border-red-500 @enderror">
                                 <option value="">Chọn danh mục</option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
@@ -59,7 +211,7 @@
                             <div class="relative mt-1">
                                 <input type="number" id="base_price" name="base_price" min="0" step="0.01"
                                     placeholder="0" value="{{ old('base_price') }}"
-                                    class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('base_price') border-red-500 @enderror" />
+                                    class="block w-full pl-7 rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('base_price') border-red-500 @enderror" />
                             </div>
                             @error('base_price')
                                 <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
@@ -74,7 +226,7 @@
                                 class="text-red-500">*</span></label>
                             <input type="number" id="preparation_time" name="preparation_time" min="0"
                                 placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time') }}"
-                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('preparation_time') border-red-500 @enderror" />
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('preparation_time') border-red-500 @enderror" />
                             @error('preparation_time')
                                 <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                             @enderror
@@ -86,7 +238,7 @@
                             <span class="text-red-500">*</span></label>
                         <textarea id="ingredients" name="ingredients" rows="3"
                             placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -97,7 +249,7 @@
                             <span class="text-red-500">*</span></label>
                         </label>
                         <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" 
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('short_description') border-red-500 @enderror">{{ old('short_description') }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('short_description') border-red-500 @enderror">{{ old('short_description') }}</textarea>
                         @error('short_description')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -106,7 +258,7 @@
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
                         <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
                         @error('description')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -172,7 +324,6 @@
                         <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                             <!-- Primary Image -->
                             <div class="md:col-span-1">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
                                 <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
                                     <div id="image-placeholder"
                                         class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
@@ -247,39 +398,44 @@
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="text-md font-semibold text-gray-800">Thuộc tính 1</h3>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Cột trái: Tên thuộc tính (chiếm 1 phần) -->
+                            <div class="md:col-span-1">
                                 <label for="attribute_name_0" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                                 <input type="text" id="attribute_name_0" name="attributes[0][name]" placeholder="VD: Kích thước"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ old('attributes.0.name') }}">
+                                    class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ old('attributes.0.name') }}">
                                 @error('attributes.0.name')
                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-span-2">
+                            
+                            <!-- Cột phải: Giá trị thuộc tính (chiếm 2 phần) -->
+                            <div class="md:col-span-2">
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
-                                <div id="attribute_values_container_0" class="space-y-3">
+                                <div id="attribute_values_container_0" class="space-y-2">
                                     <!-- Default attribute value -->
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
-                                        <div class="md:col-span-2">
-                                            <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
-                                            <input type="text" id="attribute_value_0_0" name="attributes[0][values][0][value]" placeholder="VD: Nhỏ"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.value') }}">
-                                            @error('attributes.0.values.0.value')
-                                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                        <div>
-                                            <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                            <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
-                                            @error('attributes.0.values.0.price_adjustment')
-                                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                         <div class="grid grid-cols-2 gap-2">
+                                             <div>
+                                                 <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                                                 <input type="text" id="attribute_value_0_0" name="attributes[0][values][0][value]" placeholder="VD: Nhỏ"
+                                     class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.value') }}">
+                                                 @error('attributes.0.values.0.value')
+                                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                 @enderror
+                                             </div>
+                                             <div>
+                                                 <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                                                 <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
+                                     class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
+                                                 @error('attributes.0.values.0.price_adjustment')
+                                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                 @enderror
+                                             </div>
+                                         </div>
+                                     </div>
                                 </div>
-                                <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="0">+ Thêm giá trị</button>
+                                <button type="button" class="add-attribute-value-btn mt-2 text-xs text-blue-600 hover:text-blue-800" data-index="0">+ Thêm giá trị</button>
                             </div>
                         </div>
                     </div>
@@ -300,28 +456,120 @@
             </div>
         </section>
         <!-- Toppings Section -->
-        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <section id="toppings-section" class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <header class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
-                <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+                        <p class="text-gray-500 text-sm mt-1">Chọn các topping có sẵn cho sản phẩm</p>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        Đã chọn: <span id="selected-toppings-count" class="font-semibold text-blue-600">0</span> topping
+                    </div>
+                </div>
             </header>
 
             <div class="px-6 py-6">
-                <div id="toppings-container">
-                    <!-- Topping groups will be added here -->
-                </div>
-                <button type="button" id="add-topping-btn"
+                <!-- Open Modal Button -->
+                <div class="mb-4">
+                    <button type="button" id="open-toppings-modal" 
                     class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16"
-                        fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        viewBox="0 0 24 24">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Thêm topping
-                </button>
+                        <i class="fas fa-plus-circle"></i>
+                        Chọn Toppings
+                    </button>
+                </div>
+
+                <!-- Selected Toppings Display -->
+                <div id="selected-toppings-display" class="space-y-2">
+                    <h4 class="text-sm font-medium text-gray-700">Toppings đã chọn:</h4>
+                    <div id="selected-toppings-tags" class="flex flex-wrap gap-2">
+                        <!-- Selected toppings will be displayed here as tags -->
+                        <div class="text-gray-500 text-sm italic" id="no-toppings-message">
+                            Chưa có topping nào được chọn
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
+
+        <!-- Toppings Modal -->
+        <div id="toppings-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Background overlay -->
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+                <!-- Modal panel -->
+                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                    <!-- Modal Header -->
+                    <div class="bg-white px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-gray-900" id="modal-title">
+                                Chọn Toppings
+                            </h3>
+                            <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">Chọn các topping muốn thêm vào sản phẩm</p>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="bg-white px-6 py-4 max-h-96 overflow-y-auto">
+                        <!-- Search and Filter -->
+                        <div class="mb-4">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" id="topping-search" placeholder="Tìm kiếm topping theo tên..." 
+                                       class="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" id="clear-search" class="text-gray-400 hover:text-gray-600 hidden">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Control buttons -->
+                        <div class="mb-4 flex gap-2">
+                            <button type="button" id="modal-select-all" 
+                                    class="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700">
+                                <i class="fas fa-check-double"></i>
+                                Chọn tất cả
+                            </button>
+                            <button type="button" id="modal-clear-all" 
+                                    class="inline-flex items-center gap-2 rounded-md bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-700">
+                                <i class="fas fa-times"></i>
+                                Bỏ chọn tất cả
+                            </button>
+                        </div>
+
+                        <!-- Toppings Grid -->
+                        <div id="modal-toppings-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <!-- Toppings will be loaded here via AJAX -->
+                            <div class="col-span-full flex justify-center items-center py-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                <span class="ml-2 text-gray-600">Đang tải...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                        <button type="button" id="cancel-modal" 
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            Hủy
+                        </button>
+                        <button type="button" id="confirm-toppings" 
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            <i class="fas fa-check mr-2"></i>
+                            Xác nhận (<span id="modal-selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Save Buttons -->
         <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
             <button type="button" id="save-draft-btn"
@@ -460,31 +708,31 @@
                     <h3 class="text-md font-semibold text-gray-800">Thuộc tính ${index + 1}</h3>
                     <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-1">
                         <label for="attribute_name_${index}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                         <input type="text" id="attribute_name_${index}" name="attributes[${index}][name]" placeholder="VD: Kích thước"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                         <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_name" style="display: none;"></div>
                     </div>
-                    <div class="col-span-2">
+                    <div class="md:col-span-2">
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                         <div id="attribute_values_container_${index}" class="space-y-3">
                             <!-- Default attribute value -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
-                                <div class="md:col-span-2">
+                            <div class="grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                <div>
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_value" style="display: none;"></div>
                                 </div>
                                 <div>
                                     <label for="attribute_price_${index}_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
                                     <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_price_adjustment" style="display: none;"></div>
                                 </div>
-                                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+                                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
                             </div>
                         </div>
                         <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="${index}">+ Thêm giá trị</button>
@@ -523,21 +771,21 @@
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-3', 'p-3', 'border', 'border-dashed', 'border-gray-300', 'rounded-md');
+            valueDiv.classList.add('grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
-                <div class="md:col-span-2">
+                <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                     <input type="text" id="attribute_value_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][value]" placeholder="VD: Nhỏ"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_value" style="display: none;"></div>
                 </div>
                 <div>
                     <label for="attribute_price_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
                     <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_price_adjustment" style="display: none;"></div>
                 </div>
-                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
             `;
 
             // Add event listener for removing this value
@@ -822,4 +1070,8 @@
         toggleReleaseDate();
     });
 </script>
+
+<!-- Topping Modal Script -->
+<script src="{{ asset('js/admin/topping-modal.js') }}"></script>
+
 @endsection
