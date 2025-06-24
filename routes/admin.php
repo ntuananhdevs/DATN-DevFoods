@@ -144,7 +144,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('{product}/variants', [ProductVariantController::class, 'generate'])->name('generate-variants');
         Route::patch('variants/{variant}/status', [ProductVariantController::class, 'updateStatus'])->name('update-variant-status');
         Route::get('variants/{variant}', [ProductVariantController::class, 'show'])->name('show-variant');
-        
+
         // Topping management for products
         Route::get('get-toppings', [ToppingController::class, 'getToppings'])->name('get-toppings');
     });
@@ -158,15 +158,15 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::put('/update/{id}', [ToppingController::class, 'update'])->name('update');
         Route::get('/show/{topping}', [ToppingController::class, 'show'])->name('show');
         Route::delete('/delete/{topping}', [ToppingController::class, 'destroy'])->name('destroy');
-        
+
         // Status management
         Route::patch('/{topping}/toggle-status', [ToppingController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/bulk-update-status', [ToppingController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
-        
+
         // Stock management for toppings
         Route::get('/{topping}/stock', [ToppingStockController::class, 'show'])->name('stock');
         Route::post('/{topping}/update-stock', [ToppingStockController::class, 'update'])->name('update-stock');
-        
+
         // Advanced stock management
         Route::get('/stock-management', [ToppingStockController::class, 'index'])->name('stock-management');
         Route::get('/stock/{topping}', [ToppingStockController::class, 'show'])->name('stock.show');
@@ -187,7 +187,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::put('/update/{id}', [ComboController::class, 'update'])->name('update');
         Route::get('/show/{id}', [ComboController::class, 'show'])->name('show');
         Route::delete('/delete/{id}', [ComboController::class, 'destroy'])->name('destroy');
-        
+
         // Status management
         Route::patch('/{id}/toggle-status', [ComboController::class, 'toggleStatus'])->name('toggle-status');
         Route::patch('/{id}/toggle-featured', [ComboController::class, 'toggleFeatured'])->name('toggle-featured');
@@ -324,12 +324,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
-        Route::post('/typing', [ChatController::class, 'handleTyping'])->name('typing');
     });
-    
 });
 
-Broadcast::routes(['middleware' => ['auth:sp_admin,customer,branch']]);
+
 
 // Add public broadcast routes for discount updates
 Route::post('/broadcasting/auth', function () {
