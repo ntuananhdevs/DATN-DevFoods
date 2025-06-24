@@ -16,7 +16,6 @@
 <div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
     <div class="space-y-6">
         <div>
-            <h3 class="text-xs font-medium text-sidebar-foreground/70 mb-2 px-2 sidebar-group-label">Main Menu</h3>
             <div class="space-y-1">
                 <!-- Dashboard Dropdown -->
                 <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">

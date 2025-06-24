@@ -720,6 +720,9 @@ class ProductController extends Controller
             // Handle variants using refactored methods
             $this->updateProductVariants($product, $request->input('attributes', []));
 
+            // Handle toppings
+            $this->handleToppings($product, $request);
+
             // Update stock data if provided
             $this->updateProductStocks(
                 $request,
