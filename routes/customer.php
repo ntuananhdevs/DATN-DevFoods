@@ -34,6 +34,24 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
+    Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
+
+    // Debug routes for discount codes
+    Route::get('/debug/discount-codes', function () {
+        $now = \Carbon\Carbon::now();
+        $publicCodes = \App\Models\DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where('usage_type', 'public')
+            ->get();
+
+        return response()->json([
+            'count' => $publicCodes->count(),
+            'codes' => $publicCodes
+        ]);
+    });
+
+    Route::get('/debug/product/{id}/discount-codes', [CustomerProductController::class, 'showProductDiscounts']);
 
     // Wishlist
     Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
@@ -53,7 +71,7 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::get('/about', [CustomerAboutController::class, 'index'])->name('about.index');
     Route::get('/contact', [CustomerContactController::class, 'index'])->name('contact.index');
     Route::get('/promotions', [CustomerPromotionController::class, 'promotions'])->name('promotions.index');
-    Route::get('/branchs', [CustomerBranchController::class, 'branchs'])->name('branches.index');
+    Route::get('/branches', [CustomerBranchController::class, 'branchs'])->name('branches.index');
     Route::get('/support', [CustomerSupportController::class, 'support'])->name('support.index');
 });
 
@@ -135,5 +153,7 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
-    Route::post('/chat/typing', [ChatController::class, 'typing'])->name('customer.chat.typing');
 });
+
+// Add new route for discount badge partial
+Route::post('/partial/discount-badge', [CustomerProductController::class, 'getDiscountBadges'])->name('products.discount-badges');

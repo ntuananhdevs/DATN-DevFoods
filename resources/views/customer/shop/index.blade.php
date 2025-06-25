@@ -8,14 +8,13 @@
 <meta name="selected-branch" content="{{ $currentBranch->id }}">
 @endif
 
-<script>
-    // Add authentication class to body
-    document.addEventListener('DOMContentLoaded', function() {
-        @if(Auth::check())
+@if(Auth::check())
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('user-authenticated');
-        @endif
-    });
-</script>
+        });
+    </script>
+@endif
 <style>
     .container {
       max-width: 1280px;
@@ -47,44 +46,65 @@
         z-index: 10;
     }
     
-    /* Discount code pill badges */
-    .discount-code-pill {
-        position: absolute;
-        bottom: 8px;
-        left: 8px;
-        right: 8px;
+    /* Discount code styles */
+    .discount-tag {
+        margin-top: 8px;
         display: flex;
-        flex-direction: column;
+        flex-wrap: wrap;
         gap: 4px;
-        z-index: 10;
     }
     
-    .discount-code-item {
+    .discount-badge, .quality {
         display: inline-flex;
         align-items: center;
-        background-color: rgba(249, 115, 22, 0.9);
-        color: white;
-        padding: 3px 8px;
-        border-radius: 100px;
+        padding: 2px 6px;
+        border-radius: 4px;
         font-size: 10px;
         font-weight: 600;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        color: white;
+        margin-bottom: 2px;
+    }
+
+    .quality {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 6px;
+        border-radius: 2px;
+        font-size: 10px;
+        font-weight: 600;
+        color: #F97316;
+        margin-bottom: 2px;
+        border: solid 1px #F97316;
     }
     
-    .discount-code-item i {
-        margin-right: 4px;
+    .discount-badge i {
+        margin-right: 3px;
         font-size: 9px;
     }
     
-    .discount-code-item.free-shipping {
-        background-color: rgba(10, 132, 255, 0.9);
+    .discount-badge.percentage {
+        background-color: #F97316;
     }
     
-    .discount-code-item.fixed-amount {
-        background-color: rgba(130, 32, 246, 0.9);
+    .discount-badge.fixed-amount {
+        background-color: #8B5CF6;
+    }
+    
+    .discount-badge.free-shipping {
+        background-color: #0EA5E9;
+    }
+
+    /* Animation for discount badges */
+    .discount-badge.fade-out {
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    
+    .discount-badge.fade-in {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 0.5s ease, transform 0.5s ease;
     }
 
     /* Product card styling */
@@ -109,7 +129,7 @@
         font-weight: 600;
         font-size: 1.1rem;
         line-height: 1.5rem;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.1rem;
         transition: color 0.2s ease;
     }
 
@@ -118,8 +138,8 @@
     }
 
     .product-price {
-        font-size: 1.25rem;
-        font-weight: 700;
+        font-size: 1.1rem;
+        font-weight: 500;
         color: #F97316;
     }
 
@@ -265,6 +285,11 @@
     .add-to-cart-btn.disabled:hover {
         background-color: #9CA3AF !important;
     }
+    .commons {
+        color: #000;
+        font-size: 0.8rem;
+        font-weight: 400;
+    }
 </style>
 
     @php
@@ -322,7 +347,7 @@
 
     
     <!-- Danh sách sản phẩm -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         @forelse($products as $product)
             <div class="product-card bg-white rounded-lg overflow-hidden" 
                 data-product-id="{{ $product->id }}"
@@ -370,79 +395,125 @@
                         <span class="custom-badge badge-new">Mới</span>
                     @endif
                     
-                    @if(isset($product->applicable_discount_codes) && $product->applicable_discount_codes->count() > 0)
-                        <div class="discount-code-pill">
-                            @foreach($product->applicable_discount_codes as $discountCode)
-                                @php
-                                    $badgeClass = 'discount-code-item';
-                                    $icon = 'fa-percent';
-                                    if($discountCode->discount_type === 'fixed_amount') {
-                                        $badgeClass .= ' fixed-amount';
-                                        $icon = 'fa-money-bill-wave';
-                                    } elseif($discountCode->discount_type === 'free_shipping') {
-                                        $badgeClass .= ' free-shipping';
-                                        $icon = 'fa-shipping-fast';
-                                    }
-                                @endphp
-                                <div class="{{ $badgeClass }}" title="{{ $discountCode->name }}">
-                                    <i class="fas {{ $icon }}"></i>
-                                    @if($discountCode->discount_type === 'percentage')
-                                        Giảm {{ $discountCode->discount_value }}%
-                                    @elseif($discountCode->discount_type === 'fixed_amount')
-                                        Giảm {{ number_format($discountCode->discount_value) }}đ
-                                    @else
-                                        Miễn phí vận chuyển
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
+
                 </div>
 
-                <div class="p-4">
-                    <div class="flex items-center mb-2">
-                        <div class="rating-stars flex">
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($product->average_rating))
-                                    <i class="fas fa-star"></i>
-                                @elseif($i - 0.5 <= $product->average_rating)
-                                    <i class="fas fa-star-half-alt"></i>
-                                @else
-                                    <i class="far fa-star"></i>
-                                @endif
-                            @endfor
-                        </div>
-                        <span class="rating-count ml-2">({{ $product->reviews_count }})</span>
+                <div class="px-4 py-2">
+
+                    @php
+                        $freeship = null;
+                        $otherDiscounts = [];
+                        if(isset($product->applicable_discount_codes)) {
+                            foreach($product->applicable_discount_codes as $discountCode) {
+                                if($discountCode->discount_type === 'free_shipping') {
+                                    $freeship = $discountCode;
+                                } else {
+                                    $otherDiscounts[] = $discountCode;
+                                }
+                            }
+                        }
+
+                        // Tìm mã giảm giá trừ nhiều nhất
+                        $maxDiscount = null;
+                        $maxValue = 0;
+                        foreach($otherDiscounts as $discountCode) {
+                            if($discountCode->discount_type === 'fixed_amount') {
+                                $value = $discountCode->discount_value;
+                            } elseif($discountCode->discount_type === 'percentage') {
+                                $value = isset($product->min_price) ? ($product->min_price * $discountCode->discount_value / 100) : 0;
+                            } else {
+                                $value = 0;
+                            }
+                            if($value > $maxValue) {
+                                $maxValue = $value;
+                                $maxDiscount = $discountCode;
+                            }
+                        }
+
+                        // Giá gốc
+                        $originPrice = $product->discount_price && $product->base_price > $product->discount_price
+                            ? $product->discount_price
+                            : $product->min_price;
+
+                        // Giá sau giảm
+                        $finalPrice = $originPrice;
+                        if($maxDiscount) {
+                            if($maxDiscount->discount_type === 'fixed_amount') {
+                                $finalPrice = max(0, $originPrice - $maxDiscount->discount_value);
+                            } elseif($maxDiscount->discount_type === 'percentage') {
+                                $finalPrice = max(0, $originPrice * (1 - $maxDiscount->discount_value / 100));
+                            }
+                        }
+                    @endphp
+
+                    <div class="flex items-center justify-between">
+                        <a href="{{ route('products.show', $product->id) }}" class="block">
+                            <h3 class="product-title">{{ $product->name }}</h3>
+                        </a>
                     </div>
 
-                    <a href="{{ route('products.show', $product->id) }}" class="block">
-                        <h3 class="product-title">{{ $product->name }}</h3>
-                    </a>
-
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <!-- <p class="text-gray-600 text-sm mb-4 line-clamp-2">
                         {{ $product->short_description ?? Str::limit($product->description, 80) }}
-                    </p>
+                    </p> -->
 
-                    <div class="flex justify-between items-center">
+                    <div>
                         <div class="flex flex-col">
-                            @if($product->discount_price && $product->base_price > $product->discount_price)
-                                <span class="product-price">{{ number_format($product->discount_price) }}đ</span>
-                                <span class="product-original-price">{{ number_format($product->base_price) }}đ</span>
-                            @else
-                                <span class="product-price">{{ number_format($product->base_price) }}đ</span>
-                            @endif
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="product-price">{{ number_format($finalPrice) }}đ</span>
+                                    @if($finalPrice < $originPrice)
+                                        <span class="product-original-price">{{ number_format($originPrice) }}đ</span>
+                                    @endif
+                                </div>
+                                @if($freeship)
+                            <img src="{{ asset('images/free-shipping.png') }}" alt="Free Shipping" style="height: 16px;">
+                        @endif
+                            </div>
+                            <div class="discount-tag">
+                                <span class="text-xs font-semibold text-orange-500 mr-2 px-1 py-1 quality">Rẻ vô địch</span>
+                                @if($maxDiscount)
+                                    @php
+                                        $badgeClass = 'discount-badge';
+                                        $icon = 'fa-percent';
+                                        if($maxDiscount->discount_type === 'fixed_amount') {
+                                            $badgeClass .= ' fixed-amount';
+                                            $icon = 'fa-money-bill-wave';
+                                        } else {
+                                            $badgeClass .= ' percentage';
+                                        }
+                                    @endphp
+                                    <div class="{{ $badgeClass }}" title="{{ $maxDiscount->name }}" data-discount-code="{{ $maxDiscount->code }}">
+                                        <i class="fas {{ $icon }}"></i>
+                                        @if($maxDiscount->discount_type === 'percentage')
+                                            Giảm {{ $maxDiscount->discount_value }}%
+                                        @elseif($maxDiscount->discount_type === 'fixed_amount')
+                                            Giảm {{ number_format($maxDiscount->discount_value) }}đ
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                         @if(isset($product->has_stock) && $product->has_stock)
-                            <a href="{{ route('products.show', ['id' => $product->id]) }}" class="add-to-cart-btn">
+                            <!-- <a href="{{ route('products.show', ['id' => $product->id]) }}" class="add-to-cart-btn">
                                 <i class="fas fa-shopping-cart"></i>
                                 Mua hàng
-                            </a>
+                            </a> -->
                         @else
                             <button class="add-to-cart-btn disabled" disabled>
                                 <i class="fas fa-ban"></i>
                                 Hết hàng
                             </button>
                         @endif
+                    </div>
+
+                    <div class="flex justify-start items-center">
+                        <div class="flex items-center mr-4">
+                            <i class="fas fa-star text-yellow-400 text-xs"></i>
+                            <span class="commons rating-count ml-1">{{ $product->reviews_count }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="commons">Đã bán 46k</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -538,8 +609,8 @@
 <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
     // Pusher configuration
-    window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
-    window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
+    window.pusherKey = '{{ config("broadcasting.connections.pusher.key") }}';
+    window.pusherCluster = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
 </script>
 <script src="{{ asset('js/Customer/Shop/index.js') }}"></script>
 @include('partials.customer.branch-check')

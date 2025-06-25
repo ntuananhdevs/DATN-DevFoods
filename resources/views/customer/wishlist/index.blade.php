@@ -351,34 +351,31 @@ document.addEventListener('DOMContentLoaded', function() {
         heart.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
-            const productId = this.dataset.productId;
-            const isActive = this.classList.contains('active');
-            
-            if (isActive) {
-                // Remove from wishlist
-                this.classList.remove('active');
-                this.querySelector('i').style.color = '#9ca3af';
-                
-                // Remove item from wishlist if it's in wishlist page
+            const wishlistId = this.dataset.wishlistId;
+            if (!wishlistId) return;
+            fetch(`/wishlist/${wishlistId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
                 const wishlistItem = this.closest('.wishlist-item');
-                if (wishlistItem && wishlistContainer.contains(wishlistItem)) {
-                    wishlistItem.style.transform = 'scale(0.8)';
-                    wishlistItem.style.opacity = '0';
-                    setTimeout(() => {
-                        wishlistItem.remove();
-                        updateWishlistStats();
-                        checkEmptyState();
-                    }, 300);
-                }
-                
-                showNotification('Đã xóa khỏi danh sách yêu thích', 'success');
-            } else {
-                // Add to wishlist
-                this.classList.add('active');
-                this.querySelector('i').style.color = '#ef4444';
-                showNotification('Đã thêm vào danh sách yêu thích', 'success');
-            }
+                wishlistItem.style.transform = 'scale(0.8)';
+                wishlistItem.style.opacity = '0';
+                setTimeout(() => {
+                    wishlistItem.remove();
+                    updateWishlistStats();
+                    checkEmptyState();
+                    showNotification(data.message, 'success');
+                }, 300);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Có lỗi xảy ra, vui lòng thử lại!', 'error');
+            });
         });
     });
 
@@ -553,40 +550,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }, 3000);
     }
-
-    // Heart icon functionality
-    document.querySelectorAll('.heart-icon').forEach(heart => {
-        heart.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const wishlistId = this.dataset.wishlistId;
-            
-            fetch(`/whishlist/${wishlistId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                const wishlistItem = this.closest('.wishlist-item');
-                wishlistItem.style.transform = 'scale(0.8)';
-                wishlistItem.style.opacity = '0';
-                setTimeout(() => {
-                    wishlistItem.remove();
-                    updateWishlistStats();
-                    checkEmptyState();
-                    showNotification(data.message, 'success');
-                }, 300);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Có lỗi xảy ra, vui lòng thử lại!', 'error');
-            });
-        });
-    });
 
     // Initialize stats
     updateWishlistStats();

@@ -17,7 +17,8 @@ class DiscountCode extends Model
         'image',
         'discount_type',
         'discount_value',
-        'min_order_amount',
+        'min_requirement_type',
+        'min_requirement_value',
         'max_discount_amount',
         'applicable_scope',
         'applicable_items',
@@ -49,7 +50,7 @@ class DiscountCode extends Model
         'is_featured' => 'boolean',
         'rank_exclusive' => 'boolean',
         'discount_value' => 'decimal:2',
-        'min_order_amount' => 'decimal:2',
+        'min_requirement_value' => 'decimal:2',
         'max_discount_amount' => 'decimal:2',
     ];
 

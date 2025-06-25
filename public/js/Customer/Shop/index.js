@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Khai báo biến channel
-    let productsChannel, favoritesChannel, cartChannel, branchStockChannel;
+    let productsChannel, favoritesChannel, cartChannel, branchStockChannel, discountsChannel;
     
     // Khởi tạo Pusher với key và cluster từ window object
     const pusher = new Pusher(window.pusherKey, {
@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function() {
         encrypted: true,
         enabledTransports: ['ws', 'wss'] // Force WebSocket transport
     });
+
+    // Expose Pusher instance for other scripts to use
+    window.existingPusher = pusher;
 
     // Enable Pusher logging
     Pusher.logToConsole = true;
@@ -33,36 +36,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // Subscribe to cart channel
         cartChannel = pusher.subscribe('user-cart-channel');
         
+        // Subscribe to discounts channel
+        discountsChannel = pusher.subscribe('discounts');
+        
         // Get current branch ID
         const urlParams = new URLSearchParams(window.location.search);
         const currentBranchId = urlParams.get('branch_id') || document.querySelector('meta[name="selected-branch"]')?.content;
         
         // Listen for stock update events
         branchStockChannel.bind('stock-updated', function(data) {
-            console.log('Stock update received:', data);
-            
             // Get current branch ID from multiple possible sources
             const urlParams = new URLSearchParams(window.location.search);
             const branchIdFromUrl = urlParams.get('branch_id');
             const branchIdFromMeta = document.querySelector('meta[name="selected-branch"]')?.content;
             const currentBranchId = branchIdFromUrl || branchIdFromMeta || '1'; // Default to branch 1 if not specified
             
-            console.log('Current branch ID:', currentBranchId);
-            console.log('Event branch ID:', data.branchId);
-            
             // Only update if the stock change is for the current branch
             if (data.branchId == currentBranchId) {
-                console.log('Updating UI for current branch');
                 const productCards = document.querySelectorAll('.product-card');
-                console.log('Found product cards:', productCards.length);
                 
                 productCards.forEach(card => {
                     try {
                         const variants = JSON.parse(card.dataset.variants);
-                        console.log('Product variants:', variants);
                         
                         const variant = variants.find(v => v.id == data.productVariantId);
-                        console.log('Found variant:', variant);
                         
                         if (variant) {
                             // Update stock for the variant
@@ -70,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             // Check if any variant has stock
                             const hasStock = variants.some(v => v.stock > 0);
-                            console.log('Has stock:', hasStock);
                             
                             card.dataset.hasStock = hasStock.toString();
                             
@@ -111,33 +107,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             setTimeout(() => {
                                 card.classList.remove('highlight-update');
                             }, 1000);
-                            
-                            console.log('Updated product card:', card.dataset.productId);
                         }
                     } catch (error) {
                         console.error('Error updating product stock:', error);
                     }
                 });
-            } else {
-                console.log('Skipping update - different branch');
             }
         });
 
         // Listen for product update events
         productsChannel.bind('product-updated', function(data) {
-            console.log('Product update received:', data);
             // Reload page to show updated product
             window.location.reload();
         });
         
         productsChannel.bind('product-created', function(data) {
-            console.log('Product created:', data);
             // Reload page to show new product
             window.location.reload();
         });
 
         productsChannel.bind('product-deleted', function(data) {
-            console.log('Product deleted:', data);
             // Remove the deleted product from the grid
             const productCard = document.querySelector(`.product-card[data-product-id="${data.product_id}"]`);
             if (productCard) {
@@ -148,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Listen for favorite updates if user is authenticated
         if (favoritesChannel) {
             favoritesChannel.bind('favorite-updated', function(data) {
-                console.log('Favorite update received:', data);
                 if (data.product_id) {
                     const favoriteButtons = document.querySelectorAll(`.favorite-btn[data-product-id="${data.product_id}"]`);
                     favoriteButtons.forEach(button => {
@@ -167,13 +155,35 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Listen for cart events
         cartChannel.bind('cart-updated', function(data) {
-            console.log('Cart update received:', data);
             updateCartCount(data.count);
         });
 
+        // Listen for discount updates
+        discountsChannel.bind('discount-updated', function(data) {
+            console.log('--- Pusher event "discount-updated" received ---');
+            console.log('Data received:', data);
+            
+            // Reload page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+        
+        // Listen for subscription success
+        discountsChannel.bind('pusher:subscription_succeeded', () => {
+            console.log('✅ Successfully subscribed to discounts channel');
+        });
+
+        // Listen for subscription error
+        discountsChannel.bind('pusher:subscription_error', (error) => {
+            console.error('❌ Failed to subscribe to discounts channel:', error);
+        });
+
+        console.log('🔧 All channels subscribed successfully');
+
         // Handle connection state changes
         pusher.connection.bind('state_change', function(states) {
-            console.log('Pusher connection state changed:', states);
+            // Connection state changed
         });
 
         pusher.connection.bind('error', function(err) {
@@ -198,93 +208,80 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Function to attach event listeners to newly rendered products
-    function attachEventListeners() {
-        // Favorite button handling
-        document.querySelectorAll('.favorite-btn:not(.login-prompt-btn)').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const productCard = this.closest('.product-card');
-                const productId = productCard.dataset.productId;
-                const icon = this.querySelector('i');
-                const isFavorite = icon.classList.contains('far');
-                
-                // Immediate visual effect
-                if (isFavorite) {
-                    icon.classList.remove('far');
-                    icon.classList.add('fas', 'text-red-500');
-                } else {
-                    icon.classList.remove('fas', 'text-red-500');
-                    icon.classList.add('far');
-                }
-                
-                // AJAX call to update favorites
-                axios.post('/api/favorites/toggle', {
-                    product_id: productId,
-                    is_favorite: isFavorite
-                })
-                .then(response => {
-                    if (response.data.success) {
-                        // Update wishlist counter if function exists
-                        if (typeof window.updateWishlistCount === 'function') {
-                            window.updateWishlistCount(response.data.count);
-                        }
-                        showToast(response.data.message);
-                    }
-                })
-                .catch(error => {
-                    // Revert visual change if error
-                    if (isFavorite) {
-                        icon.classList.remove('fas', 'text-red-500');
-                        icon.classList.add('far');
-                    } else {
-                        icon.classList.remove('far');
-                        icon.classList.add('fas', 'text-red-500');
-                    }
-                    console.error('Error updating favorites:', error);
-                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.');
-                });
-            });
-        });
-        
-        // Login prompt button handling
-        document.querySelectorAll('.login-prompt-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const loginPopup = document.getElementById('login-popup');
-                if (loginPopup) {
-                    loginPopup.classList.remove('hidden');
-                }
-            });
-        });
-    }
-    
-    // Attach initial event listeners
-    attachEventListeners();
-    
     // Toast notification function
-    function showToast(message) {
+    function showToast(message, type = 'info') {
+        // Remove old toast if exists
+        const oldToast = document.querySelector('.custom-toast');
+        if (oldToast) oldToast.remove();
+
         // Create toast element
         const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
-        toast.textContent = message;
-        
+        toast.className = 'custom-toast fixed top-8 right-4 z-50 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-toast-in';
+        toast.style.minWidth = '220px';
+        toast.style.maxWidth = '90vw';
+        toast.style.fontSize = '1rem';
+        toast.style.transition = 'transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.3s';
+        toast.style.transform = 'translateX(120%)';
+        toast.style.opacity = '0';
+
+        // Icon
+        const icon = document.createElement('i');
+        icon.className = 'fas';
+        switch(type) {
+            case 'success':
+                toast.classList.add('bg-green-500', 'text-white');
+                icon.classList.add('fa-check-circle');
+                break;
+            case 'error':
+                toast.classList.add('bg-red-500', 'text-white');
+                icon.classList.add('fa-times-circle');
+                break;
+            case 'warning':
+                toast.classList.add('bg-yellow-400', 'text-gray-900');
+                icon.classList.add('fa-exclamation-triangle');
+                break;
+            default:
+                toast.classList.add('bg-gray-800', 'text-white');
+                icon.classList.add('fa-info-circle');
+        }
+        icon.style.fontSize = '1.3em';
+        toast.appendChild(icon);
+
+        // Message
+        const msg = document.createElement('span');
+        msg.textContent = message;
+        toast.appendChild(msg);
+
         // Add to DOM
         document.body.appendChild(toast);
-        
-        // Show toast
+
+        // Force reflow for animation
         setTimeout(() => {
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
         }, 10);
-        
-        // Hide and remove toast after 3 seconds
+
+        // Hide and remove after 2.5s
         setTimeout(() => {
-            toast.classList.remove('opacity-100');
-            toast.classList.add('opacity-0');
-            
+            toast.style.transform = 'translateX(120%)';
+            toast.style.opacity = '0';
             setTimeout(() => {
-                document.body.removeChild(toast);
-            }, 300);
-        }, 3000);
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 400);
+        }, 2500);
+    }
+});
+
+// Force reload when coming back from bfcache (back/forward)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && performance.getEntriesByType('navigation')[0]?.type === 'back_forward')) {
+        window.location.reload();
+    }
+});
+
+// Thêm fallback: reload khi tab được hiển thị lại nếu discount đã bị tắt (dùng localStorage flag)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && window.needDiscountReload) {
+        window.location.reload();
     }
 });

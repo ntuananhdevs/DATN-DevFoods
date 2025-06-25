@@ -1,224 +1,229 @@
-@extends('layouts/admin/contentLayoutMaster')
+@extends('layouts.admin.contentLayoutMaster')
 
-@section('title', 'Chỉnh Sửa Topping')
+@section('title', 'Chỉnh sửa Topping - ' . $topping->name)
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Chỉnh Sửa Topping: {{ $topping->name }}</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('admin.toppings.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Quay lại
-                        </a>
+
+<main class="container">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-extrabold mb-1">Chỉnh sửa Topping</h1>
+            <p class="text-gray-500">Cập nhật thông tin topping: {{ $topping->name }}</p>
+        </div>
+        <a href="{{ route('admin.toppings.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Quay lại
+        </a>
+    </div>
+
+    <form id="edit-topping-form" class="space-y-8" action="{{ route('admin.toppings.update', $topping->id) }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        @method('PUT')
+
+        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900">Thông tin cơ bản</h2>
+                    <p class="text-gray-500 text-sm mt-1">Cập nhật thông tin cơ bản của topping</p>
+                </div>
+            </header>
+
+            <div class="px-6 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-5 md:col-span-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700">Tên Topping <span class="text-red-500">*</span></label>
+                            <input type="text" id="name" name="name" placeholder="Nhập tên topping"
+                                value="{{ old('name', $topping->name) }}"
+                                class="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-500 @enderror" />
+                            @error('name')
+                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="price" class="block text-sm font-medium text-gray-700">Giá <span class="text-red-500">*</span></label>
+                            <div class="relative mt-1">
+                                <input type="number" id="price" name="price" min="0" step="1000"
+                                    placeholder="0" value="{{ old('price', $topping->price) }}"
+                                    class="block w-full px-4 py-3 pr-12 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('price') border-red-500 @enderror" />
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 sm:text-sm">VNĐ</span>
+                                </div>
+                            </div>
+                            @error('price')
+                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Mô tả</label>
+                        <textarea id="description" name="description" rows="4"
+                            placeholder="Nhập mô tả topping"
+                            class="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('description') border-red-500 @enderror">{{ old('description', $topping->description) }}</textarea>
+                        @error('description')
+                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <span class="block text-sm font-medium text-gray-700">Trạng thái</span>
+                        <div class="mt-2 space-y-2">
+                            <label class="inline-flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="status" value="active"
+                                    {{ old('status', $topping->active ? 'active' : 'inactive') == 'active' ? 'checked' : '' }}
+                                    class="form-radio text-blue-600" />
+                                <span>Đang bán</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="status" value="inactive"
+                                    {{ old('status', $topping->active ? 'active' : 'inactive') == 'inactive' ? 'checked' : '' }}
+                                    class="form-radio text-yellow-600" />
+                                <span>Tạm ngưng</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="status" value="discontinued"
+                                    {{ old('status', $topping->active ? 'active' : 'inactive') == 'discontinued' ? 'checked' : '' }}
+                                    class="form-radio text-red-600" />
+                                <span>Chưa bán nữa</span>
+                            </label>
+                            <p class="text-xs text-gray-500 mt-1">Chọn trạng thái hiển thị của topping</p>
+                        </div>
                     </div>
                 </div>
 
-                <form action="{{ route('admin.toppings.update', $topping) }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- Tên topping -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="name">Tên Topping <span class="text-danger">*</span></label>
-                                    <input type="text" 
-                                           class="form-control @error('name') is-invalid @enderror" 
-                                           id="name" 
-                                           name="name" 
-                                           value="{{ old('name', $topping->name) }}" 
-                                           placeholder="Nhập tên topping"
-                                           required>
-                                    @error('name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hình ảnh topping</label>
+                        @error('image')
+                            <div class="text-red-500 text-xs mb-2">{{ $message }}</div>
+                        @enderror
+                        <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
+                            <div id="image-placeholder"
+                                class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
+                                <div id="image-preview" class="absolute inset-0 w-full h-full {{ $topping->image ? '' : 'hidden' }}">
+                                    <img id="preview-img" src="{{ $topping->image ? Storage::disk('s3')->url($topping->image) : '' }}" alt="Image preview"
+                                        class="w-full h-full object-cover" />
                                 </div>
-                            </div>
-
-                            <!-- Giá -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="price">Giá <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="number" 
-                                               class="form-control @error('price') is-invalid @enderror" 
-                                               id="price" 
-                                               name="price" 
-                                               value="{{ old('price', $topping->price) }}" 
-                                               placeholder="0"
-                                               min="0"
-                                               step="1000"
-                                               required>
-                                        <div class="input-group-append">
-                                            <span class="input-group-text">VNĐ</span>
-                                        </div>
-                                        @error('price')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                                <div id="upload-content" class="flex flex-col items-center justify-center {{ $topping->image ? 'hidden' : '' }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        class="stroke-current text-gray-400 mb-3" width="48"
+                                        height="48" fill="none" stroke-width="1.5"
+                                        stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" />
+                                        <line x1="12" y1="3" x2="12" y2="15" />
+                                    </svg>
+                                    <p class="text-base text-gray-600 mb-2">Kéo thả ảnh vào đây</p>
+                                    <p class="text-sm text-gray-500 mb-4">hoặc</p>
+                                    <button type="button" id="select-image-btn"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Chọn
+                                        ảnh</button>
+                                    <p class="text-xs text-gray-500 mt-3">Hỗ trợ: JPG, PNG, GIF (Tối đa 2MB)
+                                    </p>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Mô tả -->
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label for="description">Mô tả</label>
-                                    <textarea class="form-control @error('description') is-invalid @enderror" 
-                                              id="description" 
-                                              name="description" 
-                                              rows="3" 
-                                              placeholder="Nhập mô tả topping">{{ old('description', $topping->description) }}</textarea>
-                                    @error('description')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Hình ảnh hiện tại -->
-                            <div class="col-md-6">
-                                @if($topping->image)
-                                    <div class="form-group">
-                                        <label>Hình ảnh hiện tại</label>
-                                        <div class="current-image">
-                                            <img src="{{ asset('storage/' . $topping->image) }}" 
-                                                 alt="{{ $topping->name }}" 
-                                                 class="img-thumbnail" 
-                                                 style="max-width: 200px; max-height: 200px;">
-                                            <div class="mt-2">
-                                                <label class="custom-control custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" name="remove_image" value="1">
-                                                    <span class="custom-control-label">Xóa hình ảnh này</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endif
-
-                                <!-- Upload hình ảnh mới -->
-                                <div class="form-group">
-                                    <label for="image">{{ $topping->image ? 'Thay đổi hình ảnh' : 'Hình ảnh' }}</label>
-                                    <div class="custom-file">
-                                        <input type="file" 
-                                               class="custom-file-input @error('image') is-invalid @enderror" 
-                                               id="image" 
-                                               name="image" 
-                                               accept="image/*">
-                                        <label class="custom-file-label" for="image">Chọn hình ảnh...</label>
-                                        @error('image')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        Chấp nhận: JPG, PNG, GIF. Kích thước tối đa: 2MB
-                                    </small>
-                                </div>
-                                
-                                <!-- Preview image -->
-                                <div id="image-preview" class="mt-2" style="display: none;">
-                                    <img id="preview-img" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
-                                </div>
-                            </div>
-
-                            <!-- Trạng thái -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Trạng thái</label>
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" 
-                                               class="custom-control-input" 
-                                               id="active" 
-                                               name="active" 
-                                               value="1" 
-                                               {{ old('active', $topping->active) ? 'checked' : '' }}>
-                                        <label class="custom-control-label" for="active">
-                                            Kích hoạt
-                                        </label>
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        Topping sẽ hiển thị cho khách hàng khi được kích hoạt
-                                    </small>
-                                </div>
-
-                                <!-- Thông tin bổ sung -->
-                                <div class="form-group">
-                                    <label>Thông tin</label>
-                                    <div class="info-box">
-                                        <small class="text-muted">
-                                            <strong>Ngày tạo:</strong> {{ $topping->created_at->format('d/m/Y H:i') }}<br>
-                                            <strong>Cập nhật:</strong> {{ $topping->updated_at->format('d/m/Y H:i') }}
-                                        </small>
-                                    </div>
-                                </div>
+                                <input type="file" id="image-upload" name="image"
+                                    accept="image/*" class="hidden" />
                             </div>
                         </div>
                     </div>
-
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Cập nhật Topping
-                        </button>
-                        <a href="{{ route('admin.toppings.index') }}" class="btn btn-secondary ml-2">
-                            <i class="fas fa-times"></i> Hủy
-                        </a>
-                        <button type="button" class="btn btn-danger ml-auto" data-toggle="modal" data-target="#deleteModal">
-                            <i class="fas fa-trash"></i> Xóa Topping
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
-    </div>
-</div>
+        </section>
 
-<!-- Delete Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Xác nhận xóa</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+        <div class="flex items-center justify-between">
+            <a href="{{ route('admin.toppings.stock', $topping->id) }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                <i class="fas fa-boxes mr-2"></i>Quản lý tồn kho
+            </a>
+            <div class="flex items-center space-x-4">
+                <a href="{{ route('admin.toppings.index') }}" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Hủy
+                </a>
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>Cập nhật Topping
                 </button>
             </div>
-            <div class="modal-body">
-                Bạn có chắc chắn muốn xóa topping "{{ $topping->name }}"? Hành động này không thể hoàn tác.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                <form action="{{ route('admin.toppings.destroy', $topping) }}" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">Xóa</button>
-                </form>
-            </div>
         </div>
-    </div>
-</div>
+    </form>
+</main>
 @endsection
 
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Custom file input label
-    $('.custom-file-input').on('change', function() {
-        let fileName = $(this).val().split('\\').pop();
-        $(this).next('.custom-file-label').addClass('selected').html(fileName);
-        
-        // Preview image
-        if (this.files && this.files[0]) {
-            let reader = new FileReader();
+    const imageUpload = $('#image-upload');
+    const imagePlaceholder = $('#image-placeholder');
+    const imagePreview = $('#image-preview');
+    const previewImg = $('#preview-img');
+    const uploadContent = $('#upload-content');
+    const selectImageBtn = $('#select-image-btn');
+
+    // Handle file selection button click
+    selectImageBtn.on('click', function(e) {
+        e.preventDefault();
+        imageUpload.click();
+    });
+
+    // Handle file input change
+    imageUpload.on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
             reader.onload = function(e) {
-                $('#preview-img').attr('src', e.target.result);
-                $('#image-preview').show();
+                previewImg.attr('src', e.target.result);
+                imagePreview.removeClass('hidden');
+                uploadContent.addClass('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // If no file selected, show existing image or upload content
+            const existingImage = '{{ $topping->image ? Storage::disk("s3")->url($topping->image) : "" }}';
+            if (existingImage) {
+                previewImg.attr('src', existingImage);
+                imagePreview.removeClass('hidden');
+                uploadContent.addClass('hidden');
+            } else {
+                imagePreview.addClass('hidden');
+                uploadContent.removeClass('hidden');
             }
-            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    // Handle drag and drop
+    imagePlaceholder.on('dragover', function(e) {
+        e.preventDefault();
+        $(this).addClass('border-blue-400 bg-blue-50');
+    });
+
+    imagePlaceholder.on('dragleave', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-blue-400 bg-blue-50');
+    });
+
+    imagePlaceholder.on('drop', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-blue-400 bg-blue-50');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                imageUpload[0].files = files;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.attr('src', e.target.result);
+                    imagePreview.removeClass('hidden');
+                    uploadContent.addClass('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    });
+
+    // Handle click on placeholder to select file
+    imagePlaceholder.on('click', function(e) {
+        if (e.target === this || $(e.target).closest('#upload-content').length || $(e.target).closest('#image-preview').length) {
+            imageUpload.click();
         }
     });
 
@@ -231,29 +236,4 @@ $(document).ready(function() {
     });
 });
 </script>
-@endpush
-
-@push('styles')
-<style>
-.custom-file-label.selected {
-    color: #495057;
-}
-
-.img-thumbnail {
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-    padding: 0.25rem;
-}
-
-.info-box {
-    background-color: #f8f9fa;
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #e9ecef;
-}
-
-.current-image {
-    text-align: center;
-}
-</style>
 @endpush

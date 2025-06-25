@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('toppings', function (Blueprint $table) {
             $table->id();
+            $table->string('sku')->unique()->nullable();
+            
             $table->string('name');
             $table->decimal('price', 12, 2);
             $table->boolean('active')->default(true);
@@ -20,6 +22,8 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->string('description')->nullable();
 
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
 

@@ -56,7 +56,8 @@ class ProductController extends Controller
                 if ($selectedBranchId) {
                     $query->where('branch_id', $selectedBranchId);
                 }
-            }
+            },
+            'variants.variantValues'
         ])
         ->where('status', 'selling');
         
@@ -97,10 +98,12 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
 
-        $products = $query->paginate(12);
+        $products = $query->paginate(15);
         
         // Lấy danh sách mã giảm giá đang hoạt động
         $now = Carbon::now();
+        $currentDayOfWeek = $now->dayOfWeekIso;
+        $currentTime = $now->format('H:i:s');
         $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
             ->where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
@@ -131,7 +134,42 @@ class ProductController extends Controller
         $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
-            ->get();
+            ->get()
+            // Filter theo ngày trong tuần và giờ hợp lệ
+            ->filter(function($discountCode) use ($currentTime) {
+                // Kiểm tra giờ hợp lệ
+                if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                    $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                    $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                    if ($from < $to) {
+                        // Khoảng thời gian trong cùng 1 ngày
+                        if (!($currentTime >= $from && $currentTime <= $to)) {
+                            return false;
+                        }
+                    } else {
+                        // Khoảng thời gian qua đêm (ví dụ: 22:00 - 02:00)
+                        if (!($currentTime >= $from || $currentTime <= $to)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+            
+        // Log discount codes for debugging
+        \Illuminate\Support\Facades\Log::debug('Active Discount Codes in index page:', [
+            'total_codes' => $activeDiscountCodes->count(),
+            'public_codes' => $activeDiscountCodes->where('usage_type', 'public')->count(),
+            'personal_codes' => $activeDiscountCodes->where('usage_type', 'personal')->count(),
+            'codes' => $activeDiscountCodes->map(function($code) {
+                return [
+                    'id' => $code->id,
+                    'code' => $code->code,
+                    'usage_type' => $code->usage_type,
+                    'applicable_scope' => $code->applicable_scope,
+                ];
+            })
+        ]);
             
         // Obtener favoritos del usuario
         $favorites = [];
@@ -191,26 +229,63 @@ class ProductController extends Controller
                                         ->first();
             }
             
-            // Lấy các mã giảm giá áp dụng cho sản phẩm này
-            $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
-                // Kiểm tra scope của mã giảm giá
-                if ($discountCode->applicable_scope === 'all') {
-                    return true; // Áp dụng cho tất cả sản phẩm
+            // Tính giá thấp nhất bao gồm cả biến thể
+            $product->min_price = $product->base_price;
+            $product->max_price = $product->base_price;
+            
+            if ($product->variants && $product->variants->count() > 0) {
+                $variantPrices = [];
+                
+                foreach ($product->variants as $variant) {
+                    // Tính giá của biến thể này
+                    $variantPrice = $product->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
                 }
                 
+                if (!empty($variantPrices)) {
+                    $product->min_price = min($variantPrices);
+                    $product->max_price = max($variantPrices);
+                }
+            }
+            
+            // Lấy các mã giảm giá áp dụng cho sản phẩm này
+            $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
+                // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
+                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                    // Kiểm tra điều kiện tối thiểu nếu có
+                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                        if ($discountCode->min_requirement_type === 'order_amount') {
+                            // Không kiểm tra ở đây, chỉ kiểm tra khi checkout
+                            return true;
+                        } elseif ($discountCode->min_requirement_type === 'product_price') {
+                            // Sử dụng giá thấp nhất để kiểm tra điều kiện
+                            if ($product->min_price < $discountCode->min_requirement_value) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
                 // Kiểm tra áp dụng cụ thể cho sản phẩm
-                return $discountCode->products->contains(function($discountProduct) use ($product) {
+                $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
                     if ($discountProduct->product_id === $product->id) {
                         return true; // Áp dụng trực tiếp cho sản phẩm này
                     }
-                    
                     if ($discountProduct->category_id === $product->category_id) {
                         return true; // Áp dụng cho danh mục của sản phẩm này
                     }
-                    
                     return false;
                 });
-            })->take(2); // Chỉ lấy tối đa 2 mã giảm giá hiển thị
+                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                    if ($product->min_price < $discountCode->min_requirement_value) {
+                        return false;
+                    }
+                }
+                return $applies;
+            });
             
             return $product;
         });
@@ -289,6 +364,8 @@ class ProductController extends Controller
         
         // Lấy danh sách mã giảm giá áp dụng cho sản phẩm này
         $now = Carbon::now();
+        $currentDayOfWeek = $now->dayOfWeekIso; // 1 (Monday) - 7 (Sunday)
+        $currentTime = $now->format('H:i:s');
         $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
             ->where('start_date', '<=', $now)
             ->where('end_date', '>=', $now)
@@ -321,24 +398,55 @@ class ProductController extends Controller
             }])
             ->get();
             
-        $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
-            // Kiểm tra scope của mã giảm giá
-            if ($discountCode->applicable_scope === 'all') {
-                return true; // Áp dụng cho tất cả sản phẩm
-            }
+        // Log discount codes for debugging
+        \Illuminate\Support\Facades\Log::debug('Active Discount Codes in product detail page:', [
+            'product_id' => $product->id,
+            'total_codes' => $activeDiscountCodes->count(),
+            'public_codes' => $activeDiscountCodes->where('usage_type', 'public')->count(),
+            'personal_codes' => $activeDiscountCodes->where('usage_type', 'personal')->count(),
+            'codes' => $activeDiscountCodes->map(function($code) {
+                return [
+                    'id' => $code->id,
+                    'code' => $code->code,
+                    'usage_type' => $code->usage_type,
+                    'applicable_scope' => $code->applicable_scope,
+                ];
+            })
+        ]);
             
+        $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
+            // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
+            if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                // Kiểm tra điều kiện tối thiểu nếu có
+                if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                    if ($discountCode->min_requirement_type === 'order_amount') {
+                        // Không kiểm tra ở đây, chỉ kiểm tra khi checkout
+                        return true;
+                    } elseif ($discountCode->min_requirement_type === 'product_price') {
+                        // Nếu giá sản phẩm nhỏ hơn min_requirement_value thì không áp dụng
+                        if ($product->base_price < $discountCode->min_requirement_value) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
             // Kiểm tra áp dụng cụ thể cho sản phẩm
-            return $discountCode->products->contains(function($discountProduct) use ($product) {
+            $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
                 if ($discountProduct->product_id === $product->id) {
                     return true; // Áp dụng trực tiếp cho sản phẩm này
                 }
-                
                 if ($discountProduct->category_id === $product->category_id) {
                     return true; // Áp dụng cho danh mục của sản phẩm này
                 }
-                
                 return false;
             });
+            if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                if ($product->base_price < $discountCode->min_requirement_value) {
+                    return false;
+                }
+            }
+            return $applies;
         });
 
         // Lấy các variant attributes và values
@@ -362,7 +470,8 @@ class ProductController extends Controller
             },
             'reviews' => function($query) {
                 $query->where('approved', true);
-            }
+            },
+            'variants.variantValues'
         ])
         ->where('category_id', $product->category_id)
         ->where('id', '!=', $product->id)
@@ -378,7 +487,7 @@ class ProductController extends Controller
             });
         }
         
-        $relatedProducts = $relatedProductsQuery->limit(4)->get();
+        $relatedProducts = $relatedProductsQuery->limit(5)->get();
 
         // Thêm thông tin rating cho related products
         $relatedProducts->transform(function ($relatedProduct) use ($activeDiscountCodes) {
@@ -393,32 +502,59 @@ class ProductController extends Controller
                 $relatedProduct->primary_image->s3_url = asset('storage/' . $relatedProduct->primary_image->img);
             }
             
-            // Lấy các mã giảm giá áp dụng cho sản phẩm liên quan
-            $relatedProduct->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($relatedProduct) {
-                // Kiểm tra scope của mã giảm giá
-                if ($discountCode->applicable_scope === 'all') {
-                    return true; // Áp dụng cho tất cả sản phẩm
+            // Tính giá thấp nhất và cao nhất bao gồm cả biến thể
+            $relatedProduct->min_price = $relatedProduct->base_price;
+            $relatedProduct->max_price = $relatedProduct->base_price;
+            
+            if ($relatedProduct->variants && $relatedProduct->variants->count() > 0) {
+                $variantPrices = [];
+                
+                foreach ($relatedProduct->variants as $variant) {
+                    // Tính giá của biến thể này
+                    $variantPrice = $relatedProduct->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
                 }
                 
+                if (!empty($variantPrices)) {
+                    $relatedProduct->min_price = min($variantPrices);
+                    $relatedProduct->max_price = max($variantPrices);
+                }
+            }
+            
+            // Lấy các mã giảm giá áp dụng cho sản phẩm liên quan
+            $relatedProduct->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($relatedProduct) {
+                // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
+                if ($discountCode->applicable_items === 'all_items') {
+                    return true;
+                }
                 // Kiểm tra áp dụng cụ thể cho sản phẩm
                 return $discountCode->products->contains(function($discountProduct) use ($relatedProduct) {
                     if ($discountProduct->product_id === $relatedProduct->id) {
                         return true; // Áp dụng trực tiếp cho sản phẩm này
                     }
-                    
                     if ($discountProduct->category_id === $relatedProduct->category_id) {
                         return true; // Áp dụng cho danh mục của sản phẩm này
                     }
-                    
                     return false;
                 });
-            })->take(2);
+            });
             
             return $relatedProduct;
         });
 
         // Always get all active branches for the modal to display all options
         $branches = Branch::where('active', true)->get();
+
+        // Đánh dấu sản phẩm đã yêu thích cho user hiện tại
+        $product->is_favorite = false;
+        if (Auth::check()) {
+            $product->is_favorite = Favorite::where('user_id', Auth::id())
+                ->where('product_id', $product->id)
+                ->exists();
+        }
 
         return view('customer.shop.show', compact(
             'product',
@@ -450,5 +586,189 @@ class ProductController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Toggle favorite status for a product (AJAX/API)
+     */
+    public function toggleFavorite(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+        ]);
+
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập để sử dụng chức năng này.'], 401);
+        }
+
+        $productId = $request->input('product_id');
+        $favorite = $user->favorites()->where('product_id', $productId)->first();
+        $product = \App\Models\Product::find($productId);
+
+        if ($favorite) {
+            $favorite->delete();
+            $isFavorite = false;
+            // Giảm favorite_count
+            if ($product && $product->favorite_count > 0) {
+                $product->decrement('favorite_count');
+            }
+        } else {
+            $user->favorites()->create(['product_id' => $productId]);
+            $isFavorite = true;
+            // Tăng favorite_count
+            if ($product) {
+                $product->increment('favorite_count');
+            }
+        }
+
+        // Optionally: broadcast event here for real-time update
+        // event(new FavoriteUpdated($user->id, $productId, $isFavorite));
+
+        return response()->json([
+            'success' => true,
+            'is_favorite' => $isFavorite,
+        ]);
+    }
+
+    public function getApplicableDiscounts(Request $request)
+    {
+        $request->validate([
+            'product_ids' => 'required|array',
+            'product_ids.*' => 'integer|exists:products,id',
+            'branch_id' => 'nullable|integer|exists:branches,id'
+        ]);
+
+        $productIds = $request->input('product_ids');
+        $selectedBranchId = $request->input('branch_id');
+
+        // Fallback to session-based service if branch_id is not provided in the request
+        if (!$selectedBranchId) {
+            $currentBranch = $this->branchService->getCurrentBranch();
+            $selectedBranchId = $currentBranch ? $currentBranch->id : null;
+        }
+
+        // 1. Get all active discount codes
+        $now = Carbon::now();
+        $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where(function ($query) use ($selectedBranchId) {
+                if ($selectedBranchId) {
+                    $query->whereDoesntHave('branches')
+                        ->orWhereHas('branches', function ($q) use ($selectedBranchId) {
+                            $q->where('branches.id', $selectedBranchId);
+                        });
+                }
+            });
+
+        $activeDiscountCodesQuery->where(function ($query) {
+            $query->where('usage_type', 'public');
+            if (Auth::check()) {
+                $query->orWhere(function ($q) {
+                    $q->where('usage_type', 'personal')
+                        ->whereHas('users', function ($userQuery) {
+                            $userQuery->where('user_id', Auth::id());
+                        });
+                });
+            }
+        });
+        
+        $allActiveCodesFromDB = $activeDiscountCodesQuery->with(['products:id,product_id,category_id'])->get();
+
+        // Filter by valid time, just like the index() method does.
+        $currentTime = $now->format('H:i:s');
+        $activeDiscountCodes = $allActiveCodesFromDB->filter(function($discountCode) use ($currentTime) {
+            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                if ($from < $to) {
+                    // Same day time range
+                    if (!($currentTime >= $from && $currentTime <= $to)) {
+                        return false;
+                    }
+                } else {
+                    // Overnight time range (e.g., 22:00 - 02:00)
+                    if (!($currentTime >= $from || $currentTime <= $to)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        });
+
+        // 2. Get products with relations needed for price calculation
+        $products = Product::with('variants.variantValues', 'category:id,name')
+            ->whereIn('id', $productIds)
+            ->get();
+
+        // 3. Prepare the response
+        $response = [];
+
+        foreach ($products as $product) {
+            // Calculate min_price and max_price, to match the logic from the index page perfectly
+            $product->min_price = $product->base_price;
+            $product->max_price = $product->base_price;
+            
+            if ($product->variants && $product->variants->count() > 0) {
+                $variantPrices = [];
+                foreach ($product->variants as $variant) {
+                    $variantPrice = $product->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
+                }
+                if (!empty($variantPrices)) {
+                    $product->min_price = min($variantPrices);
+                    $product->max_price = max($variantPrices);
+                }
+            }
+
+            // This filtering logic is copied EXACTLY from the index method to ensure consistency
+            $applicableCodes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
+                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                        if ($discountCode->min_requirement_type === 'order_amount') {
+                            return true;
+                        } elseif ($discountCode->min_requirement_type === 'product_price') {
+                            if ($product->min_price < $discountCode->min_requirement_value) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
+                
+                $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
+                    if ($discountProduct->product_id === $product->id) return true;
+                    if ($discountProduct->category_id === $product->category_id) return true;
+                    return false;
+                });
+
+                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                    if ($product->min_price < $discountCode->min_requirement_value) {
+                        return false;
+                    }
+                }
+                
+                return $applies;
+            });
+
+            $response[$product->id] = [];
+            foreach ($applicableCodes as $code) {
+                $response[$product->id][] = [
+                    'code' => $code->code,
+                    'name' => $code->name,
+                    'discount_type' => $code->discount_type,
+                    'discount_value' => $code->discount_value,
+                    'min_requirement_type' => $code->min_requirement_type,
+                    'min_requirement_value' => $code->min_requirement_value
+                ];
+            }
+        }
+
+        return response()->json($response);
     }
 }

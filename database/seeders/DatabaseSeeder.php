@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             DiscountCodeBranchSeeder::class,
             PromotionBranchSeeder::class,
             DiscountCodeProductSeeder::class,
+            DriverOrderSeeder::class, // Chuyển lên trước DiscountUsageHistorySeeder
             DiscountUsageHistorySeeder::class,
             UserRankHistorySeeder::class,
         ]);

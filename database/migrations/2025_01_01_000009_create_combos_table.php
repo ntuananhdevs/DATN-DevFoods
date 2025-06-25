@@ -13,12 +13,15 @@ return new class extends Migration
     {
         Schema::create('combos', function (Blueprint $table) {
             $table->id();
+            $table->string('sku')->unique();
             $table->string('name');
             $table->string('image')->nullable();
 
             $table->text('description')->nullable();
             $table->decimal('price', 12, 2); // Giá combo ưu đãi
             $table->boolean('active')->default(true);
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
 

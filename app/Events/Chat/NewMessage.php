@@ -5,9 +5,11 @@ namespace App\Events\Chat;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class NewMessage implements ShouldBroadcast
 {
@@ -24,7 +26,18 @@ class NewMessage implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('chat.' . $this->conversationId);
+        $channels = [
+            new Channel('chat.' . $this->conversationId),
+            new PrivateChannel('admin.conversations'),
+        ];
+
+        // Nếu có branch_id thì broadcast cho branch
+        $conversation = $this->message->conversation ?? null;
+        if ($conversation && !empty($conversation->branch_id)) {
+            $channels[] = new PrivateChannel('branch.' . $conversation->branch_id . '.conversations');
+        }
+
+        return $channels;
     }
 
     public function broadcastAs()
@@ -34,6 +47,10 @@ class NewMessage implements ShouldBroadcast
 
     public function broadcastWith()
     {
+        Log::info('[NewMessage] broadcastWith', [
+            'conversationId' => $this->conversationId,
+            'message' => $this->message,
+        ]);
         return [
             'message' => [
                 'id' => $this->message->id,
