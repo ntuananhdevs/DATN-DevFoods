@@ -69,13 +69,30 @@ class ProductController extends Controller
         }
 
         // Filter theo category nếu có
+        $selectedCategoryIds = [];
         if ($request->has('category') && $request->category != '') {
-            $query->where('category_id', $request->category);
+            $catParam = $request->category;
+            if (strpos($catParam, ',') !== false) {
+                $selectedCategoryIds = array_filter(explode(',', $catParam));
+                $query->whereIn('category_id', $selectedCategoryIds);
+            } else {
+                $selectedCategoryIds = [$catParam];
+                $query->where('category_id', $catParam);
+            }
         }
 
-        // Search theo tên sản phẩm
+        // Search theo nhiều trường liên quan đến sản phẩm
         if ($request->has('search') && $request->search != '') {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('sku', 'like', "%$search%")
+                  ->orWhere('short_description', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%")
+                  ->orWhereRaw("JSON_EXTRACT(ingredients, '$[*]') like ?", ["%$search%"])
+                  ->orWhereRaw("CAST(base_price AS CHAR) like ?", ["%$search%"])
+                  ->orWhereRaw("CAST(preparation_time AS CHAR) like ?", ["%$search%"]);
+            });
         }
 
         // Sắp xếp
@@ -288,7 +305,16 @@ class ProductController extends Controller
             return $product;
         });
         
-        return view("customer.shop.index", compact('products', 'categories'));
+        // Nếu là AJAX (lazy load 1 category)
+        if ($request->ajax() || $request->has('ajax')) {
+            $categoryId = $request->get('category');
+            $catProducts = $products->where('category_id', $categoryId);
+            return view('customer.shop._product_grid', [
+                'products' => $catProducts,
+            ])->render();
+        }
+        
+        return view("customer.shop.index", compact('products', 'categories', 'selectedCategoryIds'));
     }
 
     /**

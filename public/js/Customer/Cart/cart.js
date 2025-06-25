@@ -370,6 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (applyButton && couponInput) {
         applyButton.addEventListener('click', function() {
             const couponCode = couponInput.value.trim();
+            const btn = this;
             
             if (couponCode === '') {
                 dtmodalShowToast('warning', {
@@ -378,55 +379,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 return;
             }
-            
-            if (couponCode.toUpperCase() === 'FASTFOOD10') {
-                const subtotalText = document.getElementById('subtotal').textContent;
-                const subtotal = parseInt(subtotalText.replace(/\D/g, ''));
-                const discount = Math.round(subtotal * 0.1);
-                
-                document.getElementById('discount-container').classList.remove('hidden');
-                document.getElementById('discount').textContent = '-' + discount.toLocaleString() + 'đ';
-                
-                updateCartTotals();
-                
-                fetch('/coupon/apply', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.csrfToken},
-                    body: JSON.stringify({
-                        coupon_code: couponCode,
-                        discount: discount
-                    })
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch('/coupon/apply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    coupon_code: couponCode,
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: 'Áp dụng mã giảm giá thành công'
-                        });
-                        const checkoutButton = document.querySelector('a[href*="checkout"]');
-                        const total = parseInt(document.getElementById('total').textContent.replace(/\D/g, ''));
-                        checkoutButton.href = checkoutButton.href + "?discount=" + discount;
-                    } else {
-                        dtmodalShowToast('error', {
-                            title: 'Lỗi',
-                            message: data.message || 'Đã xảy ra lỗi khi áp dụng mã giảm giá'
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error applying coupon:', error);
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    dtmodalShowToast('success', {
+                        title: 'Thành công',
+                        message: data.message
+                    });
+                    
+                    document.getElementById('discount-container').classList.remove('hidden');
+                    document.getElementById('discount').textContent = '-' + data.discount.toLocaleString() + 'đ';
+                    updateCartTotals();
+                } else {
                     dtmodalShowToast('error', {
                         title: 'Lỗi',
-                        message: 'Đã xảy ra lỗi khi áp dụng mã giảm giá'
+                        message: data.message || 'Đã xảy ra lỗi khi áp dụng mã giảm giá'
                     });
+                }
+            })
+            .catch(error => {
+                console.error('Error applying coupon:', error);
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Đã xảy ra lỗi kết nối. Vui lòng thử lại.'
                 });
-            } else {
-                dtmodalShowToast('warning', {
-                    title: 'Cảnh báo',
-                    message: 'Mã giảm giá không hợp lệ'
-                });
-            }
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = 'Áp Dụng';
+            });
         });
     }
 

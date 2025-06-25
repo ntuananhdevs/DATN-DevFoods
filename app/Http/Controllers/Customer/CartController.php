@@ -77,21 +77,65 @@ class CartController extends Controller
         $suggestedProducts = collect();
         $cartProductIds = $cartItems->pluck('variant.product.id')->unique()->toArray();
         $cartCategoryIds = $cartItems->pluck('variant.product.category_id')->unique()->toArray();
+        $cartProducts = $cartItems->map(function($item) {
+            return [
+                'product_id' => $item->variant->product->id,
+                'category_id' => $item->variant->product->category_id
+            ];
+        });
 
-        foreach ($cartCategoryIds as $categoryId) {
-            $product = Product::with(['primaryImage', 'images'])
-                ->where('category_id', $categoryId)
+        $cartCount = $cartProducts->count();
+        $suggestionPlan = [];
+        if ($cartCount == 1) {
+            $suggestionPlan = [4];
+        } elseif ($cartCount == 2) {
+            $suggestionPlan = [2,2];
+        } elseif ($cartCount == 3) {
+            $suggestionPlan = [1,1,2];
+        } elseif ($cartCount >= 4) {
+            $suggestionPlan = array_fill(0, min(4, $cartCount), 1);
+        }
+        $usedProductIds = $cartProductIds;
+        $suggested = collect();
+        foreach ($suggestionPlan as $i => $num) {
+            if (!isset($cartProducts[$i])) break;
+            $catId = $cartProducts[$i]['category_id'];
+            $query = Product::with(['primaryImage', 'images'])
+                ->where('category_id', $catId)
                 ->where('status', 'selling')
-                ->whereNotIn('id', $cartProductIds)
+                ->whereNotIn('id', $usedProductIds)
                 ->whereHas('variants.branchStocks', function($q) {
                     $q->where('stock_quantity', '>', 0);
                 })
                 ->orderByDesc('favorite_count')
-                ->first();
-            if ($product) {
-                $suggestedProducts->push($product);
+                ->limit($num)
+                ->get();
+            foreach ($query as $p) {
+                if (count($suggested) < 4 && !$usedProductIds || !in_array($p->id, $usedProductIds)) {
+                    $suggested->push($p);
+                    $usedProductIds[] = $p->id;
+                }
             }
         }
+        // Nếu chưa đủ 4 sản phẩm, lấy thêm sản phẩm yêu thích nhất ngoài giỏ hàng, không trùng
+        if ($suggested->count() < 4) {
+            $fill = Product::with(['primaryImage', 'images'])
+                ->where('status', 'selling')
+                ->whereNotIn('id', $usedProductIds)
+                ->whereHas('variants.branchStocks', function($q) {
+                    $q->where('stock_quantity', '>', 0);
+                })
+                ->orderByDesc('favorite_count')
+                ->limit(4 - $suggested->count())
+                ->get();
+            foreach ($fill as $p) {
+                if ($suggested->count() < 4 && !in_array($p->id, $usedProductIds)) {
+                    $suggested->push($p);
+                    $usedProductIds[] = $p->id;
+                }
+            }
+        }
+        $suggestedProducts = $suggested;
 
         return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart', 'suggestedProducts'));
     }

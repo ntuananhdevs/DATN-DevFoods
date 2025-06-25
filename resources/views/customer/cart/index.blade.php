@@ -197,37 +197,55 @@
             <div class="mt-12">
                 <h2 class="text-xl font-bold mb-6">Có Thể Bạn Cũng Thích</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    @forelse($suggestedProducts as $product)
-                        @php
-                            $primaryImage = $product->primaryImage ? $product->primaryImage : $product->images->first();
-                            $imgUrl = $primaryImage && $primaryImage->img ? (Storage::disk('s3')->url($primaryImage->img)) : asset('images/default-placeholder.png');
-                            $firstVariant = $product->variants->first();
-                            $branchId = $cart && $cart->branch_id ? $cart->branch_id : 1;
-                        @endphp
-                        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                            <div class="relative h-40">
-                                <img src="{{ $imgUrl }}" alt="{{ $product->name }}" class="object-cover w-full h-full">
-                                @if(isset($product->is_favorite) && $product->is_favorite)
-                                    <span class="absolute top-2 right-2 text-red-500"><i class="fas fa-heart"></i></span>
-                                @endif
-                            </div>
-                            <div class="p-3">
-                                <h3 class="font-medium text-sm mb-1 line-clamp-1">{{ $product->name }}</h3>
-                                <p class="text-orange-500 font-bold text-sm mb-2">{{ number_format($product->base_price) }}đ</p>
-                                <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested"
-                                    data-product-id="{{ $product->id }}"
-                                    data-variant-id="{{ $firstVariant ? $firstVariant->id : '' }}"
-                                    data-branch-id="{{ $branchId }}"
-                                    data-variant-values='@json($firstVariant ? $firstVariant->variantValues->pluck("id") : [])'>
-                                    Thêm vào giỏ
-                                </button>
-                            </div>
-                        </div>
-                    @empty
+                    @if(count($cartItems) == 0)
                         <div class="col-span-4 text-center text-gray-400">Không có sản phẩm gợi ý</div>
-                    @endforelse
+                    @else
+                        @forelse($suggestedProducts as $product)
+                            @php
+                                $primaryImage = $product->primaryImage ? $product->primaryImage : $product->images->first();
+                                $imgUrl = $primaryImage && $primaryImage->img ? (Storage::disk('s3')->url($primaryImage->img)) : asset('images/default-placeholder.png');
+                                $firstVariant = $product->variants->first();
+                                $branchId = $cart && $cart->branch_id ? $cart->branch_id : 1;
+                            @endphp
+                            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                                <div class="relative h-40">
+                                    <img src="{{ $imgUrl }}" alt="{{ $product->name }}" class="object-cover w-full h-full">
+                                    @if(isset($product->is_favorite) && $product->is_favorite)
+                                        <span class="absolute top-2 right-2 text-red-500"><i class="fas fa-heart"></i></span>
+                                    @endif
+                                </div>
+                                <div class="p-3">
+                                    <h3 class="font-medium text-sm mb-1 line-clamp-1">{{ $product->name }}</h3>
+                                    <p class="text-orange-500 font-bold text-sm mb-2">{{ number_format($product->base_price) }}đ</p>
+                                    <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested"
+                                        data-product-id="{{ $product->id }}"
+                                        data-variant-id="{{ $firstVariant ? $firstVariant->id : '' }}"
+                                        data-branch-id="{{ $branchId }}"
+                                        data-variant-values='@json($firstVariant ? $firstVariant->variantValues->pluck("id") : [])'>
+                                        Thêm ngay
+                                    </button>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-span-4 text-center text-gray-400">Không có sản phẩm gợi ý</div>
+                        @endforelse
+                    @endif
                 </div>
             </div>
+            @if(count($cartItems) > 0)
+            @php
+                $cartCategoryIds = collect($cartItems)->map(function($item) {
+                    return $item->variant->product->category_id;
+                })->unique()->implode(',');
+                $categoryUrl = route('products.index') . ($cartCategoryIds ? ('?category=' . $cartCategoryIds) : '');
+            @endphp
+            <div class="mt-4 flex flex-wrap gap-4">
+                <a href="{{ $categoryUrl }}" class="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-md flex items-center transition-colors">
+                    <i class="fas fa-plus h-4 w-4 mr-2"></i>
+                    Xem Thêm
+                </a>
+            </div>
+            @endif
         </div>
 
         <div>

@@ -399,4 +399,112 @@ document.addEventListener('DOMContentLoaded', function() {
             message: message
         });
     }
+
+    // Live search logic
+    const searchInput = document.getElementById('live-search-input');
+    let searchKeyword = '';
+    let debounceTimeout = null;
+    let lastSearch = '';
+    let currentControllers = {};
+    function resetAllBlocks() {
+        document.querySelectorAll('.category-block').forEach((block, idx) => {
+            const productList = block.querySelector('.product-list');
+            productList.innerHTML = '<div class="loading-placeholder text-gray-400 py-8 text-center">Đang tải sản phẩm...</div>';
+            block.style.display = '';
+        });
+        loadedCategories.clear();
+        Object.values(currentControllers).forEach(ctrl => ctrl.abort());
+        currentControllers = {};
+    }
+    function checkShowNoResultMessage() {
+        const blocks = document.querySelectorAll('.category-block');
+        const visibleBlocks = Array.from(blocks).filter(b => b.style.display !== 'none');
+        const noResultDiv = document.getElementById('no-search-result-message');
+        const keywordSpan = document.getElementById('no-search-keyword');
+        if (searchInput && searchInput.value.trim() && visibleBlocks.length === 0) {
+            if (noResultDiv) {
+                noResultDiv.classList.remove('hidden');
+                if (keywordSpan) keywordSpan.textContent = '"' + searchInput.value.trim() + '"';
+            }
+        } else {
+            if (noResultDiv) noResultDiv.classList.add('hidden');
+        }
+    }
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            searchKeyword = this.value.trim();
+            if (debounceTimeout) clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                if (searchKeyword !== lastSearch) {
+                    lastSearch = searchKeyword;
+                    resetAllBlocks();
+                }
+                // Nếu search rỗng, show lại tất cả danh mục và ẩn thông báo
+                if (!searchKeyword) {
+                    document.querySelectorAll('.category-block').forEach(block => {
+                        block.style.display = '';
+                    });
+                    const noResultDiv = document.getElementById('no-search-result-message');
+                    if (noResultDiv) noResultDiv.classList.add('hidden');
+                }
+            }, 200);
+        });
+    }
+    // Lazy load sản phẩm cho từng danh mục khi scroll tới
+    const categoryBlocks = document.querySelectorAll('.category-block');
+    const loadedCategories = new Set();
+    const sortSelect = document.getElementById('sort-select');
+    let currentSort = 'popular';
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            currentSort = this.value;
+            resetAllBlocks();
+        });
+    }
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const block = entry.target;
+                const categoryId = block.getAttribute('data-category-id');
+                if (!loadedCategories.has(categoryId) && block.querySelector('.loading-placeholder')) {
+                    loadedCategories.add(categoryId);
+                    const params = new URLSearchParams();
+                    params.append('category', categoryId);
+                    params.append('ajax', '1');
+                    if (searchInput && searchInput.value.trim()) {
+                        params.append('search', searchInput.value.trim());
+                    }
+                    if (sortSelect && sortSelect.value) {
+                        params.append('sort', sortSelect.value);
+                    }
+                    if (currentControllers[categoryId]) currentControllers[categoryId].abort();
+                    const controller = new AbortController();
+                    currentControllers[categoryId] = controller;
+                    fetch(`/shop/products?${params.toString()}`, { signal: controller.signal })
+                        .then(res => res.text())
+                        .then(html => {
+                            const productList = block.querySelector('.product-list');
+                            productList.innerHTML = html;
+                            delete currentControllers[categoryId];
+                            // Ẩn block nếu không có sản phẩm
+                            const noProduct = productList.textContent.includes('Không có sản phẩm') || productList.textContent.includes('Chúng tôi không thể tìm thấy sản phẩm');
+                            if (noProduct) {
+                                block.style.display = 'none';
+                            } else {
+                                block.style.display = '';
+                            }
+                            checkShowNoResultMessage();
+                        })
+                        .catch(err => {
+                            if (err.name === 'AbortError') return;
+                            const productList = block.querySelector('.product-list');
+                            productList.innerHTML = '<div class="text-red-500">Lỗi tải sản phẩm.</div>';
+                            delete currentControllers[categoryId];
+                            checkShowNoResultMessage();
+                        });
+                }
+            }
+        });
+    }, { threshold: 0.2 });
+    categoryBlocks.forEach(block => observer.observe(block));
 });
