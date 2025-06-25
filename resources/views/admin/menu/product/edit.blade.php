@@ -996,9 +996,13 @@
             
             // Remove attribute value
             if (e.target.classList.contains('remove-attribute-value-btn') || e.target.closest('.remove-attribute-value-btn')) {
-                const valueRow = e.target.closest('.grid');
-                if (valueRow) {
-                    valueRow.remove();
+                // Find the parent div that contains the value inputs
+                let valueContainer = e.target.closest('div');
+                while (valueContainer && !valueContainer.classList.contains('border-dashed')) {
+                    valueContainer = valueContainer.parentElement;
+                }
+                if (valueContainer && valueContainer.classList.contains('border-dashed')) {
+                    valueContainer.remove();
                 }
             }
             

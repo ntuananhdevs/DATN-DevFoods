@@ -285,7 +285,13 @@ class ProductController extends Controller
             $this->handleImages($product, $request, true);
 
             // Update toppings
-            if ($request->has('toppings')) {
+            if ($request->has('selected_toppings')) {
+                $selectedToppings = $request->input('selected_toppings');
+                if (is_string($selectedToppings)) {
+                    $selectedToppings = json_decode($selectedToppings, true) ?: [];
+                }
+                $product->toppings()->sync($selectedToppings);
+            } elseif ($request->has('toppings')) {
                 $product->toppings()->sync($request->input('toppings', []));
             }
 
@@ -531,6 +537,19 @@ class ProductController extends Controller
      * Handle product images
      */
     private function handleImages($product, $request, $isUpdate = false) {
+        // Handle deleted images first
+        if ($isUpdate && $request->has('deleted_images')) {
+            $deletedImageIds = $request->input('deleted_images', []);
+            $imagesToDelete = $product->images()->whereIn('id', $deletedImageIds)->get();
+            
+            foreach ($imagesToDelete as $image) {
+                if ($image->img) {
+                    Storage::disk('s3')->delete($image->img);
+                }
+                $image->delete();
+            }
+        }
+
         if ($request->hasFile('primary_image')) {
             $this->uploadPrimaryImage($product, $request->file('primary_image'), $isUpdate);
         }
