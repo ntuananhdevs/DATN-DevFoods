@@ -31,6 +31,12 @@
                     @error('otp')
                         <div class="text-red-500 text-sm text-center">{{ $message }}</div>
                     @enderror
+                    @if(isset($lockInfo) && $lockInfo)
+                        <div id="otpLockMessage" class="text-red-500 text-sm text-center mb-2">
+                            {{ $lockInfo['type'] === 'lock' ? 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau ' : 'Bạn vừa nhập sai. Vui lòng thử lại sau ' }}
+                            <span id="otpLockCountdown">{{ $lockInfo['seconds'] }}</span> giây.
+                        </div>
+                    @endif
                     
                     <div class="flex justify-center">
                         <div class="flex gap-2" id="otpInputs">
@@ -80,6 +86,11 @@
 @endsection
 
 @section('scripts')
+@if(isset($lockInfo) && $lockInfo)
+<script>
+window.otpLockInfo = @json($lockInfo);
+</script>
+@endif
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const otpInputs = document.querySelectorAll('#otpInputs input');
@@ -210,6 +221,23 @@ document.addEventListener('DOMContentLoaded', function() {
             resendBtn.disabled = false;
         });
     });
+
+    // OTP Lock/Delay UX
+    if (window.otpLockInfo) {
+        let lockSeconds = window.otpLockInfo.seconds;
+        verifyBtn.disabled = true;
+        let otpLockCountdown = document.getElementById('otpLockCountdown');
+        let otpLockMessage = document.getElementById('otpLockMessage');
+        let lockInterval = setInterval(function() {
+            lockSeconds--;
+            if (otpLockCountdown) otpLockCountdown.textContent = lockSeconds;
+            if (lockSeconds <= 0) {
+                clearInterval(lockInterval);
+                verifyBtn.disabled = false;
+                if (otpLockMessage) otpLockMessage.style.display = 'none';
+            }
+        }, 1000);
+    }
 });
 </script>
 @endsection

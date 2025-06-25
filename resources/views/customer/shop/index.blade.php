@@ -506,8 +506,8 @@
                         @endif
                     </div>
 
-                    <div class="flex justify-start items-center">
-                        <div class="flex items-center mr-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
                             <i class="fas fa-star text-yellow-400 text-xs"></i>
                             <span class="commons rating-count ml-1">{{ $product->reviews_count }}</span>
                         </div>

@@ -20,6 +20,7 @@ use App\Http\Controllers\Customer\WishlistController as CustomerWishlistControll
 use App\Http\Middleware\Customer\CartCountMiddleware;
 use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
+use App\Http\Controllers\Customer\Auth\RegisterController;
 
 // API Controllers for Customer
 // use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
@@ -81,13 +82,11 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
 Route::middleware('guest')->group(function () {
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');
     Route::post('/login', [CustomerAuthController::class, 'login'])->name('customer.login.post');
-    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('customer.register');
-    Route::post('/register', [CustomerAuthController::class, 'register'])->name('customer.register.post');
-
-    // OTP
-    Route::get('/verify-otp', [CustomerAuthController::class, 'showOTPForm'])->name('customer.verify.otp.show');
-    Route::post('/verify-otp', [CustomerAuthController::class, 'verifyOTP'])->name('customer.verify.otp.post');
-    Route::post('/resend-otp', [CustomerAuthController::class, 'resendOTP'])->name('customer.resend.otp');
+    Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('customer.register');
+    Route::post('/register-temp', [RegisterController::class, 'registerTemp'])->name('customer.register.post');;
+    Route::get('/verify-otp', [RegisterController::class, 'showOTPForm'])->name('customer.verify.otp.show');
+    Route::post('/verify-otp', [RegisterController::class, 'verifyOtp'])->name('customer.verify.otp.post');
+    Route::post('/resend-otp', [RegisterController::class, 'resendOTP'])->name('customer.resend.otp');
 
     // Forgot password
     Route::get('/forgot-password', [CustomerAuthController::class, 'showForgotPasswordForm'])->name('customer.password.request');
