@@ -435,34 +435,34 @@ class FastFoodSeeder extends Seeder
                 'flavor' => []
             ];
             
-            // Tạo các giá trị size cho sản phẩm
+            // Tạo các giá trị size riêng biệt cho từng sản phẩm
             $sizeValues = $this->getProductSizeValues($product);
             foreach ($sizeValues as $valueData) {
-                $variantValue = VariantValue::firstOrCreate(
-                    [
-                        'variant_attribute_id' => $sizeAttribute->id,
-                        'value' => $valueData['name']
-                    ],
-                    ['price_adjustment' => $valueData['price_adjustment']]
-                );
+                // Tạo VariantValue riêng biệt cho mỗi sản phẩm bằng cách thêm product_id vào value
+                $uniqueValue = $valueData['name'] . ' - ' . $product->name;
+                $variantValue = VariantValue::create([
+                    'variant_attribute_id' => $sizeAttribute->id,
+                    'value' => $uniqueValue,
+                    'price_adjustment' => $valueData['price_adjustment']
+                ]);
                 
                 $this->globalVariantValues[$product->id]['size'][] = $variantValue->id;
-                echo "Created/Found Size Value: {$valueData['name']} (ID: {$variantValue->id}) for {$product->name}\n";
+                echo "Created Size Value: {$uniqueValue} (ID: {$variantValue->id}) for {$product->name}\n";
             }
             
-            // Tạo các giá trị vị cho sản phẩm
+            // Tạo các giá trị vị riêng biệt cho từng sản phẩm
             $flavorValues = $this->getProductFlavorValues($product);
             foreach ($flavorValues as $valueData) {
-                $variantValue = VariantValue::firstOrCreate(
-                    [
-                        'variant_attribute_id' => $flavorAttribute->id,
-                        'value' => $valueData['name']
-                    ],
-                    ['price_adjustment' => $valueData['price_adjustment']]
-                );
+                // Tạo VariantValue riêng biệt cho mỗi sản phẩm bằng cách thêm product_id vào value
+                $uniqueValue = $valueData['name'] . ' - ' . $product->name;
+                $variantValue = VariantValue::create([
+                    'variant_attribute_id' => $flavorAttribute->id,
+                    'value' => $uniqueValue,
+                    'price_adjustment' => $valueData['price_adjustment']
+                ]);
                 
                 $this->globalVariantValues[$product->id]['flavor'][] = $variantValue->id;
-                echo "Created/Found Flavor Value: {$valueData['name']} (ID: {$variantValue->id}) for {$product->name}\n";
+                echo "Created Flavor Value: {$uniqueValue} (ID: {$variantValue->id}) for {$product->name}\n";
             }
         }
     }

@@ -88,10 +88,18 @@ class ToppingStockController extends Controller
     {
         try {
             $request->validate([
-                'stocks' => 'required|array',
-                'stocks.*.branch_id' => 'required|exists:branches,id',
-                'stocks.*.quantity' => 'required|integer|min:0'
+                'stocks' => 'nullable|array',
+                'stocks.*.branch_id' => 'required_with:stocks|exists:branches,id',
+                'stocks.*.quantity' => 'required_with:stocks|integer|min:0'
             ]);
+
+            // Check if stocks data is provided
+            if (!$request->has('stocks') || empty($request->stocks)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không có dữ liệu kho hàng nào được cập nhật'
+                ]);
+            }
 
             DB::beginTransaction();
 
