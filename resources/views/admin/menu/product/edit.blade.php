@@ -388,7 +388,7 @@
                                         @endphp
                                         
                                         @foreach ($values as $valueIndex => $value)
-                                            <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                            <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                                 <!-- Hidden input for VariantValue ID -->
                                                 @if(isset($value['id']))
                                                     <input type="hidden" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][id]" value="{{ $value['id'] }}">
@@ -939,13 +939,106 @@
             return group;
         }
 
+        // Function to reindex all attribute groups after deletion
+        function reindexAttributeGroups() {
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            
+            attributeGroups.forEach((group, groupIndex) => {
+                // Update group title
+                const title = group.querySelector('h3');
+                if (title) {
+                    title.textContent = `Thuộc tính ${groupIndex + 1}`;
+                }
+                
+                // Update attribute name input
+                const nameInput = group.querySelector('input[name*="[name]"]');
+                if (nameInput) {
+                    const newName = `attributes[${groupIndex}][name]`;
+                    const newId = `attribute_name_${groupIndex}`;
+                    nameInput.setAttribute('name', newName);
+                    nameInput.setAttribute('id', newId);
+                    
+                    // Update corresponding label
+                    const label = group.querySelector(`label[for*="attribute_name"]`);
+                    if (label) {
+                        label.setAttribute('for', newId);
+                    }
+                }
+                
+                // Update values container ID
+                const valuesContainer = group.querySelector('[id*="attribute_values_container"]');
+                if (valuesContainer) {
+                    valuesContainer.setAttribute('id', `attribute_values_container_${groupIndex}`);
+                }
+                
+                // Update add value button data-index
+                const addValueBtn = group.querySelector('.add-attribute-value-btn');
+                if (addValueBtn) {
+                    addValueBtn.setAttribute('data-index', groupIndex);
+                }
+                
+                // Reindex all attribute values in this group
+                reindexAttributeValues(group, groupIndex);
+            });
+        }
+        
+        // Function to reindex attribute values after deletion
+        function reindexAttributeValues(attributeGroup, groupIndex = null) {
+            if (groupIndex === null) {
+                groupIndex = Array.from(attributeGroup.parentNode.children).indexOf(attributeGroup);
+            }
+            
+            const valueContainers = attributeGroup.querySelectorAll('.attribute-value-item');
+            
+            valueContainers.forEach((container, valueIndex) => {
+                // Update all input names and IDs
+                const inputs = container.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    
+                    if (name) {
+                        // Update both group index and value index in the name attribute
+                        const newName = name.replace(/attributes\[\d+\]\[values\]\[\d+\]/, `attributes[${groupIndex}][values][${valueIndex}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    
+                    if (id) {
+                        // Update both group index and value index in the id attribute
+                        const newId = id.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        input.setAttribute('id', newId);
+                    }
+                });
+                
+                // Update labels
+                const labels = container.querySelectorAll('label');
+                labels.forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    if (forAttr) {
+                        const newFor = forAttr.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        label.setAttribute('for', newFor);
+                    }
+                });
+                
+                // Update error message divs
+                const errorDivs = container.querySelectorAll('.error-message');
+                errorDivs.forEach(div => {
+                    const id = div.getAttribute('id');
+                    if (id) {
+                        const newId = id.replace(/_(\d+)_values_(\d+)_/, `_${groupIndex}_values_${valueIndex}_`);
+                        div.setAttribute('id', newId);
+                    }
+                });
+            });
+        }
+        
         function addAttributeValue(attributeIndex) {
             const valuesContainer = document.getElementById(`attribute_values_container_${attributeIndex}`);
             const existingValues = valuesContainer.querySelectorAll('.grid');
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
+            valueDiv.classList.add('attribute-value-item', 'grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
                 <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -965,7 +1058,10 @@
             // Add event listener for removing this value
             const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
             removeBtn.addEventListener('click', () => {
-                valueDiv.remove();
+                const valueContainer = removeBtn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    valueContainer.remove();
+                }
             });
             
             valuesContainer.appendChild(valueDiv);
@@ -976,13 +1072,8 @@
             // Remove attribute group
             if (e.target.classList.contains('remove-attribute-btn') || e.target.classList.contains('remove-attribute-group-btn')) {
                 e.target.closest('.attribute-group').remove();
-                // Update attribute group numbers
-                document.querySelectorAll('.attribute-group').forEach((group, index) => {
-                    const title = group.querySelector('h3');
-                    if (title) {
-                        title.textContent = `Thuộc tính ${index + 1}`;
-                    }
-                });
+                // Reindex all remaining attribute groups
+                reindexAttributeGroups();
             }
             
             // Add attribute value
@@ -997,12 +1088,12 @@
             // Remove attribute value
             if (e.target.classList.contains('remove-attribute-value-btn') || e.target.closest('.remove-attribute-value-btn')) {
                 // Find the parent div that contains the value inputs
-                let valueContainer = e.target.closest('div');
-                while (valueContainer && !valueContainer.classList.contains('border-dashed')) {
-                    valueContainer = valueContainer.parentElement;
-                }
-                if (valueContainer && valueContainer.classList.contains('border-dashed')) {
+                const valueContainer = e.target.closest('.attribute-value-item');
+                if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.attribute-group');
                     valueContainer.remove();
+                    // Reindex the remaining attribute values in this group
+                    reindexAttributeValues(attributeGroup);
                 }
             }
             
@@ -1028,7 +1119,10 @@
         // Add event listeners to existing attribute value remove buttons
         document.querySelectorAll('.remove-attribute-value-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                btn.closest('.grid').remove();
+                const valueContainer = btn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    valueContainer.remove();
+                }
             });
         });
 

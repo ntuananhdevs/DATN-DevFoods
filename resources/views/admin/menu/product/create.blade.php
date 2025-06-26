@@ -499,7 +499,7 @@
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                                 <div id="attribute_values_container_0" class="space-y-2">
                                     <!-- Default attribute value -->
-                                    <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                    <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                          <div class="grid grid-cols-2 gap-2">
                                              <div>
                                                  <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -789,7 +789,7 @@
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                         <div id="attribute_values_container_${index}" class="space-y-3">
                             <!-- Default attribute value -->
-                            <div class="grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                            <div class="attribute-value-item grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                 <div>
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
@@ -814,7 +814,7 @@
             const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
             removeAttributeBtn.addEventListener('click', () => {
                 group.remove();
-                updateAttributeNumbers();
+                reindexAttributeGroups();
             });
 
             // Add event listener for adding attribute values
@@ -827,8 +827,12 @@
             const removeValueBtns = group.querySelectorAll('.remove-attribute-value-btn');
             removeValueBtns.forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const valueContainer = e.target.closest('.grid');
-                    valueContainer.remove();
+                    const valueContainer = e.target.closest('.attribute-value-item');
+                    if (valueContainer) {
+                        const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                        valueContainer.remove();
+                        reindexAttributeValues(attributeGroup);
+                    }
                 });
             });
 
@@ -841,7 +845,7 @@
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
+            valueDiv.classList.add('attribute-value-item', 'grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
                 <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -861,19 +865,55 @@
             // Add event listener for removing this value
             const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
             removeBtn.addEventListener('click', () => {
-                valueDiv.remove();
+                const valueContainer = removeBtn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                    valueContainer.remove();
+                    reindexAttributeValues(attributeGroup);
+                }
             });
 
             valuesContainer.appendChild(valueDiv);
         }
 
-        function updateAttributeNumbers() {
+        function reindexAttributeGroups() {
             const attributeGroups = attributesContainer.querySelectorAll('.p-4.border.border-gray-200');
             attributeGroups.forEach((group, index) => {
+                // Update group title
                 const title = group.querySelector('h3');
                 if (title) {
                     title.textContent = `Thuộc tính ${index + 1}`;
                 }
+                
+                // Update attribute name input
+                const nameInput = group.querySelector('input[name*="[name]"]');
+                if (nameInput) {
+                    const currentName = nameInput.getAttribute('name');
+                    const newName = currentName.replace(/attributes\[\d+\]/, `attributes[${index}]`);
+                    nameInput.setAttribute('name', newName);
+                    
+                    const currentId = nameInput.getAttribute('id');
+                    if (currentId) {
+                        const newId = currentId.replace(/attribute_name_\d+/, `attribute_name_${index}`);
+                        nameInput.setAttribute('id', newId);
+                    }
+                }
+                
+                // Update values container ID
+                const valuesContainer = group.querySelector('[id*="attribute_values_container_"]');
+                if (valuesContainer) {
+                    const newId = `attribute_values_container_${index}`;
+                    valuesContainer.setAttribute('id', newId);
+                }
+                
+                // Update add value button data-index
+                const addValueBtn = group.querySelector('.add-attribute-value-btn');
+                if (addValueBtn) {
+                    addValueBtn.setAttribute('data-index', index);
+                }
+                
+                // Reindex all attribute values in this group
+                reindexAttributeValues(group, index);
             });
         }
 
@@ -892,7 +932,7 @@
                 const attributeGroup = existingRemoveBtn.closest('.p-4.border.border-gray-200');
                 if (attributeGroup) {
                     attributeGroup.remove();
-                    updateAttributeNumbers();
+                    reindexAttributeGroups();
                 }
             });
         }
@@ -910,9 +950,11 @@
         const existingRemoveValueBtns = document.querySelectorAll('.remove-attribute-value-btn');
         existingRemoveValueBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const valueContainer = e.target.closest('.grid');
+                const valueContainer = e.target.closest('.attribute-value-item');
                 if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
                     valueContainer.remove();
+                    reindexAttributeValues(attributeGroup);
                 }
             });
         });
@@ -1144,6 +1186,56 @@
 
         // Initial check
         toggleReleaseDate();
+
+        // Function to reindex attribute values after deletion
+        function reindexAttributeValues(attributeGroup, groupIndex = null) {
+            if (groupIndex === null) {
+                groupIndex = Array.from(attributeGroup.parentNode.children).indexOf(attributeGroup);
+            }
+            
+            const valueContainers = attributeGroup.querySelectorAll('.attribute-value-item');
+            
+            valueContainers.forEach((container, valueIndex) => {
+                // Update all input names and IDs
+                const inputs = container.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    
+                    if (name) {
+                        // Update both group index and value index in the name attribute
+                        const newName = name.replace(/attributes\[\d+\]\[values\]\[\d+\]/, `attributes[${groupIndex}][values][${valueIndex}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    
+                    if (id) {
+                        // Update both group index and value index in the id attribute
+                        const newId = id.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        input.setAttribute('id', newId);
+                    }
+                });
+                
+                // Update labels
+                const labels = container.querySelectorAll('label');
+                labels.forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    if (forAttr) {
+                        const newFor = forAttr.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        label.setAttribute('for', newFor);
+                    }
+                });
+                
+                // Update error message divs
+                const errorDivs = container.querySelectorAll('.error-message');
+                errorDivs.forEach(div => {
+                    const id = div.getAttribute('id');
+                    if (id) {
+                        const newId = id.replace(/_(\d+)_values_(\d+)_/, `_${groupIndex}_values_${valueIndex}_`);
+                        div.setAttribute('id', newId);
+                    }
+                });
+            });
+        }
     });
 </script>
 

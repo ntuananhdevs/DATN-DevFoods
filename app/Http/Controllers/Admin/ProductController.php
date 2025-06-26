@@ -295,6 +295,9 @@ class ProductController extends Controller
                 $product->toppings()->sync($request->input('toppings', []));
             }
 
+            // Remove deleted attribute values
+            $this->removeDeletedAttributeValues($currentAttributes, $newAttributes);
+            
             // Update existing variant values (for renames)
             $this->updateVariantValues($currentAttributes, $newAttributes);
             
@@ -762,13 +765,26 @@ class ProductController extends Controller
             foreach ($variant->productVariantDetails as $detail) {
                 $attrName = $detail->variantValue->attribute->name;
                 $value = $detail->variantValue->value;
+                $valueId = $detail->variantValue->id;
                 
                 if (!isset($attributes[$attrName])) {
                     $attributes[$attrName] = [];
                 }
                 
-                if (!in_array($value, $attributes[$attrName])) {
-                    $attributes[$attrName][] = $value;
+                // Check if this value already exists to avoid duplicates
+                $exists = false;
+                foreach ($attributes[$attrName] as $existingValue) {
+                    if (is_array($existingValue) && $existingValue['id'] == $valueId) {
+                        $exists = true;
+                        break;
+                    }
+                }
+                
+                if (!$exists) {
+                    $attributes[$attrName][] = [
+                        'id' => $valueId,
+                        'value' => $value
+                    ];
                 }
             }
         }
@@ -780,6 +796,14 @@ class ProductController extends Controller
      * Check if attributes have changed (only for new attributes/values, not renames)
      */
     private function attributesChanged($currentAttributes, $newAttributes) {
+        // Convert current attributes to simple format for comparison
+        $currentAttributesFormatted = [];
+        foreach ($currentAttributes as $name => $values) {
+            $currentAttributesFormatted[$name] = array_map(function($v) { 
+                return is_array($v) ? $v['value'] : $v; 
+            }, $values);
+        }
+        
         // Convert new attributes to same format
         $newAttributesFormatted = [];
         foreach ($newAttributes as $attr) {
@@ -791,18 +815,18 @@ class ProductController extends Controller
         
         // Check if new attributes are added
         foreach ($newAttributesFormatted as $name => $values) {
-            if (!isset($currentAttributes[$name])) {
+            if (!isset($currentAttributesFormatted[$name])) {
                 return true; // New attribute added
             }
             
             // Check if the number of values increased (indicating new values)
-            if (count($values) > count($currentAttributes[$name])) {
+            if (count($values) > count($currentAttributesFormatted[$name])) {
                 return true; // New values added
             }
         }
         
         // Check if any new attributes exist that weren't in current
-        if (count($newAttributesFormatted) > count($currentAttributes)) {
+        if (count($newAttributesFormatted) > count($currentAttributesFormatted)) {
             return true; // New attributes added
         }
         
@@ -829,6 +853,55 @@ class ProductController extends Controller
         return $branchStocks;
     }
 
+    /**
+     * Remove deleted attribute values
+     */
+    private function removeDeletedAttributeValues($currentAttributes, $newAttributes) {
+        // Get all current variant value IDs
+        $currentValueIds = [];
+        foreach ($currentAttributes as $attributeName => $values) {
+            foreach ($values as $value) {
+                if (isset($value['id'])) {
+                    $currentValueIds[] = $value['id'];
+                }
+            }
+        }
+        
+        // Get all new variant value IDs from the form
+        $newValueIds = [];
+        foreach ($newAttributes as $attr) {
+            if (empty($attr['name']) || empty($attr['values'])) {
+                continue;
+            }
+            
+            foreach ($attr['values'] as $valueData) {
+                if (isset($valueData['id'])) {
+                    $newValueIds[] = $valueData['id'];
+                }
+            }
+        }
+        
+        // Find IDs that exist in current but not in new (these should be deleted)
+        $idsToDelete = array_diff($currentValueIds, $newValueIds);
+        
+        if (!empty($idsToDelete)) {
+            // Delete variant values and their related data
+            \App\Models\VariantValue::whereIn('id', $idsToDelete)->delete();
+            
+            // Also delete related product variant details
+            \App\Models\ProductVariantDetail::whereIn('variant_value_id', $idsToDelete)->delete();
+            
+            // Delete product variants that no longer have any variant details
+            $orphanedVariants = \App\Models\ProductVariant::whereDoesntHave('productVariantDetails')->get();
+            foreach ($orphanedVariants as $variant) {
+                // Delete related branch stocks first
+                \App\Models\BranchStock::where('product_variant_id', $variant->id)->delete();
+                // Then delete the variant
+                $variant->delete();
+            }
+        }
+    }
+    
     /**
      * Update variant values (for renames)
      */
