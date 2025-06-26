@@ -33,7 +33,6 @@
 }
 
 @keyframes pulse {
-
     0%,
     100% {
         transform: scale(1);
@@ -68,7 +67,6 @@
 }
 
 @keyframes bounce {
-
     0%,
     20%,
     53%,
@@ -92,7 +90,6 @@
 }
 
 @keyframes ping {
-
     75%,
     100% {
         transform: scale(2);
@@ -110,18 +107,6 @@
 
 .animate-ping {
     animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-}
-
-.typing-dot {
-    animation: bounce 1.4s infinite ease-in-out both;
-}
-
-.typing-dot:nth-child(1) {
-    animation-delay: -0.32s;
-}
-
-.typing-dot:nth-child(2) {
-    animation-delay: -0.16s;
 }
 
 .chat-popup {

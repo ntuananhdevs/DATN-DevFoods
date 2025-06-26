@@ -6,6 +6,243 @@
 
 @section('page-style-prd-edit')
     <link rel="stylesheet" href="{{ asset('css/admin/product.css') }}">
+    <style>
+        /* Topping Selection Styles */
+        .topping-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .topping-card:hover {
+            border-color: #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .topping-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .topping-card.selected:hover {
+            border-color: #2563eb;
+        }
+        
+        .topping-checkbox {
+            transform: scale(1.2);
+        }
+        
+        .topping-image img {
+            object-fit: cover;
+        }
+        
+        #toppings-list .col-md-6 {
+            margin-bottom: 1rem;
+        }
+
+        /* Modal Styles */
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+
+        /* Line clamp utilities */
+        .line-clamp-1 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 1;
+        }
+        
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        
+        /* Aspect ratio utility */
+        .aspect-square {
+            aspect-ratio: 1 / 1;
+        }
+        
+        /* Topping grid item styles */
+        .topping-item {
+            min-height: 180px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        
+        .topping-item:hover {
+            transform: translateY(-2px);
+            border-color: #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .topping-item.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .selection-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .topping-item.selected .selection-indicator {
+            opacity: 1;
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .topping-item:hover .selection-indicator {
+            opacity: 1;
+        }
+        
+        /* No image placeholder */
+        .no-image-placeholder {
+            background-color: #F3F4F6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .no-image-placeholder i {
+            color: #9CA3AF;
+            font-size: 1.5rem;
+        }
+
+        /* Topping Tags Styles */
+        .topping-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #3b82f6;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .topping-tag:hover {
+            background-color: #2563eb;
+        }
+
+        .topping-tag .remove-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .topping-tag .remove-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .topping-tag .remove-btn i {
+            font-size: 10px;
+        }
+
+        /* Modal Animation */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .modal-exit {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .modal-exit-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        /* Line clamp utility */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Enhanced topping card styles */
+        .topping-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .topping-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 197, 253, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .topping-card.selected::before {
+            opacity: 1;
+        }
+
+        .topping-card:hover::before {
+            opacity: 0.5;
+        }
+
+        /* Search input improvements */
+        #topping-search {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>');
+            background-repeat: no-repeat;
+            background-position: 12px center;
+            background-size: 16px 16px;
+            padding-left: 40px;
+        }
+
+        #topping-search:focus {
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%233b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>');
+            outline: none;
+            box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5);
+            border-color: #3b82f6;
+        }
+    </style>
 @endsection
 
 <main class="container">
@@ -30,7 +267,7 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm"
                             value="{{ old('name') }}"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-500 @enderror" />
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-500 @enderror" />
                         @error('name')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -41,7 +278,7 @@
                             <label for="category_id" class="block text-sm font-medium text-gray-700">Danh mục <span
                                     class="text-red-500">*</span></label>
                             <select id="category_id" name="category_id"
-                                class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('category_id') border-red-500 @enderror">
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white sm:text-sm @error('category_id') border-red-500 @enderror">
                                 <option value="">Chọn danh mục</option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
@@ -59,7 +296,7 @@
                             <div class="relative mt-1">
                                 <input type="number" id="base_price" name="base_price" min="0" step="0.01"
                                     placeholder="0" value="{{ old('base_price') }}"
-                                    class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('base_price') border-red-500 @enderror" />
+                                    class="block w-full pl-7 rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('base_price') border-red-500 @enderror" />
                             </div>
                             @error('base_price')
                                 <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
@@ -74,7 +311,7 @@
                                 class="text-red-500">*</span></label>
                             <input type="number" id="preparation_time" name="preparation_time" min="0"
                                 placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time') }}"
-                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('preparation_time') border-red-500 @enderror" />
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('preparation_time') border-red-500 @enderror" />
                             @error('preparation_time')
                                 <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                             @enderror
@@ -86,7 +323,7 @@
                             <span class="text-red-500">*</span></label>
                         <textarea id="ingredients" name="ingredients" rows="3"
                             placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -97,7 +334,7 @@
                             <span class="text-red-500">*</span></label>
                         </label>
                         <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" 
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('short_description') border-red-500 @enderror">{{ old('short_description') }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('short_description') border-red-500 @enderror">{{ old('short_description') }}</textarea>
                         @error('short_description')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -106,7 +343,7 @@
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
                         <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
                         @error('description')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -172,7 +409,6 @@
                         <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
                             <!-- Primary Image -->
                             <div class="md:col-span-1">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
                                 <div class="border border-gray-200 rounded-md bg-white overflow-hidden">
                                     <div id="image-placeholder"
                                         class="w-full h-80 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 cursor-pointer transition-all relative">
@@ -247,39 +483,44 @@
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="text-md font-semibold text-gray-800">Thuộc tính 1</h3>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Cột trái: Tên thuộc tính (chiếm 1 phần) -->
+                            <div class="md:col-span-1">
                                 <label for="attribute_name_0" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                                 <input type="text" id="attribute_name_0" name="attributes[0][name]" placeholder="VD: Kích thước"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ old('attributes.0.name') }}">
+                                    class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ old('attributes.0.name') }}">
                                 @error('attributes.0.name')
                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
-                            <div class="col-span-2">
+                            
+                            <!-- Cột phải: Giá trị thuộc tính (chiếm 2 phần) -->
+                            <div class="md:col-span-2">
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
-                                <div id="attribute_values_container_0" class="space-y-3">
+                                <div id="attribute_values_container_0" class="space-y-2">
                                     <!-- Default attribute value -->
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
-                                        <div class="md:col-span-2">
-                                            <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
-                                            <input type="text" id="attribute_value_0_0" name="attributes[0][values][0][value]" placeholder="VD: Nhỏ"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.value') }}">
-                                            @error('attributes.0.values.0.value')
-                                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                        <div>
-                                            <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                            <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
-                                            @error('attributes.0.values.0.price_adjustment')
-                                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                         <div class="grid grid-cols-2 gap-2">
+                                             <div>
+                                                 <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                                                 <input type="text" id="attribute_value_0_0" name="attributes[0][values][0][value]" placeholder="VD: Nhỏ"
+                                     class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.value') }}">
+                                                 @error('attributes.0.values.0.value')
+                                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                 @enderror
+                                             </div>
+                                             <div>
+                                                 <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                                                 <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
+                                     class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
+                                                 @error('attributes.0.values.0.price_adjustment')
+                                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                 @enderror
+                                             </div>
+                                         </div>
+                                     </div>
                                 </div>
-                                <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="0">+ Thêm giá trị</button>
+                                <button type="button" class="add-attribute-value-btn mt-2 text-xs text-blue-600 hover:text-blue-800" data-index="0">+ Thêm giá trị</button>
                             </div>
                         </div>
                     </div>
@@ -300,28 +541,105 @@
             </div>
         </section>
         <!-- Toppings Section -->
-        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <section id="toppings-section" class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <header class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
-                <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+                        <p class="text-gray-500 text-sm mt-1">Chọn các topping có sẵn cho sản phẩm</p>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        Đã chọn: <span id="selected-toppings-count" class="font-semibold text-blue-600">0</span> topping
+                    </div>
+                </div>
             </header>
 
             <div class="px-6 py-6">
-                <div id="toppings-container">
-                    <!-- Topping groups will be added here -->
-                </div>
-                <button type="button" id="add-topping-btn"
+                <!-- Open Modal Button -->
+                <div class="mb-4">
+                    <button type="button" id="open-toppings-modal" 
                     class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16"
-                        fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        viewBox="0 0 24 24">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Thêm topping
-                </button>
+                        <i class="fas fa-plus-circle"></i>
+                        Chọn Toppings
+                    </button>
+                </div>
+
+                <!-- Selected Toppings Display -->
+                <div id="selected-toppings-display" class="space-y-2">
+                    <h4 class="text-sm font-medium text-gray-700">Toppings đã chọn:</h4>
+                    <div id="selected-toppings-tags" class="flex flex-wrap gap-2">
+                        <!-- Selected toppings will be displayed here as tags -->
+                        <div class="text-gray-500 text-sm italic" id="no-toppings-message">
+                            Chưa có topping nào được chọn
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
+
+        <!-- Toppings Modal - Simplified -->
+        <div id="toppings-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <!-- Background overlay -->
+                <div class="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true"></div>
+
+                <!-- Modal panel -->
+                <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+                    <!-- Modal Header -->
+                    <div class="px-6 py-4 border-b">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900" id="modal-title">
+                                Chọn Toppings
+                            </h3>
+                            <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                        <!-- Search -->
+                        <div class="mb-4">
+                            <input type="text" id="topping-search" placeholder="Tìm kiếm topping..." 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <!-- Control buttons -->
+                        <div class="mb-4 flex gap-2">
+                            <button type="button" id="modal-select-all" 
+                                    class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+                                Chọn tất cả
+                            </button>
+                            <button type="button" id="modal-clear-all" 
+                                    class="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">
+                                Bỏ chọn tất cả
+                            </button>
+                        </div>
+
+                        <!-- Toppings Grid -->
+                        <div id="modal-toppings-list" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                            <!-- Toppings will be loaded here -->
+                            <div class="col-span-full text-center py-8 text-gray-500">
+                                Đang tải...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="px-6 py-4 border-t flex justify-end gap-3">
+                        <button type="button" id="cancel-modal" 
+                                class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                            Hủy
+                        </button>
+                        <button type="button" id="confirm-toppings" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Xác nhận (<span id="modal-selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Save Buttons -->
         <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-4 shadow-sm mt-6">
             <button type="button" id="save-draft-btn"
@@ -460,31 +778,31 @@
                     <h3 class="text-md font-semibold text-gray-800">Thuộc tính ${index + 1}</h3>
                     <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-1">
                         <label for="attribute_name_${index}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                         <input type="text" id="attribute_name_${index}" name="attributes[${index}][name]" placeholder="VD: Kích thước"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                         <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_name" style="display: none;"></div>
                     </div>
-                    <div class="col-span-2">
+                    <div class="md:col-span-2">
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                         <div id="attribute_values_container_${index}" class="space-y-3">
                             <!-- Default attribute value -->
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
-                                <div class="md:col-span-2">
+                            <div class="attribute-value-item grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                <div>
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_value" style="display: none;"></div>
                                 </div>
                                 <div>
                                     <label for="attribute_price_${index}_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
                                     <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_price_adjustment" style="display: none;"></div>
                                 </div>
-                                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+                                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
                             </div>
                         </div>
                         <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="${index}">+ Thêm giá trị</button>
@@ -496,7 +814,7 @@
             const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
             removeAttributeBtn.addEventListener('click', () => {
                 group.remove();
-                updateAttributeNumbers();
+                reindexAttributeGroups();
             });
 
             // Add event listener for adding attribute values
@@ -509,8 +827,12 @@
             const removeValueBtns = group.querySelectorAll('.remove-attribute-value-btn');
             removeValueBtns.forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const valueContainer = e.target.closest('.grid');
-                    valueContainer.remove();
+                    const valueContainer = e.target.closest('.attribute-value-item');
+                    if (valueContainer) {
+                        const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                        valueContainer.remove();
+                        reindexAttributeValues(attributeGroup);
+                    }
                 });
             });
 
@@ -523,39 +845,75 @@
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-3', 'p-3', 'border', 'border-dashed', 'border-gray-300', 'rounded-md');
+            valueDiv.classList.add('attribute-value-item', 'grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
-                <div class="md:col-span-2">
+                <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                     <input type="text" id="attribute_value_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][value]" placeholder="VD: Nhỏ"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_value" style="display: none;"></div>
                 </div>
                 <div>
                     <label for="attribute_price_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
                     <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
                     <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_price_adjustment" style="display: none;"></div>
                 </div>
-                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
             `;
 
             // Add event listener for removing this value
             const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
             removeBtn.addEventListener('click', () => {
-                valueDiv.remove();
+                const valueContainer = removeBtn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                    valueContainer.remove();
+                    reindexAttributeValues(attributeGroup);
+                }
             });
 
             valuesContainer.appendChild(valueDiv);
         }
 
-        function updateAttributeNumbers() {
+        function reindexAttributeGroups() {
             const attributeGroups = attributesContainer.querySelectorAll('.p-4.border.border-gray-200');
             attributeGroups.forEach((group, index) => {
+                // Update group title
                 const title = group.querySelector('h3');
                 if (title) {
                     title.textContent = `Thuộc tính ${index + 1}`;
                 }
+                
+                // Update attribute name input
+                const nameInput = group.querySelector('input[name*="[name]"]');
+                if (nameInput) {
+                    const currentName = nameInput.getAttribute('name');
+                    const newName = currentName.replace(/attributes\[\d+\]/, `attributes[${index}]`);
+                    nameInput.setAttribute('name', newName);
+                    
+                    const currentId = nameInput.getAttribute('id');
+                    if (currentId) {
+                        const newId = currentId.replace(/attribute_name_\d+/, `attribute_name_${index}`);
+                        nameInput.setAttribute('id', newId);
+                    }
+                }
+                
+                // Update values container ID
+                const valuesContainer = group.querySelector('[id*="attribute_values_container_"]');
+                if (valuesContainer) {
+                    const newId = `attribute_values_container_${index}`;
+                    valuesContainer.setAttribute('id', newId);
+                }
+                
+                // Update add value button data-index
+                const addValueBtn = group.querySelector('.add-attribute-value-btn');
+                if (addValueBtn) {
+                    addValueBtn.setAttribute('data-index', index);
+                }
+                
+                // Reindex all attribute values in this group
+                reindexAttributeValues(group, index);
             });
         }
 
@@ -574,7 +932,7 @@
                 const attributeGroup = existingRemoveBtn.closest('.p-4.border.border-gray-200');
                 if (attributeGroup) {
                     attributeGroup.remove();
-                    updateAttributeNumbers();
+                    reindexAttributeGroups();
                 }
             });
         }
@@ -592,9 +950,11 @@
         const existingRemoveValueBtns = document.querySelectorAll('.remove-attribute-value-btn');
         existingRemoveValueBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const valueContainer = e.target.closest('.grid');
+                const valueContainer = e.target.closest('.attribute-value-item');
                 if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
                     valueContainer.remove();
+                    reindexAttributeValues(attributeGroup);
                 }
             });
         });
@@ -810,8 +1170,14 @@
         const releaseAtContainer = document.getElementById('release_at_container');
 
         function toggleReleaseDate() {
-            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
-            releaseAtContainer.classList.toggle('hidden', selectedStatus !== 'coming_soon');
+            const selectedStatus = document.querySelector('input[name="status"]:checked');
+            if (selectedStatus) {
+                if (selectedStatus.value === 'coming_soon') {
+                    releaseAtContainer.classList.remove('hidden');
+                } else {
+                    releaseAtContainer.classList.add('hidden');
+                }
+            }
         }
 
         statusInputs.forEach(input => {
@@ -820,6 +1186,60 @@
 
         // Initial check
         toggleReleaseDate();
+
+        // Function to reindex attribute values after deletion
+        function reindexAttributeValues(attributeGroup, groupIndex = null) {
+            if (groupIndex === null) {
+                groupIndex = Array.from(attributeGroup.parentNode.children).indexOf(attributeGroup);
+            }
+            
+            const valueContainers = attributeGroup.querySelectorAll('.attribute-value-item');
+            
+            valueContainers.forEach((container, valueIndex) => {
+                // Update all input names and IDs
+                const inputs = container.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    
+                    if (name) {
+                        // Update both group index and value index in the name attribute
+                        const newName = name.replace(/attributes\[\d+\]\[values\]\[\d+\]/, `attributes[${groupIndex}][values][${valueIndex}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    
+                    if (id) {
+                        // Update both group index and value index in the id attribute
+                        const newId = id.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        input.setAttribute('id', newId);
+                    }
+                });
+                
+                // Update labels
+                const labels = container.querySelectorAll('label');
+                labels.forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    if (forAttr) {
+                        const newFor = forAttr.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        label.setAttribute('for', newFor);
+                    }
+                });
+                
+                // Update error message divs
+                const errorDivs = container.querySelectorAll('.error-message');
+                errorDivs.forEach(div => {
+                    const id = div.getAttribute('id');
+                    if (id) {
+                        const newId = id.replace(/_(\d+)_values_(\d+)_/, `_${groupIndex}_values_${valueIndex}_`);
+                        div.setAttribute('id', newId);
+                    }
+                });
+            });
+        }
     });
 </script>
+
+<!-- Topping Modal Script -->
+<script src="{{ asset('js/admin/topping-modal.js') }}"></script>
+
 @endsection

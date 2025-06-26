@@ -1,4 +1,5 @@
 // Class ChatCommon cho admin chat
+
 class ChatCommon {
     constructor(options) {
         if (!options || !options.conversationId || !options.userId) {
@@ -29,6 +30,66 @@ class ChatCommon {
         });
 
         this.init();
+        this.setupPusherGlobalListeners(); // Lắng nghe Pusher JS thuần cho sidebar
+    }
+
+    setupPusherGlobalListeners() {
+        // Khởi tạo Pusher nếu chưa có
+        if (!window._sidebarPusher) {
+            window._sidebarPusher = new Pusher("6ef607214efab0d72419", {
+                cluster: "ap1",
+                encrypted: true,
+                authEndpoint: "/broadcasting/auth",
+                auth: {
+                    headers: {
+                        "X-CSRF-TOKEN": document.querySelector(
+                            'meta[name="csrf-token"]'
+                        ).content,
+                    },
+                },
+            });
+        }
+        const pusher = window._sidebarPusher;
+        // Admin subscribe channel tổng
+        const adminChannel = pusher.subscribe("private-admin.conversations");
+        adminChannel.bind("conversation.updated", (data) => {
+            if (data.update_type === "created") {
+                // Nếu có last_message thì dùng, không thì tạo message giả từ thông tin conversation
+                let sidebarMsg = data.last_message
+                    ? {
+                          ...data.last_message,
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                      }
+                    : {
+                          conversation_id: data.conversation.id,
+                          status: data.conversation.status,
+                          customer: data.conversation.customer,
+                          branch_id: data.conversation.branch_id,
+                          message: "",
+                          sender: data.conversation.customer
+                              ? {
+                                    full_name:
+                                        data.conversation.customer.full_name,
+                                }
+                              : { full_name: "Khách hàng" },
+                          sender_id: data.conversation.customer
+                              ? data.conversation.customer.id
+                              : "",
+                          created_at: data.conversation.updated_at,
+                      };
+                // Tạo sidebar item mới và prepend vào chat-list
+                const chatItem = this.createSidebarChatItem(sidebarMsg);
+                if (this.chatList)
+                    this.chatList.insertBefore(
+                        chatItem,
+                        this.chatList.firstChild
+                    );
+                this.showNotification("Có cuộc trò chuyện mới!", "info");
+            }
+        });
     }
 
     init() {
@@ -49,11 +110,6 @@ class ChatCommon {
                 if (this.sendBtn) {
                     this.sendBtn.disabled = !this.messageInput.value.trim();
                 }
-                this.sendTypingIndicator(true);
-                if (this.typingTimeout) clearTimeout(this.typingTimeout);
-                this.typingTimeout = setTimeout(() => {
-                    this.sendTypingIndicator(false);
-                }, 2000);
             });
 
             this.messageInput.addEventListener("keypress", (e) => {
@@ -222,10 +278,11 @@ class ChatCommon {
                 }
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
+                this.moveConversationToTop(data.message.conversation_id);
             }
         });
 
-        channel.bind("conversation-updated", (data) => {
+        channel.bind("conversation.updated", (data) => {
             console.log("🔄 Cập nhật cuộc trò chuyện:", data);
             // Nếu là cuộc trò chuyện mới hoặc có last_message thì cập nhật sidebar
             if (data.update_type === "created") {
@@ -256,6 +313,7 @@ class ChatCommon {
                           created_at: data.conversation.updated_at,
                       };
                 this.updateSidebarPreview(sidebarMsg);
+                this.showNotification("Có cuộc trò chuyện mới!", "info");
             } else if (data.last_message) {
                 this.updateSidebarPreview({
                     ...data.last_message,
@@ -267,15 +325,6 @@ class ChatCommon {
             }
             // Cập nhật trạng thái nếu cần
             this.updateConversationStatus(data.conversation.status);
-        });
-
-        channel.bind("UserTyping", (data) => {
-            console.log("[ChatCommon] Nhận event UserTyping:", data);
-            if (data.user_id !== this.userId && data.is_typing) {
-                this.showTypingIndicator(data.user_name);
-            } else {
-                this.hideTypingIndicator();
-            }
         });
     }
 
@@ -430,10 +479,8 @@ class ChatCommon {
                 },
                 body: formData,
             });
-
             console.log("Nhận response từ server");
             const data = await response.json();
-
             if (data.success) {
                 console.log("Gửi tin nhắn thành công");
                 // Hiển thị tin nhắn vừa gửi ngay lập tức
@@ -452,7 +499,6 @@ class ChatCommon {
                     created_at: new Date().toISOString(),
                     conversation_id: this.conversationId,
                 });
-
                 this.scrollToBottom();
             } else {
                 console.error("Lỗi từ server:", data.message);
@@ -518,11 +564,6 @@ class ChatCommon {
     }
 
     handleTyping() {
-        if (!this.isTyping) {
-            this.isTyping = true;
-            this.sendTypingIndicator(true);
-        }
-
         // Clear existing timeout
         if (this.typingTimeout) {
             clearTimeout(this.typingTimeout);
@@ -535,11 +576,6 @@ class ChatCommon {
     }
 
     stopTyping() {
-        if (this.isTyping) {
-            this.isTyping = false;
-            this.sendTypingIndicator(false);
-        }
-
         if (this.typingTimeout) {
             clearTimeout(this.typingTimeout);
             this.typingTimeout = null;
@@ -1101,10 +1137,11 @@ class ChatCommon {
                 }
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
+                this.moveConversationToTop(data.message.conversation_id);
             }
         });
 
-        channel.bind("conversation-updated", (data) => {
+        channel.bind("conversation.updated", (data) => {
             console.log("🔄 Cập nhật cuộc trò chuyện:", data);
             // Nếu là cuộc trò chuyện mới hoặc có last_message thì cập nhật sidebar
             if (data.update_type === "created") {
@@ -1135,6 +1172,7 @@ class ChatCommon {
                           created_at: data.conversation.updated_at,
                       };
                 this.updateSidebarPreview(sidebarMsg);
+                this.showNotification("Có cuộc trò chuyện mới!", "info");
             } else if (data.last_message) {
                 this.updateSidebarPreview({
                     ...data.last_message,
@@ -1146,15 +1184,6 @@ class ChatCommon {
             }
             // Cập nhật trạng thái nếu cần
             this.updateConversationStatus(data.conversation.status);
-        });
-
-        channel.bind("UserTyping", (data) => {
-            console.log("[ChatCommon] Nhận event UserTyping:", data);
-            if (data.user_id !== this.userId && data.is_typing) {
-                this.showTypingIndicator(data.user_name);
-            } else {
-                this.hideTypingIndicator();
-            }
         });
     }
 
@@ -1213,10 +1242,29 @@ class ChatCommon {
         }, 2000);
     }
 
+    moveConversationToTop(conversationId) {
+        const chatItem = document.querySelector(
+            `.chat-item[data-conversation-id="${conversationId}"]`
+        );
+        if (chatItem && this.chatList) {
+            // Xóa chat item khỏi vị trí hiện tại
+            chatItem.remove();
+            // Thêm vào đầu danh sách
+            this.chatList.insertBefore(chatItem, this.chatList.firstChild);
+
+            // Thêm hiệu ứng highlight
+            chatItem.classList.add("highlight-new");
+            setTimeout(() => {
+                chatItem.classList.remove("highlight-new");
+            }, 2000);
+        }
+    }
+
     switchConversation(conversationId, chatItem) {
         console.log("🔄 Chuyển cuộc trò chuyện:", conversationId);
 
         // Cập nhật trạng thái active
+
         document.querySelectorAll(".chat-item").forEach((item) => {
             item.classList.remove("active");
         });
@@ -1240,6 +1288,8 @@ class ChatCommon {
         const infoAvatar = document.getElementById("customer-info-avatar");
         const infoName = document.getElementById("customer-info-name");
         const infoEmail = document.getElementById("customer-info-email");
+        const infoPhone = document.getElementById("customer-info-phone");
+
         const infoBranch = document.getElementById(
             "customer-info-branch-badge"
         );
@@ -1247,6 +1297,8 @@ class ChatCommon {
         if (avatar) avatar.textContent = firstLetter;
         if (name) name.textContent = customerName;
         if (email) email.textContent = customerEmail;
+        if (infoPhone)
+            infoPhone.textContent = "SĐT: " + (customerPhone || "---");
         if (infoAvatar) infoAvatar.textContent = firstLetter;
         if (infoName) infoName.textContent = customerName;
         if (infoEmail) infoEmail.textContent = customerEmail;
@@ -1264,7 +1316,7 @@ class ChatCommon {
         const statusBadge = document.querySelector(".status-badge");
         if (statusBadge) {
             statusBadge.textContent =
-                status === "distributed" || status === "active"
+                status === "distributed"
                     ? "Đã phân phối"
                     : status === "new"
                     ? "Chờ phản hồi"
@@ -1294,6 +1346,33 @@ class ChatCommon {
         }
         this.loadMessages();
         this.setupPusherChannels();
+
+        // Cập nhật trạng thái vào info panel
+        const infoStatus = document.getElementById("customer-info-status");
+        if (infoStatus) {
+            if (status === "distributed" || status === "active") {
+                infoStatus.textContent = "Đã phân phối";
+            } else if (status === "new") {
+                infoStatus.textContent = "Chờ phản hồi";
+            } else if (status === "closed") {
+                infoStatus.textContent = "Đã đóng";
+            } else {
+                infoStatus.textContent = status;
+            }
+        }
+        // Hiển thị/ẩn thành phần phân công
+        const distributionSection = document.getElementById(
+            `distribution-${conversationId}`
+        );
+        if (distributionSection) {
+            if (status === "distributed" || status === "active") {
+                distributionSection.classList.add("active");
+                distributionSection.style.display = "";
+            } else {
+                distributionSection.classList.remove("active");
+                distributionSection.style.display = "none";
+            }
+        }
     }
 
     showDistributionSection(conversationId) {
@@ -1494,7 +1573,7 @@ class ChatCommon {
         const statusBadge = document.querySelector(".status-badge");
         if (statusBadge) {
             statusBadge.textContent =
-                status === "distributed" || status === "active"
+                status === "distributed"
                     ? "Đã phân phối"
                     : status === "new"
                     ? "Chờ phản hồi"
@@ -1515,6 +1594,38 @@ class ChatCommon {
         }
         this.loadMessages();
         this.setupPusherChannels();
+
+        // Cập nhật trạng thái vào info panel
+        const infoStatus = document.getElementById("customer-info-status");
+        if (infoStatus) {
+            if (status === "distributed" || status === "active") {
+                infoStatus.textContent = "Đã phân phối";
+            } else if (status === "new") {
+                infoStatus.textContent = "Chờ phản hồi";
+            } else if (status === "closed") {
+                infoStatus.textContent = "Đã đóng";
+            } else {
+                infoStatus.textContent = status;
+            }
+        }
+        // Hiển thị/ẩn thành phần phân công
+        const distributionSection = document.getElementById(
+            `distribution-${conversationId}`
+        );
+        if (distributionSection) {
+            if (status === "distributed" || status === "active") {
+                distributionSection.classList.add("active");
+                distributionSection.style.display = "";
+            } else {
+                distributionSection.classList.remove("active");
+                distributionSection.style.display = "none";
+            }
+        }
+
+        const customerPhone = chatItem.dataset.customerPhone;
+        const infoPhone = document.getElementById("customer-info-phone");
+        if (infoPhone)
+            infoPhone.textContent = "SĐT: " + (customerPhone || "---");
     }
 
     appendMessage(message) {
@@ -1953,6 +2064,36 @@ class BranchChat {
         });
 
         this.init();
+        this.setupPusherGlobalListeners(); // Lắng nghe Pusher JS thuần cho sidebar
+    }
+
+    setupPusherGlobalListeners() {
+        if (!window._sidebarPusher) {
+            window._sidebarPusher = new Pusher("6ef607214efab0d72419", {
+                cluster: "ap1",
+                encrypted: true,
+                authEndpoint: "/broadcasting/auth",
+                auth: {
+                    headers: {
+                        "X-CSRF-TOKEN": document.querySelector(
+                            'meta[name="csrf-token"]'
+                        ).content,
+                    },
+                },
+            });
+        }
+        const pusher = window._sidebarPusher;
+        const branchId = this.chatContainer?.dataset.branchId || this.userId;
+        const branchChannel = pusher.subscribe(
+            `private-branch.${branchId}.conversations`
+        );
+        branchChannel.bind("new-message", (data) => {
+            console.log("RECEIVED new-message (branch)", data);
+            if (data.message) {
+                this.updateSidebarPreview(data.message);
+                this.moveConversationToTop(data.message.conversation_id);
+            }
+        });
     }
 
     init() {
@@ -1977,17 +2118,13 @@ class BranchChat {
                 if (this.sendBtn) {
                     this.sendBtn.disabled = !this.messageInput.value.trim();
                 }
-                this.sendTypingIndicator(true);
-                if (this.typingTimeout) clearTimeout(this.typingTimeout);
-                this.typingTimeout = setTimeout(() => {
-                    this.sendTypingIndicator(false);
-                }, 2000);
             });
-
             this.messageInput.addEventListener("keypress", (e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    this.sendMessage();
+                    if (this.messageInput.value.trim()) {
+                        this.sendMessage();
+                    }
                 }
             });
         }
@@ -2037,9 +2174,13 @@ class BranchChat {
         channel.bind("new-message", (data) => {
             console.log("[BranchChat] Tin nhắn mới:", data);
             if (data.message) {
+                // Xóa message tạm thời nếu có
+                const tempMsg = this.messageContainer.querySelector(
+                    '[data-message-id^="temp-"]'
+                );
+                if (tempMsg) tempMsg.remove();
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
-
                 // Nếu đang ở cuộc trò chuyện này thì append message ngay lập tức
                 if (
                     String(this.conversationId) ===
@@ -2047,17 +2188,19 @@ class BranchChat {
                 ) {
                     // Kiểm tra xem tin nhắn đã tồn tại chưa
                     const existingMessage = document.querySelector(
-                        `[data-message-id=\"${data.message.id}\"]`
+                        `[data-message-id="${data.message.id}"]`
                     );
                     if (!existingMessage) {
                         this.appendMessage(data.message);
                         this.scrollToBottom();
                     }
                 }
+                this.updateSidebarPreview(data.message);
+                this.moveConversationToTop(data.message.conversation_id);
             }
         });
 
-        channel.bind("conversation-updated", (data) => {
+        channel.bind("conversation.updated", (data) => {
             console.log("[BranchChat] Cập nhật cuộc trò chuyện:", data);
             // Nếu là cuộc trò chuyện mới hoặc có last_message thì cập nhật sidebar
             if (data.update_type === "created") {
@@ -2088,6 +2231,7 @@ class BranchChat {
                           created_at: data.conversation.updated_at,
                       };
                 this.updateSidebarPreview(sidebarMsg);
+                this.showNotification("Có cuộc trò chuyện mới!", "info");
             } else if (data.last_message) {
                 this.updateSidebarPreview({
                     ...data.last_message,
@@ -2099,14 +2243,6 @@ class BranchChat {
             }
             // Cập nhật trạng thái nếu cần
             this.updateConversationStatus(data.conversation.status);
-        });
-
-        channel.bind("UserTyping", (data) => {
-            if (data.user_id !== this.userId && data.is_typing) {
-                this.showTypingIndicator(data.user_name);
-            } else {
-                this.hideTypingIndicator();
-            }
         });
     }
 
@@ -2167,6 +2303,13 @@ class BranchChat {
 
     appendMessage(message) {
         if (!this.messageContainer) return;
+        // Xóa message tạm thời nếu có (khi append message thật)
+        if (message.id && !String(message.id).startsWith("temp-")) {
+            const tempMsg = this.messageContainer.querySelector(
+                '[data-message-id^="temp-"]'
+            );
+            if (tempMsg) tempMsg.remove();
+        }
         const isAdmin = String(message.sender_id) === String(this.userId);
         const senderName =
             message.sender && message.sender.full_name
@@ -2267,6 +2410,19 @@ class BranchChat {
         // Xóa nội dung input sau khi đã lấy giá trị
         this.messageInput.value = "";
         if (this.sendBtn) this.sendBtn.disabled = true;
+        // Hiển thị tin nhắn ngay lập tức nếu là text (không file/ảnh)
+        if (!this.fileInput?.files?.length && !this.imageInput?.files?.length) {
+            const tempId = "temp-" + Date.now();
+            this.appendMessage({
+                id: tempId,
+                message: message,
+                sender_id: this.userId,
+                sender: { full_name: "Nhân viên chi nhánh" },
+                created_at: new Date().toISOString(),
+                isTemp: true,
+            });
+            this.scrollToBottom();
+        }
         try {
             console.log("[BranchChat] Chuẩn bị gửi request...");
             const formData = new FormData();
@@ -2293,7 +2449,21 @@ class BranchChat {
             const data = await response.json();
             if (data.success) {
                 console.log("[BranchChat] Gửi tin nhắn thành công");
-                // KHÔNG appendMessage ở đây nữa, chỉ update preview sidebar
+                // Nếu là gửi file/ảnh thì appendMessage ở đây
+                if (
+                    data.data &&
+                    (this.fileInput?.files?.length ||
+                        this.imageInput?.files?.length)
+                ) {
+                    this.appendMessage({
+                        ...data.data,
+                        sender_id: this.userId,
+                        sender: { full_name: "Nhân viên chi nhánh" },
+                        created_at: new Date().toISOString(),
+                    });
+                    this.scrollToBottom();
+                }
+                // Cập nhật preview sidebar
                 this.updateSidebarPreview({
                     ...data.message,
                     message: message,
@@ -2396,6 +2566,11 @@ class BranchChat {
 
         this.loadMessages();
         this.setupPusherChannels();
+
+        const customerPhone = chatItem.dataset.customerPhone;
+        const infoPhone = document.getElementById("customer-info-phone");
+        if (infoPhone)
+            infoPhone.textContent = "SĐT: " + (customerPhone || "---");
     }
 
     scrollToBottom() {
@@ -2558,46 +2733,6 @@ class BranchChat {
         }
     }
 
-    async sendTypingIndicator(isTyping) {
-        try {
-            await fetch("/branch/chat/typing", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector(
-                        'meta[name="csrf-token"]'
-                    ).content,
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-                body: JSON.stringify({
-                    conversation_id: this.conversationId,
-                    is_typing: isTyping,
-                }),
-            });
-        } catch (e) {
-            console.error("[BranchChat] Lỗi gửi typing:", e);
-        }
-    }
-
-    showTypingIndicator(userName) {
-        let typingDiv = document.getElementById("branch-typing-indicator");
-        if (!typingDiv) {
-            typingDiv = document.createElement("div");
-            typingDiv.id = "branch-typing-indicator";
-            typingDiv.className = "text-xs text-gray-500 px-4 py-2";
-            typingDiv.textContent = `${userName} đang nhập...`;
-            if (this.messageContainer)
-                this.messageContainer.appendChild(typingDiv);
-        } else {
-            typingDiv.textContent = `${userName} đang nhập...`;
-        }
-    }
-
-    hideTypingIndicator() {
-        const typingDiv = document.getElementById("branch-typing-indicator");
-        if (typingDiv) typingDiv.remove();
-    }
-
     // Thêm hàm tạo chat-item cho admin
     createSidebarChatItem(message) {
         const div = document.createElement("div");
@@ -2665,13 +2800,10 @@ class CustomerChatRealtime {
             encrypted: true,
         });
         this.init();
-        this.typingTimeout = null;
-        this.isTyping = false;
     }
 
     init() {
         this.setupPusherChannel();
-        this.setupTypingEvents();
     }
 
     setupPusherChannel() {
@@ -2702,78 +2834,9 @@ class CustomerChatRealtime {
                     this.appendMessage(data.message);
                 }
             });
-            channel.bind("UserTyping", (data) => {
-                console.log(
-                    "[CustomerChatRealtime] Nhận event UserTyping:",
-                    data
-                );
-                if (data.user_id !== this.userId && data.is_typing) {
-                    this.showTypingIndicator(data.user_name);
-                } else {
-                    this.hideTypingIndicator();
-                }
-            });
         } catch (e) {
             console.error("[CustomerChatRealtime] Lỗi khi setup channel:", e);
         }
-    }
-
-    setupTypingEvents() {
-        const messageInput = document.getElementById("messageInput");
-        if (messageInput) {
-            messageInput.addEventListener("input", () => {
-                this.sendTypingIndicator(true);
-                if (this.typingTimeout) clearTimeout(this.typingTimeout);
-                this.typingTimeout = setTimeout(() => {
-                    this.sendTypingIndicator(false);
-                }, 2000);
-            });
-        }
-    }
-
-    async sendTypingIndicator(isTyping) {
-        console.log("[CustomerChatRealtime] Gửi typing:", {
-            conversation_id: this.conversationId,
-            is_typing: isTyping,
-        });
-        try {
-            await fetch("/customer/chat/typing", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document.querySelector(
-                        'meta[name="csrf-token"]'
-                    ).content,
-                    "X-Requested-With": "XMLHttpRequest",
-                },
-                body: JSON.stringify({
-                    conversation_id: this.conversationId,
-                    is_typing: isTyping,
-                }),
-            });
-        } catch (e) {
-            console.error("[CustomerChatRealtime] Lỗi gửi typing:", e);
-        }
-    }
-
-    showTypingIndicator(userName) {
-        let typingDiv = document.getElementById("customer-typing-indicator");
-        if (!typingDiv) {
-            typingDiv = document.createElement("div");
-            typingDiv.id = "customer-typing-indicator";
-            typingDiv.className = "text-xs text-gray-500 px-4 py-2";
-            typingDiv.textContent = `${userName} đang nhập...`;
-            const messagesContainer =
-                document.getElementById("messagesContainer");
-            if (messagesContainer) messagesContainer.appendChild(typingDiv);
-        } else {
-            typingDiv.textContent = `${userName} đang nhập...`;
-        }
-    }
-
-    hideTypingIndicator() {
-        const typingDiv = document.getElementById("customer-typing-indicator");
-        if (typingDiv) typingDiv.remove();
     }
 }
 

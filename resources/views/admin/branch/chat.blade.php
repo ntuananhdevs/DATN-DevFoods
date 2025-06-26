@@ -20,13 +20,15 @@
                          <div class="chat-item-header">
                              <span
                                  class="chat-item-name">{{ $conv->customer->full_name ?? ($conv->customer->name ?? 'Khách hàng') }}</span>
-                             <span
-                                 class="chat-item-time">{{ $conv->messages->last()?->created_at ? $conv->messages->last()->created_at->format('H:i') : '' }}</span>
+
                          </div>
                          <div class="chat-item-preview">
                              {{ $conv->messages->last()?->message ? Str::limit($conv->messages->last()->message, 30) : '...' }}
                          </div>
-                         <div class="chat-item-footer">
+                         <span
+                             class="chat-item-time">{{ $conv->messages->last()?->created_at ? $conv->messages->last()->created_at->format('H:i') : '' }}</span>
+                         <div class="chat-item-footer mt-2">
+
                              <div class="chat-item-badges">
                                  <span
                                      class="badge badge-distributed">{{ strtoupper($conv->status_label ?? 'Đã phân phối') }}</span>

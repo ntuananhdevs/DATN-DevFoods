@@ -43,7 +43,6 @@
                     <div class="flex items-center gap-2 text-sm">
                         <div id="adminStatus" class="w-2 h-2 rounded-full bg-green-400"></div>
                         <span id="adminStatusText">Đang hoạt động</span>
-                        <span id="typingIndicator" class="text-orange-200 hidden">• đang nhập...</span>
                     </div>
                 </div>
             </div>
@@ -222,8 +221,6 @@
         const imageInput = document.getElementById('imageInput');
         const adminStatus = document.getElementById('adminStatus');
         const adminStatusText = document.getElementById('adminStatusText');
-        const typingIndicator = document.getElementById('typingIndicator');
-        const chatBadge = document.getElementById('chatBadge');
         const initialTime = document.getElementById('initialTime');
         const loginRequiredModal = document.getElementById('loginRequiredModal');
 
@@ -231,7 +228,6 @@
         let isChatOpen = false;
         let isFullscreen = false;
         let isAdminOnline = true;
-        let isTyping = false;
         let isChatEnded = false;
         let currentRating = 0;
         let messages = [];
@@ -414,11 +410,28 @@
             const content = messageInput.value.trim();
             if ((!content && !pendingFile && !pendingImage) || isChatEnded) return;
             const formData = new FormData();
+            messageInput.value = '';
             formData.append('conversation_id', conversationId);
             formData.append('message', content);
             if (pendingFile) formData.append('attachment', pendingFile);
             if (pendingImage) formData.append('attachment', pendingImage);
             sendBtn.disabled = true;
+
+            // Hiển thị tin nhắn ngay lập tức nếu là text (không file/image)
+            if (content && !pendingFile && !pendingImage) {
+                const tempId = 'temp-' + Date.now();
+                addMessage({
+                    id: tempId,
+                    content: content,
+                    sender: 'user',
+                    timestamp: new Date(),
+                    type: 'text',
+                    isTemp: true
+                });
+                handleInputChange();
+                autoResizeTextarea();
+            }
+
             fetch('/customer/chat/send', {
                     method: 'POST',
                     headers: {
@@ -429,7 +442,8 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.success && data.data) {
+                    // Nếu là gửi file/ảnh thì addMessage ở đây
+                    if (data.success && data.data && (pendingFile || pendingImage)) {
                         addMessage({
                             id: data.data.id,
                             content: data.data.message,
@@ -446,14 +460,14 @@
                             fileUrl: data.data.attachment_type !== 'image' && data.data.attachment ?
                                 '/storage/' + data.data.attachment : undefined,
                         });
-                        messageInput.value = '';
-                        pendingFile = null;
-                        pendingImage = null;
-                        fileInput.value = '';
-                        imageInput.value = '';
-                        handleInputChange();
-                        autoResizeTextarea();
                     }
+
+                    pendingFile = null;
+                    pendingImage = null;
+                    fileInput.value = '';
+                    imageInput.value = '';
+                    handleInputChange();
+                    autoResizeTextarea();
                 })
                 .finally(() => {
                     sendBtn.disabled = false;
@@ -483,48 +497,6 @@
             handleInputChange();
             hideEmojiPicker();
             messageInput.focus();
-        }
-
-        function showTyping() {
-            isTyping = true;
-            typingIndicator.classList.remove('hidden');
-
-            // Add typing animation
-            const typingDiv = document.createElement('div');
-            typingDiv.id = 'typingAnimation';
-            typingDiv.className = 'flex justify-start';
-            typingDiv.innerHTML = `
-            <div class="flex gap-2 max-w-[80%]">
-                <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                    <span class="text-white text-xs font-bold">FS</span>
-                </div>
-                <div class="bg-white rounded-2xl rounded-bl-md px-4 py-3 border border-gray-200 shadow-sm">
-                    <div class="flex space-x-1">
-                        <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                        <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                        <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-            messagesContainer.appendChild(typingDiv);
-            scrollToBottom();
-        }
-
-        function hideTyping() {
-            isTyping = false;
-            typingIndicator.classList.add('hidden');
-
-            const typingAnimation = document.getElementById('typingAnimation');
-            if (typingAnimation) {
-                typingAnimation.remove();
-            }
-        }
-
-        function setAdminOffline() {
-            isAdminOnline = false;
-            adminStatus.className = 'w-2 h-2 rounded-full bg-gray-400';
-            adminStatusText.textContent = 'Không hoạt động';
         }
 
         function endChat() {
@@ -666,6 +638,11 @@
         }
 
         function addMessage(message) {
+            // Nếu là message thật (id không phải temp-) thì xóa message tạm thời
+            if (message.id && !String(message.id).startsWith('temp-')) {
+                const tempMsg = messagesContainer.querySelector('[data-message-id^="temp-"]');
+                if (tempMsg) tempMsg.remove();
+            }
             messages.push(message);
             const messageElement = createMessageElement(message);
             messagesContainer.appendChild(messageElement);
@@ -676,6 +653,7 @@
             const messageDiv = document.createElement('div');
             messageDiv.className =
                 `flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} message-enter`;
+            messageDiv.setAttribute('data-message-id', message.id);
 
             const isUser = message.sender === 'user';
             const timeString = message.timestamp.toLocaleTimeString('vi-VN', {

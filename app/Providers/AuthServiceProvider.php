@@ -29,7 +29,7 @@ class AuthServiceProvider extends ServiceProvider
         // Gate cho quản lý Roles
 
         Gate::define('manage-roles', function (User $user) {
-            return $user->roles()->whereIn('name', ['sp_admin', 'admin'])->exists();
+            return $user->roles()->whereIn('name', ['spadmin', 'admin'])->exists();
         });
 
 

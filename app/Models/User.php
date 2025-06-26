@@ -165,6 +165,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's name attribute (alias for full_name)
+     * Access via $user->name
+     */
+    public function getNameAttribute()
+    {
+        return $this->full_name;
+    }
+
+    /**
      * Get full avatar URL from filename
      * Access via $user->avatar_url
      */

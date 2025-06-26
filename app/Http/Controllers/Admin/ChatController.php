@@ -13,15 +13,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Events\Chat\TypingStatus;
 
 class ChatController extends Controller
 {
-    public function __construct()
-    {
-        // Bỏ middleware để test dễ dàng
-        // $this->middleware('auth');
-    }
+    public function __construct() {}
 
     public function index(Request $request)
     {
@@ -86,7 +81,8 @@ class ChatController extends Controller
             'attachment' => $attachmentPath,
             'attachment_type' => $attachmentType,
             'sent_at' => now(),
-            'status' => 'sent'
+            'status' => 'sent',
+            'branch_id' => $conversation->branch_id, // <--- THÊM DÒNG NÀY
         ]);
         Log::info('Admin đã tạo message', ['message_id' => $message->id, 'message' => $message->toArray()]);
         $message->load(['sender' => function ($query) {
@@ -148,6 +144,13 @@ class ChatController extends Controller
             ]);
 
             $conversation = Conversation::findOrFail($request->conversation_id);
+
+            if ($conversation->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cuộc trò chuyện này đã được phân phối.'
+                ], 400);
+            }
 
             $conversation->update([
                 'branch_id' => $request->branch_id,
@@ -255,48 +258,5 @@ class ChatController extends Controller
                 'message' => 'Lỗi khi lấy tin nhắn: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    public function handleTyping(Request $request)
-    {
-        Log::info('[ADMIN] handleTyping', [
-            'user_id' => Auth::id(),
-            'conversation_id' => $request->conversation_id,
-            'is_typing' => $request->is_typing,
-            'request_data' => $request->all(),
-            'ip' => $request->ip(),
-        ]);
-        $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
-            'is_typing' => 'required|boolean'
-        ]);
-        $conversation = Conversation::findOrFail($request->conversation_id);
-        $userId = Auth::id();
-        $user = Auth::user();
-        // Xác định user type
-        $userType = 'admin';
-        $userName = $user->name ?? 'Admin';
-        if ($conversation->customer_id === $userId) {
-            $userType = 'customer';
-            $userName = $user->name ?? 'Khách hàng';
-        } elseif ($conversation->branch_id === $userId) {
-            $userType = 'branch';
-            $userName = $user->name ?? 'Chi nhánh';
-        }
-        Log::info('[ADMIN] Broadcasting TypingStatus', [
-            'conversation_id' => $request->conversation_id,
-            'user_id' => $userId,
-            'is_typing' => $request->is_typing,
-            'user_type' => $userType,
-            'user_name' => $userName
-        ]);
-        broadcast(new TypingStatus(
-            $request->conversation_id,
-            $userId,
-            $request->is_typing,
-            $userType,
-            $userName
-        ))->toOthers();
-        return response()->json(['success' => true]);
     }
 };
