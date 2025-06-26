@@ -89,6 +89,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/verify-otp', [RegisterController::class, 'showOTPForm'])->name('customer.verify.otp.show');
     Route::post('/verify-otp', [RegisterController::class, 'verifyOtp'])->name('customer.verify.otp.post');
     Route::post('/resend-otp', [RegisterController::class, 'resendOTP'])->name('customer.resend.otp');
+    Route::post('/check-otp-lock', [RegisterController::class, 'checkOtpLock'])->name('customer.check.otp.lock');
 
     // Forgot password
     Route::get('/forgot-password', [CustomerAuthController::class, 'showForgotPasswordForm'])->name('customer.password.request');
@@ -155,6 +156,3 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
 });
-
-// Add new route for discount badge partial
-Route::post('/partial/discount-badge', [CustomerProductController::class, 'getDiscountBadges'])->name('products.discount-badges');

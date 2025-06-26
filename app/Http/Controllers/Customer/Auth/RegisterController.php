@@ -73,10 +73,10 @@ class RegisterController extends Controller
             'password' => $hashedPassword,
             'otp' => $otp,
         ];
-        Cache::put($cacheKey, $data, now()->addMinutes(10));
+        Cache::put($cacheKey, $data, now()->addMinutes(20));
 
-        // Gửi OTP (mô phỏng bằng log)
-        Log::info("OTP for {$request->email}: $otp");
+        // Gửi OTP qua job queue
+        SendOTPJob::dispatch($request->email, $otp)->onQueue('default');
 
         return response()->json([
             'success' => true,
@@ -100,36 +100,67 @@ class RegisterController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Dữ liệu không hợp lệ.',
-                'errors' => $validator->errors(),
-            ], 422);
+            return back()->withErrors($validator)->withInput();
         }
 
-        $cacheKey = 'register_' . strtolower($request->email);
+        $email = strtolower($request->email);
+        $cacheKey = 'register_' . $email;
+        $failKey = 'otp_fail_' . $email;
+        $lockKey = 'otp_lock_' . $email;
+
+        // Kiểm tra đang bị khóa
+        if (Cache::has($lockKey)) {
+            $lockInfo = Cache::get($lockKey);
+            return back()->withErrors(['otp' => $lockInfo['message']]);
+        }
+
         $data = Cache::get($cacheKey);
         if (!$data) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Thông tin đăng ký đã hết hạn hoặc không tồn tại.',
-            ], 410);
+            return back()->withErrors(['otp' => 'Thông tin đăng ký đã hết hạn hoặc không tồn tại.'])->withInput();
         }
 
         if ($data['otp'] !== $request->otp) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mã OTP không đúng.',
-            ], 401);
+            // Đếm số lần sai, không reset khi hết thời gian khóa
+            $failCount = Cache::get($failKey, 0) + 1;
+            Cache::put($failKey, $failCount, now()->addMinutes(20));
+
+            // Xử lý logic khóa
+            if ($failCount == 3) {
+                $lockTime = 60; // 1 phút
+                $message = 'Bạn đã nhập sai OTP quá 3 lần, Vui lòng thử lại sau 1 phút';
+                Cache::put($lockKey, ['type' => 'lock', 'message' => $message], $lockTime);
+                return back()->withErrors(['otp' => $message])->with(['lockInfo' => ['type' => 'lock', 'seconds' => $lockTime]]);
+            } elseif ($failCount == 5) {
+                $lockTime = 180; // 3 phút
+                $message = 'Bạn đã nhập sai OTP quá 5 lần, Vui lòng thử lại sau 3 phút';
+                Cache::put($lockKey, ['type' => 'lock', 'message' => $message], $lockTime);
+                return back()->withErrors(['otp' => $message])->with(['lockInfo' => ['type' => 'lock', 'seconds' => $lockTime]]);
+            } elseif ($failCount > 5) {
+                // Tăng dần thời gian khóa
+                $lockTime = 180 * ($failCount - 4); // 3 phút * số lần vượt quá 5
+                $message = "Bạn đã nhập sai OTP quá nhiều lần, Vui lòng thử lại sau " . ($lockTime / 60) . " phút";
+                Cache::put($lockKey, ['type' => 'lock', 'message' => $message], $lockTime);
+                return back()->withErrors(['otp' => $message])->with(['lockInfo' => ['type' => 'lock', 'seconds' => $lockTime]]);
+            } else {
+                if ($failCount < 3) {
+                    $message = "Bạn đã nhập sai OTP $failCount lần, còn " . (3 - $failCount) . " lần nhập OTP";
+                } elseif ($failCount < 5) {
+                    $message = "Bạn đã nhập sai OTP $failCount lần, còn " . (5 - $failCount) . " lần nhập OTP";
+                } else {
+                    $message = "Bạn đã nhập sai OTP $failCount lần.";
+                }
+                return back()->withErrors(['otp' => $message])->withInput();
+            }
         }
+
+        // Đúng OTP, xóa đếm sai và khóa
+        Cache::forget($failKey);
+        Cache::forget($lockKey);
 
         // Kiểm tra lại email chưa tồn tại (tránh race condition)
         if (User::where('email', $data['email'])->exists()) {
             Cache::forget($cacheKey);
-            return response()->json([
-                'success' => false,
-                'message' => 'Email đã tồn tại trong hệ thống.',
-            ], 409);
+            return back()->withErrors(['otp' => 'Email đã tồn tại trong hệ thống.'])->withInput();
         }
 
         // Ghi vào DB
@@ -145,11 +176,7 @@ class RegisterController extends Controller
         // Xóa cache
         Cache::forget($cacheKey);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Đăng ký thành công! Bạn có thể đăng nhập.',
-            'user_id' => $user->id,
-        ]);
+        return redirect()->route('customer.login')->with('status', 'Đăng ký thành công! Bạn có thể đăng nhập.');
     }
 
     /**
@@ -216,12 +243,26 @@ class RegisterController extends Controller
         }
 
         $otp = $data['otp'];
-        // Gửi lại OTP (log)
-        Log::info("[RESEND] OTP for {$request->email}: $otp");
+        // Gửi lại OTP qua job queue
+        SendOTPJob::dispatch($request->email, $otp)->onQueue('default');
 
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi lại mã OTP đến email. Vui lòng kiểm tra email để xác thực.',
         ]);
+    }
+
+    public function checkOtpLock(Request $request)
+    {
+        $email = strtolower($request->email);
+        $lockKey = 'otp_lock_' . $email;
+        if (Cache::has($lockKey)) {
+            $lockInfo = Cache::get($lockKey);
+            return response()->json([
+                'locked' => true,
+                'message' => $lockInfo['message']
+            ]);
+        }
+        return response()->json(['locked' => false]);
     }
 } 
