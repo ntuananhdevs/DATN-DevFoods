@@ -18,7 +18,6 @@
 }
 
 @layer base {
-
     /* Your custom CSS variables */
     :root {
         --background: 0 0% 100%;
@@ -41,7 +40,7 @@
         --success-foreground: 210 40% 98%;
         --warning: 47.9 95.8% 53.1%;
         --warning-foreground: 222.2 47.4% 11.2%;
-        --info: 200.0 95.8% 53.1%;
+        --info: 200 95.8% 53.1%;
         --info-foreground: 210 40% 98%;
         --border: 214.3 31.8% 91.4%;
         --input: 214.3 31.8% 91.4%;
@@ -70,7 +69,7 @@
         --success-foreground: 210 40% 98%;
         --warning: 47.9 90.8% 43.1%;
         --warning-foreground: 222.2 47.4% 11.2%;
-        --info: 200.0 90.8% 43.1%;
+        --info: 200 90.8% 43.1%;
         --info-foreground: 210 40% 98%;
         --border: 217.2 32.6% 17.5%;
         --input: 217.2 32.6% 17.5%;

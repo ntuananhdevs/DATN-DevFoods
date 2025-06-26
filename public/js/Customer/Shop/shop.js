@@ -41,6 +41,28 @@ document.addEventListener("DOMContentLoaded", function() {
     let quantity = 1;
     let totalPrice = basePrice;
     
+    // Discount code info from server (window)
+    const bestDiscount = window.bestDiscountCode || null;
+    const bestDiscountAmount = window.bestDiscountAmount || 0;
+    
+    // Helper: tính số tiền giảm giá tốt nhất cho 1 sản phẩm
+    function calcBestDiscountAmount(price) {
+        if (!bestDiscount) return 0;
+        let discountAmount = 0;
+        if (bestDiscount.discount_type === 'percentage') {
+            discountAmount = price * (bestDiscount.discount_value / 100);
+            if (bestDiscount.max_discount_amount && bestDiscount.max_discount_amount > 0) {
+                discountAmount = Math.min(discountAmount, bestDiscount.max_discount_amount);
+            }
+        } else if (bestDiscount.discount_type === 'fixed_amount') {
+            discountAmount = bestDiscount.discount_value;
+        }
+        if (bestDiscount.min_order_amount > 0 && price < bestDiscount.min_order_amount) {
+            discountAmount = 0;
+        }
+        return discountAmount;
+    }
+
     // Define updatePrice function in global scope
     window.updatePrice = function() {
         // Calculate variant price adjustments
@@ -48,28 +70,31 @@ document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.variant-input:checked').forEach(input => {
             variantAdjustment += parseFloat(input.dataset.priceAdjustment || 0);
         });
-        
         // Calculate topping price
         let toppingPrice = 0;
         document.querySelectorAll('.topping-input:checked').forEach(input => {
             toppingPrice += parseFloat(input.dataset.price || 0);
         });
-        
-        // Single item price (base price + variant price + toppings)
-        const singleItemPrice = window.basePrice + variantAdjustment + toppingPrice;
-        
-        // Update display - chỉ hiển thị giá của 1 sản phẩm, không nhân với quantity
-        if (variantAdjustment !== 0 || toppingPrice !== 0) {
-            basePriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+        // Tổng giá gốc (base + variant + topping)
+        const originalPrice = window.basePrice + variantAdjustment + toppingPrice;
+        // Tính số tiền giảm giá tốt nhất
+        const discountAmount = calcBestDiscountAmount(originalPrice);
+        // Giá sau giảm
+        const finalPrice = Math.max(0, originalPrice - discountAmount);
+        // Hiển thị
+        if (discountAmount > 0) {
+            basePriceDisplay.textContent = `${originalPrice.toLocaleString('vi-VN')}đ`;
             basePriceDisplay.classList.remove('hidden');
+            currentPriceDisplay.textContent = `${finalPrice.toLocaleString('vi-VN')}đ`;
         } else {
             basePriceDisplay.classList.add('hidden');
+            currentPriceDisplay.textContent = `${originalPrice.toLocaleString('vi-VN')}đ`;
         }
-        
-        currentPriceDisplay.textContent = `${singleItemPrice.toLocaleString('vi-VN')}đ`;
-        
-        // Highlight current price if different from base
-        if (singleItemPrice !== window.basePrice) {
+        // Highlight
+        if (discountAmount > 0) {
+            currentPriceDisplay.classList.add('text-orange-500');
+            currentPriceDisplay.classList.remove('text-green-500');
+        } else if (originalPrice !== window.basePrice) {
             currentPriceDisplay.classList.add('text-green-500');
             currentPriceDisplay.classList.remove('text-orange-500');
         } else {
@@ -143,6 +168,9 @@ document.addEventListener("DOMContentLoaded", function() {
             return null;
         }
         
+        // Lấy product_id từ data attribute của nút add-to-cart
+        const productId = document.getElementById('add-to-cart').getAttribute('data-product-id');
+        
         // Get all selected variant values
         const selectedVariantValueIds = [];
         const variantGroups = document.querySelectorAll('#variants-container > div');
@@ -162,7 +190,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const quantity = parseInt(document.getElementById('quantity').textContent);
         
         return {
-            product_id: window.productId,
+            product_id: productId,
             variant_values: selectedVariantValueIds,
             branch_id: branchId,
             quantity: quantity,
@@ -1238,3 +1266,19 @@ function showVariantNotification(message, type) {
         message: message
     });
 }
+
+
+// Initialize Pusher for discount realtime
+const discountsPusher = new Pusher(window.pusherKey, {
+    cluster: window.pusherCluster,
+    encrypted: true,
+    enabledTransports: ['ws', 'wss']
+});
+const discountsChannel = discountsPusher.subscribe('discounts');
+discountsChannel.bind('discount-updated', function(data) {
+    console.log('--- Pusher event "discount-updated" received ---');
+    console.log('Data received:', data);
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+});

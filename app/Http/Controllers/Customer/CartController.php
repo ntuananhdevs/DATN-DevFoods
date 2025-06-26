@@ -191,10 +191,15 @@ class CartController extends Controller
             }
 
             // Find product variant based on selected values
+            $variantValueIds = $request->variant_values;
+            $variantValueIds = array_map('intval', $variantValueIds);
             $variant = ProductVariant::where('product_id', $request->product_id)
-                ->whereHas('variantValues', function($query) use ($request) {
-                    $query->whereIn('variant_value_id', $request->variant_values);
-                }, '=', count($request->variant_values))
+                ->whereHas('variantValues', function($query) use ($variantValueIds) {
+                    $query->whereIn('variant_value_id', $variantValueIds);
+                }, '=', count($variantValueIds))
+                ->whereHas('variantValues', function($query) use ($variantValueIds) {
+                    $query->whereNotIn('variant_value_id', $variantValueIds);
+                }, '=', 0)
                 ->first();
 
             if (!$variant) {

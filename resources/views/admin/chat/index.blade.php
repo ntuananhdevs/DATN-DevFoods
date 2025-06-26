@@ -33,7 +33,8 @@
                         data-conversation-id="{{ $conv->id }}" data-status="{{ $conv->status }}"
                         data-customer-name="{{ $conv->customer->full_name ?? ($conv->customer->name ?? 'Khách hàng') }}"
                         data-customer-email="{{ $conv->customer->email }}"
-                        data-branch-name="{{ $conv->branch ? $conv->branch->name : '' }}">
+                        data-branch-name="{{ $conv->branch ? $conv->branch->name : '' }}"
+                        data-customer-phone="{{ $conv->customer->phone ?? '' }}">
                         <div class="flex items-center gap-3 w-full min-w-0">
                             <div class="flex flex-col items-center justify-center relative">
                                 <div
@@ -120,7 +121,6 @@
                 <div class="chat-messages" id="chat-messages">
                     <!-- Tin nhắn sẽ được load bằng JS ChatCommon -->
                 </div>
-                <div id="admin-typing-indicator" class="text-xs text-gray-500 px-4 py-2"></div>
                 <div class="chat-input-container">
                     <form id="chat-form" enctype="multipart/form-data" class="flex w-full gap-2">
                         <textarea id="chat-input-message" class="chat-input" placeholder="Nhập tin nhắn..."></textarea>

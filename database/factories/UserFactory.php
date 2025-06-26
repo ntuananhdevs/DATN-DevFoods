@@ -36,7 +36,9 @@ class UserFactory extends Factory
             'balance' => fake()->randomFloat(2, 0, 1000),
             'active' => true,
             'email_verified_at' => now(),
-            'user_rank_id' => UserRank::inRandomOrder()->first()->id ?? UserRank::factory()->create()->id, // Sử dụng rank hiện có hoặc tạo mới
+            'user_rank_id' => UserRank::inRandomOrder()->first()?->id ?? 1, // Use existing rank or default to 1
+            'birthday' => fake()->optional()->date(),
+            'gender' => fake()->optional()->randomElement(['male', 'female', 'other']),
             'total_spending' => fake()->randomFloat(2, 0, 10000),
             'total_orders' => fake()->numberBetween(0, 50),
             'rank_updated_at' => now(),

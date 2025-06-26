@@ -32,7 +32,7 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" id="name" name="name" placeholder="Nhập tên sản phẩm"
                             value="{{ old('name', $product->name) }}"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('name') border-red-500 @enderror" />
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 @error('name') border-red-500 @enderror" />
                         @error('name')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -43,7 +43,7 @@
                             <label for="category_id" class="block text-sm font-medium text-gray-700"> Danh mục <span
                                     class="text-red-500">*</span></label>
                             <select id="category_id" name="category_id"
-                                class="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('category_id') border-red-500 @enderror">
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 bg-white shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 @error('category_id') border-red-500 @enderror">
                                 <option value=""> Chọn danh mục</option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
@@ -61,7 +61,7 @@
                             <div class="relative mt-1">
                                 <input type="number" id="base_price" name="base_price" min="0" step="0.01"
                                     placeholder="0" value="{{ old('base_price', $product->base_price) }}"
-                                    class="block w-full pl-7 rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('base_price') border-red-500 @enderror" />
+                                    class="block w-full pl-7 rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 @error('base_price') border-red-500 @enderror" />
                             </div>
                             @error('base_price')
                                 <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
@@ -76,7 +76,7 @@
                                 class="text-red-500">*</span></label>
                             <input type="number" id="preparation_time" name="preparation_time" min="0"
                                 placeholder="Nhập thời gian chuẩn bị" value="{{ old('preparation_time', $product->preparation_time) }}"
-                                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm @error('preparation_time') border-red-500 @enderror" />
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2 @error('preparation_time') border-red-500 @enderror" />
                             @error('preparation_time')
                                 <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                             @enderror
@@ -104,11 +104,11 @@
                             @endphp
                     
                             <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border border-gray-300 rounded-lg" rows="6">{{ $ingredientsText }}</textarea>
+                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6">{{ $ingredientsText }}</textarea>
                             </div>
                         @else
                             <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border border-gray-300 rounded-lg" rows="6" placeholder="Nhập nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, hành tây, ớt chuông)"></textarea>
+                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6" placeholder="Nhập nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, hành tây, ớt chuông)"></textarea>
                             </div>
                         @endif
                     
@@ -127,7 +127,7 @@
                             <span class="text-red-500">*</span></label>
                         </label>
                         <textarea id="short_description" name="short_description" rows="2" placeholder="Nhập mô tả ngắn về sản phẩm" 
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('short_description') border-red-500 @enderror">{{ old('short_description', $product->short_description) }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('short_description') border-red-500 @enderror">{{ old('short_description', $product->short_description) }}</textarea>
                         @error('short_description')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -136,7 +136,7 @@
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Mô tả chi tiết</label>
                         <textarea id="description" name="description" rows="5" placeholder="Nhập mô tả chi tiết về sản phẩm"
-                            class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none @error('description') border-red-500 @enderror">{{ old('description', $product->description) }}</textarea>
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('description') border-red-500 @enderror">{{ old('description', $product->description) }}</textarea>
                         @error('description')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -183,7 +183,7 @@
                                 <label for="release_at" class="block text-sm font-medium text-gray-700">Ngày ra mắt</label>
                                 <input type="datetime-local" id="release_at" name="release_at"
                                     value="{{ old('release_at', $product->release_at ? $product->release_at->format('Y-m-d\TH:i') : '') }}"
-                                    class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
+                                    class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2" />
                             </div>
                         </div>
                     </div>
@@ -367,7 +367,7 @@
                                 <div>
                                     <label for="attribute_name_{{ $attrIndex }}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                                     <input type="text" id="attribute_name_{{ $attrIndex }}" name="attributes[{{ $attrIndex }}][name]" placeholder="VD: Kích thước"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ $attribute['name'] ?? '' }}">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2" value="{{ $attribute['name'] ?? '' }}">
                                     @error("attributes.{$attrIndex}.name")
                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                     @enderror
@@ -387,7 +387,7 @@
                                                 <div class="md:col-span-2">
                                                     <label for="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                                     <input type="text" id="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][value]" placeholder="VD: Nhỏ"
-                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ $value['value'] ?? '' }}">
+                                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2" value="{{ $value['value'] ?? '' }}">
                                                     @error("attributes.{$attrIndex}.values.{$valueIndex}.value")
                                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                                     @enderror
@@ -395,7 +395,7 @@
                                                 <div>
                                                     <label for="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
                                                     <input type="number" id="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" placeholder="0" step="any"
-                                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ $value['price_adjustment'] ?? 0 }}">
+                                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2" value="{{ $value['price_adjustment'] ?? 0 }}">
                                                     @error("attributes.{$attrIndex}.values.{$valueIndex}.price_adjustment")
                                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                                     @enderror
@@ -450,7 +450,7 @@
                                 <div>
                                     <label for="topping_name_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Tên topping</label>
                                     <input type="text" id="topping_name_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][name]" placeholder="VD: Phô mai thêm"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ $topping['name'] ?? '' }}">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2" value="{{ $topping['name'] ?? '' }}">
                                     @error("toppings.{$toppingIndex}.name")
                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                     @enderror
@@ -458,7 +458,7 @@
                                 <div>
                                     <label for="topping_price_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Giá</label>
                                     <input type="number" id="topping_price_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][price]" placeholder="0" step="any"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ $topping['price'] ?? '' }}">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2" value="{{ $topping['price'] ?? '' }}">
                                     @error("toppings.{$toppingIndex}.price")
                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                     @enderror
@@ -866,7 +866,7 @@
                     <div>
                         <label for="attribute_name_${index}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                         <input type="text" id="attribute_name_${index}" name="attributes[${index}][name]" placeholder="VD: Kích thước"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2">
                     </div>
                     <div class="col-span-2">
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
@@ -875,12 +875,12 @@
                                 <div class="md:col-span-2">
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
                                 </div>
                                 <div>
                                     <label for="attribute_price_${index}_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
                                     <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any" value="0"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
                                 </div>
                             </div>
                         </div>
@@ -902,12 +902,12 @@
                 <div class="md:col-span-2">
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                     <input type="text" id="attribute_value_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][value]" placeholder="VD: Nhỏ"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
                 </div>
                 <div>
                     <label for="attribute_price_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
                     <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any" value="0"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
                 </div>
                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
             `;
@@ -964,12 +964,12 @@
                     <div>
                         <label for="topping_name_${index}" class="block text-sm font-medium text-gray-700">Tên topping</label>
                         <input type="text" id="topping_name_${index}" name="toppings[${index}][name]" placeholder="VD: Trân châu đen"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2">
                     </div>
                     <div>
                         <label for="topping_price_${index}" class="block text-sm font-medium text-gray-700">Giá</label>
                         <input type="number" id="topping_price_${index}" name="toppings[${index}][price]" min="0" placeholder="0"
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2">
                     </div>
                     <div class="flex items-center mt-7">
                         <input type="checkbox" id="topping_available_${index}" name="toppings[${index}][available]" value="1" checked

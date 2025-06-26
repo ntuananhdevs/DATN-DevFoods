@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Events\Chat\TypingStatus;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
+
+use App\Models\Branch;
 
 use App\Events\Chat\NewMessage;
 use App\Http\Controllers\Controller;
@@ -44,8 +45,15 @@ class ChatController extends Controller
 
             Log::info('Customer conversation found', ['conversation' => $conversation]);
 
-            $receiverId = $conversation->branch_id ?? 11;
-            $receiverType = $conversation->branch_id ? 'branch_staff' : 'super_admin';
+            if ($conversation->branch_id) {
+                // Lấy manager của chi nhánh
+                $branch = Branch::find($conversation->branch_id);
+                $receiverId = $branch ? $branch->manager_user_id : null;
+                $receiverType = $branch ? 'branch_admin' : null;
+            } else {
+                $receiverId = 11; // ID admin mặc định
+                $receiverType = 'super_admin';
+            }
 
             $attachmentPath = null;
             $attachmentType = null;
@@ -77,7 +85,8 @@ class ChatController extends Controller
                 'attachment' => $attachmentPath,
                 'attachment_type' => $attachmentType,
                 'sent_at' => now(),
-                'status' => 'sent'
+                'status' => 'sent',
+                'branch_id' => $conversation->branch_id, // <--- THÊM DÒNG NÀY
             ];
             Log::info('Customer message data before create', $messageData);
             $message = ChatMessage::create($messageData);
@@ -266,40 +275,5 @@ class ChatController extends Controller
             ->get();
 
         return view('customer.chat', compact('conversations'));
-    }
-
-    public function typing(Request $request)
-    {
-        Log::info('[CUSTOMER] typing', [
-            'user_id' => Auth::id(),
-            'conversation_id' => $request->conversation_id,
-            'is_typing' => $request->is_typing,
-            'request_data' => $request->all(),
-            'ip' => $request->ip(),
-        ]);
-        $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
-            'is_typing' => 'required|boolean'
-        ]);
-        $conversation = Conversation::findOrFail($request->conversation_id);
-        $userId = Auth::id();
-        $user = Auth::user();
-        $userType = 'customer';
-        $userName = $user->name ?? 'Khách hàng';
-        Log::info('[CUSTOMER] Broadcasting TypingStatus', [
-            'conversation_id' => $request->conversation_id,
-            'user_id' => $userId,
-            'is_typing' => $request->is_typing,
-            'user_type' => $userType,
-            'user_name' => $userName
-        ]);
-        broadcast(new TypingStatus(
-            $request->conversation_id,
-            $userId,
-            $request->is_typing,
-            $userType,
-            $userName
-        ))->toOthers();
-        return response()->json(['success' => true]);
     }
 }
