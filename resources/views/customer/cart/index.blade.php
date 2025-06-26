@@ -51,44 +51,6 @@
    .animate-fade-out {
        animation: fadeOut 0.3s ease-out;
    }
-   
-   /* Toast notification styles */
-   .cart-toast {
-       position: fixed;
-       top: 20px;
-       right: 20px;
-       transform: translateX(100%);
-       background: rgba(0, 0, 0, 0.8);
-       color: white;
-       padding: 12px 20px;
-       border-radius: 8px;
-       font-size: 14px;
-       font-weight: 500;
-       z-index: 9999;
-       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-       backdrop-filter: blur(8px);
-       transition: transform 0.3s ease-out;
-   }
-   
-   .cart-toast.show {
-       transform: translateX(0);
-   }
-   
-   .cart-toast.success {
-       background: rgba(34, 197, 94, 0.9);
-   }
-   
-   .cart-toast.error {
-       background: rgba(239, 68, 68, 0.9);
-   }
-   
-   .cart-toast.warning {
-       background: rgba(245, 158, 11, 0.9);
-   }
-   
-   .cart-toast.info {
-       background: rgba(59, 130, 246, 0.9);
-   }
 </style>
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-2">Giỏ Hàng</h1>
@@ -167,15 +129,93 @@
                                 <span class="md:hidden font-medium mr-2">Giá:</span>
                                 <span class="item-price">
                                     @php
-                                        $itemPrice = $item->variant->price;
+                                        $now = \Carbon\Carbon::now();
+                                        $currentTime = $now->format('H:i:s');
+                                        $userId = \Illuminate\Support\Facades\Auth::id();
+                                        $selectedBranchId = $cart->branch_id ?? 1;
+
+                                        $originPrice = $item->variant->price;
                                         foreach ($item->toppings as $topping) {
-                                            $itemPrice += $topping->price;
+                                            $originPrice += $topping->price;
                                         }
+
+                                        // Lấy discount code giống trang show
+                                        $activeDiscountCodesQuery = \App\Models\DiscountCode::where('is_active', true)
+                                            ->where('start_date', '<=', $now)
+                                            ->where('end_date', '>=', $now)
+                                            ->where(function($query) use ($selectedBranchId) {
+                                                if ($selectedBranchId) {
+                                                    $query->whereDoesntHave('branches')
+                                                        ->orWhereHas('branches', function($q) use ($selectedBranchId) {
+                                                            $q->where('branches.id', $selectedBranchId);
+                                                        });
+                                                }
+                                            });
+
+                                        $activeDiscountCodesQuery->where(function($query) use ($userId) {
+                                            $query->where('usage_type', 'public');
+                                            if ($userId) {
+                                                $query->orWhere(function($q) use ($userId) {
+                                                    $q->where('usage_type', 'personal')
+                                                      ->whereHas('users', function($userQuery) use ($userId) {
+                                                          $userQuery->where('user_id', $userId);
+                                                      });
+                                                });
+                                            }
+                                        });
+
+                                        $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
+                                            $query->with(['product', 'category']);
+                                        }])->get()->filter(function($discountCode) use ($currentTime) {
+                                            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                                                $from = \Carbon\Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                                                $to = \Carbon\Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                                                if ($from < $to) {
+                                                    if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                                                } else {
+                                                    if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                                                }
+                                            }
+                                            return true;
+                                        });
+
+                                        // Lọc discount code áp dụng cho sản phẩm này
+                                        $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                                            if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                                                return true;
+                                            }
+                                            $applies = $discountCode->products->contains(function($discountProduct) use ($item) {
+                                                if ($discountProduct->product_id === $item->variant->product->id) return true;
+                                                if ($discountProduct->category_id === $item->variant->product->category_id) return true;
+                                                return false;
+                                            });
+                                            return $applies;
+                                        });
+
+                                        // Tìm mã giảm giá tốt nhất
+                                        $maxDiscount = null;
+                                        $maxValue = 0;
+                                        foreach ($applicableDiscounts as $discountCode) {
+                                            $value = 0;
+                                            if ($discountCode->discount_type === 'fixed_amount') {
+                                                $value = $discountCode->discount_value;
+                                            } elseif ($discountCode->discount_type === 'percentage') {
+                                                $value = $originPrice * $discountCode->discount_value / 100;
+                                                if ($discountCode->max_discount_amount) {
+                                                    $value = min($value, $discountCode->max_discount_amount);
+                                                }
+                                            }
+                                            if ($value > $maxValue) {
+                                                $maxValue = $value;
+                                                $maxDiscount = $discountCode;
+                                            }
+                                        }
+                                        $finalPrice = max(0, $originPrice - $maxValue);
                                     @endphp
-                                    {{ number_format($itemPrice) }}đ
+                                    {{ number_format($finalPrice, 0, '', '.') }} đ
                                 </span>
                                 <div class="text-xs text-gray-500">
-                                    @if($item->variant->price < $itemPrice)
+                                    @if($item->variant->price < $originPrice)
                                         <span>(Bao gồm topping)</span>
                                     @endif
                                 </div>
@@ -197,13 +237,9 @@
                                 <span class="md:hidden font-medium mr-2">Tổng:</span>
                                 <span class="item-total">
                                     @php
-                                        $itemPrice = $item->variant->price;
-                                        foreach ($item->toppings as $topping) {
-                                            $itemPrice += $topping->price;
-                                        }
-                                        $itemTotal = $itemPrice * $item->quantity;
+                                        $itemTotal = $finalPrice * $item->quantity;
                                     @endphp
-                                    {{ number_format($itemTotal) }}đ
+                                    {{ number_format($itemTotal, 0, '', '.') }} đ
                                 </span>
                             </div>
                         </div>
@@ -235,63 +271,55 @@
             <div class="mt-12">
                 <h2 class="text-xl font-bold mb-6">Có Thể Bạn Cũng Thích</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- Suggested Product 1 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Gà Rán Giòn Cay" class="object-cover w-full h-full">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Gà Rán Giòn Cay</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">55.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Suggested Product 2 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Khoai Tây Chiên" class="object-cover w-full h-full">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Khoai Tây Chiên</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">25.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Suggested Product 3 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Nước Cam Tươi" class="object-cover w-full h-full">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Nước Cam Tươi</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">35.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Suggested Product 4 -->
-                    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                        <div class="relative h-40">
-                            <img src="/placeholder.svg?height=400&width=400" alt="Bánh Chocolate Nóng" class="object-cover w-full h-full">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-medium text-sm mb-1 line-clamp-1">Bánh Chocolate Nóng</h3>
-                            <p class="text-orange-500 font-bold text-sm mb-2">39.000đ</p>
-                            <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested">
-                                Thêm vào giỏ
-                            </button>
-                        </div>
-                    </div>
+                    @if(count($cartItems) == 0)
+                        <div class="col-span-4 text-center text-gray-400">Không có sản phẩm gợi ý</div>
+                    @else
+                        @forelse($suggestedProducts as $product)
+                            @php
+                                $primaryImage = $product->primaryImage ? $product->primaryImage : $product->images->first();
+                                $imgUrl = $primaryImage && $primaryImage->img ? (Storage::disk('s3')->url($primaryImage->img)) : asset('images/default-placeholder.png');
+                                $firstVariant = $product->variants->first();
+                                $branchId = $cart && $cart->branch_id ? $cart->branch_id : 1;
+                            @endphp
+                            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                                <div class="relative h-40">
+                                    <img src="{{ $imgUrl }}" alt="{{ $product->name }}" class="object-cover w-full h-full">
+                                    @if(isset($product->is_favorite) && $product->is_favorite)
+                                        <span class="absolute top-2 right-2 text-red-500"><i class="fas fa-heart"></i></span>
+                                    @endif
+                                </div>
+                                <div class="p-3">
+                                    <h3 class="font-medium text-sm mb-1 line-clamp-1">{{ $product->name }}</h3>
+                                    <p class="text-orange-500 font-bold text-sm mb-2">{{ number_format($product->base_price) }}đ</p>
+                                    <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested"
+                                        data-product-id="{{ $product->id }}"
+                                        data-variant-id="{{ $firstVariant ? $firstVariant->id : '' }}"
+                                        data-branch-id="{{ $branchId }}"
+                                        data-variant-values='@json($firstVariant ? $firstVariant->variantValues->pluck("id") : [])'>
+                                        Thêm ngay
+                                    </button>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-span-4 text-center text-gray-400">Không có sản phẩm gợi ý</div>
+                        @endforelse
+                    @endif
                 </div>
             </div>
+            @if(count($cartItems) > 0)
+            @php
+                $cartCategoryIds = collect($cartItems)->map(function($item) {
+                    return $item->variant->product->category_id;
+                })->unique()->implode(',');
+                $categoryUrl = route('products.index') . ($cartCategoryIds ? ('?category=' . $cartCategoryIds) : '');
+            @endphp
+            <div class="mt-4 flex flex-wrap gap-4">
+                <a href="{{ $categoryUrl }}" class="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-md flex items-center transition-colors">
+                    <i class="fas fa-plus h-4 w-4 mr-2"></i>
+                    Xem Thêm
+                </a>
+            </div>
+            @endif
         </div>
 
         <div>
@@ -301,7 +329,86 @@
                 <div class="space-y-3 mb-6">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Tạm tính</span>
-                        <span id="subtotal">{{ number_format($subtotal) }}đ</span>
+                        @php
+                            $subtotal = 0;
+                            $now = \Carbon\Carbon::now();
+                            $currentTime = $now->format('H:i:s');
+                            $userId = \Illuminate\Support\Facades\Auth::id();
+                            $selectedBranchId = $cart->branch_id ?? 1;
+                            foreach ($cartItems as $item) {
+                                $originPrice = $item->variant->price;
+                                foreach ($item->toppings as $topping) {
+                                    $originPrice += $topping->price;
+                                }
+                                $activeDiscountCodesQuery = \App\Models\DiscountCode::where('is_active', true)
+                                    ->where('start_date', '<=', $now)
+                                    ->where('end_date', '>=', $now)
+                                    ->where(function($query) use ($selectedBranchId) {
+                                        if ($selectedBranchId) {
+                                            $query->whereDoesntHave('branches')
+                                                ->orWhereHas('branches', function($q) use ($selectedBranchId) {
+                                                    $q->where('branches.id', $selectedBranchId);
+                                                });
+                                        }
+                                    });
+                                $activeDiscountCodesQuery->where(function($query) use ($userId) {
+                                    $query->where('usage_type', 'public');
+                                    if ($userId) {
+                                        $query->orWhere(function($q) use ($userId) {
+                                            $q->where('usage_type', 'personal')
+                                              ->whereHas('users', function($userQuery) use ($userId) {
+                                                  $userQuery->where('user_id', $userId);
+                                              });
+                                        });
+                                    }
+                                });
+                                $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
+                                    $query->with(['product', 'category']);
+                                }])->get()->filter(function($discountCode) use ($currentTime) {
+                                    if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                                        $from = \Carbon\Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                                        $to = \Carbon\Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                                        if ($from < $to) {
+                                            if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                                        } else {
+                                            if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                                        }
+                                    }
+                                    return true;
+                                });
+                                $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                                        return true;
+                                    }
+                                    $applies = $discountCode->products->contains(function($discountProduct) use ($item) {
+                                        if ($discountProduct->product_id === $item->variant->product->id) return true;
+                                        if ($discountProduct->category_id === $item->variant->product->category_id) return true;
+                                        return false;
+                                    });
+                                    return $applies;
+                                });
+                                $maxDiscount = null;
+                                $maxValue = 0;
+                                foreach ($applicableDiscounts as $discountCode) {
+                                    $value = 0;
+                                    if ($discountCode->discount_type === 'fixed_amount') {
+                                        $value = $discountCode->discount_value;
+                                    } elseif ($discountCode->discount_type === 'percentage') {
+                                        $value = $originPrice * $discountCode->discount_value / 100;
+                                        if ($discountCode->max_discount_amount) {
+                                            $value = min($value, $discountCode->max_discount_amount);
+                                        }
+                                    }
+                                    if ($value > $maxValue) {
+                                        $maxValue = $value;
+                                        $maxDiscount = $discountCode;
+                                    }
+                                }
+                                $finalPrice = max(0, $originPrice - $maxValue);
+                                $subtotal += $finalPrice * $item->quantity;
+                            }
+                        @endphp
+                        <span id="subtotal">{{ number_format($subtotal, 0, '', '.') }} đ</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Phí giao hàng</span>
@@ -483,3 +590,5 @@
 </script>
 <script src="{{ asset('js/Customer/Cart/cart.js') }}"></script>
 @endsection
+
+@include('components.modal')
