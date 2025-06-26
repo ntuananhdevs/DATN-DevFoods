@@ -29,10 +29,18 @@ class BranchStockController extends Controller
     {
         try {
             $request->validate([
-                'stocks' => 'required|array',
-                'stocks.*' => 'required|array',
-                'stocks.*.*' => 'required|integer|min:0'
+                'stocks' => 'nullable|array',
+                'stocks.*' => 'nullable|array',
+                'stocks.*.*' => 'nullable|integer|min:0'
             ]);
+
+            // Check if stocks data is provided
+            if (!$request->has('stocks') || empty($request->stocks)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không có dữ liệu kho hàng nào được cập nhật'
+                ]);
+            }
 
             DB::beginTransaction();
 

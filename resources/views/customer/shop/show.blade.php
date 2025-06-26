@@ -405,11 +405,13 @@
                     } else {
                         $value = 0;
                     }
+                    
                     if($value > $maxValue) {
                         $maxValue = $value;
                         $maxDiscount = $discountCode;
                     }
                 }
+                
                 // Giá gốc
                 $originPrice = $product->discount_price && $product->base_price > $product->discount_price
                     ? $product->discount_price
@@ -430,15 +432,15 @@
             <div class="space-y-2">
                 <div class="flex items-center gap-3">
                     <span class="text-3xl font-bold text-orange-500 transition-all duration-300" id="current-price">
-                        {{ number_format($finalPrice, 0, ',', '.') }}đ
+                        {{ number_format($finalPrice, 0, '', '.') }} đ
                     </span>
                     @if($finalPrice < $originPrice)
                     <span class="text-lg text-gray-400 line-through" id="base-price">
-                        {{ number_format($originPrice, 0, ',', '.') }}đ
+                        {{ number_format($originPrice, 0, '', '.') }} đ
                     </span>
                     @else
                     <span class="text-lg text-gray-400 line-through hidden" id="base-price">
-                        {{ number_format($originPrice, 0, ',', '.') }}đ
+                        {{ number_format($originPrice, 0, '', '.') }} đ
                     </span>
                     @endif
                 </div>
@@ -574,17 +576,6 @@
                                 ->where('branch_id', $selectedBranchId)
                                 ->first() : null;
                             
-                            // Debug log for each variant
-                            \Log::debug('Variant Stock Info:', [
-                                'attribute' => $attribute->name,
-                                'value' => $value->value,
-                                'variant_stock' => $variantStock ? [
-                                    'id' => $variantStock->id,
-                                    'product_variant_id' => $variantStock->product_variant_id,
-                                    'stock_quantity' => $variantStock->stock_quantity
-                                ] : null
-                            ]);
-                            
                             $stockQuantity = $variantStock ? $variantStock->stock_quantity : 0;
                             $productVariantId = $variantStock ? $variantStock->product_variant_id : null;
                         @endphp
@@ -604,7 +595,7 @@
                                 {{ $value->value }}
                                 @if($value->price_adjustment != 0)
                                     <span class="text-sm ml-1 {{ $value->price_adjustment > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                        {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, ',', '.') }}đ
+                                        {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, '', '.') }} đ
                                     </span>
                                 @endif
                             </span>
@@ -665,7 +656,7 @@
                             <div class="mt-1 text-center">
                                 <p class="text-xs font-medium truncate">{{ $topping->name }}</p>
                                 <p class="text-xs text-orange-500 font-medium">
-                                    +{{ number_format($topping->price, 0, ',', '.') }}đ
+                                    +{{ number_format($topping->price, 0, '', '.') }} đ
                                 </p>
                             </div>
                         </label>
@@ -848,7 +839,7 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="text-gray-600">{{ $product->ingredients }}</p>
+                        <p class="text-gray-600">{{ is_array($product->ingredients) ? implode(', ', $product->ingredients) : $product->ingredients }}</p>
                     @endif
                 @else
                     <div class="text-center py-8">
@@ -1008,8 +999,8 @@
                         }
                     }
                 }
-                $maxDiscount = null;
-                $maxValue = 0;
+                $relatedMaxDiscount = null;
+                $relatedMaxValue = 0;
                 foreach($otherDiscounts as $discountCode) {
                     if($discountCode->discount_type === 'fixed_amount') {
                         $value = $discountCode->discount_value;
@@ -1018,20 +1009,20 @@
                     } else {
                         $value = 0;
                     }
-                    if($value > $maxValue) {
-                        $maxValue = $value;
-                        $maxDiscount = $discountCode;
+                    if($value > $relatedMaxValue) {
+                        $relatedMaxValue = $value;
+                        $relatedMaxDiscount = $discountCode;
                     }
                 }
                 $originPrice = $relatedProduct->discount_price && $relatedProduct->base_price > $relatedProduct->discount_price
                     ? $relatedProduct->discount_price
                     : $relatedProduct->min_price;
                 $finalPrice = $originPrice;
-                if($maxDiscount) {
-                    if($maxDiscount->discount_type === 'fixed_amount') {
-                        $finalPrice = max(0, $originPrice - $maxDiscount->discount_value);
-                    } elseif($maxDiscount->discount_type === 'percentage') {
-                        $finalPrice = max(0, $originPrice * (1 - $maxDiscount->discount_value / 100));
+                if($relatedMaxDiscount) {
+                    if($relatedMaxDiscount->discount_type === 'fixed_amount') {
+                        $finalPrice = max(0, $originPrice - $relatedMaxDiscount->discount_value);
+                    } elseif($relatedMaxDiscount->discount_type === 'percentage') {
+                        $finalPrice = max(0, $originPrice * (1 - $relatedMaxDiscount->discount_value / 100));
                     }
                 }
             @endphp
@@ -1065,9 +1056,9 @@
                         <div class="flex flex-col">
                             <div class="flex justify-between items-center">
                                 <div>
-                                    <span class="product-price">{{ number_format($finalPrice) }}đ</span>
+                                    <span class="product-price">{{ number_format($finalPrice, 0, '', '.') }}đ</span>
                                     @if($finalPrice < $originPrice)
-                                        <span class="product-original-price">{{ number_format($originPrice) }}đ</span>
+                                        <span class="product-original-price">{{ number_format($originPrice, 0, '', '.') }}đ</span>
                                     @endif
                                 </div>
                                 @if($freeship)
@@ -1076,23 +1067,23 @@
                             </div>
                             <div class="discount-tag">
                                 <span class="text-xs font-semibold text-orange-500 mr-2 px-1 py-1 quality">Rẻ vô địch</span>
-                                @if($maxDiscount)
+                                @if($relatedMaxDiscount)
                                     @php
                                         $badgeClass = 'discount-badge';
                                         $icon = 'fa-percent';
-                                        if($maxDiscount->discount_type === 'fixed_amount') {
+                                        if($relatedMaxDiscount->discount_type === 'fixed_amount') {
                                             $badgeClass .= ' fixed-amount';
                                             $icon = 'fa-money-bill-wave';
                                         } else {
                                             $badgeClass .= ' percentage';
                                         }
                                     @endphp
-                                    <div class="{{ $badgeClass }}" title="{{ $maxDiscount->name }}" data-discount-code="{{ $maxDiscount->code }}">
+                                    <div class="{{ $badgeClass }}" title="{{ $relatedMaxDiscount->name }}" data-discount-code="{{ $relatedMaxDiscount->code }}">
                                         <i class="fas {{ $icon }}"></i>
-                                        @if($maxDiscount->discount_type === 'percentage')
-                                            Giảm {{ $maxDiscount->discount_value }}%
-                                        @elseif($maxDiscount->discount_type === 'fixed_amount')
-                                            Giảm {{ number_format($maxDiscount->discount_value) }}đ
+                                        @if($relatedMaxDiscount->discount_type === 'percentage')
+                                            Giảm {{ $relatedMaxDiscount->discount_value }}%
+                                        @elseif($relatedMaxDiscount->discount_type === 'fixed_amount')
+                                            Giảm {{ number_format($relatedMaxDiscount->discount_value, 0, '', '.') }}đ
                                         @endif
                                     </div>
                                 @endif
@@ -1142,6 +1133,18 @@
     </div>
 </div>
 
+<pre style="background:#f3f4f6;padding:8px 12px;border-radius:6px;font-size:13px;">
+id: {{ $product->id }}
+min_price: {{ $product->min_price }}
+base_price: {{ $product->base_price }}
+variants: {{ json_encode($product->variants->pluck('price')) }}
+maxDiscount: {{ json_encode($maxDiscount) }}
+maxValue: {{ $maxValue }}
+originPrice: {{ $originPrice }}
+finalPrice: {{ $finalPrice }}
+bestDiscountAmount: {{ $maxValue }}
+</pre>
+
 @endsection
 
 @section('scripts')
@@ -1156,6 +1159,7 @@
     // Truyền discount tốt nhất sang JS
     window.bestDiscountCode = @json($maxDiscount);
     window.bestDiscountAmount = {{ $maxValue }};
+    
     // Truyền mapping variant value ids -> product_variant_id
     window.variantCombinations = @json(
         \App\Models\ProductVariant::where('product_id', $product->id)

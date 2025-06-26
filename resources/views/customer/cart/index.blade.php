@@ -129,15 +129,93 @@
                                 <span class="md:hidden font-medium mr-2">Giá:</span>
                                 <span class="item-price">
                                     @php
-                                        $itemPrice = $item->variant->price;
+                                        $now = \Carbon\Carbon::now();
+                                        $currentTime = $now->format('H:i:s');
+                                        $userId = \Illuminate\Support\Facades\Auth::id();
+                                        $selectedBranchId = $cart->branch_id ?? 1;
+
+                                        $originPrice = $item->variant->price;
                                         foreach ($item->toppings as $topping) {
-                                            $itemPrice += $topping->price;
+                                            $originPrice += $topping->price;
                                         }
+
+                                        // Lấy discount code giống trang show
+                                        $activeDiscountCodesQuery = \App\Models\DiscountCode::where('is_active', true)
+                                            ->where('start_date', '<=', $now)
+                                            ->where('end_date', '>=', $now)
+                                            ->where(function($query) use ($selectedBranchId) {
+                                                if ($selectedBranchId) {
+                                                    $query->whereDoesntHave('branches')
+                                                        ->orWhereHas('branches', function($q) use ($selectedBranchId) {
+                                                            $q->where('branches.id', $selectedBranchId);
+                                                        });
+                                                }
+                                            });
+
+                                        $activeDiscountCodesQuery->where(function($query) use ($userId) {
+                                            $query->where('usage_type', 'public');
+                                            if ($userId) {
+                                                $query->orWhere(function($q) use ($userId) {
+                                                    $q->where('usage_type', 'personal')
+                                                      ->whereHas('users', function($userQuery) use ($userId) {
+                                                          $userQuery->where('user_id', $userId);
+                                                      });
+                                                });
+                                            }
+                                        });
+
+                                        $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
+                                            $query->with(['product', 'category']);
+                                        }])->get()->filter(function($discountCode) use ($currentTime) {
+                                            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                                                $from = \Carbon\Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                                                $to = \Carbon\Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                                                if ($from < $to) {
+                                                    if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                                                } else {
+                                                    if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                                                }
+                                            }
+                                            return true;
+                                        });
+
+                                        // Lọc discount code áp dụng cho sản phẩm này
+                                        $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                                            if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                                                return true;
+                                            }
+                                            $applies = $discountCode->products->contains(function($discountProduct) use ($item) {
+                                                if ($discountProduct->product_id === $item->variant->product->id) return true;
+                                                if ($discountProduct->category_id === $item->variant->product->category_id) return true;
+                                                return false;
+                                            });
+                                            return $applies;
+                                        });
+
+                                        // Tìm mã giảm giá tốt nhất
+                                        $maxDiscount = null;
+                                        $maxValue = 0;
+                                        foreach ($applicableDiscounts as $discountCode) {
+                                            $value = 0;
+                                            if ($discountCode->discount_type === 'fixed_amount') {
+                                                $value = $discountCode->discount_value;
+                                            } elseif ($discountCode->discount_type === 'percentage') {
+                                                $value = $originPrice * $discountCode->discount_value / 100;
+                                                if ($discountCode->max_discount_amount) {
+                                                    $value = min($value, $discountCode->max_discount_amount);
+                                                }
+                                            }
+                                            if ($value > $maxValue) {
+                                                $maxValue = $value;
+                                                $maxDiscount = $discountCode;
+                                            }
+                                        }
+                                        $finalPrice = max(0, $originPrice - $maxValue);
                                     @endphp
-                                    {{ number_format($itemPrice) }}đ
+                                    {{ number_format($finalPrice, 0, '', '.') }} đ
                                 </span>
                                 <div class="text-xs text-gray-500">
-                                    @if($item->variant->price < $itemPrice)
+                                    @if($item->variant->price < $originPrice)
                                         <span>(Bao gồm topping)</span>
                                     @endif
                                 </div>
@@ -159,13 +237,9 @@
                                 <span class="md:hidden font-medium mr-2">Tổng:</span>
                                 <span class="item-total">
                                     @php
-                                        $itemPrice = $item->variant->price;
-                                        foreach ($item->toppings as $topping) {
-                                            $itemPrice += $topping->price;
-                                        }
-                                        $itemTotal = $itemPrice * $item->quantity;
+                                        $itemTotal = $finalPrice * $item->quantity;
                                     @endphp
-                                    {{ number_format($itemTotal) }}đ
+                                    {{ number_format($itemTotal, 0, '', '.') }} đ
                                 </span>
                             </div>
                         </div>
@@ -255,7 +329,86 @@
                 <div class="space-y-3 mb-6">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Tạm tính</span>
-                        <span id="subtotal">{{ number_format($subtotal) }}đ</span>
+                        @php
+                            $subtotal = 0;
+                            $now = \Carbon\Carbon::now();
+                            $currentTime = $now->format('H:i:s');
+                            $userId = \Illuminate\Support\Facades\Auth::id();
+                            $selectedBranchId = $cart->branch_id ?? 1;
+                            foreach ($cartItems as $item) {
+                                $originPrice = $item->variant->price;
+                                foreach ($item->toppings as $topping) {
+                                    $originPrice += $topping->price;
+                                }
+                                $activeDiscountCodesQuery = \App\Models\DiscountCode::where('is_active', true)
+                                    ->where('start_date', '<=', $now)
+                                    ->where('end_date', '>=', $now)
+                                    ->where(function($query) use ($selectedBranchId) {
+                                        if ($selectedBranchId) {
+                                            $query->whereDoesntHave('branches')
+                                                ->orWhereHas('branches', function($q) use ($selectedBranchId) {
+                                                    $q->where('branches.id', $selectedBranchId);
+                                                });
+                                        }
+                                    });
+                                $activeDiscountCodesQuery->where(function($query) use ($userId) {
+                                    $query->where('usage_type', 'public');
+                                    if ($userId) {
+                                        $query->orWhere(function($q) use ($userId) {
+                                            $q->where('usage_type', 'personal')
+                                              ->whereHas('users', function($userQuery) use ($userId) {
+                                                  $userQuery->where('user_id', $userId);
+                                              });
+                                        });
+                                    }
+                                });
+                                $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
+                                    $query->with(['product', 'category']);
+                                }])->get()->filter(function($discountCode) use ($currentTime) {
+                                    if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                                        $from = \Carbon\Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                                        $to = \Carbon\Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                                        if ($from < $to) {
+                                            if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                                        } else {
+                                            if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                                        }
+                                    }
+                                    return true;
+                                });
+                                $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                                    if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                                        return true;
+                                    }
+                                    $applies = $discountCode->products->contains(function($discountProduct) use ($item) {
+                                        if ($discountProduct->product_id === $item->variant->product->id) return true;
+                                        if ($discountProduct->category_id === $item->variant->product->category_id) return true;
+                                        return false;
+                                    });
+                                    return $applies;
+                                });
+                                $maxDiscount = null;
+                                $maxValue = 0;
+                                foreach ($applicableDiscounts as $discountCode) {
+                                    $value = 0;
+                                    if ($discountCode->discount_type === 'fixed_amount') {
+                                        $value = $discountCode->discount_value;
+                                    } elseif ($discountCode->discount_type === 'percentage') {
+                                        $value = $originPrice * $discountCode->discount_value / 100;
+                                        if ($discountCode->max_discount_amount) {
+                                            $value = min($value, $discountCode->max_discount_amount);
+                                        }
+                                    }
+                                    if ($value > $maxValue) {
+                                        $maxValue = $value;
+                                        $maxDiscount = $discountCode;
+                                    }
+                                }
+                                $finalPrice = max(0, $originPrice - $maxValue);
+                                $subtotal += $finalPrice * $item->quantity;
+                            }
+                        @endphp
+                        <span id="subtotal">{{ number_format($subtotal, 0, '', '.') }} đ</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Phí giao hàng</span>

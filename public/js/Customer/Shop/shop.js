@@ -47,6 +47,18 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Helper: tính số tiền giảm giá tốt nhất cho 1 sản phẩm
     function calcBestDiscountAmount(price) {
+        // Debug log
+        console.log('calcBestDiscountAmount called with price:', price);
+        console.log('window.bestDiscountAmount:', window.bestDiscountAmount);
+        console.log('window.bestDiscountCode:', window.bestDiscountCode);
+        
+        // Sử dụng giá trị đã tính sẵn từ server thay vì tính lại
+        if (window.bestDiscountAmount && window.bestDiscountAmount > 0) {
+            console.log('Using server-calculated discount amount:', window.bestDiscountAmount);
+            return window.bestDiscountAmount;
+        }
+        
+        // Fallback: tính toán như cũ nếu không có giá trị từ server
         if (!bestDiscount) return 0;
         let discountAmount = 0;
         if (bestDiscount.discount_type === 'percentage') {
@@ -60,6 +72,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (bestDiscount.min_order_amount > 0 && price < bestDiscount.min_order_amount) {
             discountAmount = 0;
         }
+        console.log('Calculated discount amount:', discountAmount);
         return discountAmount;
     }
 
@@ -83,12 +96,12 @@ document.addEventListener("DOMContentLoaded", function() {
         const finalPrice = Math.max(0, originalPrice - discountAmount);
         // Hiển thị
         if (discountAmount > 0) {
-            basePriceDisplay.textContent = `${originalPrice.toLocaleString('vi-VN')}đ`;
+            basePriceDisplay.textContent = `${Math.round(originalPrice).toLocaleString('en-US')} đ`;
             basePriceDisplay.classList.remove('hidden');
-            currentPriceDisplay.textContent = `${finalPrice.toLocaleString('vi-VN')}đ`;
+            currentPriceDisplay.textContent = `${Math.round(finalPrice).toLocaleString('en-US')} đ`;
         } else {
             basePriceDisplay.classList.add('hidden');
-            currentPriceDisplay.textContent = `${originalPrice.toLocaleString('vi-VN')}đ`;
+            currentPriceDisplay.textContent = `${Math.round(originalPrice).toLocaleString('en-US')} đ`;
         }
         // Highlight
         if (discountAmount > 0) {
@@ -678,11 +691,11 @@ channel.bind('product-price-updated', function(data) {
     currentPriceDisplay.classList.add('animate-price-update');
     
     // Update base price display
-    basePriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+    basePriceDisplay.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
     basePriceDisplay.classList.remove('hidden');
     
     // Update current price display
-    currentPriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+    currentPriceDisplay.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
     currentPriceDisplay.classList.add('text-orange-500');
     currentPriceDisplay.classList.remove('text-green-500');
     
@@ -710,7 +723,7 @@ channel.bind('product-price-updated', function(data) {
         if (productId == data.productId) {
             const priceElement = product.querySelector('.product-price');
             if (priceElement) {
-                priceElement.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+                priceElement.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
                 priceElement.classList.add('animate-price-update');
                 setTimeout(() => {
                     priceElement.classList.remove('animate-price-update');
@@ -745,20 +758,15 @@ channel.bind('variant-price-updated', function(data) {
         const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
         if (priceSpan) {
             if (data.newPriceAdjustment > 0) {
-                priceSpan.textContent = `+${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
-                priceSpan.className = 'text-sm ml-1 text-red-600';
-            } else if (data.newPriceAdjustment < 0) {
-                priceSpan.textContent = `${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
-                priceSpan.className = 'text-sm ml-1 text-green-600';
+                priceSpan.textContent = `+${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
             } else {
-                // Remove price span if adjustment is 0
-                priceSpan.remove();
+                priceSpan.textContent = `${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
             }
         } else if (data.newPriceAdjustment !== 0) {
             // Create new price span if it doesn't exist
             const newPriceSpan = document.createElement('span');
             newPriceSpan.className = `text-sm ml-1 ${data.newPriceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-            newPriceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
+            newPriceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
             label.appendChild(newPriceSpan);
         }
         
@@ -803,8 +811,7 @@ channel.bind('variant-price-updated', function(data) {
                     const label = input.nextElementSibling;
                     const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
                     if (priceSpan && data.newPriceAdjustment !== 0) {
-                        priceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
-                        priceSpan.className = `text-sm ml-1 ${data.newPriceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+                        priceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
                     }
                 }
             });
@@ -837,7 +844,7 @@ channel.bind('topping-price-updated', function(data) {
             // Update the price display
             const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
             if (priceElement) {
-                priceElement.textContent = `+${parseFloat(data.newPrice).toLocaleString('vi-VN')}đ`;
+                priceElement.textContent = `+${Math.round(parseFloat(data.newPrice)).toLocaleString('en-US')} đ`;
                 
                 // Add animation to the price element
                 priceElement.classList.add('topping-price-updated');
@@ -879,7 +886,7 @@ channel.bind('topping-price-updated', function(data) {
                 const label = input.closest('label');
                 const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
                 if (priceElement) {
-                    priceElement.textContent = `+${parseFloat(data.newPrice).toLocaleString('vi-VN')}đ`;
+                    priceElement.textContent = `+${Math.round(parseFloat(data.newPrice)).toLocaleString('en-US')} đ`;
                 }
             }
         });
@@ -1178,7 +1185,7 @@ function createVariantOption(variantValue, variantId) {
     if (variantValue.price_adjustment !== 0) {
         const priceSpan = document.createElement('span');
         priceSpan.className = `text-sm ml-1 ${variantValue.price_adjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-        priceSpan.textContent = `${variantValue.price_adjustment > 0 ? '+' : ''}${parseFloat(variantValue.price_adjustment).toLocaleString('vi-VN')}đ`;
+        priceSpan.textContent = `${variantValue.price_adjustment > 0 ? '+' : ''}${Math.round(parseFloat(variantValue.price_adjustment)).toLocaleString('en-US')} đ`;
         span.appendChild(priceSpan);
         console.log('Added price span:', priceSpan.textContent);
     }
@@ -1217,12 +1224,11 @@ function updateVariantPriceDisplay(label, priceAdjustment) {
     
     if (priceAdjustment !== 0) {
         if (priceSpan) {
-            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${parseFloat(priceAdjustment).toLocaleString('vi-VN')}đ`;
-            priceSpan.className = `text-sm ml-1 ${priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(priceAdjustment)).toLocaleString('en-US')} đ`;
         } else {
             priceSpan = document.createElement('span');
             priceSpan.className = `text-sm ml-1 ${priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${parseFloat(priceAdjustment).toLocaleString('vi-VN')}đ`;
+            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(priceAdjustment)).toLocaleString('en-US')} đ`;
             label.appendChild(priceSpan);
         }
     } else if (priceSpan) {
