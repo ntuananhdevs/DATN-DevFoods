@@ -1133,18 +1133,6 @@
     </div>
 </div>
 
-<pre style="background:#f3f4f6;padding:8px 12px;border-radius:6px;font-size:13px;">
-id: {{ $product->id }}
-min_price: {{ $product->min_price }}
-base_price: {{ $product->base_price }}
-variants: {{ json_encode($product->variants->pluck('price')) }}
-maxDiscount: {{ json_encode($maxDiscount) }}
-maxValue: {{ $maxValue }}
-originPrice: {{ $originPrice }}
-finalPrice: {{ $finalPrice }}
-bestDiscountAmount: {{ $maxValue }}
-</pre>
-
 @endsection
 
 @section('scripts')
