@@ -61,7 +61,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
 
 // Admin conversations channel
 Broadcast::channel('admin.conversations', function ($user) {
-    return $user->role === 'sp_admin' ? [
+    return in_array($user->role, ['admin', 'super_admin', 'spadmin']) ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,
@@ -70,7 +70,7 @@ Broadcast::channel('admin.conversations', function ($user) {
 
 // Branch conversations channel
 Broadcast::channel('branch.{branchId}.conversations', function ($user, $branchId) {
-    return (in_array($user->role, ['branch_manager', 'branch_staff']) && $user->branch_id == $branchId) ? [
+    return (in_array($user->role, ['branch_staff', 'branch_admin']) && $user->branch_id == $branchId) ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,
@@ -78,15 +78,7 @@ Broadcast::channel('branch.{branchId}.conversations', function ($user, $branchId
     ] : false;
 });
 
-// Online users presence channel
-Broadcast::channel('online-users', function ($user) {
-    return [
-        'id' => $user->id,
-        'name' => $user->name,
-        'role' => $user->role,
-        'avatar' => $user->avatar ?? null,
-    ];
-});
+
 Broadcast::channel('driver.{driverId}', function ($driver, $driverId) {
     // Chỉ tài xế đã đăng nhập và có ID trùng khớp mới có thể nghe kênh này
     return (int) $driver->id === (int) $driverId;
@@ -141,4 +133,10 @@ Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversat
 Broadcast::channel('discounts', function ($user = null) {
     // Allow all users (including unauthenticated) to listen to discount updates
     return true;
+});
+
+// Wishlist channel for a specific user
+Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
+    // Only the authenticated user with the matching ID can listen.
+    return (int) $user->id === (int) $userId;
 });

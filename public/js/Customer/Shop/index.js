@@ -160,7 +160,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Listen for discount updates
         discountsChannel.bind('discount-updated', function(data) {
-            handleDiscountUpdate(data);
+            console.log('--- Pusher event "discount-updated" received ---');
+            console.log('Data received:', data);
+            
+            // Reload page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         });
         
         // Listen for subscription success
@@ -201,136 +207,61 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1000);
         }
     }
-    
-    // Function to handle discount updates
-    function handleDiscountUpdate(data) {
-        // Check if data has the expected structure
-        if (!data) {
-            console.error('No data received in discount update');
-            return;
-        }
 
-        // Handle data structure from DiscountUpdated event
-        let action, discountData;
-        
-        if (data.action && data.discountData) {
-            // Event structure: { action: 'created', discountData: {...} }
-            action = data.action;
-            discountData = data.discountData;
-        } else if (data.action) {
-            // Direct action structure
-            action = data.action;
-            discountData = data;
-        } else {
-            console.error('Invalid data structure:', data);
-            return;
-        }
-        
-        switch (action) {
-            case 'created':
-                handleDiscountCreated(discountData);
-                break;
-            case 'updated':
-                handleDiscountUpdated(discountData);
-                break;
-            case 'deleted':
-                handleDiscountDeleted(discountData);
-                break;
-            default:
-                // Unknown action
-        }
-    }
-    
-    function handleDiscountCreated(discountData) {
-        refreshDiscountCodes();
-        updateDiscountBadges(discountData);
-    }
-
-    function handleDiscountUpdated(discountData) {
-        refreshDiscountCodes();
-        updateDiscountBadges(discountData);
-    }
-
-    function handleDiscountDeleted(discountData) {
-        showToast(`Xóa mã giảm giá: ${discountData.code}`, 'warning');
-        refreshDiscountCodes();
-        updateDiscountBadges(discountData);
-    }
-
-    function refreshDiscountCodes() {
-        // Find all product cards with discount codes
-        const productCards = document.querySelectorAll('.product-card');
-        
-        productCards.forEach((card, index) => {
-            const discountTags = card.querySelectorAll('.discount-badge');
-            if (discountTags.length > 0) {
-                // Add a subtle animation to indicate update
-                card.classList.add('animate-pulse');
-                setTimeout(() => {
-                    card.classList.remove('animate-pulse');
-                }, 2000);
+    // Favorite (heart) button logic
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Nếu là nút login-prompt-btn thì show popup đăng nhập
+            if (btn.classList.contains('login-prompt-btn')) {
+                document.getElementById('login-popup').classList.remove('hidden');
+                return;
             }
-        });
-    }
-    
-    function updateDiscountBadges(discountData) {
-        const productCards = document.querySelectorAll('.product-card');
-        
-        productCards.forEach((card, index) => {
-            const discountTags = card.querySelectorAll('.discount-badge');
-            
-            discountTags.forEach(tag => {
-                // Try to get discount code from data attribute or text content
-                let discountCode = tag.getAttribute('data-discount-code');
-                
-                // If no data attribute, try to extract from text content
-                if (!discountCode) {
-                    const text = tag.textContent.trim();
-                    // Try to extract code from text like "Giảm 10%" or "Miễn phí vận chuyển"
-                    if (text.includes('Giảm') || text.includes('Miễn phí')) {
-                        // For now, we'll use a more generic approach
-                        discountCode = 'MATCH_ALL'; // This will match all discount badges
-                    }
-                }
-                
-                // If we found a matching discount or it's a general update
-                if (discountCode === discountData.code || discountCode === 'MATCH_ALL') {
-                    if (!discountData.is_active) {
-                        // Hide the discount badge if discount is inactive
-                        // Add animation for hiding
-                        tag.classList.add('fade-out');
-                        setTimeout(() => {
-                            tag.style.display = 'none';
-                            tag.classList.remove('fade-out');
-                        }, 500);
+            // Đã đăng nhập
+            const productId = btn.getAttribute('data-product-id');
+            const icon = btn.querySelector('i');
+            const isFavorite = icon.classList.contains('fas');
+            // Optimistic UI
+            if (isFavorite) {
+                icon.classList.remove('fas', 'text-red-500');
+                icon.classList.add('far');
+            } else {
+                icon.classList.remove('far');
+                icon.classList.add('fas', 'text-red-500');
+            }
+            // Gửi AJAX
+            fetch('/wishlist' + (isFavorite ? '/' + productId : ''), {
+                method: isFavorite ? 'DELETE' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken
+                },
+                body: isFavorite ? null : JSON.stringify({ product_id: productId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.message) {
+                    dtmodalShowToast(isFavorite ? 'info' : 'success', {
+                        title: isFavorite ? 'Thông báo' : 'Thành công',
+                        message: data.message
+                    });
+                } else {
+                    // Nếu lỗi, revert lại UI
+                    if (isFavorite) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas', 'text-red-500');
                     } else {
-                        // Show the discount badge if discount is active
-                        tag.style.display = 'inline-flex';
-                        
-                        // Add animation for showing
-                        tag.classList.add('fade-in');
-                        setTimeout(() => {
-                            tag.classList.remove('fade-in');
-                        }, 500);
+                        icon.classList.remove('fas', 'text-red-500');
+                        icon.classList.add('far');
                     }
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Có lỗi khi cập nhật yêu thích'
+                    });
                 }
-            });
-        });
-    }
-    
-    // Function to attach event listeners to newly rendered products
-    function attachEventListeners() {
-        // Favorite button handling
-        document.querySelectorAll('.favorite-btn:not(.login-prompt-btn)').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const productCard = this.closest('.product-card');
-                const productId = productCard.dataset.productId;
-                const icon = this.querySelector('i');
-                if (!productId || !icon) return;
-                const isFavorite = icon.classList.contains('far');
-
-                // Giao diện ngay lập tức
+            })
+            .catch(() => {
+                // Nếu lỗi, revert lại UI
                 if (isFavorite) {
                     icon.classList.remove('far');
                     icon.classList.add('fas', 'text-red-500');
@@ -338,120 +269,42 @@ document.addEventListener('DOMContentLoaded', function() {
                     icon.classList.remove('fas', 'text-red-500');
                     icon.classList.add('far');
                 }
-
-                // Gọi API toggle yêu thích
-                fetch('/favorite/toggle', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({ product_id: productId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (data.is_favorite) {
-                            icon.classList.remove('far');
-                            icon.classList.add('fas', 'text-red-500');
-                            showToast('Đã thêm vào yêu thích', 'success');
-                        } else {
-                            icon.classList.remove('fas', 'text-red-500');
-                            icon.classList.add('far');
-                            showToast('Đã xóa khỏi yêu thích', 'info');
-                        }
-                    } else {
-                        showToast(data.message || 'Có lỗi xảy ra', 'error');
-                    }
-                })
-                .catch(error => {
-                    // Revert visual nếu lỗi
-                    if (isFavorite) {
-                        icon.classList.remove('fas', 'text-red-500');
-                        icon.classList.add('far');
-                    } else {
-                        icon.classList.remove('far');
-                        icon.classList.add('fas', 'text-red-500');
-                    }
-                    showToast('Đã xảy ra lỗi. Vui lòng thử lại.', 'error');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi khi cập nhật yêu thích'
                 });
             });
         });
-        
-        // Login prompt button handling
-        document.querySelectorAll('.login-prompt-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const loginPopup = document.getElementById('login-popup');
-                if (loginPopup) {
-                    loginPopup.classList.remove('hidden');
-                }
-            });
+    });
+
+    // Đóng modal đăng nhập khi bấm nút đóng hoặc click ra ngoài
+    const loginPopup = document.getElementById('login-popup');
+    const closeLoginBtn = document.getElementById('close-login-popup');
+    if (loginPopup && closeLoginBtn) {
+        closeLoginBtn.onclick = function() {
+            loginPopup.classList.add('hidden');
+        };
+        loginPopup.onclick = function(e) {
+            if (e.target === this) this.classList.add('hidden');
+        };
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                loginPopup.classList.add('hidden');
+            }
         });
     }
-    
-    // Attach initial event listeners
-    attachEventListeners();
-    
-    // Toast notification function
-    function showToast(message, type = 'info') {
-        // Remove old toast if exists
-        const oldToast = document.querySelector('.custom-toast');
-        if (oldToast) oldToast.remove();
+});
 
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = 'custom-toast fixed top-8 right-4 z-50 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-toast-in';
-        toast.style.minWidth = '220px';
-        toast.style.maxWidth = '90vw';
-        toast.style.fontSize = '1rem';
-        toast.style.transition = 'transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.3s';
-        toast.style.transform = 'translateX(120%)';
-        toast.style.opacity = '0';
+// Force reload when coming back from bfcache (back/forward)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && performance.getEntriesByType('navigation')[0]?.type === 'back_forward')) {
+        window.location.reload();
+    }
+});
 
-        // Icon
-        const icon = document.createElement('i');
-        icon.className = 'fas';
-        switch(type) {
-            case 'success':
-                toast.classList.add('bg-green-500', 'text-white');
-                icon.classList.add('fa-check-circle');
-                break;
-            case 'error':
-                toast.classList.add('bg-red-500', 'text-white');
-                icon.classList.add('fa-times-circle');
-                break;
-            case 'warning':
-                toast.classList.add('bg-yellow-400', 'text-gray-900');
-                icon.classList.add('fa-exclamation-triangle');
-                break;
-            default:
-                toast.classList.add('bg-gray-800', 'text-white');
-                icon.classList.add('fa-info-circle');
-        }
-        icon.style.fontSize = '1.3em';
-        toast.appendChild(icon);
-
-        // Message
-        const msg = document.createElement('span');
-        msg.textContent = message;
-        toast.appendChild(msg);
-
-        // Add to DOM
-        document.body.appendChild(toast);
-
-        // Force reflow for animation
-        setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-            toast.style.opacity = '1';
-        }, 10);
-
-        // Hide and remove after 2.5s
-        setTimeout(() => {
-            toast.style.transform = 'translateX(120%)';
-            toast.style.opacity = '0';
-            setTimeout(() => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 400);
-        }, 2500);
+// Thêm fallback: reload khi tab được hiển thị lại nếu discount đã bị tắt (dùng localStorage flag)
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && window.needDiscountReload) {
+        window.location.reload();
     }
 });

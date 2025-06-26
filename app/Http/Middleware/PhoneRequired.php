@@ -21,12 +21,12 @@ class PhoneRequired
         if (Auth::check()) {
             /** @var \App\Models\User $user */
             $user = Auth::user();
-            
+
             // Kiểm tra user có vai trò admin không (admin không cần số điện thoại)
             if ($user->roles()->where('name', 'admin')->exists()) {
                 return $next($request);
             }
-            
+
             // Nếu user chưa có số điện thoại
             if (empty($user->phone)) {
                 // Danh sách route được phép access khi chưa có số điện thoại
@@ -37,9 +37,9 @@ class PhoneRequired
                     'api.auth.google',
                     'api.auth.status'
                 ];
-                
+
                 $currentRoute = $request->route() ? $request->route()->getName() : null;
-                
+
                 // Nếu không phải route được phép, redirect đến trang nhập số điện thoại
                 if (!in_array($currentRoute, $allowedRoutes)) {
                     // Nếu là AJAX request, trả về JSON
@@ -50,14 +50,14 @@ class PhoneRequired
                             'redirect_url' => route('customer.phone-required')
                         ], 403);
                     }
-                    
+
                     // Nếu là request thường, redirect
                     return redirect()->route('customer.phone-required')
                         ->with('warning', 'Vui lòng cập nhật số điện thoại để tiếp tục sử dụng dịch vụ.');
                 }
             }
         }
-        
+
         return $next($request);
     }
 }

@@ -8,6 +8,14 @@
       max-width: 1280px;
       margin: 0 auto;
    }
+
+   button:disabled, button[disabled] {
+    background-color: #fbbf24 !important; /* màu cam nhạt hơn */
+    color: #fff !important;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    border: none !important;
+}
 </style>
 <div class="min-h-screen flex flex-col items-center justify-center px-4">
     <div class="w-full max-w-md">
@@ -26,6 +34,7 @@
                 <!-- OTP Form -->
                 <form id="otpForm" class="space-y-6" action="{{ route('customer.verify.otp.post') }}" method="POST">
                     @csrf
+                    <input type="hidden" name="email" id="emailField" value="{{ $email ?? '' }}">
                     <input type="hidden" name="otp" id="otpValue">
                     
                     @error('otp')
@@ -85,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const otpInputs = document.querySelectorAll('#otpInputs input');
     const otpForm = document.getElementById('otpForm');
     const otpValue = document.getElementById('otpValue');
+    const emailField = document.getElementById('emailField');
     const verifyBtn = document.getElementById('verifyBtn');
     const verifyBtnText = document.getElementById('verifyBtnText');
     const verifyBtnLoading = document.getElementById('verifyBtnLoading');
@@ -94,14 +104,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const timerText = document.getElementById('timerText');
     const countdown = document.getElementById('countdown');
     
-    let timer = 60;
+    // Tạo key lưu trữ duy nhất cho từng email
+    const resendCooldownKey = 'otpResendDeadline_' + (emailField.value || 'default');
     let timerInterval;
+
+    // Set email from URL parameter or session
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailFromUrl = urlParams.get('email');
+    if (emailFromUrl) {
+        emailField.value = emailFromUrl;
+    }
 
     // Focus first input
     otpInputs[0].focus();
-
-    // Start countdown
-    startCountdown();
 
     // OTP input handling
     otpInputs.forEach((input, index) => {
@@ -155,17 +170,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function startCountdown() {
-        timerInterval = setInterval(() => {
-            timer--;
-            countdown.textContent = timer;
+    // Hàm quản lý trạng thái và hiển thị của bộ đếm ngược
+    function manageResendCooldown() {
+        const deadline = localStorage.getItem(resendCooldownKey);
+
+        if (deadline && Date.now() < deadline) {
+            // Nếu đang trong thời gian chờ
+            timerText.classList.remove('hidden');
+            resendBtn.classList.add('hidden');
             
-            if (timer <= 0) {
-                clearInterval(timerInterval);
-                timerText.classList.add('hidden');
-                resendBtn.classList.remove('hidden');
-            }
-        }, 1000);
+            if (timerInterval) clearInterval(timerInterval); // Xóa bộ đếm cũ nếu có
+
+            timerInterval = setInterval(() => {
+                const remaining = deadline - Date.now();
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerText.classList.add('hidden');
+                    resendBtn.classList.remove('hidden');
+                    localStorage.removeItem(resendCooldownKey);
+                } else {
+                    countdown.textContent = Math.ceil(remaining / 1000);
+                }
+            }, 1000);
+        } else {
+            // Nếu không trong thời gian chờ (hoặc đã hết hạn)
+            timerText.classList.add('hidden');
+            resendBtn.classList.remove('hidden');
+            localStorage.removeItem(resendCooldownKey); // Dọn dẹp key đã hết hạn
+        }
     }
 
     // Form submission
@@ -175,41 +207,90 @@ document.addEventListener('DOMContentLoaded', function() {
         verifyBtnLoading.classList.remove('hidden');
     });
 
-    // Resend OTP
+    // Xử lý khi bấm nút "Gửi lại OTP"
     resendBtn.addEventListener('click', function() {
         resendBtnText.classList.add('hidden');
         resendBtnLoading.classList.remove('hidden');
         resendBtn.disabled = true;
         
-        // Send AJAX request to resend OTP
         fetch('{{ route("customer.resend.otp") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({})
+            body: JSON.stringify({
+                email: emailField.value
+            })
         })
         .then(response => response.json())
         .then(data => {
-            resendBtnText.classList.remove('hidden');
-            resendBtnLoading.classList.add('hidden');
-            resendBtn.disabled = false;
-            resendBtn.classList.add('hidden');
-            timerText.classList.remove('hidden');
-            
-            // Reset timer
-            timer = 60;
-            countdown.textContent = timer;
-            startCountdown();
+            if (data.success) {
+                // Đặt mốc hết hạn mới và bắt đầu đếm ngược
+                localStorage.setItem(resendCooldownKey, Date.now() + 60000);
+                manageResendCooldown();
+            } else {
+                // Failure: show error and re-enable button
+                alert(data.message || 'Không thể gửi lại OTP. Vui lòng thử lại sau.');
+                resendBtnText.classList.remove('hidden');
+                resendBtnLoading.classList.add('hidden');
+                resendBtn.disabled = false;
+            }
         })
         .catch(error => {
             console.error('Error:', error);
+            alert('Đã xảy ra lỗi khi gửi lại OTP. Vui lòng kiểm tra kết nối và thử lại.');
             resendBtnText.classList.remove('hidden');
             resendBtnLoading.classList.add('hidden');
             resendBtn.disabled = false;
         });
     });
+
+    // Gọi hàm quản lý khi trang được tải lần đầu
+    manageResendCooldown();
+
+    // Sau khi DOMContentLoaded
+    const otpErrorDiv = document.querySelector('.text-red-500.text-sm.text-center');
+    if (otpErrorDiv && otpErrorDiv.textContent.includes('Vui lòng thử lại sau')) {
+        let minutes = 1;
+        const match = otpErrorDiv.textContent.match(/sau (\d+) phút/);
+        if (match) {
+            minutes = parseInt(match[1]);
+        } else if (otpErrorDiv.textContent.match(/sau 1 phút/)) {
+            minutes = 1;
+        } else if (otpErrorDiv.textContent.match(/sau 3 phút/)) {
+            minutes = 3;
+        }
+        let seconds = minutes * 60;
+        verifyBtn.disabled = true;
+        otpErrorDiv.innerHTML += `<br><span id="otp-timer">(${seconds}s)</span>`;
+        const timerSpan = document.getElementById('otp-timer');
+        const timerInterval = setInterval(() => {
+            seconds--;
+            timerSpan.textContent = `(${seconds}s)`;
+            if (seconds <= 0) {
+                clearInterval(timerInterval);
+                // AJAX check lock status
+                fetch('{{ route("customer.check.otp.lock") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ email: emailField.value })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.locked) {
+                        verifyBtn.disabled = false;
+                        timerSpan.textContent = '';
+                    } else {
+                        otpErrorDiv.textContent = data.message;
+                    }
+                });
+            }
+        }, 1000);
+    }
 });
 </script>
 @endsection

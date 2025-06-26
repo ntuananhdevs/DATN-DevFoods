@@ -16,69 +16,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
     
-    // Show toast function (custom slide-in right)
-    window.showToast = function(message, type = 'info') {
-        // Remove old toast if exists
-        const oldToast = document.querySelector('.custom-toast');
-        if (oldToast) oldToast.remove();
-
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = 'custom-toast fixed top-8 right-4 z-50 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-toast-in';
-        toast.style.minWidth = '220px';
-        toast.style.maxWidth = '90vw';
-        toast.style.fontSize = '1rem';
-        toast.style.transition = 'transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.3s';
-        toast.style.transform = 'translateX(120%)';
-        toast.style.opacity = '0';
-
-        // Icon
-        const icon = document.createElement('i');
-        icon.className = 'fas';
-        switch(type) {
-            case 'success':
-                toast.classList.add('bg-green-500', 'text-white');
-                icon.classList.add('fa-check-circle');
-                break;
-            case 'error':
-                toast.classList.add('bg-red-500', 'text-white');
-                icon.classList.add('fa-times-circle');
-                break;
-            case 'warning':
-                toast.classList.add('bg-yellow-400', 'text-gray-900');
-                icon.classList.add('fa-exclamation-triangle');
-                break;
-            default:
-                toast.classList.add('bg-gray-800', 'text-white');
-                icon.classList.add('fa-info-circle');
-        }
-        icon.style.fontSize = '1.3em';
-        toast.appendChild(icon);
-
-        // Message
-        const msg = document.createElement('span');
-        msg.textContent = message;
-        toast.appendChild(msg);
-
-        // Add to DOM
-        document.body.appendChild(toast);
-
-        // Force reflow for animation
-        setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-            toast.style.opacity = '1';
-        }, 10);
-
-        // Hide and remove after 2.5s
-        setTimeout(() => {
-            toast.style.transform = 'translateX(120%)';
-            toast.style.opacity = '0';
-            setTimeout(() => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 400);
-        }, 2500);
-    };
-    
     // Product image gallery
     const mainImage = document.getElementById('main-product-image');
     const thumbnails = document.querySelectorAll('.product-thumbnail');
@@ -104,6 +41,41 @@ document.addEventListener("DOMContentLoaded", function() {
     let quantity = 1;
     let totalPrice = basePrice;
     
+    // Discount code info from server (window)
+    const bestDiscount = window.bestDiscountCode || null;
+    const bestDiscountAmount = window.bestDiscountAmount || 0;
+    
+    // Helper: tính số tiền giảm giá tốt nhất cho 1 sản phẩm
+    function calcBestDiscountAmount(price) {
+        // Debug log
+        console.log('calcBestDiscountAmount called with price:', price);
+        console.log('window.bestDiscountAmount:', window.bestDiscountAmount);
+        console.log('window.bestDiscountCode:', window.bestDiscountCode);
+        
+        // Sử dụng giá trị đã tính sẵn từ server thay vì tính lại
+        if (window.bestDiscountAmount && window.bestDiscountAmount > 0) {
+            console.log('Using server-calculated discount amount:', window.bestDiscountAmount);
+            return window.bestDiscountAmount;
+        }
+        
+        // Fallback: tính toán như cũ nếu không có giá trị từ server
+        if (!bestDiscount) return 0;
+        let discountAmount = 0;
+        if (bestDiscount.discount_type === 'percentage') {
+            discountAmount = price * (bestDiscount.discount_value / 100);
+            if (bestDiscount.max_discount_amount && bestDiscount.max_discount_amount > 0) {
+                discountAmount = Math.min(discountAmount, bestDiscount.max_discount_amount);
+            }
+        } else if (bestDiscount.discount_type === 'fixed_amount') {
+            discountAmount = bestDiscount.discount_value;
+        }
+        if (bestDiscount.min_order_amount > 0 && price < bestDiscount.min_order_amount) {
+            discountAmount = 0;
+        }
+        console.log('Calculated discount amount:', discountAmount);
+        return discountAmount;
+    }
+
     // Define updatePrice function in global scope
     window.updatePrice = function() {
         // Calculate variant price adjustments
@@ -111,28 +83,31 @@ document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.variant-input:checked').forEach(input => {
             variantAdjustment += parseFloat(input.dataset.priceAdjustment || 0);
         });
-        
         // Calculate topping price
         let toppingPrice = 0;
         document.querySelectorAll('.topping-input:checked').forEach(input => {
             toppingPrice += parseFloat(input.dataset.price || 0);
         });
-        
-        // Single item price (base price + variant price + toppings)
-        const singleItemPrice = window.basePrice + variantAdjustment + toppingPrice;
-        
-        // Update display - chỉ hiển thị giá của 1 sản phẩm, không nhân với quantity
-        if (variantAdjustment !== 0 || toppingPrice !== 0) {
-            basePriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+        // Tổng giá gốc (base + variant + topping)
+        const originalPrice = window.basePrice + variantAdjustment + toppingPrice;
+        // Tính số tiền giảm giá tốt nhất
+        const discountAmount = calcBestDiscountAmount(originalPrice);
+        // Giá sau giảm
+        const finalPrice = Math.max(0, originalPrice - discountAmount);
+        // Hiển thị
+        if (discountAmount > 0) {
+            basePriceDisplay.textContent = `${Math.round(originalPrice).toLocaleString('en-US')} đ`;
             basePriceDisplay.classList.remove('hidden');
+            currentPriceDisplay.textContent = `${Math.round(finalPrice).toLocaleString('en-US')} đ`;
         } else {
             basePriceDisplay.classList.add('hidden');
+            currentPriceDisplay.textContent = `${Math.round(originalPrice).toLocaleString('en-US')} đ`;
         }
-        
-        currentPriceDisplay.textContent = `${singleItemPrice.toLocaleString('vi-VN')}đ`;
-        
-        // Highlight current price if different from base
-        if (singleItemPrice !== window.basePrice) {
+        // Highlight
+        if (discountAmount > 0) {
+            currentPriceDisplay.classList.add('text-orange-500');
+            currentPriceDisplay.classList.remove('text-green-500');
+        } else if (originalPrice !== window.basePrice) {
             currentPriceDisplay.classList.add('text-green-500');
             currentPriceDisplay.classList.remove('text-orange-500');
         } else {
@@ -199,9 +174,15 @@ document.addEventListener("DOMContentLoaded", function() {
         // Get selected branch
         const branchId = document.getElementById('branch-select').value;
         if (!branchId) {
-            showToast('Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng', 'warning');
+            dtmodalShowToast('warning', {
+                title: 'Chọn chi nhánh',
+                message: 'Vui lòng chọn chi nhánh trước khi thêm vào giỏ hàng'
+            });
             return null;
         }
+        
+        // Lấy product_id từ data attribute của nút add-to-cart
+        const productId = document.getElementById('add-to-cart').getAttribute('data-product-id');
         
         // Get all selected variant values
         const selectedVariantValueIds = [];
@@ -222,7 +203,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const quantity = parseInt(document.getElementById('quantity').textContent);
         
         return {
-            product_id: window.productId,
+            product_id: productId,
             variant_values: selectedVariantValueIds,
             branch_id: branchId,
             quantity: quantity,
@@ -247,19 +228,32 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showToast(data.message, 'success');
-                
-                // Update cart counter if needed
-                if (typeof window.updateCartCount === 'function' && data.count) {
-                    window.updateCartCount(data.count);
+                dtmodalShowToast('success', {
+                    title: 'Thành công',
+                    message: data.message
+                });
+                // Cập nhật số lượng giỏ hàng trên header
+                const cartCounter = document.getElementById('cart-counter');
+                if (cartCounter) {
+                    cartCounter.textContent = data.cart_count;
                 }
+                // Chờ toast biến mất (5 giây) rồi chuyển hướng đến trang giỏ hàng
+                setTimeout(() => {
+                    window.location.href = '/cart';
+                }, 5000);
             } else {
-                showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: data.message || 'Có lỗi xảy ra'
+                });
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
+            dtmodalShowToast('error', {
+                title: 'Lỗi',
+                message: 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
+            });
         });
     });
 
@@ -286,12 +280,18 @@ document.addEventListener("DOMContentLoaded", function() {
                 // Redirect to checkout page
                 window.location.href = '/checkout';
             } else {
-                showToast(data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng', 'error');
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: data.message || 'Có lỗi khi thêm sản phẩm vào giỏ hàng'
+                });
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng', 'error');
+            dtmodalShowToast('error', {
+                title: 'Lỗi',
+                message: 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
+            });
         });
     });
     
@@ -328,7 +328,10 @@ document.addEventListener("DOMContentLoaded", function() {
             }, 2000);
             
             // Show toast notification
-            showToast(`Đã sao chép mã "${code}" vào clipboard`, 'success');
+            dtmodalShowToast('success', {
+                title: 'Đã sao chép',
+                message: `Mã "${code}" đã được sao chép vào clipboard`
+            });
         });
     });
 
@@ -340,36 +343,67 @@ document.addEventListener("DOMContentLoaded", function() {
     if (favoriteBtn) {
         favoriteBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            // Nếu là nút login-prompt-btn thì show popup đăng nhập
+            if (this.classList.contains('login-prompt-btn')) {
+                document.getElementById('login-popup').classList.remove('hidden');
+                return;
+            }
             const productId = this.getAttribute('data-product-id');
             const icon = this.querySelector('i');
-            if (!productId || !icon) return;
-
-            fetch('/favorite/toggle', {
-                method: 'POST',
+            const isFavorite = icon.classList.contains('fas');
+            // Optimistic UI
+            if (isFavorite) {
+                icon.classList.remove('fas', 'text-red-500');
+                icon.classList.add('far');
+            } else {
+                icon.classList.remove('far');
+                icon.classList.add('fas', 'text-red-500');
+            }
+            // Gửi AJAX
+            fetch('/wishlist' + (isFavorite ? '/' + productId : ''), {
+                method: isFavorite ? 'DELETE' : 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': window.csrfToken
                 },
-                body: JSON.stringify({ product_id: productId })
+                body: isFavorite ? null : JSON.stringify({ product_id: productId })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    if (data.is_favorite) {
+                if (data && data.message) {
+                    // Thành công hoặc lỗi đều show message
+                    dtmodalShowToast(isFavorite ? 'info' : 'success', {
+                        title: isFavorite ? 'Thông báo' : 'Thành công',
+                        message: data.message
+                    });
+                } else {
+                    // Nếu lỗi, revert lại UI
+                    if (isFavorite) {
                         icon.classList.remove('far');
                         icon.classList.add('fas', 'text-red-500');
-                        showToast('Đã thêm vào yêu thích', 'success');
                     } else {
                         icon.classList.remove('fas', 'text-red-500');
                         icon.classList.add('far');
-                        showToast('Đã xóa khỏi yêu thích', 'info');
                     }
-                } else {
-                    showToast(data.message || 'Có lỗi xảy ra', 'error');
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Có lỗi khi cập nhật yêu thích'
+                    });
                 }
             })
-            .catch(error => {
-                showToast('Có lỗi xảy ra khi cập nhật yêu thích', 'error');
+            .catch(() => {
+                // Nếu lỗi, revert lại UI
+                if (isFavorite) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas', 'text-red-500');
+                } else {
+                    icon.classList.remove('fas', 'text-red-500');
+                    icon.classList.add('far');
+                }
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi khi cập nhật yêu thích'
+                });
             });
         });
     }
@@ -676,11 +710,11 @@ channel.bind('product-price-updated', function(data) {
     currentPriceDisplay.classList.add('animate-price-update');
     
     // Update base price display
-    basePriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+    basePriceDisplay.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
     basePriceDisplay.classList.remove('hidden');
     
     // Update current price display
-    currentPriceDisplay.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+    currentPriceDisplay.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
     currentPriceDisplay.classList.add('text-orange-500');
     currentPriceDisplay.classList.remove('text-green-500');
     
@@ -708,7 +742,7 @@ channel.bind('product-price-updated', function(data) {
         if (productId == data.productId) {
             const priceElement = product.querySelector('.product-price');
             if (priceElement) {
-                priceElement.textContent = `${window.basePrice.toLocaleString('vi-VN')}đ`;
+                priceElement.textContent = `${Math.round(window.basePrice).toLocaleString('en-US')} đ`;
                 priceElement.classList.add('animate-price-update');
                 setTimeout(() => {
                     priceElement.classList.remove('animate-price-update');
@@ -743,20 +777,15 @@ channel.bind('variant-price-updated', function(data) {
         const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
         if (priceSpan) {
             if (data.newPriceAdjustment > 0) {
-                priceSpan.textContent = `+${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
-                priceSpan.className = 'text-sm ml-1 text-red-600';
-            } else if (data.newPriceAdjustment < 0) {
-                priceSpan.textContent = `${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
-                priceSpan.className = 'text-sm ml-1 text-green-600';
+                priceSpan.textContent = `+${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
             } else {
-                // Remove price span if adjustment is 0
-                priceSpan.remove();
+                priceSpan.textContent = `${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
             }
         } else if (data.newPriceAdjustment !== 0) {
             // Create new price span if it doesn't exist
             const newPriceSpan = document.createElement('span');
             newPriceSpan.className = `text-sm ml-1 ${data.newPriceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-            newPriceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
+            newPriceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
             label.appendChild(newPriceSpan);
         }
         
@@ -801,8 +830,7 @@ channel.bind('variant-price-updated', function(data) {
                     const label = input.nextElementSibling;
                     const priceSpan = label.querySelector('span[class*="text-red-600"], span[class*="text-green-600"]');
                     if (priceSpan && data.newPriceAdjustment !== 0) {
-                        priceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${parseFloat(data.newPriceAdjustment).toLocaleString('vi-VN')}đ`;
-                        priceSpan.className = `text-sm ml-1 ${data.newPriceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+                        priceSpan.textContent = `${data.newPriceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(data.newPriceAdjustment)).toLocaleString('en-US')} đ`;
                     }
                 }
             });
@@ -835,7 +863,7 @@ channel.bind('topping-price-updated', function(data) {
             // Update the price display
             const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
             if (priceElement) {
-                priceElement.textContent = `+${parseFloat(data.newPrice).toLocaleString('vi-VN')}đ`;
+                priceElement.textContent = `+${Math.round(parseFloat(data.newPrice)).toLocaleString('en-US')} đ`;
                 
                 // Add animation to the price element
                 priceElement.classList.add('topping-price-updated');
@@ -877,7 +905,7 @@ channel.bind('topping-price-updated', function(data) {
                 const label = input.closest('label');
                 const priceElement = label.querySelector('.text-xs.text-orange-500.font-medium');
                 if (priceElement) {
-                    priceElement.textContent = `+${parseFloat(data.newPrice).toLocaleString('vi-VN')}đ`;
+                    priceElement.textContent = `+${Math.round(parseFloat(data.newPrice)).toLocaleString('en-US')} đ`;
                 }
             }
         });
@@ -1176,7 +1204,7 @@ function createVariantOption(variantValue, variantId) {
     if (variantValue.price_adjustment !== 0) {
         const priceSpan = document.createElement('span');
         priceSpan.className = `text-sm ml-1 ${variantValue.price_adjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-        priceSpan.textContent = `${variantValue.price_adjustment > 0 ? '+' : ''}${parseFloat(variantValue.price_adjustment).toLocaleString('vi-VN')}đ`;
+        priceSpan.textContent = `${variantValue.price_adjustment > 0 ? '+' : ''}${Math.round(parseFloat(variantValue.price_adjustment)).toLocaleString('en-US')} đ`;
         span.appendChild(priceSpan);
         console.log('Added price span:', priceSpan.textContent);
     }
@@ -1215,12 +1243,11 @@ function updateVariantPriceDisplay(label, priceAdjustment) {
     
     if (priceAdjustment !== 0) {
         if (priceSpan) {
-            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${parseFloat(priceAdjustment).toLocaleString('vi-VN')}đ`;
-            priceSpan.className = `text-sm ml-1 ${priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
+            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(priceAdjustment)).toLocaleString('en-US')} đ`;
         } else {
             priceSpan = document.createElement('span');
             priceSpan.className = `text-sm ml-1 ${priceAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`;
-            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${parseFloat(priceAdjustment).toLocaleString('vi-VN')}đ`;
+            priceSpan.textContent = `${priceAdjustment > 0 ? '+' : ''}${Math.round(parseFloat(priceAdjustment)).toLocaleString('en-US')} đ`;
             label.appendChild(priceSpan);
         }
     } else if (priceSpan) {
@@ -1257,4 +1284,26 @@ function showVariantNotification(message, type) {
             notification.classList.add('hidden');
         }, 5000);
     }
+    
+    // Also show modal toast for better user experience
+    dtmodalShowToast(type, {
+        title: type === 'success' ? 'Thành công' : type === 'warning' ? 'Cảnh báo' : 'Thông báo',
+        message: message
+    });
 }
+
+
+// Initialize Pusher for discount realtime
+const discountsPusher = new Pusher(window.pusherKey, {
+    cluster: window.pusherCluster,
+    encrypted: true,
+    enabledTransports: ['ws', 'wss']
+});
+const discountsChannel = discountsPusher.subscribe('discounts');
+discountsChannel.bind('discount-updated', function(data) {
+    console.log('--- Pusher event "discount-updated" received ---');
+    console.log('Data received:', data);
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+});

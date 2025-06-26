@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use App\Models\Driver;
+use App\Models\Branch;
+use App\Models\Customer;
 
 
 return [

@@ -69,13 +69,30 @@ class ProductController extends Controller
         }
 
         // Filter theo category nếu có
+        $selectedCategoryIds = [];
         if ($request->has('category') && $request->category != '') {
-            $query->where('category_id', $request->category);
+            $catParam = $request->category;
+            if (strpos($catParam, ',') !== false) {
+                $selectedCategoryIds = array_filter(explode(',', $catParam));
+                $query->whereIn('category_id', $selectedCategoryIds);
+            } else {
+                $selectedCategoryIds = [$catParam];
+                $query->where('category_id', $catParam);
+            }
         }
 
-        // Search theo tên sản phẩm
+        // Search theo nhiều trường liên quan đến sản phẩm
         if ($request->has('search') && $request->search != '') {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('sku', 'like', "%$search%")
+                  ->orWhere('short_description', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%")
+                  ->orWhereRaw("JSON_EXTRACT(ingredients, '$[*]') like ?", ["%$search%"])
+                  ->orWhereRaw("CAST(base_price AS CHAR) like ?", ["%$search%"])
+                  ->orWhereRaw("CAST(preparation_time AS CHAR) like ?", ["%$search%"]);
+            });
         }
 
         // Sắp xếp
@@ -98,7 +115,7 @@ class ProductController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
 
-        $products = $query->paginate(12);
+        $products = $query->paginate(15);
         
         // Lấy danh sách mã giảm giá đang hoạt động
         $now = Carbon::now();
@@ -135,20 +152,22 @@ class ProductController extends Controller
                 $query->with(['product', 'category']);
             }])
             ->get()
-            // Filter theo ngày trong tuần và giờ hợp lệ
-            ->filter(function($discountCode) use ($currentDayOfWeek, $currentTime) {
-                // Kiểm tra ngày trong tuần
-                if ($discountCode->valid_days_of_week && is_array($discountCode->valid_days_of_week)) {
-                    if (!in_array($currentDayOfWeek, $discountCode->valid_days_of_week)) {
-                        return false;
-                    }
-                }
+            // Filter theo ngày trong tuần và giờ hợp lệ (đồng nhất với index)
+            ->filter(function($discountCode) use ($currentTime) {
                 // Kiểm tra giờ hợp lệ
                 if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
                     $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
                     $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
-                    if (!($currentTime >= $from && $currentTime <= $to)) {
-                        return false;
+                    if ($from < $to) {
+                        // Khoảng thời gian trong cùng 1 ngày
+                        if (!($currentTime >= $from && $currentTime <= $to)) {
+                            return false;
+                        }
+                    } else {
+                        // Khoảng thời gian qua đêm (ví dụ: 22:00 - 02:00)
+                        if (!($currentTime >= $from || $currentTime <= $to)) {
+                            return false;
+                        }
                     }
                 }
                 return true;
@@ -288,7 +307,16 @@ class ProductController extends Controller
             return $product;
         });
         
-        return view("customer.shop.index", compact('products', 'categories'));
+        // Nếu là AJAX (lazy load 1 category)
+        if ($request->ajax() || $request->has('ajax')) {
+            $categoryId = $request->get('category');
+            $catProducts = $products->where('category_id', $categoryId);
+            return view('customer.shop._product_grid', [
+                'products' => $catProducts,
+            ])->render();
+        }
+        
+        return view("customer.shop.index", compact('products', 'categories', 'selectedCategoryIds'));
     }
 
     /**
@@ -360,7 +388,7 @@ class ProductController extends Controller
             });
         }
         
-        // Lấy danh sách mã giảm giá áp dụng cho sản phẩm này
+        // Lấy các mã giảm giá áp dụng cho sản phẩm này
         $now = Carbon::now();
         $currentDayOfWeek = $now->dayOfWeekIso; // 1 (Monday) - 7 (Sunday)
         $currentTime = $now->format('H:i:s');
@@ -394,7 +422,27 @@ class ProductController extends Controller
         $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
-            ->get();
+            ->get()
+            // Filter theo ngày trong tuần và giờ hợp lệ (đồng nhất với index)
+            ->filter(function($discountCode) use ($currentTime) {
+                // Kiểm tra giờ hợp lệ
+                if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                    $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                    $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                    if ($from < $to) {
+                        // Khoảng thời gian trong cùng 1 ngày
+                        if (!($currentTime >= $from && $currentTime <= $to)) {
+                            return false;
+                        }
+                    } else {
+                        // Khoảng thời gian qua đêm (ví dụ: 22:00 - 02:00)
+                        if (!($currentTime >= $from || $currentTime <= $to)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
             
         // Log discount codes for debugging
         \Illuminate\Support\Facades\Log::debug('Active Discount Codes in product detail page:', [
@@ -485,7 +533,7 @@ class ProductController extends Controller
             });
         }
         
-        $relatedProducts = $relatedProductsQuery->limit(4)->get();
+        $relatedProducts = $relatedProductsQuery->limit(5)->get();
 
         // Thêm thông tin rating cho related products
         $relatedProducts->transform(function ($relatedProduct) use ($activeDiscountCodes) {
@@ -554,6 +602,38 @@ class ProductController extends Controller
                 ->exists();
         }
 
+        // Tính giá thấp nhất và cao nhất bao gồm cả biến thể (đồng nhất với index)
+        $product->min_price = $product->base_price;
+        $product->max_price = $product->base_price;
+        
+        if ($product->variants && $product->variants->count() > 0) {
+            $variantPrices = [];
+            
+            foreach ($product->variants as $variant) {
+                // Tính giá của biến thể này
+                $variantPrice = $product->base_price;
+                if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                    $variantPrice += $variant->variantValues->sum('price_adjustment');
+                }
+                $variantPrices[] = $variantPrice;
+            }
+            
+            if (!empty($variantPrices)) {
+                $product->min_price = min($variantPrices);
+                $product->max_price = max($variantPrices);
+            }
+        }
+        
+        // Debug log để kiểm tra giá trị
+        \Illuminate\Support\Facades\Log::debug('Product price calculation in show method:', [
+            'product_id' => $product->id,
+            'base_price' => $product->base_price,
+            'min_price' => $product->min_price,
+            'max_price' => $product->max_price,
+            'variant_prices' => $variantPrices ?? [],
+            'applicable_discount_codes_count' => $product->applicable_discount_codes->count()
+        ]);
+
         return view('customer.shop.show', compact(
             'product',
             'variantAttributes',
@@ -595,7 +675,8 @@ class ProductController extends Controller
             'product_id' => 'required|exists:products,id',
         ]);
 
-        $user = auth()->user();
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập để sử dụng chức năng này.'], 401);
         }
@@ -627,5 +708,145 @@ class ProductController extends Controller
             'success' => true,
             'is_favorite' => $isFavorite,
         ]);
+    }
+
+    public function getApplicableDiscounts(Request $request)
+    {
+        $request->validate([
+            'product_ids' => 'required|array',
+            'product_ids.*' => 'integer|exists:products,id',
+            'branch_id' => 'nullable|integer|exists:branches,id'
+        ]);
+
+        $productIds = $request->input('product_ids');
+        $selectedBranchId = $request->input('branch_id');
+
+        // Fallback to session-based service if branch_id is not provided in the request
+        if (!$selectedBranchId) {
+            $currentBranch = $this->branchService->getCurrentBranch();
+            $selectedBranchId = $currentBranch ? $currentBranch->id : null;
+        }
+
+        // 1. Get all active discount codes
+        $now = Carbon::now();
+        $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where(function ($query) use ($selectedBranchId) {
+                if ($selectedBranchId) {
+                    $query->whereDoesntHave('branches')
+                        ->orWhereHas('branches', function ($q) use ($selectedBranchId) {
+                            $q->where('branches.id', $selectedBranchId);
+                        });
+                }
+            });
+
+        $activeDiscountCodesQuery->where(function ($query) {
+            $query->where('usage_type', 'public');
+            if (Auth::check()) {
+                $query->orWhere(function ($q) {
+                    $q->where('usage_type', 'personal')
+                        ->whereHas('users', function ($userQuery) {
+                            $userQuery->where('user_id', Auth::id());
+                        });
+                });
+            }
+        });
+        
+        $allActiveCodesFromDB = $activeDiscountCodesQuery->with(['products:id,product_id,category_id'])->get();
+
+        // Filter by valid time, just like the index() method does.
+        $currentTime = $now->format('H:i:s');
+        $activeDiscountCodes = $allActiveCodesFromDB->filter(function($discountCode) use ($currentTime) {
+            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                if ($from < $to) {
+                    // Same day time range
+                    if (!($currentTime >= $from && $currentTime <= $to)) {
+                        return false;
+                    }
+                } else {
+                    // Overnight time range (e.g., 22:00 - 02:00)
+                    if (!($currentTime >= $from || $currentTime <= $to)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        });
+
+        // 2. Get products with relations needed for price calculation
+        $products = Product::with('variants.variantValues', 'category:id,name')
+            ->whereIn('id', $productIds)
+            ->get();
+
+        // 3. Prepare the response
+        $response = [];
+
+        foreach ($products as $product) {
+            // Calculate min_price and max_price, to match the logic from the index page perfectly
+            $product->min_price = $product->base_price;
+            $product->max_price = $product->base_price;
+            
+            if ($product->variants && $product->variants->count() > 0) {
+                $variantPrices = [];
+                foreach ($product->variants as $variant) {
+                    $variantPrice = $product->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
+                }
+                if (!empty($variantPrices)) {
+                    $product->min_price = min($variantPrices);
+                    $product->max_price = max($variantPrices);
+                }
+            }
+
+            // This filtering logic is copied EXACTLY from the index method to ensure consistency
+            $applicableCodes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
+                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                        if ($discountCode->min_requirement_type === 'order_amount') {
+                            return true;
+                        } elseif ($discountCode->min_requirement_type === 'product_price') {
+                            if ($product->min_price < $discountCode->min_requirement_value) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
+                
+                $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
+                    if ($discountProduct->product_id === $product->id) return true;
+                    if ($discountProduct->category_id === $product->category_id) return true;
+                    return false;
+                });
+
+                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                    if ($product->min_price < $discountCode->min_requirement_value) {
+                        return false;
+                    }
+                }
+                
+                return $applies;
+            });
+
+            $response[$product->id] = [];
+            foreach ($applicableCodes as $code) {
+                $response[$product->id][] = [
+                    'code' => $code->code,
+                    'name' => $code->name,
+                    'discount_type' => $code->discount_type,
+                    'discount_value' => $code->discount_value,
+                    'min_requirement_type' => $code->min_requirement_type,
+                    'min_requirement_value' => $code->min_requirement_value
+                ];
+            }
+        }
+
+        return response()->json($response);
     }
 }
