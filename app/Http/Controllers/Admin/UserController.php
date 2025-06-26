@@ -23,7 +23,8 @@ use Illuminate\Support\Str;
 use Workbench\App\Models\User as ModelsUser;
 use App\Models\UserImage;
 use Illuminate\Validation\ValidationException;
-
+use App\Mail\SendWelcomeEmail;
+use Illuminate\Support\Facades\Mail;
 class UserController extends Controller
 {
     public function index(Request $request)
@@ -192,7 +193,7 @@ class UserController extends Controller
             }
     
           
-    
+    Mail::to($user->email)->send(new SendWelcomeEmail($user));
             DB::commit();
             
             // Get user's role

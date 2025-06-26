@@ -9,15 +9,16 @@ use App\Models\BranchStock;
 use App\Models\ToppingStock;
 use App\Observers\BranchStockObserver;
 use App\Observers\ToppingStockObserver;
-use App\Models\Product;
 use App\Observers\ProductPriceObserver;
-use App\Models\VariantValue;
+use App\Models\Product;
 use App\Observers\VariantPriceObserver;
-use App\Models\Topping;
+use App\Models\VariantValue;
 use App\Observers\ToppingPriceObserver;
-use App\Models\ProductVariant;
+use App\Models\Topping;
 use App\Observers\ProductVariantObserver;
-
+use App\Models\ProductVariant;
+use App\Observers\ComboObserver;
+use App\Models\Combo;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -51,6 +52,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register ProductVariantObserver
         ProductVariant::observe(ProductVariantObserver::class);
+
+        // Register ComboObserver
+        Combo::observe(ComboObserver::class);
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));

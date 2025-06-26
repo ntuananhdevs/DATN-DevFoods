@@ -3,366 +3,1018 @@
 @section('title', 'Thêm Combo Mới')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Thêm Combo Mới</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('admin.combos.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Quay lại
-                        </a>
-                    </div>
-                </div>
-
-                <form action="{{ route('admin.combos.store') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- Tên combo -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="name">Tên Combo <span class="text-danger">*</span></label>
-                                    <input type="text" 
-                                           class="form-control @error('name') is-invalid @enderror" 
-                                           id="name" 
-                                           name="name" 
-                                           value="{{ old('name') }}" 
-                                           placeholder="Nhập tên combo"
-                                           required>
-                                    @error('name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <!-- Giá -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="price">Giá <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="number" 
-                                               class="form-control @error('price') is-invalid @enderror" 
-                                               id="price" 
-                                               name="price" 
-                                               value="{{ old('price') }}" 
-                                               placeholder="0"
-                                               min="0"
-                                               step="1000"
-                                               required>
-                                        <div class="input-group-append">
-                                            <span class="input-group-text">VNĐ</span>
-                                        </div>
-                                        @error('price')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Giá gốc -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="original_price">Giá gốc</label>
-                                    <div class="input-group">
-                                        <input type="number" 
-                                               class="form-control @error('original_price') is-invalid @enderror" 
-                                               id="original_price" 
-                                               name="original_price" 
-                                               value="{{ old('original_price') }}" 
-                                               placeholder="0"
-                                               min="0"
-                                               step="1000">
-                                        <div class="input-group-append">
-                                            <span class="input-group-text">VNĐ</span>
-                                        </div>
-                                        @error('original_price')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        Giá gốc để tính % giảm giá (không bắt buộc)
-                                    </small>
-                                </div>
-                            </div>
-
-                            <!-- Danh mục -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="category_id">Danh mục</label>
-                                    <select class="form-control @error('category_id') is-invalid @enderror" 
-                                            id="category_id" 
-                                            name="category_id">
-                                        <option value="">Chọn danh mục</option>
-                                        @foreach($categories as $category)
-                                            <option value="{{ $category->id }}" 
-                                                    {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                                {{ $category->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('category_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Mô tả ngắn -->
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label for="short_description">Mô tả ngắn</label>
-                                    <textarea class="form-control @error('short_description') is-invalid @enderror" 
-                                              id="short_description" 
-                                              name="short_description" 
-                                              rows="2" 
-                                              placeholder="Nhập mô tả ngắn về combo">{{ old('short_description') }}</textarea>
-                                    @error('short_description')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Mô tả chi tiết -->
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label for="description">Mô tả chi tiết</label>
-                                    <textarea class="form-control @error('description') is-invalid @enderror" 
-                                              id="description" 
-                                              name="description" 
-                                              rows="4" 
-                                              placeholder="Nhập mô tả chi tiết về combo">{{ old('description') }}</textarea>
-                                    @error('description')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <!-- Hình ảnh -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="image">Hình ảnh chính</label>
-                                    <div class="custom-file">
-                                        <input type="file" 
-                                               class="custom-file-input @error('image') is-invalid @enderror" 
-                                               id="image" 
-                                               name="image" 
-                                               accept="image/*">
-                                        <label class="custom-file-label" for="image">Chọn hình ảnh...</label>
-                                        @error('image')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        Chấp nhận: JPG, PNG, GIF. Kích thước tối đa: 2MB
-                                    </small>
-                                </div>
-                                
-                                <!-- Preview image -->
-                                <div id="image-preview" class="mt-2" style="display: none;">
-                                    <img id="preview-img" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
-                                </div>
-                            </div>
-
-                            <!-- Cài đặt -->
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Trạng thái</label>
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" 
-                                               class="custom-control-input" 
-                                               id="active" 
-                                               name="active" 
-                                               value="1" 
-                                               {{ old('active', true) ? 'checked' : '' }}>
-                                        <label class="custom-control-label" for="active">
-                                            Kích hoạt
-                                        </label>
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        Combo sẽ hiển thị cho khách hàng khi được kích hoạt
-                                    </small>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Nổi bật</label>
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" 
-                                               class="custom-control-input" 
-                                               id="featured" 
-                                               name="featured" 
-                                               value="1" 
-                                               {{ old('featured') ? 'checked' : '' }}>
-                                        <label class="custom-control-label" for="featured">
-                                            Đánh dấu nổi bật
-                                        </label>
-                                    </div>
-                                    <small class="form-text text-muted">
-                                        Combo nổi bật sẽ hiển thị ở vị trí ưu tiên
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Chọn sản phẩm cho combo -->
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    <label>Sản phẩm trong combo <span class="text-danger">*</span></label>
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5 class="card-title mb-0">Chọn sản phẩm</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row" id="products-selection">
-                                                @foreach($products as $product)
-                                                    <div class="col-md-4 mb-3">
-                                                        <div class="card product-card" data-product-id="{{ $product->id }}">
-                                                            <div class="card-body p-2">
-                                                                <div class="custom-control custom-checkbox">
-                                                                    <input type="checkbox" 
-                                                                           class="custom-control-input product-checkbox" 
-                                                                           id="product_{{ $product->id }}" 
-                                                                           name="products[]" 
-                                                                           value="{{ $product->id }}">
-                                                                    <label class="custom-control-label" for="product_{{ $product->id }}">
-                                                                        <strong>{{ $product->name }}</strong>
-                                                                    </label>
-                                                                </div>
-                                                                @if($product->image)
-                                                                    <img src="{{ asset('storage/' . $product->image) }}" 
-                                                                         alt="{{ $product->name }}" 
-                                                                         class="img-fluid mt-2" 
-                                                                         style="max-height: 80px;">
-                                                                @endif
-                                                                <p class="text-muted small mt-1 mb-0">
-                                                                    {{ number_format($product->price, 0, ',', '.') }} VNĐ
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                            @error('products')
-                                                <div class="text-danger">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Lưu Combo
-                        </button>
-                        <a href="{{ route('admin.combos.index') }}" class="btn btn-secondary ml-2">
-                            <i class="fas fa-times"></i> Hủy
-                        </a>
-                    </div>
-                </form>
+<div class="min-h-screen w-full bg-gray-50">
+    <div class="w-full p-6 space-y-6">
+        <!-- Header -->
+        <div class="flex items-center gap-4">
+            <a href="{{ route('admin.combos.index') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Quay lại
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold">Tạo Combo Mới</h1>
+                <p class="text-gray-600">Tạo combo mới cho menu của bạn</p>
             </div>
         </div>
+
+        <form action="{{ route('admin.combos.store') }}" method="POST" enctype="multipart/form-data" id="combo-form">
+            @csrf
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Thông tin combo -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-lg shadow-sm border sticky top-6">
+                        <div class="p-6 border-b">
+                            <h2 class="text-lg font-semibold">Thông tin combo</h2>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Tên Combo *</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value="{{ old('name') }}"
+                                    placeholder="Nhập tên combo"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('name') border-red-500 @enderror"
+                                    required>
+                                @error('name')
+                                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Thêm phần upload ảnh -->
+                            <div>
+                                <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Ảnh Combo</label>
+                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-orange-400 transition-colors">
+                                    <div class="space-y-1 text-center">
+                                        <div id="image-preview" class="hidden">
+                                            <img id="preview-img" src="" alt="Preview" class="mx-auto h-32 w-32 object-cover rounded-lg">
+                                        </div>
+                                        <div id="upload-placeholder">
+                                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                            <div class="flex text-sm text-gray-600">
+                                                <label for="image" class="relative cursor-pointer bg-white rounded-md font-medium text-orange-600 hover:text-orange-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-orange-500">
+                                                    <span>Tải ảnh lên</span>
+                                                </label>
+                                                <p class="pl-1">hoặc kéo thả</p>
+                                            </div>
+                                            <p class="text-xs text-gray-500">PNG, JPG, GIF tối đa 2MB</p>
+                                        </div>
+                                        <button type="button" id="remove-image" class="hidden mt-2 text-sm text-red-600 hover:text-red-500">Xóa ảnh</button>
+                                    </div>
+                                </div>
+                                @error('image')
+                                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Thêm trường số lượng -->
+                            <div>
+                                <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Số Lượng Có Sẵn</label>
+                                <input
+                                    type="number"
+                                    id="quantity"
+                                    name="quantity"
+                                    value="{{ old('quantity', 0) }}"
+                                    placeholder="0"
+                                    min="0"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('quantity') border-red-500 @enderror">
+                                <p class="text-xs text-gray-500 mt-1">Để trống hoặc 0 nếu không giới hạn số lượng</p>
+                                @error('quantity')
+                                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Mô Tả</label>
+                                <textarea
+                                    id="description"
+                                    name="description"
+                                    rows="3"
+                                    placeholder="Mô tả combo"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
+                                @error('description')
+                                <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Giá Bán</label>
+                                    <input
+                                        type="number"
+                                        id="price"
+                                        name="price"
+                                        value="{{ old('price') }}"
+                                        placeholder="0"
+                                        min="0"
+                                        step="1000"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('price') border-red-500 @enderror"
+                                        required>
+                                    <p class="text-xs text-gray-500 mt-1">Tự động: <span id="auto-price">0₫</span></p>
+                                    @error('price')
+                                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="original_price" class="block text-sm font-medium text-gray-700 mb-1">Giá Gốc</label>
+                                    <input
+                                        type="number"
+                                        id="original_price"
+                                        name="original_price"
+                                        value="{{ old('original_price') }}"
+                                        placeholder="0"
+                                        min="0"
+                                        step="1000"
+                                        readonly
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('original_price') border-red-500 @enderror"
+                                        required>
+                                    @error('original_price')
+                                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Sản phẩm đã chọn -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">Sản phẩm trong combo (<span id="selected-count">0</span>)</label>
+                                <div id="selected-items" class="space-y-2 max-h-60 overflow-y-auto">
+                                    <p class="text-gray-500 text-sm text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                                        Chưa có sản phẩm nào được chọn
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Tổng giá trị -->
+                            <div class="border-t pt-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="font-medium">Tổng giá trị:</span>
+                                    <span id="total-price" class="font-bold text-lg text-orange-600">0₫</span>
+                                </div>
+                                <div class="space-y-2">
+                                    <button
+                                        type="submit"
+                                        id="create-combo-btn"
+                                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled>
+                                        Tạo Combo
+                                    </button>
+                                    <a href="{{ route('admin.combos.index') }}" class="block w-full text-center border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md hover:bg-gray-50">
+                                        Hủy
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Hidden inputs for image and active status -->
+                            <input type="file"
+                                class="hidden @error('image') border-red-500 @enderror"
+                                id="image"
+                                name="image"
+                                accept="image/*">
+                            <input type="checkbox"
+                                class="hidden"
+                                id="active"
+                                name="active"
+                                value="1"
+                                {{ old('active', true) ? 'checked' : '' }}>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="category_id" value="{{ optional($categories->where('name', 'Combo')->first())->id ?? optional($categories->first())->id }}">
+                @error('category_id')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                @enderror
+                <!-- Chọn sản phẩm -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-lg shadow-sm border">
+                        <div class="p-6 border-b">
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-lg font-semibold">Chọn sản phẩm</h2>
+                                <select id="category-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    <option value="all">Tất cả danh mục</option>
+                                    @foreach($products->groupBy('category.name') as $categoryName => $categoryProducts)
+                                    <option value="{{ $categoryProducts->first()->category_id }}">{{ $categoryName ?: 'Chưa phân loại' }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-4">
+                                <!-- Search và Filter -->
+                                <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                                    <div class="relative flex-1">
+                                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        <input
+                                            type="text"
+                                            id="search-input"
+                                            placeholder="Tìm kiếm sản phẩm..."
+                                            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    </div>
+                                </div>
+
+                                <!-- Danh sách sản phẩm -->
+                                <div id="products-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    @foreach($products as $product)
+                                    <div class="product-card bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
+                                        data-category-id="{{ $product->category_id }}"
+                                        data-product-name="{{ strtolower($product->name) }}"
+                                        data-product-id="{{ $product->id }}"
+                                        data-product-name-display="{{ $product->name }}"
+                                        data-has-variants="{{ $product->variants->count() > 0 ? 'true' : 'false' }}">
+                                        <div class="p-4">
+                                            <div class="flex items-start gap-4 mb-4">
+                                                <div class="relative">
+                                                    @if($product->image_url)
+                                                    <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="w-20 h-20 rounded-lg object-cover">
+                                                    @else
+                                                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </div>
+                                                    @endif
+                                                    <div class="absolute -top-2 -right-2 bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full font-medium">
+                                                        {{ $product->category->name ?? '🍽️' }}
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h3 class="font-semibold text-lg mb-1">{{ $product->name }}</h3>
+                                                    <p class="text-sm text-gray-500 capitalize mb-2">{{ $product->category->name ?? 'Chưa phân loại' }}</p>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-sm text-green-600 font-medium">
+                                                            Từ {{ number_format($product->base_price, 0, ',', '.') }}₫
+                                                        </span>
+                                                        @if($product->variants->count() > 0)
+                                                        <span class="text-xs text-gray-500">
+                                                            • {{ $product->variants->count() }} lựa chọn
+                                                        </span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Phần chọn biến thể (ẩn mặc định) -->
+                                            @if($product->variants->count() > 0)
+                                            <div class="variants-section hidden mt-4" data-product-id="{{ $product->id }}">
+                                                <div class="border-t pt-4">
+                                                    <div class="flex items-center justify-between mb-3">
+                                                        <h4 class="font-medium text-sm">Chọn biến thể:</h4>
+                                                        <button type="button"
+                                                            class="back-to-product-btn text-gray-500 hover:text-gray-700 text-xs"
+                                                            data-product-id="{{ $product->id }}">
+                                                            ← Quay lại
+                                                        </button>
+                                                    </div>
+                                                    <div class="space-y-2">
+                                                        @foreach($product->variants as $variant)
+                                                        <div class="flex items-center p-2 border border-gray-200 rounded-md hover:bg-gray-50">
+                                                            <div class="flex-1 min-w-0">
+                                                                <p class="text-sm font-medium truncate">{{ $variant->variant_description ?: 'Biến thể không tên' }}</p>
+                                                                <p class="text-xs text-green-600">{{ number_format($variant->price, 0, ',', '.') }}₫</p>
+                                                            </div>
+                                                            <div class="flex-shrink-0 ml-2">
+                                                                <button type="button"
+                                                                    class="add-variant-btn bg-orange-500 hover:bg-orange-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                                                                    data-product-id="{{ $product->id }}"
+                                                                    data-variant-id="{{ $variant->id }}"
+                                                                    data-product-name="{{ $product->name }}"
+                                                                    data-variant-name="{{ $variant->variant_description ?: 'Biến thể không tên' }}"
+                                                                    data-variant-price="{{ $variant->price }}">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @else
+                                            <!-- Nút thêm cho sản phẩm không có biến thể -->
+                                            <div class="mt-4 pt-4 border-t">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-sm text-gray-600">Thêm vào combo</span>
+                                                    <button type="button"
+                                                        class="add-product-btn bg-orange-500 hover:bg-orange-600 text-white w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                                                        data-product-id="{{ $product->id }}"
+                                                        data-product-name="{{ $product->name }}"
+                                                        data-product-price="{{ $product->base_price }}">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+
+
+
+                                <!-- Empty state -->
+                                <div id="empty-state" class="text-center py-12 hidden">
+                                    <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                    <p class="text-gray-500">Không tìm thấy sản phẩm nào phù hợp</p>
+                                    <p class="text-sm text-gray-400 mt-1">Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
+                                </div>
+
+                                @error('product_variants')
+                                <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <div class="flex items-center">
+                                        <svg class="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <p class="text-red-800 text-sm">{{ $message }}</p>
+                                    </div>
+                                </div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 @endsection
 
-@push('scripts')
-<script>
-$(document).ready(function() {
-    // Custom file input label
-    $('.custom-file-input').on('change', function() {
-        let fileName = $(this).val().split('\\').pop();
-        $(this).next('.custom-file-label').addClass('selected').html(fileName);
-        
-        // Preview image
-        if (this.files && this.files[0]) {
-            let reader = new FileReader();
-            reader.onload = function(e) {
-                $('#preview-img').attr('src', e.target.result);
-                $('#image-preview').show();
-            }
-            reader.readAsDataURL(this.files[0]);
-        }
-    });
-
-    // Format price inputs
-    $('#price, #original_price').on('input', function() {
-        let value = $(this).val().replace(/[^0-9]/g, '');
-        if (value) {
-            $(this).val(parseInt(value));
-        }
-    });
-
-    // Product selection styling
-    $('.product-checkbox').on('change', function() {
-        let card = $(this).closest('.product-card');
-        if ($(this).is(':checked')) {
-            card.addClass('selected');
-        } else {
-            card.removeClass('selected');
-        }
-    });
-
-    // Calculate original price suggestion
-    $('.product-checkbox').on('change', function() {
-        let totalPrice = 0;
-        $('.product-checkbox:checked').each(function() {
-            let productCard = $(this).closest('.product-card');
-            let priceText = productCard.find('.text-muted').text();
-            let price = parseInt(priceText.replace(/[^0-9]/g, ''));
-            totalPrice += price;
-        });
-        
-        if (totalPrice > 0 && !$('#original_price').val()) {
-            $('#original_price').val(totalPrice);
-        }
-    });
-});
-</script>
-@endpush
-
 @push('styles')
 <style>
-.custom-file-label.selected {
-    color: #495057;
-}
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 28px;
+    }
 
-.img-thumbnail {
-    border: 1px solid #dee2e6;
-    border-radius: 0.25rem;
-    padding: 0.25rem;
-}
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
 
-.product-card {
-    border: 2px solid #e9ecef;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #cbd5e1;
+        transition: .3s;
+        border-radius: 28px;
+    }
 
-.product-card:hover {
-    border-color: #007bff;
-    box-shadow: 0 2px 4px rgba(0,123,255,0.25);
-}
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-.product-card.selected {
-    border-color: #28a745;
-    background-color: #f8fff9;
-    box-shadow: 0 2px 4px rgba(40,167,69,0.25);
-}
+    input:checked+.slider {
+        background-color: #3b82f6;
+    }
 
-.product-card img {
-    object-fit: cover;
-    border-radius: 4px;
-}
+    input:checked+.slider:before {
+        transform: translateX(22px);
+    }
+
+    .file-upload-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: #f8fafc;
+    }
+
+    .file-upload-area:hover {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+        transform: translateY(-1px);
+    }
+
+    .file-upload-area.dragover {
+        border-color: #2563eb;
+        background-color: #dbeafe;
+        transform: scale(1.02);
+    }
+
+    .product-item {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .product-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .product-item.ring-2 {
+        animation: pulse-border 2s infinite;
+    }
+
+    @keyframes pulse-border {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+
+        50% {
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+        }
+    }
+
+    .variant-item {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .variant-item:hover {
+        background-color: #f1f5f9;
+        transform: translateX(2px);
+    }
+
+    .selected-variant-display {
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .selected-variants-container {
+        max-height: 350px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+
+    .selected-variants-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .selected-variants-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+    }
+
+    .selected-variants-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    .selected-variants-container::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    .selected-variant-item {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: 1px solid #0ea5e9;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 6px;
+        transition: all 0.2s ease;
+        animation: fadeInUp 0.3s ease;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .selected-variant-item:hover {
+        transform: translateX(3px);
+        box-shadow: 0 3px 10px rgba(14, 165, 233, 0.2);
+    }
+
+    .category-section {
+        animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    }
+
+    .btn-secondary {
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        color: #475569;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #e2e8f0;
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
+        color: #334155;
+    }
+
+    .form-input {
+        transition: all 0.2s ease;
+    }
+
+    .form-input:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+
+    .change-variant-btn {
+        transition: all 0.2s ease;
+    }
+
+    .change-variant-btn:hover {
+        transform: rotate(90deg);
+    }
+
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+        .product-item {
+            margin-bottom: 1rem;
+        }
+
+        .grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .selected-variants-container {
+            max-height: 250px;
+        }
+    }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Selected variants storage
+        let selectedVariants = {};
+        let selectedCount = 0;
+
+        // DOM elements
+        const selectedItemsContainer = document.getElementById('selected-items');
+        const selectedCountSpan = document.getElementById('selected-count');
+        const totalPriceSpan = document.getElementById('total-price');
+        const autoPriceSpan = document.getElementById('auto-price');
+        const originalPriceInput = document.getElementById('original_price');
+        const createComboBtn = document.getElementById('create-combo-btn');
+        const searchInput = document.getElementById('search-input');
+        const categoryFilter = document.getElementById('category-filter');
+        const productsGrid = document.getElementById('products-grid');
+        const emptyState = document.getElementById('empty-state');
+
+        // Handle product card click
+        document.addEventListener('click', function(e) {
+            // Check if click is on product card but not on buttons
+            const productCard = e.target.closest('.product-card');
+            if (productCard && !e.target.closest('.add-variant-btn') && !e.target.closest('.add-product-btn') && !e.target.closest('.back-to-product-btn') && !e.target.closest('.variants-section')) {
+                const productId = productCard.dataset.productId;
+                const hasVariants = productCard.dataset.hasVariants === 'true';
+
+                if (hasVariants) {
+                    // Show variants section
+                    const variantsSection = document.querySelector(`.variants-section[data-product-id="${productId}"]`);
+                    if (variantsSection) {
+                        variantsSection.classList.remove('hidden');
+                    }
+                }
+            }
+        });
+
+        // Handle add product button click (for products without variants)
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.add-product-btn')) {
+                const btn = e.target.closest('.add-product-btn');
+                const productId = btn.dataset.productId;
+                const productName = btn.dataset.productName;
+                const productPrice = parseFloat(btn.dataset.productPrice);
+                const variantId = btn.dataset.variantId; // Sử dụng variant_id thực tế
+                const variantName = 'Mặc định';
+
+                // Kiểm tra xem variant này đã được chọn chưa
+                if (selectedVariants[variantId]) {
+                    // Nếu đã có, tăng số lượng
+                    selectedVariants[variantId].quantity += 1;
+                } else {
+                    // Nếu chưa có, thêm mới
+                    selectedVariants[variantId] = {
+                        productId: productId,
+                        variantId: variantId, // Thêm variantId thực tế
+                        productName: productName,
+                        variantName: variantName,
+                        price: productPrice,
+                        quantity: 1
+                    };
+                }
+
+                updateSelectedItems();
+            }
+        });
+
+        // Handle back to product button click
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.back-to-product-btn')) {
+                const btn = e.target.closest('.back-to-product-btn');
+                const productId = btn.dataset.productId;
+
+                // Hide variants section
+                const variantsSection = document.querySelector(`.variants-section[data-product-id="${productId}"]`);
+                if (variantsSection) {
+                    variantsSection.classList.add('hidden');
+                }
+            }
+        });
+
+        // Add variant buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.add-variant-btn')) {
+                const btn = e.target.closest('.add-variant-btn');
+                const productId = btn.dataset.productId;
+                const productName = btn.dataset.productName;
+                const variantId = btn.dataset.variantId; // Sử dụng variant_id thực tế
+                const variantName = btn.dataset.variantName;
+                const variantPrice = parseFloat(btn.dataset.variantPrice);
+
+                // Kiểm tra xem variant này đã được chọn chưa
+                if (selectedVariants[variantId]) {
+                    // Nếu đã có, tăng số lượng
+                    selectedVariants[variantId].quantity += 1;
+                } else {
+                    // Nếu chưa có, thêm mới
+                    selectedVariants[variantId] = {
+                        productId: productId,
+                        variantId: variantId, // Thêm variantId thực tế
+                        productName: productName,
+                        variantName: variantName,
+                        price: variantPrice,
+                        quantity: 1
+                    };
+                }
+
+                updateSelectedItems();
+            }
+        });
+
+        // Function to add variant to selected (for compatibility)
+        function addVariantToSelected(productId, variantId, productName, variantName, variantPrice) {
+            const id = variantId || `${productId}_default`;
+            const price = parseFloat(variantPrice);
+
+            // Kiểm tra xem variant này đã được chọn chưa
+            if (selectedVariants[id]) {
+                // Nếu đã có variant này, tăng số lượng
+                selectedVariants[id].quantity += 1;
+            } else {
+                // Nếu chưa có, thêm mới
+                selectedVariants[id] = {
+                    productId: productId,
+                    productName: productName,
+                    variantName: variantName,
+                    price: price,
+                    quantity: 1
+                };
+            }
+
+            updateSelectedItems();
+        }
+
+        // Remove variant function
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-variant-btn')) {
+                const btn = e.target.closest('.remove-variant-btn');
+                const variantId = btn.dataset.variantId;
+                delete selectedVariants[variantId];
+                updateSelectedItems();
+            }
+        });
+
+        // Update quantity function
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('variant-quantity-input')) {
+                const variantId = e.target.dataset.variantId;
+                const quantity = parseInt(e.target.value) || 1;
+
+                if (selectedVariants[variantId]) {
+                    selectedVariants[variantId].quantity = Math.max(1, quantity);
+                    // Update the corresponding hidden input
+                    const hiddenQuantityInput = document.querySelector(`input[name*="[quantity]"][value="${selectedVariants[variantId].quantity}"]`);
+                    if (hiddenQuantityInput) {
+                        hiddenQuantityInput.value = Math.max(1, quantity);
+                    }
+                    updateSelectedItems();
+                }
+            }
+        });
+
+        // Update selected items display
+        function updateSelectedItems() {
+            const variants = Object.values(selectedVariants);
+            selectedCount = variants.length;
+            selectedCountSpan.textContent = selectedCount;
+
+            if (variants.length === 0) {
+                selectedItemsContainer.innerHTML = `
+                    <p class="text-gray-500 text-sm text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                        Chưa có sản phẩm nào được chọn
+                    </p>
+                `;
+                totalPriceSpan.textContent = '0₫';
+                autoPriceSpan.textContent = '0₫';
+                originalPriceInput.value = 0;
+                createComboBtn.disabled = true;
+                return;
+            }
+
+            let totalPrice = 0;
+            let html = '';
+
+            variants.forEach((variant, index) => {
+                const itemTotal = variant.price * variant.quantity;
+                totalPrice += itemTotal;
+                const variantId = Object.keys(selectedVariants).find(key => selectedVariants[key] === variant);
+
+                html += `
+                    <div class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-sm">${variant.productName}</h4>
+                            <p class="text-xs text-gray-500">${variant.variantName}</p>
+                            <p class="text-xs text-green-600">${formatPrice(variant.price)} × ${variant.quantity}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input 
+                                type="number" 
+                                class="variant-quantity-input w-16 px-2 py-1 border border-gray-300 rounded text-center text-xs"
+                                min="1" 
+                                value="${variant.quantity}"
+                                data-variant-id="${variantId}"
+                            >
+                            <button 
+                                type="button"
+                                class="remove-variant-btn text-red-500 hover:text-red-700 text-xs"
+                                data-variant-id="${variantId}"
+                            >
+                                Xóa
+                            </button>
+                        </div>
+                        <input type="hidden" name="product_variants[${index}][id]" value="${variantId}">
+                        <input type="hidden" name="product_variants[${index}][quantity]" value="${variant.quantity}">
+                    </div>
+                `;
+            });
+
+            selectedItemsContainer.innerHTML = html;
+            totalPriceSpan.textContent = formatPrice(totalPrice);
+            autoPriceSpan.textContent = formatPrice(totalPrice);
+            originalPriceInput.value = totalPrice;
+            createComboBtn.disabled = false;
+        }
+
+        // Format price function
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN').format(price) + '₫';
+        }
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            filterProducts();
+        });
+
+        // Category filter functionality
+        categoryFilter.addEventListener('change', function() {
+            filterProducts();
+        });
+
+        // Filter products function
+        function filterProducts() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+            const productCards = productsGrid.querySelectorAll('.product-card');
+            let visibleCount = 0;
+
+            productCards.forEach(card => {
+                const productName = card.dataset.productName;
+                const categoryId = card.dataset.categoryId;
+
+                const matchesSearch = productName.includes(searchTerm);
+                const matchesCategory = selectedCategory === 'all' || categoryId === selectedCategory;
+
+                if (matchesSearch && matchesCategory) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state
+            if (visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
+
+        // Price input formatting
+        const priceInput = document.getElementById('price');
+        priceInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            e.target.value = value;
+        });
+
+          // Image upload preview
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-img');
+        const uploadPlaceholder = document.getElementById('upload-placeholder');
+        const removeImageBtn = document.getElementById('remove-image');
+
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('Vui lòng chọn file ảnh!');
+                    return;
+                }
+                
+                // Validate file size (2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('Kích thước file không được vượt quá 2MB!');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.classList.remove('hidden');
+                    uploadPlaceholder.classList.add('hidden');
+                    removeImageBtn.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Remove image
+        removeImageBtn.addEventListener('click', function() {
+            imageInput.value = '';
+            previewImg.src = '';
+            imagePreview.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+            removeImageBtn.classList.add('hidden');
+        });
+
+        // Drag and drop functionality
+        const dropZone = imageInput.closest('.border-dashed');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('border-orange-400', 'bg-orange-50');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('border-orange-400', 'bg-orange-50');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                imageInput.files = files;
+                imageInput.dispatchEvent(new Event('change'));
+            }
+        }
+
+        // Hàm hiển thị thông báo
+        function showNotification(message, type = 'info') {
+            // Tạo element thông báo
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-full`;
+            
+            // Thiết lập màu sắc theo loại thông báo
+            if (type === 'info') {
+                notification.className += ' bg-blue-500 text-white';
+            } else if (type === 'success') {
+                notification.className += ' bg-green-500 text-white';
+            } else if (type === 'warning') {
+                notification.className += ' bg-yellow-500 text-white';
+            } else if (type === 'error') {
+                notification.className += ' bg-red-500 text-white';
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-sm font-medium">${message}</span>
+                </div>
+            `;
+            
+            // Thêm vào body
+            document.body.appendChild(notification);
+            
+            // Hiển thị thông báo
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Tự động ẩn sau 3 giây
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Initialize
+        updateSelectedItems();
+    });
+</script>
 @endpush

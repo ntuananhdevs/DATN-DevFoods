@@ -3,797 +3,480 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Điều hướng giao hàng</title>
-    
-    <!-- Mapbox GL JS -->
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
-    
-    <!-- Lucide Icons -->
+    <title>Chi Tiết Combo - Quản Lý Combo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #111827;
-            color: white;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100vh;
-        }
-
-        .overlay {
-            position: absolute;
-            z-index: 10;
-        }
-
-        .header {
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 1rem;
-        }
-
-        .header-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border-radius: 0.375rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-icon {
-            padding: 0.75rem;
-            width: 3rem;
-            height: 3rem;
-            border-radius: 50%;
-            justify-content: center;
-        }
-
-        .btn-primary {
-            background: #2563eb;
-            border-color: #2563eb;
-        }
-
-        .btn-primary:hover {
-            background: #1d4ed8;
-        }
-
-        .btn-success {
-            background: #16a34a;
-            border-color: #16a34a;
-        }
-
-        .btn-success:hover {
-            background: #15803d;
-        }
-
-        .btn-white {
-            background: white;
-            color: #374151;
-            border-color: #d1d5db;
-        }
-
-        .badge {
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .badge-green {
-            background: #16a34a;
-        }
-
-        .badge-purple {
-            background: #7c3aed;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .card-white {
-            background: white;
-            color: black;
-            border: 1px solid #e5e7eb;
-        }
-
-        .customer-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .customer-name {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 500;
-        }
-
-        .customer-address {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: #d1d5db;
-            margin-bottom: 0.5rem;
-        }
-
-        .note {
-            margin-top: 0.5rem;
-            padding: 0.5rem;
-            background: rgba(245, 158, 11, 0.2);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-        }
-
-        .map-controls {
-            position: absolute;
-            right: 1rem;
-            bottom: 8rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .bottom-panel {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 1rem;
-        }
-
-        .navigation-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .info-item {
-            text-align: center;
-        }
-
-        .info-value {
-            font-size: 1.125rem;
-            font-weight: bold;
-        }
-
-        .info-label {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .current-instruction {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
-
-        .instruction-icon {
-            width: 3rem;
-            height: 3rem;
-            background: #dbeafe;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #2563eb;
-        }
-
-        .instruction-text {
-            font-weight: 500;
-        }
-
-        .instruction-distance {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #111827;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            z-index: 1000;
-        }
-
-        .spinner {
-            width: 3rem;
-            height: 3rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .w-full {
-            width: 100%;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .mt-2 {
-            margin-top: 0.5rem;
-        }
-
-        .text-gray-500 {
-            color: #6b7280;
-        }
-
-        .text-sm {
-            font-size: 0.875rem;
-        }
-    </style>
 </head>
-<body>
-    <!-- Loading Screen -->
-    <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Đang tải bản đồ...</p>
-    </div>
-
-    <!-- Map Container -->
-    <div id="map"></div>
-
-    <!-- Header Overlay -->
-    <div class="overlay header">
-        <div class="header-controls">
-            <button class="btn" onclick="goBack()">
-                <i data-lucide="arrow-left"></i>
+<body class="min-h-screen bg-gray-50">
+    <div class="container mx-auto p-6 space-y-6">
+        <!-- Header -->
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
                 Quay lại
-            </button>
-            <div style="display: flex; gap: 0.5rem;">
-                <span id="navigation-badge" class="badge badge-green hidden">
-                    <i data-lucide="navigation"></i>
-                    Đang điều hướng
-                </span>
-                <span class="badge badge-purple">
-                    <i data-lucide="clock"></i>
-                    <span id="remaining-time">0 phút</span>
-                </span>
+            </a>
+            <div class="flex-1">
+                <h1 id="combo-title" class="text-3xl font-bold">Chi Tiết Combo</h1>
+                <p class="text-gray-600">Thông tin chi tiết về combo</p>
             </div>
-        </div>
-
-        <!-- Customer Info Card -->
-        <div id="customer-info" class="card">
-            <div class="customer-info">
-                <div class="customer-name">
-                    <i data-lucide="user"></i>
-                    <span id="customer-name">Khách hàng</span>
-                </div>
-                <button class="btn btn-success" onclick="callCustomer()">
-                    <i data-lucide="phone"></i>
+            <div class="flex gap-2">
+                <button id="edit-btn" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md">
+                    <i data-lucide="edit" class="w-4 h-4 mr-2"></i>
+                    Chỉnh sửa
+                </button>
+                <button id="delete-btn" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md">
+                    <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>
+                    Xóa
                 </button>
             </div>
-            <div class="customer-address">
-                <i data-lucide="map-pin"></i>
-                <span id="customer-address">Địa chỉ giao hàng</span>
-            </div>
-            <div id="customer-note" class="note hidden">
-                <strong>Ghi chú:</strong> <span id="note-text"></span>
-            </div>
-            <button class="btn w-full mt-2" onclick="toggleCustomerInfo()">
-                <i data-lucide="chevron-down"></i>
-                Ẩn
-            </button>
         </div>
 
-        <!-- Show Customer Info Button (when hidden) -->
-        <button id="show-customer-btn" class="btn hidden" onclick="toggleCustomerInfo()">
-            <i data-lucide="user"></i>
-            Hiện thông tin khách
-        </button>
-    </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Hình ảnh và thông tin chính -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                    <!-- Hình ảnh combo -->
+                    <div class="relative">
+                        <img id="combo-image" src="/placeholder.svg" alt="" class="w-full h-80 object-cover">
+                        <div class="absolute top-4 right-4 flex gap-2">
+                            <span id="status-badge" class="px-3 py-1 text-sm font-medium rounded-full"></span>
+                            <span id="discount-badge" class="px-3 py-1 text-sm font-medium bg-orange-500 text-white rounded-full hidden"></span>
+                        </div>
+                        <div class="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+                            <div class="flex items-center gap-4">
+                                <div>
+                                    <span id="combo-price" class="text-2xl font-bold"></span>
+                                    <span id="original-price" class="text-sm line-through ml-2 opacity-75"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    <!-- Map Controls -->
-    <div class="map-controls">
-        <button class="btn btn-white btn-icon" onclick="zoomIn()">
-            <i data-lucide="zoom-in"></i>
-        </button>
-        <button class="btn btn-white btn-icon" onclick="zoomOut()">
-            <i data-lucide="zoom-out"></i>
-        </button>
-        <button class="btn btn-white btn-icon" onclick="centerOnUser()">
-            <i data-lucide="locate"></i>
-        </button>
-    </div>
+                    <!-- Thông tin combo -->
+                    <div class="p-6">
+                        <div class="mb-6">
+                            <h2 id="combo-name" class="text-2xl font-bold mb-2"></h2>
+                            <p id="combo-description" class="text-gray-600 text-lg"></p>
+                        </div>
 
-    <!-- Bottom Panel -->
-    <div class="overlay bottom-panel">
-        <!-- Pre-navigation Panel -->
-        <div id="pre-navigation" class="card card-white">
-            <div class="navigation-info">
-                <div class="info-item">
-                    <div class="info-value" id="total-distance">0 km</div>
-                    <div class="info-label">Khoảng cách</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-value" id="total-time">0 phút</div>
-                    <div class="info-label">Thời gian dự kiến</div>
-                </div>
-            </div>
-            <button id="start-navigation-btn" class="btn btn-primary w-full" onclick="startNavigation()" disabled>
-                <i data-lucide="compass"></i>
-                Bắt đầu điều hướng
-            </button>
-            <p id="status-text" class="text-center text-sm text-gray-500 mt-2">
-                Đang lấy vị trí...
-            </p>
-        </div>
+                        <!-- Thông tin chi tiết -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
+                                    <span id="combo-category" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800"></span>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                                    <span id="combo-status" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"></span>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ngày tạo</label>
+                                    <span id="combo-created" class="text-gray-900"></span>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tổng sản phẩm</label>
+                                    <span id="total-items" class="text-gray-900 font-medium"></span>
+                                </div>
+                            </div>
+                        </div>
 
-        <!-- Navigation Panel -->
-        <div id="navigation-panel" class="card card-white hidden">
-            <div class="current-instruction">
-                <div class="instruction-icon">
-                    <i data-lucide="navigation"></i>
-                </div>
-                <div>
-                    <div class="instruction-text" id="current-instruction">Tiếp tục đi thẳng</div>
-                    <div class="instruction-distance">
-                        Còn <span id="nav-distance">0 km</span> - <span id="nav-time">0 phút</span>
+                        <!-- Sản phẩm trong combo -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Sản phẩm trong combo</h3>
+                            <div id="combo-items" class="space-y-3">
+                                <!-- Items will be rendered here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="action-buttons">
-                <button class="btn" onclick="callCustomer()">
-                    <i data-lucide="phone"></i>
-                    Gọi khách
+
+            <!-- Sidebar thông tin -->
+            <div class="lg:col-span-1">
+                <div class="space-y-6">
+                    <!-- Thống kê giá -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Thông tin giá</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Giá bán:</span>
+                                <span id="price-display" class="font-semibold text-lg text-orange-600"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Giá gốc:</span>
+                                <span id="original-price-display" class="font-medium text-gray-900"></span>
+                            </div>
+                            <div class="flex justify-between items-center pt-2 border-t">
+                                <span class="text-gray-600">Tiết kiệm:</span>
+                                <span id="savings-display" class="font-semibold text-green-600"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Giảm giá:</span>
+                                <span id="discount-percent" class="font-semibold text-orange-600"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thống kê sản phẩm -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Thống kê sản phẩm</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Tổng sản phẩm:</span>
+                                <span id="total-products" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Tổng số lượng:</span>
+                                <span id="total-quantity" class="font-medium"></span>
+                            </div>
+                            <div id="category-breakdown" class="pt-2 border-t">
+                                <!-- Category breakdown will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Hành động</h3>
+                        <div class="space-y-3">
+                            <button class="w-full flex items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md">
+                                <i data-lucide="copy" class="w-4 h-4 mr-2"></i>
+                                Sao chép combo
+                            </button>
+                            <button class="w-full flex items-center justify-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md">
+                                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                Xuất PDF
+                            </button>
+                            <button id="toggle-status-btn" class="w-full flex items-center justify-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-md">
+                                <i data-lucide="power" class="w-4 h-4 mr-2"></i>
+                                <span id="toggle-status-text">Tạm dừng</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lịch sử -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-lg font-semibold mb-4">Lịch sử thay đổi</h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-start gap-3">
+                                <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                                <div>
+                                    <p class="font-medium">Combo được tạo</p>
+                                    <p class="text-gray-500" id="created-date"></p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                                <div>
+                                    <p class="font-medium">Cập nhật giá</p>
+                                    <p class="text-gray-500">2 ngày trước</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
+                                <div>
+                                    <p class="font-medium">Thay đổi mô tả</p>
+                                    <p class="text-gray-500">1 tuần trước</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-6 h-6 text-red-600"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold">Xác nhận xóa</h3>
+                    <p class="text-gray-600">Hành động này không thể hoàn tác</p>
+                </div>
+            </div>
+            <p class="text-gray-700 mb-6">
+                Bạn có chắc chắn muốn xóa combo "<span id="delete-combo-name" class="font-semibold"></span>"?
+            </p>
+            <div class="flex gap-3 justify-end">
+                <button id="cancel-delete" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
+                    Hủy
                 </button>
-                <button class="btn btn-success" onclick="completeDelivery()">
-                    <i data-lucide="check-circle"></i>
-                    Đã giao
+                <button id="confirm-delete" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md">
+                    Xóa combo
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Replace with your Mapbox access token
-        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
-
-        // Global variables
-        let map;
-        let currentPosition = null;
-        let order = null;
-        let route = null;
-        let navigationStarted = false;
-        let watchId = null;
-        let userMarker = null;
-        let destinationMarker = null;
-
-        // Mock order data (replace with actual data)
-        const mockOrder = {
-            id: 1,
-            customer_name: "Nguyễn Văn A",
-            customer_phone: "0123456789",
-            delivery_address: "123 Đường ABC, Quận 1, TP.HCM",
-            guest_latitude: 21.0285,
-            guest_longitude: 105.8542,
-            notes: "Gọi trước khi đến 15 phút"
+        // Sample combo data - in real app, this would come from URL params or API
+        const comboData = {
+            "1": {
+                id: "1",
+                name: "Combo Burger Deluxe",
+                description: "Combo burger bò nướng thơm ngon với khoai tây chiên giòn rụm và nước ngọt mát lạnh. Phù hợp cho bữa trưa hoặc bữa tối nhanh gọn.",
+                price: 89000,
+                originalPrice: 120000,
+                image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=600&fit=crop&crop=center",
+                items: [
+                    { id: "1", productId: "p1", name: "Burger Bò Nướng", variantName: "Bò Nướng Deluxe", quantity: 1, price: 65000 },
+                    { id: "2", productId: "p3", name: "Khoai Tây Chiên", variantName: "Size Lớn", quantity: 1, price: 45000 },
+                    { id: "3", productId: "p4", name: "Nước Ngọt", variantName: "Coca Cola", quantity: 1, price: 15000 },
+                ],
+                category: "burger",
+                status: "active",
+                createdAt: "2024-01-15",
+            },
+            "2": {
+                id: "2",
+                name: "Combo Gà Rán Gia Đình",
+                description: "Combo dành cho gia đình với 8 miếng gà rán giòn tan, khoai tây chiên và nước ngọt. Hoàn hảo cho bữa ăn sum họp.",
+                price: 299000,
+                originalPrice: 380000,
+                image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=800&h=600&fit=crop&crop=center",
+                items: [
+                    { id: "4", productId: "p2", name: "Gà Rán", variantName: "Gà Giòn Thường", quantity: 8, price: 35000 },
+                    { id: "2", productId: "p3", name: "Khoai Tây Chiên", variantName: "Size Lớn", quantity: 2, price: 45000 },
+                    { id: "3", productId: "p4", name: "Nước Ngọt", variantName: "Coca Cola", quantity: 4, price: 15000 },
+                ],
+                category: "chicken",
+                status: "active",
+                createdAt: "2024-01-10",
+            },
+            "3": {
+                id: "3",
+                name: "Combo Pizza Hải Sản",
+                description: "Pizza hải sản tươi ngon với tôm, mực, cua kết hợp cùng salad tươi mát và nước cam vitamin C.",
+                price: 159000,
+                originalPrice: 200000,
+                image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop&crop=center",
+                items: [
+                    { id: "5", productId: "p5", name: "Pizza", variantName: "Pizza Hải Sản - Size M", quantity: 1, price: 129000 },
+                    { id: "6", productId: "p6", name: "Salad", variantName: "Salad Rau Củ", quantity: 1, price: 25000 },
+                    { id: "7", productId: "p4", name: "Nước Ngọt", variantName: "Nước Cam Tươi", quantity: 1, price: 15000 },
+                ],
+                category: "pizza",
+                status: "active",
+                createdAt: "2024-01-08",
+            }
         };
 
-        // Initialize the application
-        function init() {
-            // Check login (mock)
-            const isLoggedIn = localStorage.getItem("isLoggedIn");
-            if (isLoggedIn !== "true") {
-                // Redirect to login
-                window.location.href = "/login.html";
+        // Get combo ID from URL params (default to "1" for demo)
+        const urlParams = new URLSearchParams(window.location.search);
+        const comboId = urlParams.get('id') || '1';
+        const combo = comboData[comboId];
+
+        // Utility functions
+        function formatPrice(price) {
+            return new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+            }).format(price);
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function getCategoryName(category) {
+            const categories = {
+                burger: "🍔 Burger",
+                chicken: "🍗 Gà Rán", 
+                pizza: "🍕 Pizza",
+                side: "🍟 Món phụ",
+                drink: "🥤 Đồ Uống",
+                other: "🍽️ Khác"
+            };
+            return categories[category] || category;
+        }
+
+        function calculateSavings(original, current) {
+            return original - current;
+        }
+
+        function calculateDiscountPercent(original, current) {
+            return Math.round(((original - current) / original) * 100);
+        }
+
+        function getCategoryBreakdown(items) {
+            const breakdown = {};
+            items.forEach(item => {
+                // Simple category detection based on product name
+                let category = 'other';
+                if (item.name.toLowerCase().includes('burger')) category = 'burger';
+                else if (item.name.toLowerCase().includes('gà')) category = 'chicken';
+                else if (item.name.toLowerCase().includes('pizza')) category = 'pizza';
+                else if (item.name.toLowerCase().includes('khoai') || item.name.toLowerCase().includes('salad')) category = 'side';
+                else if (item.name.toLowerCase().includes('nước') || item.name.toLowerCase().includes('coca')) category = 'drink';
+
+                if (!breakdown[category]) {
+                    breakdown[category] = { count: 0, quantity: 0 };
+                }
+                breakdown[category].count += 1;
+                breakdown[category].quantity += item.quantity;
+            });
+            return breakdown;
+        }
+
+        // Render combo details
+        function renderComboDetails() {
+            if (!combo) {
+                document.body.innerHTML = '<div class="container mx-auto p-6"><h1 class="text-2xl font-bold text-red-600">Combo không tồn tại</h1><a href="index.html" class="text-blue-600 hover:underline">Quay lại danh sách</a></div>';
                 return;
             }
 
-            // Set order data
-            order = mockOrder;
-            updateCustomerInfo();
+            // Basic info
+            document.getElementById('combo-title').textContent = combo.name;
+            document.getElementById('combo-name').textContent = combo.name;
+            document.getElementById('combo-description').textContent = combo.description;
+            document.getElementById('combo-image').src = combo.image;
+            document.getElementById('combo-image').alt = combo.name;
 
-            // Initialize map
-            initMap();
+            // Category
+            document.getElementById('combo-category').textContent = getCategoryName(combo.category);
 
-            // Get current location
-            getCurrentLocation();
-
-            // Initialize Lucide icons
-            lucide.createIcons();
-        }
-
-        function initMap() {
-            map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/navigation-night-v1',
-                center: [105.8542, 21.0285], // Default to Hanoi
-                zoom: 16
-            });
-
-            map.on('load', function() {
-                document.getElementById('loading').classList.add('hidden');
-                
-                // Add destination marker
-                if (order) {
-                    destinationMarker = new mapboxgl.Marker({ color: '#ef4444' })
-                        .setLngLat([order.guest_longitude, order.guest_latitude])
-                        .setPopup(new mapboxgl.Popup().setHTML(`
-                            <div>
-                                <strong>${order.customer_name}</strong><br>
-                                ${order.delivery_address}
-                            </div>
-                        `))
-                        .addTo(map);
-                }
-            });
-        }
-
-        function getCurrentLocation() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        const { latitude, longitude } = position.coords;
-                        currentPosition = { latitude, longitude };
-                        
-                        // Add user marker
-                        if (userMarker) {
-                            userMarker.remove();
-                        }
-                        userMarker = new mapboxgl.Marker({ color: '#3b82f6' })
-                            .setLngLat([longitude, latitude])
-                            .addTo(map);
-
-                        // Center map on user location
-                        map.flyTo({
-                            center: [longitude, latitude],
-                            zoom: 16
-                        });
-
-                        // Calculate route
-                        calculateRoute();
-                    },
-                    function(error) {
-                        console.error("Error getting location:", error);
-                        showToast("Lỗi vị trí", "Không thể lấy vị trí hiện tại. Vui lòng bật GPS.", "error");
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 60000
-                    }
-                );
-            }
-        }
-
-        async function calculateRoute() {
-            if (!currentPosition || !order) return;
-
-            try {
-                const start = `${currentPosition.longitude},${currentPosition.latitude}`;
-                const end = `${order.guest_longitude},${order.guest_latitude}`;
-                
-                const response = await fetch(
-                    `https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?geometries=geojson&access_token=${mapboxgl.accessToken}`
-                );
-                
-                const data = await response.json();
-                
-                if (data.routes && data.routes.length > 0) {
-                    route = data.routes[0];
-                    
-                    // Update UI with route info
-                    updateRouteInfo(route);
-                    
-                    // Add route to map
-                    addRouteToMap(route);
-                    
-                    // Enable start navigation button
-                    document.getElementById('start-navigation-btn').disabled = false;
-                    document.getElementById('status-text').textContent = "Sẵn sàng điều hướng";
-                }
-            } catch (error) {
-                console.error("Error calculating route:", error);
-                showToast("Lỗi tính toán đường đi", "Không thể tính toán đường đi. Vui lòng thử lại.", "error");
-            }
-        }
-
-        function addRouteToMap(route) {
-            // Remove existing route
-            if (map.getSource('route')) {
-                map.removeLayer('route');
-                map.removeSource('route');
-            }
-
-            // Add route source and layer
-            map.addSource('route', {
-                type: 'geojson',
-                data: {
-                    type: 'Feature',
-                    properties: {},
-                    geometry: route.geometry
-                }
-            });
-
-            map.addLayer({
-                id: 'route',
-                type: 'line',
-                source: 'route',
-                layout: {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                paint: {
-                    'line-color': '#007cbf',
-                    'line-width': 6,
-                    'line-opacity': 0.8
-                }
-            });
-
-            // Fit map to route
-            const coordinates = route.geometry.coordinates;
-            const bounds = coordinates.reduce(function (bounds, coord) {
-                return bounds.extend(coord);
-            }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-
-            map.fitBounds(bounds, {
-                padding: 50
-            });
-        }
-
-        function updateRouteInfo(route) {
-            const distance = formatDistance(route.distance);
-            const time = formatTime(route.duration);
-            
-            document.getElementById('total-distance').textContent = distance;
-            document.getElementById('total-time').textContent = time;
-            document.getElementById('remaining-time').textContent = time;
-        }
-
-        function updateCustomerInfo() {
-            if (!order) return;
-            
-            document.getElementById('customer-name').textContent = order.customer_name || "Khách hàng";
-            document.getElementById('customer-address').textContent = order.delivery_address || "Địa chỉ giao hàng";
-            
-            if (order.notes) {
-                document.getElementById('customer-note').classList.remove('hidden');
-                document.getElementById('note-text').textContent = order.notes;
-            }
-        }
-
-        function startNavigation() {
-            navigationStarted = true;
-            
-            // Show navigation panel
-            document.getElementById('pre-navigation').classList.add('hidden');
-            document.getElementById('navigation-panel').classList.remove('hidden');
-            document.getElementById('navigation-badge').classList.remove('hidden');
-            
-            // Start location tracking
-            if ("geolocation" in navigator) {
-                watchId = navigator.geolocation.watchPosition(
-                    function(position) {
-                        const { latitude, longitude } = position.coords;
-                        currentPosition = { latitude, longitude };
-                        
-                        // Update user marker
-                        if (userMarker) {
-                            userMarker.setLngLat([longitude, latitude]);
-                        }
-                        
-                        // Update remaining distance
-                        updateNavigationInfo();
-                        
-                        // Center map on user during navigation
-                        map.easeTo({
-                            center: [longitude, latitude],
-                            duration: 1000
-                        });
-                    },
-                    function(error) {
-                        console.error("Position tracking error:", error);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 1000,
-                        timeout: 10000
-                    }
-                );
-            }
-            
-            showToast("Điều hướng đã bắt đầu", "Hệ thống sẽ hướng dẫn bạn đến địa điểm giao hàng", "success");
-        }
-
-        function updateNavigationInfo() {
-            if (!currentPosition || !order) return;
-            
-            const distance = calculateDistance(
-                currentPosition.latitude,
-                currentPosition.longitude,
-                order.guest_latitude,
-                order.guest_longitude
-            );
-            
-            const time = (distance / 1000 / 30) * 3600; // Assuming 30 km/h average speed
-            
-            document.getElementById('nav-distance').textContent = formatDistance(distance);
-            document.getElementById('nav-time').textContent = formatTime(time);
-            document.getElementById('remaining-time').textContent = formatTime(time);
-        }
-
-        function completeDelivery() {
-            showToast("Giao hàng thành công", "Đơn hàng đã được cập nhật thành đã giao", "success");
-            
-            // Stop location tracking
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-            
-            // Redirect back to orders
-            setTimeout(() => {
-                window.location.href = `/orders/${order.id}?status=delivered`;
-            }, 2000);
-        }
-
-        function callCustomer() {
-            if (order && order.customer_phone) {
-                window.open(`tel:${order.customer_phone}`);
-            }
-        }
-
-        function toggleCustomerInfo() {
-            const customerInfo = document.getElementById('customer-info');
-            const showBtn = document.getElementById('show-customer-btn');
-            
-            if (customerInfo.classList.contains('hidden')) {
-                customerInfo.classList.remove('hidden');
-                showBtn.classList.add('hidden');
+            // Status
+            const statusBadge = document.getElementById('status-badge');
+            const comboStatus = document.getElementById('combo-status');
+            if (combo.status === 'active') {
+                statusBadge.className = 'px-3 py-1 text-sm font-medium bg-green-500 text-white rounded-full';
+                statusBadge.textContent = 'Hoạt động';
+                comboStatus.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800';
+                comboStatus.textContent = 'Hoạt động';
             } else {
-                customerInfo.classList.add('hidden');
-                showBtn.classList.remove('hidden');
+                statusBadge.className = 'px-3 py-1 text-sm font-medium bg-red-500 text-white rounded-full';
+                statusBadge.textContent = 'Tạm dừng';
+                comboStatus.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800';
+                comboStatus.textContent = 'Tạm dừng';
             }
-        }
 
-        function zoomIn() {
-            map.zoomIn();
-        }
+            // Dates
+            document.getElementById('combo-created').textContent = formatDate(combo.createdAt);
+            document.getElementById('created-date').textContent = formatDate(combo.createdAt);
 
-        function zoomOut() {
-            map.zoomOut();
-        }
+            // Prices
+            document.getElementById('combo-price').textContent = formatPrice(combo.price);
+            document.getElementById('price-display').textContent = formatPrice(combo.price);
+            document.getElementById('original-price-display').textContent = formatPrice(combo.originalPrice);
 
-        function centerOnUser() {
-            if (currentPosition) {
-                map.flyTo({
-                    center: [currentPosition.longitude, currentPosition.latitude],
-                    zoom: 16
-                });
+            if (combo.originalPrice > combo.price) {
+                document.getElementById('original-price').textContent = formatPrice(combo.originalPrice);
+                document.getElementById('discount-badge').textContent = `-${calculateDiscountPercent(combo.originalPrice, combo.price)}%`;
+                document.getElementById('discount-badge').classList.remove('hidden');
+                
+                const savings = calculateSavings(combo.originalPrice, combo.price);
+                document.getElementById('savings-display').textContent = formatPrice(savings);
+                document.getElementById('discount-percent').textContent = `${calculateDiscountPercent(combo.originalPrice, combo.price)}%`;
+            } else {
+                document.getElementById('original-price').style.display = 'none';
+                document.getElementById('savings-display').textContent = '0₫';
+                document.getElementById('discount-percent').textContent = '0%';
             }
-        }
 
-        function goBack() {
-            window.history.back();
-        }
-
-        // Utility functions
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Earth's radius in meters
-            const φ1 = lat1 * Math.PI / 180;
-            const φ2 = lat2 * Math.PI / 180;
-            const Δφ = (lat2 - lat1) * Math.PI / 180;
-            const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                    Math.cos(φ1) * Math.cos(φ2) *
-                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-            return R * c;
-        }
-
-        function formatDistance(meters) {
-            if (meters >= 1000) {
-                return `${(meters / 1000).toFixed(1)} km`;
-            }
-            return `${Math.round(meters)} m`;
-        }
-
-        function formatTime(seconds) {
-            const minutes = Math.ceil(seconds / 60);
-            if (minutes < 60) {
-                return `${minutes} phút`;
-            }
-            const hours = Math.floor(minutes / 60);
-            const remainingMinutes = minutes % 60;
-            return `${hours}h ${remainingMinutes}m`;
-        }
-
-        function showToast(title, message, type) {
-            // Simple toast implementation
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${type === 'error' ? '#ef4444' : '#16a34a'};
-                color: white;
-                padding: 1rem;
-                border-radius: 0.5rem;
-                z-index: 1000;
-                max-width: 300px;
-            `;
-            toast.innerHTML = `<strong>${title}</strong><br>${message}`;
-            document.body.appendChild(toast);
+            // Items
+            const totalItems = combo.items.length;
+            const totalQuantity = combo.items.reduce((sum, item) => sum + item.quantity, 0);
             
-            setTimeout(() => {
-                document.body.removeChild(toast);
-            }, 3000);
+            document.getElementById('total-items').textContent = `${totalItems} loại`;
+            document.getElementById('total-products').textContent = `${totalItems} loại`;
+            document.getElementById('total-quantity').textContent = `${totalQuantity} món`;
+
+            // Render items
+            const itemsContainer = document.getElementById('combo-items');
+            itemsContainer.innerHTML = combo.items.map(item => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <span class="text-2xl">
+                                ${item.name.toLowerCase().includes('burger') ? '🍔' : 
+                                  item.name.toLowerCase().includes('gà') ? '🍗' :
+                                  item.name.toLowerCase().includes('pizza') ? '🍕' :
+                                  item.name.toLowerCase().includes('khoai') ? '🍟' :
+                                  item.name.toLowerCase().includes('salad') ? '🥗' :
+                                  item.name.toLowerCase().includes('nước') ? '🥤' : '🍽️'}
+                            </span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">${item.name}</h4>
+                            <p class="text-sm text-gray-600">${item.variantName}</p>
+                            <p class="text-sm text-orange-600 font-medium">${formatPrice(item.price)}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-semibold">x${item.quantity}</div>
+                        <div class="text-sm text-gray-600">${formatPrice(item.price * item.quantity)}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Category breakdown
+            const categoryBreakdown = getCategoryBreakdown(combo.items);
+            const breakdownContainer = document.getElementById('category-breakdown');
+            breakdownContainer.innerHTML = Object.entries(categoryBreakdown).map(([category, data]) => `
+                <div class="flex justify-between items-center py-1">
+                    <span class="text-sm text-gray-600">${getCategoryName(category)}:</span>
+                    <span class="text-sm font-medium">${data.count} loại (${data.quantity} món)</span>
+                </div>
+            `).join('');
+
+            // Toggle status button
+            const toggleBtn = document.getElementById('toggle-status-btn');
+            const toggleText = document.getElementById('toggle-status-text');
+            if (combo.status === 'active') {
+                toggleText.textContent = 'Tạm dừng';
+                toggleBtn.className = 'w-full flex items-center justify-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-md';
+            } else {
+                toggleText.textContent = 'Kích hoạt';
+                toggleBtn.className = 'w-full flex items-center justify-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md';
+            }
+
+            // Delete modal
+            document.getElementById('delete-combo-name').textContent = combo.name;
         }
 
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', init);
+        // Event listeners
+        document.getElementById('edit-btn').addEventListener('click', () => {
+            window.location.href = `edit-combo.html?id=${comboId}`;
+        });
+
+        document.getElementById('delete-btn').addEventListener('click', () => {
+            document.getElementById('delete-modal').classList.remove('hidden');
+            document.getElementById('delete-modal').classList.add('flex');
+        });
+
+        document.getElementById('cancel-delete').addEventListener('click', () => {
+            document.getElementById('delete-modal').classList.add('hidden');
+            document.getElementById('delete-modal').classList.remove('flex');
+        });
+
+        document.getElementById('confirm-delete').addEventListener('click', () => {
+            alert('Combo đã được xóa!');
+            window.location.href = 'index.html';
+        });
+
+        document.getElementById('toggle-status-btn').addEventListener('click', () => {
+            combo.status = combo.status === 'active' ? 'inactive' : 'active';
+            renderComboDetails();
+            alert(`Combo đã được ${combo.status === 'active' ? 'kích hoạt' : 'tạm dừng'}!`);
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderComboDetails();
+        });
     </script>
 </body>
 </html>
