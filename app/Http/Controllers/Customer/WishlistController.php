@@ -9,6 +9,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\BranchService;
+use App\Events\Customer\FavoriteUpdated;
 
 class WishlistController extends Controller
 {
@@ -37,41 +38,41 @@ class WishlistController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'product_variant_id' => 'nullable|exists:product_variants,id',
         ]);
 
         $user = Auth::user();
         $existingItem = WishlistItem::where('user_id', $user->id)
             ->where('product_id', $request->product_id)
-            ->where('product_variant_id', $request->product_variant_id)
             ->first();
 
         if ($existingItem) {
-            return response()->json(['message' => 'Sản phẩm đã có trong danh sách yêu thích'], 400);
+            return response()->json(['message' => 'Sản phẩm đã có trong danh sách yêu thích'], 409);
         }
 
         WishlistItem::create([
             'user_id' => $user->id,
             'product_id' => $request->product_id,
-            'product_variant_id' => $request->product_variant_id,
         ]);
 
-        return response()->json(['message' => 'Đã thêm vào danh sách yêu thích'], 200);
+        return response()->json(['message' => 'Đã thêm vào danh sách yêu thích'], 201);
     }
 
     /**
      * Remove a product from the wishlist.
      */
-    public function destroy($id)
+    public function destroy($productId)
     {
-        $wishlistItem = WishlistItem::where('user_id', Auth::id())->findOrFail($id);
-        // Giảm favorite_count nếu có
-        $product = $wishlistItem->product;
-        if ($product && $product->favorite_count > 0) {
-            $product->decrement('favorite_count');
+        $user = Auth::user();
+        $wishlistItem = WishlistItem::where('user_id', $user->id)
+            ->where('product_id', $productId)
+            ->first();
+
+        if (!$wishlistItem) {
+            return response()->json(['message' => 'Sản phẩm không có trong danh sách yêu thích'], 404);
         }
+
         $wishlistItem->delete();
 
-        return response()->json(['message' => 'Đã xóa khỏi danh sách yêu thích'], 200);
+        return response()->json(['message' => 'Đã xoá khỏi danh sách yêu thích']);
     }
 }
