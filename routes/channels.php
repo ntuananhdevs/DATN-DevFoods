@@ -134,3 +134,9 @@ Broadcast::channel('discounts', function ($user = null) {
     // Allow all users (including unauthenticated) to listen to discount updates
     return true;
 });
+
+// Wishlist channel for a specific user
+Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
+    // Only the authenticated user with the matching ID can listen.
+    return (int) $user->id === (int) $userId;
+});

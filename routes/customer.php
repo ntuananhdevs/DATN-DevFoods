@@ -62,6 +62,8 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
+    Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
 
     // Checkout
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');

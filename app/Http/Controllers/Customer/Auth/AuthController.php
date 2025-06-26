@@ -116,6 +116,10 @@ class AuthController extends Controller
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
         
+        // Xóa thông tin giỏ hàng khỏi session
+        $request->session()->forget('cart');
+        $request->session()->forget('cart_count');
+        
         // Đăng xuất người dùng
         Auth::logout();
         
