@@ -212,20 +212,57 @@ class ToppingController extends Controller
         try {
             $query = Topping::where('active', true);
 
+            // Improved fuzzy search
             if ($request->has('search') && $request->search) {
-                $query->where('name', 'like', '%' . $request->search . '%');
+                $searchTerm = $request->search;
+                $query->where(function($q) use ($searchTerm) {
+                    // Exact match gets highest priority
+                    $q->where('name', 'like', '%' . $searchTerm . '%')
+                      // Also search in description
+                      ->orWhere('description', 'like', '%' . $searchTerm . '%')
+                      // Search by individual words
+                      ->orWhere(function($subQ) use ($searchTerm) {
+                          $words = explode(' ', $searchTerm);
+                          foreach ($words as $word) {
+                              if (strlen(trim($word)) > 1) {
+                                  $subQ->orWhere('name', 'like', '%' . trim($word) . '%');
+                              }
+                          }
+                      });
+                });
             }
 
-            $toppings = $query->select('id', 'name', 'price', 'image')
+            $toppings = $query->select('id', 'name', 'price', 'image', 'description')
                              ->orderBy('name')
                              ->get()
                              ->map(function ($topping) {
+                                 // Use S3 URL if image exists
+                                 $imageUrl = null;
+                                 if ($topping->image) {
+                                     // Check if it's already a full URL (S3)
+                                     if (filter_var($topping->image, FILTER_VALIDATE_URL)) {
+                                         $imageUrl = $topping->image;
+                                     } else {
+                                         // Try S3 first, fallback to local storage
+                                         try {
+                                             if (\Storage::disk('s3')->exists($topping->image)) {
+                                                 $imageUrl = \Storage::disk('s3')->url($topping->image);
+                                             } else {
+                                                 $imageUrl = asset('storage/' . $topping->image);
+                                             }
+                                         } catch (\Exception $e) {
+                                             $imageUrl = asset('storage/' . $topping->image);
+                                         }
+                                     }
+                                 }
+
                                  return [
                                      'id' => $topping->id,
                                      'name' => $topping->name,
                                      'price' => $topping->price,
                                      'formatted_price' => number_format($topping->price, 0, ',', '.') . ' VNĐ',
-                                     'image_url' => $topping->image ? asset('storage/' . $topping->image) : null
+                                     'image_url' => $imageUrl,
+                                     'description' => $topping->description
                                  ];
                              });
 

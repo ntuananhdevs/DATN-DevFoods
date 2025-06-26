@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+  <rect width="48" height="48" rx="8" fill="#f3f4f6"/>
+  <path d="M24 12c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10-10-4.477-10-10 4.477-10 10-10z" fill="#9ca3af"/>
+  <circle cx="24" cy="24" r="3" fill="#9ca3af"/>
+  <path d="M18 20h12v8H18z" fill="#e5e7eb" opacity="0.5"/>
+  <text x="24" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#6b7280">Topping</text>
+</svg>
