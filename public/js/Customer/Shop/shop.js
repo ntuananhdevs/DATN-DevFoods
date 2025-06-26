@@ -343,47 +343,66 @@ document.addEventListener("DOMContentLoaded", function() {
     if (favoriteBtn) {
         favoriteBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            // Nếu là nút login-prompt-btn thì show popup đăng nhập
+            if (this.classList.contains('login-prompt-btn')) {
+                document.getElementById('login-popup').classList.remove('hidden');
+                return;
+            }
             const productId = this.getAttribute('data-product-id');
             const icon = this.querySelector('i');
-            if (!productId || !icon) return;
-
-            fetch('/favorite/toggle', {
-                method: 'POST',
+            const isFavorite = icon.classList.contains('fas');
+            // Optimistic UI
+            if (isFavorite) {
+                icon.classList.remove('fas', 'text-red-500');
+                icon.classList.add('far');
+            } else {
+                icon.classList.remove('far');
+                icon.classList.add('fas', 'text-red-500');
+            }
+            // Gửi AJAX
+            fetch('/wishlist' + (isFavorite ? '/' + productId : ''), {
+                method: isFavorite ? 'DELETE' : 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': window.csrfToken
                 },
-                body: JSON.stringify({ product_id: productId })
+                body: isFavorite ? null : JSON.stringify({ product_id: productId })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    if (data.is_favorite) {
+                if (data && data.message) {
+                    // Thành công hoặc lỗi đều show message
+                    dtmodalShowToast(isFavorite ? 'info' : 'success', {
+                        title: isFavorite ? 'Thông báo' : 'Thành công',
+                        message: data.message
+                    });
+                } else {
+                    // Nếu lỗi, revert lại UI
+                    if (isFavorite) {
                         icon.classList.remove('far');
                         icon.classList.add('fas', 'text-red-500');
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: 'Đã thêm vào yêu thích'
-                        });
                     } else {
                         icon.classList.remove('fas', 'text-red-500');
                         icon.classList.add('far');
-                        dtmodalShowToast('info', {
-                            title: 'Thông báo',
-                            message: 'Đã xóa khỏi yêu thích'
-                        });
                     }
-                } else {
                     dtmodalShowToast('error', {
                         title: 'Lỗi',
-                        message: data.message || 'Có lỗi xảy ra'
+                        message: 'Có lỗi khi cập nhật yêu thích'
                     });
                 }
             })
-            .catch(error => {
+            .catch(() => {
+                // Nếu lỗi, revert lại UI
+                if (isFavorite) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas', 'text-red-500');
+                } else {
+                    icon.classList.remove('fas', 'text-red-500');
+                    icon.classList.add('far');
+                }
                 dtmodalShowToast('error', {
                     title: 'Lỗi',
-                    message: 'Có lỗi xảy ra khi cập nhật yêu thích'
+                    message: 'Có lỗi khi cập nhật yêu thích'
                 });
             });
         });

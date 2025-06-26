@@ -475,71 +475,42 @@
             if (savedCount) {
                 const sessionCount = {{ auth()->check() ? auth()->user()->wishlist->count() : 0 }};
                 // Only use localStorage if it has a newer value than the session
-                if (parseInt(savedCount) > sessionCount) {
+                if (parseInt(savedCount) >= sessionCount) {
                     window.updateWishlistCount(savedCount);
                 }
             }
 
             // Set up Pusher if the script is loaded and user is authenticated
             if (typeof Pusher !== 'undefined' && {{ auth()->check() ? 'true' : 'false' }}) {
-                console.log('Initializing Pusher for wishlist updates...');
-
+                // This Pusher instance is for layout elements.
+                // Page-specific scripts might have their own or should share this one.
                 const pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
                     cluster: '{{ env('PUSHER_APP_CLUSTER') }}',
                     encrypted: true,
-                    enabledTransports: ['ws', 'wss'],
-                    debug: true
-                });
-
-                // Subscribe to wishlist channel
-                const channelName = 'user-wishlist-channel.{{ auth()->id() }}';
-                console.log('Subscribing to channel:', channelName);
-
-                const wishlistChannel = pusher.subscribe(channelName);
-
-                // Log connection status
-                pusher.connection.bind('connected', () => {
-                    console.log('Pusher connected successfully');
-                });
-
-                pusher.connection.bind('error', (err) => {
-                    console.error('Pusher connection error:', err);
-                });
-
-                // Listen for wishlist updates
-                wishlistChannel.bind('favorite-updated', function(data) {
-                    console.log('Received favorite-updated event:', data);
-
-                    window.updateWishlistCount(data.count);
-
-                    // Update favorite button state if on product page
-                    const favoriteBtn = document.querySelector(
-                        `.favorite-btn[data-product-id="${data.product_id}"]`);
-                    if (favoriteBtn) {
-                        console.log('Updating favorite button state for product:', data.product_id);
-                        const icon = favoriteBtn.querySelector('i');
-                        if (data.is_favorite) {
-                            icon.classList.remove('far');
-                            icon.classList.add('fas', 'text-red-500');
-                        } else {
-                            icon.classList.remove('fas', 'text-red-500');
-                            icon.classList.add('far');
+                    authEndpoint: '/broadcasting/auth',
+                    auth: {
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         }
                     }
                 });
 
-                // Log subscription status
-                wishlistChannel.bind('subscription_succeeded', () => {
-                    console.log('Successfully subscribed to wishlist channel');
+                // Subscribe to the correct private wishlist channel
+                const channelName = 'private-user-wishlist-channel.{{ auth()->id() }}';
+                const wishlistChannel = pusher.subscribe(channelName);
+
+                // Listen for wishlist updates
+                wishlistChannel.bind('favorite-updated', function(data) {
+                    // This listener in the layout should only update the global counter.
+                    window.updateWishlistCount(data.count);
                 });
 
-                wishlistChannel.bind('subscription_error', (error) => {
-                    console.error('Error subscribing to wishlist channel:', error);
+                wishlistChannel.bind('pusher:subscription_succeeded', () => {
+                    console.log('Layout subscribed to wishlist channel:', channelName);
                 });
-            } else {
-                console.log('Pusher not initialized because:', {
-                    pusherLoaded: typeof Pusher !== 'undefined',
-                    userAuthenticated: {{ auth()->check() ? 'true' : 'false' }}
+
+                wishlistChannel.bind('pusher:subscription_error', (error) => {
+                    console.error('Layout failed to subscribe to wishlist channel:', channelName, error);
                 });
             }
         });

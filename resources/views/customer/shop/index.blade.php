@@ -15,6 +15,11 @@
         });
     </script>
 @endif
+@if(Auth::check() || true)
+    <script>
+        window.csrfToken = '{{ csrf_token() }}';
+    </script>
+@endif
 <style>
     .container {
       max-width: 1280px;
