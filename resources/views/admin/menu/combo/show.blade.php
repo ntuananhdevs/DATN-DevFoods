@@ -1,355 +1,351 @@
 @extends('layouts/admin/contentLayoutMaster')
-
 @section('title', 'Chi Tiết Combo')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Chi Tiết Combo: {{ $combo->name }}</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('admin.combos.edit', $combo) }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-edit"></i> Chỉnh sửa
-                        </a>
-                        <a href="{{ route('admin.combos.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-arrow-left"></i> Quay lại
-                        </a>
-                    </div>
-                </div>
+<div class="min-h-screen bg-gray-50">
+    <div class="container mx-auto p-6 space-y-6">
+        <!-- Header -->
+        <div class="flex items-center gap-4">
+            <a href="{{ route('admin.combos.index') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>
+                Quay lại
+            </a>
+            <div class="flex-1">
+                <h1 class="text-3xl font-bold">Chi Tiết Combo: {{ $combo->name }}</h1>
+                <p class="text-gray-600">Thông tin chi tiết về combo</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ route('admin.combos.edit', $combo) }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md">
+                    <i class="fas fa-edit w-4 h-4 mr-2"></i>
+                    Chỉnh sửa
+                </a>
+                <button onclick="openDeleteModal()" type="button" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md">
+                    <i class="fas fa-trash-2 w-4 h-4 mr-2"></i>
+                    Xóa
+                </button>
+            </div>
+        </div>
 
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Thông tin cơ bản -->
-                        <div class="col-md-8">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label><strong>Tên Combo:</strong></label>
-                                        <p class="form-control-static">{{ $combo->name }}</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label><strong>Danh mục:</strong></label>
-                                        <p class="form-control-static">
-                                            @if($combo->category)
-                                                <span class="badge badge-info">{{ $combo->category->name }}</span>
-                                            @else
-                                                <span class="text-muted">Chưa phân loại</span>
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label><strong>Giá bán:</strong></label>
-                                        <p class="form-control-static text-success">
-                                            <strong>{{ number_format($combo->price, 0, ',', '.') }} VNĐ</strong>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label><strong>Giá gốc:</strong></label>
-                                        <p class="form-control-static">
-                                            @if($combo->original_price)
-                                                <span class="text-muted">{{ number_format($combo->original_price, 0, ',', '.') }} VNĐ</span>
-                                                @if($combo->original_price > $combo->price)
-                                                    <span class="badge badge-danger ml-2">
-                                                        -{{ round((($combo->original_price - $combo->price) / $combo->original_price) * 100) }}%
-                                                    </span>
-                                                @endif
-                                            @else
-                                                <span class="text-muted">Không có</span>
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="form-group">
-                                        <label><strong>Mô tả ngắn:</strong></label>
-                                        <p class="form-control-static">
-                                            {{ $combo->short_description ?: 'Không có mô tả ngắn' }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="form-group">
-                                        <label><strong>Mô tả chi tiết:</strong></label>
-                                        <div class="form-control-static">
-                                            {!! nl2br(e($combo->description ?: 'Không có mô tả chi tiết')) !!}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label><strong>Trạng thái:</strong></label>
-                                        <p class="form-control-static">
-                                            @if($combo->active)
-                                                <span class="badge badge-success">Kích hoạt</span>
-                                            @else
-                                                <span class="badge badge-secondary">Không kích hoạt</span>
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label><strong>Nổi bật:</strong></label>
-                                        <p class="form-control-static">
-                                            @if($combo->featured)
-                                                <span class="badge badge-warning">Nổi bật</span>
-                                            @else
-                                                <span class="badge badge-light">Thường</span>
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label><strong>Ngày tạo:</strong></label>
-                                        <p class="form-control-static">{{ $combo->created_at->format('d/m/Y H:i:s') }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label><strong>Cập nhật lần cuối:</strong></label>
-                                        <p class="form-control-static">{{ $combo->updated_at->format('d/m/Y H:i:s') }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Hình ảnh -->
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label><strong>Hình ảnh:</strong></label>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Hình ảnh và thông tin chính -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                    <!-- Hình ảnh combo -->
+                    <div class="relative">
+                        @if($combo->image)
+                            <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="w-full h-80 object-cover">
+                        @else
+                            <div class="w-full h-80 bg-gray-100 flex items-center justify-center">
                                 <div class="text-center">
-                                    @if($combo->image)
-                                        <img src="{{ asset('storage/' . $combo->image) }}" 
-                                             alt="{{ $combo->name }}" 
-                                             class="img-fluid img-thumbnail" 
-                                             style="max-width: 300px; max-height: 300px;">
-                                    @else
-                                        <div class="no-image-placeholder">
-                                            <i class="fas fa-image fa-3x text-muted"></i>
-                                            <p class="text-muted mt-2">Không có hình ảnh</p>
-                                        </div>
+                                    <i class="fas fa-image fa-3x text-gray-400 mb-3"></i>
+                                    <p class="text-gray-500">Không có hình ảnh</p>
+                                </div>
+                            </div>
+                        @endif
+                        <div class="absolute top-4 right-4 flex gap-2">
+                            @if($combo->active)
+                                <span class="px-3 py-1 text-sm font-medium bg-green-500 text-white rounded-full">Hoạt động</span>
+                            @else
+                                <span class="px-3 py-1 text-sm font-medium bg-red-500 text-white rounded-full">Tạm dừng</span>
+                            @endif
+                            @if($combo->original_price && $combo->original_price > $combo->price)
+                                <span class="px-3 py-1 text-sm font-medium bg-orange-500 text-white rounded-full">
+                                    -{{ round((($combo->original_price - $combo->price) / $combo->original_price) * 100) }}%
+                                </span>
+                            @endif
+                        </div>
+                        <div class="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+                            <div class="flex items-center gap-4">
+                                <div>
+                                    <span class="text-2xl font-bold">{{ number_format($combo->price, 0, ',', '.') }} VNĐ</span>
+                                    @if($combo->original_price && $combo->original_price > $combo->price)
+                                        <span class="text-sm line-through ml-2 opacity-75">{{ number_format($combo->original_price, 0, ',', '.') }} VNĐ</span>
                                     @endif
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Sản phẩm trong combo -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Sản phẩm trong combo ({{ $combo->products->count() }} sản phẩm)</h3>
-                </div>
-                <div class="card-body">
-                    @if($combo->products->count() > 0)
-                        <div class="row">
-                            @foreach($combo->products as $product)
-                                <div class="col-md-4 mb-3">
-                                    <div class="card product-item">
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-4">
-                                                    @if($product->image)
-                                                        <img src="{{ asset('storage/' . $product->image) }}" 
-                                                             alt="{{ $product->name }}" 
-                                                             class="img-fluid rounded" 
-                                                             style="max-height: 80px; object-fit: cover;">
-                                                    @else
-                                                        <div class="no-image-small">
-                                                            <i class="fas fa-image fa-2x text-muted"></i>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                                <div class="col-8">
-                                                    <h6 class="card-title mb-1">
-                                                        <a href="{{ route('admin.products.show', $product->id) }}" class="text-decoration-none">
-                                                            {{ $product->name }}
-                                                        </a>
-                                                    </h6>
-                                                    <p class="card-text text-success mb-1">
-                                                        <strong>{{ number_format($product->price, 0, ',', '.') }} VNĐ</strong>
-                                                    </p>
-                                                    <p class="card-text">
-                                                        <small class="text-muted">{{ $product->category->name ?? 'Chưa phân loại' }}</small>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
+                    <!-- Thông tin combo -->
+                    <div class="p-6">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold mb-2">{{ $combo->name }}</h2>
+                            <p class="text-gray-600 text-lg">{{ $combo->short_description ?: $combo->description ?: 'Không có mô tả' }}</p>
                         </div>
-                        
-                        <!-- Tổng giá trị -->
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <div class="alert alert-info">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <strong>Tổng giá trị sản phẩm:</strong> 
-                                            {{ number_format($combo->products->sum('price'), 0, ',', '.') }} VNĐ
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Giá combo:</strong> 
-                                            {{ number_format($combo->price, 0, ',', '.') }} VNĐ
-                                            @php
-                                                $totalProductPrice = $combo->products->sum('price');
-                                                $savings = $totalProductPrice - $combo->price;
-                                            @endphp
-                                            @if($savings > 0)
-                                                <span class="badge badge-success ml-2">
-                                                    Tiết kiệm: {{ number_format($savings, 0, ',', '.') }} VNĐ
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @else
-                        <div class="text-center py-4">
-                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Combo này chưa có sản phẩm nào</p>
-                            <a href="{{ route('admin.combos.edit', $combo) }}" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Thêm sản phẩm
-                            </a>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Thống kê -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Thống kê bán hàng</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-info"><i class="fas fa-shopping-cart"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Tổng đơn hàng</span>
-                                    <span class="info-box-number">0</span>
+                        <!-- Thông tin chi tiết -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Danh mục</label>
+                                    @if($combo->category)
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">{{ $combo->category->name }}</span>
+                                    @else
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">Chưa phân loại</span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
+                                    @if($combo->active)
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Hoạt động</span>
+                                    @else
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Tạm dừng</span>
+                                    @endif
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-success"><i class="fas fa-dollar-sign"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Doanh thu</span>
-                                    <span class="info-box-number">0 VNĐ</span>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Ngày tạo</label>
+                                    <span class="text-gray-900">{{ $combo->created_at->format('d/m/Y H:i:s') }}</span>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-warning"><i class="fas fa-chart-line"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Tháng này</span>
-                                    <span class="info-box-number">0</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-danger"><i class="fas fa-star"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Đánh giá TB</span>
-                                    <span class="info-box-number">0/5</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Số lượng có sẵn</label>
+                                    <span class="text-gray-900 font-medium">
+                                        @if($combo->quantity !== null)
+                                            {{ number_format($combo->quantity) }} combo
 
-    <!-- Actions -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-footer">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <a href="{{ route('admin.combos.edit', $combo) }}" class="btn btn-primary">
-                                <i class="fas fa-edit"></i> Chỉnh sửa
-                            </a>
-                            <a href="{{ route('admin.combos.index') }}" class="btn btn-secondary ml-2">
-                                <i class="fas fa-list"></i> Danh sách
-                            </a>
+                                        @else
+                                            <span class="text-gray-500">Không giới hạn</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tổng sản phẩm</label>
+                                    <span class="text-gray-900 font-medium">{{ $combo->productVariants->count() }} loại</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 text-right">
-                            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal">
-                                <i class="fas fa-trash"></i> Xóa Combo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Delete Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Xác nhận xóa</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                Bạn có chắc chắn muốn xóa combo "{{ $combo->name }}"? Hành động này không thể hoàn tác.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                <form action="{{ route('admin.combos.destroy', $combo) }}" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">Xóa</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+                        <!-- Sản phẩm trong combo -->
+                        <div>
+                            <h3 class="text-lg font-semibold mb-4">Sản phẩm trong combo</h3>
+                            @if($combo->productVariants->count() > 0)
+                                 @foreach($combo->productVariants as $productVariant)
+                                     <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                         <div class="flex items-center gap-4">
+                                             <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                                 @if($productVariant->product->image)
+                                                     <img src="{{ $productVariant->product->image_url }}" alt="{{ $productVariant->product->name }}" class="w-full h-full object-cover">
+                                                 @else
+                                                     <span class="text-2xl">
+                                                         @if(str_contains(strtolower($productVariant->product->name), 'burger'))
+                                                             🍔
+                                                         @elseif(str_contains(strtolower($productVariant->product->name), 'gà'))
+                                                             🍗
+                                                         @elseif(str_contains(strtolower($productVariant->product->name), 'pizza'))
+                                                             🍕
+                                                         @elseif(str_contains(strtolower($productVariant->product->name), 'khoai'))
+                                                             🍟
+                                                         @elseif(str_contains(strtolower($productVariant->product->name), 'salad'))
+                                                             🥗
+                                                         @elseif(str_contains(strtolower($productVariant->product->name), 'nước'))
+                                                             🥤
+                                                         @else
+                                                             🍽️
+                                                         @endif
+                                                     </span>
+                                                 @endif
+                                             </div>
+                                             <div>
+                                                 <h4 class="font-semibold">
+                                                     <a href="{{ route('admin.products.show', $productVariant->product->id) }}" class="text-blue-600 hover:text-blue-800">
+                                                         {{ $productVariant->product->name }}
+                                                     </a>
+                                                 </h4>
+                                                 @if($productVariant->variantValues->count() > 0)
+                                                     <p class="text-sm text-gray-600">
+                                                         @foreach($productVariant->variantValues as $variantValue)
+                                                             {{ $variantValue->attribute->name }}: {{ $variantValue->value }}@if(!$loop->last), @endif
+                                                         @endforeach
+                                                     </p>
+                                                 @endif
+                                                 <p class="text-sm text-orange-600 font-medium">{{ number_format($productVariant->price, 0, ',', '.') }} VNĐ</p>
+                                             </div>
+                                         </div>
+                                         <div class="text-right">
+                                             <div class="text-lg font-semibold">x{{ $productVariant->pivot->quantity ?? 1 }}</div>
+                                             <div class="text-sm text-gray-600">{{ number_format($productVariant->price * ($productVariant->pivot->quantity ?? 1), 0, ',', '.') }} VNĐ</div>
+                                         </div>
+                                     </div>
+                                 @endforeach
+                             @else
+                                 <div class="text-center py-8">
+                                     <i class="fas fa-box-open fa-3x text-gray-400 mb-3"></i>
+                                     <p class="text-gray-500 mb-4">Combo này chưa có sản phẩm nào</p>
+                                     <a href="{{ route('admin.combos.edit', $combo) }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md">
+                                         <i class="fas fa-plus w-4 h-4 mr-2"></i>
+                                         Thêm sản phẩm
+                                     </a>
+                                 </div>
+                             @endif
+                         </div>
+                     </div>
+                 </div>
+             </div>
+
+             <!-- Sidebar thông tin -->
+             <div class="lg:col-span-1">
+                 <div class="space-y-6">
+                     <!-- Thống kê giá -->
+                     <div class="bg-white rounded-lg shadow-sm border p-6">
+                         <h3 class="text-lg font-semibold mb-4">Thông tin giá</h3>
+                         <div class="space-y-4">
+                             <div class="flex justify-between items-center">
+                                 <span class="text-gray-600">Giá bán:</span>
+                                 <span class="font-semibold text-lg text-orange-600">{{ number_format($combo->price, 0, ',', '.') }} VNĐ</span>
+                             </div>
+                             <div class="flex justify-between items-center">
+                                 <span class="text-gray-600">Giá gốc:</span>
+                                 <span class="font-medium text-gray-900">
+                                     @if($combo->original_price)
+                                         {{ number_format($combo->original_price, 0, ',', '.') }} VNĐ
+                                     @else
+                                         Không có
+                                     @endif
+                                 </span>
+                             </div>
+                             @if($combo->original_price && $combo->original_price > $combo->price)
+                                 <div class="flex justify-between items-center pt-2 border-t">
+                                     <span class="text-gray-600">Tiết kiệm:</span>
+                                     <span class="font-semibold text-green-600">{{ number_format($combo->original_price - $combo->price, 0, ',', '.') }} VNĐ</span>
+                                 </div>
+                                 <div class="flex justify-between items-center">
+                                     <span class="text-gray-600">Giảm giá:</span>
+                                     <span class="font-semibold text-orange-600">{{ round((($combo->original_price - $combo->price) / $combo->original_price) * 100) }}%</span>
+                                 </div>
+                             @endif
+                         </div>
+                     </div>
+
+                     <!-- Thống kê sản phẩm -->
+                     <div class="bg-white rounded-lg shadow-sm border p-6">
+                         <h3 class="text-lg font-semibold mb-4">Thống kê sản phẩm</h3>
+                         <div class="space-y-3">
+                             <div class="flex justify-between items-center">
+                                 <span class="text-gray-600">Tổng sản phẩm:</span>
+                                 <span class="font-medium">{{ $combo->productVariants->count() }} loại</span>
+                             </div>
+                             <div class="flex justify-between items-center">
+                                 <span class="text-gray-600">Tổng số lượng:</span>
+                                 <span class="font-medium">{{ $combo->productVariants->sum('pivot.quantity') }} món</span>
+                             </div>
+                             @if($combo->productVariants->count() > 0)
+                                 <div class="pt-2 border-t">
+                                     @php
+                                         $categoryBreakdown = [];
+                                         foreach($combo->productVariants as $variant) {
+                                             $categoryName = $variant->product->category->name ?? 'Khác';
+                                             if (!isset($categoryBreakdown[$categoryName])) {
+                                                 $categoryBreakdown[$categoryName] = ['count' => 0, 'quantity' => 0];
+                                             }
+                                             $categoryBreakdown[$categoryName]['count']++;
+                                             $categoryBreakdown[$categoryName]['quantity'] += $variant->pivot->quantity ?? 1;
+                                         }
+                                     @endphp
+                                     @foreach($categoryBreakdown as $category => $data)
+                                         <div class="flex justify-between items-center py-1">
+                                             <span class="text-sm text-gray-600">{{ $category }}:</span>
+                                             <span class="text-sm font-medium">{{ $data['count'] }} loại ({{ $data['quantity'] }} món)</span>
+                                         </div>
+                                     @endforeach
+                                 </div>
+                             @endif
+                         </div>
+                     </div>
+
+    <!-- Thao tác -->
+                     <div class="bg-white rounded-lg shadow-sm border p-6">
+                         <h3 class="text-lg font-semibold mb-4">Thao tác</h3>
+                         <div class="space-y-3">
+                             <button class="w-full flex items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md transition-colors">
+                                 <i class="fas fa-copy w-4 h-4 mr-2"></i>
+                                 Sao chép combo
+                             </button>
+                             <button class="w-full flex items-center justify-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-md transition-colors">
+                                 <i class="fas fa-file-pdf w-4 h-4 mr-2"></i>
+                                 Xuất PDF
+                             </button>
+                             <button class="w-full flex items-center justify-center px-4 py-2 {{ $combo->is_active ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600' }} text-white font-medium rounded-md transition-colors">
+                                 <i class="fas {{ $combo->is_active ? 'fa-pause' : 'fa-play' }} w-4 h-4 mr-2"></i>
+                                 {{ $combo->is_active ? 'Tạm ngưng' : 'Kích hoạt' }}
+                             </button>
+                         </div>
+                     </div>
+
+                     <!-- Lịch sử thay đổi -->
+                     <div class="bg-white rounded-lg shadow-sm border p-6">
+                         <h3 class="text-lg font-semibold mb-4">Lịch sử thay đổi</h3>
+                         <div class="space-y-3">
+                             <div class="flex items-start space-x-3">
+                                 <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                                 <div class="flex-1">
+                                     <p class="text-sm font-medium">Tạo combo</p>
+                                     <p class="text-xs text-gray-500">{{ $combo->created_at->format('d/m/Y H:i') }}</p>
+                                 </div>
+                             </div>
+                             @if($combo->updated_at != $combo->created_at)
+                                 <div class="flex items-start space-x-3">
+                                     <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                                     <div class="flex-1">
+                                         <p class="text-sm font-medium">Cập nhật gần nhất</p>
+                                         <p class="text-xs text-gray-500">{{ $combo->updated_at->format('d/m/Y H:i') }}</p>
+                                     </div>
+                                 </div>
+                             @endif
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </div>
+ </div>
+
+ <!-- Delete Modal -->
+ <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+         <div class="mt-3 text-center">
+             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                 <i class="fas fa-exclamation-triangle text-red-600"></i>
+             </div>
+             <h3 class="text-lg font-medium text-gray-900 mt-4">Xác nhận xóa combo</h3>
+             <div class="mt-2 px-7 py-3">
+                 <p class="text-sm text-gray-500">
+                     Bạn có chắc chắn muốn xóa combo "{{ $combo->name }}" không? Hành động này không thể hoàn tác.
+                 </p>
+             </div>
+             <div class="flex justify-center space-x-3 mt-4">
+                 <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                     Hủy
+                 </button>
+                 <form action="{{ route('admin.combos.destroy', $combo) }}" method="POST" style="display: inline;">
+                     @csrf
+                     @method('DELETE')
+                     <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                         Xóa
+                     </button>
+                 </form>
+             </div>
+         </div>
+     </div>
+ </div>
+
+ <script>
+ function openDeleteModal() {
+     document.getElementById('deleteModal').classList.remove('hidden');
+ }
+
+ function closeDeleteModal() {
+     document.getElementById('deleteModal').classList.add('hidden');
+ }
+
+ // Cập nhật nút xóa để sử dụng modal mới
+ document.addEventListener('DOMContentLoaded', function() {
+     const deleteButton = document.querySelector('[onclick="openDeleteModal()"]');
+     if (deleteButton) {
+         deleteButton.addEventListener('click', openDeleteModal);
+     }
+ });
+ </script>
 @endsection
 
 @push('styles')
