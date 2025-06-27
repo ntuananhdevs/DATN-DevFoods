@@ -431,13 +431,7 @@
                 </div>
 
                 <div class="mb-6">
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" placeholder="Nhập mã giảm giá" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500" id="coupon-code">
-                        <button class="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-md transition-colors" id="apply-coupon">
-                            Áp Dụng
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500">Nhập mã "FASTFOOD10" để được giảm 10%</p>
+                    <!-- Đã xóa phần nhập mã giảm giá và hướng dẫn sử dụng mã giảm giá -->
                 </div>
 
                 <a href="{{ route('checkout.index') }}" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors {{ count($cartItems) == 0 ? 'opacity-50 pointer-events-none' : '' }}">
