@@ -384,46 +384,37 @@
         <div class="space-y-6">
             @php
                 $freeshipCode = null;
-                $otherDiscounts = [];
+                $maxDiscountCode = null;
+                $maxDiscountAmount = 0;
                 if(isset($product->applicable_discount_codes)) {
                     foreach($product->applicable_discount_codes as $discountCode) {
                         if($discountCode->discount_type === 'free_shipping') {
                             $freeshipCode = $discountCode;
                         } else {
-                            $otherDiscounts[] = $discountCode;
+                            // Tính số tiền giảm
+                            $discountAmount = 0;
+                            if($discountCode->discount_type === 'percentage') {
+                                $discountAmount = $product->base_price * ($discountCode->discount_value / 100);
+                                if(isset($discountCode->max_discount_amount) && $discountCode->max_discount_amount > 0) {
+                                    $discountAmount = min($discountAmount, $discountCode->max_discount_amount);
+                                }
+                            } elseif($discountCode->discount_type === 'fixed_amount') {
+                                $discountAmount = $discountCode->discount_value;
+                            }
+                            // Kiểm tra điều kiện đơn tối thiểu
+                            if($discountCode->min_order_amount > 0 && $product->base_price < $discountCode->min_order_amount) {
+                                $discountAmount = 0;
+                            }
+                            if($discountAmount > $maxDiscountAmount) {
+                                $maxDiscountAmount = $discountAmount;
+                                $maxDiscountCode = $discountCode;
+                            }
                         }
                     }
                 }
-                // Tìm mã giảm giá trừ nhiều nhất
-                $maxDiscount = null;
-                $maxValue = 0;
-                foreach($otherDiscounts as $discountCode) {
-                    if($discountCode->discount_type === 'fixed_amount') {
-                        $value = $discountCode->discount_value;
-                    } elseif($discountCode->discount_type === 'percentage') {
-                        $value = isset($product->min_price) ? ($product->min_price * $discountCode->discount_value / 100) : 0;
-                    } else {
-                        $value = 0;
-                    }
-                    
-                    if($value > $maxValue) {
-                        $maxValue = $value;
-                        $maxDiscount = $discountCode;
-                    }
-                }
-                
-                // Giá gốc
-                $originPrice = $product->discount_price && $product->base_price > $product->discount_price
-                    ? $product->discount_price
-                    : $product->min_price;
-                // Giá sau giảm
-                $finalPrice = $originPrice;
-                if($maxDiscount) {
-                    if($maxDiscount->discount_type === 'fixed_amount') {
-                        $finalPrice = max(0, $originPrice - $maxDiscount->discount_value);
-                    } elseif($maxDiscount->discount_type === 'percentage') {
-                        $finalPrice = max(0, $originPrice * (1 - $maxDiscount->discount_value / 100));
-                    }
+                $finalPrice = $product->base_price;
+                if($maxDiscountAmount > 0) {
+                    $finalPrice = max(0, $product->base_price - $maxDiscountAmount);
                 }
             @endphp
             <h1 class="text-2xl sm:text-3xl font-bold">{{ $product->name }}</h1>
@@ -432,15 +423,15 @@
             <div class="space-y-2">
                 <div class="flex items-center gap-3">
                     <span class="text-3xl font-bold text-orange-500 transition-all duration-300" id="current-price">
-                        {{ number_format($finalPrice, 0, '', '.') }} đ
+                        {{ number_format($finalPrice, 0, ',', '.') }}đ
                     </span>
-                    @if($finalPrice < $originPrice)
+                    @if($maxDiscountAmount > 0)
                     <span class="text-lg text-gray-400 line-through" id="base-price">
-                        {{ number_format($originPrice, 0, '', '.') }} đ
+                        {{ number_format($product->base_price, 0, ',', '.') }}đ
                     </span>
                     @else
                     <span class="text-lg text-gray-400 line-through hidden" id="base-price">
-                        {{ number_format($originPrice, 0, '', '.') }} đ
+                        {{ number_format($product->base_price, 0, ',', '.') }}đ
                     </span>
                     @endif
                 </div>
@@ -576,6 +567,17 @@
                                 ->where('branch_id', $selectedBranchId)
                                 ->first() : null;
                             
+                            // Debug log for each variant
+                            \Log::debug('Variant Stock Info:', [
+                                'attribute' => $attribute->name,
+                                'value' => $value->value,
+                                'variant_stock' => $variantStock ? [
+                                    'id' => $variantStock->id,
+                                    'product_variant_id' => $variantStock->product_variant_id,
+                                    'stock_quantity' => $variantStock->stock_quantity
+                                ] : null
+                            ]);
+                            
                             $stockQuantity = $variantStock ? $variantStock->stock_quantity : 0;
                             $productVariantId = $variantStock ? $variantStock->product_variant_id : null;
                         @endphp
@@ -595,9 +597,16 @@
                                 {{ $value->value }}
                                 @if($value->price_adjustment != 0)
                                     <span class="text-sm ml-1 {{ $value->price_adjustment > 0 ? 'text-red-600' : 'text-green-600' }}">
-                                        {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, '', '.') }} đ
+                                        {{ $value->price_adjustment > 0 ? '+' : '' }}{{ number_format($value->price_adjustment, 0, ',', '.') }}đ
                                     </span>
                                 @endif
+                                <span class="text-xs ml-1 {{ $stockQuantity <= 5 ? 'text-orange-500' : 'text-gray-500' }} stock-display">
+                                    @if($stockQuantity > 0)
+                                        (Còn {{ $stockQuantity }})
+                                    @else
+                                        (Hết hàng)
+                                    @endif
+                                </span>
                             </span>
                         </label>
                         @endforeach
@@ -656,7 +665,7 @@
                             <div class="mt-1 text-center">
                                 <p class="text-xs font-medium truncate">{{ $topping->name }}</p>
                                 <p class="text-xs text-orange-500 font-medium">
-                                    +{{ number_format($topping->price, 0, '', '.') }} đ
+                                    +{{ number_format($topping->price, 0, ',', '.') }}đ
                                 </p>
                             </div>
                         </label>
@@ -687,7 +696,6 @@
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3 pt-4">
                 <button id="add-to-cart" 
-                        data-product-id="{{ $product->id }}"
                         class="w-full sm:flex-1 {{ isset($product->has_stock) && $product->has_stock ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-400' }} text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                         {{ isset($product->has_stock) && !$product->has_stock ? 'disabled' : '' }}>
                     <i class="fas {{ isset($product->has_stock) && $product->has_stock ? 'fa-shopping-cart' : 'fa-ban' }} h-5 w-5 mr-2"></i>
@@ -748,53 +756,98 @@
                 @if(!empty($product->ingredients))
                     @php
                         $ingredients = is_string($product->ingredients) ? json_decode($product->ingredients, true) : $product->ingredients;
-                        
-                        // Check if ingredients is structured (has string keys with array values)
-                        $isStructured = false;
-                        if (is_array($ingredients) && !empty($ingredients)) {
-                            $firstKey = array_key_first($ingredients);
-                            $isStructured = is_string($firstKey) && is_array($ingredients[$firstKey]);
-                        }
                     @endphp
                     
                     @if(is_array($ingredients))
-                        @if($isStructured)
-                            {{-- Structured format: display categories --}}
-                            <div class="space-y-6">
-                                @foreach($ingredients as $category => $items)
-                                    @if(is_array($items) && !empty($items))
-                                        <div>
-                                            <h4 class="font-medium mb-3 text-gray-900 capitalize">{{ $category }}:</h4>
-                                            <ul class="space-y-2">
-                                                @foreach($items as $item)
-                                                    <li class="flex items-center space-x-2 text-gray-700">
-                                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                        <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? $item[0] ?? '') : $item }}</span>
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
-                                    @endif
-                                @endforeach
-                            </div>
-                        @else
-                            {{-- Simple format: display as list --}}
-                            <div class="space-y-6">
+                        <div class="space-y-6">
+                            @if(isset($ingredients['base']))
                                 <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Nguyên liệu:</h4>
+                                    <h4 class="font-medium mb-3 text-gray-900">Nguyên liệu cơ bản:</h4>
                                     <ul class="space-y-2">
-                                        @foreach($ingredients as $item)
+                                        @foreach((array)$ingredients['base'] as $item)
                                             <li class="flex items-center space-x-2 text-gray-700">
                                                 <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? $item[0] ?? '') : $item }}</span>
+                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
                                             </li>
                                         @endforeach
                                     </ul>
                                 </div>
-                            </div>
-                        @endif
+                            @endif
+
+                            @if(isset($ingredients['vegetables']))
+                                <div>
+                                    <h4 class="font-medium mb-3 text-gray-900">Rau củ:</h4>
+                                    <ul class="space-y-2">
+                                        @foreach((array)$ingredients['vegetables'] as $item)
+                                            <li class="flex items-center space-x-2 text-gray-700">
+                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if(isset($ingredients['meat']))
+                                <div>
+                                    <h4 class="font-medium mb-3 text-gray-900">Thịt:</h4>
+                                    <ul class="space-y-2">
+                                        @foreach((array)$ingredients['meat'] as $item)
+                                            <li class="flex items-center space-x-2 text-gray-700">
+                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if(isset($ingredients['sauces']))
+                                <div>
+                                    <h4 class="font-medium mb-3 text-gray-900">Sốt:</h4>
+                                    <ul class="space-y-2">
+                                        @foreach((array)$ingredients['sauces'] as $item)
+                                            <li class="flex items-center space-x-2 text-gray-700">
+                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @if(isset($ingredients['cheese']))
+                                <div>
+                                    <h4 class="font-medium mb-3 text-gray-900">Phô mai:</h4>
+                                    <ul class="space-y-2">
+                                        @foreach((array)$ingredients['cheese'] as $item)
+                                            <li class="flex items-center space-x-2 text-gray-700">
+                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+
+                            @foreach($ingredients as $key => $items)
+                                @if(!in_array($key, ['base', 'vegetables', 'meat', 'sauces', 'cheese']) && is_array($items))
+                                    <div>
+                                        <h4 class="font-medium mb-3 text-gray-900">{{ ucfirst(str_replace('_', ' ', $key)) }}:</h4>
+                                        <ul class="space-y-2">
+                                            @foreach($items as $item)
+                                                <li class="flex items-center space-x-2 text-gray-700">
+                                                    <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                                    <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
                     @else
-                        <p class="text-gray-600">{{ $product->ingredients }}</p>
+                        <p class="text-gray-600">{{ is_array($product->ingredients) ? implode(', ', $product->ingredients) : $product->ingredients }}</p>
                     @endif
                 @else
                     <div class="text-center py-8">
@@ -941,12 +994,12 @@
     <div class="mt-12">
         <h2 class="text-2xl font-bold mb-6">Sản Phẩm Liên Quan</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            @foreach($relatedProducts as $relatedProduct)
+            @foreach($relatedProducts as $product)
             @php
                 $freeship = null;
                 $otherDiscounts = [];
-                if(isset($relatedProduct->applicable_discount_codes)) {
-                    foreach($relatedProduct->applicable_discount_codes as $discountCode) {
+                if(isset($product->applicable_discount_codes)) {
+                    foreach($product->applicable_discount_codes as $discountCode) {
                         if($discountCode->discount_type === 'free_shipping') {
                             $freeship = $discountCode;
                         } else {
@@ -954,66 +1007,66 @@
                         }
                     }
                 }
-                $relatedMaxDiscount = null;
-                $relatedMaxValue = 0;
+                $maxDiscount = null;
+                $maxValue = 0;
                 foreach($otherDiscounts as $discountCode) {
                     if($discountCode->discount_type === 'fixed_amount') {
                         $value = $discountCode->discount_value;
                     } elseif($discountCode->discount_type === 'percentage') {
-                        $value = isset($relatedProduct->min_price) ? ($relatedProduct->min_price * $discountCode->discount_value / 100) : 0;
+                        $value = isset($product->min_price) ? ($product->min_price * $discountCode->discount_value / 100) : 0;
                     } else {
                         $value = 0;
                     }
-                    if($value > $relatedMaxValue) {
-                        $relatedMaxValue = $value;
-                        $relatedMaxDiscount = $discountCode;
+                    if($value > $maxValue) {
+                        $maxValue = $value;
+                        $maxDiscount = $discountCode;
                     }
                 }
-                $originPrice = $relatedProduct->discount_price && $relatedProduct->base_price > $relatedProduct->discount_price
-                    ? $relatedProduct->discount_price
-                    : $relatedProduct->min_price;
+                $originPrice = $product->discount_price && $product->base_price > $product->discount_price
+                    ? $product->discount_price
+                    : $product->min_price;
                 $finalPrice = $originPrice;
-                if($relatedMaxDiscount) {
-                    if($relatedMaxDiscount->discount_type === 'fixed_amount') {
-                        $finalPrice = max(0, $originPrice - $relatedMaxDiscount->discount_value);
-                    } elseif($relatedMaxDiscount->discount_type === 'percentage') {
-                        $finalPrice = max(0, $originPrice * (1 - $relatedMaxDiscount->discount_value / 100));
+                if($maxDiscount) {
+                    if($maxDiscount->discount_type === 'fixed_amount') {
+                        $finalPrice = max(0, $originPrice - $maxDiscount->discount_value);
+                    } elseif($maxDiscount->discount_type === 'percentage') {
+                        $finalPrice = max(0, $originPrice * (1 - $maxDiscount->discount_value / 100));
                     }
                 }
             @endphp
-            <div class="product-card bg-white rounded-lg overflow-hidden" data-product-id="{{ $relatedProduct->id }}">
+            <div class="product-card bg-white rounded-lg overflow-hidden" data-product-id="{{ $product->id }}">
                 <div class="relative">
-                    <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
-                        @if($relatedProduct->primary_image)
-                            <img src="{{ $relatedProduct->primary_image->s3_url }}" alt="{{ $relatedProduct->name }}" class="product-image">
+                    <a href="{{ route('products.show', $product->id) }}" class="block">
+                        @if($product->primary_image)
+                            <img src="{{ $product->primary_image->s3_url }}" alt="{{ $product->name }}" class="product-image">
                         @else
                             <div class="no-image-placeholder">
                                 <i class="far fa-image"></i>
                             </div>
                         @endif
                     </a>
-                    @if($relatedProduct->discount_price && $relatedProduct->base_price > $relatedProduct->discount_price)
+                    @if($product->discount_price && $product->base_price > $product->discount_price)
                         @php
-                            $discountPercent = round((($relatedProduct->base_price - $relatedProduct->discount_price) / $relatedProduct->base_price) * 100);
+                            $discountPercent = round((($product->base_price - $product->discount_price) / $product->base_price) * 100);
                         @endphp
                         <span class="custom-badge badge-sale">-{{ $discountPercent }}%</span>
-                    @elseif($relatedProduct->created_at->diffInDays(now()) <= 7)
+                    @elseif($product->created_at->diffInDays(now()) <= 7)
                         <span class="custom-badge badge-new">Mới</span>
                     @endif
                 </div>
                 <div class="px-4 py-2">
                     <div class="flex items-center justify-between">
-                        <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
-                            <h3 class="product-title">{{ $relatedProduct->name }}</h3>
+                        <a href="{{ route('products.show', $product->id) }}" class="block">
+                            <h3 class="product-title">{{ $product->name }}</h3>
                         </a>
                     </div>
                     <div>
                         <div class="flex flex-col">
                             <div class="flex justify-between items-center">
                                 <div>
-                                    <span class="product-price">{{ number_format($finalPrice, 0, '', '.') }}đ</span>
+                                    <span class="product-price">{{ number_format($finalPrice) }}đ</span>
                                     @if($finalPrice < $originPrice)
-                                        <span class="product-original-price">{{ number_format($originPrice, 0, '', '.') }}đ</span>
+                                        <span class="product-original-price">{{ number_format($originPrice) }}đ</span>
                                     @endif
                                 </div>
                                 @if($freeship)
@@ -1022,23 +1075,23 @@
                             </div>
                             <div class="discount-tag">
                                 <span class="text-xs font-semibold text-orange-500 mr-2 px-1 py-1 quality">Rẻ vô địch</span>
-                                @if($relatedMaxDiscount)
+                                @if($maxDiscount)
                                     @php
                                         $badgeClass = 'discount-badge';
                                         $icon = 'fa-percent';
-                                        if($relatedMaxDiscount->discount_type === 'fixed_amount') {
+                                        if($maxDiscount->discount_type === 'fixed_amount') {
                                             $badgeClass .= ' fixed-amount';
                                             $icon = 'fa-money-bill-wave';
                                         } else {
                                             $badgeClass .= ' percentage';
                                         }
                                     @endphp
-                                    <div class="{{ $badgeClass }}" title="{{ $relatedMaxDiscount->name }}" data-discount-code="{{ $relatedMaxDiscount->code }}">
+                                    <div class="{{ $badgeClass }}" title="{{ $maxDiscount->name }}" data-discount-code="{{ $maxDiscount->code }}">
                                         <i class="fas {{ $icon }}"></i>
-                                        @if($relatedMaxDiscount->discount_type === 'percentage')
-                                            Giảm {{ $relatedMaxDiscount->discount_value }}%
-                                        @elseif($relatedMaxDiscount->discount_type === 'fixed_amount')
-                                            Giảm {{ number_format($relatedMaxDiscount->discount_value, 0, '', '.') }}đ
+                                        @if($maxDiscount->discount_type === 'percentage')
+                                            Giảm {{ $maxDiscount->discount_value }}%
+                                        @elseif($maxDiscount->discount_type === 'fixed_amount')
+                                            Giảm {{ number_format($maxDiscount->discount_value) }}đ
                                         @endif
                                     </div>
                                 @endif
@@ -1048,7 +1101,7 @@
                     <div class="flex justify-start items-center">
                         <div class="flex items-center mr-4">
                             <i class="fas fa-star text-yellow-400 text-xs"></i>
-                            <span class="commons rating-count ml-1">{{ $relatedProduct->reviews_count }}</span>
+                            <span class="commons rating-count ml-1">{{ $product->reviews_count }}</span>
                         </div>
                         <div class="flex items-center">
                             <span class="commons">Đã bán 46k</span>
@@ -1100,21 +1153,10 @@
     window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
     window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
     // Truyền discount tốt nhất sang JS
-    window.bestDiscountCode = @json($maxDiscount);
-    window.bestDiscountAmount = {{ $maxValue }};
-    
-    // Truyền mapping variant value ids -> product_variant_id
-    window.variantCombinations = @json(
-        \App\Models\ProductVariant::where('product_id', $product->id)
-            ->with('variantValues')
-            ->get()
-            ->mapWithKeys(function($variant) {
-                $ids = $variant->variantValues->pluck('id')->sort()->values()->toArray();
-                return [implode('_', $ids) => $variant->id];
-            })
-    );
+    window.bestDiscountCode = @json($maxDiscountCode);
+    window.bestDiscountAmount = {{ $maxDiscountAmount }};
 </script>
 <script src="{{ asset('js/Customer/Shop/shop.js') }}"></script>
-{{-- <script src="{{ asset('js/Customer/discount-updates.js') }}"></script> --}}
+<script src="{{ asset('js/Customer/discount-updates.js') }}"></script>
 @include('partials.customer.branch-check')
 @endsection
