@@ -1160,6 +1160,5 @@
     );
 </script>
 <script src="{{ asset('js/Customer/Shop/shop.js') }}"></script>
-{{-- <script src="{{ asset('js/Customer/discount-updates.js') }}"></script> --}}
 @include('partials.customer.branch-check')
 @endsection
