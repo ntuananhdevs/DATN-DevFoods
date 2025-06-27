@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             DriverOrderSeeder::class, // Chuyển lên trước DiscountUsageHistorySeeder
             DiscountUsageHistorySeeder::class,
             UserRankHistorySeeder::class,
+            GeneralSettingSeeder::class,
         ]);
     }
 }

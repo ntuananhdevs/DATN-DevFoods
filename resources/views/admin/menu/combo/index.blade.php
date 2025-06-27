@@ -207,10 +207,32 @@
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.3-4.3"></path>
                 </svg>
-                <input type="text" placeholder="Tìm kiếm theo tên combo..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" id="searchInput">
+                <input type="text" placeholder="Tìm kiếm theo tên combo, SKU..." class="border rounded-md px-3 py-2 bg-background text-sm w-full pl-9" id="searchInput" value="{{ request('search') }}" onkeyup="handleSearch(event)">
             </div>
             <div class="flex items-center gap-2">
-                <button class="btn btn-outline flex items-center" id="selectAllButton">
+                <!-- View Toggle Buttons -->
+                <div class="flex items-center border rounded-md p-1 bg-gray-50">
+                    <button id="tableViewBtn" class="flex items-center px-3 py-1 rounded text-sm font-medium transition-colors bg-white shadow-sm border">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                            <rect width="18" height="18" x="3" y="3" rx="2"></rect>
+                            <path d="M9 3v18"></path>
+                            <path d="M15 3v18"></path>
+                            <path d="M3 9h18"></path>
+                            <path d="M3 15h18"></path>
+                        </svg>
+                        Bảng
+                    </button>
+                    <button id="cardViewBtn" class="flex items-center px-3 py-1 rounded text-sm font-medium transition-colors text-gray-600 hover:text-gray-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                            <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+                            <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+                            <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+                            <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+                        </svg>
+                        Thẻ
+                    </button>
+                </div>
+                <button class="btn btn-outline flex items-center" id="selectAllButton" style="display: none;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                         <rect width="18" height="18" x="3" y="3" rx="2"></rect>
                         <path d="m9 12 2 2 4-4"></path>
@@ -271,7 +293,7 @@
         </div>
 
         <!-- Table content -->
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" id="tableView">
             @forelse($combos as $combo)
                 @if($loop->first)
                     <table class="w-full">
@@ -283,6 +305,8 @@
                                 <th class="p-4 font-medium text-muted-foreground">SKU</th>
                                 <th class="p-4 font-medium text-muted-foreground">Hình ảnh</th>
                                 <th class="p-4 font-medium text-muted-foreground">Tên combo</th>
+                                <th class="p-4 font-medium text-muted-foreground">Sản phẩm</th>
+                                <th class="p-4 font-medium text-muted-foreground">Số lượng</th>
                                 <th class="p-4 font-medium text-muted-foreground">Giá</th>
                                 <th class="p-4 font-medium text-muted-foreground">Trạng thái</th>
                                 <th class="p-4 font-medium text-muted-foreground">Thao tác</th>
@@ -297,7 +321,7 @@
                     <td class="p-4 font-mono text-sm text-muted-foreground">{{ $combo->sku }}</td>
                     <td class="p-4">
                         @if($combo->image)
-                            <img src="{{ asset('storage/' . $combo->image) }}" 
+                            <img src="{{ $combo->image_url }}" 
                                  alt="{{ $combo->name }}" 
                                  class="w-12 h-12 rounded-lg object-cover border">
                         @else
@@ -315,6 +339,56 @@
                         @if($combo->description)
                             <div class="text-sm text-muted-foreground mt-1">{{ Str::limit($combo->description, 40) }}</div>
                         @endif
+                    </td>
+                    <td class="p-4">
+                        <div class="space-y-1">
+                            @if($combo->comboItems && $combo->comboItems->count() > 0)
+                                @foreach($combo->comboItems->take(3) as $item)
+                                    <div class="flex items-center gap-2 text-sm">
+                                        @if($item->productVariant && $item->productVariant->product)
+                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                                {{ $item->productVariant->product->name }}
+                                                @if($item->productVariant->variant_attribute_value_1)
+                                                    - {{ $item->productVariant->variant_attribute_value_1 }}
+                                                @endif
+                                                @if($item->productVariant->variant_attribute_value_2)
+                                                    - {{ $item->productVariant->variant_attribute_value_2 }}
+                                                @endif
+                                                <span class="ml-1 text-gray-600">x{{ $item->quantity }}</span>
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endforeach
+                                @if($combo->comboItems->count() > 3)
+                                    <div class="text-xs text-muted-foreground">
+                                        +{{ $combo->comboItems->count() - 3 }} sản phẩm khác
+                                    </div>
+                                @endif
+                            @else
+                                <span class="text-sm text-muted-foreground">Chưa có sản phẩm</span>
+                            @endif
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center gap-2">
+                            <input type="number" 
+                                   value="{{ $combo->quantity ?? 0 }}" 
+                                   min="0" 
+                                   class="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   onchange="updateQuantity({{ $combo->id }}, this.value)"
+                                   id="quantity-{{ $combo->id }}">
+                            <button type="button" 
+                                    class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    onclick="updateQuantity({{ $combo->id }}, document.getElementById('quantity-{{ $combo->id }}').value)"
+                                    title="Cập nhật số lượng">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                                    <path d="M21 3v5h-5"></path>
+                                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                                    <path d="M3 21v-5h5"></path>
+                                </svg>
+                            </button>
+                        </div>
                     </td>
                     <td class="p-4">
                         <div class="font-medium text-green-600">{{ number_format($combo->price) }}đ</div>
@@ -397,6 +471,138 @@
                     </a>
                 </div>
             @endforelse
+        </div>
+        
+        <!-- Card Grid View -->
+        <div id="cardView" class="hidden p-6">
+            <!-- Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <div class="text-sm font-medium text-gray-600 mb-2">Tổng Combo</div>
+                    <div class="text-2xl font-bold">{{ $combos->total() }}</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <div class="text-sm font-medium text-gray-600 mb-2">Combo Hoạt Động</div>
+                    <div class="text-2xl font-bold text-green-600">{{ $combos->where('active', 1)->count() }}</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <div class="text-sm font-medium text-gray-600 mb-2">Combo Tạm Dừng</div>
+                    <div class="text-2xl font-bold text-red-600">{{ $combos->where('active', 0)->count() }}</div>
+                </div>
+            </div>
+            
+            <!-- Combo Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @forelse($combos as $combo)
+                <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                    <div class="relative">
+                        @if($combo->image)
+                            <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="w-full h-48 object-cover">
+                        @else
+                            <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400">
+                                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                                    <circle cx="9" cy="9" r="2"></circle>
+                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                </svg>
+                            </div>
+                        @endif
+                        <span class="absolute top-2 right-2 {{ $combo->active ? 'bg-green-500' : 'bg-red-500' }} text-white text-xs px-2 py-1 rounded-full">
+                            {{ $combo->active ? 'Hoạt động' : 'Tạm dừng' }}
+                        </span>
+                        @if($combo->original_price && $combo->original_price > $combo->price)
+                            <span class="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
+                                -{{ round((($combo->original_price - $combo->price) / $combo->original_price) * 100) }}%
+                            </span>
+                        @endif
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold mb-2">{{ $combo->name }}</h3>
+                        @if($combo->description)
+                            <p class="text-sm text-gray-600 mb-4">{{ Str::limit($combo->description, 60) }}</p>
+                        @endif
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-2xl font-bold text-orange-600">{{ number_format($combo->price) }}₫</span>
+                                @if($combo->original_price && $combo->original_price > $combo->price)
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price) }}₫</span>
+                                @endif
+                            </div>
+                            @if($combo->comboItems && $combo->comboItems->count() > 0)
+                                <div class="text-sm text-gray-600">
+                                    <strong>Bao gồm:</strong>
+                                    <ul class="mt-1 space-y-1">
+                                        @foreach($combo->comboItems->take(2) as $item)
+                                            @if($item->productVariant && $item->productVariant->product)
+                                                <li class="flex justify-between">
+                                                    <span>
+                                                        {{ $item->productVariant->product->name }}
+                                                        @if($item->productVariant->variant_attribute_value_1)
+                                                            ({{ $item->productVariant->variant_attribute_value_1 }})
+                                                        @endif
+                                                    </span>
+                                                    <span>x{{ $item->quantity }}</span>
+                                                </li>
+                                            @endif
+                                        @endforeach
+                                        @if($combo->comboItems->count() > 2)
+                                            <li class="text-xs text-gray-500">+{{ $combo->comboItems->count() - 2 }} sản phẩm khác</li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            @else
+                                <div class="text-sm text-gray-500">
+                                    <em>Chưa có sản phẩm nào</em>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="p-4 border-t flex gap-2">
+                        <a href="{{ route('admin.combos.edit', $combo->id) }}" class="flex-1 flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-1">
+                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                <path d="m15 5 4 4"></path>
+                            </svg>
+                            Sửa
+                        </a>
+                        <button type="button" onclick="deleteCombo({{ $combo->id }})" class="px-3 py-2 border border-gray-300 rounded-md hover:bg-red-50 text-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                <line x1="10" x2="10" y1="11" y2="17"></line>
+                                <line x1="14" x2="14" y1="11" y2="17"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                @empty
+                <div class="col-span-full text-center py-12">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 mb-4">
+                        <path d="m7.5 4.27 9 5.15"></path>
+                        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                        <path d="m3.3 7 8.7 5 8.7-5"></path>
+                        <path d="M12 22V12"></path>
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Chưa có combo nào</h3>
+                    <p class="text-gray-500 mb-4">Bắt đầu bằng cách tạo combo đầu tiên của bạn.</p>
+                    <a href="{{ route('admin.combos.create') }}" class="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2">
+                            <path d="M5 12h14"></path>
+                            <path d="M12 5v14"></path>
+                        </svg>
+                        Tạo combo đầu tiên
+                    </a>
+                </div>
+                @endforelse
+            </div>
+            
+            <!-- Pagination for Card View -->
+            @if($combos->hasPages())
+                <div class="flex justify-center mt-8">
+                    {{ $combos->appends(request()->query())->links() }}
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -492,13 +698,371 @@
         dropdown.classList.toggle('hidden');
     }
 
-    // Search functionality
+    // Search functionality with AJAX
     function handleSearch() {
-        const searchInput = document.getElementById('searchInput');
-        const searchForm = searchInput.closest('form');
-        if (searchForm) {
-            searchForm.submit();
+        performSearch();
+    }
+    
+    // Variables for search functionality
+    let searchTimeout = null;
+    let currentPage = {{ $combos->currentPage() ?? 1 }};
+    let currentSearch = '{{ request('search') }}';
+
+    // Hàm tải dữ liệu combo
+    function loadCombos(page = 1, search = currentSearch) {
+        currentPage = page;
+        currentSearch = search;
+
+        // Hiển thị loading
+        const tableBody = document.querySelector('#tableView tbody');
+        const cardGrid = document.querySelector('#cardView .grid');
+        if (tableBody) tableBody.classList.add('loading');
+        if (cardGrid) cardGrid.classList.add('loading');
+
+        const params = new URLSearchParams();
+        params.append('page', page);
+        if (search) params.append('search', search);
+        params.append('ajax', '1');
+        
+        // Get filter values
+        const filterStatus = document.getElementById('filter_status');
+        const filterCategory = document.getElementById('filter_category');
+        const filterFeatured = document.getElementById('filter_featured');
+        
+        if (filterStatus && filterStatus.value) {
+            params.append('status', filterStatus.value === 'active' ? '1' : '0');
         }
+        if (filterCategory && filterCategory.value) {
+            params.append('category_id', filterCategory.value);
+        }
+        if (filterFeatured && filterFeatured.value) {
+            params.append('is_featured', filterFeatured.value);
+        }
+
+        fetch(`{{ route('admin.combos.index') }}?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateComboDisplay(data.combos, data.stats);
+                if (data.pagination) {
+                    updatePagination(data.pagination);
+                }
+                updateURL(page, search);
+            } else {
+                showErrorAlert('Lỗi tải dữ liệu', data.message || 'Vui lòng thử lại sau');
+            }
+        })
+        .catch(error => {
+            console.error('Load error:', error);
+            showErrorAlert('Lỗi tải dữ liệu', 'Vui lòng thử lại sau');
+        })
+        .finally(() => {
+            // Ẩn loading khi hoàn thành
+            if (tableBody) tableBody.classList.remove('loading');
+            if (cardGrid) cardGrid.classList.remove('loading');
+        });
+    }
+
+    function showErrorAlert(title, message) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: title,
+                text: message,
+                confirmButtonColor: '#4361ee',
+            });
+        } else {
+            alert(title + ': ' + message);
+        }
+    }
+
+    // Xử lý tìm kiếm
+    function handleSearch(event) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const searchValue = event.target.value;
+            loadCombos(1, searchValue);
+        }, 500);
+    }
+
+    // Perform AJAX search (legacy support)
+    function performSearch() {
+        const searchInput = document.getElementById('searchInput');
+        const searchValue = searchInput ? searchInput.value : '';
+        loadCombos(1, searchValue);
+    }
+    
+    // Render table rows from combo data
+    function renderTableRows(combos) {
+        if (!combos || combos.length === 0) {
+            return '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Không có combo nào được tìm thấy</td></tr>';
+        }
+        
+        return combos.map(combo => {
+            const imageHtml = combo.image 
+                ? `<img src="{{ asset('storage/') }}/${combo.image}" alt="${escapeHtml(combo.name)}" class="w-12 h-12 object-cover rounded-lg mr-3">`
+                : '<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center mr-3"><i class="fas fa-image text-gray-400"></i></div>';
+            
+            const statusClass = combo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            const statusText = combo.status === 'active' ? 'Hoạt động' : 'Không hoạt động';
+            const featuredIcon = combo.is_featured ? '<i class="fas fa-star text-yellow-500"></i>' : '<i class="fas fa-star text-gray-300"></i>';
+            const toggleClass = combo.status === 'active' ? 'red' : 'green';
+            const toggleIcon = combo.status === 'active' ? 'ban' : 'check';
+            const toggleTitle = combo.status === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt';
+            
+            return `
+                <tr class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" class="combo-checkbox" value="${combo.id}">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            ${imageHtml}
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${escapeHtml(combo.name)}</div>
+                                <div class="text-sm text-gray-500">SKU: ${escapeHtml(combo.sku || 'N/A')}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${escapeHtml(combo.category?.name || 'N/A')}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${formatPrice(combo.price)}đ</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="text-sm text-gray-900">${combo.combo_items_count || 0}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        ${featuredIcon}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatDate(combo.created_at)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex items-center justify-end space-x-2">
+                            <a href="/admin/combos/${combo.id}" class="text-blue-600 hover:text-blue-900 transition-colors" title="Xem chi tiết"><i class="fas fa-eye"></i></a>
+                             <a href="/admin/combos/${combo.id}/edit" class="text-yellow-600 hover:text-yellow-900 transition-colors" title="Chỉnh sửa"><i class="fas fa-edit"></i></a>
+                            <button onclick="toggleComboStatus(${combo.id}, '${combo.status}')" class="text-${toggleClass}-600 hover:text-${toggleClass}-900 transition-colors" title="${toggleTitle}"><i class="fas fa-${toggleIcon}"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    // Render card grid from combo data
+    function renderCardGrid(combos) {
+        if (!combos || combos.length === 0) {
+            return '<div class="text-center py-12"><i class="fas fa-box-open text-gray-400 text-6xl mb-4"></i><h3 class="text-lg font-medium text-gray-900 mb-2">Không có combo nào</h3><p class="text-gray-500">Chưa có combo nào được tạo hoặc không có combo nào phù hợp với bộ lọc hiện tại.</p></div>';
+        }
+        
+        return combos.map(combo => {
+            const imageHtml = combo.image 
+                ? `<img src="{{ asset('storage/') }}/${combo.image}" alt="${escapeHtml(combo.name)}" class="w-full h-48 object-cover rounded-lg">`
+                : '<div class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center"><i class="fas fa-image text-gray-400 text-4xl"></i></div>';
+            
+            const featuredBadge = combo.is_featured 
+                ? '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full"><i class="fas fa-star mr-1"></i>Nổi bật</span>'
+                : '';
+            
+            const statusClass = combo.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            const statusText = combo.status === 'active' ? 'Hoạt động' : 'Không hoạt động';
+            const toggleClass = combo.status === 'active' ? 'red' : 'green';
+            const toggleIcon = combo.status === 'active' ? 'ban' : 'check';
+            
+            return `
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" class="combo-checkbox mr-3" value="${combo.id}">
+                            <h3 class="text-lg font-semibold text-gray-800">${escapeHtml(combo.name)}</h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${featuredBadge}
+                            <span class="px-3 py-1 rounded-full text-xs font-medium ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        ${imageHtml}
+                    </div>
+                    <div class="mb-4">
+                        <p class="text-gray-600 text-sm mb-2">${escapeHtml(limitText(combo.description, 100))}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-bold text-green-600">${formatPrice(combo.price)}đ</span>
+                            <span class="text-sm text-gray-500">Danh mục: ${escapeHtml(combo.category?.name || 'N/A')}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-500"><i class="fas fa-utensils mr-1"></i>${combo.combo_items_count || 0} món</span>
+                            <span class="text-sm text-gray-500"><i class="fas fa-calendar mr-1"></i>${formatDate(combo.created_at, 'd/m/Y')}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <a href="/admin/combos/${combo.id}" class="text-blue-600 hover:text-blue-800 transition-colors"><i class="fas fa-eye"></i></a>
+                             <a href="/admin/combos/${combo.id}/edit" class="text-yellow-600 hover:text-yellow-800 transition-colors"><i class="fas fa-edit"></i></a>
+                            <button onclick="toggleComboStatus(${combo.id}, '${combo.status}')" class="text-${toggleClass}-600 hover:text-${toggleClass}-800 transition-colors"><i class="fas fa-${toggleIcon}"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Helper functions
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function formatPrice(price) {
+        return new Intl.NumberFormat('vi-VN').format(price || 0);
+    }
+    
+    function formatDate(dateString, format = 'd/m/Y H:i') {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (format === 'd/m/Y') {
+            return date.toLocaleDateString('vi-VN');
+        }
+        return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'});
+    }
+    
+    function limitText(text, limit) {
+        if (!text) return '';
+        return text.length > limit ? text.substring(0, limit) + '...' : text;
+    }
+
+    // Update combo display
+    function updateComboDisplay(combos, stats) {
+        // Render table HTML
+        const tableHtml = renderTableRows(combos);
+        
+        // Render card HTML
+        const cardHtml = renderCardGrid(combos);
+        
+        // Update table view
+        const tableView = document.getElementById('tableView');
+        if (tableView) {
+            const tableBody = tableView.querySelector('tbody');
+            if (tableBody) {
+                tableBody.innerHTML = tableHtml;
+            }
+        }
+        
+        // Update card view
+        const cardView = document.getElementById('cardView');
+        if (cardView) {
+            const cardContainer = cardView.querySelector('.grid');
+            if (cardContainer) {
+                cardContainer.innerHTML = cardHtml;
+            }
+            
+            // Update stats in card view
+            const statsContainers = cardView.querySelectorAll('.grid .bg-white');
+            if (statsContainers.length >= 3 && stats) {
+                statsContainers[0].querySelector('.text-2xl').textContent = stats.total;
+                statsContainers[1].querySelector('.text-2xl').textContent = stats.active;
+                statsContainers[2].querySelector('.text-2xl').textContent = stats.inactive;
+            }
+        }
+    }
+    
+    // Update URL without page reload
+    function updateURL(page = 1, search = '') {
+        const url = new URL(window.location);
+        url.searchParams.delete('page');
+        url.searchParams.delete('search');
+        
+        if (page > 1) {
+            url.searchParams.set('page', page);
+        }
+        if (search) {
+            url.searchParams.set('search', search);
+        }
+        
+        window.history.pushState({}, '', url);
+    }
+
+    // Update pagination controls
+    function updatePagination(paginationData) {
+        const paginationContainer = document.querySelector('.pagination');
+        if (paginationContainer && paginationData) {
+            paginationContainer.innerHTML = generatePaginationHTML(paginationData);
+            
+            // Add event listeners to pagination links
+            paginationContainer.querySelectorAll('a[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = parseInt(this.getAttribute('data-page'));
+                    loadCombos(page, currentSearch);
+                });
+            });
+        }
+    }
+
+    // Generate pagination HTML
+    function generatePaginationHTML(data) {
+        if (!data || data.last_page <= 1) return '';
+        
+        let html = '<nav class="flex items-center justify-between">';
+        html += '<div class="flex-1 flex justify-between sm:hidden">';
+        
+        // Previous button (mobile)
+        if (data.current_page > 1) {
+            html += `<a href="#" data-page="${data.current_page - 1}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Trước</a>`;
+        }
+        
+        // Next button (mobile)
+        if (data.current_page < data.last_page) {
+            html += `<a href="#" data-page="${data.current_page + 1}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Sau</a>`;
+        }
+        
+        html += '</div>';
+        html += '<div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">';
+        html += `<div><p class="text-sm text-gray-700">Hiển thị <span class="font-medium">${data.from || 0}</span> đến <span class="font-medium">${data.to || 0}</span> trong <span class="font-medium">${data.total}</span> kết quả</p></div>`;
+        html += '<div><span class="relative z-0 inline-flex shadow-sm rounded-md">';
+        
+        // Previous button (desktop)
+        if (data.current_page > 1) {
+            html += `<a href="#" data-page="${data.current_page - 1}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">‹</a>`;
+        }
+        
+        // Page numbers
+        const startPage = Math.max(1, data.current_page - 2);
+        const endPage = Math.min(data.last_page, data.current_page + 2);
+        
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === data.current_page) {
+                html += `<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-orange-50 text-sm font-medium text-orange-600">${i}</span>`;
+            } else {
+                html += `<a href="#" data-page="${i}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">${i}</a>`;
+            }
+        }
+        
+        // Next button (desktop)
+        if (data.current_page < data.last_page) {
+            html += `<a href="#" data-page="${data.current_page + 1}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">›</a>`;
+        }
+        
+        html += '</span></div></div></nav>';
+        return html;
     }
 
     // Select all functionality
@@ -612,6 +1176,50 @@
 function confirmDelete(id, name) {
     document.getElementById('comboName').textContent = name;
     document.getElementById('deleteForm').action = `/admin/combos/delete/${id}`;
+    
+    // Update delete form to use AJAX
+    const deleteForm = document.getElementById('deleteForm');
+    deleteForm.onsubmit = function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        const submitBtn = deleteForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> Đang xóa...';
+        
+        // Send AJAX request
+        fetch(deleteForm.action, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            toggleModal('deleteModal');
+            
+            if (data.success) {
+                showToast(data.message || 'Đã xóa combo thành công');
+                // Refresh the search results
+                performSearch();
+            } else {
+                showToast(data.message || 'Có lỗi xảy ra khi xóa combo', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showToast('Có lỗi xảy ra khi xóa combo', 'error');
+        })
+        .finally(() => {
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    };
+    
     toggleModal('deleteModal');
 }
 
@@ -624,20 +1232,23 @@ function toggleStatus(id, currentStatus) {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Thành công!');
-                location.reload();
+                showToast('Đã cập nhật trạng thái thành công!');
+                // Refresh the search results instead of reloading page
+                loadCombos(currentPage, currentSearch);
             } else {
-                alert('Lỗi: ' + data.message);
+                showToast('Lỗi: ' + data.message, 'error');
             }
         })
         .catch(error => {
-            alert('Có lỗi xảy ra khi thay đổi trạng thái.');
+            showToast('Có lỗi xảy ra khi thay đổi trạng thái.', 'error');
         });
     }
 }
@@ -685,10 +1296,151 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                handleSearch();
+                loadCombos(1, e.target.value);
             }
         });
     }
+    
+    // Filter functionality
+    const filterStatus = document.getElementById('filter_status');
+    const filterCategory = document.getElementById('filter_category');
+    const filterFeatured = document.getElementById('filter_featured');
+    
+    if (filterStatus) {
+        filterStatus.addEventListener('change', () => loadCombos(1, currentSearch));
+    }
+    if (filterCategory) {
+        filterCategory.addEventListener('change', () => loadCombos(1, currentSearch));
+    }
+    if (filterFeatured) {
+        filterFeatured.addEventListener('change', () => loadCombos(1, currentSearch));
+    }
+    
+    
+    // Update filter form to prevent default submission
+    const filterForm = document.querySelector('form[action*="combos"]');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            loadCombos(1, currentSearch);
+        });
+    }
+    
+    // Update combo quantity
+    function updateQuantity(comboId, quantity) {
+        console.log('updateQuantity called:', comboId, quantity);
+        
+        // Validate quantity
+        if (quantity < 0) {
+            showToast('Số lượng không thể âm', 'error');
+            return;
+        }
+        
+        // Show loading state
+        const quantityInput = document.getElementById(`quantity-${comboId}`);
+        const originalValue = quantityInput.value;
+        quantityInput.disabled = true;
+        
+        console.log('Sending request to:', `/admin/combos/${comboId}/update-quantity`);
+        console.log('Request body:', { quantity: parseInt(quantity) });
+        
+        fetch(`/admin/combos/${comboId}/update-quantity`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                quantity: parseInt(quantity)
+            })
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                
+                // Update status display if changed
+                const statusElement = quantityInput.closest('tr').querySelector('.status-tag');
+                if (statusElement) {
+                    statusElement.className = `status-tag ${data.combo.active ? 'success' : 'failed'}`;
+                    statusElement.textContent = data.combo.status_text;
+                }
+                
+                // Update quantity input
+                quantityInput.value = data.combo.quantity;
+            } else {
+                showToast(data.message || 'Có lỗi xảy ra', 'error');
+                quantityInput.value = originalValue;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Có lỗi xảy ra khi cập nhật số lượng', 'error');
+            quantityInput.value = originalValue;
+        })
+        .finally(() => {
+            quantityInput.disabled = false;
+        });
+    }
+    
+    // Show toast notification
+    function showToast(message, type = 'success') {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 transition-all duration-300 transform translate-x-full ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => {
+            toast.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 300);
+        }, 3000);
+    }
+    
+    // View toggle functionality
+    const tableViewBtn = document.getElementById('tableViewBtn');
+    const cardViewBtn = document.getElementById('cardViewBtn');
+    const tableView = document.getElementById('tableView');
+    const cardView = document.getElementById('cardView');
+    const selectAllButton = document.getElementById('selectAllButton');
+    
+    // Switch to table view
+    tableViewBtn.addEventListener('click', function() {
+        tableView.classList.remove('hidden');
+        cardView.classList.add('hidden');
+        tableViewBtn.classList.add('bg-orange-500', 'text-white');
+        tableViewBtn.classList.remove('bg-white', 'text-gray-700');
+        cardViewBtn.classList.remove('bg-orange-500', 'text-white');
+        cardViewBtn.classList.add('bg-white', 'text-gray-700');
+        selectAllButton.classList.remove('hidden');
+    });
+    
+    // Switch to card view
+    cardViewBtn.addEventListener('click', function() {
+        cardView.classList.remove('hidden');
+        tableView.classList.add('hidden');
+        cardViewBtn.classList.add('bg-orange-500', 'text-white');
+        cardViewBtn.classList.remove('bg-white', 'text-gray-700');
+        tableViewBtn.classList.remove('bg-orange-500', 'text-white');
+        tableViewBtn.classList.add('bg-white', 'text-gray-700');
+        selectAllButton.classList.add('hidden');
+    });
 });
 </script>
 @endpush
