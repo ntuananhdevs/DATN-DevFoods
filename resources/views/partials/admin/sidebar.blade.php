@@ -16,11 +16,53 @@
                     </path>
                     <circle cx="12" cy="12" r="3"></circle>
                 </svg>
-            </div>
-            <div class="flex flex-col gap-0.5 leading-none sidebar-logo-text">
-                <span class="font-semibold">PolyCrispyWings</span>
-                <span class="text-xs text-muted-foreground">v1.0.0</span>
-            </div>
+                <div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
+                    <div class="space-y-6">
+                        <div>
+                            <!-- Dashboard Dropdown -->
+                            <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
+                                <button type="button"
+                                    class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.dashboard') || request()->routeIs('admin.analytics') || request()->routeIs('admin.ecommerce') || request()->routeIs('admin.store_analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-home">
+                                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                        </svg>
+                                    </span>
+                                    <span class="sidebar-text">Dashboard</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round"
+                                        class="lucide lucide-chevron-down ml-auto transition-transform sidebar-dropdown-icon">
+                                        <path d="m6 9 6 6 6-6"></path>
+                                    </svg>
+                                </button>
+                                <div
+                                    class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
+                                    <a href="{{ route('admin.dashboard') }}"
+                                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                                        <span class="sidebar-text">Tổng quan</span>
+                                    </a>
+                                    <a href="{{ route('admin.analytics') }}"
+                                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                                        <span class="sidebar-text">Analytics</span>
+                                    </a>
+                                    <a href="{{ route('admin.ecommerce') }}"
+                                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.ecommerce') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                                        <span class="sidebar-text">eCommerce</span>
+                                    </a>
+                                    <a href="{{ route('admin.store_analytics') }}"
+                                        class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.store_analytics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                                        <span class="sidebar-text">Thống kê cửa hàng</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-0.5 leading-none sidebar-logo-text">
+                                <span class="font-semibold">PolyCrispyWings</span>
+                                <span class="text-xs text-muted-foreground">v1.0.0</span>
+                            </div>
         </a>
     </div>
 
@@ -73,9 +115,9 @@
                     <button type="button"
                         class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.users.*') || request()->routeIs('admin.roles.*') || request()->routeIs('admin.permissions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="lucide lucide-users">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="9" cy="7" r="4"></circle>
                                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -350,6 +392,53 @@
                     <span class="sidebar-text">Mã giảm giá</span>
                 </a>
             </div>
+            <!-- Promotions -->
+            <a href="{{ route('admin.promotions.index') }}"
+                class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.promotions.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                data-tooltip="Promotions">
+                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-percent">
+                        <line x1="19" x2="5" y1="5" y2="19"></line>
+                        <circle cx="6.5" cy="6.5" r="2.5"></circle>
+                        <circle cx="17.5" cy="17.5" r="2.5"></circle>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Chương trình khuyến mãi</span>
+            </a>
+            <!-- Discount Codes -->
+            <a href="{{ route('admin.discount_codes.index') }}"
+                class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.discount_codes.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                data-tooltip="Discount Codes">
+                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-tag">
+                        <path
+                            d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.828 2.828 0 0 0 4-4l-8.704-8.704Z">
+                        </path>
+                        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Mã giảm giá</span>
+            </a>
+            <!-- General Settings -->
+            <a href="{{ route('admin.general_settings.index') }}"
+                class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.general_settings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                data-tooltip="General Settings">
+                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-settings">
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                        </path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Cài đặt chung</span>
+            </a>
         </div>
     </div>
 @endif

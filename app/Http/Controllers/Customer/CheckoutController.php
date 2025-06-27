@@ -31,48 +31,49 @@ class CheckoutController extends Controller
      */
     public function index(Request $request)
     {
-        // Get cart items
         $cartItems = [];
         $subtotal = 0;
-        
-        // Determine if user is authenticated or using session
+
         $userId = Auth::id();
         $sessionId = session()->getId();
-        
-        // Query the cart based on user_id or session_id
+
         $cartQuery = Cart::query()->where('status', 'active');
-        
         if ($userId) {
             $cartQuery->where('user_id', $userId);
         } else {
             $cartQuery->where('session_id', $sessionId);
         }
-        
         $cart = $cartQuery->first();
-        
-        // Get cart items with their relationships
+
+        // Lấy danh sách id sản phẩm được chọn
+        $selectedIds = $request->cart_item_ids;
+
         if ($cart) {
-            $cartItems = CartItem::with([
+            $query = CartItem::with([
                 'variant.product.images',
                 'variant.variantValues.attribute',
                 'toppings'
-            ])->where('cart_id', $cart->id)->get();
-            
-            // Calculate subtotal
+            ])->where('cart_id', $cart->id);
+
+            if ($selectedIds && is_array($selectedIds)) {
+                $query->whereIn('id', $selectedIds);
+            }
+
+            $cartItems = $query->get();
+
             foreach ($cartItems as $item) {
                 $subtotal += $item->variant->price * $item->quantity;
-                
-                // Set primary image for display
+                foreach ($item->toppings as $topping) {
+                    $subtotal += $topping->price * $item->quantity;
+                }
                 $item->variant->product->primary_image = $item->variant->product->images
                     ->where('is_primary', true)
                     ->first() ?? $item->variant->product->images->first();
             }
         } else {
-            // Create an empty collection if no cart found
             $cartItems = collect([]);
         }
-        
-        // If cart is empty, redirect to cart page
+
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống. Vui lòng thêm sản phẩm trước khi thanh toán.');
         }

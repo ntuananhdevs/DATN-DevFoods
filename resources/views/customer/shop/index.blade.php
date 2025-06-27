@@ -15,6 +15,11 @@
         });
     </script>
 @endif
+@if(Auth::check() || true)
+    <script>
+        window.csrfToken = '{{ csrf_token() }}';
+    </script>
+@endif
 <style>
     .container {
       max-width: 1280px;
@@ -506,8 +511,8 @@
                         @endif
                     </div>
 
-                    <div class="flex justify-start items-center">
-                        <div class="flex items-center mr-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
                             <i class="fas fa-star text-yellow-400 text-xs"></i>
                             <span class="commons rating-count ml-1">{{ $product->reviews_count }}</span>
                         </div>
@@ -616,3 +621,4 @@
 @include('partials.customer.branch-check')
 <!-- Branch Selector Modal -->
 @endsection
+@include('components.modal')

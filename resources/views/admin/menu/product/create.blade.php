@@ -45,6 +45,91 @@
             backdrop-filter: blur(4px);
         }
 
+        /* Line clamp utilities */
+        .line-clamp-1 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 1;
+        }
+        
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        
+        /* Aspect ratio utility */
+        .aspect-square {
+            aspect-ratio: 1 / 1;
+        }
+        
+        /* Topping grid item styles */
+        .topping-item {
+            min-height: 180px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        
+        .topping-item:hover {
+            transform: translateY(-2px);
+            border-color: #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .topping-item.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        
+        .selection-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .topping-item.selected .selection-indicator {
+            opacity: 1;
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        
+        .topping-item:hover .selection-indicator {
+            opacity: 1;
+        }
+        
+        /* No image placeholder */
+        .no-image-placeholder {
+            background-color: #F3F4F6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .no-image-placeholder i {
+            color: #9CA3AF;
+            font-size: 1.5rem;
+        }
+
         /* Topping Tags Styles */
         .topping-tag {
             display: inline-flex;
@@ -234,11 +319,52 @@
                     </div>
 
                     <div>
-                        <label for="ingredients" class="block text-sm font-medium text-gray-700">Nguyên liệu 
-                            <span class="text-red-500">*</span></label>
-                        <textarea id="ingredients" name="ingredients" rows="3"
-                            placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)"
-                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Nguyên liệu 
+                            <span class="text-red-500">*</span>
+                        </label>
+                        
+                        <!-- Toggle between simple and structured format -->
+                        <div class="mb-4">
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="ingredients_format" value="simple" class="form-radio" checked>
+                                    <span class="ml-2">Định dạng đơn giản</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="ingredients_format" value="structured" class="form-radio">
+                                    <span class="ml-2">Định dạng có cấu trúc</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Simple format -->
+                        <div id="simple-ingredients" class="ingredients-format">
+                            <textarea id="ingredients" name="ingredients" rows="3"
+                                placeholder="Nhập danh sách nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, rau xà lách, ớt chuông)"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
+                            <p class="text-sm text-gray-500 mt-1">Ví dụ: thịt bò, rau xà lách, cà chua</p>
+                        </div>
+                        
+                        <!-- Structured format -->
+                        <div id="structured-ingredients" class="ingredients-format hidden">
+                            <div class="space-y-4">
+                                <div class="ingredient-category">
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                                               class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                        <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                                    </div>
+                                    <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                                              class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                                              rows="3"></textarea>
+                                </div>
+                            </div>
+                            <button type="button" id="add-category" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                                Thêm danh mục
+                            </button>
+                            <p class="text-sm text-gray-500 mt-2">Ví dụ: Danh mục "thịt" có thể chứa "thịt bò", "thịt heo"</p>
+                        </div>
+                        
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -414,7 +540,7 @@
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                                 <div id="attribute_values_container_0" class="space-y-2">
                                     <!-- Default attribute value -->
-                                    <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                    <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                          <div class="grid grid-cols-2 gap-2">
                                              <div>
                                                  <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -492,78 +618,63 @@
             </div>
         </section>
 
-        <!-- Toppings Modal -->
-        <div id="toppings-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Toppings Modal - Simplified -->
+        <div id="toppings-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen p-4">
                 <!-- Background overlay -->
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <div class="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true"></div>
 
                 <!-- Modal panel -->
-                <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
                     <!-- Modal Header -->
-                    <div class="bg-white px-6 py-4 border-b border-gray-200">
+                    <div class="px-6 py-4 border-b">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-medium text-gray-900" id="modal-title">
+                            <h3 class="text-lg font-semibold text-gray-900" id="modal-title">
                                 Chọn Toppings
                             </h3>
                             <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-600">
-                                <i class="fas fa-times text-xl"></i>
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
-                        <p class="text-sm text-gray-500 mt-1">Chọn các topping muốn thêm vào sản phẩm</p>
                     </div>
 
                     <!-- Modal Body -->
-                    <div class="bg-white px-6 py-4 max-h-96 overflow-y-auto">
-                        <!-- Search and Filter -->
+                    <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                        <!-- Search -->
                         <div class="mb-4">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-search text-gray-400"></i>
-                                </div>
-                                <input type="text" id="topping-search" placeholder="Tìm kiếm topping theo tên..." 
-                                       class="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white">
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <button type="button" id="clear-search" class="text-gray-400 hover:text-gray-600 hidden">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
+                            <input type="text" id="topping-search" placeholder="Tìm kiếm topping..." 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
 
                         <!-- Control buttons -->
                         <div class="mb-4 flex gap-2">
                             <button type="button" id="modal-select-all" 
-                                    class="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700">
-                                <i class="fas fa-check-double"></i>
+                                    class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
                                 Chọn tất cả
                             </button>
                             <button type="button" id="modal-clear-all" 
-                                    class="inline-flex items-center gap-2 rounded-md bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-700">
-                                <i class="fas fa-times"></i>
+                                    class="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">
                                 Bỏ chọn tất cả
                             </button>
                         </div>
 
                         <!-- Toppings Grid -->
-                        <div id="modal-toppings-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                            <!-- Toppings will be loaded here via AJAX -->
-                            <div class="col-span-full flex justify-center items-center py-8">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                                <span class="ml-2 text-gray-600">Đang tải...</span>
+                        <div id="modal-toppings-list" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                            <!-- Toppings will be loaded here -->
+                            <div class="col-span-full text-center py-8 text-gray-500">
+                                Đang tải...
                             </div>
                         </div>
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                    <div class="px-6 py-4 border-t flex justify-end gap-3">
                         <button type="button" id="cancel-modal" 
-                                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
                             Hủy
                         </button>
                         <button type="button" id="confirm-toppings" 
-                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-                            <i class="fas fa-check mr-2"></i>
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                             Xác nhận (<span id="modal-selected-count">0</span>)
                         </button>
                     </div>
@@ -585,6 +696,11 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Prevent multiple initialization
+        if (window.productFormInitialized) {
+            return;
+        }
+        window.productFormInitialized = true;
         // Image Upload Logic (Primary and Additional)
         const primaryImageUpload = document.getElementById('primary-image-upload');
         const selectPrimaryImageBtn = document.getElementById('select-primary-image-btn');
@@ -719,7 +835,7 @@
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                         <div id="attribute_values_container_${index}" class="space-y-3">
                             <!-- Default attribute value -->
-                            <div class="grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                            <div class="attribute-value-item grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
                                 <div>
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
@@ -740,27 +856,7 @@
                 </div>
             `;
 
-            // Add event listeners for the new attribute group
-            const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
-            removeAttributeBtn.addEventListener('click', () => {
-                group.remove();
-                updateAttributeNumbers();
-            });
-
-            // Add event listener for adding attribute values
-            const addValueBtn = group.querySelector('.add-attribute-value-btn');
-            addValueBtn.addEventListener('click', () => {
-                addAttributeValue(index);
-            });
-
-            // Add event listeners for removing attribute values
-            const removeValueBtns = group.querySelectorAll('.remove-attribute-value-btn');
-            removeValueBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const valueContainer = e.target.closest('.grid');
-                    valueContainer.remove();
-                });
-            });
+            // Event listeners will be handled by event delegation in the main container
 
             return group;
         }
@@ -771,7 +867,7 @@
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
+            valueDiv.classList.add('attribute-value-item', 'grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
                 <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -788,64 +884,83 @@
                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
             `;
 
-            // Add event listener for removing this value
-            const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
-            removeBtn.addEventListener('click', () => {
-                valueDiv.remove();
-            });
+            // Event listener will be handled by event delegation
 
             valuesContainer.appendChild(valueDiv);
         }
 
-        function updateAttributeNumbers() {
+        function reindexAttributeGroups() {
             const attributeGroups = attributesContainer.querySelectorAll('.p-4.border.border-gray-200');
             attributeGroups.forEach((group, index) => {
+                // Update group title
                 const title = group.querySelector('h3');
                 if (title) {
                     title.textContent = `Thuộc tính ${index + 1}`;
                 }
+                
+                // Update attribute name input
+                const nameInput = group.querySelector('input[name*="[name]"]');
+                if (nameInput) {
+                    const currentName = nameInput.getAttribute('name');
+                    const newName = currentName.replace(/attributes\[\d+\]/, `attributes[${index}]`);
+                    nameInput.setAttribute('name', newName);
+                    
+                    const currentId = nameInput.getAttribute('id');
+                    if (currentId) {
+                        const newId = currentId.replace(/attribute_name_\d+/, `attribute_name_${index}`);
+                        nameInput.setAttribute('id', newId);
+                    }
+                }
+                
+                // Update values container ID
+                const valuesContainer = group.querySelector('[id*="attribute_values_container_"]');
+                if (valuesContainer) {
+                    const newId = `attribute_values_container_${index}`;
+                    valuesContainer.setAttribute('id', newId);
+                }
+                
+                // Update add value button data-index
+                const addValueBtn = group.querySelector('.add-attribute-value-btn');
+                if (addValueBtn) {
+                    addValueBtn.setAttribute('data-index', index);
+                }
+                
+                // Reindex all attribute values in this group
+                reindexAttributeValues(group, index);
             });
         }
 
         // Add event listener for the main "Add Attribute" button
-        addAttributeBtn.addEventListener('click', () => {
-            const attributeGroup = createAttributeGroup(attributeCount);
-            attributesContainer.appendChild(attributeGroup);
-            attributeCount++;
-        });
-
-        // Add event listeners for existing attribute elements
-        // Add listeners for existing remove attribute button
-        const existingRemoveBtn = document.querySelector('.remove-attribute-btn');
-        if (existingRemoveBtn) {
-            existingRemoveBtn.addEventListener('click', () => {
-                const attributeGroup = existingRemoveBtn.closest('.p-4.border.border-gray-200');
-                if (attributeGroup) {
-                    attributeGroup.remove();
-                    updateAttributeNumbers();
-                }
+        if (addAttributeBtn) {
+            addAttributeBtn.addEventListener('click', () => {
+                const attributeGroup = createAttributeGroup(attributeCount);
+                attributesContainer.appendChild(attributeGroup);
+                attributeCount++;
             });
         }
 
-        // Add listeners for existing add value button
-        const existingAddValueBtn = document.querySelector('.add-attribute-value-btn');
-        if (existingAddValueBtn) {
-            existingAddValueBtn.addEventListener('click', () => {
-                const attributeIndex = existingAddValueBtn.getAttribute('data-index') || 0;
-                addAttributeValue(parseInt(attributeIndex));
-            });
-        }
-
-        // Add listeners for existing remove value buttons
-        const existingRemoveValueBtns = document.querySelectorAll('.remove-attribute-value-btn');
-        existingRemoveValueBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const valueContainer = e.target.closest('.grid');
-                if (valueContainer) {
-                    valueContainer.remove();
+        // Use event delegation for attribute-related buttons to avoid conflicts
+        if (attributesContainer) {
+            attributesContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-attribute-btn')) {
+                    const attributeGroup = e.target.closest('.p-4.border.border-gray-200');
+                    if (attributeGroup) {
+                        attributeGroup.remove();
+                        reindexAttributeGroups();
+                    }
+                } else if (e.target.classList.contains('add-attribute-value-btn')) {
+                    const attributeIndex = e.target.getAttribute('data-index') || 0;
+                    addAttributeValue(parseInt(attributeIndex));
+                } else if (e.target.classList.contains('remove-attribute-value-btn')) {
+                    const valueContainer = e.target.closest('.attribute-value-item');
+                    if (valueContainer) {
+                        const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                        valueContainer.remove();
+                        reindexAttributeValues(attributeGroup);
+                    }
                 }
             });
-        });
+        }
 
         // Toppings Logic
         const toppingsContainer = document.getElementById('toppings-container');
@@ -890,7 +1005,7 @@
                     </div>
                 </div>
             `;
-            group.querySelector('.remove-topping-btn').addEventListener('click', () => group.remove());
+            // Event listener will be handled by event delegation
 
             const imageInput = group.querySelector(`#topping_image_${index}`);
             const imagePreview = group.querySelector(`#topping_image_preview_${index}`);
@@ -916,11 +1031,26 @@
             return group;
         }
 
-        addToppingBtn.addEventListener('click', () => {
-            const toppingGroup = createToppingGroup(toppingCount);
-            toppingsContainer.appendChild(toppingGroup);
-            toppingCount++;
-        });
+        // Add event listener for the main "Add Topping" button
+        if (addToppingBtn) {
+            addToppingBtn.addEventListener('click', () => {
+                const toppingGroup = createToppingGroup(toppingCount);
+                toppingsContainer.appendChild(toppingGroup);
+                toppingCount++;
+            });
+        }
+
+        // Use event delegation for topping-related buttons to avoid conflicts
+        if (toppingsContainer) {
+            toppingsContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-topping-btn')) {
+                    const toppingGroup = e.target.closest('.p-4.border.border-gray-200');
+                    if (toppingGroup) {
+                        toppingGroup.remove();
+                    }
+                }
+            });
+        }
 
         // Restore old topping data if validation fails
         @if (old('toppings'))
@@ -1036,38 +1166,177 @@
         // Call displayValidationErrors after restoring old data
         setTimeout(displayValidationErrors, 100);
 
+        // Ingredients format toggle
+        const formatRadios = document.querySelectorAll('input[name="ingredients_format"]');
+        const simpleFormat = document.getElementById('simple-ingredients');
+        const structuredFormat = document.getElementById('structured-ingredients');
+        
+        if (formatRadios.length > 0) {
+            formatRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'simple') {
+                        simpleFormat.classList.remove('hidden');
+                        structuredFormat.classList.add('hidden');
+                    } else {
+                        simpleFormat.classList.add('hidden');
+                        structuredFormat.classList.remove('hidden');
+                    }
+                });
+            });
+        }
+        
+        // Add category functionality
+        const addCategoryBtn = document.getElementById('add-category');
+        if (addCategoryBtn) {
+            addCategoryBtn.addEventListener('click', function() {
+                const categoryContainer = document.querySelector('#structured-ingredients .space-y-4');
+                const newCategory = document.createElement('div');
+                newCategory.className = 'ingredient-category';
+                newCategory.innerHTML = `
+                    <div class="flex items-center space-x-2 mb-2">
+                        <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                               class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                    </div>
+                    <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                              class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                              rows="3"></textarea>
+                `;
+                categoryContainer.appendChild(newCategory);
+            });
+        }
+        
+        // Remove category functionality using event delegation
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-category')) {
+                const categoryContainer = document.querySelector('#structured-ingredients .space-y-4');
+                if (categoryContainer && categoryContainer.children.length > 1) {
+                    e.target.closest('.ingredient-category').remove();
+                }
+            }
+        });
+        
         // Form Submission Logic
         const addProductForm = document.getElementById('add-product-form');
-        addProductForm.addEventListener('submit', function(e) {
-            // Convert ingredients textarea to JSON array
-            const ingredientsText = document.getElementById('ingredients').value;
-            const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
-            const ingredientsInput = document.createElement('input');
-            ingredientsInput.type = 'hidden';
-            ingredientsInput.name = 'ingredients_json';
-            ingredientsInput.value = JSON.stringify(ingredientsArray);
-            addProductForm.appendChild(ingredientsInput);
+        if (addProductForm && !addProductForm.hasAttribute('data-listener-added')) {
+            addProductForm.setAttribute('data-listener-added', 'true');
+            addProductForm.addEventListener('submit', function(e) {
+            const selectedFormat = document.querySelector('input[name="ingredients_format"]:checked').value;
+            
+            if (selectedFormat === 'simple') {
+                // Convert ingredients textarea to JSON array
+                const ingredientsText = document.getElementById('ingredients').value;
+                const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+                const ingredientsInput = document.createElement('input');
+                ingredientsInput.type = 'hidden';
+                ingredientsInput.name = 'ingredients_json';
+                ingredientsInput.value = JSON.stringify(ingredientsArray);
+                addProductForm.appendChild(ingredientsInput);
+            } else {
+                // Convert structured ingredients to JSON object
+                const categories = document.querySelectorAll('.ingredient-category');
+                const structuredIngredients = {};
+                
+                categories.forEach(category => {
+                    const categoryName = category.querySelector('.category-name').value.trim();
+                    const categoryItems = category.querySelector('.category-items').value
+                        .split('\n')
+                        .map(item => item.trim())
+                        .filter(item => item);
+                    
+                    if (categoryName && categoryItems.length > 0) {
+                        structuredIngredients[categoryName] = categoryItems;
+                    }
+                });
+                
+                const structuredInput = document.createElement('input');
+                structuredInput.type = 'hidden';
+                structuredInput.name = 'ingredients_structured';
+                structuredInput.value = JSON.stringify(structuredIngredients);
+                addProductForm.appendChild(structuredInput);
+            }
 
             // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
         });
 
+            });
+        }
+
         // Handle status and release date visibility
         const statusInputs = document.querySelectorAll('input[name="status"]');
         const releaseAtContainer = document.getElementById('release_at_container');
 
         function toggleReleaseDate() {
-            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
-            releaseAtContainer.classList.toggle('hidden', selectedStatus !== 'coming_soon');
+            const selectedStatus = document.querySelector('input[name="status"]:checked');
+            if (selectedStatus) {
+                if (selectedStatus.value === 'coming_soon') {
+                    releaseAtContainer.classList.remove('hidden');
+                } else {
+                    releaseAtContainer.classList.add('hidden');
+                }
+            }
         }
 
-        statusInputs.forEach(input => {
-            input.addEventListener('change', toggleReleaseDate);
-        });
+        if (statusInputs.length > 0) {
+            statusInputs.forEach(input => {
+                input.addEventListener('change', toggleReleaseDate);
+            });
+        }
 
         // Initial check
         toggleReleaseDate();
+
+        // Function to reindex attribute values after deletion
+        function reindexAttributeValues(attributeGroup, groupIndex = null) {
+            if (groupIndex === null) {
+                groupIndex = Array.from(attributeGroup.parentNode.children).indexOf(attributeGroup);
+            }
+            
+            const valueContainers = attributeGroup.querySelectorAll('.attribute-value-item');
+            
+            valueContainers.forEach((container, valueIndex) => {
+                // Update all input names and IDs
+                const inputs = container.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    
+                    if (name) {
+                        // Update both group index and value index in the name attribute
+                        const newName = name.replace(/attributes\[\d+\]\[values\]\[\d+\]/, `attributes[${groupIndex}][values][${valueIndex}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    
+                    if (id) {
+                        // Update both group index and value index in the id attribute
+                        const newId = id.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        input.setAttribute('id', newId);
+                    }
+                });
+                
+                // Update labels
+                const labels = container.querySelectorAll('label');
+                labels.forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    if (forAttr) {
+                        const newFor = forAttr.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        label.setAttribute('for', newFor);
+                    }
+                });
+                
+                // Update error message divs
+                const errorDivs = container.querySelectorAll('.error-message');
+                errorDivs.forEach(div => {
+                    const id = div.getAttribute('id');
+                    if (id) {
+                        const newId = id.replace(/_(\d+)_values_(\d+)_/, `_${groupIndex}_values_${valueIndex}_`);
+                        div.setAttribute('id', newId);
+                    }
+                });
+            });
+        }
     });
 </script>
 

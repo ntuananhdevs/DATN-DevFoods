@@ -39,7 +39,7 @@ class CartCountMiddleware
         // Calculate cart count
         $cartCount = 0;
         if ($cart) {
-            $cartCount = CartItem::where('cart_id', $cart->id)->sum('quantity');
+            $cartCount = CartItem::where('cart_id', $cart->id)->count();
         }
         
         // Always update the session with the correct count

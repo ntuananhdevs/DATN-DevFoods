@@ -16,6 +16,7 @@ use App\Models\VariantValue;
 use App\Models\BranchStock;
 use App\Models\ProductVariant;
 use App\Models\ProductImg;
+use App\Models\Topping;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -175,9 +176,11 @@ class ProductController extends Controller
      * Show the form for creating a new resource.
      */
     public function create() {
-        $categories = Category::all();
+        $categories = Category::where('status', true)->get();
         $branches = Branch::where('active', true)->get();
-        return view('admin.menu.product.create', compact('categories', 'branches'));
+        $toppings = Topping::where('active', true)->get();
+        
+        return view('admin.menu.product.create', compact('categories', 'branches', 'toppings'));
     }
 
     /**
@@ -197,13 +200,12 @@ class ProductController extends Controller
             // Handle variants (for new product, no need to clear existing)
             $this->createProductVariants($product, $request->input('attributes', []));
 
+            // Handle toppings
+            $this->handleToppings($product, $request);
+
             DB::commit();
 
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => 'Sản phẩm đã được tạo thành công'
-            ]);
+            session()->flash('success', 'Sản phẩm đã được tạo thành công');
 
             return redirect()->route('admin.products.stock', $product->id);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -220,6 +222,9 @@ class ProductController extends Controller
         $category = Category::findOrFail($validated['category_id']);
         $sku = $this->generateSKU($category);
 
+        // Process ingredients
+        $ingredients = $this->processIngredients($validated);
+
         return Product::create([
             'name' => $validated['name'],
             'category_id' => $validated['category_id'],
@@ -228,11 +233,11 @@ class ProductController extends Controller
             'preparation_time' => $validated['preparation_time'],
             'short_description' => $validated['short_description'] ?? '',
             'description' => $validated['description'] ?? null,
-            'ingredients' => $validated['ingredients_json'] ?? $validated['ingredients'] ?? '[]',
+            'ingredients' => $ingredients,
             'is_featured' => $validated['is_featured'] ?? false,
             'available' => $validated['available'] ?? true,
             'status' => $validated['status'],
-            'release_at' => $validated['release_at'],
+            'release_at' => $validated['release_at'] ?? null,
             'created_by' => auth()->id(),
         ]);
     }
@@ -252,6 +257,59 @@ class ProductController extends Controller
         }
 
         return $category->short_name . '-' . str_pad($skuNumber, 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Process ingredients from request
+     */
+    private function processIngredients($validated) {
+        // If ingredients_json exists (from frontend), use it
+        if (isset($validated['ingredients_json'])) {
+            return $validated['ingredients_json'];
+        }
+        
+        // If ingredients is a string, try to decode it
+        if (isset($validated['ingredients'])) {
+            if (is_string($validated['ingredients'])) {
+                // Try to decode as JSON first
+                $decoded = json_decode($validated['ingredients'], true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return json_encode($decoded);
+                }
+                // If not JSON, split by comma and create array
+                $ingredients = array_map('trim', explode(',', $validated['ingredients']));
+                return json_encode(array_filter($ingredients));
+            }
+            // If already an array, encode it
+            if (is_array($validated['ingredients'])) {
+                return json_encode($validated['ingredients']);
+            }
+        }
+        
+        return '[]';
+    }
+
+    /**
+     * Update product basic information
+     */
+    private function updateProductBasicInfo($product, $validated) {
+        // Process ingredients
+        $ingredients = $this->processIngredients($validated);
+        
+        $product->update([
+            'name' => $validated['name'],
+            'category_id' => $validated['category_id'],
+            'base_price' => $validated['base_price'],
+            'preparation_time' => $validated['preparation_time'],
+            'short_description' => $validated['short_description'] ?? '',
+            'description' => $validated['description'] ?? null,
+            'ingredients' => $ingredients,
+            'is_featured' => $validated['is_featured'] ?? false,
+            'available' => $validated['available'] ?? true,
+            'status' => $validated['status'],
+            'release_at' => $validated['release_at'] ?? null,
+            'updated_by' => auth()->id(),
+        ]);
     }
 
     /**
@@ -641,41 +699,40 @@ class ProductController extends Controller
             'images',
             'attributes.values',
             'variants.productVariantDetails.variantValue.attribute',
-            'variants.variantValues.attribute'
+            'variants.variantValues.attribute',
+            'toppings'
         ])->findOrFail($id);
 
         // Get primary image
-        $primaryImage = $product->images->first();
+        $primaryImage = $product->images->where('is_primary', true)->first();
+        
+        // Get additional images
+        $additionalImages = $product->images->where('is_primary', false);
 
-        // Get all branches
+        // Get all active branches
         $branches = Branch::where('active', true)->get();
+        
+        // Get all available toppings
+        $toppings = Topping::where('active', true)->get();
+        
+        // Get selected topping IDs
+        $selectedToppings = $product->toppings->pluck('id')->toArray();
 
-        // Get branch stocks for all variants of this product
-        $branchStocks = [];
-        if ($product->variants && $product->variants->count() > 0) {
-            $variantIds = $product->variants->pluck('id')->toArray();
-            $stocksData = BranchStock::whereIn('product_variant_id', $variantIds)->get();
-
-            // Organize branch stocks by branch_id and variant_id for easier access in the view
-            foreach ($stocksData as $stock) {
-                if (!isset($branchStocks[$stock->branch_id])) {
-                    $branchStocks[$stock->branch_id] = [];
-                }
-                $branchStocks[$stock->branch_id][$stock->product_variant_id] = $stock->stock_quantity;
-            }
-        }
-
-
+        // Get branch stocks organized by branch and variant
+        $branchStocks = $this->getBranchStocksForProduct($product);
 
         // Get categories for dropdown
-        $categories = Category::all();
+        $categories = Category::where('status', true)->get();
 
         return view('admin.menu.product.edit', compact(
             'product',
             'primaryImage',
+            'additionalImages',
             'categories',
             'branches',
-            'branchStocks'
+            'branchStocks',
+            'toppings',
+            'selectedToppings'
         ));
     }
 
@@ -689,24 +746,12 @@ class ProductController extends Controller
             $product = Product::with([
                 'images',
                 'attributes.values',
-                'variants.productVariantDetails'
+                'variants.productVariantDetails',
+                'toppings'
             ])->findOrFail($id);
 
             // Update product basic information
-            $product->update([
-                'name' => $validated['name'],
-                'category_id' => $validated['category_id'],
-                'base_price' => $validated['base_price'],
-                'preparation_time' => $validated['preparation_time'],
-                'short_description' => $validated['short_description'] ?? '',
-                'description' => $validated['description'] ?? null,
-                'ingredients' => $validated['ingredients_json'] ?? $validated['ingredients'] ?? '[]',
-                'is_featured' => $validated['is_featured'] ?? false,
-                'available' => $validated['available'] ?? true,
-                'status' => $validated['status'],
-                'release_at' => $validated['release_at'],
-                'updated_by' => auth()->id(),
-            ]);
+            $this->updateProductBasicInfo($product, $validated);
 
             // Handle image deletions
             $imagesToDelete = $request->input('delete_images', []);
@@ -720,20 +765,17 @@ class ProductController extends Controller
             // Handle variants using refactored methods
             $this->updateProductVariants($product, $request->input('attributes', []));
 
-            // Update stock data if provided
-            $this->updateProductStocks(
-                $request,
-                $product, 
-                $request->input('variant_stocks', [])
-            );
+            // Handle toppings
+            $this->handleToppings($product, $request);
+
+            // Update stock data if provided - only if stocks data exists
+            if ($request->has('stocks') && !empty($request->stocks)) {
+                $this->updateProductStocks($request, $product, false);
+            }
 
             DB::commit();
 
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => 'Sản phẩm đã được cập nhật thành công.'
-            ]);
+            session()->flash('success', 'Sản phẩm đã được cập nhật thành công');
 
             return redirect()->route('admin.products.edit', $product->id);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -1082,14 +1124,44 @@ class ProductController extends Controller
     }
 
     // Update stock quantities for product variants
-    public function updateProductStocks(Request $request, Product $product, $variantStocks = [])
+    public function updateProductStocks(Request $request, Product $product, $isDirectCall = true)
     {
         try {
+            // Validate request
+            $request->validate([
+                'stocks' => 'nullable|array',
+                'stocks.*' => 'nullable|array',
+                'stocks.*.*' => 'nullable|integer|min:0'
+            ]);
+
+            // Check if stocks data is provided
+            if (!$request->has('stocks') || empty($request->stocks)) {
+                if ($isDirectCall) {
+                    session()->flash('toast', [
+                        'type' => 'warning',
+                        'title' => 'Thông báo!',
+                        'message' => 'Không có dữ liệu kho hàng nào được cập nhật'
+                    ]);
+                    return redirect()->route('admin.products.stock', $product->id);
+                }
+                return; // Just return if called from update method
+            }
+
             DB::beginTransaction();
 
-            // Update variant stocks
-            if (!empty($variantStocks)) {
-                foreach ($variantStocks as $variantId => $branchStocks) {
+            // Update variant stocks from request
+            // Form structure: stocks[branch_id][variant_id] = quantity
+            foreach ($request->stocks as $branchId => $variantStocks) {
+                // Validate that branch exists and is active
+                $branchExists = DB::table('branches')
+                    ->where('id', $branchId)
+                    ->where('active', true)
+                    ->exists();
+
+                if (!$branchExists) continue;
+
+                foreach ($variantStocks as $variantId => $quantity) {
+                    // Validate that variant exists and belongs to this product
                     $variantExists = DB::table('product_variants')
                         ->where('id', $variantId)
                         ->where('product_id', $product->id)
@@ -1097,55 +1169,42 @@ class ProductController extends Controller
 
                     if (!$variantExists) continue;
 
-                    foreach ($branchStocks as $branchId => $quantity) {
-                        // Validate that branch exists
-                        $branchExists = DB::table('branches')
-                            ->where('id', $branchId)
-                            ->exists();
-
-                        if (!$branchExists) continue;
-
-                        // Update branch stock
-                        $branchStock = DB::table('branch_stocks')
-                            ->where('branch_id', $branchId)
-                            ->where('product_variant_id', $variantId)
-                            ->first();
-
-                        if ($branchStock) {
-                            DB::table('branch_stocks')
-                                ->where('branch_id', $branchId)
-                                ->where('product_variant_id', $variantId)
-                                ->update(['stock_quantity' => $quantity]);
-                        } else {
-                            DB::table('branch_stocks')->insert([
-                                'branch_id' => $branchId,
-                                'product_variant_id' => $variantId,
-                                'stock_quantity' => $quantity,
-                                'created_at' => now(),
-                                'updated_at' => now()
-                            ]);
-                        }
-                    }
+                    // Use updateOrCreate for better handling
+                    BranchStock::updateOrCreate(
+                        [
+                            'branch_id' => $branchId,
+                            'product_variant_id' => $variantId
+                        ],
+                        ['stock_quantity' => $quantity]
+                    );
                 }
             }
 
             DB::commit();
 
-            session()->flash('toast', [
-                'type' => 'success',
-                'title' => 'Thành công!',
-                'message' => 'Sản phẩm và số lượng tồn kho đã được cập nhật thành công'
-            ]);
-
-            return redirect()->route('admin.products.edit', $product->id);
+            if ($isDirectCall) {
+                session()->flash('toast', [
+                    'type' => 'success',
+                    'title' => 'Thành công!',
+                    'message' => 'Số lượng tồn kho đã được cập nhật thành công'
+                ]);
+                return redirect()->route('admin.products.stock', $product->id);
+            }
+            
+            // If called from update method, just return without redirect
+            return;
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('toast', [
-                'type' => 'error',
-                'title' => 'Lỗi!',
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ]);
-            return redirect()->back()->withInput();
+            if ($isDirectCall) {
+                session()->flash('toast', [
+                    'type' => 'error',
+                    'title' => 'Lỗi!',
+                    'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+                ]);
+                return redirect()->back()->withInput();
+            }
+            // If called from update method, throw the exception to be handled by the calling method
+            throw $e;
         }
     }
 
@@ -1416,5 +1475,50 @@ class ProductController extends Controller
         $html .= '</div>';
         
         return $html;
+    }
+
+    /**
+     * Display the stock management page for a product
+     */
+    public function stock(Product $product)
+    {
+        $product->load(['variants.variantValues.attribute', 'variants.branchStocks']);
+        $branches = Branch::where('active', true)->get();
+        
+        // Get current stock data organized by branch and variant
+        $branchStocks = [];
+        $stocksData = BranchStock::whereHas('productVariant', function($query) use ($product) {
+            $query->where('product_id', $product->id);
+        })->get();
+        
+        foreach ($stocksData as $stock) {
+            if (!isset($branchStocks[$stock->branch_id])) {
+                $branchStocks[$stock->branch_id] = [];
+            }
+            $branchStocks[$stock->branch_id][$stock->product_variant_id] = $stock->stock_quantity;
+        }
+        
+        return view('admin.menu.product.stock', compact('product', 'branches', 'branchStocks'));
+    }
+
+    // Get branch stocks organized by branch and variant for a product
+    private function getBranchStocksForProduct(Product $product)
+    {
+        $branchStocks = [];
+        $stocksData = BranchStock::whereHas('productVariant', function($query) use ($product) {
+            $query->where('product_id', $product->id);
+        })->get();
+        
+        foreach ($stocksData as $stock) {
+            if (!isset($branchStocks[$stock->branch_id])) {
+                $branchStocks[$stock->branch_id] = [];
+            }
+            // Ensure stock_quantity is always an integer
+            $stockQuantity = is_array($stock->stock_quantity) ? 0 : (int)$stock->stock_quantity;
+            $branchStocks[$stock->branch_id][$stock->product_variant_id] = $stockQuantity;
+        }
+        
+        \Log::info('BranchStocks data:', ['branchStocks' => $branchStocks]);
+        return $branchStocks;
     }
 }

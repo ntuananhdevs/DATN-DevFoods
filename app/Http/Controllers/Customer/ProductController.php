@@ -69,13 +69,30 @@ class ProductController extends Controller
         }
 
         // Filter theo category nếu có
+        $selectedCategoryIds = [];
         if ($request->has('category') && $request->category != '') {
-            $query->where('category_id', $request->category);
+            $catParam = $request->category;
+            if (strpos($catParam, ',') !== false) {
+                $selectedCategoryIds = array_filter(explode(',', $catParam));
+                $query->whereIn('category_id', $selectedCategoryIds);
+            } else {
+                $selectedCategoryIds = [$catParam];
+                $query->where('category_id', $catParam);
+            }
         }
 
-        // Search theo tên sản phẩm
+        // Search theo nhiều trường liên quan đến sản phẩm
         if ($request->has('search') && $request->search != '') {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('sku', 'like', "%$search%")
+                  ->orWhere('short_description', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%")
+                  ->orWhereRaw("JSON_EXTRACT(ingredients, '$[*]') like ?", ["%$search%"])
+                  ->orWhereRaw("CAST(base_price AS CHAR) like ?", ["%$search%"])
+                  ->orWhereRaw("CAST(preparation_time AS CHAR) like ?", ["%$search%"]);
+            });
         }
 
         // Sắp xếp
@@ -135,7 +152,7 @@ class ProductController extends Controller
                 $query->with(['product', 'category']);
             }])
             ->get()
-            // Filter theo ngày trong tuần và giờ hợp lệ
+            // Filter theo ngày trong tuần và giờ hợp lệ (đồng nhất với index)
             ->filter(function($discountCode) use ($currentTime) {
                 // Kiểm tra giờ hợp lệ
                 if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
@@ -290,7 +307,16 @@ class ProductController extends Controller
             return $product;
         });
         
-        return view("customer.shop.index", compact('products', 'categories'));
+        // Nếu là AJAX (lazy load 1 category)
+        if ($request->ajax() || $request->has('ajax')) {
+            $categoryId = $request->get('category');
+            $catProducts = $products->where('category_id', $categoryId);
+            return view('customer.shop._product_grid', [
+                'products' => $catProducts,
+            ])->render();
+        }
+        
+        return view("customer.shop.index", compact('products', 'categories', 'selectedCategoryIds'));
     }
 
     /**
@@ -362,7 +388,7 @@ class ProductController extends Controller
             });
         }
         
-        // Lấy danh sách mã giảm giá áp dụng cho sản phẩm này
+        // Lấy các mã giảm giá áp dụng cho sản phẩm này
         $now = Carbon::now();
         $currentDayOfWeek = $now->dayOfWeekIso; // 1 (Monday) - 7 (Sunday)
         $currentTime = $now->format('H:i:s');
@@ -396,7 +422,27 @@ class ProductController extends Controller
         $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
-            ->get();
+            ->get()
+            // Filter theo ngày trong tuần và giờ hợp lệ (đồng nhất với index)
+            ->filter(function($discountCode) use ($currentTime) {
+                // Kiểm tra giờ hợp lệ
+                if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                    $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                    $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                    if ($from < $to) {
+                        // Khoảng thời gian trong cùng 1 ngày
+                        if (!($currentTime >= $from && $currentTime <= $to)) {
+                            return false;
+                        }
+                    } else {
+                        // Khoảng thời gian qua đêm (ví dụ: 22:00 - 02:00)
+                        if (!($currentTime >= $from || $currentTime <= $to)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
             
         // Log discount codes for debugging
         \Illuminate\Support\Facades\Log::debug('Active Discount Codes in product detail page:', [
@@ -555,6 +601,38 @@ class ProductController extends Controller
                 ->where('product_id', $product->id)
                 ->exists();
         }
+
+        // Tính giá thấp nhất và cao nhất bao gồm cả biến thể (đồng nhất với index)
+        $product->min_price = $product->base_price;
+        $product->max_price = $product->base_price;
+        
+        if ($product->variants && $product->variants->count() > 0) {
+            $variantPrices = [];
+            
+            foreach ($product->variants as $variant) {
+                // Tính giá của biến thể này
+                $variantPrice = $product->base_price;
+                if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                    $variantPrice += $variant->variantValues->sum('price_adjustment');
+                }
+                $variantPrices[] = $variantPrice;
+            }
+            
+            if (!empty($variantPrices)) {
+                $product->min_price = min($variantPrices);
+                $product->max_price = max($variantPrices);
+            }
+        }
+        
+        // Debug log để kiểm tra giá trị
+        \Illuminate\Support\Facades\Log::debug('Product price calculation in show method:', [
+            'product_id' => $product->id,
+            'base_price' => $product->base_price,
+            'min_price' => $product->min_price,
+            'max_price' => $product->max_price,
+            'variant_prices' => $variantPrices ?? [],
+            'applicable_discount_codes_count' => $product->applicable_discount_codes->count()
+        ]);
 
         return view('customer.shop.show', compact(
             'product',
