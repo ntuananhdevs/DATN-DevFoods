@@ -261,19 +261,11 @@ class ProductController extends Controller
 
     /**
      * Process ingredients from request
-     * Supports two formats:
-     * 1. Simple array: ["thịt", "rau"]
-     * 2. Structured object: {"thịt": ["thịt bò"], "rau": ["xà lách"]}
      */
     private function processIngredients($validated) {
         // If ingredients_json exists (from frontend), use it
         if (isset($validated['ingredients_json'])) {
             return $validated['ingredients_json'];
-        }
-        
-        // If ingredients_structured exists (structured format), use it
-        if (isset($validated['ingredients_structured'])) {
-            return json_encode($validated['ingredients_structured']);
         }
         
         // If ingredients is a string, try to decode it

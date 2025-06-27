@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\DriverApplicationController;
 use App\Http\Controllers\Admin\DiscountCodeController;
 use App\Http\Controllers\Admin\UserRankHistoryController;
 use App\Http\Controllers\Admin\ChatController;
+use App\Http\Controllers\Admin\GeneralSettingController;
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
@@ -297,6 +298,14 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
+    });
+
+    // General Settings Management
+    Route::prefix('general-settings')->name('general_settings.')->group(function () {
+        Route::get('/', [GeneralSettingController::class, 'index'])->name('index');
+        Route::post('/', [GeneralSettingController::class, 'store'])->name('store');
+        Route::put('/{id}', [GeneralSettingController::class, 'update'])->name('update');
+        Route::delete('/{id}', [GeneralSettingController::class, 'destroy'])->name('destroy');
     });
 
     // Hiring driver routes (these are publicly accessible for applications but relate to driver management)
