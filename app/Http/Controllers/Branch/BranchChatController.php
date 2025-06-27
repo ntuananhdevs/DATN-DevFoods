@@ -7,6 +7,8 @@ use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\Branch;
 use App\Models\User;
+use App\Models\PromotionProgram;
+use App\Models\DiscountCode;
 
 use App\Events\Chat\NewMessage;
 use Illuminate\Http\Request;
@@ -25,13 +27,14 @@ class BranchChatController extends Controller
     public function index()
     {
         $user = Auth::user();
-        // Lấy branch mà user này là manager
+        // Lấy branch mà user này là manager (nếu quản lý nhiều chi nhánh, lấy đầu tiên hoặc cho chọn)
         $branch = Branch::where('manager_user_id', $user->id)->first();
         if (!$branch) {
             return abort(403, 'Bạn không phải quản lý của chi nhánh nào!');
         }
         $branchId = $branch->id;
 
+        // Lọc tất cả dữ liệu chat theo branch_id của manager
         $conversations = Conversation::with(['customer', 'messages.sender'])
             ->whereNotNull('branch_id')
             ->where('branch_id', $branchId)
@@ -39,7 +42,10 @@ class BranchChatController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        return view('admin.branch.chat', compact('conversations', 'branch', 'user'));
+        $promotions = PromotionProgram::whereHas('branches', fn($q) => $q->where('branch_id', $branch->id))->get();
+        $discountCodes = DiscountCode::whereHas('branches', fn($q) => $q->where('branch_id', $branch->id))->get();
+
+        return view('admin.branch.chat', compact('conversations', 'branch', 'user', 'promotions', 'discountCodes'));
     }
 
     public function apiGetConversation($id)

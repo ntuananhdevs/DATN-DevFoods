@@ -29,7 +29,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Super admin can access all conversations
-    if ($user->role === 'super_admin') {
+    if ($user->role === 'spadmin') {
         return [
             'id' => $user->id,
             'name' => $user->name,

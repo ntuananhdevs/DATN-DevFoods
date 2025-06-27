@@ -81,6 +81,12 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function hasRole(string $roleName): bool
+    {
+        return $this->roles()->where('name', $roleName)->exists();
+    }
+
+
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPasswordNotification($token));
@@ -92,13 +98,16 @@ class User extends Authenticatable
         return $this->hasMany(WishlistItem::class);
     }
 
-    public function orders() {
+    public function orders()
+    {
         return $this->hasMany(Order::class, 'customer_id');
     }
-    public function addresses() {
+    public function addresses()
+    {
         return $this->hasMany(Address::class);
     }
-    public function favorites() {
+    public function favorites()
+    {
         return $this->hasMany(Favorite::class)->with('product');
     }
 
@@ -125,7 +134,7 @@ class User extends Authenticatable
     public function userDiscountCodes()
     {
         return $this->belongsToMany(DiscountCode::class, 'user_discount_codes')
-                    ->withPivot('usage_count', 'status', 'assigned_at', 'first_used_at', 'last_used_at');
+            ->withPivot('usage_count', 'status', 'assigned_at', 'first_used_at', 'last_used_at');
     }
 
     public function createdDiscountCodes()
@@ -184,7 +193,7 @@ class User extends Authenticatable
         }
 
         $avatar = $this->attributes['avatar'];
-        
+
         // If it's already a full URL, return as is
         if (str_starts_with($avatar, 'http')) {
             return $avatar;
@@ -193,11 +202,16 @@ class User extends Authenticatable
         // Build S3 URL from filename
         $bucket = env('AWS_BUCKET');
         $region = env('AWS_DEFAULT_REGION', 'us-east-1');
-        
+
         if ($region === 'us-east-1') {
             return "https://{$bucket}.s3.amazonaws.com/users/avatars/{$avatar}";
         } else {
             return "https://{$bucket}.s3.{$region}.amazonaws.com/users/avatars/{$avatar}";
         }
+    }
+
+    public function branch()
+    {
+        return $this->hasOne(Branch::class, 'manager_user_id', 'id');
     }
 }

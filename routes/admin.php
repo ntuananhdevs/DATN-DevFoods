@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Branch\BranchChatController;
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -18,7 +18,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PromotionProgramController;
-use App\Http\Controllers\Admin\ChatController as AdminChatController;
+
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\UserRankController;
@@ -38,7 +38,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Đăng nhập
     Route::controller(AuthController::class)->group(function () {
         Route::get('login', 'showLoginForm')->name('login');
-        Route::post('login', 'login')->name('login.submit');
+        Route::post('login', 'login')->name('login.submit')->middleware('throttle:5,1');
     });
 
     // Đăng xuất (chỉ cho Admin đã đăng nhập)

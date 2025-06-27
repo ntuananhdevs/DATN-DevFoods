@@ -52,6 +52,11 @@ return [
             'provider' => 'users',
         ],
 
+        'manager' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+
         'driver' => [
             'driver' => 'session',
             'provider' => 'drivers',
