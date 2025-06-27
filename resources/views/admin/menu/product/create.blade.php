@@ -319,52 +319,11 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">Nguyên liệu 
-                            <span class="text-red-500">*</span>
-                        </label>
-                        
-                        <!-- Toggle between simple and structured format -->
-                        <div class="mb-4">
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                                    <input type="radio" name="ingredients_format" value="simple" class="form-radio" checked>
-                                    <span class="ml-2">Định dạng đơn giản</span>
-                                </label>
-                                <label class="inline-flex items-center">
-                                    <input type="radio" name="ingredients_format" value="structured" class="form-radio">
-                                    <span class="ml-2">Định dạng có cấu trúc</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <!-- Simple format -->
-                        <div id="simple-ingredients" class="ingredients-format">
-                            <textarea id="ingredients" name="ingredients" rows="3"
-                                placeholder="Nhập danh sách nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, rau xà lách, ớt chuông)"
-                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
-                            <p class="text-sm text-gray-500 mt-1">Ví dụ: thịt bò, rau xà lách, cà chua</p>
-                        </div>
-                        
-                        <!-- Structured format -->
-                        <div id="structured-ingredients" class="ingredients-format hidden">
-                            <div class="space-y-4">
-                                <div class="ingredient-category">
-                                    <div class="flex items-center space-x-2 mb-2">
-                                        <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
-                                               class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                        <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
-                                    </div>
-                                    <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
-                                              class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
-                                              rows="3"></textarea>
-                                </div>
-                            </div>
-                            <button type="button" id="add-category" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                                Thêm danh mục
-                            </button>
-                            <p class="text-sm text-gray-500 mt-2">Ví dụ: Danh mục "thịt" có thể chứa "thịt bò", "thịt heo"</p>
-                        </div>
-                        
+                        <label for="ingredients" class="block text-sm font-medium text-gray-700">Nguyên liệu 
+                            <span class="text-red-500">*</span></label>
+                        <textarea id="ingredients" name="ingredients" rows="3"
+                            placeholder="Nhập danh sách nguyên liệu (mỗi nguyên liệu một dòng)"
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients') }}</textarea>
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -696,11 +655,6 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Prevent multiple initialization
-        if (window.productFormInitialized) {
-            return;
-        }
-        window.productFormInitialized = true;
         // Image Upload Logic (Primary and Additional)
         const primaryImageUpload = document.getElementById('primary-image-upload');
         const selectPrimaryImageBtn = document.getElementById('select-primary-image-btn');
@@ -856,7 +810,31 @@
                 </div>
             `;
 
-            // Event listeners will be handled by event delegation in the main container
+            // Add event listeners for the new attribute group
+            const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
+            removeAttributeBtn.addEventListener('click', () => {
+                group.remove();
+                reindexAttributeGroups();
+            });
+
+            // Add event listener for adding attribute values
+            const addValueBtn = group.querySelector('.add-attribute-value-btn');
+            addValueBtn.addEventListener('click', () => {
+                addAttributeValue(index);
+            });
+
+            // Add event listeners for removing attribute values
+            const removeValueBtns = group.querySelectorAll('.remove-attribute-value-btn');
+            removeValueBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const valueContainer = e.target.closest('.attribute-value-item');
+                    if (valueContainer) {
+                        const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                        valueContainer.remove();
+                        reindexAttributeValues(attributeGroup);
+                    }
+                });
+            });
 
             return group;
         }
@@ -884,7 +862,16 @@
                 <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
             `;
 
-            // Event listener will be handled by event delegation
+            // Add event listener for removing this value
+            const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
+            removeBtn.addEventListener('click', () => {
+                const valueContainer = removeBtn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                    valueContainer.remove();
+                    reindexAttributeValues(attributeGroup);
+                }
+            });
 
             valuesContainer.appendChild(valueDiv);
         }
@@ -931,36 +918,46 @@
         }
 
         // Add event listener for the main "Add Attribute" button
-        if (addAttributeBtn) {
-            addAttributeBtn.addEventListener('click', () => {
-                const attributeGroup = createAttributeGroup(attributeCount);
-                attributesContainer.appendChild(attributeGroup);
-                attributeCount++;
-            });
-        }
+        addAttributeBtn.addEventListener('click', () => {
+            const attributeGroup = createAttributeGroup(attributeCount);
+            attributesContainer.appendChild(attributeGroup);
+            attributeCount++;
+        });
 
-        // Use event delegation for attribute-related buttons to avoid conflicts
-        if (attributesContainer) {
-            attributesContainer.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-attribute-btn')) {
-                    const attributeGroup = e.target.closest('.p-4.border.border-gray-200');
-                    if (attributeGroup) {
-                        attributeGroup.remove();
-                        reindexAttributeGroups();
-                    }
-                } else if (e.target.classList.contains('add-attribute-value-btn')) {
-                    const attributeIndex = e.target.getAttribute('data-index') || 0;
-                    addAttributeValue(parseInt(attributeIndex));
-                } else if (e.target.classList.contains('remove-attribute-value-btn')) {
-                    const valueContainer = e.target.closest('.attribute-value-item');
-                    if (valueContainer) {
-                        const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
-                        valueContainer.remove();
-                        reindexAttributeValues(attributeGroup);
-                    }
+        // Add event listeners for existing attribute elements
+        // Add listeners for existing remove attribute button
+        const existingRemoveBtn = document.querySelector('.remove-attribute-btn');
+        if (existingRemoveBtn) {
+            existingRemoveBtn.addEventListener('click', () => {
+                const attributeGroup = existingRemoveBtn.closest('.p-4.border.border-gray-200');
+                if (attributeGroup) {
+                    attributeGroup.remove();
+                    reindexAttributeGroups();
                 }
             });
         }
+
+        // Add listeners for existing add value button
+        const existingAddValueBtn = document.querySelector('.add-attribute-value-btn');
+        if (existingAddValueBtn) {
+            existingAddValueBtn.addEventListener('click', () => {
+                const attributeIndex = existingAddValueBtn.getAttribute('data-index') || 0;
+                addAttributeValue(parseInt(attributeIndex));
+            });
+        }
+
+        // Add listeners for existing remove value buttons
+        const existingRemoveValueBtns = document.querySelectorAll('.remove-attribute-value-btn');
+        existingRemoveValueBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const valueContainer = e.target.closest('.attribute-value-item');
+                if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.p-4.border.border-gray-200');
+                    valueContainer.remove();
+                    reindexAttributeValues(attributeGroup);
+                }
+            });
+        });
 
         // Toppings Logic
         const toppingsContainer = document.getElementById('toppings-container');
@@ -1005,7 +1002,7 @@
                     </div>
                 </div>
             `;
-            // Event listener will be handled by event delegation
+            group.querySelector('.remove-topping-btn').addEventListener('click', () => group.remove());
 
             const imageInput = group.querySelector(`#topping_image_${index}`);
             const imagePreview = group.querySelector(`#topping_image_preview_${index}`);
@@ -1031,26 +1028,11 @@
             return group;
         }
 
-        // Add event listener for the main "Add Topping" button
-        if (addToppingBtn) {
-            addToppingBtn.addEventListener('click', () => {
-                const toppingGroup = createToppingGroup(toppingCount);
-                toppingsContainer.appendChild(toppingGroup);
-                toppingCount++;
-            });
-        }
-
-        // Use event delegation for topping-related buttons to avoid conflicts
-        if (toppingsContainer) {
-            toppingsContainer.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-topping-btn')) {
-                    const toppingGroup = e.target.closest('.p-4.border.border-gray-200');
-                    if (toppingGroup) {
-                        toppingGroup.remove();
-                    }
-                }
-            });
-        }
+        addToppingBtn.addEventListener('click', () => {
+            const toppingGroup = createToppingGroup(toppingCount);
+            toppingsContainer.appendChild(toppingGroup);
+            toppingCount++;
+        });
 
         // Restore old topping data if validation fails
         @if (old('toppings'))
@@ -1166,103 +1148,22 @@
         // Call displayValidationErrors after restoring old data
         setTimeout(displayValidationErrors, 100);
 
-        // Ingredients format toggle
-        const formatRadios = document.querySelectorAll('input[name="ingredients_format"]');
-        const simpleFormat = document.getElementById('simple-ingredients');
-        const structuredFormat = document.getElementById('structured-ingredients');
-        
-        if (formatRadios.length > 0) {
-            formatRadios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (this.value === 'simple') {
-                        simpleFormat.classList.remove('hidden');
-                        structuredFormat.classList.add('hidden');
-                    } else {
-                        simpleFormat.classList.add('hidden');
-                        structuredFormat.classList.remove('hidden');
-                    }
-                });
-            });
-        }
-        
-        // Add category functionality
-        const addCategoryBtn = document.getElementById('add-category');
-        if (addCategoryBtn) {
-            addCategoryBtn.addEventListener('click', function() {
-                const categoryContainer = document.querySelector('#structured-ingredients .space-y-4');
-                const newCategory = document.createElement('div');
-                newCategory.className = 'ingredient-category';
-                newCategory.innerHTML = `
-                    <div class="flex items-center space-x-2 mb-2">
-                        <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
-                               class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                        <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
-                    </div>
-                    <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
-                              class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
-                              rows="3"></textarea>
-                `;
-                categoryContainer.appendChild(newCategory);
-            });
-        }
-        
-        // Remove category functionality using event delegation
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-category')) {
-                const categoryContainer = document.querySelector('#structured-ingredients .space-y-4');
-                if (categoryContainer && categoryContainer.children.length > 1) {
-                    e.target.closest('.ingredient-category').remove();
-                }
-            }
-        });
-        
         // Form Submission Logic
         const addProductForm = document.getElementById('add-product-form');
-        if (addProductForm && !addProductForm.hasAttribute('data-listener-added')) {
-            addProductForm.setAttribute('data-listener-added', 'true');
-            addProductForm.addEventListener('submit', function(e) {
-            const selectedFormat = document.querySelector('input[name="ingredients_format"]:checked').value;
-            
-            if (selectedFormat === 'simple') {
-                // Convert ingredients textarea to JSON array
-                const ingredientsText = document.getElementById('ingredients').value;
-                const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
-                const ingredientsInput = document.createElement('input');
-                ingredientsInput.type = 'hidden';
-                ingredientsInput.name = 'ingredients_json';
-                ingredientsInput.value = JSON.stringify(ingredientsArray);
-                addProductForm.appendChild(ingredientsInput);
-            } else {
-                // Convert structured ingredients to JSON object
-                const categories = document.querySelectorAll('.ingredient-category');
-                const structuredIngredients = {};
-                
-                categories.forEach(category => {
-                    const categoryName = category.querySelector('.category-name').value.trim();
-                    const categoryItems = category.querySelector('.category-items').value
-                        .split('\n')
-                        .map(item => item.trim())
-                        .filter(item => item);
-                    
-                    if (categoryName && categoryItems.length > 0) {
-                        structuredIngredients[categoryName] = categoryItems;
-                    }
-                });
-                
-                const structuredInput = document.createElement('input');
-                structuredInput.type = 'hidden';
-                structuredInput.name = 'ingredients_structured';
-                structuredInput.value = JSON.stringify(structuredIngredients);
-                addProductForm.appendChild(structuredInput);
-            }
+        addProductForm.addEventListener('submit', function(e) {
+            // Convert ingredients textarea to JSON array
+            const ingredientsText = document.getElementById('ingredients').value;
+            const ingredientsArray = ingredientsText.split('\n').filter(item => item.trim());
+            const ingredientsInput = document.createElement('input');
+            ingredientsInput.type = 'hidden';
+            ingredientsInput.name = 'ingredients_json';
+            ingredientsInput.value = JSON.stringify(ingredientsArray);
+            addProductForm.appendChild(ingredientsInput);
 
             // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
         });
-
-            });
-        }
 
         // Handle status and release date visibility
         const statusInputs = document.querySelectorAll('input[name="status"]');
@@ -1279,11 +1180,9 @@
             }
         }
 
-        if (statusInputs.length > 0) {
-            statusInputs.forEach(input => {
-                input.addEventListener('change', toggleReleaseDate);
-            });
-        }
+        statusInputs.forEach(input => {
+            input.addEventListener('change', toggleReleaseDate);
+        });
 
         // Initial check
         toggleReleaseDate();
