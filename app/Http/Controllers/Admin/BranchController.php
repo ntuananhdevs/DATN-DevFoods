@@ -718,11 +718,7 @@ class BranchController extends Controller
     }
 }
 
-// ... existing code ...
 
-/**
- * Hiển thị form tạo chi nhánh mới
- */
 public function create()
 {
     try {

@@ -184,14 +184,16 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('/', [ComboController::class, 'index'])->name('index');
         Route::get('/create', [ComboController::class, 'create'])->name('create');
         Route::post('/store', [ComboController::class, 'store'])->name('store');
-        Route::get('/edit/{id}', [ComboController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [ComboController::class, 'update'])->name('update');
-        Route::get('/show/{id}', [ComboController::class, 'show'])->name('show');
-        Route::delete('/delete/{id}', [ComboController::class, 'destroy'])->name('destroy');
-
+        Route::get('/edit/{combo}', [ComboController::class, 'edit'])->name('edit');
+        Route::put('/update/{combo}', [ComboController::class, 'update'])->name('update');
+        Route::get('/show/{combo}', [ComboController::class, 'show'])->name('show');
+        Route::delete('/delete/{combo}', [ComboController::class, 'destroy'])->name('destroy');
+        
         // Status management
-        Route::patch('/{id}/toggle-status', [ComboController::class, 'toggleStatus'])->name('toggle-status');
-        Route::patch('/{id}/toggle-featured', [ComboController::class, 'toggleFeatured'])->name('toggle-featured');
+        Route::patch('/{combo}/toggle-status', [ComboController::class, 'toggleStatus'])->name('toggle-status');
+        
+        // Quantity management
+        Route::patch('/{combo}/update-quantity', [ComboController::class, 'updateQuantity'])->name('update-quantity');
     });
 
     // Driver Application Management
@@ -298,6 +300,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
+        
     });
 
     // General Settings Management
@@ -342,3 +345,5 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 Route::post('/broadcasting/auth', function () {
     return Broadcast::auth(request());
 })->middleware('web');
+// Thêm vào group combos:
+
