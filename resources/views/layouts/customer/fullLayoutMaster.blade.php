@@ -382,6 +382,19 @@
             });
         };
 
+        // Nếu user đã đăng xuất, reset cart_count về 0
+        @if (!auth()->check())
+        // Khách vãng lai: lấy cart_count từ localStorage, nếu không có thì set về 0 và cập nhật giao diện
+        document.addEventListener('DOMContentLoaded', function() {
+            let guestCartCount = localStorage.getItem('cart_count');
+            if (!guestCartCount) {
+                guestCartCount = 0;
+                localStorage.setItem('cart_count', 0);
+            }
+            window.updateCartCount(guestCartCount);
+        });
+        @endif
+
         // Initialize Pusher on every page to listen for cart updates
         document.addEventListener('DOMContentLoaded', function() {
             // Check if we should restore cart count from localStorage
