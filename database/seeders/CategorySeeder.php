@@ -41,11 +41,7 @@ class CategorySeeder extends Seeder
                 'description' => 'Các món tráng miệng ngọt ngào',
                 'status' => 1
             ],
-            [
-                'name' => 'Combo Set',
-                'description' => 'Combo tiết kiệm',
-                'status' => 1
-            ],
+        
             [
                 'name' => 'Side Dish',
                 'description' => 'Các món ăn kèm',
