@@ -7,17 +7,19 @@ use Illuminate\Http\Request;
 use App\Http\Requests\Admin\Product\ProductRequest;
 use App\Models\Product;
 use App\Models\Category;
+use Illuminate\Support\Facades\Response;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use App\Models\VariantAttribute;
 use App\Models\VariantValue;
 use App\Models\BranchStock;
 use App\Models\ProductVariant;
+use App\Models\ProductImg;
 use App\Models\Topping;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Response;
-use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
@@ -183,10 +185,11 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request) {
         try {
+            $validated = $request->validated();
             DB::beginTransaction();
 
-            // Create product
-            $product = $this->createProduct($request->validated());
+            // Create product with auto-generated SKU
+            $product = $this->createProduct($validated);
 
             // Handle images
             $this->handleImages($product, $request);
@@ -195,8 +198,17 @@ class ProductController extends Controller
             $this->createVariants($product, $request->input('attributes', []));
 
             // Sync toppings (simplified)
-            if ($request->has('toppings')) {
-                $product->toppings()->sync($request->input('toppings', []));
+            if ($request->has('selected_toppings')) {
+                $selectedToppings = $request->input('selected_toppings');
+                \Log::info('Selected toppings from request:', ['selected_toppings' => $selectedToppings]);
+                
+                if (is_string($selectedToppings)) {
+                    $selectedToppings = json_decode($selectedToppings, true) ?: [];
+                }
+                \Log::info('Parsed selected toppings:', ['toppings' => $selectedToppings]);
+                $product->toppings()->sync($selectedToppings);
+            } else {
+                \Log::info('No selected_toppings found in request');
             }
 
             DB::commit();
@@ -497,19 +509,54 @@ class ProductController extends Controller
      * Process ingredients from request
      */
     private function processIngredients($validated) {
+        // Priority 1: Check for ingredients_json from JavaScript processing
         if (isset($validated['ingredients_json'])) {
-            return $validated['ingredients_json'];
+            $ingredientsData = $validated['ingredients_json'];
+            
+            // If it's already a string (JSON), decode and re-encode to ensure proper format
+            if (is_string($ingredientsData)) {
+                $decoded = json_decode($ingredientsData, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return json_encode($decoded);
+                }
+            }
+            
+            // If it's an array, encode it
+            if (is_array($ingredientsData)) {
+                return json_encode($ingredientsData);
+            }
         }
         
+        // Priority 2: Fallback to regular ingredients field
         if (isset($validated['ingredients'])) {
             if (is_string($validated['ingredients'])) {
+                // Try to decode as JSON first
                 $decoded = json_decode($validated['ingredients'], true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     return json_encode($decoded);
                 }
-                $ingredients = array_map('trim', explode(',', $validated['ingredients']));
-                return json_encode(array_filter($ingredients));
+                
+                // If not JSON, treat as comma-separated or newline-separated string
+                // Handle both comma and newline separators
+                $ingredientsText = str_replace(["\r\n", "\r"], "\n", $validated['ingredients']);
+                $ingredients = [];
+                
+                // First try splitting by commas
+                if (strpos($ingredientsText, ',') !== false) {
+                    $ingredients = array_map('trim', explode(',', $ingredientsText));
+                } else {
+                    // If no commas, split by newlines
+                    $ingredients = array_map('trim', explode("\n", $ingredientsText));
+                }
+                
+                // Filter out empty items and return as JSON
+                $ingredients = array_filter($ingredients, function($item) {
+                    return !empty(trim($item));
+                });
+                
+                return json_encode(array_values($ingredients));
             }
+            
             if (is_array($validated['ingredients'])) {
                 return json_encode($validated['ingredients']);
             }
@@ -960,6 +1007,7 @@ class ProductController extends Controller
             }
         }
     }
+    
     /**
      * Export products data
      */
@@ -1154,4 +1202,5 @@ class ProductController extends Controller
 
         return Response::download($file, $filename);
     }
+
 }
