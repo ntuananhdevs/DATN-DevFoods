@@ -12,6 +12,12 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
+    <!-- Font Awesome for modal icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Modal JS -->
+    <script src="{{ asset('js/modal.js') }}"></script>
+    
     <style>
         * {
             margin: 0;
@@ -306,19 +312,23 @@
             stroke-linejoin: round;
         }
 
+        /* Toast Styles - Redesigned */
         .toast {
             position: fixed;
             top: 1rem;
             right: 1rem;
             background: white;
-            border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
-            padding: 1rem;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            padding: 1rem 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             min-width: 300px;
+            max-width: 400px;
             transform: translateX(100%);
             transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
         .toast.show {
@@ -326,15 +336,521 @@
         }
 
         .toast-success {
-            border-left: 4px solid #16a34a;
+            background: #f0f9ff;
         }
 
         .toast-error {
-            border-left: 4px solid #dc2626;
+            background: #fef2f2;
         }
 
         .toast-warning {
-            border-left: 4px solid #f59e0b;
+            background: #fffbeb;
+        }
+
+        .toast-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+        }
+
+        .toast-success .toast-icon {
+            background: #16a34a;
+            color: white;
+        }
+
+        .toast-error .toast-icon {
+            background: #dc2626;
+            color: white;
+        }
+
+        .toast-warning .toast-icon {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
+            color: #1f2937;
+        }
+
+        .toast-message {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toast-close:hover {
+            color: #6b7280;
+            background: #f3f4f6;
+        }
+
+        /* Progress bar cho auto-dismiss */
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 0 0 0.5rem 0.5rem;
+            overflow: hidden;
+        }
+
+        .toast-progress-bar {
+            height: 100%;
+            width: 100%;
+            animation: toast-progress 5s linear;
+        }
+
+        .toast-success .toast-progress-bar {
+            background: #16a34a;
+        }
+
+        .toast-error .toast-progress-bar {
+            background: #dc2626;
+        }
+
+        .toast-warning .toast-progress-bar {
+            background: #f59e0b;
+        }
+
+        @keyframes toast-progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        /* Container cho multiple toasts */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* Responsive cho mobile */
+        @media (max-width: 640px) {
+            .toast {
+                min-width: 280px;
+                margin-right: 1rem;
+                left: 1rem;
+                right: 1rem;
+                transform: translateY(-100%);
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+
+            .toast-container {
+                left: 1rem;
+                right: 1rem;
+                top: 1rem;
+            }
+        }
+        
+        /* Modal Styles - Enhanced Version */
+        .dtmodal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6));
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .dtmodal-overlay.dtmodal-active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .dtmodal-container {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            max-width: 420px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .dtmodal-active .dtmodal-container {
+            transform: scale(1) translateY(0);
+        }
+        
+        .dtmodal-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            
+        }
+        
+        .dtmodal-header {
+            padding: 2rem 2rem 1rem 2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            position: relative;
+        }
+        
+        .dtmodal-icon-wrapper {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dtmodal-icon-wrapper::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            padding: 2px;
+            background: linear-gradient(135deg, currentColor, transparent);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: xor;
+            opacity: 0.3;
+        }
+        
+        .dtmodal-success .dtmodal-icon-wrapper {
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            color: #16a34a;
+        }
+        
+        .dtmodal-warning .dtmodal-icon-wrapper {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #f59e0b;
+        }
+        
+        .dtmodal-error .dtmodal-icon-wrapper {
+            background: linear-gradient(135deg, #fecaca, #fca5a5);
+            color: #dc2626;
+        }
+        
+        .dtmodal-info .dtmodal-icon-wrapper {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #3b82f6;
+        }
+        
+        .dtmodal-icon {
+            font-size: 1.5rem;
+            z-index: 1;
+        }
+        
+        .dtmodal-title-content {
+            flex: 1;
+        }
+        
+        .dtmodal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            color: #1f2937;
+            line-height: 1.4;
+        }
+        
+        .dtmodal-subtitle {
+            font-size: 0.95rem;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .dtmodal-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 2rem;
+            height: 2rem;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #6b7280;
+        }
+        
+        .dtmodal-close:hover {
+            background: #e5e7eb;
+            color: #374151;
+            transform: scale(1.1);
+        }
+        
+        .dtmodal-body {
+            padding: 0 2rem 1.5rem 2rem;
+        }
+        
+        .dtmodal-message {
+            margin: 0;
+            color: #4b5563;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .dtmodal-footer {
+            padding: 1.5rem 2rem 2rem 2rem;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        
+        .dtmodal-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+            min-width: 100px;
+        }
+        
+        .dtmodal-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .dtmodal-btn:hover::before {
+            left: 100%;
+        }
+        
+        .dtmodal-btn-outline {
+            background: white;
+            color: #374151;
+            border-color: #d1d5db;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .dtmodal-btn-outline:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dtmodal-btn-primary {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: white;
+            box-shadow: 0 4px 6px rgba(22, 163, 74, 0.25);
+        }
+        
+        .dtmodal-btn-primary:hover {
+            background: linear-gradient(135deg, #15803d, #166534);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(22, 163, 74, 0.35);
+        }
+        
+        .dtmodal-btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        /* Toast Styles - Enhanced */
+        .dtmodal-toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .dtmodal-toast {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            padding: 1rem;
+            min-width: 320px;
+            max-width: 400px;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 4px solid;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dtmodal-toast::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, currentColor, transparent);
+        }
+        
+        .dtmodal-toast.dtmodal-active {
+            transform: translateX(0);
+        }
+        
+        .dtmodal-toast-success {
+            border-left-color: #16a34a;
+            color: #ffff;
+        }
+        
+        .dtmodal-toast-error {
+            border-left-color: #dc2626;
+            color: #dc2626;
+        }
+        
+        .dtmodal-toast-warning {
+            border-left-color: #f59e0b;
+            color: #f59e0b;
+        }
+        
+        .dtmodal-toast-info {
+            border-left-color: #3b82f6;
+            color: #3b82f6;
+        }
+        
+        .dtmodal-toast-icon-wrapper {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: currentColor;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .dtmodal-toast-content {
+            flex: 1;
+        }
+        
+        .dtmodal-toast-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
+            color: #1f2937;
+        }
+        
+        .dtmodal-toast-message {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        .dtmodal-toast-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .dtmodal-toast-close:hover {
+            color: #6b7280;
+            background: #f3f4f6;
+        }
+        
+        .dtmodal-toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .dtmodal-toast-progress-bar {
+            height: 100%;
+            background: currentColor;
+            width: 100%;
+            animation: toast-progress 5s linear;
+        }
+        
+        @keyframes toast-progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        
+        /* Animation cho mobile */
+        @media (max-width: 640px) {
+            .dtmodal-container {
+                width: 95%;
+                margin: 1rem;
+            }
+            
+            .dtmodal-header,
+            .dtmodal-body,
+            .dtmodal-footer {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+            
+            .dtmodal-toast {
+                min-width: 280px;
+                margin-right: 1rem;
+            }
         }
     </style>
 </head>
@@ -778,19 +1294,33 @@
         }
 
         function completeDelivery() {
-            if (confirm('Xác nhận đã giao hàng thành công?')) {
-                // Stop navigation
-                if (watchId) {
-                    navigator.geolocation.clearWatch(watchId);
+            dtmodalCreateModal({
+                type: 'success',
+                title: 'Xác nhận hoàn thành',
+                message: 'Bạn có chắc chắn đã giao hàng thành công cho khách hàng?',
+                confirmText: 'Xác nhận',
+                cancelText: 'Hủy bỏ',
+                onConfirm: function() {
+                    // Stop navigation
+                    if (watchId) {
+                        navigator.geolocation.clearWatch(watchId);
+                    }
+                    
+                    // Show success toast
+                    dtmodalShowToast('success', {
+                        title: 'Thành công!',
+                        message: 'Đã hoàn thành giao hàng'
+                    });
+                    
+                    // Redirect back to orders list after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '{{ route("driver.orders.index") }}';
+                    }, 2000);
+                },
+                onCancel: function() {
+                    // Do nothing, just close modal
                 }
-                
-                showToast("Thành công", "Đã hoàn thành giao hàng", "success");
-                
-                // Redirect back to orders list after 2 seconds
-                setTimeout(() => {
-                    window.location.href = '{{ route("driver.orders.index") }}';
-                }, 2000);
-            }
+            });
         }
 
         function callCustomer() {
@@ -835,12 +1365,19 @@
         }
 
         function goBack() {
-            if (confirm('Bạn có chắc muốn quay lại? Điều hướng sẽ bị dừng.')) {
-                if (watchId) {
-                    navigator.geolocation.clearWatch(watchId);
+            dtmodalCreateModal({
+                type: 'warning',
+                title: 'Xác nhận quay lại',
+                message: 'Bạn có chắc muốn quay lại? Điều hướng sẽ bị dừng.',
+                confirmText: 'Quay lại',
+                cancelText: 'Tiếp tục',
+                onConfirm: function() {
+                    if (watchId) {
+                        navigator.geolocation.clearWatch(watchId);
+                    }
+                    window.location.href = '{{ route("driver.orders.index") }}';
                 }
-                window.location.href = '{{ route("driver.orders.index") }}';
-            }
+            });
         }
 
         // Utility functions
@@ -884,12 +1421,23 @@
             // Create toast element
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
+            
+            const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : type === 'warning' ? 'alert-triangle' : 'info';
+            
             toast.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info'}"></i>
-                    <strong>${title}</strong>
+                <div class="toast-icon">
+                    <i data-lucide="${iconName}"></i>
                 </div>
-                <div style="font-size: 0.875rem; color: #6b7280;">${message}</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">
+                    <i data-lucide="x"></i>
+                </button>
+                <div class="toast-progress">
+                    <div class="toast-progress-bar"></div>
+                </div>
             `;
 
             // Add to page
@@ -901,7 +1449,7 @@
                 toast.classList.add('show');
             }, 100);
 
-            // Hide toast after 3 seconds
+            // Hide toast after 5 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => {
@@ -909,7 +1457,7 @@
                         toast.parentNode.removeChild(toast);
                     }
                 }, 300);
-            }, 3000);
+            }, 5000);
         }
 
         // Initialize when DOM is loaded

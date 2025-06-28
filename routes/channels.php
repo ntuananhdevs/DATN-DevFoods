@@ -41,7 +41,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Super admin can access all conversations
-    if ($user->role === 'super_admin') {
+    if ($user->role === 'spadmin') {
         return [
             'id' => $user->id,
             'name' => $user->name,
@@ -172,4 +172,9 @@ Broadcast::channel('order.{orderId}', function ($user, $orderId) {
 Broadcast::channel('drivers', function ($user) {
     // Chỉ cần kiểm tra xem người dùng đang xác thực có phải là Driver không.
     return $user instanceof Driver;
+});
+// Wishlist channel for a specific user
+Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
+    // Only the authenticated user with the matching ID can listen.
+    return (int) $user->id === (int) $userId;
 });

@@ -7,14 +7,18 @@ use Illuminate\Http\Request;
 use App\Http\Requests\Admin\Product\ProductRequest;
 use App\Models\Product;
 use App\Models\Category;
+use Illuminate\Support\Facades\Response;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use App\Models\VariantAttribute;
 use App\Models\VariantValue;
 use App\Models\BranchStock;
 use App\Models\ProductVariant;
+use App\Models\ProductImg;
 use App\Models\Topping;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -181,10 +185,11 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request) {
         try {
+            $validated = $request->validated();
             DB::beginTransaction();
 
-            // Create product
-            $product = $this->createProduct($request->validated());
+            // Create product with auto-generated SKU
+            $product = $this->createProduct($validated);
 
             // Handle images
             $this->handleImages($product, $request);
@@ -193,8 +198,17 @@ class ProductController extends Controller
             $this->createVariants($product, $request->input('attributes', []));
 
             // Sync toppings (simplified)
-            if ($request->has('toppings')) {
-                $product->toppings()->sync($request->input('toppings', []));
+            if ($request->has('selected_toppings')) {
+                $selectedToppings = $request->input('selected_toppings');
+                \Log::info('Selected toppings from request:', ['selected_toppings' => $selectedToppings]);
+                
+                if (is_string($selectedToppings)) {
+                    $selectedToppings = json_decode($selectedToppings, true) ?: [];
+                }
+                \Log::info('Parsed selected toppings:', ['toppings' => $selectedToppings]);
+                $product->toppings()->sync($selectedToppings);
+            } else {
+                \Log::info('No selected_toppings found in request');
             }
 
             DB::commit();
@@ -495,19 +509,54 @@ class ProductController extends Controller
      * Process ingredients from request
      */
     private function processIngredients($validated) {
+        // Priority 1: Check for ingredients_json from JavaScript processing
         if (isset($validated['ingredients_json'])) {
-            return $validated['ingredients_json'];
+            $ingredientsData = $validated['ingredients_json'];
+            
+            // If it's already a string (JSON), decode and re-encode to ensure proper format
+            if (is_string($ingredientsData)) {
+                $decoded = json_decode($ingredientsData, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return json_encode($decoded);
+                }
+            }
+            
+            // If it's an array, encode it
+            if (is_array($ingredientsData)) {
+                return json_encode($ingredientsData);
+            }
         }
         
+        // Priority 2: Fallback to regular ingredients field
         if (isset($validated['ingredients'])) {
             if (is_string($validated['ingredients'])) {
+                // Try to decode as JSON first
                 $decoded = json_decode($validated['ingredients'], true);
                 if (json_last_error() === JSON_ERROR_NONE) {
                     return json_encode($decoded);
                 }
-                $ingredients = array_map('trim', explode(',', $validated['ingredients']));
-                return json_encode(array_filter($ingredients));
+                
+                // If not JSON, treat as comma-separated or newline-separated string
+                // Handle both comma and newline separators
+                $ingredientsText = str_replace(["\r\n", "\r"], "\n", $validated['ingredients']);
+                $ingredients = [];
+                
+                // First try splitting by commas
+                if (strpos($ingredientsText, ',') !== false) {
+                    $ingredients = array_map('trim', explode(',', $ingredientsText));
+                } else {
+                    // If no commas, split by newlines
+                    $ingredients = array_map('trim', explode("\n", $ingredientsText));
+                }
+                
+                // Filter out empty items and return as JSON
+                $ingredients = array_filter($ingredients, function($item) {
+                    return !empty(trim($item));
+                });
+                
+                return json_encode(array_values($ingredients));
             }
+            
             if (is_array($validated['ingredients'])) {
                 return json_encode($validated['ingredients']);
             }
@@ -958,4 +1007,200 @@ class ProductController extends Controller
             }
         }
     }
+    
+    /**
+     * Export products data
+     */
+    public function export(Request $request)
+    {
+        try {
+            $type = $request->get('type', 'excel');
+            $query = Product::with(['category', 'branchStocks.branch']);
+
+            // Lọc theo danh mục
+            if ($request->filled('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
+
+            // Lọc theo giá tối thiểu
+            if ($request->filled('price_min')) {
+                $query->where('base_price', '>=', $request->price_min);
+            }
+
+            // Lọc theo giá tối đa
+            if ($request->filled('price_max')) {
+                $query->where('base_price', '<=', $request->price_max);
+            }
+
+            // Lọc theo chi nhánh
+            if ($request->filled('branch_id')) {
+                $query->whereHas('branchStocks', function ($subQuery) use ($request) {
+                    $subQuery->where('branch_id', $request->branch_id);
+                });
+            }
+
+            // Lọc theo tình trạng kho
+            if ($request->filled('stock_status')) {
+                $stockStatus = $request->stock_status;
+                if ($stockStatus === 'in_stock') {
+                    $query->whereHas('variants.branchStocks', function ($subQuery) {
+                        $subQuery->where('stock_quantity', '>', 0);
+                    });
+                } elseif ($stockStatus === 'out_of_stock') {
+                    $query->whereDoesntHave('variants.branchStocks')
+                          ->orWhereHas('variants.branchStocks', function ($subQuery) {
+                              $subQuery->where('stock_quantity', '=', 0);
+                          });
+                } elseif ($stockStatus === 'low_stock') {
+                    $query->whereHas('variants.branchStocks', function ($subQuery) {
+                        $subQuery->whereBetween('stock_quantity', [1, 10]);
+                    });
+                }
+            }
+
+            $products = $query->latest()->get();
+
+            // Tạo tên file với thông tin bộ lọc
+            $filename = 'products';
+            if ($request->filled('category_id')) {
+                $category = \App\Models\Category::find($request->category_id);
+                if ($category) {
+                    $filename .= '_' . \Str::slug($category->name);
+                }
+            }
+            if ($request->filled('branch_id')) {
+                $branch = \App\Models\Branch::find($request->branch_id);
+                if ($branch) {
+                    $filename .= '_' . \Str::slug($branch->name);
+                }
+            }
+            $filename .= '_' . date('Y-m-d_H-i-s');
+
+            // Xử lý xuất dữ liệu theo định dạng
+            switch ($type) {
+                case 'excel':
+                    return \Maatwebsite\Excel\Facades\Excel::download(
+                        new \App\Exports\ProductsExport($products, $request->branch_id), 
+                        $filename . '.xlsx'
+                    );
+
+                case 'pdf':
+                    // Format data for PDF export with proper formatting
+                    $exportData = collect();
+                    $selectedBranch = null;
+                    
+                    if ($request->filled('branch_id')) {
+                        $selectedBranch = \App\Models\Branch::find($request->branch_id);
+                    }
+                    
+                    foreach ($products as $product) {
+                        $branchStocks = $product->branchStocks;
+                        
+                        if ($request->filled('branch_id')) {
+                            // Nếu chọn chi nhánh cụ thể, chỉ hiển thị dữ liệu của chi nhánh đó
+                            $branchStock = $branchStocks->where('branch_id', $request->branch_id)->first();
+                            if ($branchStock) {
+                                $exportData->push([
+                                    'sku' => $product->sku,
+                                    'name' => $product->name,
+                                    'category' => $product->category ? $product->category->name : 'N/A',
+                                    'base_price' => number_format($product->base_price, 0, ',', '.') . ' VNĐ',
+                                    'branch_name' => $branchStock->branch ? $branchStock->branch->name : 'N/A',
+                                    'stock_quantity' => $branchStock->stock_quantity,
+                                    'status' => $branchStock->stock_quantity > 0 ? 'Còn hàng' : 'Hết hàng',
+                                    'created_at' => $product->created_at->format('d/m/Y H:i:s'),
+                                    'updated_at' => $product->updated_at->format('d/m/Y H:i:s'),
+                                ]);
+                            }
+                        } else {
+                            // Hiển thị tất cả chi nhánh như trước
+                            if ($branchStocks->isEmpty()) {
+                                $exportData->push([
+                                    'sku' => $product->sku,
+                                    'name' => $product->name,
+                                    'category' => $product->category ? $product->category->name : 'N/A',
+                                    'base_price' => number_format($product->base_price, 0, ',', '.') . ' VNĐ',
+                                    'branch_name' => 'Chưa phân bổ chi nhánh',
+                                    'stock_quantity' => 0,
+                                    'status' => 'Chưa phân bổ',
+                                    'created_at' => $product->created_at->format('d/m/Y H:i:s'),
+                                    'updated_at' => $product->updated_at->format('d/m/Y H:i:s'),
+                                ]);
+                            } else {
+                                foreach ($branchStocks as $branchStock) {
+                                    $exportData->push([
+                                        'sku' => $product->sku,
+                                        'name' => $product->name,
+                                        'category' => $product->category ? $product->category->name : 'N/A',
+                                        'base_price' => number_format($product->base_price, 0, ',', '.') . ' VNĐ',
+                                        'branch_name' => $branchStock->branch ? $branchStock->branch->name : 'N/A',
+                                        'stock_quantity' => $branchStock->stock_quantity,
+                                        'status' => $branchStock->stock_quantity > 0 ? 'Còn hàng' : 'Hết hàng',
+                                        'created_at' => $product->created_at->format('d/m/Y H:i:s'),
+                                        'updated_at' => $product->updated_at->format('d/m/Y H:i:s'),
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                    
+                    $pdfData = [
+                        'products' => $exportData->toArray(),
+                        'selectedBranch' => $selectedBranch
+                    ];
+                    
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.products', $pdfData);
+                    $pdf->setPaper('A4', 'landscape'); // Set landscape orientation for better table display
+                    return $pdf->download($filename . '.pdf');
+                    
+                case 'csv':
+                    return \Maatwebsite\Excel\Facades\Excel::download(
+                        new \App\Exports\ProductsExport($products, $request->branch_id), 
+                        $filename . '.csv', 
+                        \Maatwebsite\Excel\Excel::CSV
+                    );
+                    
+                default:
+                    return $this->exportJson($products, $filename . '.json');
+            }
+        } catch (\Exception $e) {
+            \Log::error('Export error: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi xuất dữ liệu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Temporary JSON export method
+     */
+    private function exportJson($products, $filename)
+    {
+        $data = [];
+
+        foreach ($products as $product) {
+            $data[] = [
+                'id' => $product->id,
+                'name' => $product->name,
+                'category' => $product->category ? $product->category->name : 'N/A',
+                'price' => $product->base_price,
+                'stock' => $product->stock,
+                'status' => $product->stock > 0 ? 'Còn hàng' : 'Hết hàng',
+                'created_at' => $product->created_at->format('d/m/Y H:i:s'),
+                'updated_at' => $product->updated_at->format('d/m/Y H:i:s'),
+            ];
+        }
+
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $file = storage_path('products-export.json');
+        file_put_contents($file, $json);
+
+        return Response::download($file, $filename);
+    }
+
 }

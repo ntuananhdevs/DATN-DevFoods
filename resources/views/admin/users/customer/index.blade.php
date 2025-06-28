@@ -168,7 +168,7 @@
                         <td class="px-4 py-4">{{ $user->phone ?? 'N/A' }}</td>
                         <td class="px-4 py-4">
                             <button type="button"
-                                    class="px-3 py-1.5 rounded-full text-xs whitespace-nowrap overflow-hidden {{ $user->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 w-28 transition-opacity duration-200 flex items-center"
+                                    class="px-3 py-1.5 rounded-full text-xs whitespace-nowrap overflow-hidden {{ $user->active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }} hover:opacity-80 w-24 transition-opacity duration-200 flex items-center"
                                     onclick="toggleUserStatus(this, {{ $user->id }}, '{{ $user->full_name }}', {{ $user->active ? 'true' : 'false' }})">
                                 @if($user->active)
                                 <i class="fas fa-check mr-1"></i> <span class="inline-block">Hoạt động</span>
