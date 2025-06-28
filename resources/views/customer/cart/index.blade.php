@@ -368,9 +368,7 @@
                     </div>
                 </div>
                 <hr class="my-4 border-t-2 border-gray-200">
-                <button type="submit" id="checkout-btn" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors {{ count($cartItems) == 0 ? 'opacity-50 pointer-events-none' : '' }}">
-                    Tiến Hành Thanh Toán
-                </button>
+                <button type="submit" id="checkout-btn" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors" disabled>Tiến Hành Thanh Toán</button>
                 <div class="mt-4 text-xs text-gray-500 text-center">
                     Đơn hàng trên 100.000đ được miễn phí giao hàng
                 </div>
@@ -393,7 +391,7 @@
 <div class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-xl z-50 transform translate-x-full transition-transform duration-300" id="mini-cart">
     <div class="flex flex-col h-full">
         <div class="flex items-center justify-between p-4 border-b">
-            <h2 class="text-lg font-bold">Giỏ Hàng (3)</h2>
+            <h2 class="text-lg font-bold">Giỏ Hàng (<span id="mini-cart-count">{{ count($cartItems) }}</span>)</h2>
             <button class="p-2" id="close-mini-cart">
                 <i class="fas fa-times h-5 w-5"></i>
             </button>
@@ -483,11 +481,11 @@
         <div class="p-4 border-t">
             <div class="flex justify-between mb-2">
                 <span>Tạm tính:</span>
-                <span>322.000đ</span>
+                <span id="mini-cart-subtotal">0đ</span>
             </div>
             <div class="flex justify-between mb-4">
                 <span>Phí giao hàng:</span>
-                <span>Miễn phí</span>
+                <span id="mini-cart-shipping">0đ</span>
             </div>
             <a href="{{ route('cart.index') }}" class="block w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-4 py-2 rounded-md font-medium transition-colors mb-2">
                 Xem Giỏ Hàng
@@ -517,142 +515,6 @@
     window.csrfToken = '{{ csrf_token() }}';
 </script>
 <script src="{{ asset('js/Customer/Cart/cart.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const selectAll = document.getElementById('select-all-cart');
-    const itemCheckboxes = document.querySelectorAll('.cart-item-checkbox');
-    const checkoutBtn = document.getElementById('checkout-btn');
-    const cartForm = document.getElementById('cart-form');
-
-    function updateTotal() {
-        let total = 0;
-        document.querySelectorAll('.cart-item-checkbox:checked').forEach(cb => {
-            const item = cb.closest('.cart-item');
-            const priceText = item.querySelector('.item-total')?.textContent || '0';
-            const price = parseInt(priceText.replace(/\D/g, '')) || 0;
-            total += price;
-        });
-        const totalEl = document.getElementById('total');
-        if (totalEl) totalEl.textContent = total.toLocaleString() + 'đ';
-        checkoutBtn.disabled = document.querySelectorAll('.cart-item-checkbox:checked').length === 0;
-        checkoutBtn.classList.toggle('opacity-50', checkoutBtn.disabled);
-        checkoutBtn.classList.toggle('pointer-events-none', checkoutBtn.disabled);
-    }
-    if (selectAll) {
-        selectAll.addEventListener('change', function() {
-            itemCheckboxes.forEach(cb => cb.checked = selectAll.checked);
-            updateTotal();
-        });
-    }
-    itemCheckboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            if (!cb.checked && selectAll.checked) selectAll.checked = false;
-            if (document.querySelectorAll('.cart-item-checkbox:checked').length === itemCheckboxes.length) {
-                selectAll.checked = true;
-            }
-            updateTotal();
-        });
-    });
-    if (cartForm) {
-        cartForm.addEventListener('submit', function(e) {
-            const checked = document.querySelectorAll('.cart-item-checkbox:checked');
-            if (checked.length === 0) {
-                e.preventDefault();
-                alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!');
-                return false;
-            }
-            document.querySelectorAll('.cart-item-checkbox:not(:checked)').forEach(cb => {
-                cb.disabled = true;
-            });
-        });
-    }
-    updateTotal();
-});
-</script>
-<script>
-function renderSelectedItemsSummary() {
-    const container = document.getElementById('selected-items-summary');
-    const checked = document.querySelectorAll('.cart-item-checkbox:checked');
-    if (!container) return;
-    if (checked.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
-    let html = '<div class="font-bold mb-2">Đơn Hàng Của Bạn</div>';
-    checked.forEach(cb => {
-        const item = cb.closest('.cart-item');
-        if (!item) return;
-        const img = item.querySelector('img, .fa-image');
-        const name = item.querySelector('h3')?.textContent || '';
-        const desc = item.querySelector('.text-sm.text-gray-500')?.textContent || '';
-        const qty = item.querySelector('.item-quantity')?.textContent || '1';
-        const price = item.querySelector('.item-price')?.textContent || '';
-        const toppings = Array.from(item.querySelectorAll('.text-xs.text-gray-600 li')).map(li => li.textContent.trim());
-        html += `<div class='flex items-center gap-3 mb-3'>
-            <div class='w-14 h-14 bg-gray-100 rounded flex items-center justify-center overflow-hidden'>`;
-        if (img && img.tagName === 'IMG') {
-            html += `<img src='${img.src}' alt='' class='object-cover w-full h-full'>`;
-        } else {
-            html += `<i class='fas fa-image text-gray-400 text-2xl'></i>`;
-        }
-        html += `</div>
-            <div class='flex-1 min-w-0'>
-                <div class='font-semibold'>${name}</div>
-                <div class='text-xs text-gray-500 line-clamp-1'>${desc}</div>
-                ${toppings.length > 0 ? `<div class='text-xs text-orange-600 mt-1'>+${toppings.length} topping</div>` : ''}
-            </div>
-            <div class='text-right'>
-                <div class='font-bold'>${price}</div>
-                <div class='text-xs text-gray-500'>SL: ${qty}</div>
-            </div>
-        </div>`;
-    });
-    container.innerHTML = html;
-}
-document.addEventListener('DOMContentLoaded', function() {
-    renderSelectedItemsSummary();
-    document.querySelectorAll('.cart-item-checkbox').forEach(cb => {
-        cb.addEventListener('change', renderSelectedItemsSummary);
-    });
-});
-</script>
-<script>
-function updateSummaryBySelected() {
-    let subtotal = 0;
-    let discount = 0;
-    let shipping = 0;
-    let total = 0;
-    // Lấy các item được chọn
-    const checked = document.querySelectorAll('.cart-item-checkbox:checked');
-    checked.forEach(cb => {
-        const item = cb.closest('.cart-item');
-        if (!item) return;
-        // Lấy giá từng sản phẩm (tổng đã nhân số lượng)
-        const itemTotalText = item.querySelector('.item-total')?.textContent || '0';
-        const itemTotal = parseInt(itemTotalText.replace(/\D/g, '')) || 0;
-        subtotal += itemTotal;
-    });
-    // Phí ship (ví dụ miễn phí nếu > 100k)
-    shipping = subtotal > 100000 ? 0 : (subtotal > 0 ? 15000 : 0);
-    // Giảm giá (nếu có, có thể lấy từ session hoặc tính lại)
-    if (typeof sessionDiscount !== 'undefined') {
-        discount = sessionDiscount;
-    } else {
-        discount = 0;
-    }
-    total = subtotal + shipping - discount;
-    document.getElementById('subtotal-js').textContent = subtotal.toLocaleString() + 'đ';
-    document.getElementById('shipping-js').textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
-    document.getElementById('discount-js').textContent = discount > 0 ? '-' + discount.toLocaleString() + 'đ' : '-0đ';
-    document.getElementById('total-js').textContent = total.toLocaleString() + 'đ';
-}
-document.addEventListener('DOMContentLoaded', function() {
-    updateSummaryBySelected();
-    document.querySelectorAll('.cart-item-checkbox').forEach(cb => {
-        cb.addEventListener('change', updateSummaryBySelected);
-    });
-});
-</script>
 @endsection
 
 @include('components.modal')

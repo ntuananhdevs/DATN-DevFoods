@@ -38,6 +38,7 @@ function updateCartTotals() {
     
     const shippingEl = document.getElementById('shipping');
     if (shippingEl) {
+        // Phí ship: miễn phí nếu > 100k, ngược lại 15k
         const shipping = subtotal > 100000 ? 0 : 15000;
         shippingEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
         
@@ -48,12 +49,57 @@ function updateCartTotals() {
         }
     }
     
+    // Update mini cart totals
+    updateMiniCartTotals(subtotal);
+    
+    // Update mini cart count
+    updateMiniCartCount();
+    
     const checkoutButton = document.querySelector('a[href*="checkout"]');
     if (checkoutButton) {
         if (cartItems.length === 0) {
             checkoutButton.classList.add('opacity-50', 'pointer-events-none');
         } else {
             checkoutButton.classList.remove('opacity-50', 'pointer-events-none');
+        }
+    }
+}
+
+function updateMiniCartTotals(subtotal) {
+    const miniCartSubtotal = document.getElementById('mini-cart-subtotal');
+    const miniCartShipping = document.getElementById('mini-cart-shipping');
+    
+    if (miniCartSubtotal) {
+        miniCartSubtotal.textContent = subtotal.toLocaleString() + 'đ';
+    }
+    
+    if (miniCartShipping) {
+        // Phí ship: miễn phí nếu > 100k, ngược lại 15k
+        const shipping = subtotal > 100000 ? 0 : 15000;
+        miniCartShipping.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
+    }
+}
+
+function updateMiniCartCount() {
+    const cartItems = document.querySelectorAll('.cart-item');
+    const miniCartCount = document.getElementById('mini-cart-count');
+    
+    if (miniCartCount) {
+        miniCartCount.textContent = cartItems.length;
+    }
+}
+
+function updateSelectAllState() {
+    const selectAll = document.getElementById('select-all-cart');
+    if (selectAll) {
+        const allCheckboxes = document.querySelectorAll('.cart-item-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.cart-item-checkbox:checked');
+        
+        // Nếu tất cả checkbox đều được chọn thì check "Chọn tất cả"
+        if (allCheckboxes.length > 0 && allCheckboxes.length === checkedCheckboxes.length) {
+            selectAll.checked = true;
+        } else {
+            selectAll.checked = false;
         }
     }
 }
@@ -110,6 +156,7 @@ async function refreshCartView() {
 
         attachDynamicEventListeners();
         initializeButtonStates();
+        updateSelectAllState();
 
     } catch (error) {
         console.error('Failed to refresh cart view:', error);
@@ -329,10 +376,140 @@ function showEmptyCartMessage() {
                 <p class="text-gray-500 font-medium">Giỏ hàng của bạn đang trống</p>
             </div>`;
     }
+    
+    // Update mini cart count and totals
+    updateMiniCartCount();
+    updateMiniCartTotals(0);
+    
+    // Reset select all state
+    updateSelectAllState();
 }
 
+function renderSelectedItemsSummary() {
+    const container = document.getElementById('selected-items-summary');
+    const checked = document.querySelectorAll('.cart-item-checkbox:checked');
+    if (!container) return;
+    if (checked.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    let html = '<div class="font-bold mb-2">Đơn Hàng Của Bạn</div>';
+    checked.forEach(cb => {
+        const item = cb.closest('.cart-item');
+        if (!item) return;
+        const img = item.querySelector('img, .fa-image');
+        const name = item.querySelector('h3')?.textContent || '';
+        const desc = item.querySelector('.text-sm.text-gray-500')?.textContent || '';
+        const qty = item.querySelector('.item-quantity')?.textContent || '1';
+        const price = item.querySelector('.item-price')?.textContent || '';
+        const toppings = Array.from(item.querySelectorAll('.text-xs.text-gray-600 li')).map(li => li.textContent.trim());
+        html += `<div class='flex items-center gap-3 mb-3'>
+            <div class='w-14 h-14 bg-gray-100 rounded flex items-center justify-center overflow-hidden'>`;
+        if (img && img.tagName === 'IMG') {
+            html += `<img src='${img.src}' alt='' class='object-cover w-full h-full'>`;
+        } else {
+            html += `<i class='fas fa-image text-gray-400 text-2xl'></i>`;
+        }
+        html += `</div>
+            <div class='flex-1 min-w-0'>
+                <div class='font-semibold'>${name}</div>
+                <div class='text-xs text-gray-500 line-clamp-1'>${desc}</div>
+                ${toppings.length > 0 ? `<div class='text-xs text-orange-600 mt-1'>+${toppings.length} topping</div>` : ''}
+            </div>
+            <div class='text-right'>
+                <div class='font-bold'>${price}</div>
+                <div class='text-xs text-gray-500'>SL: ${qty}</div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function updateSummaryBySelected() {
+    let subtotal = 0;
+    let discount = 0;
+    let shipping = 0;
+    let total = 0;
+    // Lấy các item được chọn
+    const checked = document.querySelectorAll('.cart-item-checkbox:checked');
+    checked.forEach(cb => {
+        const item = cb.closest('.cart-item');
+        if (!item) return;
+        // Lấy giá từng sản phẩm (tổng đã nhân số lượng)
+        const itemTotalText = item.querySelector('.item-total')?.textContent || '0';
+        const itemTotal = parseInt(itemTotalText.replace(/\D/g, '')) || 0;
+        subtotal += itemTotal;
+    });
+    // Phí ship: miễn phí nếu > 100k, ngược lại 15k
+    shipping = subtotal > 100000 ? 0 : 15000;
+    // Giảm giá (nếu có, có thể lấy từ session hoặc tính lại)
+    if (typeof sessionDiscount !== 'undefined') {
+        discount = sessionDiscount;
+    } else {
+        discount = 0;
+    }
+    total = subtotal + shipping - discount;
+    document.getElementById('subtotal-js').textContent = subtotal.toLocaleString() + 'đ';
+    document.getElementById('shipping-js').textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
+    document.getElementById('discount-js').textContent = discount > 0 ? '-' + discount.toLocaleString() + 'đ' : '-0đ';
+    document.getElementById('total-js').textContent = total.toLocaleString() + 'đ';
+    
+    // Update mini cart totals
+    if (typeof updateMiniCartTotals === 'function') {
+        updateMiniCartTotals(subtotal);
+    }
+}
+
+function updateCheckoutButtonState() {
+    const anyChecked = Array.from(document.querySelectorAll('.cart-item-checkbox')).some(cb => cb.checked);
+    document.getElementById('checkout-btn').disabled = !anyChecked;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize cart summary and states
+    updateSummaryBySelected();
+    renderSelectedItemsSummary();
+    updateCheckoutButtonState();
+    updateSelectAllState();
+    
+    // Initialize mini cart totals
+    if (typeof updateMiniCartTotals === 'function') {
+        let initialSubtotal = 0;
+        const cartItems = document.querySelectorAll('.cart-item');
+        cartItems.forEach(item => {
+            const itemTotalText = item.querySelector('.item-total')?.textContent || '0';
+            const itemTotal = parseInt(itemTotalText.replace(/\D/g, '')) || 0;
+            initialSubtotal += itemTotal;
+        });
+        updateMiniCartTotals(initialSubtotal);
+    }
+    
+    // Initialize mini cart count
+    if (typeof updateMiniCartCount === 'function') {
+        updateMiniCartCount();
+    }
+    
+    // Add event listeners for individual checkboxes
+    document.querySelectorAll('.cart-item-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            updateSummaryBySelected();
+            renderSelectedItemsSummary();
+            updateCheckoutButtonState();
+            updateSelectAllState();
+        });
+    });
+    
+    // Add event listener for select all checkbox
+    const selectAll = document.getElementById('select-all-cart');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.cart-item-checkbox').forEach(cb => cb.checked = selectAll.checked);
+            updateSummaryBySelected();
+            renderSelectedItemsSummary();
+            updateCheckoutButtonState();
+        });
+    }
+
     // Initialize Pusher, etc.
     const pusher = new Pusher(window.pusherKey, {
         cluster: window.pusherCluster,
