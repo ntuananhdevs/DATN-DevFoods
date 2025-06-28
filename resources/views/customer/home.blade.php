@@ -455,4 +455,12 @@
 {{-- Include branch checking logic --}}
 @include('partials.customer.branch-check')
 <!-- Branch Selector Modal -->
+
+<!-- Thêm biến Pusher cho JS -->
+<script>
+    window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
+    window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+</script>
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script src="/js/chat-realtime.js"></script>
 @endsection

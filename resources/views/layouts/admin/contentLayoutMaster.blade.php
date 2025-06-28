@@ -52,12 +52,24 @@
             @include('partials.admin.header')
 
             <!-- Page Content -->
-            <div class="flex-1 p-4 md:p-6 overflow-auto">
-                @yield('content')
-            </div>
+            @hasSection('hide_footer')
+                <div class="flex-1 overflow-auto">
+                    @yield('content')
+                </div>
+            @else
+                <div class="flex-1 p-4 md:p-6 overflow-auto">
+                    @yield('content')
+                </div>
+            @endif
 
             <!-- Footer -->
-            @include('partials.admin.footer')
+            @hasSection('hide_footer')
+                @if (!trim($__env->yieldContent('hide_footer')))
+                    @include('partials.admin.footer')
+                @endif
+            @else
+                @include('partials.admin.footer')
+            @endif
         </main>
     </div>
 

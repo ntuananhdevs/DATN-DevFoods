@@ -35,16 +35,16 @@ class BranchChatController extends Controller
 
         // Lấy conversations thuộc branch của user
         $conversations = Conversation::where('branch_id', $branch->id)
-            ->with(['customer', 'messages' => function($q) {
-                $q->latest()->limit(1);
-            }])
+            ->with(['customer', 'messages'])
             ->orderBy('updated_at', 'desc')
             ->get();
+
+        $conversation = $conversations->first();
 
         $promotions = PromotionProgram::whereHas('branches', fn($q) => $q->where('branch_id', $branch->id))->get();
         $discountCodes = DiscountCode::whereHas('branches', fn($q) => $q->where('branch_id', $branch->id))->get();
 
-        return view('branch.chat.index', compact('conversations', 'branch', 'promotions', 'discountCodes'));
+        return view('branch.chat.index', compact('conversations', 'conversation', 'branch', 'promotions', 'discountCodes'));
     }
 
     public function apiGetConversation($id)

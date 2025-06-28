@@ -57,12 +57,23 @@ class ChatController extends Controller
 
             $attachmentPath = null;
             $attachmentType = null;
+            $attachmentUrl = null;
             $messageText = $request->message;
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
-                $attachmentPath = $file->store('chat-attachments', 'public');
-                $attachmentType = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'file';
-                Log::info('Customer gửi file', ['file' => $attachmentPath, 'type' => $attachmentType]);
+                if (str_starts_with($file->getMimeType(), 'image/')) {
+                    // Lưu lên S3
+                    $path = $file->store('chat-attachments', 's3');
+                    $attachmentPath = $path;
+                    $attachmentType = 'image';
+                    $attachmentUrl = Storage::disk('s3')->url($path);
+                } else {
+                    // Lưu local
+                    $attachmentPath = $file->store('chat-attachments', 'public');
+                    $attachmentType = 'file';
+                    $attachmentUrl = '/storage/' . $attachmentPath;
+                }
+                Log::info('Customer gửi file', ['file' => $attachmentPath, 'type' => $attachmentType, 'url' => $attachmentUrl]);
                 if (!$messageText) {
                     $messageText = $attachmentType === 'image' ? 'Đã gửi ảnh' : 'Đã gửi file';
                 }
@@ -96,7 +107,22 @@ class ChatController extends Controller
             broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
             return response()->json([
                 'success' => true,
-                'message' => $message
+                'message' => [
+                    'id' => $message->id,
+                    'conversation_id' => $message->conversation_id,
+                    'sender_id' => $message->sender_id,
+                    'receiver_id' => $message->receiver_id,
+                    'message' => $message->message,
+                    'attachment' => $message->attachment,
+                    'attachment_type' => $message->attachment_type,
+                    'attachment_url' => $attachmentUrl,
+                    'created_at' => $message->created_at,
+                    'sent_at' => $message->sent_at,
+                    'sender' => [
+                        'id' => $message->sender->id,
+                        'full_name' => $message->sender->full_name,
+                    ],
+                ]
             ], 201);
         } catch (\Exception $e) {
             Log::error('Customer send message error: ' . $e->getMessage());

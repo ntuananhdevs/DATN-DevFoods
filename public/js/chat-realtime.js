@@ -24,8 +24,8 @@ class ChatCommon {
         this.chatList = document.getElementById("chat-list");
 
         // Khởi tạo Pusher
-        this.pusher = new Pusher("6ef607214efab0d72419", {
-            cluster: "ap1",
+        this.pusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
             encrypted: true,
         });
 
@@ -36,8 +36,8 @@ class ChatCommon {
     setupPusherGlobalListeners() {
         // Khởi tạo Pusher nếu chưa có
         if (!window._sidebarPusher) {
-            window._sidebarPusher = new Pusher("6ef607214efab0d72419", {
-                cluster: "ap1",
+            window._sidebarPusher = new Pusher(window.pusherKey, {
+                cluster: window.pusherCluster,
                 encrypted: true,
                 authEndpoint: "/broadcasting/auth",
                 auth: {
@@ -279,6 +279,7 @@ class ChatCommon {
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
                 this.moveConversationToTop(data.message.conversation_id);
+                showChatNotification(data.message.conversation_id);
             }
         });
 
@@ -436,7 +437,7 @@ class ChatCommon {
         try {
             console.log("📥 Đang tải tin nhắn...");
             const url = this.api.getMessages.replace(
-                ":id",
+                ":conversation",
                 this.conversationId
             );
             const response = await fetch(url);
@@ -987,7 +988,7 @@ class ChatCommon {
         try {
             console.log("📥 Đang tải tin nhắn...");
             const url = this.api.getMessages.replace(
-                ":id",
+                ":conversation",
                 this.conversationId
             );
             const response = await fetch(url);
@@ -1170,6 +1171,7 @@ class ChatCommon {
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
                 this.moveConversationToTop(data.message.conversation_id);
+                showChatNotification(data.message.conversation_id);
             }
         });
 
@@ -2064,7 +2066,7 @@ document.addEventListener("DOMContentLoaded", function () {
             userType: "admin",
             api: {
                 send: "/admin/chat/send",
-                getMessages: "/admin/chat/messages/:id",
+                getMessages: "/admin/chat/messages/:conversation",
                 distribute: "/admin/chat/distribute",
             },
         });
@@ -2142,8 +2144,8 @@ class BranchChat {
         this.chatList = document.getElementById("chat-list");
 
         // Khởi tạo Pusher
-        this.pusher = new Pusher("6ef607214efab0d72419", {
-            cluster: "ap1",
+        this.pusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
             encrypted: true,
         });
 
@@ -2153,8 +2155,8 @@ class BranchChat {
 
     setupPusherGlobalListeners() {
         if (!window._sidebarPusher) {
-            window._sidebarPusher = new Pusher("6ef607214efab0d72419", {
-                cluster: "ap1",
+            window._sidebarPusher = new Pusher(window.pusherKey, {
+                cluster: window.pusherCluster,
                 encrypted: true,
                 authEndpoint: "/broadcasting/auth",
                 auth: {
@@ -2932,8 +2934,8 @@ class CustomerChatRealtime {
         this.userId = options.userId;
         this.api = options.api || {};
         this.appendMessage = options.appendMessage || function () {};
-        this.pusher = new Pusher("6ef607214efab0d72419", {
-            cluster: "ap1",
+        this.pusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
             encrypted: true,
         });
         this.init();
@@ -3030,5 +3032,89 @@ document.addEventListener("DOMContentLoaded", function () {
     if (btnActivate) btnActivate.onclick = () => updateStatus("active");
     if (btnResolve) btnResolve.onclick = () => updateStatus("resolved");
     if (btnClose) btnClose.onclick = () => updateStatus("closed");
+
+    // Quick reply click handler
+    document.querySelectorAll('.quick-reply-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var input = document.getElementById('chat-input-message');
+            if (input) {
+                input.value = btn.textContent;
+                input.focus();
+            }
+        });
+    });
+
+    // Xử lý chuyển chi nhánh
+    document.querySelectorAll('.distribution-select').forEach(function(select) {
+        select.addEventListener('change', function(e) {
+            var conversationId = select.dataset.conversationId;
+            var branchId = select.value;
+            if (conversationId && branchId) {
+                fetch('/admin/chat/distribute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        conversation_id: conversationId,
+                        branch_id: branchId
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload hoặc cập nhật UI
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra khi phân phối!');
+                    }
+                })
+                .catch(() => alert('Có lỗi xảy ra khi phân phối!'));
+            }
+        });
+    });
 });
+// ... existing code ...
+
+function showChatNotification(conversationId) {
+    // Hiện badge đỏ ở chuông
+    var bell = document.getElementById('chat-new-msg-badge');
+    if (bell) bell.classList.remove('hidden');
+    // Hiện badge đỏ ở chat-item sidebar
+    var chatItem = document.querySelector('.chat-item[data-conversation-id="' + conversationId + '"]');
+    if (chatItem) {
+        var badge = chatItem.querySelector('.unread-badge');
+        if (badge) {
+            badge.classList.remove('hidden');
+            badge.textContent = parseInt(badge.textContent || '0') + 1;
+        } else {
+            var newBadge = document.createElement('span');
+            newBadge.className = 'unread-badge absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center';
+            newBadge.textContent = '1';
+            chatItem.appendChild(newBadge);
+        }
+    }
+}
+
+function updateChatNewMessageNotify(count) {
+    var notify = document.getElementById('chat-new-message-notify');
+    var countSpan = document.getElementById('chat-new-message-count');
+    var countSpan2 = document.getElementById('chat-new-message-count-2');
+    if (notify && count > 0) {
+        notify.classList.remove('hidden');
+        if (countSpan) countSpan.textContent = count;
+        if (countSpan2) countSpan2.textContent = count;
+    } else if (notify) {
+        notify.classList.add('hidden');
+    }
+}
+// ... existing code ...
+// Giả sử có biến global window.unreadChatCount
+// Khi có tin nhắn mới:
+window.unreadChatCount = (window.unreadChatCount || 0) + 1;
+updateChatNewMessageNotify(window.unreadChatCount);
+// Khi đọc hết:
+// window.unreadChatCount = 0;
+// updateChatNewMessageNotify(0);
 // ... existing code ...
