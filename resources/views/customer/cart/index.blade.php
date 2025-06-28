@@ -136,7 +136,7 @@
                                     </div>
                                 @endif
 
-                                <button class="text-red-500 text-sm flex items-center mt-1 hover:underline remove-item" 
+                                <button type="button" class="text-red-500 text-sm flex items-center mt-1 hover:underline remove-item" 
                                         data-id="{{ $item->id }}">
                                     <i class="fas fa-trash-alt h-3 w-3 mr-1"></i>
                                     Xóa
@@ -243,11 +243,11 @@
 
                         <div class="md:col-span-2 flex items-center justify-center">
                             <div class="flex items-center border rounded">
-                                <button class="px-2 py-1 hover:bg-gray-100 decrease-quantity" data-id="{{ $item->id }}">
+                                <button type="button" class="px-2 py-1 hover:bg-gray-100 decrease-quantity" data-id="{{ $item->id }}">
                                     <i class="fas fa-minus h-3 w-3"></i>
                                 </button>
                                 <span class="px-3 py-1 item-quantity">{{ $item->quantity }}</span>
-                                <button class="px-2 py-1 hover:bg-gray-100 increase-quantity" data-id="{{ $item->id }}">
+                                <button type="button" class="px-2 py-1 hover:bg-gray-100 increase-quantity" data-id="{{ $item->id }}">
                                     <i class="fas fa-plus h-3 w-3"></i>
                                 </button>
                             </div>
@@ -310,7 +310,7 @@
                                 <div class="p-3">
                                     <h3 class="font-medium text-sm mb-1 line-clamp-1">{{ $product->name }}</h3>
                                     <p class="text-orange-500 font-bold text-sm mb-2">{{ number_format($product->base_price) }}đ</p>
-                                    <button class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested"
+                                    <button type="button" class="w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-xs flex items-center justify-center transition-colors add-suggested"
                                         data-product-id="{{ $product->id }}"
                                         data-variant-id="{{ $firstVariant ? $firstVariant->id : '' }}"
                                         data-branch-id="{{ $branchId }}"
@@ -392,7 +392,7 @@
     <div class="flex flex-col h-full">
         <div class="flex items-center justify-between p-4 border-b">
             <h2 class="text-lg font-bold">Giỏ Hàng (<span id="mini-cart-count">{{ count($cartItems) }}</span>)</h2>
-            <button class="p-2" id="close-mini-cart">
+            <button type="button" class="p-2" id="close-mini-cart">
                 <i class="fas fa-times h-5 w-5"></i>
             </button>
         </div>
@@ -422,7 +422,7 @@
                 <div class="flex-1">
                     <div class="flex justify-between">
                         <h3 class="font-medium text-sm">{{ $item->variant->product->name }}</h3>
-                        <button class="text-gray-400 hover:text-red-500 remove-item" data-id="{{ $item->id }}">
+                        <button type="button" class="text-gray-400 hover:text-red-500 remove-item" data-id="{{ $item->id }}">
                             <i class="fas fa-times h-4 w-4"></i>
                         </button>
                     </div>
@@ -445,11 +445,11 @@
                     
                     <div class="flex justify-between items-center mt-2">
                         <div class="flex items-center border rounded">
-                            <button class="px-1 py-0.5 hover:bg-gray-100 decrease-quantity" data-id="{{ $item->id }}">
+                            <button type="button" class="px-1 py-0.5 hover:bg-gray-100 decrease-quantity" data-id="{{ $item->id }}">
                                 <i class="fas fa-minus h-3 w-3"></i>
                             </button>
                             <span class="px-2 py-0.5 text-sm item-quantity">{{ $item->quantity }}</span>
-                            <button class="px-1 py-0.5 hover:bg-gray-100 increase-quantity" data-id="{{ $item->id }}">
+                            <button type="button" class="px-1 py-0.5 hover:bg-gray-100 increase-quantity" data-id="{{ $item->id }}">
                                 <i class="fas fa-plus h-3 w-3"></i>
                             </button>
                         </div>
@@ -501,7 +501,7 @@
 <div class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" id="mini-cart-overlay"></div>
 
 <!-- Floating cart button -->
-<button class="fixed bottom-4 right-4 bg-orange-500 text-white p-3 rounded-full shadow-lg md:hidden z-30" id="floating-cart-button">
+<button type="button" class="fixed bottom-4 right-4 bg-orange-500 text-white p-3 rounded-full shadow-lg md:hidden z-30" id="floating-cart-button">
     <i class="fas fa-shopping-cart h-6 w-6"></i>
 </button>
 @endsection
