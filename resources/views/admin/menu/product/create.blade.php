@@ -538,28 +538,27 @@
                             <!-- Cột phải: Giá trị thuộc tính (chiếm 2 phần) -->
                             <div class="md:col-span-2">
                                 <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
-                                <div id="attribute_values_container_0" class="space-y-2">
+                                <div id="attribute_values_container_0" class="space-y-3">
                                     <!-- Default attribute value -->
-                                    <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
-                                         <div class="grid grid-cols-2 gap-2">
-                                             <div>
-                                                 <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
-                                                 <input type="text" id="attribute_value_0_0" name="attributes[0][values][0][value]" placeholder="VD: Nhỏ"
-                                     class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.value') }}">
-                                                 @error('attributes.0.values.0.value')
-                                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                                 @enderror
-                                             </div>
-                                             <div>
-                                                 <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                                 <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
-                                     class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
-                                                 @error('attributes.0.values.0.price_adjustment')
-                                                     <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                                 @enderror
-                                             </div>
-                                         </div>
-                                     </div>
+                                    <div class="attribute-value-item grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                        <div>
+                                            <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                                            <input type="text" id="attribute_value_0_0" name="attributes[0][values][0][value]" placeholder="VD: Nhỏ"
+                                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.value') }}">
+                                            @error('attributes.0.values.0.value')
+                                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div>
+                                            <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                                            <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
+                                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
+                                            @error('attributes.0.values.0.price_adjustment')
+                                                <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
+                                    </div>
                                 </div>
                                 <button type="button" class="add-attribute-value-btn mt-2 text-xs text-blue-600 hover:text-blue-800" data-index="0">+ Thêm giá trị</button>
                             </div>
@@ -616,6 +615,9 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Hidden input for selected toppings -->
+            <input type="hidden" id="selected_toppings" name="selected_toppings" value="[]">
         </section>
 
         <!-- Toppings Modal - Simplified -->
@@ -1221,46 +1223,77 @@
         if (addProductForm && !addProductForm.hasAttribute('data-listener-added')) {
             addProductForm.setAttribute('data-listener-added', 'true');
             addProductForm.addEventListener('submit', function(e) {
-            const selectedFormat = document.querySelector('input[name="ingredients_format"]:checked').value;
-            
-            if (selectedFormat === 'simple') {
-                // Convert ingredients textarea to JSON array
-                const ingredientsText = document.getElementById('ingredients').value;
-                const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
-                const ingredientsInput = document.createElement('input');
-                ingredientsInput.type = 'hidden';
-                ingredientsInput.name = 'ingredients_json';
-                ingredientsInput.value = JSON.stringify(ingredientsArray);
-                addProductForm.appendChild(ingredientsInput);
-            } else {
-                // Convert structured ingredients to JSON object
-                const categories = document.querySelectorAll('.ingredient-category');
-                const structuredIngredients = {};
+                console.log('Form submission started');
+                const selectedFormatElement = document.querySelector('input[name="ingredients_format"]:checked');
+                if (!selectedFormatElement) {
+                    console.error('No ingredients format selected');
+                    return;
+                }
+                const selectedFormat = selectedFormatElement.value;
+                console.log('Selected format:', selectedFormat);
                 
-                categories.forEach(category => {
-                    const categoryName = category.querySelector('.category-name').value.trim();
-                    const categoryItems = category.querySelector('.category-items').value
-                        .split('\n')
-                        .map(item => item.trim())
-                        .filter(item => item);
+                if (selectedFormat === 'simple') {
+                    // Convert ingredients textarea to JSON array
+                    const ingredientsText = document.getElementById('ingredients').value;
+                    const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+                    const ingredientsInput = document.createElement('input');
+                    ingredientsInput.type = 'hidden';
+                    ingredientsInput.name = 'ingredients_json';
+                    ingredientsInput.value = JSON.stringify(ingredientsArray);
+                    addProductForm.appendChild(ingredientsInput);
+                } else {
+                    // Convert structured ingredients to JSON object
+                    const categories = document.querySelectorAll('.ingredient-category');
+                    const structuredIngredients = {};
                     
-                    if (categoryName && categoryItems.length > 0) {
-                        structuredIngredients[categoryName] = categoryItems;
-                    }
+                    categories.forEach(category => {
+                        const categoryName = category.querySelector('.category-name').value.trim();
+                        const categoryItems = category.querySelector('.category-items').value
+                            .split('\n')
+                            .map(item => item.trim())
+                            .filter(item => item);
+                        
+                        if (categoryName && categoryItems.length > 0) {
+                            structuredIngredients[categoryName] = categoryItems;
+                        }
+                    });
+                    
+                    const structuredInput = document.createElement('input');
+                    structuredInput.type = 'hidden';
+                    structuredInput.name = 'ingredients_json';
+                    structuredInput.value = JSON.stringify(structuredIngredients);
+                    addProductForm.appendChild(structuredInput);
+                }
+
+                // Ensure description is always sent (even if empty)
+                const description = document.getElementById('description');
+                if (!description.value) description.value = '';
+                
+                // Debug: Log form data before submission
+                const formData = new FormData(this);
+                console.log('Form data before submission:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key + ':', value);
+                }
+                
+                // Debug: Check attributes data
+                const attributeInputs = this.querySelectorAll('input[name^="attributes["]');
+                console.log('Attribute inputs found:', attributeInputs.length);
+                attributeInputs.forEach((input, index) => {
+                    console.log(`Attribute ${index}:`, input.name, '=', input.value);
                 });
                 
-                const structuredInput = document.createElement('input');
-                structuredInput.type = 'hidden';
-                structuredInput.name = 'ingredients_structured';
-                structuredInput.value = JSON.stringify(structuredIngredients);
-                addProductForm.appendChild(structuredInput);
-            }
-
-            // Ensure description is always sent (even if empty)
-            const description = document.getElementById('description');
-            if (!description.value) description.value = '';
-        });
-
+                // Debug: Check toppings data
+                const selectedToppingsInput = document.getElementById('selected_toppings');
+                console.log('Selected toppings input:', selectedToppingsInput ? selectedToppingsInput.value : 'Not found');
+                if (selectedToppingsInput && selectedToppingsInput.value) {
+                    try {
+                        const selectedToppings = JSON.parse(selectedToppingsInput.value);
+                        console.log('Selected toppings:', selectedToppings);
+                    } catch (e) {
+                        console.error('Error parsing selected toppings:', e);
+                    }
+                }
             });
         }
 
@@ -1270,7 +1303,7 @@
 
         function toggleReleaseDate() {
             const selectedStatus = document.querySelector('input[name="status"]:checked');
-            if (selectedStatus) {
+            if (selectedStatus && releaseAtContainer) {
                 if (selectedStatus.value === 'coming_soon') {
                     releaseAtContainer.classList.remove('hidden');
                 } else {
@@ -1279,14 +1312,14 @@
             }
         }
 
-        if (statusInputs.length > 0) {
+        if (statusInputs.length > 0 && releaseAtContainer) {
             statusInputs.forEach(input => {
                 input.addEventListener('change', toggleReleaseDate);
             });
+            
+            // Initial check
+            toggleReleaseDate();
         }
-
-        // Initial check
-        toggleReleaseDate();
 
         // Function to reindex attribute values after deletion
         function reindexAttributeValues(attributeGroup, groupIndex = null) {
@@ -1342,5 +1375,39 @@
 
 <!-- Topping Modal Script -->
 <script src="{{ asset('js/admin/topping-modal.js') }}"></script>
+
+<script>
+    // Khởi tạo ToppingModal
+    document.addEventListener('DOMContentLoaded', function() {
+        // Debug: Kiểm tra các element quan trọng
+        console.log('Checking elements:');
+        console.log('add-attribute-btn:', document.getElementById('add-attribute-btn'));
+        console.log('attributes-container:', document.getElementById('attributes-container'));
+        console.log('open-toppings-modal:', document.getElementById('open-toppings-modal'));
+        console.log('release_at_container:', document.getElementById('release_at_container'));
+        console.log('ingredients format radios:', document.querySelectorAll('input[name="ingredients_format"]').length);
+        
+        // Khởi tạo topping modal
+        try {
+            window.toppingModal = new ToppingModal();
+            
+            // Override confirmSelection để cập nhật count
+            const originalConfirmSelection = window.toppingModal.confirmSelection;
+            window.toppingModal.confirmSelection = function() {
+                originalConfirmSelection.call(this);
+                
+                // Cập nhật số lượng toppings đã chọn
+                const countElement = document.getElementById('selected-toppings-count');
+                if (countElement) {
+                    countElement.textContent = this.selectedToppings.size;
+                }
+            };
+            
+            console.log('ToppingModal initialized successfully');
+        } catch (error) {
+            console.error('Error initializing ToppingModal:', error);
+        }
+    });
+</script>
 
 @endsection

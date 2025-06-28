@@ -7,6 +7,37 @@
 @section('page-style-prd-edit')
     <link rel="stylesheet" href="{{ asset('css/admin/product.css') }}">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .ingredients-format {
+            transition: all 0.3s ease;
+        }
+        .ingredients-format.hidden {
+            display: none;
+        }
+        .ingredient-category {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+        }
+        .ingredient-category:hover {
+            border-color: #d1d5db;
+        }
+        .category-name:focus,
+        .category-items:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .remove-category:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+        #add-category:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+    </style>
 @endsection
 
 <main class="container">
@@ -87,36 +118,145 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">Nguyên liệu 
                             <span class="text-red-500">*</span>
                         </label>
-                    
-                        @if(!empty($product->ingredients))
+                        
+                        <!-- Toggle between simple and structured format -->
+                        <div class="mb-4">
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="ingredients_format" value="simple" class="form-radio" 
+                                        @php
+                                            $isStructured = false;
+                                            if (!empty($product->ingredients)) {
+                                                $ingredientsData = $product->ingredients;
+                                                
+                                                // If it's a JSON string, decode it
+                                                if (is_string($ingredientsData)) {
+                                                    $decoded = json_decode($ingredientsData, true);
+                                                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                                        $ingredientsData = $decoded;
+                                                    }
+                                                }
+                                                
+                                                // Check if it's structured (object with string keys)
+                                                if (is_array($ingredientsData)) {
+                                                    foreach ($ingredientsData as $key => $value) {
+                                                        if (!is_numeric($key) && is_array($value)) {
+                                                            $isStructured = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        @endphp
+                                        {{ !$isStructured ? 'checked' : '' }}>
+                                    <span class="ml-2">Định dạng đơn giản</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="ingredients_format" value="structured" class="form-radio" {{ $isStructured ? 'checked' : '' }}>
+                                    <span class="ml-2">Định dạng có cấu trúc</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Simple format -->
+                        <div id="simple-ingredients" class="ingredients-format {{ $isStructured ? 'hidden' : '' }}">
                             @php
-                                // Model accessor đã đảm bảo ingredients luôn là array
-                                $ingredients = $product->ingredients;
-                                
-                                // Chuyển tất cả nguyên liệu thành chuỗi để hiển thị trong một textarea
-                                $allIngredients = [];
-                                foreach ($ingredients as $category => $items) {
-                                    if (is_array($items)) {
-                                        $allIngredients[] = implode(', ', (array)$items);
-                                    } else {
-                                        $allIngredients[] = $items;
+                                $ingredientsText = '';
+                                if (!empty($product->ingredients)) {
+                                    // If ingredients is a JSON string, decode it first
+                                    if (is_string($product->ingredients)) {
+                                        $decoded = json_decode($product->ingredients, true);
+                                        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                            // Check if it's a simple array or structured object
+                                            if (array_keys($decoded) === range(0, count($decoded) - 1)) {
+                                                // Simple array - join with commas
+                                                $ingredientsText = implode(', ', $decoded);
+                                            } else {
+                                                // Structured object - flatten all values
+                                                $allIngredients = [];
+                                                foreach ($decoded as $category => $items) {
+                                                    if (is_array($items)) {
+                                                        $allIngredients = array_merge($allIngredients, $items);
+                                                    } else {
+                                                        $allIngredients[] = $items;
+                                                    }
+                                                }
+                                                $ingredientsText = implode(', ', $allIngredients);
+                                            }
+                                        } else {
+                                            // Not valid JSON, treat as plain text
+                                            $ingredientsText = $product->ingredients;
+                                        }
+                                    } elseif (is_array($product->ingredients)) {
+                                        // Already an array
+                                        $allIngredients = [];
+                                        foreach ($product->ingredients as $category => $items) {
+                                            if (is_array($items)) {
+                                                $allIngredients = array_merge($allIngredients, $items);
+                                            } else {
+                                                $allIngredients[] = $items;
+                                            }
+                                        }
+                                        $ingredientsText = implode(', ', $allIngredients);
                                     }
                                 }
-                                $ingredientsText = implode(', ', $allIngredients);
                             @endphp
-                    
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6">{{ $ingredientsText }}</textarea>
+                            <textarea id="ingredients" name="ingredients" rows="3"
+                                placeholder="Nhập danh sách nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, rau xà lách, ớt chuông)"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients', $ingredientsText) }}</textarea>
+                            <p class="text-sm text-gray-500 mt-1">Ví dụ: thịt bò, rau xà lách, cà chua</p>
+                        </div>
+                        
+                        <!-- Structured format -->
+                        <div id="structured-ingredients" class="ingredients-format {{ !$isStructured ? 'hidden' : '' }}">
+                            <div class="space-y-4">
+                                @if($isStructured && !empty($product->ingredients))
+                                    @php
+                                        $structuredData = $product->ingredients;
+                                        if (is_string($structuredData)) {
+                                            $decoded = json_decode($structuredData, true);
+                                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                                $structuredData = $decoded;
+                                            }
+                                        }
+                                    @endphp
+                                    @foreach($structuredData as $category => $items)
+                                        @if(!is_numeric($category) && is_array($items))
+                                            <div class="ingredient-category">
+                                                <div class="flex items-center space-x-2 mb-2">
+                                                    <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                                                           value="{{ $category }}"
+                                                           class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                                    <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                                                </div>
+                                                <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                                                          class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                                                          rows="3">{{ implode("\n", $items) }}</textarea>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <div class="ingredient-category">
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                                                   class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                            <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                                        </div>
+                                        <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                                                  class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                                                  rows="3"></textarea>
+                                    </div>
+                                @endif
                             </div>
-                        @else
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6" placeholder="Nhập nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, hành tây, ớt chuông)"></textarea>
-                            </div>
-                        @endif
-                    
+                            <button type="button" id="add-category" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                                Thêm danh mục
+                            </button>
+                            <p class="text-sm text-gray-500 mt-2">Ví dụ: Danh mục "thịt" có thể chứa "thịt bò", "thịt heo"</p>
+                        </div>
+                        
                         {{-- Hidden input để giữ dữ liệu nguyên liệu gốc --}}
-        <input type="hidden" name="ingredients_raw" value="{{ is_array($product->ingredients) ? json_encode($product->ingredients) : $product->ingredients }}">
-                    
+                        <input type="hidden" name="ingredients_raw" value="{{ is_array($product->ingredients) ? json_encode($product->ingredients) : $product->ingredients }}">
+                        
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -329,6 +469,7 @@
                                         $attributesData[] = [
                                             'name' => $attrName,
                                             'values' => [[
+                                                'id' => $detail->variantValue->id,
                                                 'value' => $attrValue,
                                                 'price_adjustment' => $attrPrice,
                                                 'price_type' => $attrPriceType
@@ -345,6 +486,7 @@
                                         }
                                         if (!$valueExists) {
                                             $attributesData[$attrIndex]['values'][] = [
+                                                'id' => $detail->variantValue->id,
                                                 'value' => $attrValue,
                                                 'price_adjustment' => $attrPrice,
                                                 'price_type' => $attrPriceType
@@ -386,7 +528,11 @@
                                         @endphp
                                         
                                         @foreach ($values as $valueIndex => $value)
-                                            <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                            <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                                <!-- Hidden input for VariantValue ID -->
+                                                @if(isset($value['id']))
+                                                    <input type="hidden" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][id]" value="{{ $value['id'] }}">
+                                                @endif
                                                 <div class="grid grid-cols-2 gap-2">
                                                     <div>
                                                         <label for="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -933,13 +1079,106 @@
             return group;
         }
 
+        // Function to reindex all attribute groups after deletion
+        function reindexAttributeGroups() {
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            
+            attributeGroups.forEach((group, groupIndex) => {
+                // Update group title
+                const title = group.querySelector('h3');
+                if (title) {
+                    title.textContent = `Thuộc tính ${groupIndex + 1}`;
+                }
+                
+                // Update attribute name input
+                const nameInput = group.querySelector('input[name*="[name]"]');
+                if (nameInput) {
+                    const newName = `attributes[${groupIndex}][name]`;
+                    const newId = `attribute_name_${groupIndex}`;
+                    nameInput.setAttribute('name', newName);
+                    nameInput.setAttribute('id', newId);
+                    
+                    // Update corresponding label
+                    const label = group.querySelector(`label[for*="attribute_name"]`);
+                    if (label) {
+                        label.setAttribute('for', newId);
+                    }
+                }
+                
+                // Update values container ID
+                const valuesContainer = group.querySelector('[id*="attribute_values_container"]');
+                if (valuesContainer) {
+                    valuesContainer.setAttribute('id', `attribute_values_container_${groupIndex}`);
+                }
+                
+                // Update add value button data-index
+                const addValueBtn = group.querySelector('.add-attribute-value-btn');
+                if (addValueBtn) {
+                    addValueBtn.setAttribute('data-index', groupIndex);
+                }
+                
+                // Reindex all attribute values in this group
+                reindexAttributeValues(group, groupIndex);
+            });
+        }
+        
+        // Function to reindex attribute values after deletion
+        function reindexAttributeValues(attributeGroup, groupIndex = null) {
+            if (groupIndex === null) {
+                groupIndex = Array.from(attributeGroup.parentNode.children).indexOf(attributeGroup);
+            }
+            
+            const valueContainers = attributeGroup.querySelectorAll('.attribute-value-item');
+            
+            valueContainers.forEach((container, valueIndex) => {
+                // Update all input names and IDs
+                const inputs = container.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    
+                    if (name) {
+                        // Update both group index and value index in the name attribute
+                        const newName = name.replace(/attributes\[\d+\]\[values\]\[\d+\]/, `attributes[${groupIndex}][values][${valueIndex}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    
+                    if (id) {
+                        // Update both group index and value index in the id attribute
+                        const newId = id.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        input.setAttribute('id', newId);
+                    }
+                });
+                
+                // Update labels
+                const labels = container.querySelectorAll('label');
+                labels.forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    if (forAttr) {
+                        const newFor = forAttr.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        label.setAttribute('for', newFor);
+                    }
+                });
+                
+                // Update error message divs
+                const errorDivs = container.querySelectorAll('.error-message');
+                errorDivs.forEach(div => {
+                    const id = div.getAttribute('id');
+                    if (id) {
+                        const newId = id.replace(/_(\d+)_values_(\d+)_/, `_${groupIndex}_values_${valueIndex}_`);
+                        div.setAttribute('id', newId);
+                    }
+                });
+            });
+        }
+        
         function addAttributeValue(attributeIndex) {
             const valuesContainer = document.getElementById(`attribute_values_container_${attributeIndex}`);
             const existingValues = valuesContainer.querySelectorAll('.grid');
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
+            valueDiv.classList.add('attribute-value-item', 'grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
                 <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
@@ -959,7 +1198,10 @@
             // Add event listener for removing this value
             const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
             removeBtn.addEventListener('click', () => {
-                valueDiv.remove();
+                const valueContainer = removeBtn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    valueContainer.remove();
+                }
             });
             
             valuesContainer.appendChild(valueDiv);
@@ -970,13 +1212,8 @@
             // Remove attribute group
             if (e.target.classList.contains('remove-attribute-btn') || e.target.classList.contains('remove-attribute-group-btn')) {
                 e.target.closest('.attribute-group').remove();
-                // Update attribute group numbers
-                document.querySelectorAll('.attribute-group').forEach((group, index) => {
-                    const title = group.querySelector('h3');
-                    if (title) {
-                        title.textContent = `Thuộc tính ${index + 1}`;
-                    }
-                });
+                // Reindex all remaining attribute groups
+                reindexAttributeGroups();
             }
             
             // Add attribute value
@@ -990,9 +1227,13 @@
             
             // Remove attribute value
             if (e.target.classList.contains('remove-attribute-value-btn') || e.target.closest('.remove-attribute-value-btn')) {
-                const valueRow = e.target.closest('.grid');
-                if (valueRow) {
-                    valueRow.remove();
+                // Find the parent div that contains the value inputs
+                const valueContainer = e.target.closest('.attribute-value-item');
+                if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.attribute-group');
+                    valueContainer.remove();
+                    // Reindex the remaining attribute values in this group
+                    reindexAttributeValues(attributeGroup);
                 }
             }
             
@@ -1018,7 +1259,10 @@
         // Add event listeners to existing attribute value remove buttons
         document.querySelectorAll('.remove-attribute-value-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                btn.closest('.grid').remove();
+                const valueContainer = btn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    valueContainer.remove();
+                }
             });
         });
 
@@ -1162,40 +1406,118 @@
             }
         });
 
+        // Ingredients Format Toggle Logic
+        const formatRadios = document.querySelectorAll('input[name="ingredients_format"]');
+        const simpleFormat = document.getElementById('simple-ingredients');
+        const structuredFormat = document.getElementById('structured-ingredients');
+        const categoryContainer = document.querySelector('#structured-ingredients .space-y-4');
+        
+        // Toggle between simple and structured format
+        formatRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'simple') {
+                    simpleFormat.classList.remove('hidden');
+                    structuredFormat.classList.add('hidden');
+                } else {
+                    simpleFormat.classList.add('hidden');
+                    structuredFormat.classList.remove('hidden');
+                }
+            });
+        });
+        
+        // Add category functionality
+        document.getElementById('add-category').addEventListener('click', function() {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'ingredient-category';
+            categoryDiv.innerHTML = `
+                <div class="flex items-center space-x-2 mb-2">
+                    <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                           class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                </div>
+                <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                          class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                          rows="3"></textarea>
+            `;
+            categoryContainer.appendChild(categoryDiv);
+        });
+        
+        // Remove category functionality (event delegation)
+        categoryContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-category')) {
+                e.target.closest('.ingredient-category').remove();
+            }
+        });
+
         // Form Submission Logic
         const editProductForm = document.getElementById('edit-product-form');
         editProductForm.addEventListener('submit', function(e) {
-            // Convert ingredients textarea to JSON array
-            const ingredientsText = document.getElementById('ingredients').value;
-            const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+            // Process ingredients based on selected format
+            const selectedFormat = document.querySelector('input[name="ingredients_format"]:checked').value;
+            let ingredientsData;
+            
+            if (selectedFormat === 'simple') {
+                // Simple format: convert comma-separated text to array
+                const ingredientsText = document.getElementById('ingredients').value;
+                ingredientsData = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+            } else {
+                // Structured format: convert categories to object
+                ingredientsData = {};
+                const categories = document.querySelectorAll('.ingredient-category');
+                categories.forEach(category => {
+                    const categoryName = category.querySelector('.category-name').value.trim();
+                    const categoryItems = category.querySelector('.category-items').value
+                        .split('\n')
+                        .map(item => item.trim())
+                        .filter(item => item);
+                    
+                    if (categoryName && categoryItems.length > 0) {
+                        ingredientsData[categoryName] = categoryItems;
+                    }
+                });
+            }
+            
+            // Create hidden input for processed ingredients
             const ingredientsInput = document.createElement('input');
             ingredientsInput.type = 'hidden';
             ingredientsInput.name = 'ingredients_json';
-            ingredientsInput.value = JSON.stringify(ingredientsArray);
+            ingredientsInput.value = JSON.stringify(ingredientsData);
             editProductForm.appendChild(ingredientsInput);
 
             // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
             
-            // Collect variant stock data
+            // Collect and submit variant stock data
             const variantStockInputs = document.querySelectorAll('input[name^="variant_stocks["]');
             const variantStocks = {};
+            
+            // Remove any existing hidden variant stock inputs
+            const existingHiddenInputs = editProductForm.querySelectorAll('input[name^="variant_stocks["][type="hidden"]');
+            existingHiddenInputs.forEach(input => input.remove());
+            
             variantStockInputs.forEach(input => {
-                if (input.value && input.value.trim() !== '') {
-                    const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
-                    if (matches) {
-                        const variantId = matches[1];
-                        const branchId = matches[2];
-                        if (!variantStocks[variantId]) {
-                            variantStocks[variantId] = {};
-                        }
-                        variantStocks[variantId][branchId] = parseInt(input.value) || 0;
+                const value = input.value && input.value.trim() !== '' ? parseInt(input.value) || 0 : 0;
+                const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
+                if (matches) {
+                    const variantId = matches[1];
+                    const branchId = matches[2];
+                    
+                    // Create hidden input for each variant stock
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = `variant_stocks[${variantId}][${branchId}]`;
+                    hiddenInput.value = value;
+                    editProductForm.appendChild(hiddenInput);
+                    
+                    if (!variantStocks[variantId]) {
+                        variantStocks[variantId] = {};
                     }
+                    variantStocks[variantId][branchId] = value;
                 }
             });
             
-            console.log('Variant Stocks:', variantStocks);
+            console.log('Variant Stocks being submitted:', variantStocks);
         });
 
         // Handle status and release date visibility
