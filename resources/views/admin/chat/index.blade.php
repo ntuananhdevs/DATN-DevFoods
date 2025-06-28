@@ -53,7 +53,7 @@
                                 </div>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span
-                                        class="chat-item-time text-xs text-gray-400">{{ $conv->updated_at->format('H:i') }}</span>
+                                        class="chat-item-time">{{ $conv->messages->last()?->created_at ? $conv->messages->last()->created_at->format('H:i') : '' }}</span>
                                 </div>
                             </div>
                             @if ($conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() > 0)
