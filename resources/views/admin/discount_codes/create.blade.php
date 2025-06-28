@@ -350,14 +350,14 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu</label>
+                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu <span class="text-danger">*</span></label>
                             <div class="flex gap-2">
                                 <select name="min_requirement_type" id="min_requirement_type" class="form-control w-1/2">
-                                    <option value="" {{ old('min_requirement_type') == '' ? 'selected' : '' }}>Không áp dụng</option>
+                                    <option value="" {{ old('min_requirement_type') == '' ? 'selected' : '' }}>Chọn loại điều kiện</option>
                                     <option value="order_amount" {{ old('min_requirement_type') == 'order_amount' ? 'selected' : '' }}>Đơn hàng tối thiểu</option>
                                     <option value="product_price" {{ old('min_requirement_type') == 'product_price' ? 'selected' : '' }}>Giá sản phẩm tối thiểu</option>
                                 </select>
-                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0" value="{{ old('min_requirement_value') }}" placeholder="Nhập giá trị...">
+                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0.01" value="{{ old('min_requirement_value') }}" placeholder="Nhập giá trị...">
                             </div>
                             @error('min_requirement_type')
                                 <div class="text-danger mt-1">{{ $message }}</div>
@@ -368,9 +368,8 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_discount_amount" class="form-label">Số tiền giảm tối đa</label>
-                            <input type="number" name="max_discount_amount" id="max_discount_amount" class="form-control" step="0.01" min="0" value="{{ old('max_discount_amount') }}">
-                            <small class="text-muted">Áp dụng khi loại giảm giá là phần trăm</small>
+                            <label for="max_discount_amount" class="form-label">Số tiền giảm tối đa <span class="text-danger" id="max_discount_required" style="display: none;">*</span></label>
+                            <input type="number" name="max_discount_amount" class="form-control" step="0.01" min="0.01" value="{{ old('max_discount_amount') }}">
                             @error('max_discount_amount')
                                 <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
@@ -405,7 +404,7 @@
                             @enderror
                         </div>
 
-                        <div class="form-group mb-3" id="branch_selection" style="{{ old('applicable_scope') == 'specific_branches' ? '' : 'display: none;' }}">
+                        <div class="form-group mb-3" id="branch_selection" @if(old('applicable_scope') != 'specific_branches') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn chi nhánh</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -431,6 +430,9 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-branches">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('branch_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
                         
                         <div class="form-group mb-3">
@@ -462,7 +464,7 @@
                             @enderror
                         </div>
 
-                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_products' ? '' : 'display: none;' }}">
+                        <div id="products_selection" class="form-group mb-3" @if(old('applicable_items') != 'specific_products') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -494,9 +496,12 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-products">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('product_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div id="categories_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_categories' ? '' : 'display: none;' }}">
+                        <div id="categories_selection" class="form-group mb-3" @if(old('applicable_items') != 'specific_categories') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn danh mục</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -520,9 +525,12 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-categories">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('category_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div id="combos_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'combos_only' ? '' : 'display: none;' }}">
+                        <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items') != 'combos_only') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn combo</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -546,9 +554,12 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('combo_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div id="variants_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_variants' ? '' : 'display: none;' }}">
+                        <div id="variants_selection" class="form-group mb-3" @if(old('applicable_items') != 'specific_variants') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn biến thể sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -571,8 +582,11 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-variants">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('variant_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
-                        </div>
+                    </div>
 
                     <!-- Usage Settings -->
                     <div class="form-section">
@@ -582,7 +596,7 @@
                                 <circle cx="9" cy="7" r="4"></circle>
                                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                                </svg>
+                            </svg>
                             Cài đặt sử dụng
                         </h3>
                         
@@ -634,7 +648,7 @@
                             @error('applicable_ranks')
                                 <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
-                    </div>
+                        </div>
                         
                         <div class="form-group mb-3">
                             <label for="usage_type" class="form-label">Loại sử dụng</label>
@@ -642,7 +656,6 @@
                                 <option value="public" {{ old('usage_type') == 'public' ? 'selected' : '' }}>Công khai</option>
                                 <option value="personal" {{ old('usage_type') == 'personal' ? 'selected' : '' }}>Riêng tư</option>
                             </select>
-                            <small class="text-muted">Mã riêng tư chỉ dành cho người dùng được chỉ định</small>
                             @error('usage_type')
                                 <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
@@ -751,20 +764,23 @@
                                     </div>
                                 </div>
                             </div>
+                            @error('assigned_users')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_total_usage" class="form-label">Số lần sử dụng tối đa</label>
-                            <input type="number" name="max_total_usage" id="max_total_usage" class="form-control" min="0" value="{{ old('max_total_usage') }}">
-                            <small class="text-muted">Để trống nếu không giới hạn</small>
+                            <label for="max_total_usage" class="form-label">Số lần sử dụng tối đa <span class="text-danger">*</span></label>
+                            <input type="number" name="max_total_usage" id="max_total_usage" class="form-control" min="1" value="{{ old('max_total_usage') }}" placeholder="Nhập số lần sử dụng...">
                             @error('max_total_usage')
                                 <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_usage_per_user" class="form-label">Số lần sử dụng tối đa mỗi người dùng</label>
-                            <input type="number" name="max_usage_per_user" id="max_usage_per_user" class="form-control" min="1" value="{{ old('max_usage_per_user', 1) }}">
+                            <label for="max_usage_per_user" class="form-label">Số lần sử dụng tối đa mỗi người dùng <span class="text-danger">*</span></label>
+                            <input type="number" name="max_usage_per_user" id="max_usage_per_user" class="form-control" min="1" value="{{ old('max_usage_per_user', 1) }}" placeholder="Nhập số lần sử dụng...">
+                            <small class="text-muted">Số lần tối đa mỗi người dùng có thể sử dụng mã giảm giá</small>
                             @error('max_usage_per_user')
                                 <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror

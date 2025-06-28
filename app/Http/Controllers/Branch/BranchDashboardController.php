@@ -13,8 +13,12 @@ class BranchDashboardController extends Controller
 {
     public function index()
     {
-        $manager = Auth::user();
-        $branch = Branch::where('manager_user_id', $manager->id)->first();
+        $manager = Auth::guard('manager')->user();
+        $branch = $manager ? $manager->branch : null;
+
+        if (!$branch) {
+            abort(403, 'Bạn chưa được gán chi nhánh.');
+        }
 
         // Thống kê
         $totalRevenue = Order::where('branch_id', $branch->id)->sum('total_amount');
@@ -37,7 +41,6 @@ class BranchDashboardController extends Controller
             'totalRevenue',
             'orderCount',
             'productCount',
-
             'topProducts'
         ));
     }

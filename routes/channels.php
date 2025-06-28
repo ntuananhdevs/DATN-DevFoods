@@ -29,12 +29,8 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Super admin can access all conversations
-    if ($user->role === 'spadmin') {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'role' => $user->role,
-        ];
+    if ($user->role === 'admin') {
+        return true;
     }
 
     // Branch users can access conversations assigned to their branch
@@ -61,7 +57,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
 
 // Admin conversations channel
 Broadcast::channel('admin.conversations', function ($user) {
-    return in_array($user->role, ['admin', 'super_admin', 'spadmin']) ? [
+    return in_array($user->role, ['admin']) ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,

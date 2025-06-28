@@ -1277,6 +1277,14 @@ class DiscountCodeController extends Controller
             'discountCodeId' => $discountCodeId
         ]);
         
+        // Validate rank IDs
+        if (empty($rankIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng chọn ít nhất một hạng thành viên.'
+            ], 422);
+        }
+        
         // Get users with selected ranks
         $users = User::whereIn('user_rank_id', $rankIds)
             ->whereDoesntHave('roles', function($query) {
@@ -1285,12 +1293,18 @@ class DiscountCodeController extends Controller
             ->orderBy('full_name')
             ->get();
             
-        // Get assigned users if discount code ID is provided
+        // Get assigned users if discount code ID is provided and valid
         $assignedUsers = [];
-        if ($discountCodeId) {
-            $assignedUsers = UserDiscountCode::where('discount_code_id', $discountCodeId)
-                ->pluck('user_id')
-                ->toArray();
+        if ($discountCodeId && is_numeric($discountCodeId)) {
+            // Check if discount code exists
+            $discountCodeExists = DiscountCode::where('id', $discountCodeId)->exists();
+            if ($discountCodeExists) {
+                $assignedUsers = UserDiscountCode::where('discount_code_id', $discountCodeId)
+                    ->pluck('user_id')
+                    ->toArray();
+            } else {
+                Log::warning("Discount code ID {$discountCodeId} does not exist");
+            }
         }
         
         // Prepare the response data

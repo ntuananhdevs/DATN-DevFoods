@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Auth;
+namespace App\Http\Controllers\Branch\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -16,7 +16,7 @@ class AuthController extends Controller
     // Hiển thị form đăng nhập
     public function showLoginForm()
     {
-        return view('admin.auth.login');
+        return view('branch.auth.login');
     }
 
     // Xử lý đăng nhập
@@ -47,28 +47,41 @@ class AuthController extends Controller
             return back()->with('error', 'Email hoặc mật khẩu không chính xác')->withInput();
         }
 
-        // Chỉ cho phép admin đăng nhập vào admin
-        if ($user->hasRole('admin')) {
-            Auth::guard('admin')->login($user, $request->boolean('remember'));
-            RateLimiter::clear($key);
-            $request->session()->regenerate();
-            return redirect()->route('admin.dashboard');
+        // Kiểm tra user có role manager không
+        if (!$user->hasRole('manager')) {
+            RateLimiter::hit($key, 60);
+            return back()->with('error', 'Bạn không có quyền truy cập vào hệ thống chi nhánh')->withInput();
         }
 
-        RateLimiter::hit($key, 60);
+        // Kiểm tra user có được gán branch không
+        if (!$user->branch) {
+            RateLimiter::hit($key, 60);
+            return back()->with('error', 'Tài khoản chưa được gán chi nhánh. Vui lòng liên hệ quản trị viên.')->withInput();
+        }
 
-        return back()->with('error', 'Bạn không có quyền truy cập vào hệ thống quản trị')->withInput();
+        // Kiểm tra branch có active không
+        if (!$user->branch->active) {
+            RateLimiter::hit($key, 60);
+            return back()->with('error', 'Chi nhánh của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.')->withInput();
+        }
+
+        // Đăng nhập thành công
+        Auth::guard('manager')->login($user, $request->boolean('remember'));
+        RateLimiter::clear($key);
+        $request->session()->regenerate();
+        
+        return redirect()->route('branch.dashboard');
     }
 
     // Xử lý đăng xuất
     public function logout(Request $request): RedirectResponse
     {
-        Auth::guard('admin')->logout();
+        Auth::guard('manager')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         session()->flash('success', 'Đăng xuất thành công.');
 
-        return redirect()->route('admin.login');
+        return redirect()->route('branch.login');
     }
-}
+} 

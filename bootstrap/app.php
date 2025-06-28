@@ -5,6 +5,7 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\Driver\DriverAuth;
 use App\Http\Middleware\Customer\CustomerAuth;
 use App\Http\Middleware\Customer\BranchMiddleware;
+use App\Http\Middleware\Branch\BranchAuth;
 use App\Http\Middleware\PhoneRequired;
 
 use App\Http\Middleware\VerifyTurnstile;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'driver.auth' => DriverAuth::class,
             'CustomerAuth' => CustomerAuth::class,
             'branch.check' => BranchMiddleware::class,
+            'branch.auth' => BranchAuth::class,
             'phone.required' => PhoneRequired::class,
             'turnstile' => VerifyTurnstile::class,
         ]);
