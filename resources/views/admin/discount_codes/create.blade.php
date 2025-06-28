@@ -241,6 +241,9 @@
     .dark .text-yellow-600 {
         color: hsl(var(--warning-foreground));
     }
+    .text-danger {
+        color: red;
+    }
 </style>
 
 <div class="fade-in flex flex-col gap-4 pb-4 p-4">
@@ -269,26 +272,6 @@
         </div>
     </div>
 
-    <!-- Error Messages -->
-    @if ($errors->any())
-        <div class="bg-red-100 dark:bg-red-950/30 border border-red-400 dark:border-red-900 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" role="alert">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="m15 9-6 6"></path>
-                    <path d="m9 9 6 6"></path>
-                </svg>
-                <div>
-                    <ul class="list-disc list-inside">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            </div>
-        </div>
-    @endif
-
     <!-- Form Card -->
     <div class="card border rounded-lg overflow-hidden bg-card">
         <div class="p-6 border-b">
@@ -312,18 +295,17 @@
                         
                         <div class="form-group mb-3">
                             <label for="code" class="form-label">Mã giảm giá <span class="text-danger">*</span></label>
-                            <input type="text" name="code" id="code" class="form-control" value="{{ old('code') }}" required>
-                            <small class="text-muted">Ví dụ: SUMMER2023, WELCOME10</small>
+                            <input type="text" name="code" id="code" class="form-control" value="{{ old('code') }}">
                             @error('code')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
                             <label for="name" class="form-label">Tên mã giảm giá <span class="text-danger">*</span></label>
-                            <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}" required>
+                            <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}">
                             @error('name')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -331,7 +313,7 @@
                             <label for="description" class="form-label">Mô tả</label>
                             <textarea name="description" id="description" class="form-control" rows="4">{{ old('description') }}</textarea>
                             @error('description')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -349,48 +331,47 @@
                         
                         <div class="form-group mb-3">
                             <label for="discount_type" class="form-label">Loại giảm giá <span class="text-danger">*</span></label>
-                            <select name="discount_type" id="discount_type" class="form-control" required>
+                            <select name="discount_type" id="discount_type" class="form-control">
                                 <option value="percentage" {{ old('discount_type') == 'percentage' ? 'selected' : '' }}>Phần trăm</option>
                                 <option value="fixed_amount" {{ old('discount_type') == 'fixed_amount' ? 'selected' : '' }}>Số tiền cố định</option>
                                 <option value="free_shipping" {{ old('discount_type') == 'free_shipping' ? 'selected' : '' }}>Miễn phí vận chuyển</option>
                             </select>
                             @error('discount_type')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
                             <label for="discount_value" class="form-label">Giá trị giảm giá <span class="text-danger">*</span></label>
-                            <input type="number" name="discount_value" id="discount_value" class="form-control" step="0.01" min="0" value="{{ old('discount_value') }}" required>
+                            <input type="number" name="discount_value" id="discount_value" class="form-control" step="0.01" min="0" value="{{ old('discount_value') }}">
                             @error('discount_value')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu</label>
+                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu <span class="text-danger">*</span></label>
                             <div class="flex gap-2">
                                 <select name="min_requirement_type" id="min_requirement_type" class="form-control w-1/2">
-                                    <option value="" {{ old('min_requirement_type') == '' ? 'selected' : '' }}>Không áp dụng</option>
+                                    <option value="" {{ old('min_requirement_type') == '' ? 'selected' : '' }}>Chọn loại điều kiện</option>
                                     <option value="order_amount" {{ old('min_requirement_type') == 'order_amount' ? 'selected' : '' }}>Đơn hàng tối thiểu</option>
                                     <option value="product_price" {{ old('min_requirement_type') == 'product_price' ? 'selected' : '' }}>Giá sản phẩm tối thiểu</option>
                                 </select>
-                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0" value="{{ old('min_requirement_value') }}" placeholder="Nhập giá trị...">
+                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0.01" value="{{ old('min_requirement_value') }}" placeholder="Nhập giá trị...">
                             </div>
                             @error('min_requirement_type')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                             @error('min_requirement_value')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_discount_amount" class="form-label">Số tiền giảm tối đa</label>
-                            <input type="number" name="max_discount_amount" id="max_discount_amount" class="form-control" step="0.01" min="0" value="{{ old('max_discount_amount') }}">
-                            <small class="text-muted">Áp dụng khi loại giảm giá là phần trăm</small>
+                            <label for="max_discount_amount" class="form-label">Số tiền giảm tối đa <span class="text-danger" id="max_discount_required" style="display: none;">*</span></label>
+                            <input type="number" name="max_discount_amount" class="form-control" step="0.01" min="0.01" value="{{ old('max_discount_amount') }}">
                             @error('max_discount_amount')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -419,11 +400,11 @@
                                 </div>
                             </div>
                             @error('applicable_scope')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <div class="form-group mb-3" id="branch_selection" style="{{ old('applicable_scope') == 'specific_branches' ? '' : 'display: none;' }}">
+                        <div class="form-group mb-3" id="branch_selection" @if(old('applicable_scope') != 'specific_branches') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn chi nhánh</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -449,6 +430,9 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-branches">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('branch_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
                         
                         <div class="form-group mb-3">
@@ -476,11 +460,11 @@
                                 </div>
                             </div>
                             @error('applicable_items')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <div id="products_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_products' ? '' : 'display: none;' }}">
+                        <div id="products_selection" class="form-group mb-3" @if(old('applicable_items') != 'specific_products') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -512,9 +496,12 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-products">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('product_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div id="categories_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_categories' ? '' : 'display: none;' }}">
+                        <div id="categories_selection" class="form-group mb-3" @if(old('applicable_items') != 'specific_categories') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn danh mục</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -538,9 +525,12 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-categories">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('category_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div id="combos_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'combos_only' ? '' : 'display: none;' }}">
+                        <div id="combos_selection" class="form-group mb-3" @if(old('applicable_items') != 'combos_only') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn combo</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 border rounded bg-white dark:bg-card">
@@ -564,9 +554,12 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-combos">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('combo_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <div id="variants_selection" class="form-group mb-3" style="{{ old('applicable_items') == 'specific_variants' ? '' : 'display: none;' }}">
+                        <div id="variants_selection" class="form-group mb-3" @if(old('applicable_items') != 'specific_variants') style="display: none;" @endif>
                             <label class="form-label font-medium">Chọn biến thể sản phẩm</label>
                             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                 <div class="relative mb-2">
@@ -589,8 +582,11 @@
                                     <span class="text-sm text-red-600 cursor-pointer unselect-all-variants">Bỏ chọn tất cả</span>
                                 </div>
                             </div>
+                            @error('variant_ids')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
-                        </div>
+                    </div>
 
                     <!-- Usage Settings -->
                     <div class="form-section">
@@ -600,7 +596,7 @@
                                 <circle cx="9" cy="7" r="4"></circle>
                                 <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
                                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                                                </svg>
+                            </svg>
                             Cài đặt sử dụng
                         </h3>
                         
@@ -650,9 +646,9 @@
                                 </div>
                             </div>
                             @error('applicable_ranks')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
-                    </div>
+                        </div>
                         
                         <div class="form-group mb-3">
                             <label for="usage_type" class="form-label">Loại sử dụng</label>
@@ -660,9 +656,8 @@
                                 <option value="public" {{ old('usage_type') == 'public' ? 'selected' : '' }}>Công khai</option>
                                 <option value="personal" {{ old('usage_type') == 'personal' ? 'selected' : '' }}>Riêng tư</option>
                             </select>
-                            <small class="text-muted">Mã riêng tư chỉ dành cho người dùng được chỉ định</small>
                             @error('usage_type')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -769,22 +764,25 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label for="max_total_usage" class="form-label">Số lần sử dụng tối đa</label>
-                            <input type="number" name="max_total_usage" id="max_total_usage" class="form-control" min="0" value="{{ old('max_total_usage') }}">
-                            <small class="text-muted">Để trống nếu không giới hạn</small>
-                            @error('max_total_usage')
-                                <div class="text-danger">{{ $message }}</div>
+                            @error('assigned_users')
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_usage_per_user" class="form-label">Số lần sử dụng tối đa mỗi người dùng</label>
-                            <input type="number" name="max_usage_per_user" id="max_usage_per_user" class="form-control" min="1" value="{{ old('max_usage_per_user', 1) }}">
+                            <label for="max_total_usage" class="form-label">Số lần sử dụng tối đa <span class="text-danger">*</span></label>
+                            <input type="number" name="max_total_usage" id="max_total_usage" class="form-control" min="1" value="{{ old('max_total_usage') }}" placeholder="Nhập số lần sử dụng...">
+                            @error('max_total_usage')
+                                <div class="text-danger mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="max_usage_per_user" class="form-label">Số lần sử dụng tối đa mỗi người dùng <span class="text-danger">*</span></label>
+                            <input type="number" name="max_usage_per_user" id="max_usage_per_user" class="form-control" min="1" value="{{ old('max_usage_per_user', 1) }}" placeholder="Nhập số lần sử dụng...">
+                            <small class="text-muted">Số lần tối đa mỗi người dùng có thể sử dụng mã giảm giá</small>
                             @error('max_usage_per_user')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -803,19 +801,19 @@
                         
                         <div class="form-group mb-3">
                             <label for="start_date" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
-                            <input type="datetime-local" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', now()->format('Y-m-d\TH:i')) }}" required>
+                            <input type="datetime-local" name="start_date" id="start_date" class="form-control" value="{{ old('start_date', now()->format('Y-m-d\TH:i')) }}">
                             <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('start_date')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
                             <label for="end_date" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
-                            <input type="datetime-local" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', now()->addDays(30)->format('Y-m-d\TH:i')) }}" required>
+                            <input type="datetime-local" name="end_date" id="end_date" class="form-control" value="{{ old('end_date', now()->addDays(30)->format('Y-m-d\TH:i')) }}">
                             <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('end_date')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -843,7 +841,7 @@
                             </div>
                             <small class="text-muted">Nếu không chọn ngày nào, mã sẽ áp dụng mọi ngày trong tuần</small>
                             @error('valid_days_of_week')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -866,7 +864,7 @@
                                     <input type="time" name="valid_from_time" id="valid_from_time" class="form-control" value="{{ old('valid_from_time') }}">
                                     <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
                                     @error('valid_from_time')
-                                        <div class="text-danger">{{ $message }}</div>
+                                        <div class="text-danger mt-1">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 <div>
@@ -874,7 +872,7 @@
                                     <input type="time" name="valid_to_time" id="valid_to_time" class="form-control" value="{{ old('valid_to_time') }}">
                                     <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
                                     @error('valid_to_time')
-                                        <div class="text-danger">{{ $message }}</div>
+                                        <div class="text-danger mt-1">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
@@ -886,7 +884,7 @@
                                 <label for="is_active">Kích hoạt</label>
                             </div>
                             @error('is_active')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -896,7 +894,7 @@
                                 <label for="is_featured">Hiển thị nổi bật</label>
                             </div>
                             @error('is_featured')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
@@ -904,7 +902,7 @@
                             <label for="display_order" class="form-label">Thứ tự hiển thị</label>
                             <input type="number" name="display_order" id="display_order" class="form-control" min="0" value="{{ old('display_order', 0) }}">
                             @error('display_order')
-                                <div class="text-danger">{{ $message }}</div>
+                                <div class="text-danger mt-1">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>

@@ -67,6 +67,9 @@ class DiscountCodeModule {
         // Initialize date validation
         this.initDateValidation();
         
+        // Initialize discount type validation
+        this.initDiscountTypeValidation();
+        
         // Load initial data based on selected radio buttons
         this.loadInitialData();
     }
@@ -346,36 +349,46 @@ class DiscountCodeModule {
         });
     }
     
-    // Initialize date validation for start and end dates
+    // Initialize date validation
     initDateValidation() {
-        const startDateField = document.getElementById('start_date');
-        const endDateField = document.getElementById('end_date');
-        
-        if (!startDateField || !endDateField) return;
+        // Add event listeners for date validation
+        $('#start_date, #end_date').on('change', function() {
+            validateDates();
+        });
         
         function validateDates() {
-            const startDate = new Date(startDateField.value);
-            const endDate = new Date(endDateField.value);
+            const startDate = new Date($('#start_date').val());
+            const endDate = new Date($('#end_date').val());
             
-            if (endDate < startDate) {
-                alert('Ngày kết thúc không thể trước ngày bắt đầu!');
-                // Set end date to start date + 30 days
-                const newEndDate = new Date(startDate);
-                newEndDate.setDate(newEndDate.getDate() + 30);
-                
-                // Format the date for datetime-local input
-                const year = newEndDate.getFullYear();
-                const month = String(newEndDate.getMonth() + 1).padStart(2, '0');
-                const day = String(newEndDate.getDate()).padStart(2, '0');
-                const hours = String(newEndDate.getHours()).padStart(2, '0');
-                const minutes = String(newEndDate.getMinutes()).padStart(2, '0');
-                
-                endDateField.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            if (startDate && endDate && startDate > endDate) {
+                $('#end_date')[0].setCustomValidity('Ngày kết thúc phải sau ngày bắt đầu');
+            } else {
+                $('#end_date')[0].setCustomValidity('');
+            }
+        }
+    }
+
+    // Initialize discount type validation
+    initDiscountTypeValidation() {
+        const discountTypeSelect = $('#discount_type');
+        const maxDiscountRequired = $('#max_discount_required');
+        const maxDiscountInput = $('#max_discount_amount');
+        
+        function toggleMaxDiscountRequired() {
+            if (discountTypeSelect.val() === 'percentage') {
+                maxDiscountRequired.show();
+                maxDiscountInput.attr('required', true);
+            } else {
+                maxDiscountRequired.hide();
+                maxDiscountInput.removeAttr('required');
             }
         }
         
-        startDateField.addEventListener('change', validateDates);
-        endDateField.addEventListener('change', validateDates);
+        // Initial check
+        toggleMaxDiscountRequired();
+        
+        // Listen for changes
+        discountTypeSelect.on('change', toggleMaxDiscountRequired);
     }
     
     // Load initial data
