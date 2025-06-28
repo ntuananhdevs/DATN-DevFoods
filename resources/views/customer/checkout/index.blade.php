@@ -83,8 +83,28 @@
 
         <form action="{{ route('checkout.process') }}" method="POST" id="checkout-form">
             @csrf
-            <div class="grid lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2">
+            <div>
+                <div>
+                    <!-- Địa chỉ nhận hàng (giống Shopee) -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex items-center border border-orange-200 relative">
+                        <span class="text-orange-500 mr-3 text-xl">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </span>
+                        <div class="flex-1">
+                            <div class="font-semibold text-base mb-1">
+                                <span class="font-bold">Bùi Đức Dương</span>
+                                <span class="ml-2">(+84) 355032605</span>
+                                <span class="ml-2 align-middle">
+                                    <span class="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs font-medium bg-white">Mặc Định</span>
+                                </span>
+                            </div>
+                            <div class="text-gray-800 text-sm">
+                                Số Nhà 26, Ngách 66 Ngõ 250 Kim Giang, Phường Đại Kim, Quận Hoàng Mai, Hà Nội
+                            </div>
+                        </div>
+                        <a href="#" class="ml-4 text-blue-600 hover:underline font-medium text-sm">Thay Đổi</a>
+                    </div>
+
                     <!-- Thông tin khách hàng -->
                     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
                         <h2 class="text-xl font-bold mb-4">Thông Tin Giao Hàng</h2>
@@ -102,7 +122,7 @@
                             <div>
                                 <label for="phone" class="form-label required">Số điện thoại</label>
                                 <input type="tel" id="phone" name="phone" class="form-control"
-                                    value="{{ old('phone', auth()->user()->phone ?? '') }}" required>
+                                    value="{{ old('phone', auth()->user()->phone ?? '') }}">
                                 @error('phone')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
@@ -111,7 +131,7 @@
                             <div class="md:col-span-2">
                                 <label for="email" class="form-label required">Email</label>
                                 <input type="email" id="email" name="email" class="form-control"
-                                    value="{{ old('email', auth()->user()->email ?? '') }}" required>
+                                    value="{{ old('email', auth()->user()->email ?? '') }}">
                                 @error('email')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
@@ -119,7 +139,7 @@
 
                             <div>
                                 <label for="city" class="form-label required">Tỉnh/Thành phố</label>
-                                <select id="city" name="city" class="form-control" required>
+                                <select id="city" name="city" class="form-control">
                                     <option value="Hà Nội" selected>Hà Nội</option>
                                 </select>
                                 @error('city')
@@ -129,7 +149,7 @@
 
                             <div>
                                 <label for="district" class="form-label required">Quận/Huyện</label>
-                                <select id="district" name="district" class="form-control" required>
+                                <select id="district" name="district" class="form-control">
                                     <option value="">-- Chọn Quận/Huyện --</option>
                                 </select>
                                 @error('district')
@@ -139,7 +159,7 @@
 
                             <div>
                                 <label for="ward" class="form-label required">Xã/Phường</label>
-                                <select id="ward" name="ward" class="form-control" required>
+                                <select id="ward" name="ward" class="form-control">
                                     <option value="">-- Chọn Xã/Phường --</option>
                                 </select>
                                 @error('ward')
@@ -148,10 +168,9 @@
                             </div>
 
                             <div class="md:col-span-2 relative">
-                                <label for="address" class="form-label required">Số nhà, đường</label>
+                                <label for="address" class="form-label">Số nhà, đường</label>
                                 <input type="text" id="address" name="address" class="form-control"
-                                    value="{{ old('address', auth()->user()->address ?? '') }}" autocomplete="off"
-                                    required>
+                                    value="{{ old('address', auth()->user()->address ?? '') }}" autocomplete="off">
                                 <div id="address-autocomplete" class="autocomplete-items" style="display: none;"></div>
                                 <div class="text-xs text-gray-500 mt-1">Nhập địa chỉ sau khi chọn Quận/Huyện và Phường/Xã
                                 </div>
@@ -168,218 +187,422 @@
                         </div>
                     </div>
 
-                    <!-- Phương thức giao hàng -->
+                    <!-- Sản phẩm, voucher, vận chuyển, lời nhắn (giống Shopee) -->
                     <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <h2 class="text-xl font-bold mb-4">Phương Thức Giao Hàng</h2>
-
-                        <div class="space-y-3">
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="shipping_method" value="standard"
-                                    class="h-5 w-5 text-orange-500" checked>
-                                <div class="ml-3">
-                                    <span class="block font-medium">Giao hàng tiêu chuẩn</span>
-                                    <span class="block text-sm text-gray-500">Nhận hàng sau 30-60 phút</span>
-                                </div>
-                                <span class="ml-auto font-medium">{{ $subtotal > 100000 ? 'Miễn phí' : '15.000đ' }}</span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="shipping_method" value="express"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Giao hàng nhanh</span>
-                                    <span class="block text-sm text-gray-500">Nhận hàng trong 15-30 phút</span>
-                                </div>
-                                <span class="ml-auto font-medium">30.000đ</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Phương thức thanh toán -->
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <h2 class="text-xl font-bold mb-4">Phương Thức Thanh Toán</h2>
-
-                        <div class="space-y-3">
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="cod"
-                                    class="h-5 w-5 text-orange-500" checked>
-                                <div class="ml-3">
-                                    <span class="block font-medium">Thanh toán khi nhận hàng</span>
-                                    <span class="block text-sm text-gray-500">Trả tiền mặt khi nhận hàng</span>
-                                </div>
-                                <span class="ml-auto">
-                                    <i class="fas fa-money-bill-wave text-gray-400 text-xl"></i>
-                                </span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="bank_transfer"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Chuyển khoản ngân hàng</span>
-                                    <span class="block text-sm text-gray-500">Chuyển khoản đến tài khoản của chúng
-                                        tôi</span>
-                                </div>
-                                <span class="ml-auto">
-                                    <i class="fas fa-university text-gray-400 text-xl"></i>
-                                </span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="credit_card"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Thẻ tín dụng / Ghi nợ</span>
-                                    <span class="block text-sm text-gray-500">Thanh toán an toàn qua cổng thanh toán</span>
-                                </div>
-                                <span class="ml-auto flex gap-2">
-                                    <i class="fab fa-cc-visa text-blue-600 text-xl"></i>
-                                    <i class="fab fa-cc-mastercard text-red-500 text-xl"></i>
-                                </span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="e_wallet"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Ví điện tử</span>
-                                    <span class="block text-sm text-gray-500">Thanh toán bằng MoMo, ZaloPay, VNPay</span>
-                                </div>
-                                <span class="ml-auto flex gap-2">
-                                    <i class="fas fa-wallet text-pink-500 text-xl"></i>
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tóm tắt đơn hàng -->
-                <div>
-                    <div class="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-                        <h2 class="text-xl font-bold mb-4">Đơn Hàng Của Bạn</h2>
-
-                        <div class="space-y-4">
-                            @foreach ($cartItems as $item)
-                                <div class="flex items-center gap-4">
-                                    <div class="relative h-16 w-16 flex-shrink-0 rounded overflow-hidden">
-                                        @if ($item->variant->product->primary_image)
-                                            <img src="{{ Storage::disk('s3')->url($item->variant->product->primary_image->img) }}"
-                                                alt="{{ $item->variant->product->name }}"
-                                                class="object-cover w-full h-full">
-                                        @else
-                                            <div class="h-full w-full bg-gray-200 flex items-center justify-center">
-                                                <i class="fas fa-image text-gray-400"></i>
-                                            </div>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <h3 class="font-medium text-sm truncate">{{ $item->variant->product->name }}</h3>
-                                        <p class="text-xs text-gray-500">
-                                            @if ($item->variant->variant_description)
-                                                {{ $item->variant->variant_description }}
-                                            @else
-                                                {{ implode(', ', $item->variant->variantValues->pluck('value')->toArray()) }}
-                                            @endif
-                                        </p>
-                                        @if ($item->toppings && $item->toppings->count() > 0)
-                                            <p class="text-xs text-orange-600 mt-1">
-                                                +{{ $item->toppings->count() }} topping
-                                            </p>
-                                        @endif
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-sm font-medium">
-                                            @php
-                                                $itemPrice = $item->variant->price;
-                                                foreach ($item->toppings as $topping) {
-                                                    $itemPrice += $topping->price;
-                                                }
-                                                $itemTotal = $itemPrice * $item->quantity;
-                                            @endphp
-                                            {{ number_format($itemTotal) }}đ
-                                        </div>
-                                        <div class="text-xs text-gray-500">
-                                            SL: {{ $item->quantity }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr class="border-t border-gray-200 my-6">
-                            @endforeach
-                        </div>
-
-
-                        <div class="space-y-4 mb-6">
-                            @php
-                                $subtotal = 0;
-                                $shipping = 0;
-                                $discount = request()->query('discount', session('discount', 0));
-
-                                // Calculate subtotal from cart items
-                                foreach ($cartItems as $item) {
-                                    $itemPrice = $item->variant->price;
-                                    foreach ($item->toppings as $topping) {
-                                        $itemPrice += $topping->price;
-                                    }
-                                    $subtotal += $itemPrice * $item->quantity;
-                                }
-
-                                // Calculate shipping
-                                $shipping = $subtotal > 100000 ? 0 : 15000;
-
-                                // Calculate total
-                                $total = $subtotal + $shipping - $discount;
-                            @endphp
-
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Tạm tính</span>
-                                <span>{{ number_format($subtotal) }}đ</span>
+                        <div class="mb-4">
+                            <div class="flex items-center mb-2">
+                                <span class="text-base font-semibold">Sản phẩm</span>
+                                <span class="ml-auto text-gray-400 text-sm">Đơn giá</span>
+                                <span class="w-20 text-gray-400 text-sm text-center">Số lượng</span>
+                                <span class="w-24 text-gray-400 text-sm text-right">Thành tiền</span>
                             </div>
-
-                            <div class="flex justify-between">
-                                <span class="text-gray-600">Phí giao hàng</span>
-                                <span>{{ $shipping > 0 ? number_format($shipping) . 'đ' : 'Miễn phí' }}</span>
-                            </div>
-
-                            @if ($discount > 0)
-                                <div class="flex justify-between text-green-600">
-                                    <span>Giảm giá</span>
-                                    <span>-{{ number_format($discount) }}đ</span>
+                            <div class="flex items-center border-b py-3">
+                                <img src="https://product.hstatic.net/200000605103/product/bo_pho_mai_35d14a20f2c34b938cf95f984dece2e0_master.jpg" alt="sp" class="w-14 h-14 rounded border mr-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-medium truncate">Burger Bò Phô Mai</div>
+                                    <div class="text-xs text-gray-500 mt-1">Nhỏ, Ít đường</div>
+                                    <p class="text-xs text-orange-600 mt-1">+1 topping</p>
                                 </div>
-                            @endif
-
-                            <hr class="border-t border-gray-200">
-
-                            <div class="flex justify-between font-bold text-lg">
-                                <span>Tổng cộng</span>
-                                <span>{{ number_format($total) }}đ</span>
+                                <div class="text-right w-24">₫445.000</div>
+                                <div class="w-20 text-center">1</div>
+                                <div class="w-24 text-right font-semibold">₫445.000</div>
+                            </div>
+                            <div class="flex items-center py-3 border-b">
+                                <input type="checkbox" class="mr-2">
+                                <span class="text-sm">Bảo hiểm Thiết bị điện tử</span>
+                                <span class="ml-auto text-gray-500 text-sm">₫13.999</span>
                             </div>
                         </div>
-
-                        <div class="space-y-4">
+                        <div class="flex items-center justify-between py-3 border-b relative">
                             <div class="flex items-center">
-                                <input type="checkbox" id="terms" name="terms" class="h-4 w-4 text-orange-500"
-                                    required>
-                                <label for="terms" class="ml-2 text-sm text-gray-600">
-                                    Tôi đã đọc và đồng ý với <a href="/terms"
-                                        class="text-orange-500 hover:underline">điều khoản và điều kiện</a> của website
-                                </label>
+                                <span class="text-red-500 mr-2"><i class="fas fa-ticket-alt"></i></span>
+                                <span class="text-sm font-medium">Voucher của Shop</span>
+                                <span class="ml-2 bg-red-100 text-red-500 px-2 py-0.5 rounded text-xs font-semibold">-₫45k</span>
                             </div>
+                            <button type="button" id="toggleVoucherBox" class="text-blue-600 text-sm hover:underline">Chọn Voucher Khác</button>
+                            <!-- Box chọn voucher (ẩn/hiện) -->
+                            <div id="voucherBox" class="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-40 hidden">
+                                <div class="absolute -top-2.5 right-0 w-0 h-0 bg-white" style="left:90%;transform:translateX(-50%);">
+                                    <div class="bg-white" style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:10px solid #e5e7eb;"></div>
+                                </div>
+                                <div class="px-6 pt-4 pb-2 border-b flex items-center gap-2">
+                                    <span class="font-semibold text-base">XSmart Store Voucher</span>
+                                    <span class="ml-auto text-xs text-gray-500">Mã Voucher</span>
+                                    <input type="text" class="border rounded px-2 py-1 text-xs w-40" placeholder="Nhập mã voucher của Shop">
+                                    <button class="bg-gray-200 text-gray-500 px-3 py-1 rounded text-xs font-semibold cursor-not-allowed" disabled>ÁP DỤNG</button>
+                                </div>
+                                <div class="max-h-72 overflow-y-auto px-6 py-4 space-y-4">
+                                    <!-- Voucher 1 -->
+                                    <div class="relative bg-white rounded-lg border border-orange-400 p-4 flex gap-4 items-start shadow-sm">
+                                        <div class="flex flex-col items-center mr-2">
+                                            <img src="https://cf.shopee.vn/file/sg-11134201-7quk2-ljv3v7w7w7w7a2" alt="logo" class="w-10 h-10 object-contain mb-1">
+                                            <span class="bg-green-500 text-white text-xs px-2 py-0.5 rounded">Lựa chọn tốt nhất</span>
+                                            <span class="bg-red-100 text-red-500 text-xs px-2 py-0.5 rounded mt-1">Shop Yêu Thích</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-semibold text-sm">Giảm 10% Giảm tối đa ₫60k</div>
+                                            <div class="text-xs text-gray-600">Đơn Tối Thiểu ₫300k</div>
+                                            <span class="inline-block border border-red-400 text-red-500 text-xs px-2 py-0.5 rounded mt-1">Sản phẩm nhất định</span>
+                                            <div class="text-xs text-gray-500 mt-1">HSD: 30.06.2025 <a href="#" class="text-blue-500 underline">Điều Kiện</a></div>
+                                        </div>
+                                        <span class="absolute top-2 right-2 text-orange-500"><i class="fas fa-check-circle fa-lg"></i></span>
+                                    </div>
+                                    <!-- Voucher 2 -->
+                                    <div class="relative bg-white rounded-lg border p-4 flex gap-4 items-start shadow-sm">
+                                        <div class="flex flex-col items-center mr-2">
+                                            <img src="https://cf.shopee.vn/file/sg-11134201-7quk2-ljv3v7w7w7w7a2" alt="logo" class="w-10 h-10 object-contain mb-1">
+                                            <span class="bg-red-100 text-red-500 text-xs px-2 py-0.5 rounded">Shop Yêu Thích</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-semibold text-sm">Giảm 9% Giảm tối đa ₫50k</div>
+                                            <div class="text-xs text-gray-600">Đơn Tối Thiểu ₫200k</div>
+                                            <span class="inline-block border border-red-400 text-red-500 text-xs px-2 py-0.5 rounded mt-1">Sản phẩm nhất định</span>
+                                            <div class="w-full h-1 bg-orange-100 rounded mt-2"><div class="h-1 bg-orange-400 rounded" style="width:99%"></div></div>
+                                            <div class="text-xs text-gray-500 mt-1">Đã dùng 99%, HSD: 30.06.2025</div>
+                                        </div>
+                                        <button class="absolute top-2 right-2 bg-red-100 text-red-500 px-3 py-1 rounded text-xs font-semibold">Lưu</button>
+                                    </div>
+                                    <!-- Voucher 3 -->
+                                    <div class="relative bg-gray-100 rounded-lg border p-4 flex gap-4 items-start opacity-60">
+                                        <div class="flex flex-col items-center mr-2">
+                                            <img src="https://cf.shopee.vn/file/sg-11134201-7quk2-ljv3v7w7w7w7a2" alt="logo" class="w-10 h-10 object-contain mb-1">
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-semibold text-sm">Giảm ₫150k</div>
+                                            <div class="text-xs text-gray-600">Đơn Tối Thiểu ₫2,5tr</div>
+                                            <div class="text-xs text-gray-500 mt-1">HSD: 08.08.2025</div>
+                                        </div>
+                                        <button class="absolute top-2 right-2 bg-red-100 text-red-500 px-3 py-1 rounded text-xs font-semibold">Lưu</button>
+                                    </div>
+                                </div>
+                                <div class="px-6 py-2 text-xs text-orange-600 bg-orange-50 border-t border-orange-100">Mua thêm ₫2,055tr để sử dụng Voucher</div>
+                                <div class="px-6 py-2 text-xs text-gray-600 border-t">1 Voucher đã được chọn <span class="text-red-500 font-semibold">Tiết kiệm ₫44,5k</span></div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6 py-6 border-b">
+                            <div>
+                                <label class="block text-sm text-gray-600 mb-2">Lời nhắn:</label>
+                                <input type="text" class="w-full border rounded px-3 py-2 text-sm" placeholder="Lưu ý cho Người bán...">
+                            </div>
+                            <div>
+                                <div class="flex items-center mb-2">
+                                    <span class="text-sm text-gray-600 font-medium">Phương thức vận chuyển:</span>
+                                    <button type="button" class="ml-2 text-blue-600 text-sm hover:underline shipping-change-btn">Thay Đổi</button>
+                                    <span class="ml-auto text-gray-700 font-semibold">₫18.300</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mb-1">Đảm bảo nhận hàng từ 28 Tháng 6 - 30 Tháng 6</div>
+                                <div class="text-xs text-gray-500 mb-1">Nhận Voucher trị giá ₫15.000 nếu đơn hàng được giao đến bạn sau ngày 30 Tháng 6 2025.</div>
+                                <div class="flex items-center mt-2">
+                                    <span class="text-xs text-gray-400">Hoặc chọn Tủ Nhận Hàng để nhận</span>
+                                    <a href="#" class="ml-2 text-green-600 text-xs font-semibold flex items-center"><i class="fas fa-shipping-fast mr-1"></i>Giao Trong Ngày Mai</a>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-400 flex items-center"><i class="fas fa-info-circle mr-1"></i>Được đồng kiểm.</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end items-center py-4">
+                            <span class="text-base text-gray-600 mr-4">Tổng số tiền (1 sản phẩm):</span>
+                            <span class="text-2xl text-red-500 font-bold">₫418.800</span>
+                        </div>
+                    </div>
 
-                            <button type="submit"
-                                class="w-full bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors">
-                                Đặt Hàng
-                            </button>
-
-                            <div class="text-center">
-                                <a href="{{ route('cart.index') }}" class="text-gray-600 hover:text-orange-500">
-                                    <i class="fas fa-arrow-left mr-2"></i> Quay lại giỏ hàng
-                                </a>
+                    <!-- Tổng kết đơn hàng & phương thức thanh toán (giống Shopee) -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                        <div class="mb-4">
+                            <span class="font-semibold text-lg">Phương thức thanh toán</span>
+                            <div class="flex gap-2 mt-3">
+                                <button type="button" class="px-4 py-2 border border-gray-300 rounded bg-white text-gray-700 font-medium">Momo</button>
+                                <button type="button" class="px-4 py-2 border border-gray-300 rounded bg-white text-gray-700 font-medium">Bank</button>
+                                <button type="button" class="px-4 py-2 border-2 border-orange-500 rounded bg-orange-50 text-orange-600 font-semibold relative">Thanh toán khi nhận hàng <span class="absolute -right-2 -top-2 text-orange-500"><i class="fas fa-check"></i></span></button>
+                            </div>
+                        </div>
+                        <!-- Box nội dung phương thức thanh toán, sẽ thay đổi theo lựa chọn -->
+                        <div id="payment-cod-box">
+                            <div class="border-t border-b py-4 flex items-center justify-between text-sm text-gray-700">
+                                <div>
+                                    <span class="font-medium">Thanh toán khi nhận hàng</span>
+                                    <span class="ml-4 text-gray-500">Phí thu hộ: <span class="text-black font-semibold">₫0 VNĐ</span>. Ưu đãi về phí vận chuyển (nếu có) áp dụng cả với phí thu hộ.</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-start py-6">
+                                <div class="flex-1"></div>
+                                <div class="w-full max-w-xs">
+                                    <div class="flex justify-between mb-2 text-gray-700 text-base">
+                                        <span>Tổng tiền hàng</span>
+                                        <span>₫553.000</span>
+                                    </div>
+                                    <div class="flex justify-between mb-2 text-gray-700 text-base">
+                                        <span>Tổng tiền phí vận chuyển</span>
+                                        <span>₫38.400</span>
+                                    </div>
+                                    <div class="flex justify-between mb-2 text-gray-700 text-base">
+                                        <span>Tổng cộng Voucher giảm giá</span>
+                                        <span class="text-red-500">-₫96.565</span>
+                                    </div>
+                                    <hr class="my-2">
+                                    <div class="flex justify-between items-center text-lg font-bold">
+                                        <span class="text-gray-700">Tổng thanh toán</span>
+                                        <span class="text-2xl text-orange-500">₫494.835</span>
+                                    </div>
+                                    <button class="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white text-center px-6 py-3 rounded-md font-medium transition-colors text-lg">Đặt hàng</button>
+                                </div>
+                            </div>
+                            <div class="border-t pt-4 text-sm text-gray-400">
+                                Nhấn "Đặt hàng" đồng nghĩa với việc bạn đồng ý tuân theo <a href="#" class="text-blue-500 hover:underline">Điều khoản Shopee</a>
+                            </div>
+                        </div>
+                        <!-- Box Momo -->
+                        <div id="payment-momo-box" class="hidden">
+                            <div class="border-t border-b py-4 flex items-center text-sm text-gray-700">
+                                <span class="font-medium text-pink-600"><i class="fab fa-cc-visa mr-2"></i>Thanh toán qua ví Momo</span>
+                                <span class="ml-4 text-gray-500">Vui lòng quét mã QR bên dưới bằng app Momo để thanh toán.</span>
+                            </div>
+                            <div class="flex flex-col items-center py-6">
+                                <img src="https://img.vietqr.io/image/970422-123456789-compact2.png" alt="QR Momo" class="w-48 h-48 border rounded mb-4">
+                                <div class="text-gray-600 text-sm mb-2">Số tiền: <span class="text-orange-500 font-bold">₫494.835</span></div>
+                                <div class="text-xs text-gray-400">Sau khi thanh toán thành công, đơn hàng sẽ được xác nhận tự động.</div>
+                            </div>
+                        </div>
+                        <!-- Box Bank -->
+                        <div id="payment-vnpay-box" class="hidden">
+                            <div class="border-t border-b py-4 flex items-center text-sm text-gray-700">
+                                <span class="font-medium text-blue-600"><i class="fas fa-university mr-2"></i>Thanh toán qua Bank</span>
+                                <span class="ml-4 text-gray-500">Chọn ngân hàng để thanh toán qua cổng Bank.</span>
+                            </div>
+                            <div class="py-6">
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    <button class="border border-gray-300 rounded p-3 flex flex-col items-center hover:border-blue-500">
+                                        <img src="https://play-lh.googleusercontent.com/KBIgU6nz3hzia77BUj4FyVdL2azYvnttVkreRmc6c-asHof7ErHsY79G_yHdFkI83w" alt="VCB" class="w-10 h-10 mb-1">
+                                        <span class="text-xs">Vietcombank</span>
+                                    </button>
+                                    <button class="border border-gray-300 rounded p-3 flex flex-col items-center hover:border-blue-500">
+                                        <img src="https://yt3.googleusercontent.com/xsKeDcgwn9tAvfRSUcDC7rVvmolj8dUb1YAcrM2qT9E9IgYKuFvRjEj9Xe94XytbKzTRMU78=s900-c-k-c0x00ffffff-no-rj" alt="Agribank" class="w-10 h-10 mb-1">
+                                        <span class="text-xs">Agribank</span>
+                                    </button>
+                                    <button class="border border-gray-300 rounded p-3 flex flex-col items-center hover:border-blue-500">
+                                        <img src="https://diadiembank.com/wp-content/uploads/2024/11/icon-bidv-smartbanking.svg" alt="BIDV" class="w-10 h-10 mb-1">
+                                        <span class="text-xs">BIDV</span>
+                                    </button>
+                                </div>
+                                <div class="text-gray-600 text-sm mb-2">Số tiền: <span class="text-orange-500 font-bold">₫494.835</span></div>
+                                <div class="text-xs text-gray-400">Sau khi thanh toán thành công, đơn hàng sẽ được xác nhận tự động.</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </form>
+    </div>
+
+    <!-- Modal chọn địa chỉ nhận hàng (tĩnh, giống Shopee) -->
+    <div id="addressModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+            <div class="px-6 py-4 border-b">
+                <span class="text-lg font-semibold">Địa Chỉ Của Tôi</span>
+            </div>
+            <div class="px-6 py-4 max-h-96 overflow-y-auto divide-y">
+                <div class="flex items-start py-3">
+                    <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500" checked>
+                    <div class="flex-1">
+                        <div class="font-semibold">Nhữ Thị Minh <span class="font-normal text-gray-600">(+84) 975 154 746</span></div>
+                        <div class="text-sm text-gray-700">Hẻm số 4,Hẻm 144 Đồ Lương<br>Phường 11, Thành Phố Vũng Tàu, Bà Rịa - Vũng Tàu</div>
+                    </div>
+                    <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                </div>
+                <div class="flex items-start py-3">
+                    <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500">
+                    <div class="flex-1">
+                        <div class="font-semibold">Nguyễn Thị Huê <span class="font-normal text-gray-600">(+84) 966 189 711</span></div>
+                        <div class="text-sm text-gray-700">Cổng chợ mền Thanh Khê<br>Xã Thanh Hải, Huyện Thanh Liêm, Hà Nam</div>
+                    </div>
+                    <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                </div>
+                <div class="flex items-start py-3">
+                    <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500">
+                    <div class="flex-1">
+                        <div class="font-semibold">Mai Xuân Cường <span class="font-normal text-gray-600">(+84) 977 312 936</span></div>
+                        <div class="text-sm text-gray-700">Nhà Nghỉ Thế Cường, Thanh Khê<br>Xã Thanh Hải, Huyện Thanh Liêm, Hà Nam</div>
+                    </div>
+                    <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                </div>
+            </div>
+            <div class="px-6 py-3">
+                <button class="flex items-center text-orange-600 border border-orange-500 rounded px-3 py-1 text-sm font-medium hover:bg-orange-50 mb-3">
+                    <i class="fas fa-plus mr-2"></i> Thêm Địa Chỉ Mới
+                </button>
+                <div class="flex justify-end gap-3">
+                    <button type="button" id="addressModalCancel" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Hủy</button>
+                    <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal cập nhật địa chỉ (tĩnh, giống Shopee) -->
+    <div id="updateAddressModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+            <div class="max-h-[80vh] overflow-y-auto scrollbar-none" style="scrollbar-width: none; -ms-overflow-style: none;">
+                <div class="px-6 py-4 border-b">
+                    <span class="text-lg font-semibold">Cập nhật địa chỉ</span>
+                </div>
+                <form class="px-6 py-4">
+                    <div class="flex gap-3 mb-3">
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Họ và tên</label>
+                            <input type="text" class="w-full border rounded px-3 py-2" value="Bùi Đức Dương">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Số điện thoại</label>
+                            <input type="text" class="w-full border rounded px-3 py-2" value="(+84) 355 032 605">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố, Quận/Huyện, Phường/Xã</label>
+                        <select class="w-full border rounded px-3 py-2">
+                            <option>Hà Nội, Quận Hoàng Mai, Phường Đại Kim</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-xs text-gray-500 mb-1">Địa chỉ cụ thể</label>
+                        <textarea class="w-full border rounded px-3 py-2" rows="2">Số Nhà 26, Ngách 66 Ngõ 250 Kim Giang</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <img src="https://maps.googleapis.com/maps/api/staticmap?center=21.002,105.825&zoom=16&size=400x120&markers=color:red%7C21.002,105.825&key=AIzaSyDUMMYKEY" alt="Google Map" class="w-full rounded border" style="height:120px;object-fit:cover;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-xs text-gray-500 mb-1">Loại địa chỉ:</label>
+                        <div class="flex gap-2">
+                            <button type="button" class="border border-orange-500 text-orange-600 bg-orange-50 px-4 py-1 rounded font-medium">Nhà Riêng</button>
+                            <button type="button" class="border border-gray-300 text-gray-700 bg-white px-4 py-1 rounded font-medium">Văn Phòng</button>
+                        </div>
+                    </div>
+                    <div class="mb-3 flex items-center">
+                        <input type="checkbox" id="setDefaultAddress" class="mr-2" checked disabled>
+                        <label for="setDefaultAddress" class="text-xs text-gray-400 select-none">Đặt làm địa chỉ mặc định</label>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" id="updateAddressBack" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Trở Lại</button>
+                        <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Hoàn thành</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal thêm địa chỉ mới (tĩnh, giống modal cập nhật) -->
+    <div id="addAddressModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+            <div class="max-h-[80vh] overflow-y-auto scrollbar-none" style="scrollbar-width: none; -ms-overflow-style: none;">
+                <div class="px-6 py-4 border-b">
+                    <span class="text-lg font-semibold">Thêm địa chỉ mới</span>
+                </div>
+                <form class="px-6 py-4">
+                    <div class="flex gap-3 mb-3">
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Họ và tên</label>
+                            <input type="text" class="w-full border rounded px-3 py-2" value="">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Số điện thoại</label>
+                            <input type="text" class="w-full border rounded px-3 py-2" value="">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố, Quận/Huyện, Phường/Xã</label>
+                        <select class="w-full border rounded px-3 py-2">
+                            <option>Hà Nội, Quận Hoàng Mai, Phường Đại Kim</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-xs text-gray-500 mb-1">Địa chỉ cụ thể</label>
+                        <textarea class="w-full border rounded px-3 py-2" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <img src="https://maps.googleapis.com/maps/api/staticmap?center=21.002,105.825&zoom=16&size=400x120&markers=color:red%7C21.002,105.825&key=AIzaSyDUMMYKEY" alt="Google Map" class="w-full rounded border" style="height:120px;object-fit:cover;">
+                    </div>
+                    <div class="mb-3">
+                        <label class="block text-xs text-gray-500 mb-1">Loại địa chỉ:</label>
+                        <div class="flex gap-2">
+                            <button type="button" class="border border-orange-500 text-orange-600 bg-orange-50 px-4 py-1 rounded font-medium">Nhà Riêng</button>
+                            <button type="button" class="border border-gray-300 text-gray-700 bg-white px-4 py-1 rounded font-medium">Văn Phòng</button>
+                        </div>
+                    </div>
+                    <div class="mb-3 flex items-center">
+                        <input type="checkbox" id="setDefaultAddressAdd" class="mr-2">
+                        <label for="setDefaultAddressAdd" class="text-xs text-gray-500 select-none">Đặt làm địa chỉ mặc định</label>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6">
+                        <button type="button" id="addAddressBack" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Trở Lại</button>
+                        <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Hoàn thành</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal chọn phương thức vận chuyển (giống Shopee, đẹp) -->
+    <div id="shippingModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl">
+            <div class="px-8 pt-6 pb-2 border-b">
+                <span class="text-xl font-semibold">Chọn phương thức vận chuyển</span>
+            </div>
+            <div class="px-8 pt-6 pb-2">
+                <div class="flex gap-4 mb-4">
+                    <button type="button" class="flex flex-col items-center justify-center border-2 border-orange-500 bg-orange-50 text-orange-600 rounded-lg px-6 py-3 font-semibold text-base focus:outline-none">
+                        <i class="fas fa-shipping-fast fa-lg mb-1"></i>
+                        Giao hàng tận nơi
+                        <span class="text-xs font-normal text-gray-500 mt-1">Từ ₫14.850</span>
+                    </button>
+                    <button type="button" class="flex flex-col items-center justify-center border border-gray-300 text-gray-500 rounded-lg px-6 py-3 font-semibold text-base focus:outline-none">
+                        <i class="fas fa-box-open fa-lg mb-1"></i>
+                        Giao tới tủ giao nhận
+                        <span class="text-xs font-normal text-gray-500 mt-1">Từ ₫18.300</span>
+                    </button>
+                </div>
+                <div class="uppercase text-xs text-gray-400 font-semibold mb-2 tracking-wide flex items-center gap-2">
+                    Phương thức vận chuyển liên kết với Shopee
+                    <i class="fas fa-shield-alt text-orange-400"></i>
+                </div>
+                <div class="max-h-[50vh] overflow-y-auto space-y-3 pr-2">
+                    <!-- Option 1 -->
+                    <div class="relative bg-orange-50 border border-orange-400 rounded-lg px-6 py-4 flex items-center group">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-base text-gray-800">Nhanh</span>
+                                <span class="text-gray-700 font-semibold">₫18.300</span>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1">Đảm bảo nhận hàng từ 28 Tháng 6 - 30 Tháng 6</div>
+                            <div class="text-xs text-gray-400 mt-1">Nhận Voucher trị giá ₫15.000 nếu đơn hàng được giao đến bạn sau ngày 30 Tháng 6 2025.</div>
+                        </div>
+                        <span class="absolute top-1/2 right-6 -translate-y-1/2 text-orange-500"><i class="fas fa-check fa-lg"></i></span>
+                    </div>
+                    <!-- Option 2 -->
+                    <div class="relative bg-white border border-gray-200 rounded-lg px-6 py-4 flex items-center group">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-base text-gray-800">Tiết kiệm</span>
+                                <span class="text-gray-700 font-semibold">₫14.850</span>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1">Đảm bảo nhận hàng từ 28 Tháng 6 - 30 Tháng 6</div>
+                            <div class="text-xs text-gray-400 mt-1">Nhận Voucher trị giá ₫15.000 nếu đơn hàng được giao đến bạn sau ngày 30 Tháng 6 2025.</div>
+                        </div>
+                    </div>
+                    <!-- Option 3 (disabled) -->
+                    <div class="relative bg-gray-100 border border-gray-200 rounded-lg px-6 py-4 flex items-center opacity-60 cursor-not-allowed">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold text-base text-gray-400">Hàng Cồng Kềnh</span>
+                                <span class="text-gray-400 font-semibold">₫0</span>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">Dưới giới hạn kích thước tối thiểu</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-8 py-4 flex justify-end gap-3">
+                <button type="button" id="shippingModalCancel" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Trở Lại</button>
+                <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Xác Nhận</button>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -788,6 +1011,119 @@
                     }, 300);
                 }, 3000);
             }
+
+            // Modal open/close logic cho chọn địa chỉ, cập nhật địa chỉ, thêm địa chỉ mới
+            const addressModal = document.getElementById('addressModal');
+            const openModalBtn = document.querySelector('a.text-blue-600');
+            const closeModalBtn = document.getElementById('addressModalCancel');
+            const updateBtns = addressModal ? addressModal.querySelectorAll('a.text-blue-600.font-medium') : [];
+            const updateAddressModal = document.getElementById('updateAddressModal');
+            const updateAddressBack = document.getElementById('updateAddressBack');
+            const addAddressModal = document.getElementById('addAddressModal');
+            const addAddressBtn = addressModal ? addressModal.querySelector('button.flex.items-center') : null;
+            const addAddressBack = document.getElementById('addAddressBack');
+
+            if (openModalBtn && addressModal) {
+                openModalBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.remove('hidden');
+                });
+            }
+            if (closeModalBtn && addressModal) {
+                closeModalBtn.addEventListener('click', function() {
+                    addressModal.classList.add('hidden');
+                });
+            }
+            // Sự kiện mở modal cập nhật địa chỉ
+            updateBtns.forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.add('hidden');
+                    updateAddressModal.classList.remove('hidden');
+                });
+            });
+            // Sự kiện trở lại modal chọn địa chỉ
+            if (updateAddressBack && updateAddressModal && addressModal) {
+                updateAddressBack.addEventListener('click', function() {
+                    updateAddressModal.classList.add('hidden');
+                    addressModal.classList.remove('hidden');
+                });
+            }
+            // Sự kiện mở modal thêm địa chỉ mới
+            if (addAddressBtn && addAddressModal && addressModal) {
+                addAddressBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.add('hidden');
+                    addAddressModal.classList.remove('hidden');
+                });
+            }
+            // Sự kiện trở lại modal chọn địa chỉ từ modal thêm mới
+            if (addAddressBack && addAddressModal && addressModal) {
+                addAddressBack.addEventListener('click', function() {
+                    addAddressModal.classList.add('hidden');
+                    addressModal.classList.remove('hidden');
+                });
+            }
+
+            // Toggle voucher box
+            const toggleVoucherBoxBtn = document.getElementById('toggleVoucherBox');
+            const voucherBox = document.getElementById('voucherBox');
+            if (toggleVoucherBoxBtn && voucherBox) {
+                toggleVoucherBoxBtn.addEventListener('click', function() {
+                    voucherBox.classList.toggle('hidden');
+                });
+            }
+
+            // Modal open/close logic cho chọn phương thức vận chuyển
+            const shippingModal = document.getElementById('shippingModal');
+            const openShippingBtn = document.querySelector('button.shipping-change-btn');
+            const closeShippingBtn = document.getElementById('shippingModalCancel');
+            if (openShippingBtn && shippingModal) {
+                openShippingBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    shippingModal.classList.remove('hidden');
+                });
+            }
+            if (closeShippingBtn && shippingModal) {
+                closeShippingBtn.addEventListener('click', function() {
+                    shippingModal.classList.add('hidden');
+                });
+            }
+
+            // Xử lý chuyển đổi giao diện phương thức thanh toán
+            const paymentBtns = document.querySelectorAll('.flex.gap-2.mt-3 button');
+            const momoBox = document.getElementById('payment-momo-box');
+            const vnpayBox = document.getElementById('payment-vnpay-box');
+            const codBox = document.getElementById('payment-cod-box');
+            function hideAllPaymentBox() {
+                momoBox.classList.add('hidden');
+                vnpayBox.classList.add('hidden');
+                codBox.classList.add('hidden');
+            }
+            paymentBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    hideAllPaymentBox();
+                    if (btn.textContent.trim().includes('Momo')) {
+                        momoBox.classList.remove('hidden');
+                    } else if (btn.textContent.trim().includes('Bank')) {
+                        vnpayBox.classList.remove('hidden');
+                    } else if (btn.textContent.trim().includes('Thanh toán khi nhận hàng')) {
+                        codBox.classList.remove('hidden');
+                    }
+                });
+            });
         });
     </script>
 @endsection
+
+<style>
+    /* Ẩn scrollbar cho modal cập nhật địa chỉ trên Chrome, Safari, Edge */
+    #updateAddressModal .overflow-y-auto::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Ẩn scrollbar cho modal chọn phương thức vận chuyển trên Chrome, Safari, Edge */
+    #shippingModal .overflow-y-auto::-webkit-scrollbar {
+        display: none;
+    }
+</style>
