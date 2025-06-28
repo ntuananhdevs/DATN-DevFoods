@@ -281,108 +281,228 @@
         </div>
     </div>
 </div>
+{{-- THÊM ĐOẠN HTML NÀY VÀO CUỐI FILE BLADE CỦA BẠN --}}
+<div id="cancel-confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="relative mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Xác nhận hủy đơn hàng</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3 flex gap-3">
+                <button id="cancel-abort-btn" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none">
+                    Không
+                </button>
+                <button id="cancel-confirm-btn" class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none">
+                    Đồng ý hủy
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Edit profile button
-    const editProfileButtons = document.querySelectorAll('button:contains("Chỉnh sửa hồ sơ")');
-    const editProfileModal = document.getElementById('edit-profile-modal');
-    const closeModalButton = document.getElementById('close-modal');
-    const editProfileForm = document.getElementById('edit-profile-form');
-    
-    if (editProfileButtons.length > 0) {
-        editProfileButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                editProfileModal.classList.remove('hidden');
-            });
-        });
-    }
-    
-    // Close modal
-    if (closeModalButton) {
-        closeModalButton.addEventListener('click', function() {
-            editProfileModal.classList.add('hidden');
-        });
-    }
-    
-    // Close modal when clicking outside
-    if (editProfileModal) {
-        editProfileModal.addEventListener('click', function(e) {
-            if (e.target === editProfileModal) {
-                editProfileModal.classList.add('hidden');
-            }
-        });
-    }
-    
-    // Form submission
-    if (editProfileForm) {
-        editProfileForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Here you would normally send the data to the server
-            // For now, we'll just close the modal
-            editProfileModal.classList.add('hidden');
-            
-            // Show success message
-            showToast('Thông tin hồ sơ đã được cập nhật');
-        });
-    }
-    
-    // Simple toast notification function
-    function showToast(message) {
-        // Create toast element
+
+    /**
+     * ===================================================================
+     * HÀM TIỆN ÍCH CHUNG
+     * ===================================================================
+     */
+    function showToast(message, type = 'success') {
         const toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300 opacity-0';
+        const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+        toast.className = `fixed bottom-4 right-4 text-white px-4 py-2 rounded-lg shadow-lg z-[101] transition-opacity duration-300 opacity-0 ${bgColor}`;
         toast.textContent = message;
-        
-        // Add to DOM
         document.body.appendChild(toast);
-        
-        // Show toast
+        setTimeout(() => toast.classList.remove('opacity-0'), 10);
         setTimeout(() => {
-            toast.classList.remove('opacity-0');
-            toast.classList.add('opacity-100');
-        }, 10);
-        
-        // Hide and remove toast after 3 seconds
-        setTimeout(() => {
-            toast.classList.remove('opacity-100');
             toast.classList.add('opacity-0');
-            
-            setTimeout(() => {
-                document.body.removeChild(toast);
-            }, 300);
+            setTimeout(() => document.body.removeChild(toast), 300);
         }, 3000);
     }
-    
-    // Fix for :contains selector which is not standard
-    if (!Element.prototype.matches) {
-        Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
-    }
-    
-    if (!NodeList.prototype.forEach) {
-        NodeList.prototype.forEach = Array.prototype.forEach;
-    }
-    
-    // Helper function to find elements containing text
-    function getElementsContainingText(selector, text) {
-        const elements = document.querySelectorAll(selector);
-        return Array.from(elements).filter(element => element.textContent.includes(text));
-    }
-    
-    // Use this instead of the :contains selector
-    const editButtons = getElementsContainingText('button', 'Chỉnh sửa hồ sơ');
-    if (editButtons.length > 0) {
-        editButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                if (editProfileModal) {
-                    editProfileModal.classList.remove('hidden');
+
+    /**
+     * ===================================================================
+     * MODULE 1: LOGIC XỬ LÝ CHỈNH SỬA HỒ SƠ
+     * ===================================================================
+     */
+    const ProfilePageLogic = {
+        elements: {
+            modal: document.getElementById('edit-profile-modal'),
+            closeButton: document.getElementById('close-modal'),
+            form: document.getElementById('edit-profile-form'),
+            editButtons: []
+        },
+
+        init() {
+            // Helper để tìm nút bấm bằng text, vì :contains không hoạt động
+            this.elements.editButtons = Array.from(document.querySelectorAll('a, button')).filter(el => el.textContent.includes('Chỉnh sửa hồ sơ'));
+            
+            if (!this.elements.modal || this.elements.editButtons.length === 0) {
+                 console.log('Không tìm thấy modal hoặc nút chỉnh sửa hồ sơ.');
+                 return;
+            }
+            this.setupEventListeners();
+            console.log('[ProfilePageLogic] Initialized successfully.');
+        },
+
+        setupEventListeners() {
+            this.elements.editButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault(); // Dùng cho cả thẻ <a> và <button>
+                    this.openModal();
+                });
+            });
+
+            this.elements.closeButton?.addEventListener('click', () => this.closeModal());
+            this.elements.modal?.addEventListener('click', (e) => {
+                if (e.target === this.elements.modal) this.closeModal();
+            });
+            this.elements.form?.addEventListener('submit', (e) => this.handleFormSubmit(e));
+             document.addEventListener('keydown', (e) => {
+                if (e.key === "Escape" && !this.elements.modal.classList.contains('hidden')) {
+                    this.closeModal();
                 }
             });
-        });
-    }
+        },
+
+        openModal() {
+            this.elements.modal.classList.remove('hidden');
+        },
+
+        closeModal() {
+            this.elements.modal.classList.add('hidden');
+        },
+
+        handleFormSubmit(event) {
+            event.preventDefault();
+            // Nơi để bạn thêm logic gửi dữ liệu form bằng AJAX sau này
+            console.log('Form submitted!');
+            this.closeModal();
+            showToast('Thông tin hồ sơ đã được cập nhật!');
+        }
+    };
+
+    /**
+     * ===================================================================
+     * MODULE 2: LOGIC XỬ LÝ HỦY ĐƠN HÀNG (Giữ nguyên, đã ổn)
+     * ===================================================================
+     */
+    const OrderCancellationLogic = {
+        elements: {
+            modal: document.getElementById('cancel-confirmation-modal'),
+            confirmBtn: document.getElementById('cancel-confirm-btn'),
+            abortBtn: document.getElementById('cancel-abort-btn'),
+            cancelForms: document.querySelectorAll('.cancel-order-form')
+        },
+        state: {
+            formToSubmit: null
+        },
+
+        init() {
+            if (!this.elements.modal || this.elements.cancelForms.length === 0) {
+                console.log('Không tìm thấy modal hoặc form hủy đơn. Bỏ qua khởi tạo.');
+                return;
+            }
+            this.setupEventListeners();
+            console.log('[OrderCancellationLogic] Initialized successfully.');
+        },
+
+        setupEventListeners() {
+            this.elements.cancelForms.forEach(form => {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.openModal(form);
+                });
+            });
+            this.elements.confirmBtn?.addEventListener('click', () => this.confirmAction());
+            this.elements.abortBtn?.addEventListener('click', () => this.closeModal());
+            this.elements.modal?.addEventListener('click', (e) => {
+                if (e.target === this.elements.modal) this.closeModal();
+            });
+        },
+
+        openModal(form) {
+            this.state.formToSubmit = form;
+            this.elements.modal.classList.remove('hidden');
+        },
+
+        closeModal() {
+            this.state.formToSubmit = null;
+            this.elements.modal.classList.add('hidden');
+        },
+
+        confirmAction() {
+            if (this.state.formToSubmit) {
+                this.sendCancelRequest(this.state.formToSubmit);
+            }
+            this.closeModal();
+        },
+
+        sendCancelRequest(form) {
+            const button = form.querySelector('button[type="submit"]');
+            const originalButtonContent = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+            const url = form.action;
+            const formData = new FormData(form);
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': formData.get('_token'),
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json().then(data => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok && data.success) {
+                    showToast(data.message || 'Hủy đơn hàng thành công!', 'success');
+                    this.updateUIAfterCancel(form);
+                } else {
+                    throw new Error(data.message || 'Hủy đơn thất bại.');
+                }
+            })
+            .catch(error => {
+                showToast(error.message, 'error');
+                button.innerHTML = originalButtonContent;
+                button.disabled = false;
+            });
+        },
+
+        updateUIAfterCancel(form) {
+            const orderCard = form.closest('.border.rounded-lg');
+            if (!orderCard) return;
+            const statusBadge = orderCard.querySelector('.text-xs.font-medium');
+            if (statusBadge) {
+                statusBadge.textContent = 'Đã hủy';
+                statusBadge.style.backgroundColor = '#FEE2E2';
+                statusBadge.style.color = '#DC2626';
+            }
+            const actionButtonsContainer = form.parentElement;
+            if (actionButtonsContainer) {
+                actionButtonsContainer.innerHTML = '<span class="text-sm text-gray-500">Đã hủy bởi bạn</span>';
+            }
+        }
+    };
+
+    // ===================================================================
+    // KHỞI CHẠY CÁC MODULE
+    // ===================================================================
+    ProfilePageLogic.init();
+    OrderCancellationLogic.init();
+
 });
 </script>
 @endsection

@@ -292,7 +292,7 @@ if ($order->status == 'cancelled') {
     </div>
 
     {{-- THÊM ĐOẠN HTML NÀY VÀO CUỐI FILE --}}
-    <div id="cancel-confirmation-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+    <div id="cancel-confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
         <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
                 <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
@@ -322,187 +322,245 @@ if ($order->status == 'cancelled') {
 {{-- Script xử lý modal và real-time --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // =========================================================
-    // MODAL LOGIC (Plain Javascript, no dependencies)
-    // =========================================================
-    const modalContainer = document.getElementById('product-details-modal');
-    const modalContent = document.getElementById('modal-content');
-    const viewButtons = document.querySelectorAll('.view-product-details-btn');
+    
+    /**
+     * Gói toàn bộ logic của trang vào một object để dễ quản lý
+     */
+    const CustomerOrderPage = {
+        //-------------------------------------------------
+        // PHẦN 1: KHỞI TẠO VÀ CẤU HÌNH
+        //-------------------------------------------------
+        elements: {
+            card: null,
+            productModal: null,
+            productModalContent: null,
+            cancelModal: null,
+            cancelConfirmBtn: null,
+            cancelAbortBtn: null,
+            viewProductButtons: [],
+            actionForms: [], 
+            cancelForms: []
+        },
 
-    const openModal = (details) => {
-        let optionsHtml = '';
-        if (details.options && details.options.length > 0) {
-            optionsHtml = `
-                <div>
-                    <h4 class="font-semibold mb-2 text-gray-800">Tùy chọn</h4>
-                    <div class="flex flex-wrap gap-2">
-                        ${details.options.map(option => `<span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">${option}</span>`).join('')}
-                    </div>
-                </div>`;
-        }
-        
-        let toppingsHtml = '';
-        if (details.toppings && details.toppings.length > 0) {
-            toppingsHtml = `
-                <div>
-                    <h4 class="font-semibold mb-2 text-gray-800">Topping</h4>
-                    <div class="flex flex-wrap gap-2">
-                        ${details.toppings.map(topping => `<span class="text-sm bg-orange-100 text-orange-700 px-3 py-1 rounded-full">${topping}</span>`).join('')}
-                    </div>
-                </div>`;
-        }
-        
-        let ingredientsHtml = '';
-        if (details.ingredients && details.ingredients.length > 0) {
-            ingredientsHtml = `
-                <div>
-                    <h4 class="font-semibold mb-2 text-gray-800">Thành phần</h4>
-                    <div class="flex flex-wrap gap-2">
-                        ${details.ingredients.map(ing => `<span class="text-sm bg-gray-100 px-3 py-1 rounded-full">${ing}</span>`).join('')}
-                    </div>
-                </div>`;
-        }
+        state: {
+            orderId: null,
+            formToSubmitForCancel: null
+        },
 
-        modalContent.innerHTML = `
-            <div class="p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <h3 class="text-xl font-bold">${details.name}</h3>
-                    <button type="button" class="close-modal-btn text-gray-400 hover:text-gray-600">&times;</button>
-                </div>
-                <img src="${details.image}" alt="${details.name}" class="w-full h-48 rounded-lg object-cover mb-4 border" />
-                <div class="space-y-4">
-                    <div>
-                        <h4 class="font-semibold mb-2 text-gray-800">Mô tả</h4>
-                        <p class="text-gray-700 text-sm">${details.description}</p>
-                    </div>
-                    ${ingredientsHtml}
-                    ${optionsHtml}
-                    ${toppingsHtml}
-                    <div class="pt-4 border-t">
-                        <div class="flex justify-between items-center">
-                            <span class="text-lg font-semibold text-gray-800">Giá:</span>
-                            <span class="text-xl font-bold text-orange-600">${new Intl.NumberFormat('vi-VN').format(details.price)}đ</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="text-gray-600">Số lượng:</span>
-                            <span class="font-semibold">${details.quantity}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-6 pt-4 border-t">
-                    <button type="button" class="close-modal-btn w-full h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-orange-600 text-white hover:bg-orange-700">Đóng</button>
-                </div>
-            </div>`;
+        /**
+         * Hàm khởi tạo chính, chạy khi DOM đã sẵn sàng
+         */
+        init() {
+            this.cacheDOMElements();
+            if (!this.elements.card) return; // Dừng lại nếu không phải trang chi tiết đơn hàng
 
-        modalContainer.style.display = 'flex';
-        setTimeout(() => {
-            modalContainer.classList.remove('opacity-0', 'pointer-events-none');
-            modalContent.classList.remove('scale-95');
-        }, 10);
-    };
+            this.state.orderId = this.elements.card.dataset.orderId;
+            this.classifyForms();
+            this.setupEventListeners();
+            this.initRealtimeListener();
+            console.log('[CustomerOrderPage] Initialized successfully.');
+        },
 
-    const closeModal = () => {
-        modalContainer.classList.add('opacity-0');
-        modalContent.classList.add('scale-95');
-        setTimeout(() => {
-            modalContainer.style.display = 'none';
-            modalContainer.classList.add('pointer-events-none');
-        }, 300);
-    };
+        /**
+         * Lấy và lưu trữ các phần tử DOM cần thiết vào object 'elements'
+         */
+        cacheDOMElements() {
+            this.elements.card = document.getElementById('order-details-card');
+            this.elements.productModal = document.getElementById('product-details-modal');
+            this.elements.productModalContent = document.getElementById('modal-content');
+            this.elements.cancelModal = document.getElementById('cancel-confirmation-modal');
+            this.elements.cancelConfirmBtn = document.getElementById('cancel-confirm-btn');
+            this.elements.cancelAbortBtn = document.getElementById('cancel-abort-btn');
+            this.elements.viewProductButtons = document.querySelectorAll('.view-product-details-btn');
+        },
 
-    viewButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            // Sử dụng dataset.details thay vì getAttribute để tương thích tốt hơn
-            const details = JSON.parse(this.dataset.details);
-            openModal(details);
-        });
-    });
-
-    modalContainer.addEventListener('click', function (e) {
-        if (e.target === modalContainer) {
-            closeModal();
-        }
-    });
-
-    // Cần delegate event cho nút đóng vì nó được tạo động
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('close-modal-btn')) {
-            closeModal();
-        }
-    });
-
-    document.addEventListener('keydown', (e) => (e.key === "Escape") && closeModal());
-
-
-    // =========================================================
-    // REAL-TIME LOGIC (with Laravel Echo & Pusher)
-    // =========================================================
-    const orderId = document.getElementById('order-details-card').dataset.orderId;
-    if (window.Echo) {
-        window.Echo.private(`order.${orderId}`)
-            .listen('.OrderStatusUpdated', (event) => {
-                // Toast đã được xử lý chung ở layout, nhưng ta vẫn có thể thêm một thông báo ở đây nếu muốn
-                console.log('OrderStatusUpdated event received:', event);
-
-                // Chỉ cần tải lại trang, toast sẽ tự động hiển thị
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+        /**
+         * Phân loại các form trong khu vực action-buttons
+         */
+        classifyForms() {
+            document.querySelectorAll('#action-buttons form').forEach(form => {
+                if (form.classList.contains('cancel-order-form')) {
+                    this.elements.cancelForms.push(form);
+                } else {
+                    this.elements.actionForms.push(form);
+                }
             });
-    }
+        },
+        
+        //-------------------------------------------------
+        // PHẦN 2: GÁN SỰ KIỆN
+        //-------------------------------------------------
 
-    // =========================================================
-    // PHẦN 3: LOGIC XÁC NHẬN HỦY ĐƠN (SWEETALERT2)
-    // =========================================================
-    const cancelModal = document.getElementById('cancel-confirmation-modal');
-    const confirmCancelBtn = document.getElementById('cancel-confirm-btn');
-    const abortCancelBtn = document.getElementById('cancel-abort-btn');
-    let formToSubmit = null; // Biến để lưu trữ form cần submit
+        /**
+         * Gán tất cả các sự kiện cho các phần tử
+         */
+        setupEventListeners() {
+            // Sự kiện cho nút xem chi tiết sản phẩm
+            this.elements.viewProductButtons.forEach(button => {
+                button.addEventListener('click', (e) => this.handleViewProduct(e));
+            });
 
-    // Hàm để mở modal xác nhận hủy
-    const openCancelModal = (form) => {
-        formToSubmit = form; // Lưu lại form khi modal mở ra
-        if(cancelModal) cancelModal.classList.remove('hidden');
-    };
+            // Sự kiện cho modal sản phẩm (đóng khi click ngoài, nút X)
+            this.elements.productModal?.addEventListener('click', (e) => {
+                if (e.target === this.elements.productModal || e.target.classList.contains('close-modal-btn')) {
+                    this.closeProductModal();
+                }
+            });
 
-    // Hàm để đóng modal xác nhận hủy
-    const closeCancelModal = () => {
-        formToSubmit = null; // Xóa form đã lưu
-        if(cancelModal) cancelModal.classList.add('hidden');
-    };
+            // Sự kiện cho form HỦY ĐƠN (mở modal xác nhận)
+            this.elements.cancelForms.forEach(form => {
+                form.addEventListener('submit', (e) => this.handleCancelSubmission(e));
+            });
 
-    // Gán sự kiện cho các nút trong modal hủy
-    if (confirmCancelBtn) {
-        confirmCancelBtn.addEventListener('click', () => {
-            if (formToSubmit) {
-                formToSubmit.submit(); // Submit form đã được lưu
-            }
-            closeCancelModal();
-        });
-    }
+            // Sự kiện cho các nút trong modal hủy đơn
+            this.elements.cancelConfirmBtn?.addEventListener('click', () => this.confirmCancellation());
+            this.elements.cancelAbortBtn?.addEventListener('click', () => this.closeCancelModal());
 
-    if (abortCancelBtn) {
-        abortCancelBtn.addEventListener('click', () => {
-            closeCancelModal();
-        });
-    }
+            // Sự kiện đóng modal hủy đơn khi click ra ngoài
+            this.elements.cancelModal?.addEventListener('click', (e) => {
+                if (e.target === this.elements.cancelModal) {
+                    this.closeCancelModal();
+                }
+            });
 
+            // Sự kiện cho các form HÀNH ĐỘNG KHÁC (ví dụ: xác nhận nhận hàng) -> Dùng AJAX
+            this.elements.actionForms.forEach(form => {
+                form.addEventListener('submit', (e) => this.handleActionFormSubmit(e));
+            });
 
-    // =========================================================
-    // CẬP NHẬT LOGIC CHO NÚT "HỦY ĐƠN"
-    // =========================================================
-    document.querySelectorAll('.cancel-order-form button[type="submit"]').forEach(button => {
-        button.addEventListener('click', function (event) {
-            // Ngăn form gửi đi ngay lập tức
+            // Sự kiện chung để đóng các modal bằng phím Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === "Escape") {
+                    this.closeProductModal();
+                    this.closeCancelModal();
+                }
+            });
+        },
+        
+        //-------------------------------------------------
+        // PHẦN 3: CÁC HÀM XỬ LÝ HÀNH ĐỘNG
+        //-------------------------------------------------
+
+        handleCancelSubmission(event) {
             event.preventDefault();
-            
-            // Lấy form cha
-            const form = this.closest('form');
+            this.state.formToSubmitForCancel = event.target;
+            this.elements.cancelModal?.classList.remove('hidden');
+        },
+        
+        handleActionFormSubmit(event) {
+            event.preventDefault();
+            const form = event.target;
+            const button = form.querySelector('button[type="submit"]');
+            const originalButtonText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Đang xử lý...';
+            button.disabled = true;
 
-            // **Gọi hàm mở modal mới của chúng ta**
-            openCancelModal(form);
-        });
-    });
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok && data.toast) {
+                    if(typeof showToast === 'function') {
+                        showToast(data.toast.type, data.toast.title, data.toast.message);
+                    } else {
+                        alert(data.toast.message);
+                    }
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    throw new Error(data.message || 'Có lỗi xảy ra.');
+                }
+            })
+            .catch(error => {
+                if(typeof showToast === 'function') {
+                    showToast('error', 'Lỗi', error.message);
+                } else {
+                    alert('Lỗi: ' + error.message);
+                }
+                button.innerHTML = originalButtonText;
+                button.disabled = false;
+            });
+        },
+
+        confirmCancellation() {
+            if (this.state.formToSubmitForCancel) {
+                this.state.formToSubmitForCancel.submit();
+            }
+            this.closeCancelModal();
+        },
+        
+        closeCancelModal() {
+            this.state.formToSubmitForCancel = null;
+            this.elements.cancelModal?.classList.add('hidden');
+        },
+
+        handleViewProduct(event) {
+            try {
+                const details = JSON.parse(event.currentTarget.dataset.details);
+                this.openProductModal(details);
+            } catch (e) {
+                console.error("Lỗi khi phân tích cú pháp dữ liệu chi tiết sản phẩm:", e);
+                alert("Không thể hiển thị chi tiết sản phẩm.");
+            }
+        },
+
+        openProductModal(details) {
+            // ... (Nội dung hàm này đã đầy đủ và chính xác từ lần trước)
+            let optionsHtml = '';
+            if (details.options && details.options.length > 0) {
+                optionsHtml = `<div><h4 class="font-semibold mb-2 text-gray-800">Tùy chọn</h4><div class="flex flex-wrap gap-2">${details.options.map(option => `<span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">${option}</span>`).join('')}</div></div>`;
+            }
+            let toppingsHtml = '';
+            if (details.toppings && details.toppings.length > 0) {
+                toppingsHtml = `<div><h4 class="font-semibold mb-2 text-gray-800">Topping</h4><div class="flex flex-wrap gap-2">${details.toppings.map(topping => `<span class="text-sm bg-orange-100 text-orange-700 px-3 py-1 rounded-full">${topping}</span>`).join('')}</div></div>`;
+            }
+            let ingredientsHtml = '';
+            if (details.ingredients && details.ingredients.length > 0) {
+                ingredientsHtml = `<div><h4 class="font-semibold mb-2 text-gray-800">Thành phần</h4><div class="flex flex-wrap gap-2">${details.ingredients.map(ing => `<span class="text-sm bg-gray-100 px-3 py-1 rounded-full">${ing}</span>`).join('')}</div></div>`;
+            }
+
+            this.elements.productModalContent.innerHTML = `<div class="p-6"><div class="flex justify-between items-start mb-4"><h3 class="text-xl font-bold">${details.name}</h3><button type="button" class="close-modal-btn text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button></div><img src="${details.image}" alt="${details.name}" class="w-full h-48 rounded-lg object-cover mb-4 border" /><div class="space-y-4"><div><h4 class="font-semibold mb-2 text-gray-800">Mô tả</h4><p class="text-gray-700 text-sm">${details.description}</p></div>${ingredientsHtml}${optionsHtml}${toppingsHtml}<div class="pt-4 border-t"><div class="flex justify-between items-center"><span class="text-lg font-semibold text-gray-800">Giá:</span><span class="text-xl font-bold text-orange-600">${new Intl.NumberFormat('vi-VN').format(details.price)}đ</span></div><div class="flex justify-between items-center mt-2"><span class="text-gray-600">Số lượng:</span><span class="font-semibold">${details.quantity}</span></div></div></div><div class="mt-6 pt-4 border-t"><button type="button" class="close-modal-btn w-full h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-orange-600 text-white hover:bg-orange-700">Đóng</button></div></div>`;
+
+            this.elements.productModal.style.display = 'flex';
+            setTimeout(() => {
+                this.elements.productModal.classList.remove('opacity-0', 'pointer-events-none');
+                this.elements.productModalContent.classList.remove('scale-95');
+            }, 10);
+        },
+
+        closeProductModal() {
+            this.elements.productModal.classList.add('opacity-0');
+            this.elements.productModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                this.elements.productModal.style.display = 'none';
+                this.elements.productModal.classList.add('pointer-events-none');
+            }, 300);
+        },
+
+        initRealtimeListener() {
+            if (window.Echo) {
+                window.Echo.private(`order.${this.state.orderId}`)
+                    .listen('.OrderStatusUpdated', (event) => {
+                        console.log('Real-time event [OrderStatusUpdated] received:', event);
+                        if(typeof showToast === 'function') {
+                             showToast('info', 'Cập nhật trạng thái', `Trạng thái đơn hàng vừa được cập nhật thành: ${event.status_text}`);
+                        }
+                        setTimeout(() => window.location.reload(), 2500);
+                    });
+            } else {
+                console.warn('[CustomerOrderPage] Laravel Echo is not defined.');
+            }
+        }
+    };
+
+    // Chạy hàm khởi tạo
+    CustomerOrderPage.init();
+
 });
 </script>
 @endsection

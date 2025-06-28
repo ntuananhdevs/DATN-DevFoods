@@ -22,6 +22,7 @@ use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Customer\Auth\RegisterController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
+use Illuminate\Support\Facades\Broadcast;
 
 // API Controllers for Customer
 // use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
@@ -162,4 +163,9 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
+
+    
+    Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+        return Broadcast::auth($request);
+    })->middleware(['web']);
 });

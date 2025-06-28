@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Events\OrderCancelledByCustomer;
 use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
@@ -74,6 +75,8 @@ class OrderController extends Controller
         if ($newStatus === 'cancelled' && $order->status === 'awaiting_confirmation') {
             $canUpdate = true;
             $message = 'Đã hủy đơn hàng thành công!';
+            // Broadcast sự kiện hủy đơn đến kênh 'drivers'
+            broadcast(new OrderCancelledByCustomer($order->id))->toOthers();
         } elseif ($newStatus === 'item_received' && $order->status === 'delivered') {
             $canUpdate = true;
             $message = 'Đã xác nhận nhận hàng thành công!';

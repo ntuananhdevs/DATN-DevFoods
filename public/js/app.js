@@ -6667,13 +6667,19 @@ __webpack_require__.r(__webpack_exports__);
 
 
 window.Pusher = pusher_js__WEBPACK_IMPORTED_MODULE_1___default.a;
+
+// Xác định endpoint xác thực dựa trên URL của trang
+var authEndpoint = '/broadcasting/auth'; // Mặc định cho customer
+if (window.location.pathname.startsWith('/driver')) {
+  authEndpoint = '/driver/broadcasting/auth'; // Dùng endpoint riêng cho driver
+}
 window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__["default"]({
   broadcaster: 'pusher',
   key: "c14039c985052ba9dbe8",
   cluster: "ap1",
   forceTLS: true,
   // **THÊM DÒNG QUAN TRỌNG NÀY VÀO**
-  authEndpoint: '/broadcasting/auth'
+  authEndpoint: authEndpoint
 });
 
 /***/ }),

@@ -10,8 +10,11 @@ use App\Http\Controllers\Branch\BranchRevenueController;
 use App\Http\Controllers\Branch\BranchCategoryController;
 
 Route::middleware(['auth:manager', 'role:manager'])->prefix('branch')->group(function () {
-    Route::get('/', [BranchDashboardController::class, 'index'])->name('branch.dashboard');
-    Route::get('/orders', [BranchOrderController::class, 'index'])->name('branch.orders');
+    Route::get('/', [BranchDashboardController::class, 'index'])->name('branch.dashboard');// Nhóm các route liên quan đến đơn hàng
+    Route::prefix('orders')->name('orders.')->group(function() {
+        Route::get('/', [BranchOrderController::class, 'index'])->name('index');
+        Route::post('/{order}/update-status', [BranchOrderController::class, 'updateStatus'])->name('updateStatus');
+    });
     Route::get('/products', [BranchProductController::class, 'index'])->name('branch.products');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('branch.categories');
     Route::get('/staff', [BranchStaffController::class, 'index'])->name('branch.staff');

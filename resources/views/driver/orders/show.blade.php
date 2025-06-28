@@ -187,240 +187,263 @@
 
 @push('scripts')
 <script>
-// ======================================================================
-// PHẦN 1: CÁC HÀM TIỆN ÍCH TỰ CHỨA (MODAL & TOAST - KHÔNG CẦN FILE NGOÀI)
-// ======================================================================
-
-/**
- * Hiển thị một thông báo toast động, tự hủy sau vài giây.
- * @param {string} type - Loại toast ('success' hoặc 'error')
- * @param {string} message - Nội dung thông báo
- */
-function showLocalToast(type, message) {
-    // Tạo phần tử toast
-    const toast = document.createElement('div');
-    const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-times-circle';
-    const color = type === 'success' ? '#4CAF50' : '#F44336';
-
-    // Áp dụng CSS trực tiếp
-    Object.assign(toast.style, {
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        backgroundColor: color,
-        color: 'white',
-        padding: '15px 20px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        display: 'flex',
-        alignItems: 'center',
-        zIndex: '9999',
-        opacity: '0',
-        transform: 'translateX(100%)',
-        transition: 'opacity 0.3s ease, transform 0.3s ease'
-    });
-    
-    toast.innerHTML = `<i class="${icon}" style="margin-right: 10px; font-size: 1.2em;"></i> ${message}`;
-
-    // Thêm vào trang
-    document.body.appendChild(toast);
-
-    // Animation hiển thị
-    setTimeout(() => {
-        toast.style.opacity = '1';
-        toast.style.transform = 'translateX(0)';
-    }, 100);
-
-    // Tự động xóa sau 3 giây
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-
-// --- Các hàm điều khiển Modal Xác nhận có sẵn của bạn ---
-// Đoạn code này đã tốt, chúng ta giữ lại và sử dụng
-const modal = document.getElementById('confirmationModal');
-const modalTitle = document.getElementById('modalTitle');
-const modalMessage = document.getElementById('modalMessage');
-const modalConfirm = document.getElementById('modalConfirm');
-const modalCancel = document.getElementById('modalCancel');
-const modalIcon = document.getElementById('modalIcon');
-let confirmAction = () => {};
-
-window.showConfirmationModal = function(title, message, onConfirm, config = { /* ... */ }) {
-    if(!modal) return;
-    modalTitle.textContent = title;
-    modalMessage.textContent = message;
-    modalConfirm.textContent = config.confirmText;
-    modalConfirm.className = `w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-${config.confirmColor}-600 hover:bg-${config.confirmColor}-700`;
-    modalIcon.className = `mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-${config.iconColor}-100 text-${config.iconColor}-600 mb-4`;
-    modalIcon.firstElementChild.className = `${config.icon} text-2xl`;
-    confirmAction = onConfirm;
-    modal.classList.remove('hidden');
-}
-function hideModal() {
-    if(modal) modal.classList.add('hidden');
-}
-
-
-// ======================================================================
-// PHẦN 2: LOGIC CHÍNH KHI TRANG ĐƯỢC TẢI
-// ======================================================================
-
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('[SHOW] DOM đã tải. Bắt đầu chạy script.');
 
-    // Gán sự kiện cho các nút trong modal (nếu modal tồn tại)
-    if(modal) {
-        modalConfirm.addEventListener('click', () => {
-            confirmAction();
-            hideModal();
-        });
-        modalCancel.addEventListener('click', hideModal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) { hideModal(); } });
-    }
+    /**
+     * ===================================================================
+     * MODULE: DRIVER ORDER DETAIL PAGE LOGIC
+     * Gói toàn bộ logic của trang vào một object để đồng nhất với Customer
+     * ===================================================================
+     */
+    const DriverOrderDetailPage = {
+        
+        //-------------------------------------------------
+        // PHẦN 1: KHỞI TẠO VÀ CẤU HÌNH
+        //-------------------------------------------------
+        elements: {
+            card: document.getElementById('order-details-card'),
+            modal: document.getElementById('confirmationModal'),
+            modalTitle: document.getElementById('modalTitle'),
+            modalMessage: document.getElementById('modalMessage'),
+            modalConfirm: document.getElementById('modalConfirm'),
+            modalCancel: document.getElementById('modalCancel'),
+            modalIcon: document.getElementById('modalIcon'),
+            statusIcon: document.querySelector('.flex.items-center.space-x-3 .text-xl i'),
+            statusText: document.querySelector('.flex.items-center.space-x-3 h2.font-semibold'),
+            statusTime: document.querySelector('.flex.items-center.space-x-3 p.text-sm'),
+            statusBadge: document.querySelector('.flex.items-center.space-x-3 span.ml-auto'),
+            actionButtonContainer: document.querySelector('.space-y-3')
+        },
+        
+        state: {
+            orderId: null,
+            onConfirmAction: () => {} // Lưu trữ hành động sẽ thực hiện khi bấm nút confirm
+        },
+        
+        init() {
+            if (!this.elements.card) {
+                console.error('[DriverPage] Không tìm thấy card chi tiết đơn hàng.');
+                return;
+            }
+            this.state.orderId = this.elements.card.dataset.orderId;
+            this.setupEventListeners();
+            this.initRealtimeListener();
+            console.log('[DriverPage] Initialized successfully.');
+        },
+        
+        setupEventListeners() {
+            this.elements.modalConfirm?.addEventListener('click', () => {
+                this.state.onConfirmAction();
+                this.closeModal();
+            });
+            this.elements.modalCancel?.addEventListener('click', () => this.closeModal());
+            this.elements.modal?.addEventListener('click', e => {
+                if (e.target === this.elements.modal) this.closeModal();
+            });
+             document.addEventListener('keydown', (e) => {
+                if (e.key === "Escape" && !this.elements.modal.classList.contains('hidden')) {
+                    this.closeModal();
+                }
+            });
+        },
 
-    // --- REAL-TIME LOGIC (PUSHER) ---
-    const orderDetailsCard = document.getElementById('order-details-card');
-    if (orderDetailsCard) {
-        const orderId = orderDetailsCard.dataset.orderId;
-        console.log(`[SHOW] Tìm thấy orderId: ${orderId}`);
+        //-------------------------------------------------
+        // PHẦN 2: CÁC HÀM TIỆN ÍCH (MODAL & TOAST)
+        //-------------------------------------------------
 
-        if (window.Echo && orderId) {
-            console.log(`[SHOW] Đang kết nối tới Echo channel: private-order.${orderId}`);
+        showToast(message, type = 'success') {
+            // Đảm bảo message luôn là một chuỗi có thể hiển thị
+            const displayMessage = message || (type === 'error' ? 'Có lỗi xảy ra' : 'Thao tác thành công');
+
+            const toast = document.createElement('div');
+            let bgColor, iconClass;
+
+            switch (type) {
+                case 'error':
+                    bgColor = 'bg-red-600';
+                    iconClass = 'fa-times-circle';
+                    break;
+                case 'info':
+                    bgColor = 'bg-blue-600';
+                    iconClass = 'fa-info-circle';
+                    break;
+                case 'success':
+                default:
+                    bgColor = 'bg-green-600';
+                    iconClass = 'fa-check-circle';
+                    break;
+            }
+
+            toast.className = `fixed top-5 right-5 text-white px-4 py-3 rounded-lg shadow-lg z-[101] transition-all duration-300 opacity-0 transform translate-x-full ${bgColor}`;
+            toast.innerHTML = `<i class="fas ${iconClass} mr-2"></i> ${displayMessage}`;
             
-            const privateChannel = window.Echo.private(`order.${orderId}`);
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-x-full');
+            }, 10);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3500);
+        },
 
-            // SỬA LỖI Ở ĐÂY: Dùng .subscribed() và .error() để gỡ lỗi kết nối
-            privateChannel
-                .subscribed(() => {
-                    console.log(`[SHOW] Đã đăng ký thành công vào kênh: private-order.${orderId}`);
-                })
-                .error((error) => {
-                    console.error(`[SHOW] LỖI khi đăng ký vào kênh private! Status: ${error.status}`, error);
-                })
-                .listen('.OrderStatusUpdated', (event) => {
-                    console.log('[SHOW] ĐÃ NHẬN ĐƯỢC SỰ KIỆN REAL-TIME!', event);
+        showModal(title, message, onConfirm, config) {
+            this.elements.modalTitle.textContent = title;
+            this.elements.modalMessage.textContent = message;
+            this.elements.modalConfirm.textContent = config.confirmText;
+            this.elements.modalConfirm.className = `w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-${config.confirmColor}-600 hover:bg-${config.confirmColor}-700`;
+            this.elements.modalIcon.className = `mx-auto w-12 h-12 rounded-full flex items-center justify-center bg-${config.iconColor}-100 text-${config.iconColor}-600 mb-4`;
+            this.elements.modalIcon.firstElementChild.className = `${config.icon} text-2xl`;
+            this.state.onConfirmAction = onConfirm;
+            this.elements.modal.classList.remove('hidden');
+        },
+
+        closeModal() {
+            this.elements.modal.classList.add('hidden');
+        },
+
+        //-------------------------------------------------
+        // PHẦN 3: XỬ LÝ HÀNH ĐỘNG VÀ REAL-TIME
+        //-------------------------------------------------
+
+        performAction(url, successMessage, button) {
+            const originalContent = button?.innerHTML;
+            if(button) {
+                button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Đang xử lý...`;
+                button.disabled = true;
+            }
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                }
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok && data.success) {
+                    // Ưu tiên message từ server, nếu không có thì dùng message mặc định
+                    this.showToast(data.message || successMessage, 'success');
                     
-                    // Thay thế bằng hàm toast có sẵn của bạn
-                    if(typeof dtmodalShowToast === 'function') {
-                            dtmodalShowToast('info', { title: 'Trạng thái cập nhật', message: `Đơn hàng vừa được cập nhật: ${event.status_text}` });
-                    } else {
-                        // Hoặc dùng hàm toast tự chứa nếu dtmodal không tồn tại
-                        showLocalToast('info', `Đơn hàng vừa được cập nhật: ${event.status_text}`);
-                    }
+                    // Cập nhật giao diện không reload (bạn có thể thay đổi lại ở đây nếu muốn)
+                    // this.updateUIAfterAction(data.order);
+                    setTimeout(() => window.location.reload(), 1000); 
 
-                    setTimeout(() => window.location.reload(), 2000);
-                });
+                } else {
+                    // Ném lỗi với message từ server hoặc message mặc định
+                    throw new Error(data.message || 'Thao tác thất bại.');
+                }
+            })
+            .catch(error => {
+                // `error.message` sẽ luôn có giá trị ở đây
+                this.showToast(error.message, 'error');
+                if(button) {
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                }
+            });
+        },
 
-        } else {
-            console.error('[SHOW] Lỗi: window.Echo chưa được khởi tạo hoặc không tìm thấy orderId.');
+        updateUIAfterAction(orderData) {
+            if(!orderData) return;
+
+            // 1. Cập nhật khối trạng thái ở trên cùng
+            const statusColor = orderData.status_color;
+            this.elements.statusIcon.className = orderData.status_icon;
+            this.elements.statusIcon.parentElement.style.backgroundColor = statusColor.bg;
+            this.elements.statusIcon.parentElement.style.color = statusColor.text;
+            this.elements.statusText.textContent = orderData.status_text;
+            this.elements.statusTime.textContent = `Cập nhật lúc: ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+            this.elements.statusBadge.style.backgroundColor = statusColor.bg;
+            this.elements.statusBadge.style.color = statusColor.text;
+            
+            // 2. Cập nhật khu vực nút bấm hành động ở dưới cùng
+            let newButtonHTML = '';
+            switch(orderData.status) {
+                case 'driver_accepted': // Giả sử trạng thái sau khi accept là đây
+                    newButtonHTML = `<button onclick="DriverOrderDetailPage.confirmPickupAction(this)" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700"><i class="fas fa-shopping-bag mr-2"></i>Xác nhận đã lấy hàng</button>`;
+                    break;
+                case 'in_transit': // Giả sử trạng thái sau khi pickup là đây
+                    newButtonHTML = `<button onclick="DriverOrderDetailPage.confirmDeliveryAction(this)" class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700"><i class="fas fa-check-double mr-2"></i>Xác nhận đã giao hàng</button>
+                                     <button onclick="DriverOrderDetailPage.navigateAction()" class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 mt-3"><i class="fas fa-route mr-2"></i>Xem bản đồ lớn</button>`;
+                    break;
+                case 'delivered':
+                case 'item_received':
+                    newButtonHTML = `<div class="bg-green-50 p-4 rounded-lg text-center"><i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i><p class="text-green-800 font-medium">Đơn hàng đã được giao thành công</p><p class="text-sm text-green-600">Lúc: ${orderData.actual_delivery_time}</p></div>`;
+                    break;
+                default:
+                    newButtonHTML = '<p class="text-center text-gray-500">Không có hành động nào.</p>';
+            }
+            this.elements.actionButtonContainer.innerHTML = newButtonHTML;
+        },
+
+        initRealtimeListener() {
+            if (window.Echo) {
+                window.Echo.private(`order.${this.state.orderId}`)
+                    .listen('.OrderStatusUpdated', (event) => {
+                        // Gọi hàm showToast đã được sửa lỗi
+                        this.showToast(`Trạng thái cập nhật: ${event.status_text}`, 'info');
+                        setTimeout(() => window.location.reload(), 2500);
+                    });
+            }
+        },
+
+        //-------------------------------------------------
+        // PHẦN 4: CÁC HÀM GỌI HÀNH ĐỘNG TỪ VIEW
+        //-------------------------------------------------
+
+        acceptAction(button) {
+            this.showModal('Chấp nhận đơn hàng?', 'Bạn có chắc chắn muốn nhận đơn hàng này không?', 
+                () => this.performAction("{{ route('driver.orders.accept', $order->id) }}", 'Đã chấp nhận đơn hàng!', button),
+                { confirmText: 'Nhận đơn', confirmColor: 'blue', icon: 'fas fa-check', iconColor: 'blue' }
+            );
+        },
+
+        confirmPickupAction(button) {
+            this.showModal('Xác nhận lấy hàng?', 'Bạn có chắc chắn đã nhận hàng từ chi nhánh?',
+                () => this.performAction("{{ route('driver.orders.confirm_pickup', $order->id) }}", 'Đã xác nhận lấy hàng!', button),
+                { confirmText: 'Đã lấy hàng', confirmColor: 'indigo', icon: 'fas fa-shopping-bag', iconColor: 'indigo' }
+            );
+        },
+
+        confirmDeliveryAction(button) {
+            this.showModal('Xác nhận giao hàng?', 'Bạn có chắc chắn đã giao hàng thành công?',
+                () => this.performAction("{{ route('driver.orders.confirm_delivery', $order->id) }}", 'Đã giao hàng thành công!', button),
+                { confirmText: 'Đã giao xong', confirmColor: 'green', icon: 'fas fa-check-double', iconColor: 'green' }
+            );
+        },
+
+        navigateAction() {
+            window.open(`/driver/orders/{{ $order->id }}/navigate`, '_blank');
+        },
+
+        callCustomerAction() {
+            const phone = '{{ $order->customer_phone ?? "" }}';
+            if (phone) {
+                this.showModal('Xác nhận cuộc gọi', `Bạn muốn gọi đến số ${phone}?`, 
+                    () => window.location.href = `tel:${phone}`,
+                    { confirmText: 'Gọi ngay', confirmColor: 'green', icon: 'fas fa-phone-alt', iconColor: 'green' }
+                );
+            } else {
+                this.showToast('Không có số điện thoại khách hàng.', 'error');
+            }
         }
-    } else {
-        console.error('[SHOW] Lỗi: Không tìm thấy element có ID "order-details-card".');
-    }
+    };
+
+    // Khởi chạy logic
+    DriverOrderDetailPage.init();
+
+    // Để có thể gọi từ HTML, chúng ta cần đưa các hàm action ra ngoài scope
+    window.acceptOrder = (btn) => DriverOrderDetailPage.acceptAction(btn);
+    window.confirmPickup = (btn) => DriverOrderDetailPage.confirmPickupAction(btn);
+    window.confirmDelivery = (btn) => DriverOrderDetailPage.confirmDeliveryAction(btn);
+    window.startDelivery = () => DriverOrderDetailPage.navigateAction();
+    window.callCustomer = () => DriverOrderDetailPage.callCustomerAction();
+
 });
-
-
-// ======================================================================
-// PHẦN 3: CÁC HÀM HÀNH ĐỘNG (ACTION FUNCTIONS)
-// ======================================================================
-
-function handleApiResponse(response) {
-    console.log('[DEBUG] Nhận được phản hồi từ server.');
-    if (response.ok) return response.json();
-    throw new Error('Lỗi mạng hoặc server.');
-}
-
-function handleSuccess(data) {
-    console.log('[DEBUG] Xử lý thành công:', data);
-    if (data.success) {
-        // Gọi hàm toast tự chứa của chúng ta
-        showLocalToast('success', data.message || 'Thao tác thành công!');
-        // Chờ 2 giây để user thấy toast rồi mới reload
-        setTimeout(() => window.location.reload(), 2000);
-    } else {
-        showErrorModal(data.message || 'Thao tác không thành công.');
-    }
-}
-
-function handleError(error) {
-    console.error('[DEBUG] Lỗi API:', error);
-    showErrorModal('Đã có lỗi xảy ra. Vui lòng thử lại.');
-}
-
-// Hàm tiện ích để hiển thị lỗi bằng modal
-function showErrorModal(message) {
-    if(typeof showConfirmationModal === 'function') {
-        showConfirmationModal('Thao tác thất bại', message, () => {}, { confirmText: 'Đã hiểu', confirmColor: 'red', icon: 'fas fa-exclamation-circle', iconColor: 'red' });
-    }
-}
-
-// 1. Chấp nhận đơn hàng
-function acceptOrder() {
-    showConfirmationModal('Chấp nhận đơn hàng?', 'Bạn có chắc chắn muốn nhận đơn hàng này không?', () => {
-        fetch("{{ route('driver.orders.accept', $order->id) }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json'
-            }
-        })
-        .then(handleApiResponse)
-        .then(handleSuccess)
-        .catch(handleError);
-    }, { confirmText: 'Nhận đơn', confirmColor: 'blue', icon: 'fas fa-check', iconColor: 'blue' });
-}
-
-// 2. Xác nhận đã lấy hàng
-function confirmPickup() {
-    showConfirmationModal('Xác nhận lấy hàng?', 'Bạn có chắc chắn đã nhận hàng từ chi nhánh?', () => {
-        fetch("{{ route('driver.orders.confirm_pickup', $order->id) }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json'
-            }
-        })
-        .then(handleApiResponse)
-        .then(handleSuccess)
-        .catch(handleError);
-    }, { confirmText: 'Đã lấy hàng', confirmColor: 'indigo', icon: 'fas fa-shopping-bag', iconColor: 'indigo' });
-}
-
-// 3. Xác nhận đã giao hàng
-function confirmDelivery() {
-    showConfirmationModal('Xác nhận giao hàng?', 'Bạn có chắc chắn đã giao hàng thành công?', () => {
-        fetch("{{ route('driver.orders.confirm_delivery', $order->id) }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                'Accept': 'application/json'
-            }
-        })
-        .then(handleApiResponse)
-        .then(handleSuccess)
-        .catch(handleError);
-    }, { confirmText: 'Đã giao xong', confirmColor: 'green', icon: 'fas fa-check-double', iconColor: 'green' });
-}
-
-// Các hàm khác (giữ nguyên)
-function startDelivery() { window.location.href = `/driver/orders/{{ $order->id }}/navigate`; }
-function callCustomer() {
-    const phone = '{{ $order->customer_phone ?? "" }}';
-    if (phone && phone !== 'Không có') {
-        showConfirmationModal('Xác nhận cuộc gọi', `Bạn có muốn thực hiện cuộc gọi đến số ${phone} không?`, () => {
-            window.location.href = `tel:${phone}`;
-        }, { confirmText: 'Gọi ngay', confirmColor: 'green', icon: 'fas fa-phone-alt', iconColor: 'green' });
-    } else {
-        showErrorModal('Không có thông tin số điện thoại của khách hàng cho đơn hàng này.');
-    }
-}
 </script>
 @endpush

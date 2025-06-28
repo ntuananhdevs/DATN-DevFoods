@@ -8,14 +8,14 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-Log::info('--- [DEBUG] channels.php file was loaded ---');
-Log::info('[DEBUG] Auth Status Check:', [
-    'default_guard' => Auth::getDefaultDriver(),
-    'is_web_logged_in' => Auth::guard('web')->check(),
-    'web_user_id' => Auth::guard('web')->id(),
-    'is_driver_logged_in' => Auth::guard('driver')->check(),
-    'driver_user_id' => Auth::guard('driver')->id()
-]);
+// Log::info('--- [DEBUG] channels.php file was loaded ---');
+// Log::info('[DEBUG] Auth Status Check:', [
+//     'default_guard' => Auth::getDefaultDriver(),
+//     'is_web_logged_in' => Auth::guard('web')->check(),
+//     'web_user_id' => Auth::guard('web')->id(),
+//     'is_driver_logged_in' => Auth::guard('driver')->check(),
+//     'driver_user_id' => Auth::guard('driver')->id()
+// ]);
 
 /*
 |--------------------------------------------------------------------------
@@ -145,34 +145,54 @@ Broadcast::channel('discounts', function ($user = null) {
 
 
 Broadcast::channel('order.{orderId}', function ($user, $orderId) {
-    Log::info('[DEBUG] Executing callback for order.' . $orderId); // Log này để xem callback có được gọi không
-
+    // Biến $user ở đây sẽ là User model nếu Customer đăng nhập (vì default guard là 'web').
+    // Chúng ta sẽ kiểm tra cả hai guard một cách tường minh.
+    
     $order = Order::find($orderId);
     if (!$order) {
         return false;
     }
 
-    // Ép kiểu (int) để đảm bảo so sánh chính xác
-    $isDriver = ($user instanceof Driver) && ((int)$user->id === (int)$order->driver_id);
-    $isCustomer = ($user instanceof User) && ((int)$user->id === (int)$order->customer_id);
+    // Kiểm tra nếu là Customer sở hữu đơn hàng
+    if (Auth::guard('web')->check() && Auth::guard('web')->id() === $order->customer_id) {
+        return true;
+    }
 
-    return $isCustomer || $isDriver;
+    // Kiểm tra nếu là Driver được gán cho đơn hàng
+    if (Auth::guard('driver')->check() && Auth::guard('driver')->id() === $order->driver_id) {
+        return true;
+    }
+
+    return false;
 });
 
-// Broadcast::channel('order.{orderId}', function ($user, $orderId) {
-//     // TẠM THỜI LUÔN TRẢ VỀ TRUE ĐỂ KIỂM TRA XEM CÓ VƯỢT QUA ĐƯỢC MIDDLEWARE KHÔNG
-//     Log::info('[FORCE TEST] Reached channel authorization callback for order.' . $orderId);
-//     return true; 
-// });
 
 /**
- * KÊNH THÔNG BÁO ĐƠN HÀNG MỚI CHO TÀI XẾ
- * Đây là kênh riêng tư, chỉ những người dùng đã đăng nhập và là Driver mới được nghe.
+ * Kênh chung cho tất cả tài xế.
  */
 Broadcast::channel('drivers', function ($user) {
-    // Chỉ cần kiểm tra xem người dùng đang xác thực có phải là Driver không.
-    return $user instanceof Driver;
+    // Thay vì kiểm tra "instanceof Driver", ta kiểm tra trực tiếp guard 'driver'.
+    // Điều này chính xác và an toàn hơn.
+    return Auth::guard('driver')->check();
 });
+
+// =========================================================================
+// === BỔ SUNG KÊNH MỚI CHO CHI NHÁNH ===
+// =========================================================================
+/**
+ * Kênh riêng cho từng chi nhánh.
+ * Dùng để nhận thông báo khi có đơn hàng mới được khách hàng đặt cho chi nhánh đó.
+ * Chỉ nhân viên/quản lý của chi nhánh đó mới được nghe.
+ */
+Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
+    // Giả sử model User của bạn có 'branch_id' và 'role'
+    $isBranchMember = in_array($user->role, ['manager', 'branch_staff']);
+    $isCorrectBranch = (int)$user->branch_id === (int)$branchId;
+
+    return $isBranchMember && $isCorrectBranch;
+});
+
+
 // Wishlist channel for a specific user
 Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
     // Only the authenticated user with the matching ID can listen.

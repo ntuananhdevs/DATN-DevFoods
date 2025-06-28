@@ -156,33 +156,166 @@
         </div>
     </div>
 </div>
+{{-- THÊM ĐOẠN HTML NÀY VÀO CUỐI FILE BLADE CỦA BẠN --}}
+<div id="cancel-confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="relative mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Xác nhận hủy đơn hàng</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">
+                    Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.
+                </p>
+            </div>
+            <div class="items-center px-4 py-3 flex gap-3">
+                <button id="cancel-abort-btn" class="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none">
+                    Không
+                </button>
+                <button id="cancel-confirm-btn" class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none">
+                    Đồng ý hủy
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // Lắng nghe sự kiện submit trên TẤT CẢ các form hủy đơn
-    document.querySelectorAll('.cancel-order-form').forEach(form => {
-        form.addEventListener('submit', function (event) {
-            // Ngăn form submit ngay lập tức
-            event.preventDefault();
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+        toast.className = `fixed bottom-4 right-4 text-white px-4 py-2 rounded-lg shadow-lg z-[101] transition-opacity duration-300 opacity-0 ${bgColor}`;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.remove('opacity-0'), 10);
+        setTimeout(() => {
+            toast.classList.add('opacity-0');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+    }
 
-            Swal.fire({
-                title: 'Bạn chắc chắn muốn hủy?',
-                text: "Hành động này không thể hoàn tác!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Đồng ý hủy',
-                cancelButtonText: 'Không'
-            }).then((result) => {
-                // Nếu người dùng bấm "Đồng ý", thì submit form
-                if (result.isConfirmed) {
-                    form.submit();
+    /**
+     * Logic để xử lý việc hủy đơn hàng trên toàn trang
+     */
+    const OrderCancellationLogic = {
+        elements: {
+            modal: document.getElementById('cancel-confirmation-modal'),
+            confirmBtn: document.getElementById('cancel-confirm-btn'),
+            abortBtn: document.getElementById('cancel-abort-btn'),
+            cancelForms: document.querySelectorAll('.cancel-order-form')
+        },
+        state: {
+            formToSubmit: null
+        },
+
+        init() {
+            if (!this.elements.modal) return;
+            this.setupEventListeners();
+        },
+
+        setupEventListeners() {
+            // Gán sự kiện cho tất cả các form hủy đơn
+            this.elements.cancelForms.forEach(form => {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.openModal(form);
+                });
+            });
+
+            // Gán sự kiện cho các nút trong modal
+            this.elements.confirmBtn?.addEventListener('click', () => this.confirmAction());
+            this.elements.abortBtn?.addEventListener('click', () => this.closeModal());
+            this.elements.modal?.addEventListener('click', (e) => {
+                if (e.target === this.elements.modal) this.closeModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === "Escape" && !this.elements.modal.classList.contains('hidden')) {
+                    this.closeModal();
                 }
             });
-        });
-    });
+        },
+
+        openModal(form) {
+            this.state.formToSubmit = form;
+            this.elements.modal.classList.remove('hidden');
+        },
+
+        closeModal() {
+            this.state.formToSubmit = null;
+            this.elements.modal.classList.add('hidden');
+        },
+
+        confirmAction() {
+            if (this.state.formToSubmit) {
+                this.sendCancelRequest(this.state.formToSubmit);
+            }
+            this.closeModal();
+        },
+
+        sendCancelRequest(form) {
+            const button = form.querySelector('button[type="submit"]');
+            const originalButtonContent = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            button.disabled = true;
+
+            const url = form.action;
+            const formData = new FormData(form);
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRF-TOKEN': formData.get('_token'),
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json().then(data => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok && data.success) {
+                    showToast(data.message || 'Hủy đơn hàng thành công!', 'success');
+                    this.updateUIAfterCancel(form);
+                } else {
+                    throw new Error(data.message || 'Hủy đơn thất bại.');
+                }
+            })
+            .catch(error => {
+                showToast(error.message, 'error');
+                button.innerHTML = originalButtonContent;
+                button.disabled = false;
+            });
+        },
+
+        updateUIAfterCancel(form) {
+            const orderCard = form.closest('.border.rounded-lg');
+            if (!orderCard) return;
+
+            // Cập nhật thẻ trạng thái
+            const statusBadge = orderCard.querySelector('.text-xs.font-medium');
+            if (statusBadge) {
+                statusBadge.textContent = 'Đã hủy';
+                statusBadge.style.backgroundColor = '#FEE2E2'; // Màu nền đỏ nhạt
+                statusBadge.style.color = '#DC2626'; // Màu chữ đỏ
+            }
+
+            // Tìm và thay thế khu vực chứa các nút hành động
+            const actionButtonsContainer = form.parentElement;
+            if (actionButtonsContainer) {
+                actionButtonsContainer.innerHTML = '<span class="text-sm text-gray-500">Đã hủy bởi bạn</span>';
+            }
+        }
+    };
+
+    // Khởi chạy logic
+    OrderCancellationLogic.init();
 });
 </script>
 @endpush

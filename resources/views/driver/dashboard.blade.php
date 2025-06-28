@@ -112,92 +112,151 @@
     .animate-pulse-fade-in { animation: pulse-fade-in 1.5s ease-in-out; }
 </style>
 <script>
-// Giữ nguyên toàn bộ script của bạn, nó đã hoạt động tốt
-document.addEventListener('DOMContentLoaded', function() {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    const statusToggle = document.getElementById('statusToggle');
-    const statusTextElements = document.querySelectorAll('.driver-status-text');
-    if (statusToggle && statusTextElements.length > 0) {
-        statusToggle.addEventListener('change', function() {
-            fetch("{{ route('driver.status.toggle') }}", {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-                body: JSON.stringify({ is_available: this.checked })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    statusTextElements.forEach(el => {
-                        el.textContent = data.is_available ? 'Bạn đang Online' : 'Bạn đang Offline';
-                    });
-                }
-            }).catch(error => console.error('Status Toggle Error:', error));
-        });
+    // Giữ nguyên toàn bộ script của bạn, nó đã hoạt động tốt
+    document.addEventListener('DOMContentLoaded', function() {
+
+        function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        let bgColor, iconClass;
+
+        switch (type) {
+            case 'info':
+                bgColor = 'bg-blue-600';
+                iconClass = 'fa-info-circle';
+                break;
+            case 'error':
+                bgColor = 'bg-red-600';
+                iconClass = 'fa-times-circle';
+                break;
+            case 'success':
+            default:
+                bgColor = 'bg-green-600';
+                iconClass = 'fa-check-circle';
+                break;
+        }
+        
+        toast.className = `fixed top-5 right-5 text-white px-4 py-3 rounded-lg shadow-lg z-[101] transition-all duration-300 opacity-0 transform translate-x-full ${bgColor}`;
+        toast.innerHTML = `<i class="fas ${iconClass} mr-2"></i> ${message}`;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.remove('opacity-0', 'translate-x-full');
+        }, 10);
+        
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-x-full');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 4000); // Hiển thị trong 4 giây
     }
-
-    const periodButtons = document.querySelectorAll('#period-buttons button');
-    if (periodButtons.length > 0) {
-        periodButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // Cập nhật lại class active
-                periodButtons.forEach(btn => {
-                    btn.classList.remove('bg-orange-100', 'text-orange-600');
-                    btn.classList.add('text-gray-500');
-                });
-                this.classList.add('bg-orange-100', 'text-orange-600');
-                this.classList.remove('text-gray-500');
-
-                const period = this.dataset.period;
-                fetch(`{{ route('driver.earnings.query') }}?period=${period}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('earnings-value').textContent = data.earnings;
-                        document.getElementById('earnings-count').textContent = data.order_count;
-                    }).catch(error => console.error('Earnings Query Error:', error));
+        
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const statusToggle = document.getElementById('statusToggle');
+        const statusTextElements = document.querySelectorAll('.driver-status-text');
+        if (statusToggle && statusTextElements.length > 0) {
+            statusToggle.addEventListener('change', function() {
+                fetch("{{ route('driver.status.toggle') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                    body: JSON.stringify({ is_available: this.checked })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusTextElements.forEach(el => {
+                            el.textContent = data.is_available ? 'Bạn đang Online' : 'Bạn đang Offline';
+                        });
+                    }
+                }).catch(error => console.error('Status Toggle Error:', error));
             });
-        });
-    }
+        }
 
-    console.log('[DASHBOARD] DOM đã tải. Bắt đầu lắng nghe đơn hàng mới.');
+        const periodButtons = document.querySelectorAll('#period-buttons button');
+        if (periodButtons.length > 0) {
+            periodButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Cập nhật lại class active
+                    periodButtons.forEach(btn => {
+                        btn.classList.remove('bg-orange-100', 'text-orange-600');
+                        btn.classList.add('text-gray-500');
+                    });
+                    this.classList.add('bg-orange-100', 'text-orange-600');
+                    this.classList.remove('text-gray-500');
+
+                    const period = this.dataset.period;
+                    fetch(`{{ route('driver.earnings.query') }}?period=${period}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('earnings-value').textContent = data.earnings;
+                            document.getElementById('earnings-count').textContent = data.order_count;
+                        }).catch(error => console.error('Earnings Query Error:', error));
+                });
+            });
+        }
+
+        // --- PHẦN REAL-TIME LOGIC HOÀN CHỈNH ---
     const availableOrdersList = document.getElementById('available-orders-list');
     
     if (window.Echo && availableOrdersList) {
-        // Lắng nghe trên kênh private 'drivers'
-        window.Echo.private('drivers')
-            .listen('.new-order-event', (eventData) => {
-                console.log('[DASHBOARD] Đã nhận được đơn hàng mới!', eventData.order);
+        const driverChannel = window.Echo.private('drivers');
+        
+        driverChannel
+            .subscribed(() => {
+                console.log("Real-time service connected. Waiting for new orders.");
+            })
+            .error((error) => {
+                console.error("Real-time connection error:", error);
+                showToast('Không thể kết nối tới máy chủ real-time.', 'error');
+            })
+            .listen('.new-order-event', (eventData) => { 
+                const order = eventData.order;
+                if(!order || !order.id) return;
+
+                // Tránh thêm đơn hàng đã tồn tại trên giao diện
+                if (document.getElementById(`available-order-${order.id}`)) {
+                    return;
+                }
+
+                // === THÊM THÔNG BÁO TOAST KHI CÓ ĐƠN MỚI ===
+                showToast(`Có đơn hàng mới #${order.order_code || order.id}!`, 'info');
 
                 // Xóa thông báo "không có đơn hàng" nếu có
                 const noOrderMsg = availableOrdersList.querySelector('.no-order-message');
-                if (noOrderMsg) noOrderMsg.remove();
+                if (noOrderMsg) {
+                    noOrderMsg.remove();
+                }
                 
-                const order = eventData.order;
-
-                // SỬA LỖI Ở ĐÂY: Tạo URL bằng cách nối chuỗi trong JavaScript
-                const orderShowUrl = `{{ url('/driver/orders') }}/${order.id}`; // Cách này an toàn và đúng
-
+                // Thêm đơn hàng mới vào giao diện
+                const orderShowUrl = `{{ url('/driver/orders') }}/${order.id}`;
                 const newOrderHtml = `
-                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-blue-200 animate-pulse-fade-in">
+                    <div id="available-order-${order.id}" class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-blue-200 animate-pulse-fade-in">
                         <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-box text-white text-lg"></i></div>
                         <div class="flex-1 min-w-0">
-                            <div class="font-medium text-gray-800">Đơn #${order.id}</div>
+                            <div class="font-medium text-gray-800">Đơn #${order.order_code || order.id}</div>
                             <div class="text-sm text-gray-500 truncate">${order.delivery_address}</div>
                         </div>
                         <a href="${orderShowUrl}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Nhận đơn</a>
                     </div>
                 `;
-                // Thêm vào đầu danh sách
                 availableOrdersList.insertAdjacentHTML('afterbegin', newOrderHtml);
-
-                // Có thể thêm một toast thông báo ở đây nếu muốn
-                if(typeof dtmodalShowToast === 'function') {
-                    dtmodalShowToast('notification', { title: 'Có đơn hàng mới!', message: `Đơn #${order.id} đang chờ nhận.` });
+            })
+            .listen('.order-cancelled-event', (eventData) => {
+                const cancelledOrderCard = document.getElementById(`available-order-${eventData.order_id}`);
+                if (cancelledOrderCard) {
+                    showToast(`Đơn hàng #${eventData.order_id} đã bị hủy.`, 'error');
+                    cancelledOrderCard.style.transition = 'opacity 0.5s ease';
+                    cancelledOrderCard.style.opacity = '0';
+                    setTimeout(() => {
+                        cancelledOrderCard.remove();
+                        if (availableOrdersList.children.length === 0) {
+                            availableOrdersList.innerHTML = '<p class="text-center text-sm text-gray-500 no-order-message">Hiện không có đơn hàng mới.</p>';
+                        }
+                    }, 500);
                 }
             });
 
-        console.log('[DASHBOARD] Đã thiết lập lắng nghe trên kênh "drivers".');
     } else {
-        console.error('[DASHBOARD] Lỗi: Không thể thiết lập Echo hoặc không tìm thấy #available-orders-list');
+        console.error('Real-time service failed to initialize.');
     }
 });
 </script>
