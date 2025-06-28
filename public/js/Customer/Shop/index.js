@@ -207,68 +207,91 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1000);
         }
     }
-    
-    // Toast notification function
-    function showToast(message, type = 'info') {
-        // Remove old toast if exists
-        const oldToast = document.querySelector('.custom-toast');
-        if (oldToast) oldToast.remove();
 
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = 'custom-toast fixed top-8 right-4 z-50 px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-toast-in';
-        toast.style.minWidth = '220px';
-        toast.style.maxWidth = '90vw';
-        toast.style.fontSize = '1rem';
-        toast.style.transition = 'transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.3s';
-        toast.style.transform = 'translateX(120%)';
-        toast.style.opacity = '0';
+    // Favorite (heart) button logic
+    document.querySelectorAll('.favorite-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Nếu là nút login-prompt-btn thì show popup đăng nhập
+            if (btn.classList.contains('login-prompt-btn')) {
+                document.getElementById('login-popup').classList.remove('hidden');
+                return;
+            }
+            // Đã đăng nhập
+            const productId = btn.getAttribute('data-product-id');
+            const icon = btn.querySelector('i');
+            const isFavorite = icon.classList.contains('fas');
+            // Optimistic UI
+            if (isFavorite) {
+                icon.classList.remove('fas', 'text-red-500');
+                icon.classList.add('far');
+            } else {
+                icon.classList.remove('far');
+                icon.classList.add('fas', 'text-red-500');
+            }
+            // Gửi AJAX
+            fetch('/wishlist' + (isFavorite ? '/' + productId : ''), {
+                method: isFavorite ? 'DELETE' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.csrfToken
+                },
+                body: isFavorite ? null : JSON.stringify({ product_id: productId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.message) {
+                    dtmodalShowToast(isFavorite ? 'info' : 'success', {
+                        title: isFavorite ? 'Thông báo' : 'Thành công',
+                        message: data.message
+                    });
+                } else {
+                    // Nếu lỗi, revert lại UI
+                    if (isFavorite) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas', 'text-red-500');
+                    } else {
+                        icon.classList.remove('fas', 'text-red-500');
+                        icon.classList.add('far');
+                    }
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Có lỗi khi cập nhật yêu thích'
+                    });
+                }
+            })
+            .catch(() => {
+                // Nếu lỗi, revert lại UI
+                if (isFavorite) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas', 'text-red-500');
+                } else {
+                    icon.classList.remove('fas', 'text-red-500');
+                    icon.classList.add('far');
+                }
+                dtmodalShowToast('error', {
+                    title: 'Lỗi',
+                    message: 'Có lỗi khi cập nhật yêu thích'
+                });
+            });
+        });
+    });
 
-        // Icon
-        const icon = document.createElement('i');
-        icon.className = 'fas';
-        switch(type) {
-            case 'success':
-                toast.classList.add('bg-green-500', 'text-white');
-                icon.classList.add('fa-check-circle');
-                break;
-            case 'error':
-                toast.classList.add('bg-red-500', 'text-white');
-                icon.classList.add('fa-times-circle');
-                break;
-            case 'warning':
-                toast.classList.add('bg-yellow-400', 'text-gray-900');
-                icon.classList.add('fa-exclamation-triangle');
-                break;
-            default:
-                toast.classList.add('bg-gray-800', 'text-white');
-                icon.classList.add('fa-info-circle');
-        }
-        icon.style.fontSize = '1.3em';
-        toast.appendChild(icon);
-
-        // Message
-        const msg = document.createElement('span');
-        msg.textContent = message;
-        toast.appendChild(msg);
-
-        // Add to DOM
-        document.body.appendChild(toast);
-
-        // Force reflow for animation
-        setTimeout(() => {
-            toast.style.transform = 'translateX(0)';
-            toast.style.opacity = '1';
-        }, 10);
-
-        // Hide and remove after 2.5s
-        setTimeout(() => {
-            toast.style.transform = 'translateX(120%)';
-            toast.style.opacity = '0';
-            setTimeout(() => {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 400);
-        }, 2500);
+    // Đóng modal đăng nhập khi bấm nút đóng hoặc click ra ngoài
+    const loginPopup = document.getElementById('login-popup');
+    const closeLoginBtn = document.getElementById('close-login-popup');
+    if (loginPopup && closeLoginBtn) {
+        closeLoginBtn.onclick = function() {
+            loginPopup.classList.add('hidden');
+        };
+        loginPopup.onclick = function(e) {
+            if (e.target === this) this.classList.add('hidden');
+        };
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                loginPopup.classList.add('hidden');
+            }
+        });
     }
 });
 

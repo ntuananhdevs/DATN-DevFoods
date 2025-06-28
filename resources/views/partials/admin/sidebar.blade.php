@@ -21,7 +21,6 @@
 <div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
     <div class="space-y-6">
         <div>
-            <h3 class="text-xs font-medium text-sidebar-foreground/70 mb-2 px-2 sidebar-group-label">Main Menu</h3>
             <!-- Dashboard Dropdown -->
             <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
                 <button type="button"
@@ -337,6 +336,20 @@
                     </svg>
                 </span>
                 <span class="sidebar-text">Mã giảm giá</span>
+            </a>
+            <!-- General Settings -->
+            <a href="{{ route('admin.general_settings.index') }}"
+                class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.general_settings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                data-tooltip="General Settings">
+                <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-settings">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </span>
+                <span class="sidebar-text">Cài đặt chung</span>
             </a>
         </div>
     </div>

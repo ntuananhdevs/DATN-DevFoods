@@ -7,6 +7,37 @@
 @section('page-style-prd-edit')
     <link rel="stylesheet" href="{{ asset('css/admin/product.css') }}">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        .ingredients-format {
+            transition: all 0.3s ease;
+        }
+        .ingredients-format.hidden {
+            display: none;
+        }
+        .ingredient-category {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f9fafb;
+        }
+        .ingredient-category:hover {
+            border-color: #d1d5db;
+        }
+        .category-name:focus,
+        .category-items:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .remove-category:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+        #add-category:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+    </style>
 @endsection
 
 <main class="container">
@@ -87,34 +118,145 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">Nguyên liệu 
                             <span class="text-red-500">*</span>
                         </label>
-                    
-                        @if(!empty($product->ingredients))
+                        
+                        <!-- Toggle between simple and structured format -->
+                        <div class="mb-4">
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="ingredients_format" value="simple" class="form-radio" 
+                                        @php
+                                            $isStructured = false;
+                                            if (!empty($product->ingredients)) {
+                                                $ingredientsData = $product->ingredients;
+                                                
+                                                // If it's a JSON string, decode it
+                                                if (is_string($ingredientsData)) {
+                                                    $decoded = json_decode($ingredientsData, true);
+                                                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                                        $ingredientsData = $decoded;
+                                                    }
+                                                }
+                                                
+                                                // Check if it's structured (object with string keys)
+                                                if (is_array($ingredientsData)) {
+                                                    foreach ($ingredientsData as $key => $value) {
+                                                        if (!is_numeric($key) && is_array($value)) {
+                                                            $isStructured = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        @endphp
+                                        {{ !$isStructured ? 'checked' : '' }}>
+                                    <span class="ml-2">Định dạng đơn giản</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="ingredients_format" value="structured" class="form-radio" {{ $isStructured ? 'checked' : '' }}>
+                                    <span class="ml-2">Định dạng có cấu trúc</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Simple format -->
+                        <div id="simple-ingredients" class="ingredients-format {{ $isStructured ? 'hidden' : '' }}">
                             @php
-                                $ingredients = is_string($product->ingredients) ? json_decode($product->ingredients, true) : $product->ingredients;
-                                // Chuyển tất cả nguyên liệu thành chuỗi để hiển thị trong một textarea
-                                $allIngredients = [];
-                                foreach ($ingredients as $category => $items) {
-                                    if (is_array($items)) {
-                                        $allIngredients[] = implode(', ', (array)$items);
-                                    } else {
-                                        $allIngredients[] = $items;
+                                $ingredientsText = '';
+                                if (!empty($product->ingredients)) {
+                                    // If ingredients is a JSON string, decode it first
+                                    if (is_string($product->ingredients)) {
+                                        $decoded = json_decode($product->ingredients, true);
+                                        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                            // Check if it's a simple array or structured object
+                                            if (array_keys($decoded) === range(0, count($decoded) - 1)) {
+                                                // Simple array - join with commas
+                                                $ingredientsText = implode(', ', $decoded);
+                                            } else {
+                                                // Structured object - flatten all values
+                                                $allIngredients = [];
+                                                foreach ($decoded as $category => $items) {
+                                                    if (is_array($items)) {
+                                                        $allIngredients = array_merge($allIngredients, $items);
+                                                    } else {
+                                                        $allIngredients[] = $items;
+                                                    }
+                                                }
+                                                $ingredientsText = implode(', ', $allIngredients);
+                                            }
+                                        } else {
+                                            // Not valid JSON, treat as plain text
+                                            $ingredientsText = $product->ingredients;
+                                        }
+                                    } elseif (is_array($product->ingredients)) {
+                                        // Already an array
+                                        $allIngredients = [];
+                                        foreach ($product->ingredients as $category => $items) {
+                                            if (is_array($items)) {
+                                                $allIngredients = array_merge($allIngredients, $items);
+                                            } else {
+                                                $allIngredients[] = $items;
+                                            }
+                                        }
+                                        $ingredientsText = implode(', ', $allIngredients);
                                     }
                                 }
-                                $ingredientsText = implode(', ', $allIngredients);
                             @endphp
-                    
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6">{{ $ingredientsText }}</textarea>
+                            <textarea id="ingredients" name="ingredients" rows="3"
+                                placeholder="Nhập danh sách nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, rau xà lách, ớt chuông)"
+                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients', $ingredientsText) }}</textarea>
+                            <p class="text-sm text-gray-500 mt-1">Ví dụ: thịt bò, rau xà lách, cà chua</p>
+                        </div>
+                        
+                        <!-- Structured format -->
+                        <div id="structured-ingredients" class="ingredients-format {{ !$isStructured ? 'hidden' : '' }}">
+                            <div class="space-y-4">
+                                @if($isStructured && !empty($product->ingredients))
+                                    @php
+                                        $structuredData = $product->ingredients;
+                                        if (is_string($structuredData)) {
+                                            $decoded = json_decode($structuredData, true);
+                                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                                $structuredData = $decoded;
+                                            }
+                                        }
+                                    @endphp
+                                    @foreach($structuredData as $category => $items)
+                                        @if(!is_numeric($category) && is_array($items))
+                                            <div class="ingredient-category">
+                                                <div class="flex items-center space-x-2 mb-2">
+                                                    <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                                                           value="{{ $category }}"
+                                                           class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                                    <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                                                </div>
+                                                <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                                                          class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                                                          rows="3">{{ implode("\n", $items) }}</textarea>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                @else
+                                    <div class="ingredient-category">
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                                                   class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                            <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                                        </div>
+                                        <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                                                  class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                                                  rows="3"></textarea>
+                                    </div>
+                                @endif
                             </div>
-                        @else
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <textarea id="ingredients" name="ingredients" class="w-full p-2 border-2 border-gray-300 rounded-lg px-3 py-2" rows="6" placeholder="Nhập nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, hành tây, ớt chuông)"></textarea>
-                            </div>
-                        @endif
-                    
+                            <button type="button" id="add-category" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                                Thêm danh mục
+                            </button>
+                            <p class="text-sm text-gray-500 mt-2">Ví dụ: Danh mục "thịt" có thể chứa "thịt bò", "thịt heo"</p>
+                        </div>
+                        
                         {{-- Hidden input để giữ dữ liệu nguyên liệu gốc --}}
-                        <input type="hidden" name="ingredients_raw" value="{{ $product->ingredients }}">
-                    
+                        <input type="hidden" name="ingredients_raw" value="{{ is_array($product->ingredients) ? json_encode($product->ingredients) : $product->ingredients }}">
+                        
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
@@ -301,7 +443,7 @@
             </header>
 
             <div class="px-6 py-6">
-                 <div id="attributes-container">
+                <div id="attributes-container">
                     @php
                         // Get attributes from old input or from product variants
                         $attributes = old('attributes', []);
@@ -312,6 +454,7 @@
                                     $attrName = $detail->variantValue->attribute->name;
                                     $attrValue = $detail->variantValue->value;
                                     $attrPrice = $detail->variantValue->price_adjustment;
+                                    $attrPriceType = $detail->variantValue->price_type ?? 'fixed';
                                     
                                     // Find existing attribute or create new one
                                     $attrIndex = null;
@@ -326,8 +469,10 @@
                                         $attributesData[] = [
                                             'name' => $attrName,
                                             'values' => [[
+                                                'id' => $detail->variantValue->id,
                                                 'value' => $attrValue,
-                                                'price_adjustment' => $attrPrice
+                                                'price_adjustment' => $attrPrice,
+                                                'price_type' => $attrPriceType
                                             ]]
                                         ];
                                     } else {
@@ -341,8 +486,10 @@
                                         }
                                         if (!$valueExists) {
                                             $attributesData[$attrIndex]['values'][] = [
+                                                'id' => $detail->variantValue->id,
                                                 'value' => $attrValue,
-                                                'price_adjustment' => $attrPrice
+                                                'price_adjustment' => $attrPrice,
+                                                'price_type' => $attrPriceType
                                             ];
                                         }
                                     }
@@ -350,31 +497,29 @@
                             }
                             $attributes = $attributesData;
                         }
-                        if (empty($attributes)) {
-                            $attributes = [[]];
-                        }
                     @endphp
-                    
-                    @foreach ($attributes as $attrIndex => $attribute)
+
+                    @forelse ($attributes as $attrIndex => $attribute)
                         <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50 attribute-group">
                             <div class="flex justify-between items-center mb-3">
                                 <h3 class="text-md font-semibold text-gray-800">Thuộc tính {{ $attrIndex + 1 }}</h3>
-                                @if ($attrIndex > 0)
-                                    <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
-                                @endif
+                                <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
                             </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- Cột trái: Tên thuộc tính (chiếm 1 phần) -->
+                                <div class="md:col-span-1">
                                     <label for="attribute_name_{{ $attrIndex }}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                                     <input type="text" id="attribute_name_{{ $attrIndex }}" name="attributes[{{ $attrIndex }}][name]" placeholder="VD: Kích thước"
-                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2" value="{{ $attribute['name'] ?? '' }}">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ $attribute['name'] ?? '' }}">
                                     @error("attributes.{$attrIndex}.name")
                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                     @enderror
                                 </div>
-                                <div class="col-span-2">
+                                
+                                <!-- Cột phải: Giá trị thuộc tính (chiếm 2 phần) -->
+                                <div class="md:col-span-2">
                                     <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
-                                    <div id="attribute_values_container_{{ $attrIndex }}" class="space-y-3">
+                                    <div id="attribute_values_container_{{ $attrIndex }}" class="space-y-2">
                                         @php
                                             $values = $attribute['values'] ?? [];
                                             if (empty($values)) {
@@ -383,123 +528,209 @@
                                         @endphp
                                         
                                         @foreach ($values as $valueIndex => $value)
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
-                                                <div class="md:col-span-2">
-                                                    <label for="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
-                                                    <input type="text" id="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][value]" placeholder="VD: Nhỏ"
-                                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2" value="{{ $value['value'] ?? '' }}">
-                                                    @error("attributes.{$attrIndex}.values.{$valueIndex}.value")
-                                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                                    @enderror
-                                                </div>
-                                                <div>
-                                                    <label for="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                                    <input type="number" id="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" placeholder="0" step="any"
-                                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2" value="{{ $value['price_adjustment'] ?? 0 }}">
-                                                    @error("attributes.{$attrIndex}.values.{$valueIndex}.price_adjustment")
-                                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                                    @enderror
-                                                </div>
-                                                @if ($valueIndex > 0 || count($values) > 1)
-                                                    <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+                                            <div class="attribute-value-item p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                                <!-- Hidden input for VariantValue ID -->
+                                                @if(isset($value['id']))
+                                                    <input type="hidden" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][id]" value="{{ $value['id'] }}">
                                                 @endif
+                                                <div class="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <label for="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                                                        <input type="text" id="attribute_value_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][value]" placeholder="VD: Nhỏ"
+                                                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ $value['value'] ?? '' }}">
+                                                        @error("attributes.{$attrIndex}.values.{$valueIndex}.value")
+                                                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
+                                                    <div>
+                                                        <label for="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                                                        <input type="number" id="attribute_price_{{ $attrIndex }}_{{ $valueIndex }}" name="attributes[{{ $attrIndex }}][values][{{ $valueIndex }}][price_adjustment]" placeholder="0" step="any"
+                                                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ $value['price_adjustment'] ?? 0 }}">
+                                                        @error("attributes.{$attrIndex}.values.{$valueIndex}.price_adjustment")
+                                                            <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
+                                                    <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
+                                                </div>
                                             </div>
                                         @endforeach
                                     </div>
-                                    <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="{{ $attrIndex }}">+ Thêm giá trị</button>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-                @error('attributes')
-                    <div class="text-red-500 text-xs mt-2 mb-2">{{ $message }}</div>
-                @enderror
-                <button type="button" id="add-attribute-btn"
-                    class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16"
-                        fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        viewBox="0 0 24 24">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Thêm thuộc tính
-                </button>
-            </div>
-        </section>
-        <!-- Toppings Section -->
-        <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <header class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
-                <p class="text-gray-500 text-sm mt-1">Thêm các topping cho sản phẩm</p>
-            </header>
-
-            <div class="px-6 py-6">
-                <div id="toppings-container">
-                    @php
-                        $toppings = old('toppings', $product->toppings->toArray());
-                    @endphp
-                    
-                    @forelse ($toppings as $toppingIndex => $topping)
-                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50 topping-group">
-                            <div class="flex justify-between items-center mb-3">
-                                <h3 class="text-md font-semibold text-gray-800">Topping {{ $toppingIndex + 1 }}</h3>
-                                <button type="button" class="remove-topping-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa topping</button>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-                                <div>
-                                    <label for="topping_name_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Tên topping</label>
-                                    <input type="text" id="topping_name_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][name]" placeholder="VD: Phô mai thêm"
-                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2" value="{{ $topping['name'] ?? '' }}">
-                                    @error("toppings.{$toppingIndex}.name")
-                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div>
-                                    <label for="topping_price_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Giá</label>
-                                    <input type="number" id="topping_price_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][price]" placeholder="0" step="any"
-                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2" value="{{ $topping['price'] ?? '' }}">
-                                    @error("toppings.{$toppingIndex}.price")
-                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div class="flex items-center mt-7">
-                                    <input type="checkbox" id="topping_available_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][available]" value="1"
-                                        {{ ($topping['available'] ?? false) ? 'checked' : '' }}
-                                        class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                    <label for="topping_available_{{ $toppingIndex }}" class="ml-2 text-sm text-gray-700">Có sẵn</label>
-                                </div>
-                                <div>
-                                    <label for="topping_image_{{ $toppingIndex }}" class="block text-sm font-medium text-gray-700">Ảnh topping</label>
-                                    <input type="file" id="topping_image_{{ $toppingIndex }}" name="toppings[{{ $toppingIndex }}][image]" accept="image/*"
-                                        class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                                    <div id="topping_image_preview_container_{{ $toppingIndex }}" class="mt-2 w-24 h-24 border border-gray-300 rounded-md overflow-hidden flex items-center justify-center bg-gray-100">
-                                        @if(isset($topping['image']) && $topping['image'])
-                                            <img id="topping_image_preview_{{ $toppingIndex }}" src="{{ str_starts_with($topping['image'], 'http') ? $topping['image'] : asset('storage/' . $topping['image']) }}" alt="Preview" class="w-full h-full object-cover">
-                                        @else
-                                            <img id="topping_image_preview_{{ $toppingIndex }}" src="#" alt="Preview" class="hidden w-full h-full object-cover">
-                                            <span id="topping_image_placeholder_{{ $toppingIndex }}" class="text-xs text-gray-400">Xem trước</span>
-                                        @endif
-                                    </div>
+                                    <button type="button" class="add-attribute-value-btn mt-2 text-xs text-blue-600 hover:text-blue-800" data-index="{{ $attrIndex }}">+ Thêm giá trị</button>
                                 </div>
                             </div>
                         </div>
                     @empty
-                        <!-- No toppings message when empty -->
+                        <!-- Default attribute group when no attributes exist -->
+                        <div class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-md font-semibold text-gray-800">Thuộc tính 1</h3>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <!-- Cột trái: Tên thuộc tính (chiếm 1 phần) -->
+                                <div class="md:col-span-1">
+                                    <label for="attribute_name_0" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
+                                    <input type="text" id="attribute_name_0" name="attributes[0][name]" placeholder="VD: Kích thước"
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" value="{{ old('attributes.0.name') }}">
+                                    @error('attributes.0.name')
+                                        <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <!-- Cột phải: Giá trị thuộc tính (chiếm 2 phần) -->
+                                <div class="md:col-span-2">
+                                    <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
+                                    <div id="attribute_values_container_0" class="space-y-2">
+                                        <!-- Default attribute value -->
+                                        <div class="p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                             <div class="grid grid-cols-2 gap-2">
+                                                 <div>
+                                                     <label for="attribute_value_0_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
+                                                     <input type="text" id="attribute_value_0_0" name="attributes[0][values][0][value]" placeholder="VD: Nhỏ"
+                                         class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.value') }}">
+                                                     @error('attributes.0.values.0.value')
+                                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                     @enderror
+                                                 </div>
+                                                 <div>
+                                                     <label for="attribute_price_0_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
+                                                     <input type="number" id="attribute_price_0_0" name="attributes[0][values][0][price_adjustment]" placeholder="0" step="any"
+                                         class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs" value="{{ old('attributes.0.values.0.price_adjustment') }}">
+                                                     @error('attributes.0.values.0.price_adjustment')
+                                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
+                                                     @enderror
+                                                 </div>
+                                             </div>
+                                         </div>
+                                    </div>
+                                    <button type="button" class="add-attribute-value-btn mt-2 text-xs text-blue-600 hover:text-blue-800" data-index="0">+ Thêm giá trị</button>
+                                </div>
+                            </div>
+                        </div>
                     @endforelse
                 </div>
-                <button type="button" id="add-topping-btn"
-                    class="mt-4 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16"
-                        fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        viewBox="0 0 24 24">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Thêm topping
-                </button>
+                @error('attributes')
+                    <div class="text-red-500 text-xs mt-2 mb-2">{{ $message }}</div>
+                @enderror
+                <div class="flex justify-end mt-4">
+                    <button type="button" id="add-attribute-btn"
+                        class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current" width="16" height="16"
+                            fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            viewBox="0 0 24 24">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Thêm thuộc tính
+                    </button>
+                </div>
             </div>
         </section>
+        <!-- Toppings Section -->
+        <section id="toppings-section" class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <header class="px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Toppings</h2>
+                        <p class="text-gray-500 text-sm mt-1">Chọn các topping có sẵn cho sản phẩm</p>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        Đã chọn: <span id="selected-toppings-count" class="font-semibold text-blue-600">{{ count($product->toppings) }}</span> topping
+                    </div>
+                </div>
+            </header>
+
+            <div class="px-6 py-6">
+                <!-- Open Modal Button -->
+                <div class="mb-4 flex justify-end">
+                    <button type="button" id="open-toppings-modal" 
+                    class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
+                        <i class="fas fa-plus-circle"></i>
+                        Chọn Toppings
+                    </button>
+                </div>
+
+                <!-- Selected Toppings Display -->
+                <div id="selected-toppings-display" class="space-y-2">
+                    <h4 class="text-sm font-medium text-gray-700">Toppings đã chọn:</h4>
+                    <div id="selected-toppings-tags" class="flex flex-wrap gap-2">
+                        <!-- Selected toppings will be displayed here as tags -->
+                        @if(count($product->toppings) == 0)
+                            <div class="text-gray-500 text-sm italic" id="no-toppings-message">
+                                Chưa có topping nào được chọn
+                            </div>
+                        @endif
+                    </div>
+
+                </div>
+                <!-- Hidden input for selected toppings -->
+                <input type="hidden" id="selected_toppings" name="selected_toppings" value="{{ json_encode($product->toppings->pluck('id')) }}">
+
+            </div>
+        </section>
+
+        <!-- Toppings Modal - Simplified -->
+        <div id="toppings-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <!-- Background overlay -->
+                <div class="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true"></div>
+
+                <!-- Modal panel -->
+                <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+                    <!-- Modal Header -->
+                    <div class="px-6 py-4 border-b">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900" id="modal-title">
+                                Chọn Toppings
+                            </h3>
+                            <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                        <!-- Search -->
+                        <div class="mb-4">
+                            <input type="text" id="topping-search" placeholder="Tìm kiếm topping..." 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <!-- Control buttons -->
+                        <div class="mb-4 flex gap-2">
+                            <button type="button" id="modal-select-all" 
+                                    class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700">
+                                Chọn tất cả
+                            </button>
+                            <button type="button" id="modal-clear-all" 
+                                    class="px-3 py-1 text-sm bg-gray-600 text-white rounded hover:bg-gray-700">
+                                Bỏ chọn tất cả
+                            </button>
+                        </div>
+
+                        <!-- Toppings Grid -->
+                        <div id="modal-toppings-list" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                             <!-- Toppings will be loaded here -->
+                             <div class="col-span-full text-center py-8 text-gray-500">
+                                 Đang tải...
+                             </div>
+                         </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="px-6 py-4 border-t flex justify-end gap-3">
+                        <button type="button" id="cancel-modal" 
+                                class="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">
+                            Hủy
+                        </button>
+                        <button type="button" id="confirm-toppings" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Xác nhận (<span id="modal-selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Inventory Management Section -->
         <section class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
@@ -514,10 +745,6 @@
                     <button type="button" id="tab-variants" class="tab-button active px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600" onclick="switchTab('variants')">
                         <i data-lucide="package" class="w-4 h-4 inline mr-2"></i>
                         Biến thể sản phẩm ({{ $product->variants->count() }})
-                    </button>
-                    <button type="button" id="tab-toppings" class="tab-button px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-300" onclick="switchTab('toppings')">
-                        <i data-lucide="plus-circle" class="w-4 h-4 inline mr-2"></i>
-                        Toppings ({{ $product->toppings->count() }})
                     </button>
                 </div>
 
@@ -640,79 +867,7 @@
                     </div>
                 </div>
 
-                <!-- Toppings Tab Content -->
-                <div id="content-toppings" class="tab-content">
-                    <!-- Toppings Stock Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 border-b border-gray-200">
-                                    <th class="text-left py-3 px-4 font-medium text-gray-900 min-w-64">Topping</th>
-                                    <th class="text-center py-3 px-4 font-medium text-gray-900 min-w-24">Giá</th>
-                                    @foreach($branches as $branch)
-                                    <th class="text-center py-3 px-4 font-medium text-gray-900 min-w-36" data-branch-id="{{ $branch->id }}" {{ $loop->index >= 3 ? 'style=display:none;' : '' }}>
-                                        <div class="flex items-center justify-center gap-2">
-                                            <i data-lucide="store" class="w-4 h-4"></i>
-                                            <div>
-                                                <div class="font-medium">{{ $branch->name }}</div>
-                                            </div>
-                                        </div>
-                                    </th>
-                                    @endforeach
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @if($product->toppings && $product->toppings->count() > 0)
-                                    @foreach($product->toppings as $topping)
-                                    <tr class="border-b border-gray-100">
-                                        <td class="py-4 px-4">
-                                            <div class="flex items-center gap-3">
-                                                @if($topping->image)
-                                                <img src="{{ str_starts_with($topping->image, 'http') ? $topping->image : asset('storage/' . $topping->image) }}" alt="{{ $topping->name }}" class="w-10 h-10 rounded-md object-cover">
-                                                @else
-                                                <div class="w-10 h-10 rounded-md bg-gray-200 flex items-center justify-center">
-                                                    <i data-lucide="image" class="w-5 h-5 text-gray-400"></i>
-                                                </div>
-                                                @endif
-                                                <div>
-                                                    <div class="font-medium">{{ $topping->name }}</div>
-                                                    <div class="text-sm text-gray-500">{{ $topping->description ?? 'Không có mô tả' }}</div>
-                                                    <span class="badge-{{ $topping->available ? 'default' : 'secondary' }} px-2 py-1 rounded text-xs">
-                                                        {{ $topping->available ? 'Hoạt động' : 'Tạm dừng' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-center py-4 px-4 font-medium">{{ number_format($topping->price) }}₫</td>
-                                        @foreach($branches as $branch)
-                                        @php
-                                            $toppingQuantity = isset($toppingStocks[$branch->id][$topping->id]) ? $toppingStocks[$branch->id][$topping->id] : 0;
-                                        @endphp
-                                        <td class="text-center py-4 px-4" data-branch-id="{{ $branch->id }}" {{ $loop->index >= 3 ? 'style=display:none;' : '' }}>
-                                            <div class="space-y-2">
-                                                <input type="number" min="0" value="{{ $toppingQuantity }}" 
-                                                    name="topping_stocks[{{ $topping->id }}][{{ $branch->id }}]" 
-                                                    class="w-20 text-center mx-auto px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                                    onchange="updateStockStatus(this)">
-                                                <span class="badge-{{ $toppingQuantity > 10 ? 'default' : ($toppingQuantity > 0 ? 'secondary' : 'destructive') }} px-2 py-1 rounded text-xs">
-                                                    {{ $toppingQuantity > 10 ? 'Còn hàng' : ($toppingQuantity > 0 ? 'Sắp hết' : 'Hết hàng') }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        @endforeach
-                                    </tr>
-                                    @endforeach
-                                @else
-                                    <tr>
-                                        <td colspan="{{ 2 + $branches->count() }}" class="text-center py-8 text-gray-500">
-                                            Chưa có topping nào được tạo
-                                        </td>
-                                    </tr>
-                                @endif
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+
             </div>
         </section>
 
@@ -862,80 +1017,253 @@
                     <h3 class="text-md font-semibold text-gray-800">Thuộc tính ${index + 1}</h3>
                     <button type="button" class="remove-attribute-btn text-red-500 hover:text-red-700 font-medium text-sm">× Xóa thuộc tính</button>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-1">
                         <label for="attribute_name_${index}" class="block text-sm font-medium text-gray-700">Tên thuộc tính</label>
                         <input type="text" id="attribute_name_${index}" name="attributes[${index}][name]" placeholder="VD: Kích thước"
-                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-3 py-2">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_name" style="display: none;"></div>
                     </div>
-                    <div class="col-span-2">
+                    <div class="md:col-span-2">
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Giá trị thuộc tính</h4>
                         <div id="attribute_values_container_${index}" class="space-y-3">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 border border-dashed border-gray-300 rounded-md">
-                                <div class="md:col-span-2">
+                            <!-- Default attribute value -->
+                            <div class="grid grid-cols-2 gap-2 p-2 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                                <div>
                                     <label for="attribute_value_${index}_0" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                                     <input type="text" id="attribute_value_${index}_0" name="attributes[${index}][values][0][value]" placeholder="VD: Nhỏ"
-                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_value" style="display: none;"></div>
                                 </div>
                                 <div>
                                     <label for="attribute_price_${index}_0" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                                    <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any" value="0"
-                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
+                                    <input type="number" id="attribute_price_${index}_0" name="attributes[${index}][values][0][price_adjustment]" placeholder="0" step="any"
+                                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${index}_values_0_price_adjustment" style="display: none;"></div>
                                 </div>
+                                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
                             </div>
                         </div>
                         <button type="button" class="add-attribute-value-btn mt-2 text-sm text-blue-600 hover:text-blue-800" data-index="${index}">+ Thêm giá trị</button>
                     </div>
                 </div>
             `;
+            
+            // Add event listeners for the new attribute group
+            const removeAttributeBtn = group.querySelector('.remove-attribute-btn');
+            removeAttributeBtn.addEventListener('click', () => {
+                group.remove();
+                document.querySelectorAll('.attribute-group').forEach((group, index) => {
+                    const title = group.querySelector('h3');
+                    if (title) {
+                        title.textContent = `Thuộc tính ${index + 1}`;
+                    }
+                });
+            });
+
+            // Add event listener for adding attribute values
+            const addValueBtn = group.querySelector('.add-attribute-value-btn');
+            addValueBtn.addEventListener('click', () => {
+                addAttributeValue(index);
+            });
+
+            // Add event listeners for removing attribute values
+            const removeValueBtns = group.querySelectorAll('.remove-attribute-value-btn');
+            removeValueBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const valueContainer = e.target.closest('.grid');
+                    valueContainer.remove();
+                });
+            });
+            
             return group;
         }
 
+        // Function to reindex all attribute groups after deletion
+        function reindexAttributeGroups() {
+            const attributeGroups = document.querySelectorAll('.attribute-group');
+            
+            attributeGroups.forEach((group, groupIndex) => {
+                // Update group title
+                const title = group.querySelector('h3');
+                if (title) {
+                    title.textContent = `Thuộc tính ${groupIndex + 1}`;
+                }
+                
+                // Update attribute name input
+                const nameInput = group.querySelector('input[name*="[name]"]');
+                if (nameInput) {
+                    const newName = `attributes[${groupIndex}][name]`;
+                    const newId = `attribute_name_${groupIndex}`;
+                    nameInput.setAttribute('name', newName);
+                    nameInput.setAttribute('id', newId);
+                    
+                    // Update corresponding label
+                    const label = group.querySelector(`label[for*="attribute_name"]`);
+                    if (label) {
+                        label.setAttribute('for', newId);
+                    }
+                }
+                
+                // Update values container ID
+                const valuesContainer = group.querySelector('[id*="attribute_values_container"]');
+                if (valuesContainer) {
+                    valuesContainer.setAttribute('id', `attribute_values_container_${groupIndex}`);
+                }
+                
+                // Update add value button data-index
+                const addValueBtn = group.querySelector('.add-attribute-value-btn');
+                if (addValueBtn) {
+                    addValueBtn.setAttribute('data-index', groupIndex);
+                }
+                
+                // Reindex all attribute values in this group
+                reindexAttributeValues(group, groupIndex);
+            });
+        }
+        
+        // Function to reindex attribute values after deletion
+        function reindexAttributeValues(attributeGroup, groupIndex = null) {
+            if (groupIndex === null) {
+                groupIndex = Array.from(attributeGroup.parentNode.children).indexOf(attributeGroup);
+            }
+            
+            const valueContainers = attributeGroup.querySelectorAll('.attribute-value-item');
+            
+            valueContainers.forEach((container, valueIndex) => {
+                // Update all input names and IDs
+                const inputs = container.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    const id = input.getAttribute('id');
+                    
+                    if (name) {
+                        // Update both group index and value index in the name attribute
+                        const newName = name.replace(/attributes\[\d+\]\[values\]\[\d+\]/, `attributes[${groupIndex}][values][${valueIndex}]`);
+                        input.setAttribute('name', newName);
+                    }
+                    
+                    if (id) {
+                        // Update both group index and value index in the id attribute
+                        const newId = id.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        input.setAttribute('id', newId);
+                    }
+                });
+                
+                // Update labels
+                const labels = container.querySelectorAll('label');
+                labels.forEach(label => {
+                    const forAttr = label.getAttribute('for');
+                    if (forAttr) {
+                        const newFor = forAttr.replace(/_(\d+)_(\d+)$/, `_${groupIndex}_${valueIndex}`);
+                        label.setAttribute('for', newFor);
+                    }
+                });
+                
+                // Update error message divs
+                const errorDivs = container.querySelectorAll('.error-message');
+                errorDivs.forEach(div => {
+                    const id = div.getAttribute('id');
+                    if (id) {
+                        const newId = id.replace(/_(\d+)_values_(\d+)_/, `_${groupIndex}_values_${valueIndex}_`);
+                        div.setAttribute('id', newId);
+                    }
+                });
+            });
+        }
+        
         function addAttributeValue(attributeIndex) {
             const valuesContainer = document.getElementById(`attribute_values_container_${attributeIndex}`);
             const existingValues = valuesContainer.querySelectorAll('.grid');
             const valueIndex = existingValues.length;
 
             const valueDiv = document.createElement('div');
-            valueDiv.classList.add('grid', 'grid-cols-1', 'md:grid-cols-3', 'gap-3', 'p-3', 'border', 'border-dashed', 'border-gray-300', 'rounded-md');
+            valueDiv.classList.add('attribute-value-item', 'grid', 'grid-cols-2', 'gap-2', 'p-2', 'border', 'border-dashed', 'border-gray-300', 'rounded-md', 'bg-gray-50');
             valueDiv.innerHTML = `
-                <div class="md:col-span-2">
+                <div>
                     <label for="attribute_value_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Tên giá trị</label>
                     <input type="text" id="attribute_value_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][value]" placeholder="VD: Nhỏ"
-                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_value" style="display: none;"></div>
                 </div>
                 <div>
                     <label for="attribute_price_${attributeIndex}_${valueIndex}" class="block text-xs font-medium text-gray-600">Giá (+/-)</label>
-                    <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any" value="0"
-                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs px-3 py-2">
+                    <input type="number" id="attribute_price_${attributeIndex}_${valueIndex}" name="attributes[${attributeIndex}][values][${valueIndex}][price_adjustment]" placeholder="0" step="any"
+                        class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-xs">
+                    <div class="text-red-500 text-xs mt-1 error-message" id="error_attributes_${attributeIndex}_values_${valueIndex}_price_adjustment" style="display: none;"></div>
                 </div>
-                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end md:col-start-3">Xóa</button>
+                <button type="button" class="remove-attribute-value-btn text-red-500 hover:text-red-700 text-xs self-center justify-self-end col-start-2">Xóa</button>
             `;
+            
+            // Add event listener for removing this value
+            const removeBtn = valueDiv.querySelector('.remove-attribute-value-btn');
+            removeBtn.addEventListener('click', () => {
+                const valueContainer = removeBtn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    valueContainer.remove();
+                }
+            });
+            
             valuesContainer.appendChild(valueDiv);
         }
 
         // Event delegation for all dynamic elements
         document.addEventListener('click', function(e) {
             // Remove attribute group
-            if (e.target.classList.contains('remove-attribute-btn')) {
+            if (e.target.classList.contains('remove-attribute-btn') || e.target.classList.contains('remove-attribute-group-btn')) {
                 e.target.closest('.attribute-group').remove();
+                // Reindex all remaining attribute groups
+                reindexAttributeGroups();
             }
             
             // Add attribute value
-            if (e.target.classList.contains('add-attribute-value-btn')) {
-                const attributeIndex = e.target.getAttribute('data-index');
-                addAttributeValue(parseInt(attributeIndex));
+            if (e.target.classList.contains('add-attribute-value-btn') || e.target.closest('.add-attribute-value-btn')) {
+                const btn = e.target.classList.contains('add-attribute-value-btn') ? e.target : e.target.closest('.add-attribute-value-btn');
+                const attributeIndex = btn.getAttribute('data-index');
+                if (attributeIndex !== null) {
+                    addAttributeValue(parseInt(attributeIndex));
+                }
             }
             
             // Remove attribute value
-            if (e.target.classList.contains('remove-attribute-value-btn')) {
-                e.target.closest('.grid').remove();
+            if (e.target.classList.contains('remove-attribute-value-btn') || e.target.closest('.remove-attribute-value-btn')) {
+                // Find the parent div that contains the value inputs
+                const valueContainer = e.target.closest('.attribute-value-item');
+                if (valueContainer) {
+                    const attributeGroup = valueContainer.closest('.attribute-group');
+                    valueContainer.remove();
+                    // Reindex the remaining attribute values in this group
+                    reindexAttributeValues(attributeGroup);
+                }
             }
             
             // Remove topping
             if (e.target.classList.contains('remove-topping-btn')) {
                 e.target.closest('.topping-group').remove();
             }
+        });
+        
+        // Add event listeners to existing attribute groups
+        document.querySelectorAll('.attribute-group .remove-attribute-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.attribute-group').remove();
+                document.querySelectorAll('.attribute-group').forEach((group, index) => {
+                    const title = group.querySelector('h3');
+                    if (title) {
+                        title.textContent = `Thuộc tính ${index + 1}`;
+                    }
+                });
+            });
+        });
+        
+        // Add event listeners to existing attribute value remove buttons
+        document.querySelectorAll('.remove-attribute-value-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const valueContainer = btn.closest('.attribute-value-item');
+                if (valueContainer) {
+                    valueContainer.remove();
+                }
+            });
         });
 
         // Add new attribute group
@@ -1078,58 +1406,118 @@
             }
         });
 
+        // Ingredients Format Toggle Logic
+        const formatRadios = document.querySelectorAll('input[name="ingredients_format"]');
+        const simpleFormat = document.getElementById('simple-ingredients');
+        const structuredFormat = document.getElementById('structured-ingredients');
+        const categoryContainer = document.querySelector('#structured-ingredients .space-y-4');
+        
+        // Toggle between simple and structured format
+        formatRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'simple') {
+                    simpleFormat.classList.remove('hidden');
+                    structuredFormat.classList.add('hidden');
+                } else {
+                    simpleFormat.classList.add('hidden');
+                    structuredFormat.classList.remove('hidden');
+                }
+            });
+        });
+        
+        // Add category functionality
+        document.getElementById('add-category').addEventListener('click', function() {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'ingredient-category';
+            categoryDiv.innerHTML = `
+                <div class="flex items-center space-x-2 mb-2">
+                    <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
+                           class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
+                </div>
+                <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
+                          class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                          rows="3"></textarea>
+            `;
+            categoryContainer.appendChild(categoryDiv);
+        });
+        
+        // Remove category functionality (event delegation)
+        categoryContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-category')) {
+                e.target.closest('.ingredient-category').remove();
+            }
+        });
+
         // Form Submission Logic
         const editProductForm = document.getElementById('edit-product-form');
         editProductForm.addEventListener('submit', function(e) {
-            // Convert ingredients textarea to JSON array
-            const ingredientsText = document.getElementById('ingredients').value;
-            const ingredientsArray = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+            // Process ingredients based on selected format
+            const selectedFormat = document.querySelector('input[name="ingredients_format"]:checked').value;
+            let ingredientsData;
+            
+            if (selectedFormat === 'simple') {
+                // Simple format: convert comma-separated text to array
+                const ingredientsText = document.getElementById('ingredients').value;
+                ingredientsData = ingredientsText.split(',').map(item => item.trim()).filter(item => item);
+            } else {
+                // Structured format: convert categories to object
+                ingredientsData = {};
+                const categories = document.querySelectorAll('.ingredient-category');
+                categories.forEach(category => {
+                    const categoryName = category.querySelector('.category-name').value.trim();
+                    const categoryItems = category.querySelector('.category-items').value
+                        .split('\n')
+                        .map(item => item.trim())
+                        .filter(item => item);
+                    
+                    if (categoryName && categoryItems.length > 0) {
+                        ingredientsData[categoryName] = categoryItems;
+                    }
+                });
+            }
+            
+            // Create hidden input for processed ingredients
             const ingredientsInput = document.createElement('input');
             ingredientsInput.type = 'hidden';
             ingredientsInput.name = 'ingredients_json';
-            ingredientsInput.value = JSON.stringify(ingredientsArray);
+            ingredientsInput.value = JSON.stringify(ingredientsData);
             editProductForm.appendChild(ingredientsInput);
 
             // Ensure description is always sent (even if empty)
             const description = document.getElementById('description');
             if (!description.value) description.value = '';
             
-            // Collect variant stock data
+            // Collect and submit variant stock data
             const variantStockInputs = document.querySelectorAll('input[name^="variant_stocks["]');
             const variantStocks = {};
+            
+            // Remove any existing hidden variant stock inputs
+            const existingHiddenInputs = editProductForm.querySelectorAll('input[name^="variant_stocks["][type="hidden"]');
+            existingHiddenInputs.forEach(input => input.remove());
+            
             variantStockInputs.forEach(input => {
-                if (input.value && input.value.trim() !== '') {
-                    const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
-                    if (matches) {
-                        const variantId = matches[1];
-                        const branchId = matches[2];
-                        if (!variantStocks[variantId]) {
-                            variantStocks[variantId] = {};
-                        }
-                        variantStocks[variantId][branchId] = parseInt(input.value) || 0;
+                const value = input.value && input.value.trim() !== '' ? parseInt(input.value) || 0 : 0;
+                const matches = input.name.match(/variant_stocks\[(\d+)\]\[(\d+)\]/);
+                if (matches) {
+                    const variantId = matches[1];
+                    const branchId = matches[2];
+                    
+                    // Create hidden input for each variant stock
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = `variant_stocks[${variantId}][${branchId}]`;
+                    hiddenInput.value = value;
+                    editProductForm.appendChild(hiddenInput);
+                    
+                    if (!variantStocks[variantId]) {
+                        variantStocks[variantId] = {};
                     }
+                    variantStocks[variantId][branchId] = value;
                 }
             });
             
-            // Collect topping stock data
-            const toppingStockInputs = document.querySelectorAll('input[name^="topping_stocks["]');
-            const toppingStocks = {};
-            toppingStockInputs.forEach(input => {
-                if (input.value && input.value.trim() !== '') {
-                    const matches = input.name.match(/topping_stocks\[(\d+)\]\[(\d+)\]/);
-                    if (matches) {
-                        const toppingId = matches[1];
-                        const branchId = matches[2];
-                        if (!toppingStocks[toppingId]) {
-                            toppingStocks[toppingId] = {};
-                        }
-                        toppingStocks[toppingId][branchId] = parseInt(input.value) || 0;
-                    }
-                }
-            });
-            
-            console.log('Variant Stocks:', variantStocks);
-            console.log('Topping Stocks:', toppingStocks);
+            console.log('Variant Stocks being submitted:', variantStocks);
         });
 
         // Handle status and release date visibility
@@ -1137,8 +1525,14 @@
         const releaseAtContainer = document.getElementById('release_at_container');
 
         function toggleReleaseDate() {
-            const selectedStatus = document.querySelector('input[name="status"]:checked').value;
-            releaseAtContainer.classList.toggle('hidden', selectedStatus !== 'coming_soon');
+            const selectedStatus = document.querySelector('input[name="status"]:checked');
+            if (selectedStatus) {
+                if (selectedStatus.value === 'coming_soon') {
+                    releaseAtContainer.classList.remove('hidden');
+                } else {
+                    releaseAtContainer.classList.add('hidden');
+                }
+            }
         }
 
         statusInputs.forEach(input => {
@@ -1287,6 +1681,27 @@
     });
 </script>
 
+<!-- Topping Modal Script -->
+<script src="{{ asset('js/admin/topping-modal.js') }}"></script>
+
+<!-- Initialize Existing Toppings -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Đợi cho toppingModal được khởi tạo
+        setTimeout(() => {
+            if (window.toppingModal) {
+                // Lấy danh sách topping đã chọn từ PHP
+                const existingToppings = @json($product->toppings);
+                
+                // Khởi tạo các topping đã chọn trong modal
+                if (existingToppings && existingToppings.length > 0) {
+                    window.toppingModal.setSelectedToppings(existingToppings);
+                }
+            }
+        }, 300);
+    });
+</script>
+
 <style>
 /* Tab styles */
 .tab-content {
@@ -1364,6 +1779,91 @@ input[type="number"] {
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+/* Aspect ratio utility */
+.aspect-square {
+    aspect-ratio: 1 / 1;
+}
+
+/* Topping grid item styles */
+.topping-item {
+    min-height: 180px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.topping-item:hover {
+    transform: translateY(-2px);
+    border-color: #e5e7eb;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.topping-item.selected {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.selection-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.topping-item.selected .selection-indicator {
+    opacity: 1;
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.topping-item:hover .selection-indicator {
+    opacity: 1;
+}
+
+/* No image placeholder */
+        .no-image-placeholder {
+            background-color: #F3F4F6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+.no-image-placeholder i {
+    color: #9CA3AF;
+    font-size: 1.5rem;
 }
 </style>
 @endsection

@@ -15,7 +15,7 @@
             <div class="relative mb-6 md:mb-0 md:mr-8">
                 <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-white p-1 shadow-lg">
                     {{-- DYNAMIC AVATAR --}}
-                    <img src="{{ $user->avatar ? Storage::disk('s3')->url($user->avatar) : asset('images/default-avatar.png') }}" alt="Ảnh đại diện" class="w-full h-full rounded-full object-cover">
+                    <img src="{{ $user->avatar_url ?? asset('images/default-avatar.png') }}" alt="Ảnh đại diện" class="w-full h-full rounded-full object-cover">
                 </div>
                 <a href="{{ route('customer.profile.edit') }}" class="absolute bottom-0 right-0 bg-orange-600 hover:bg-orange-700 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-colors">
                     <i class="fas fa-camera"></i>

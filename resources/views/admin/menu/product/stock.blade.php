@@ -33,14 +33,13 @@
         </div>
     </div>
 
-    <!-- Tabs Navigation -->
-    <div class="tabs">
-        <div class="tab active" data-tab="variants">Tồn kho biến thể sản phẩm</div>
-        <div class="tab" data-tab="toppings">Tồn kho topping</div>
+    <!-- Header Section -->
+    <div class="mb-6">
+        <h2 class="text-xl font-semibold text-gray-900">Tồn kho biến thể sản phẩm</h2>
+        <p class="text-gray-600 mt-1">Quản lý số lượng tồn kho cho các biến thể sản phẩm tại từng chi nhánh</p>
     </div>
 
-    <!-- Variants Tab Content -->
-    <div id="variants-tab" class="tab-content active">
+    <!-- Variants Content -->
         <!-- Bulk Stock Section -->
         <div class="bulk-stock-section">
             <div class="mb-6">
@@ -81,7 +80,7 @@
             </div>
         </div>
 
-        <form id="variant-stock-form" action="{{ route('admin.products.update-stocks', $product->id) }}" method="POST">
+        <form id="variant-stock-form" action="{{ route('admin.products.update-branch-stocks', $product->id) }}" method="POST">
             @csrf
             @method('POST')
             <input type="hidden" name="product_id" value="{{ $product->id }}">
@@ -149,127 +148,6 @@
                             Lưu thay đổi
                         </button>
                     </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- Toppings Tab Content -->
-    <div id="toppings-tab" class="tab-content">
-        <!-- Bulk Topping Stock Section -->
-        <div class="bulk-stock-section">
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Nhập số lượng tổng cho Topping</h3>
-                <div class="flex gap-4">
-                    <div class="flex-1">
-                        <input type="number" id="bulk-topping-stock-input" min="0" class="stock-input"
-                            placeholder="Nhập số lượng tổng" />
-                    </div>
-                    <button type="button" id="apply-bulk-topping-stock"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Áp dụng
-                    </button>
-                </div>
-            </div>
-
-            <div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Chọn topping áp dụng</h3>
-                <div class="variant-list">
-                    @if (isset($product->toppings) && count($product->toppings) > 0)
-                        @foreach ($product->toppings as $topping)
-                            <div class="variant-item" data-topping-id="{{ $topping->id }}">
-                                <input type="checkbox" name="selected_toppings[]" value="{{ $topping->id }}"
-                                    class="form-checkbox text-blue-600 rounded" />
-                                <span class="text-sm">{{ $topping->name }} ({{ number_format($topping->price) }}
-                                    đ)</span>
-                            </div>
-                        @endforeach
-                    @else
-                        <p class="text-gray-500">Không có topping nào cho sản phẩm này</p>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <form id="topping-stock-form" action="{{ route('admin.toppings.update-stock', 0) }}" method="POST">
-            @csrf
-            @method('POST')
-            <input type="hidden" name="product_id" value="{{ $product->id }}">
-
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-semibold text-gray-900">Chi nhánh áp dụng</h3>
-                        <button type="button" id="select-all-branches-toppings"
-                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                            Chọn tất cả
-                        </button>
-                    </div>
-
-                    @if (isset($product->toppings) && count($product->toppings) > 0)
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            @foreach ($branches as $branch)
-                                <div class="branch-card p-6">
-                                    <div class="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h4 class="text-lg font-semibold text-gray-900">{{ $branch->name }}</h4>
-                                            <p class="text-sm text-gray-500 mt-1">{{ $branch->address }}</p>
-                                        </div>
-                                        <span
-                                            class="status-badge {{ $branch->active ? 'status-active' : 'status-inactive' }}">
-                                            {{ $branch->active ? 'Đang hoạt động' : 'Ngừng hoạt động' }}
-                                        </span>
-                                    </div>
-
-                                    <div class="flex items-center gap-2 mb-4">
-                                        <label class="inline-flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox" name="branch_selection_toppings[]"
-                                                value="{{ $branch->id }}"
-                                                class="form-checkbox text-blue-600 rounded" />
-                                            <span class="text-sm text-gray-700">Chọn chi nhánh này</span>
-                                        </label>
-                                    </div>
-
-                                    <div class="topping-stocks space-y-3">
-                                        @foreach ($product->toppings as $topping)
-                                            <div class="variant-stock" data-topping-id="{{ $topping->id }}">
-                                                <div class="flex items-center gap-3 mb-2">
-                                                    @if ($topping->image)
-                                                        <img src="{{ Storage::disk('s3')->url($topping->image) }}"
-                                                            alt="{{ $topping->name }}"
-                                                            class="w-10 h-10 object-cover rounded-md">
-                                                    @else
-                                                        <div
-                                                            class="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center">
-                                                            <i class="fas fa-utensils text-gray-400"></i>
-                                                        </div>
-                                                    @endif
-                                                    <div class="text-sm font-medium text-gray-700">
-                                                        {{ $topping->name }} ({{ number_format($topping->price) }} đ)
-                                                    </div>
-                                                </div>
-                                                <input type="number"
-                                                    name="topping_stock[{{ $branch->id }}][{{ $topping->id }}]"
-                                                    value="{{ isset($toppingStocks[$branch->id][$topping->id]) ? $toppingStocks[$branch->id][$topping->id] : 0 }}"
-                                                    min="0" class="stock-input" placeholder="Nhập số lượng" />
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <div class="flex justify-end mt-8">
-                            <button type="submit" id="save-topping-stocks"
-                                class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                Lưu thay đổi
-                            </button>
-                        </div>
-                    @else
-                        <div class="text-center py-8">
-                            <p class="text-gray-500">Không có topping nào cho sản phẩm này</p>
-                        </div>
-                    @endif
                 </div>
             </div>
         </form>
@@ -415,17 +293,7 @@
             });
         });
 
-        // Item selection for toppings
-        const toppingCheckboxes = document.querySelectorAll('input[name="selected_toppings[]"]');
-        toppingCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const toppingId = this.value;
-                const isChecked = this.checked;
 
-                // Update visual feedback or perform actions based on selection
-                console.log(`Topping ${toppingId} ${isChecked ? 'selected' : 'deselected'}`);
-            });
-        });
 
         // Apply bulk stock for selected variants and branches
         const applyBulkStockBtn = document.getElementById('apply-bulk-stock');
@@ -464,43 +332,7 @@
             });
         }
 
-        // Apply bulk stock for selected toppings and branches
-        const applyBulkToppingStockBtn = document.getElementById('apply-bulk-topping-stock');
-        if (applyBulkToppingStockBtn) {
-            applyBulkToppingStockBtn.addEventListener('click', function() {
-                const bulkValue = document.getElementById('bulk-topping-stock-input').value;
-                const selectedToppings = document.querySelectorAll(
-                    'input[name="selected_toppings[]"]:checked');
-                const selectedBranches = document.querySelectorAll(
-                    'input[name="branch_selection_toppings[]"]:checked');
 
-                if (!bulkValue || selectedToppings.length === 0 || selectedBranches.length === 0) {
-                    dtmodalShowToast('warning', {
-                        title: 'Thiếu thông tin',
-                        message: 'Vui lòng nhập số lượng và chọn ít nhất một topping và một chi nhánh'
-                    });
-                    return;
-                }
-
-                selectedBranches.forEach(branchCheckbox => {
-                    const branchId = branchCheckbox.value;
-                    selectedToppings.forEach(toppingCheckbox => {
-                        const toppingId = toppingCheckbox.value;
-                        const stockInput = document.querySelector(
-                            `input[name="topping_stock[${branchId}][${toppingId}]"]`
-                            );
-                        if (stockInput) {
-                            stockInput.value = bulkValue;
-                        }
-                    });
-                });
-
-                dtmodalShowToast('success', {
-                    title: 'Thành công',
-                    message: 'Đã áp dụng số lượng tổng cho các topping và chi nhánh đã chọn'
-                });
-            });
-        }
 
         // Add form interactions
         const stockInputs = document.querySelectorAll('.stock-input');
@@ -529,42 +361,22 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            // Ctrl/Cmd + S to save current form
+            // Ctrl/Cmd + S to save variant form
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
 
-                // Determine which tab is active and submit the corresponding form
-                const activeTab = document.querySelector('.tab-content.active');
-                if (activeTab) {
-                    if (activeTab.id === 'variants-tab') {
-                        const variantForm = document.getElementById('variant-stock-form');
-                        if (variantForm) {
-                            dtmodalShowModal('warning', {
-                                title: 'Xác nhận lưu',
-                                message: 'Bạn có chắc chắn muốn lưu thay đổi kho hàng cho biến thể?',
-                                confirmText: 'Lưu',
-                                cancelText: 'Hủy',
-                                createIfNotExists: true,
-                                onConfirm: function() {
-                                    variantForm.submit();
-                                }
-                            });
+                const variantForm = document.getElementById('variant-stock-form');
+                if (variantForm) {
+                    dtmodalShowModal('warning', {
+                        title: 'Xác nhận lưu',
+                        message: 'Bạn có chắc chắn muốn lưu thay đổi kho hàng cho biến thể?',
+                        confirmText: 'Lưu',
+                        cancelText: 'Hủy',
+                        createIfNotExists: true,
+                        onConfirm: function() {
+                            variantForm.submit();
                         }
-                    } else if (activeTab.id === 'toppings-tab') {
-                        const toppingForm = document.getElementById('topping-stock-form');
-                        if (toppingForm) {
-                            dtmodalShowModal('warning', {
-                                title: 'Xác nhận lưu',
-                                message: 'Bạn có chắc chắn muốn lưu thay đổi kho hàng cho topping?',
-                                confirmText: 'Lưu',
-                                cancelText: 'Hủy',
-                                createIfNotExists: true,
-                                onConfirm: function() {
-                                    toppingForm.submit();
-                                }
-                            });
-                        }
-                    }
+                    });
                 }
             }
         });
