@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Branch;
 use App\Models\BranchStock;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BranchStockController extends Controller
 {
@@ -34,41 +35,78 @@ class BranchStockController extends Controller
                 'stocks.*.*' => 'nullable|integer|min:0'
             ]);
 
+            // Log incoming request data for debugging
+            Log::info('BranchStockController update called', [
+                'product_id' => $product->id,
+                'stocks_data' => $request->stocks,
+                'has_stocks' => $request->has('stocks'),
+                'stocks_empty' => empty($request->stocks)
+            ]);
+
             // Check if stocks data is provided
             if (!$request->has('stocks') || empty($request->stocks)) {
-                return response()->json([
-                    'success' => false,
+                session()->flash('toast', [
+                    'type' => 'warning',
                     'message' => 'Không có dữ liệu kho hàng nào được cập nhật'
                 ]);
+                
+                return redirect()->route('admin.products.index');
             }
 
             DB::beginTransaction();
 
-            foreach ($request->stocks as $variantId => $branchStocks) {
-                foreach ($branchStocks as $branchId => $quantity) {
-                    BranchStock::updateOrCreate(
+            // Handle stocks data format: stocks[branchId][variantId] = quantity
+            foreach ($request->stocks as $branchId => $variantStocks) {
+                // Verify branch exists and is active
+                $branch = \App\Models\Branch::where('id', $branchId)->where('active', true)->first();
+                if (!$branch) {
+                    continue; // Skip invalid or inactive branch
+                }
+                
+                foreach ($variantStocks as $variantId => $quantity) {
+                    // Verify variant exists and belongs to the product
+                    $variant = $product->variants()->find($variantId);
+                    if (!$variant) {
+                        continue; // Skip invalid variant
+                    }
+                    
+                    // Ensure quantity is not null and is numeric
+                    $quantity = is_numeric($quantity) ? (int)$quantity : 0;
+                    
+                    $branchStock = BranchStock::updateOrCreate(
                         [
                             'branch_id' => $branchId,
                             'product_variant_id' => $variantId
                         ],
                         ['stock_quantity' => $quantity]
                     );
+                    
+                    Log::info('Stock updated in BranchStockController', [
+                        'branch_id' => $branchId,
+                        'variant_id' => $variantId,
+                        'quantity' => $quantity,
+                        'stock_id' => $branchStock->id
+                    ]);
                 }
             }
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
+            session()->flash('toast', [
+                'type' => 'success',
                 'message' => 'Cập nhật tồn kho thành công'
             ]);
+
+            return redirect()->route('admin.products.index');
         } catch (\Exception $e) {
             DB::rollBack();
             
-            return response()->json([
-                'success' => false,
+            session()->flash('toast', [
+                'type' => 'error',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ], 500);
+            ]);
+            
+            return redirect()->route('admin.products.index');
         }
     }
 

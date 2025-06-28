@@ -79,7 +79,6 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
 });
 
 
-
 // Authentication (login / logout / register)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('customer.login');

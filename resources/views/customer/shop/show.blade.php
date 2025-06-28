@@ -839,7 +839,7 @@
                             @endforeach
                         </div>
                     @else
-                        <p class="text-gray-600">{{ is_array($product->ingredients) ? implode(', ', $product->ingredients) : $product->ingredients }}</p>
+                        <p class="text-gray-600">{{ $product->ingredients }}</p>
                     @endif
                 @else
                     <div class="text-center py-8">
