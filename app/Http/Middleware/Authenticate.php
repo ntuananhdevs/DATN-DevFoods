@@ -17,12 +17,19 @@ class Authenticate extends Middleware
                     if (str_contains($middleware, 'auth:driver')) {
                         return route('driver.login');
                     }
+                    if (str_contains($middleware, 'auth:manager')) {
+                        return route('branch.login');
+                    }
                 }
             }
 
             // Check URL path as fallback
             if (str_contains($request->path(), 'driver')) {
                 return route('driver.login');
+            }
+            
+            if (str_contains($request->path(), 'branch')) {
+                return route('branch.login');
             }
             
             // Default to admin login

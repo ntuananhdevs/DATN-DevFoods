@@ -19,8 +19,7 @@ class RoleAdmin
      */
     public function handle($request, Closure $next, $role)
     {
-        // Thử với guard admin trước, nếu không thì thử manager
-        $user = Auth::guard('admin')->user() ?? Auth::guard('manager')->user();
+        $user = Auth::guard('admin')->user();
 
         if (!$user || !$user->hasRole($role)) {
             abort(403, 'Bạn không có quyền truy cập.');

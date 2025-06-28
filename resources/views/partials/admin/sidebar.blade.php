@@ -1,8 +1,8 @@
 @php
-    $user = Auth::user();
+    $user = Auth::guard('admin')->user() ?? Auth::guard('manager')->user();
 @endphp
 
-@if ($user && $user->hasRole('spadmin'))
+@if ($user && $user->hasRole('admin'))
     {{-- Menu cho admin --}}
     <!-- Sidebar Header -->
     <div class="sidebar-header p-3 border-b border-sidebar-border flex justify-center items-center">

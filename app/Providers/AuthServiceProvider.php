@@ -28,10 +28,13 @@ class AuthServiceProvider extends ServiceProvider
 
         // Gate cho quản lý Roles
 
-        Gate::define('manage-roles', function (User $user) {
-            return $user->roles()->whereIn('name', ['spadmin', 'admin'])->exists();
+        Gate::define('access-admin', function ($user) {
+            return $user->roles()->whereIn('name', ['admin'])->exists();
         });
 
+        Gate::define('access-branch', function ($user) {
+            return $user->roles()->whereIn('name', ['manager'])->exists();
+        });
 
         Passport::ignoreRoutes();
 

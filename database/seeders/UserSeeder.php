@@ -17,19 +17,10 @@ class UserSeeder extends Seeder
 
         // Lấy ID của rank thấp nhất (Đồng)
         $defaultRankId = UserRank::where('slug', 'bronze')->first()->id;
-        $silverRankId = UserRank::where('slug', 'silver')->first()->id;
 
-        // Tạo 10 user mẫu
-        User::factory()->count(10)->create([
-            'user_rank_id' => $defaultRankId,
-            'total_spending' => fake()->randomFloat(2, 0, 1000),
-            'total_orders' => fake()->numberBetween(0, 10),
-            'rank_updated_at' => now(),
-        ]);
-
-        // Tạo user admin mặc định
+        // Tạo user admin
         User::factory()->create([
-            'user_name' => 'spadmin',
+            'user_name' => 'admin',
             'full_name' => 'Administrator',
             'email' => 'admin@devfoods.com',
             'password' => bcrypt('admin'),
@@ -39,24 +30,13 @@ class UserSeeder extends Seeder
             'rank_updated_at' => now(),
         ]);
 
-        // Tạo user khách hàng mặc định 
-        User::factory()->create([
-            'user_name' => 'customer',
-            'full_name' => 'Test Customer',
-            'email' => 'customer@example.com',
-            'user_rank_id' => $silverRankId,
-            'total_spending' => fake()->randomFloat(2, 1000, 5000),
-            'total_orders' => fake()->numberBetween(5, 20),
-            'rank_updated_at' => now(),
-        ]);
-
         // Tạo 3 người quản lý chi nhánh
         $branchManagers = [
             [
                 'user_name' => 'manager1',
-                'full_name' => 'Nguyễn Văn Quản Lý',
+                'full_name' => 'Nguyen Van A',
                 'email' => 'manager1@devfoods.com',
-                'password' => bcrypt('manager123'),
+                'password' => bcrypt('manager'),
                 'user_rank_id' => $defaultRankId,
                 'total_spending' => 0,
                 'total_orders' => 0,
@@ -64,9 +44,9 @@ class UserSeeder extends Seeder
             ],
             [
                 'user_name' => 'manager2',
-                'full_name' => 'Trần Thị Quản Lý',
+                'full_name' => 'Nguyen Van B',
                 'email' => 'manager2@devfoods.com',
-                'password' => bcrypt('manager123'),
+                'password' => bcrypt('manager'),
                 'user_rank_id' => $defaultRankId,
                 'total_spending' => 0,
                 'total_orders' => 0,
@@ -74,9 +54,9 @@ class UserSeeder extends Seeder
             ],
             [
                 'user_name' => 'manager3',
-                'full_name' => 'Lê Minh Quản Lý',
+                'full_name' => 'Nguyen Van C',
                 'email' => 'manager3@devfoods.com',
-                'password' => bcrypt('manager123'),
+                'password' => bcrypt('manager'),
                 'user_rank_id' => $defaultRankId,
                 'total_spending' => 0,
                 'total_orders' => 0,
