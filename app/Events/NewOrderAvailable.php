@@ -3,17 +3,18 @@
 namespace App\Events;
 
 use App\Models\Order;
-use Illuminate\Broadcasting\Channel;
+// SỬA Ở ĐÂY: Dùng PrivateChannel thay vì Channel
+use Illuminate\Broadcasting\PrivateChannel; 
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log; // <-- THÊM DÒNG NÀY
+use Illuminate\Support\Facades\Log;
 
 class NewOrderAvailable implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
-    public $order;
+    public Order $order;
 
     public function __construct(Order $order)
     {
@@ -22,23 +23,28 @@ class NewOrderAvailable implements ShouldBroadcast
 
     public function broadcastOn(): array
     {
-        return [new Channel('available-orders')];
+        // SỬA Ở ĐÂY: Gửi đến kênh riêng tư 'drivers'
+        return [new PrivateChannel('drivers')];
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'new-order-event';
     }
 
-    /**
-     * THÊM PHƯƠNG THỨC NÀY VÀO
-     * Định dạng dữ liệu sẽ được gửi đi.
-     */
     public function broadcastWith(): array
     {
-        // Ghi log ngay trước khi gửi đi
         Log::info('Broadcasting NewOrderAvailable event for order ID: ' . $this->order->id);
         
-        return ['order' => $this->order->toArray()];
+        // Giữ nguyên phần này, chỉ gửi dữ liệu cần thiết
+        return [
+            'order' => [
+                'id' => $this->order->id,
+                'order_code' => $this->order->order_code ?? $this->order->id, // Thêm mã đơn hàng cho dễ nhìn
+                'delivery_address' => $this->order->delivery_address,
+                'total_amount' => $this->order->total_amount, // Gửi thêm tổng tiền
+                // Thêm các trường khác nếu cần
+            ]
+        ];
     }
 }

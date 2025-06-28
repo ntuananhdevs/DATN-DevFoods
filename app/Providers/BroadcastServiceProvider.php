@@ -12,8 +12,10 @@ class BroadcastServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Broadcast::routes();
+        // 1. Đăng ký các route xác thực với middleware cho cả web và driver
+        Broadcast::routes(['middleware' => ['web', 'driver']]);
 
+        // 2. Tải các định nghĩa kênh từ file channels.php
         require base_path('routes/channels.php');
     }
 }

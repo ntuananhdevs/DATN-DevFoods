@@ -7,5 +7,7 @@ window.Echo = new Echo({
     broadcaster: 'pusher',
     key: process.env.MIX_PUSHER_APP_KEY,
     cluster: process.env.MIX_PUSHER_APP_CLUSTER,
-    forceTLS: true
+    forceTLS: true,
+    // **THÊM DÒNG QUAN TRỌNG NÀY VÀO**
+    authEndpoint: '/broadcasting/auth'
 });

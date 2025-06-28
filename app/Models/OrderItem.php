@@ -41,4 +41,14 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Combo::class);
     }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function toppings()
+    {
+        return $this->belongsTo(ProductTopping::class);
+    }
 }

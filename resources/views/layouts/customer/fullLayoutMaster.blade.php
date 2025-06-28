@@ -541,6 +541,7 @@
             }
         });
     </script>
+    @include('components.modal')
 </body>
 
 </html>

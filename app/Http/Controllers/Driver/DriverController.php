@@ -16,24 +16,23 @@ class DriverController extends Controller
      */
     public function home()
     {
-        // 1. Lấy thông tin tài xế đang đăng nhập
         $driver = Auth::guard('driver')->user();
 
-        // 2. Lấy thu nhập từ các đơn đã giao thành công TRONG NGÀY
+        // CẬP NHẬT: Lấy thu nhập từ các đơn có trạng thái 'delivered' hoặc 'item_received'
         $ordersDeliveredToday = Order::where('driver_id', $driver->id)
-            ->where('status', 'delivered')
-            ->whereDate('delivery_date', Carbon::today())
+            ->whereIn('status', ['delivered', 'item_received'])
+            ->whereDate('actual_delivery_time', Carbon::today())
             ->get();
         $totalEarnedToday = $ordersDeliveredToday->sum('driver_earning');
 
-        // 3. Lấy các đơn hàng tài xế đang xử lý (đang chuẩn bị hoặc đang giao)
+        // CẬP NHẬT: Lấy các đơn hàng tài xế đang xử lý
         $processingOrders = Order::where('driver_id', $driver->id)
-            ->whereIn('status', ['processing', 'delivering'])
+            ->whereIn('status', ['driver_picked_up', 'in_transit'])
             ->latest()->get();
             
-        // 4. Lấy 5 đơn hàng mới có sẵn cho tất cả tài xế
+        // CẬP NHẬT: Lấy các đơn hàng mới đang chờ tài xế
         $availableOrders = Order::whereNull('driver_id')
-            ->where('status', 'pending')
+            ->where('status', 'awaiting_driver')
             ->latest()->take(5)->get();
 
         // 5. Lấy số thông báo chưa đọc (nếu có)

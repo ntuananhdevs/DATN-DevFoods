@@ -85,11 +85,12 @@
     {{-- Card Đơn hàng mới --}}
     <div class="bg-white rounded-lg p-4 shadow-sm">
         <div class="flex items-center justify-between mb-3"><h3 class="font-medium">Đơn hàng mới có sẵn</h3></div>
+        {{-- DANH SÁCH ĐƠN HÀNG MỚI SẼ ĐƯỢC THÊM VÀO ĐÂY --}}
         <div id="available-orders-list" class="space-y-3">
-             @forelse($availableOrders as $order)
+            {{-- Render các đơn hàng có sẵn ban đầu --}}
+            @forelse($availableOrders as $order)
                 <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-box text-white text-lg"></i></div>
-                    {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                     <div class="flex-1 min-w-0">
                         <div class="font-medium text-gray-800">Đơn #{{ $order->id }}</div>
                         <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
@@ -97,7 +98,7 @@
                     <a href="{{ route('driver.orders.show', $order->id) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Nhận đơn</a>
                 </div>
             @empty
-                <p class="text-center text-sm text-gray-500 py-3 no-order-message">Hiện không có đơn hàng mới.</p>
+                <p class="text-center text-sm text-gray-500 no-order-message">Hiện không có đơn hàng mới.</p>
             @endforelse
         </div>
     </div>
@@ -157,16 +158,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    console.log('[DASHBOARD] DOM đã tải. Bắt đầu lắng nghe đơn hàng mới.');
     const availableOrdersList = document.getElementById('available-orders-list');
+    
     if (window.Echo && availableOrdersList) {
-        window.Echo.channel('available-orders')
+        // Lắng nghe trên kênh private 'drivers'
+        window.Echo.private('drivers')
             .listen('.new-order-event', (eventData) => {
-                console.log('Đã nhận được đơn hàng mới:', eventData.order);
+                console.log('[DASHBOARD] Đã nhận được đơn hàng mới!', eventData.order);
+
+                // Xóa thông báo "không có đơn hàng" nếu có
                 const noOrderMsg = availableOrdersList.querySelector('.no-order-message');
                 if (noOrderMsg) noOrderMsg.remove();
                 
                 const order = eventData.order;
-                const orderShowUrl = `/driver/orders/${order.id}`;
+
+                // SỬA LỖI Ở ĐÂY: Tạo URL bằng cách nối chuỗi trong JavaScript
+                const orderShowUrl = `{{ url('/driver/orders') }}/${order.id}`; // Cách này an toàn và đúng
+
                 const newOrderHtml = `
                     <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-blue-200 animate-pulse-fade-in">
                         <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0"><i class="fas fa-box text-white text-lg"></i></div>
@@ -177,8 +186,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         <a href="${orderShowUrl}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Nhận đơn</a>
                     </div>
                 `;
+                // Thêm vào đầu danh sách
                 availableOrdersList.insertAdjacentHTML('afterbegin', newOrderHtml);
+
+                // Có thể thêm một toast thông báo ở đây nếu muốn
+                if(typeof dtmodalShowToast === 'function') {
+                    dtmodalShowToast('notification', { title: 'Có đơn hàng mới!', message: `Đơn #${order.id} đang chờ nhận.` });
+                }
             });
+
+        console.log('[DASHBOARD] Đã thiết lập lắng nghe trên kênh "drivers".');
+    } else {
+        console.error('[DASHBOARD] Lỗi: Không thể thiết lập Echo hoặc không tìm thấy #available-orders-list');
     }
 });
 </script>

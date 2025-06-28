@@ -2,8 +2,20 @@
 
 use Illuminate\Support\Facades\Broadcast;
 use App\Models\Conversation;
+use App\Models\Driver;
+use App\Models\Order;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+
+Log::info('--- [DEBUG] channels.php file was loaded ---');
+Log::info('[DEBUG] Auth Status Check:', [
+    'default_guard' => Auth::getDefaultDriver(),
+    'is_web_logged_in' => Auth::guard('web')->check(),
+    'web_user_id' => Auth::guard('web')->id(),
+    'is_driver_logged_in' => Auth::guard('driver')->check(),
+    'driver_user_id' => Auth::guard('driver')->id()
+]);
 
 /*
 |--------------------------------------------------------------------------
@@ -79,10 +91,6 @@ Broadcast::channel('branch.{branchId}.conversations', function ($user, $branchId
 });
 
 
-Broadcast::channel('driver.{driverId}', function ($driver, $driverId) {
-    // Chỉ tài xế đã đăng nhập và có ID trùng khớp mới có thể nghe kênh này
-    return (int) $driver->id === (int) $driverId;
-});
 // Presence chat channel
 Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversationId) {
     Log::info('[Broadcast] presence-chat', [
@@ -133,4 +141,35 @@ Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversat
 Broadcast::channel('discounts', function ($user = null) {
     // Allow all users (including unauthenticated) to listen to discount updates
     return true;
+});
+
+
+Broadcast::channel('order.{orderId}', function ($user, $orderId) {
+    Log::info('[DEBUG] Executing callback for order.' . $orderId); // Log này để xem callback có được gọi không
+
+    $order = Order::find($orderId);
+    if (!$order) {
+        return false;
+    }
+
+    // Ép kiểu (int) để đảm bảo so sánh chính xác
+    $isDriver = ($user instanceof Driver) && ((int)$user->id === (int)$order->driver_id);
+    $isCustomer = ($user instanceof User) && ((int)$user->id === (int)$order->customer_id);
+
+    return $isCustomer || $isDriver;
+});
+
+// Broadcast::channel('order.{orderId}', function ($user, $orderId) {
+//     // TẠM THỜI LUÔN TRẢ VỀ TRUE ĐỂ KIỂM TRA XEM CÓ VƯỢT QUA ĐƯỢC MIDDLEWARE KHÔNG
+//     Log::info('[FORCE TEST] Reached channel authorization callback for order.' . $orderId);
+//     return true; 
+// });
+
+/**
+ * KÊNH THÔNG BÁO ĐƠN HÀNG MỚI CHO TÀI XẾ
+ * Đây là kênh riêng tư, chỉ những người dùng đã đăng nhập và là Driver mới được nghe.
+ */
+Broadcast::channel('drivers', function ($user) {
+    // Chỉ cần kiểm tra xem người dùng đang xác thực có phải là Driver không.
+    return $user instanceof Driver;
 });
