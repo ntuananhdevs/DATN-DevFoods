@@ -64,6 +64,9 @@ class DiscountCodeModule {
         // Add event listeners for selection changes
         this.setupSelectionChangeListeners();
         
+        // Initialize discount type validation
+        this.initDiscountTypeValidation();
+        
         // Load initial data
         this.loadInitialData();
     }
@@ -327,6 +330,42 @@ class DiscountCodeModule {
         
         // Initialize users - this is handled by initRankSelection which is called in initSearchFunctions
         // We don't need to call fetchUsers() here as it's automatically called by initRankSelection
+    }
+
+    // Load initial data based on selected radio buttons
+    loadInitialData() {
+        // Load variants if applicable_items is specific_variants
+        if ($('input[name="applicable_items"]:checked').val() === 'specific_variants') {
+            loadVariants(this.selectedVariantIds, '#variants_container');
+        }
+        
+        // Load users if usage_type is personal
+        if ($('#usage_type').val() === 'personal') {
+            fetchUsers(this.selectedUserIds, '#users_selection .grid', '#users_selection .text-xs.text-gray-500');
+        }
+    }
+
+    // Initialize discount type validation
+    initDiscountTypeValidation() {
+        const discountTypeSelect = $('#discount_type');
+        const maxDiscountRequired = $('#max_discount_required');
+        const maxDiscountInput = $('#max_discount_amount');
+        
+        function toggleMaxDiscountRequired() {
+            if (discountTypeSelect.val() === 'percentage') {
+                maxDiscountRequired.show();
+                maxDiscountInput.attr('required', true);
+            } else {
+                maxDiscountRequired.hide();
+                maxDiscountInput.removeAttr('required');
+            }
+        }
+        
+        // Initial check
+        toggleMaxDiscountRequired();
+        
+        // Listen for changes
+        discountTypeSelect.on('change', toggleMaxDiscountRequired);
     }
 }
 

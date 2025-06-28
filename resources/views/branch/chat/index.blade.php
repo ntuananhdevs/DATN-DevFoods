@@ -1,4 +1,4 @@
-@extends('layouts.admin.contentLayoutMaster')
+@extends('layouts.branch.contentLayoutMaster')
 
 @section('hide_footer', true)
 
@@ -16,7 +16,6 @@
         #main-content {
             overflow: hidden !important;
         }
-        /* Sidebar chat item nhỏ gọn hơn, sát nhau */
         #chat-list .chat-item {
             padding-top: 2px !important;
             padding-bottom: 2px !important;
@@ -42,7 +41,7 @@
 
     <div id="chat-container" class="flex h-[92vh] rounded-lg overflow-hidden"
         @if (isset($conversation) && $conversation) data-conversation-id="{{ $conversation->id }}" @endif
-        data-user-id="{{ auth()->id() }}" data-user-type="admin">
+        data-user-id="{{ Auth::guard('manager')->id() }}" data-user-type="branch_manager">
         <!-- Sidebar: Danh sách cuộc trò chuyện -->
         <aside class="w-1/4 min-w-[320px] border-r bg-gray-50 flex flex-col">
             <div class="p-4 border-b bg-white flex flex-col gap-3">
@@ -72,9 +71,9 @@
                             <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg {{ $conv->id == optional($conversation)->id ? 'bg-blue-500' : 'bg-orange-500' }}">
                                 {{ strtoupper(substr($conv->customer->full_name ?? ($conv->customer->name ?? 'K'), 0, 1)) }}
                             </div>
-                            @if ($conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() > 0)
+                            @if ($conv->messages->where('is_read', false)->where('sender_id', '!=', Auth::guard('manager')->id())->count() > 0)
                                 <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                                    {{ $conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() }}
+                                    {{ $conv->messages->where('is_read', false)->where('sender_id', '!=', Auth::guard('manager')->id())->count() }}
                                 </span>
                             @endif
                         </div>
@@ -87,13 +86,13 @@
                             </div>
                             @php
                                 $lastMsg = $conv->messages->last();
-                                $isAdminMsg = $lastMsg && ($lastMsg->sender_type === 'super_admin' || $lastMsg->sender_type === 'admin');
+                                $isBranchMsg = $lastMsg && $lastMsg->sender_type === 'branch_manager';
                                 $isCustomerMsg = $lastMsg && $lastMsg->sender_type === 'customer';
                             @endphp
                             <div class="flex items-center gap-2 mt-1">
                                 <span class="chat-item-preview truncate text-sm text-gray-500 flex-1">
                                     @if ($lastMsg)
-                                        @if ($isAdminMsg)
+                                        @if ($isBranchMsg)
                                             Bạn: {{ $lastMsg->message }}
                                         @elseif ($isCustomerMsg)
                                             Khách: {{ $lastMsg->message }}
@@ -153,7 +152,7 @@
                         <div class='w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold'>A</div>
                         <div>
                             <div class='bg-white px-4 py-2 rounded-2xl shadow text-gray-900'>Nội dung tin nhắn</div>
-                            <div class='text-xs text-gray-500 mt-1'>Administrator • 23:20</div>
+                            <div class='text-xs text-gray-500 mt-1'>Branch Manager • 23:20</div>
                         </div>
                     </div>
                     hoặc
@@ -161,7 +160,7 @@
                         <div class='w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold'>T</div>
                         <div>
                             <div class='bg-orange-500 text-white px-4 py-2 rounded-2xl shadow'>Nội dung tin nhắn</div>
-                            <div class='text-xs text-gray-500 mt-1'>Tuấn Anh Nguyễn • 23:20</div>
+                            <div class='text-xs text-gray-500 mt-1'>Khách hàng • 23:20</div>
                         </div>
                     </div>
                     -->
@@ -259,19 +258,18 @@
     </div>
 
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-    <script src="{{ asset('js/test-pusher.js') }}"></script>
     <script src="{{ asset('js/chat-realtime.js') }}" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             @if($hasConversation)
                 const chatCommon = new ChatCommon({
                     conversationId: '{{ $conversation->id }}',
-                    userId: {{ auth()->id() }},
-                    userType: 'admin',
+                    userId: {{ Auth::guard('manager')->id() }},
+                    userType: 'branch_manager',
                     api: {
-                        send: '/admin/chat/send',
-                        getMessages: '/admin/chat/messages/{{ $conversation->id }}',
-                        distribute: '/admin/chat/distribute'
+                        send: '/branch/chat/send-message',
+                        getMessages: '/branch/chat/messages/{{ $conversation->id }}',
+                        distribute: '/branch/chat/distribute'
                     }
                 });
             @endif
@@ -308,4 +306,4 @@
             });
         }
     </script>
-@endsection
+@endsection 

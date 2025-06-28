@@ -26,10 +26,20 @@
                     <li>
                         <div class="flex items-center">
                             <a href="" class="text-sm font-medium text-muted-foreground hover:text-foreground">
-                                @yield('title', 'Dashboard')
+                                @yield('title', 'Dashboard Chi nhánh')
                             </a>
                         </div>
                     </li>
+                    @if(Auth::guard('manager')->user() && Auth::guard('manager')->user()->branch)
+                        <li>
+                            <div class="flex items-center">
+                                <span class="mx-2 text-muted-foreground">/</span>
+                                <span class="text-sm font-medium text-foreground">
+                                    {{ Auth::guard('manager')->user()->branch->name }}
+                                </span>
+                            </div>
+                        </li>
+                    @endif
                     @if(isset($breadcrumbs))
                         @foreach($breadcrumbs as $breadcrumb)
                             <li>
@@ -94,16 +104,6 @@
                     <div class="h-px my-1 bg-muted"></div>
                     <!-- Notification items -->
                     <div class="space-y-1">
-                        <!-- Thông báo tin nhắn mới -->
-                        <div id="chat-new-message-notify" class="flex items-start gap-3 px-2 py-2 rounded-md bg-orange-100 text-orange-700 font-semibold cursor-pointer hover:bg-orange-200 transition hidden">
-                            <div class="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-600">
-                                <i class="fas fa-comments"></i>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium"><span id="chat-new-message-count">0</span> tin nhắn mới</p>
-                                <p class="text-xs text-orange-600">Bạn có <span id="chat-new-message-count-2">0</span> tin nhắn chưa đọc</p>
-                            </div>
-                        </div>
                         <!-- Unread notification -->
                         <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md">
                             <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -153,10 +153,10 @@
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open" class="flex items-center gap-2 rounded-full hover:bg-accent hover:text-accent-foreground">
                 <div class="relative h-8 w-8 rounded-full bg-muted">
-                    @if(Auth::user()->avatar)
-                        <img src="{{ Storage::url(Auth::user()->avatar) }}" alt="{{ Auth::user()->full_name }}" class="h-full w-full rounded-full object-cover">
+                    @if(Auth::guard('manager')->user()->avatar)
+                        <img src="{{ Storage::url(Auth::guard('manager')->user()->avatar) }}" alt="{{ Auth::guard('manager')->user()->full_name }}" class="h-full w-full rounded-full object-cover">
                     @else
-                        <img src="{{ asset('images/placeholder.svg') }}" alt="{{ Auth::user()->full_name }}" class="h-full w-full rounded-full object-cover">
+                        <img src="{{ asset('images/placeholder.svg') }}" alt="{{ Auth::guard('manager')->user()->full_name }}" class="h-full w-full rounded-full object-cover">
                     @endif
                 </div>
             </button>
@@ -166,8 +166,11 @@
                 <div class="p-2">
                     <div class="px-2 py-1.5">
                         <div class="flex flex-col space-y-1">
-                            <p class="text-sm font-medium leading-none">{{ Auth::user()->full_name }}</p>
-                            <p class="text-xs leading-none text-muted-foreground">{{ Auth::user()->email }}</p>
+                            <p class="text-sm font-medium leading-none">{{ Auth::guard('manager')->user()->full_name }}</p>
+                            <p class="text-xs leading-none text-muted-foreground">{{ Auth::guard('manager')->user()->email }}</p>
+                            @if(Auth::guard('manager')->user()->branch)
+                                <p class="text-xs leading-none text-primary font-medium">{{ Auth::guard('manager')->user()->branch->name }}</p>
+                            @endif
                         </div>
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
@@ -188,7 +191,7 @@
                         </a>
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
-                    <form method="POST" action="{{ route('admin.logout') }}">
+                    <form method="POST" action="{{ route('branch.logout') }}">
                         @csrf
                         <button type="submit" class="flex w-full items-center rounded-md px-2 py-1.5 text-sm text-red-600 hover:bg-accent hover:text-red-700">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out mr-2">
@@ -206,79 +209,4 @@
 </header>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<script src="public/js/modal.js"></script>
-<style>
-    .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
-    }
-    
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-    }
-    
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: rgba(0, 0, 0, 0.2);
-        border-radius: 20px;
-        border: transparent;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(0, 0, 0, 0.3);
-    }
-
-    /* For dark mode */
-    .dark .custom-scrollbar {
-        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-    }
-
-    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.2);
-    }
-
-    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background-color: rgba(255, 255, 255, 0.3);
-    }
-
-    @keyframes bell-shake {
-        0% { transform: rotate(0); }
-        15% { transform: rotate(5deg); }
-        30% { transform: rotate(-5deg); }
-        45% { transform: rotate(4deg); }
-        60% { transform: rotate(-4deg); }
-        75% { transform: rotate(2deg); }
-        85% { transform: rotate(-2deg); }
-        92% { transform: rotate(1deg); }
-        100% { transform: rotate(0); }
-    }
-
-    .animate-bell {
-        transform-origin: top center;
-        animation: bell-shake 1s ease infinite;
-    }
-
-    @keyframes badge-pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
-    }
-
-    .animate-badge {
-        animation: badge-pulse 2s ease infinite;
-    }
-
-    .animate-ping {
-        animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-
-    @keyframes ping {
-        75%, 100% {
-            transform: scale(1.5);
-            opacity: 0;
-        }
-    }
-</style>
+<script src="public/js/modal.js"></script> 

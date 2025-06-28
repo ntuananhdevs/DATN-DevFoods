@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'FastFood Admin')</title>
-    <meta name="description" content="@yield('description', 'Admin dashboard')">
+    <title>@yield('title', 'FastFood Branch')</title>
+    <meta name="description" content="@yield('description', 'Branch dashboard')">
     <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -43,33 +43,21 @@
     <div class="flex min-h-screen">
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar">
-            @include('partials.admin.sidebar')
+            @include('partials.branch.sidebar')
         </aside>
 
         <!-- Main Content -->
         <main id="main-content" class="main-content">
             <!-- Header -->
-            @include('partials.admin.header')
+            @include('partials.branch.header')
 
             <!-- Page Content -->
-            @hasSection('hide_footer')
-                <div class="flex-1 overflow-auto">
-                    @yield('content')
-                </div>
-            @else
-                <div class="flex-1 p-4 md:p-6 overflow-auto">
-                    @yield('content')
-                </div>
-            @endif
+            <div class="flex-1 p-4 md:p-6 overflow-auto">
+                @yield('content')
+            </div>
 
             <!-- Footer -->
-            @hasSection('hide_footer')
-                @if (!trim($__env->yieldContent('hide_footer')))
-                    @include('partials.admin.footer')
-                @endif
-            @else
-                @include('partials.admin.footer')
-            @endif
+            @include('partials.admin.footer')
         </main>
     </div>
 
@@ -82,4 +70,4 @@
     @include('components.modal')
 </body>
 
-</html>
+</html> 

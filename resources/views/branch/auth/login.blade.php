@@ -1,8 +1,8 @@
-@extends('layouts.admin.auth')
+@extends('layouts.branch.auth')
 
 @section('content')
 <div class="login-container">
-    <h1 class="login-title">Đăng nhập Quản trị</h1>
+    <h1 class="login-title">Đăng nhập Chi nhánh</h1>
     <p class="login-subtitle">Nhập thông tin đăng nhập của bạn để tiếp tục</p>
     
     @if(session('success'))
@@ -11,7 +11,7 @@
     </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.login.submit') }}">                                                             
+    <form method="POST" action="{{ route('branch.login.submit') }}">                                                             
         @csrf
       <div class="form-group">
         <label for="email" class="form-label">Email</label>
@@ -76,4 +76,4 @@
       </button>
     </form>
   </div>
-@endsection
+@endsection 

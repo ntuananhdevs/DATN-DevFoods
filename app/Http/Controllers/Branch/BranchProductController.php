@@ -12,29 +12,25 @@ class BranchProductController extends Controller
 {
     public function index()
     {
-        $manager = Auth::user();
-        $branch = Branch::where('manager_user_id', $manager->id)->first();
-        $products = $branch ? $branch->products()->with(['primaryImage', 'category', 'branchStocks'])->get() : collect();
+        $manager = Auth::guard('manager')->user();
+        $branch = $manager ? $manager->branch : null;
+        $products = $branch ? $branch->products()->with(['category', 'productImages'])->get() : collect();
         return view('branch.products', compact('products', 'branch'));
     }
 
     public function indexCombo()
     {
-        $manager = Auth::user();
-        $branch = Branch::where('manager_user_id', $manager->id)->first();
-        $combos = Combo::whereHas('productVariants.branchStocks', function ($q) use ($branch) {
-            $q->where('branch_id', $branch->id);
-        })->with(['productVariants.product'])->get();
+        $manager = Auth::guard('manager')->user();
+        $branch = $manager ? $manager->branch : null;
+        $combos = $branch ? $branch->combos()->with(['comboItems.product'])->get() : collect();
         return view('branch.combos', compact('combos', 'branch'));
     }
 
     public function indexTopping()
     {
-        $manager = Auth::user();
-        $branch = Branch::where('manager_user_id', $manager->id)->first();
-        $toppings = Topping::whereHas('toppingStocks', function ($q) use ($branch) {
-            $q->where('branch_id', $branch->id);
-        })->with(['toppingStocks'])->get();
+        $manager = Auth::guard('manager')->user();
+        $branch = $manager ? $manager->branch : null;
+        $toppings = $branch ? $branch->toppings()->get() : collect();
         return view('branch.toppings', compact('toppings', 'branch'));
     }
 }

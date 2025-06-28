@@ -3,6 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Discount_codes\DiscountCodeRequest;
+use App\Http\Requests\Admin\Discount_codes\BulkDiscountCodeRequest;
+use App\Http\Requests\Admin\Discount_codes\BulkStatusDiscountCodeRequest;
+use App\Http\Requests\Admin\Discount_codes\LinkDiscountCodeRequest;
+use App\Http\Requests\Admin\Discount_codes\GetUsersByRankRequest;
+use App\Http\Requests\Admin\Discount_codes\GetItemsByTypeRequest;
 use App\Models\DiscountCode;
 use App\Models\DiscountCodeBranch;
 use App\Models\DiscountCodeProduct;
@@ -129,35 +135,8 @@ class DiscountCodeController extends Controller
         return view('admin.discount_codes.create', compact('branches', 'categories', 'products', 'combos'));
     }
 
-    public function store(Request $request)
+    public function store(DiscountCodeRequest $request)
     {
-        $request->validate([
-            'code' => 'required|unique:discount_codes,code',
-            'name' => 'required',
-            'discount_type' => 'required|in:percentage,fixed_amount,free_shipping',
-            'discount_value' => 'required|numeric|min:0',
-            'min_requirement_type' => 'nullable|string',
-            'min_requirement_value' => 'nullable|numeric|min:0',
-            'max_discount_amount' => 'nullable|numeric|min:0',
-            'applicable_items' => 'nullable|string',
-            'applicable_scope' => 'nullable|string',
-            'applicable_ranks' => 'nullable|array',
-            'applicable_ranks.*' => 'integer|between:1,5',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'valid_days_of_week' => 'nullable|array',
-            'valid_days_of_week.*' => 'integer|between:0,6',
-            'valid_from_time' => 'nullable|date_format:H:i',
-            'valid_to_time' => 'nullable|date_format:H:i|after_or_equal:valid_from_time',
-            'usage_type' => 'required|in:public,personal',
-            'max_total_usage' => 'nullable|integer|min:0',
-            'max_usage_per_user' => 'nullable|integer|min:1',
-            'assigned_users' => 'nullable|array',
-            'assigned_users.*' => 'exists:users,id',
-            'variant_ids' => 'nullable|array',
-            'variant_ids.*' => 'exists:product_variants,id',
-        ]);
-
         DB::beginTransaction();
         
         try {
@@ -529,36 +508,9 @@ class DiscountCodeController extends Controller
         ));
     }
 
-    public function update(Request $request, $id)
+    public function update(DiscountCodeRequest $request, $id)
     {
         $discountCode = DiscountCode::findOrFail($id);
-
-        $request->validate([
-            'code' => 'required|unique:discount_codes,code,' . $id,
-            'name' => 'required',
-            'discount_type' => 'required|in:percentage,fixed_amount,free_shipping',
-            'discount_value' => 'required|numeric|min:0',
-            'min_requirement_type' => 'nullable|string',
-            'min_requirement_value' => 'nullable|numeric|min:0',
-            'max_discount_amount' => 'nullable|numeric|min:0',
-            'applicable_items' => 'nullable|string',
-            'applicable_scope' => 'nullable|string',
-            'applicable_ranks' => 'nullable|array',
-            'applicable_ranks.*' => 'integer|between:1,5',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'valid_days_of_week' => 'nullable|array',
-            'valid_days_of_week.*' => 'integer|between:0,6',
-            'valid_from_time' => 'nullable|date_format:H:i',
-            'valid_to_time' => 'nullable|date_format:H:i|after_or_equal:valid_from_time',
-            'usage_type' => 'required|in:public,personal', 
-            'max_total_usage' => 'nullable|integer|min:0',
-            'max_usage_per_user' => 'nullable|integer|min:1',
-            'assigned_users' => 'nullable|array',
-            'assigned_users.*' => 'exists:users,id',
-            'variant_ids' => 'nullable|array',
-            'variant_ids.*' => 'exists:product_variants,id',
-        ]);
 
         DB::beginTransaction();
         
@@ -1017,11 +969,9 @@ class DiscountCodeController extends Controller
         }
     }
 
-    public function bulkStatusUpdate(Request $request)
+    public function bulkStatusUpdate(BulkStatusDiscountCodeRequest $request)
     {
         try {
-            $request->validate(['ids' => 'required|array', 'is_active' => 'required|boolean']);
-            
             $isActive = $request->is_active;
             $count = count($request->ids);
             $action = $isActive ? 'kích hoạt' : 'vô hiệu hóa';
@@ -1069,11 +1019,9 @@ class DiscountCodeController extends Controller
         }
     }
 
-    public function bulkDelete(Request $request)
+    public function bulkDelete(BulkDiscountCodeRequest $request)
     {
         try {
-            $request->validate(['ids' => 'required|array']);
-            
             DB::beginTransaction();
             
             foreach ($request->ids as $id) {
@@ -1136,12 +1084,9 @@ class DiscountCodeController extends Controller
         ]);
     }
 
-    public function linkBranch(Request $request, $id)
+    public function linkBranch(LinkDiscountCodeRequest $request, $id)
     {
         $discountCode = DiscountCode::findOrFail($id);
-        
-        // Validate the basic request
-        $request->validate(['branch_id' => 'required|exists:branches,id']);
         
         // Get available branches for this discount code
         $availableBranchIds = [];
@@ -1203,14 +1148,8 @@ class DiscountCodeController extends Controller
         ]);
     }
 
-    public function linkProduct(Request $request, $id)
+    public function linkProduct(LinkDiscountCodeRequest $request, $id)
     {
-        $request->validate([
-            'product_id' => 'nullable|exists:products,id',
-            'category_id' => 'nullable|exists:categories,id',
-            'combo_id' => 'nullable|exists:combos,id',
-        ]);
-
         DiscountCodeProduct::create([
             'discount_code_id' => $id,
             'product_id' => $request->product_id,
@@ -1240,9 +1179,8 @@ class DiscountCodeController extends Controller
         ]);
     }
 
-    public function assignUsers(Request $request, $id)
+    public function assignUsers(LinkDiscountCodeRequest $request, $id)
     {
-        $request->validate(['user_ids' => 'required|array', 'user_ids.*' => 'exists:users,id']);
         foreach ($request->user_ids as $user_id) {
             UserDiscountCode::firstOrCreate([
                 'discount_code_id' => $id,
@@ -1269,12 +1207,8 @@ class DiscountCodeController extends Controller
         ]);
     }
 
-    public function linkCombo(Request $request, $id)
+    public function linkCombo(LinkDiscountCodeRequest $request, $id)
     {
-        $request->validate([
-            'combo_id' => 'required|exists:combos,id',
-        ]);
-
         // Kiểm tra xem combo đã được liên kết chưa
         $exists = DiscountCodeProduct::where('discount_code_id', $id)
             ->where('combo_id', $request->combo_id)
@@ -1315,7 +1249,7 @@ class DiscountCodeController extends Controller
         ]);
     }
 
-    public function getUsersByRank(Request $request)
+    public function getUsersByRank(GetUsersByRankRequest $request)
     {
         // Ghi log toàn bộ request để debug
         Log::info('getUsersByRank request:', [
@@ -1333,21 +1267,8 @@ class DiscountCodeController extends Controller
             $rankIds = $data['ranks'] ?? [];
             $discountCodeId = $data['discount_code_id'] ?? null;
         } else {
-            try {
-                $request->validate([
-                    'ranks' => 'required|array',
-                    'ranks.*' => 'integer|between:1,5',
-                    'discount_code_id' => 'nullable|exists:discount_codes,id'
-                ]);
-                $rankIds = $request->ranks;
-                $discountCodeId = $request->discount_code_id;
-            } catch (\Exception $e) {
-                Log::error('Validation error in getUsersByRank: ' . $e->getMessage());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Dữ liệu không hợp lệ: ' . $e->getMessage()
-                ], 422);
-            }
+            $rankIds = $request->ranks;
+            $discountCodeId = $request->discount_code_id;
         }
 
         // Ghi log để debug
@@ -1355,6 +1276,14 @@ class DiscountCodeController extends Controller
             'rankIds' => $rankIds,
             'discountCodeId' => $discountCodeId
         ]);
+        
+        // Validate rank IDs
+        if (empty($rankIds)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng chọn ít nhất một hạng thành viên.'
+            ], 422);
+        }
         
         // Get users with selected ranks
         $users = User::whereIn('user_rank_id', $rankIds)
@@ -1364,12 +1293,18 @@ class DiscountCodeController extends Controller
             ->orderBy('full_name')
             ->get();
             
-        // Get assigned users if discount code ID is provided
+        // Get assigned users if discount code ID is provided and valid
         $assignedUsers = [];
-        if ($discountCodeId) {
-            $assignedUsers = UserDiscountCode::where('discount_code_id', $discountCodeId)
-                ->pluck('user_id')
-                ->toArray();
+        if ($discountCodeId && is_numeric($discountCodeId)) {
+            // Check if discount code exists
+            $discountCodeExists = DiscountCode::where('id', $discountCodeId)->exists();
+            if ($discountCodeExists) {
+                $assignedUsers = UserDiscountCode::where('discount_code_id', $discountCodeId)
+                    ->pluck('user_id')
+                    ->toArray();
+            } else {
+                Log::warning("Discount code ID {$discountCodeId} does not exist");
+            }
         }
         
         // Prepare the response data
@@ -1425,14 +1360,9 @@ class DiscountCodeController extends Controller
         return view('admin.discount_codes.usage_history', compact('discountCode', 'usageHistory'));
     }
 
-    public function getItemsByType(Request $request)
+    public function getItemsByType(GetItemsByTypeRequest $request)
     {
         try {
-            $request->validate([
-                'type' => 'required|string|in:products,categories,combos,variants',
-                'search' => 'nullable|string|max:255',
-            ]);
-            
             $type = $request->type;
             $search = $request->search ?? '';
             $limit = $request->limit ?? 50;
@@ -1534,12 +1464,8 @@ class DiscountCodeController extends Controller
         }
     }
 
-    public function linkVariant(Request $request, $id)
+    public function linkVariant(LinkDiscountCodeRequest $request, $id)
     {
-        $request->validate([
-            'variant_id' => 'required|exists:product_variants,id',
-        ]);
-
         // Kiểm tra xem biến thể đã được liên kết chưa
         $exists = DiscountCodeProduct::where('discount_code_id', $id)
             ->where('product_variant_id', $request->variant_id)
