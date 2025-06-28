@@ -1,4 +1,4 @@
-@extends('layouts.admin.contentLayoutMaster')
+@extends('layouts.branch.contentLayoutMaster')
 
 @section('title', 'Quản lý Combo')
 @section('description', 'Quản lý danh sách combo của bạn')

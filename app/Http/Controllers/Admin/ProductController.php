@@ -17,6 +17,7 @@ use App\Models\BranchStock;
 use App\Models\ProductVariant;
 use App\Models\ProductImg;
 use App\Models\Topping;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -1079,7 +1080,7 @@ class ProductController extends Controller
             // Xử lý xuất dữ liệu theo định dạng
             switch ($type) {
                 case 'excel':
-                    return \Maatwebsite\Excel\Facades\Excel::download(
+                    return Excel::download(
                         new \App\Exports\ProductsExport($products, $request->branch_id), 
                         $filename . '.xlsx'
                     );
@@ -1149,12 +1150,12 @@ class ProductController extends Controller
                         'selectedBranch' => $selectedBranch
                     ];
                     
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.products', $pdfData);
+                    $pdf = Pdf::loadView('exports.products', $pdfData);
                     $pdf->setPaper('A4', 'landscape'); // Set landscape orientation for better table display
                     return $pdf->download($filename . '.pdf');
                     
                 case 'csv':
-                    return \Maatwebsite\Excel\Facades\Excel::download(
+                    return Excel::download(
                         new \App\Exports\ProductsExport($products, $request->branch_id), 
                         $filename . '.csv', 
                         \Maatwebsite\Excel\Excel::CSV
