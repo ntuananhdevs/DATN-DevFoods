@@ -27,5 +27,6 @@ Route::middleware(['auth:manager', 'role:manager'])->prefix('branch')->group(fun
         Route::get('/api/conversation/{id}', [BranchChatController::class, 'apiGetConversation'])->name('conversation');
         Route::post('/send-message', [BranchChatController::class, 'sendMessage'])->name('send');
         Route::post('/update-status', [BranchChatController::class, 'updateStatus'])->name('status');
+        Route::post('/typing', [BranchChatController::class, 'typingIndicator'])->name('typing');
     });
 });

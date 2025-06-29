@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Branch;
 
+use App\Events\Chat\UserTyping;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ChatMessage;
 use App\Models\Branch;
-use App\Models\User;
+
 use App\Models\PromotionProgram;
 use App\Models\DiscountCode;
 
 use App\Events\Chat\NewMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 class BranchChatController extends Controller
@@ -336,5 +336,13 @@ class BranchChatController extends Controller
                 'message' => 'Lỗi cập nhật trạng thái: ' . $e->getMessage()
             ], 500);
         }
+    }
+    public function typingIndicator(Request $request)
+    {
+        $user = Auth::user();
+        $conversationId = $request->input('conversation_id');
+        $isTyping = $request->input('is_typing');
+        broadcast(new UserTyping($conversationId, $user->id, $user->full_name ?? $user->name, $isTyping))->toOthers();
+        return response()->json(['success' => true]);
     }
 }

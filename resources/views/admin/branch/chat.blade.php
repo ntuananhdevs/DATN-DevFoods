@@ -4,7 +4,7 @@
  <link rel="stylesheet" href="/css/admin/branchs/chat.css">
  @section('content')
 
-     <div class="chat-container">
+     <div class="chat-container" id="chat-container" data-branch-id="{{ $branch->id }}">
          <div class="chat-sidebar">
              <div class="chat-sidebar-header">
                  <h2>Cuộc trò chuyện</h2>
@@ -135,6 +135,10 @@
      <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
      <script src="/js/chat-realtime.js"></script>
      <script>
+         window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
+         window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
+     </script>
+     <script>
          document.addEventListener('DOMContentLoaded', function() {
              const userId = {{ $user->id }};
              let selectedConversationId = {{ $conversations->first()->id ?? 'null' }};
@@ -198,4 +202,64 @@
              });
          });
      </script>
+     <style>
+         .typing-indicator {
+             display: flex;
+             align-items: center;
+             justify-content: flex-start;
+             gap: 10px;
+             margin: 8px 0;
+             height: 32px;
+             min-width: 120px;
+         }
+
+         .typing-indicator .typing-flex {
+             display: flex;
+             align-items: center;
+             gap: 10px;
+         }
+
+         .typing-indicator .dot {
+             display: inline-block;
+             width: 8px;
+             height: 8px;
+             background: #f59e42;
+             border-radius: 50%;
+             opacity: 0.6;
+             animation: typing-bounce 1s infinite alternate;
+         }
+
+         .typing-indicator .dot:nth-child(2) {
+             animation-delay: 0.2s;
+         }
+
+         .typing-indicator .dot:nth-child(3) {
+             animation-delay: 0.4s;
+         }
+
+         .typing-indicator .typing-text {
+             margin-left: 8px;
+             font-size: 14px;
+             color: #888;
+             white-space: nowrap;
+             font-weight: 500;
+             letter-spacing: 0.2px;
+         }
+
+         @keyframes typing-bounce {
+             0% {
+                 transform: translateY(0);
+                 opacity: 0.6;
+             }
+
+             100% {
+                 transform: translateY(-8px);
+                 opacity: 1;
+             }
+         }
+
+         .dark .typing-indicator .dot {
+             background: #ccc;
+         }
+     </style>
  @endsection

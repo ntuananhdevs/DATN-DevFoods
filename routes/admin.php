@@ -188,10 +188,10 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::put('/update/{combo}', [ComboController::class, 'update'])->name('update');
         Route::get('/show/{combo}', [ComboController::class, 'show'])->name('show');
         Route::delete('/delete/{combo}', [ComboController::class, 'destroy'])->name('destroy');
-        
+
         // Status management
         Route::patch('/{combo}/toggle-status', [ComboController::class, 'toggleStatus'])->name('toggle-status');
-        
+
         // Quantity management
         Route::patch('/{combo}/update-quantity', [ComboController::class, 'updateQuantity'])->name('update-quantity');
     });
@@ -300,7 +300,6 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::get('{product}/stock-summary', [BranchStockController::class, 'summary'])->name('stock-summary');
         Route::get('low-stock-alerts', [BranchStockController::class, 'lowStockAlerts'])->name('low-stock-alerts');
         Route::get('out-of-stock', [BranchStockController::class, 'outOfStock'])->name('out-of-stock');
-        
     });
 
     // General Settings Management
@@ -336,6 +335,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
+        Route::post('/typing', [ChatController::class, 'typingIndicator'])->name('typing');
     });
 });
 
@@ -346,4 +346,3 @@ Route::post('/broadcasting/auth', function () {
     return Broadcast::auth(request());
 })->middleware('web');
 // Thêm vào group combos:
-

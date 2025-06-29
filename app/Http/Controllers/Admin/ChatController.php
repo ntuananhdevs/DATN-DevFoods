@@ -259,4 +259,13 @@ class ChatController extends Controller
             ], 500);
         }
     }
+
+    public function typingIndicator(Request $request)
+    {
+        $user = Auth::user();
+        $conversationId = $request->input('conversation_id');
+        $isTyping = $request->input('is_typing');
+        broadcast(new \App\Events\Chat\UserTyping($conversationId, $user->id, $user->full_name, $isTyping))->toOthers();
+        return response()->json(['success' => true]);
+    }
 };

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Customer;
 
 use App\Models\Conversation;
 use App\Models\ChatMessage;
-
+use App\Events\Chat\UserTyping;
 use App\Models\Branch;
 
 use App\Events\Chat\NewMessage;
@@ -275,5 +275,13 @@ class ChatController extends Controller
             ->get();
 
         return view('customer.chat', compact('conversations'));
+    }
+    public function typingIndicator(Request $request)
+    {
+        $user = Auth::user();
+        $conversationId = $request->input('conversation_id');
+        $isTyping = $request->input('is_typing');
+        broadcast(new UserTyping($conversationId, $user->id, $user->full_name ?? $user->name, $isTyping))->toOthers();
+        return response()->json(['success' => true]);
     }
 }

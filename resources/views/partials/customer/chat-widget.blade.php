@@ -190,6 +190,11 @@
 <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.txt,.zip,.rar">
 <input type="file" id="imageInput" class="hidden" accept="image/*">
 
+<script>
+    window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
+    window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
+</script>
+
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
 <script>
@@ -283,6 +288,12 @@
                 }
             });
             messageInput.addEventListener('input', autoResizeTextarea);
+            messageInput.addEventListener('input', () => {
+                sendTypingIndicator(true);
+                if (window.typingTimeout) clearTimeout(window.typingTimeout);
+                window.typingTimeout = setTimeout(() => sendTypingIndicator(false), 2000);
+            });
+            messageInput.addEventListener('blur', () => sendTypingIndicator(false));
             loginRequiredModal.addEventListener('click', function(e) {
                 if (e.target === loginRequiredModal) {
                     loginRequiredModal.classList.add('hidden');
@@ -431,6 +442,7 @@
                 handleInputChange();
                 autoResizeTextarea();
             }
+            // Nếu là file/ảnh, KHÔNG gọi addMessage ở đây, chỉ nhận qua Pusher
 
             fetch('/customer/chat/send', {
                     method: 'POST',
@@ -442,26 +454,7 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    // Nếu là gửi file/ảnh thì addMessage ở đây
-                    if (data.success && data.data && (pendingFile || pendingImage)) {
-                        addMessage({
-                            id: data.data.id,
-                            content: data.data.message,
-                            sender: 'user',
-                            timestamp: new Date(data.data.sent_at),
-                            type: data.data.attachment ? (data.data.attachment_type === 'image' ?
-                                'image' : 'file') : 'text',
-                            imageUrl: data.data.attachment_type === 'image' ? '/storage/' + data
-                                .data.attachment : undefined,
-                            fileName: data.data.attachment_type !== 'image' && data.data
-                                .attachment ? data.data.attachment.split('/').pop() : undefined,
-                            fileSize: data.data.attachment_type !== 'image' && data.data
-                                .attachment ? '' : undefined,
-                            fileUrl: data.data.attachment_type !== 'image' && data.data.attachment ?
-                                '/storage/' + data.data.attachment : undefined,
-                        });
-                    }
-
+                    // KHÔNG gọi addMessage với file/ảnh ở đây nữa!
                     pendingFile = null;
                     pendingImage = null;
                     fileInput.value = '';
@@ -611,7 +604,12 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success && data.messages) {
-                        messagesContainer.innerHTML = '';
+                        // Xóa tất cả trừ typing indicator
+                        [...messagesContainer.children].forEach(child => {
+                            if (child.id !== 'customer-typing-indicator') {
+                                child.remove();
+                            }
+                        });
                         data.messages.forEach(msg => {
                             addMessage({
                                 id: msg.id,
@@ -638,11 +636,51 @@
         }
 
         function addMessage(message) {
-            // Nếu là message thật (id không phải temp-) thì xóa message tạm thời
-            if (message.id && !String(message.id).startsWith('temp-')) {
-                const tempMsg = messagesContainer.querySelector('[data-message-id^="temp-"]');
-                if (tempMsg) tempMsg.remove();
+            // Nếu là message tạm, gắn data-temp="1"
+            if (message.id && String(message.id).startsWith('temp-')) {
+                const messageElement = createMessageElement(message);
+                messageElement.setAttribute('data-temp', '1');
+                messagesContainer.appendChild(messageElement);
+                scrollToBottom();
+                return;
             }
+
+            // Nếu là message thật (id không phải temp-)
+            // Ưu tiên cập nhật node tạm thành node thật nếu có
+            const tempMsg = messagesContainer.querySelector('[data-temp="1"]');
+            if (tempMsg) {
+                tempMsg.setAttribute('data-message-id', message.id);
+                tempMsg.removeAttribute('data-temp');
+                const textNode = tempMsg.querySelector('.text-sm.whitespace-pre-wrap');
+                if (textNode) textNode.textContent = message.content;
+                const timeNode = tempMsg.querySelector('.text-xs.text-gray-500.mt-1.px-2');
+                if (timeNode && message.timestamp) {
+                    const timeString = (message.timestamp instanceof Date ? message.timestamp : new Date(message
+                        .timestamp)).toLocaleTimeString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    timeNode.textContent = timeString;
+                }
+                // Xóa các node tạm khác nếu còn
+                Array.from(messagesContainer.querySelectorAll('[data-temp="1"]')).forEach(node => {
+                    if (node !== tempMsg) node.remove();
+                });
+                return; // ĐÃ cập nhật node tạm thành node thật, không thêm node mới!
+            }
+
+            // Nếu đã có node với id này, không thêm nữa
+            if (message.id && messagesContainer.querySelector(`[data-message-id="${message.id}"]`)) {
+                return;
+            }
+
+            // Nếu là tin nhắn của chính mình, cũng không thêm node mới (phòng trường hợp Pusher gửi lại)
+            const currentUserId = window.customerUserId || {{ auth()->id() ?? 'null' }};
+            if (message.sender_id && String(message.sender_id) === String(currentUserId)) {
+                return;
+            }
+
+            // Nếu không có node tạm, không có node thật, thì tạo node mới như cũ
             messages.push(message);
             const messageElement = createMessageElement(message);
             messagesContainer.appendChild(messageElement);
@@ -751,8 +789,185 @@
                         fileUrl: message.attachment_type !== 'image' && message.attachment ?
                             '/storage/' + message.attachment : undefined,
                     });
+                },
+                // Ghi đè hàm setupPusherChannel để thêm log
+                setupPusherChannel: function() {
+                    try {
+                        console.log(
+                            `[CustomerChatRealtime] Đăng ký channel: chat.${this.conversationId}`
+                        );
+                        const channel = this.pusher.subscribe(`chat.${this.conversationId}`);
+                        channel.bind("pusher:subscription_succeeded", () => {
+                            console.log(
+                                `[CustomerChatRealtime] Đã subscribe thành công vào chat.${this.conversationId}`
+                            );
+                        });
+                        channel.bind("pusher:subscription_error", (err) => {
+                            console.error(
+                                `[CustomerChatRealtime] Lỗi subscribe channel chat.${this.conversationId}:`,
+                                err);
+                        });
+                        channel.bind("new-message", (data) => {
+                            console.log("[CustomerChatRealtime] Tin nhắn mới nhận được:",
+                                data);
+                            if (data.message) {
+                                this.appendMessage(data.message);
+                            }
+                        });
+                        channel.bind("user.typing", (data) => {
+                            console.log(
+                                "[DEBUG][CustomerChatRealtime] Nhận event user.typing",
+                                data);
+                            if (
+                                data.user_id !== this.userId &&
+                                String(data.conversation_id) === String(this.conversationId)
+                            ) {
+                                if (data.is_typing) {
+                                    this.showTypingIndicator(data.user_name);
+                                } else {
+                                    this.hideTypingIndicator();
+                                }
+                            }
+                        });
+                    } catch (e) {
+                        console.error("[CustomerChatRealtime] Lỗi khi setup channel:", e);
+                    }
+                },
+                showTypingIndicator: function(userName) {
+                    console.log("[DEBUG][CustomerChatRealtime] showTypingIndicator", userName);
+                    let typingDiv = document.getElementById("customer-typing-indicator");
+                    const msgContainer = document.getElementById("messagesContainer");
+                    const typingHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 text-orange-500 mr-1">
+                                <i class="fas fa-pencil-alt"></i>
+                            </span>
+                            <span class="text-sm font-medium text-gray-700">${userName} đang nhập</span>
+                            <span class="typing-indicator">
+                                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                            </span>
+                        </div>
+                    `;
+                    if (!typingDiv) {
+                        typingDiv = document.createElement("div");
+                        typingDiv.id = "customer-typing-indicator";
+                        typingDiv.className =
+                            "px-4 py-2 bg-white rounded-2xl shadow border border-orange-100 mb-1 w-fit animate-fade-in";
+                        typingDiv.innerHTML = typingHTML;
+                        if (msgContainer) {
+                            msgContainer.appendChild(typingDiv);
+                            console.log('[DEBUG][DOM] Appended typingDiv to messagesContainer',
+                                typingDiv, msgContainer.innerHTML);
+                        }
+                    } else {
+                        typingDiv.innerHTML = typingHTML;
+                        if (msgContainer && msgContainer.lastChild !== typingDiv) {
+                            msgContainer.appendChild(typingDiv);
+                        }
+                        console.log('[DEBUG][DOM] Updated typingDiv in messagesContainer',
+                            typingDiv, msgContainer.innerHTML);
+                    }
+                },
+                hideTypingIndicator: function() {
+                    console.log("[DEBUG][CustomerChatRealtime] hideTypingIndicator");
+                    const typingDiv = document.getElementById("customer-typing-indicator");
+                    if (typingDiv) typingDiv.remove();
                 }
+            });
+            // Gọi hàm setupPusherChannel có log
+            window.customerChatInstance.setupPusherChannel();
+        }
+
+        function sendTypingIndicator(isTyping) {
+            fetch('/customer/chat/typing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    is_typing: isTyping,
+                }),
             });
         }
     });
 </script>
+
+<style>
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 10px;
+        margin: 8px 0;
+        height: 32px;
+        min-width: 120px;
+    }
+
+    .typing-indicator .typing-flex {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .typing-indicator .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #f59e42;
+        border-radius: 50%;
+        opacity: 0.6;
+        animation: typing-bounce 1s infinite alternate;
+    }
+
+    .typing-indicator .dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .typing-indicator .dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+
+    .typing-indicator .typing-text {
+        margin-left: 8px;
+        font-size: 14px;
+        color: #888;
+        white-space: nowrap;
+        font-weight: 500;
+        letter-spacing: 0.2px;
+    }
+
+    @keyframes typing-bounce {
+        0% {
+            transform: translateY(0);
+            opacity: 0.6;
+        }
+
+        100% {
+            transform: translateY(-8px);
+            opacity: 1;
+        }
+    }
+
+    .dark .typing-indicator .dot {
+        background: #ccc;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+</style>
