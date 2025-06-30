@@ -37,16 +37,6 @@ return new class extends Migration
             $table->unique(['combo_id', 'product_variant_id']);
         });
 
-        Schema::create('combo_branch_stock', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('combo_id')->constrained('combos')->onDelete('cascade'); // Liên kết với combo
-            $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade'); // Liên kết với chi nhánh
-            $table->integer('quantity')->default(0); 
-            $table->timestamps(); 
-
-            $table->unique(['combo_id', 'branch_id']); // Đảm bảo mỗi combo chỉ có một số lượng tại một chi nhánh
-        });
-
     }
 
     /**
@@ -54,7 +44,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('combo_branch_stock');
         Schema::dropIfExists('combo_items');
         Schema::dropIfExists('combos');
     }
