@@ -43,5 +43,19 @@ class UserRoleSeeder extends Seeder
                 ]);
             }
         }
+
+        // Gán role customer cho các customer
+        $customerRole = Role::where('name', 'customer')->first();
+        $customers = User::where('user_name', 'like', 'customer%')->get();
+        foreach ($customers as $customer) {
+            if ($customerRole) {
+                DB::table('user_roles')->insert([
+                    'user_id' => $customer->id,
+                    'role_id' => $customerRole->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 }

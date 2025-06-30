@@ -18,6 +18,12 @@ class OrderItem extends Model
         'total_price'
     ];
 
+    protected $casts = [
+        'quantity' => 'integer',
+        'unit_price' => 'decimal:2',
+        'total_price' => 'decimal:2',
+    ];
+
     /**
      * Get the order that owns the item.
      */
@@ -40,5 +46,21 @@ class OrderItem extends Model
     public function combo()
     {
         return $this->belongsTo(Combo::class);
+    }
+
+    /**
+     * Get the toppings for this order item.
+     */
+    public function toppings()
+    {
+        return $this->hasMany(OrderItemTopping::class);
+    }
+
+    /**
+     * Get the product through product variant.
+     */
+    public function product()
+    {
+        return $this->hasOneThrough(Product::class, ProductVariant::class, 'id', 'id', 'product_variant_id', 'product_id');
     }
 }
