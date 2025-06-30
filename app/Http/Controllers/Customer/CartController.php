@@ -27,6 +27,10 @@ class CartController extends Controller
      */
     public function index()
     {
+        // Debug session id và user id
+        \Log::info('CartController@index - Session ID: ' . session()->getId());
+        \Log::info('CartController@index - User ID: ' . (Auth::id() ?? 'null'));
+        
         // Determine if user is authenticated or using session
         $userId = Auth::id();
         $sessionId = session()->getId();
@@ -41,6 +45,10 @@ class CartController extends Controller
         }
         
         $cart = $cartQuery->first();
+        \Log::info('CartController@index - Cart found: ' . ($cart ? 'YES' : 'NO'));
+        if ($cart) {
+            \Log::info('CartController@index - Cart ID: ' . $cart->id . ' | session_id: ' . $cart->session_id . ' | user_id: ' . $cart->user_id);
+        }
         
         // Initialize cartItems as an empty collection rather than an array
         $cartItems = collect();

@@ -80,12 +80,26 @@ function updateMiniCartTotals(subtotal) {
     }
 }
 
-function updateMiniCartCount() {
-    const cartItems = document.querySelectorAll('.cart-item');
+function updateMiniCartCount(cartCountFromServer = null) {
     const miniCartCount = document.getElementById('mini-cart-count');
-    
     if (miniCartCount) {
-        miniCartCount.textContent = cartItems.length;
+        if (cartCountFromServer !== null) {
+            miniCartCount.textContent = cartCountFromServer;
+        } else {
+            // Fallback: đếm số cart-item trên giao diện nếu không có dữ liệu server
+            const cartItems = document.querySelectorAll('.cart-item');
+            miniCartCount.textContent = cartItems.length;
+        }
+    }
+    // Nếu có icon cart trên header
+    const cartCounter = document.getElementById('cart-counter');
+    if (cartCounter) {
+        if (cartCountFromServer !== null) {
+            cartCounter.textContent = cartCountFromServer;
+        } else {
+            const cartItems = document.querySelectorAll('.cart-item');
+            cartCounter.textContent = cartItems.length;
+        }
     }
 }
 
@@ -215,6 +229,7 @@ function attachDynamicEventListeners() {
                 
                 fetch('/cart/update', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.csrfToken},
                     body: JSON.stringify({cart_item_id: itemId, quantity: quantity})
                 })
@@ -269,6 +284,7 @@ function attachDynamicEventListeners() {
                 
                 fetch('/cart/update', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.csrfToken},
                     body: JSON.stringify({cart_item_id: itemId, quantity: quantity})
                 })
@@ -311,6 +327,7 @@ function attachDynamicEventListeners() {
             
             fetch('/cart/remove', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.csrfToken},
                 body: JSON.stringify({cart_item_id: itemId})
             })
@@ -363,6 +380,7 @@ function attachDynamicEventListeners() {
 
             fetch('/cart/add', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.csrfToken},
                 body: JSON.stringify({
                     product_id: productId,
@@ -700,5 +718,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeMiniCart();
             }
         });
+    }
+
+    // Khi reload trang, nếu có biến cart_count từ server (render blade), truyền vào updateMiniCartCount
+    if (typeof window.cartCountFromServer !== 'undefined') {
+        updateMiniCartCount(window.cartCountFromServer);
+    } else {
+        updateMiniCartCount();
     }
 });

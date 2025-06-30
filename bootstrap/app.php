@@ -5,6 +5,7 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\Driver\DriverAuth;
 use App\Http\Middleware\Customer\CustomerAuth;
 use App\Http\Middleware\Customer\BranchMiddleware;
+use App\Http\Middleware\Customer\CartTransferMiddleware;
 use App\Http\Middleware\Branch\BranchAuth;
 use App\Http\Middleware\PhoneRequired;
 
@@ -29,10 +30,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'branch.auth' => BranchAuth::class,
             'phone.required' => PhoneRequired::class,
             'turnstile' => VerifyTurnstile::class,
+            'cart.transfer' => CartTransferMiddleware::class,
         ]);
 
         $middleware->web(append: [
             BranchMiddleware::class,
+            CartTransferMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
