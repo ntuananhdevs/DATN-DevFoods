@@ -433,59 +433,38 @@ function attachDynamicEventListeners() {
 }
 
 function showEmptyCartMessage() {
-    const cartContainer = document.querySelector('.lg\\:col-span-2');
-    if (cartContainer) {
-        cartContainer.innerHTML = `
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div class="p-8 text-center">
-                    <div class="flex justify-center mb-4"><i class="fas fa-shopping-cart text-gray-300 text-5xl"></i></div>
-                    <h3 class="text-xl font-bold text-gray-700 mb-2">Giỏ hàng của bạn đang trống</h3>
-                    <p class="text-gray-500 mb-6">Hãy thêm sản phẩm vào giỏ hàng để tiếp tục</p>
-                    <a href="/products" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-md transition-colors inline-block">Tiếp tục mua sắm</a>
+    // Find the container that holds the cart items grid
+    const cartGridContainer = document.querySelector('.lg\\:col-span-2 .bg-white.rounded-lg.shadow-sm');
+    
+    if (cartGridContainer) {
+        // Create the empty cart message HTML
+        const emptyCartHTML = `
+            <div class="p-8 text-center">
+                <div class="flex justify-center mb-4">
+                    <i class="fas fa-shopping-cart text-gray-300 text-5xl"></i>
                 </div>
-            </div>`;
+                <h3 class="text-xl font-bold text-gray-700 mb-2">Giỏ hàng của bạn đang trống</h3>
+                <p class="text-gray-500 mb-6">Hãy thêm sản phẩm vào giỏ hàng để tiếp tục</p>
+                <a href="/products" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-md transition-colors inline-block">
+                    Tiếp tục mua sắm
+                </a>
+            </div>
+        `;
+        // Replace only the content of the grid container, not the entire column
+        cartGridContainer.innerHTML = emptyCartHTML;
     }
-    
-    // Disable checkout button by ID
-    const checkoutButton = document.getElementById('checkout-btn');
-    if (checkoutButton) {
-        checkoutButton.disabled = true;
-        checkoutButton.classList.add('opacity-50', 'pointer-events-none');
+
+    // Clear suggested products
+    const suggestedContainer = document.getElementById('suggested-products-container');
+    if (suggestedContainer) {
+        suggestedContainer.innerHTML = '<div class="col-span-4 text-center text-gray-400">Không có sản phẩm gợi ý</div>';
     }
-    
-    // Clear mini cart items
-    const miniCartItems = document.querySelectorAll('#mini-cart .flex.gap-3');
-    miniCartItems.forEach(item => item.remove());
-    const miniCartContent = document.querySelector('#mini-cart .flex-1');
-    if (miniCartContent) {
-        miniCartContent.innerHTML = `
-            <div class="text-center py-8">
-                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-shopping-cart text-3xl text-gray-400"></i></div>
-                <p class="text-gray-500 font-medium">Giỏ hàng của bạn đang trống</p>
-            </div>`;
+
+    // Hide the "select all" checkbox
+    const selectAllContainer = document.querySelector('input#select-all-cart')?.parentElement;
+    if (selectAllContainer) {
+        selectAllContainer.style.display = 'none';
     }
-    
-    // Reset all UI components
-    updateMiniCartCount();
-    updateMiniCartTotals(0);
-    updateSelectAllState();
-    
-    // Clear summary section
-    const summaryContainer = document.getElementById('selected-items-summary');
-    if (summaryContainer) {
-        summaryContainer.innerHTML = '';
-    }
-    
-    // Reset summary totals
-    const subtotalEl = document.getElementById('subtotal-js');
-    const shippingEl = document.getElementById('shipping-js');
-    const discountEl = document.getElementById('discount-js');
-    const totalEl = document.getElementById('total-js');
-    
-    if (subtotalEl) subtotalEl.textContent = '0đ';
-    if (shippingEl) shippingEl.textContent = '0đ';
-    if (discountEl) discountEl.textContent = '-0đ';
-    if (totalEl) totalEl.textContent = '0đ';
 }
 
 function renderSelectedItemsSummary() {
