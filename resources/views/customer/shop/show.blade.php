@@ -746,97 +746,17 @@
             <!-- Ingredients Tab -->
             <div class="tab-content hidden" id="content-ingredients">
                 @if(!empty($product->ingredients))
-                    @php
-                        $ingredients = is_string($product->ingredients) ? json_decode($product->ingredients, true) : $product->ingredients;
-                    @endphp
-                    
-                    @if(is_array($ingredients))
-                        <div class="space-y-6">
-                            @if(isset($ingredients['base']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Nguyên liệu cơ bản:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['base'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['vegetables']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Rau củ:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['vegetables'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['meat']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Thịt:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['meat'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['sauces']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Sốt:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['sauces'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['cheese']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Phô mai:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['cheese'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @foreach($ingredients as $key => $items)
-                                @if(!in_array($key, ['base', 'vegetables', 'meat', 'sauces', 'cheese']) && is_array($items))
-                                    <div>
-                                        <h4 class="font-medium mb-3 text-gray-900">{{ ucfirst(str_replace('_', ' ', $key)) }}:</h4>
-                                        <ul class="space-y-2">
-                                            @foreach($items as $item)
-                                                <li class="flex items-center space-x-2 text-gray-700">
-                                                    <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                    <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
-                            @endforeach
+                    @if(is_array($product->ingredients) && !empty($product->ingredients))
+                        <div class="space-y-4">
+                            <h4 class="font-medium mb-3 text-gray-900">Thành phần:</h4>
+                            <ul class="space-y-2">
+                                @foreach($product->ingredients as $ingredient)
+                                    <li class="flex items-center space-x-2 text-gray-700">
+                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                        <span class="flex-1">{{ $ingredient }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
                         </div>
                     @else
                         <p class="text-gray-600">{{ $product->ingredients }}</p>

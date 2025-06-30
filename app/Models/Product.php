@@ -32,23 +32,6 @@ class Product extends Model
         'base_price' => 'decimal:2'
     ];
 
-    /**
-     * Get the ingredients attribute and ensure it's always an array
-     */
-    public function getIngredientsAttribute($value)
-    {
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-            return is_array($decoded) ? $decoded : [];
-        }
-        
-        if (is_array($value)) {
-            return $value;
-        }
-        
-        return [];
-    }
-
     public function category()
     {
         return $this->belongsTo(Category::class);
