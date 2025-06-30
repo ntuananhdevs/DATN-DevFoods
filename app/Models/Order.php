@@ -122,6 +122,38 @@ class Order extends Model
     }
 
     /**
+     * Get the status history for the order.
+     */
+    public function statusHistory()
+    {
+        return $this->hasMany(OrderStatusHistory::class);
+    }
+
+    /**
+     * Get the cancellation information for the order.
+     */
+    public function cancellation()
+    {
+        return $this->hasOne(OrderCancellation::class);
+    }
+
+    /**
+     * Check if order is cancelled
+     */
+    public function isCancelled()
+    {
+        return $this->status === 'cancelled';
+    }
+
+    /**
+     * Check if order has cancellation record
+     */
+    public function hasCancellation()
+    {
+        return $this->cancellation()->exists();
+    }
+
+    /**
      * Get the customer name (either from User or guest_name)
      */
     private static array $statusAttributes = [
