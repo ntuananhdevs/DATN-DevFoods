@@ -154,6 +154,10 @@ class OrderSeeder extends Seeder
 
         echo "Creating 50 orders...\n";
 
+        // Loại bỏ user admin khỏi danh sách user tạo order
+        $users = $users->filter(function($user) {
+            return $user->email !== 'admin@devfoods.com';
+        })->values();
         // Lấy danh sách user, driver, address, payment thành mảng để random lặp lại nếu thiếu
         $userArr = $users->all();
         $driverArr = $drivers->all();
