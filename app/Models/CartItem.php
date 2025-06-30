@@ -9,7 +9,7 @@ class CartItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['cart_id', 'product_variant_id', 'combo_id', 'quantity', 'notes', 'branch_id'];
+    protected $fillable = ['cart_id', 'product_variant_id', 'combo_id', 'quantity', 'notes'];
 
     /**
      * Get the cart that owns the item.
@@ -17,14 +17,6 @@ class CartItem extends Model
     public function cart()
     {
         return $this->belongsTo(Cart::class);
-    }
-
-    /**
-     * Get the branch associated with this cart item.
-     */
-    public function branch()
-    {
-        return $this->belongsTo(Branch::class);
     }
 
     /**

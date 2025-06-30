@@ -1,6 +1,6 @@
 @extends('layouts.branch.contentLayoutMaster')
 
-@section('title', 'Chi tiết đơn hàng #ORD001')
+@section('title', 'Chi tiết đơn hàng #' . $order->order_code)
 
 @section('vendor-style')
 <link rel="stylesheet" href="{{ asset('vendors/css/pickers/flatpickr/flatpickr.min.css') }}">
@@ -61,10 +61,25 @@
 }
 .action-button {
     transition: all 0.2s ease;
+    cursor: pointer;
+    pointer-events: auto;
+    user-select: none;
 }
 .action-button:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 .info-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -89,416 +104,273 @@
 @section('content')
 <div class="mx-auto p-4">
     <!-- Header -->
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
-        <div class="flex items-center gap-4 mb-4 lg:mb-0">
-            <a href="{{ route('branch.orders.index') }}" class="no-print inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold mb-2 text-gray-900">Chi tiết đơn hàng</h1>
+            <p class="text-gray-600">Thông tin chi tiết đơn hàng #{{ $order->order_code ?? $order->id }}</p>
+        </div>
+        <div class="flex items-center gap-2 mt-4 md:mt-0">
+            <a href="{{ route('branch.orders.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
                 Quay lại
             </a>
-            <div>
-                <h1 class="text-2xl lg:text-3xl font-bold text-gray-900">Đơn hàng #<span id="orderId">ORD001</span></h1>
-                <p class="text-gray-600">Chi tiết và theo dõi đơn hàng</p>
-            </div>
-        </div>
-        
-        <div class="flex flex-wrap gap-2 no-print">
-            <button id="printBtn" class="action-button inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H3a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
-                </svg>
-                In đơn hàng
-            </button>
-            <button id="editBtn" class="action-button inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-                Chỉnh sửa
-            </button>
-            <div class="relative">
-                <button id="moreActionsBtn" class="action-button inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                    </svg>
-                    Thêm
-                </button>
-                <div id="moreActionsMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                    <div class="py-1">
-                        <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">📧 Gửi email khách hàng</button>
-                        <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">📱 Gửi SMS</button>
-                        <button class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">📋 Sao chép đơn hàng</button>
-                        <button class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">🗑️ Xóa đơn hàng</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Status and Quick Actions -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-        <div class="p-6">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <span id="statusBadge" class="status-badge bg-yellow-500 text-white flex items-center px-1 rounded-lg">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Chờ xác nhận
-                    </span>
-                    <div class="text-sm text-gray-600">
-                        <span>Đặt lúc: </span>
-                        <span class="font-medium" id="orderTime">15/01/2024 10:30</span>
-                    </div>
-                    <div class="text-sm text-gray-600">
-                        <span>Dự kiến giao: </span>
-                        <span class="font-medium text-green-600" id="deliveryTime">45 phút nữa</span>
-                    </div>
-                </div>
-                
-                <div id="quickActions" class="flex flex-wrap gap-2">
-                    <button onclick="updateOrderStatus('preparing')" class="action-button px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">
-                        ✅ Xác nhận đơn
-                    </button>
-                    <button onclick="updateOrderStatus('cancelled')" class="action-button px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
-                        ❌ Hủy đơn
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Main Content -->
+        <!-- Order Details -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Order Items -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="p-6 border-b border-gray-200">
-                    <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                        </svg>
-                        Sản phẩm đã đặt
-                    </h2>
+            <!-- Order Status -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Trạng thái đơn hàng</h2>
+                    <span class="status-badge {{ $order->statusColor }} text-white rounded-lg px-3 py-1">{{ $order->statusText }}</span>
                 </div>
-                <div class="p-6">
-                    <div class="space-y-4" id="orderItems">
-                        <!-- Order Item 1 -->
-                        <div class="order-item-card flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                            <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="font-medium text-gray-900">Phở Bò Tái</h3>
-                                <p class="text-sm text-gray-600">Phở truyền thống với thịt bò tái</p>
-                                <div class="flex items-center gap-4 mt-2">
-                                    <span class="text-sm text-gray-500">Số lượng: <span class="font-medium">2</span></span>
-                                    <span class="text-sm text-gray-500">Đơn giá: <span class="font-medium">65.000₫</span></span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-semibold text-gray-900">130.000₫</div>
-                            </div>
-                        </div>
-
-                        <!-- Order Item 2 -->
-                        <div class="order-item-card flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                            <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="font-medium text-gray-900">Chả Cá Lã Vọng</h3>
-                                <p class="text-sm text-gray-600">Chả cá truyền thống Hà Nội</p>
-                                <div class="flex items-center gap-4 mt-2">
-                                    <span class="text-sm text-gray-500">Số lượng: <span class="font-medium">1</span></span>
-                                    <span class="text-sm text-gray-500">Đơn giá: <span class="font-medium">85.000₫</span></span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-semibold text-gray-900">85.000₫</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Order Summary -->
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Tạm tính:</span>
-                                <span class="font-medium">215.000₫</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Phí giao hàng:</span>
-                                <span class="font-medium">0₫</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Giảm giá:</span>
-                                <span class="font-medium text-green-600">-0₫</span>
-                            </div>
-                            <div class="flex justify-between text-lg font-semibold pt-3 border-t border-gray-200">
-                                <span>Tổng cộng:</span>
-                                <span class="text-blue-600" id="totalAmount">215.000₫</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Order Timeline -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="p-6 border-b border-gray-200">
-                    <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Lịch sử đơn hàng
-                    </h2>
-                </div>
-                <div class="p-6">
-                    <div class="status-timeline" id="orderTimeline">
-                        <div class="timeline-item">
-                            <div class="timeline-dot completed"></div>
-                            <div>
-                                <div class="font-medium text-gray-900">Đơn hàng được tạo</div>
-                                <div class="text-sm text-gray-600">15/01/2024 10:30</div>
-                                <div class="text-sm text-gray-500 mt-1">Khách hàng đã đặt đơn hàng thành công</div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-item">
-                            <div class="timeline-dot active"></div>
-                            <div>
-                                <div class="font-medium text-gray-900">Chờ xác nhận</div>
-                                <div class="text-sm text-gray-600">Hiện tại</div>
-                                <div class="text-sm text-gray-500 mt-1">Đơn hàng đang chờ nhà hàng xác nhận</div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div>
-                                <div class="font-medium text-gray-400">Chuẩn bị món</div>
-                                <div class="text-sm text-gray-400">Chưa thực hiện</div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div>
-                                <div class="font-medium text-gray-400">Đang giao hàng</div>
-                                <div class="text-sm text-gray-400">Chưa thực hiện</div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-item">
-                            <div class="timeline-dot"></div>
-                            <div>
-                                <div class="font-medium text-gray-400">Hoàn thành</div>
-                                <div class="text-sm text-gray-400">Chưa thực hiện</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Internal Notes -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="p-6 border-b border-gray-200">
-                    <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                        Ghi chú nội bộ
-                    </h2>
-                </div>
-                <div class="p-6">
-                    <div class="space-y-4" id="internalNotes">
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <span class="text-yellow-600 font-medium text-sm">NV</span>
+                
+                @if($order->statusHistory->count() > 0)
+                    <div class="space-y-3">
+                        @foreach($order->statusHistory->sortByDesc('changed_at') as $history)
+                            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <div class="font-medium text-gray-900">Nhân viên bếp</div>
-                                    <div class="text-sm text-gray-600 mt-1">Khách yêu cầu không hành, ít muối</div>
-                                    <div class="text-xs text-gray-500 mt-2">15/01/2024 10:35</div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-sm font-medium text-gray-900">
+                                            {{ $history->old_status ? $history->oldStatusText . ' → ' : '' }}{{ $history->newStatusText }}
+                                        </span>
+                                        <span class="text-xs text-gray-500">{{ $history->changed_at->format('d/m/Y H:i') }}</span>
+                                    </div>
+                                    @if($history->changedBy)
+                                        <p class="text-xs text-gray-600">Thay đổi bởi: {{ $history->changedBy->name }} ({{ $history->changed_by_role }})</p>
+                                    @endif
+                                    @if($history->note)
+                                        <p class="text-xs text-gray-600 mt-1">{{ $history->note }}</p>
+                                    @endif
                                 </div>
                             </div>
-                        </div>
+                        @endforeach
                     </div>
-                    
-                    <div class="mt-4">
-                        <textarea id="newNote" placeholder="Thêm ghi chú nội bộ..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
-                        <button onclick="addInternalNote()" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-                            Thêm ghi chú
-                        </button>
+                @else
+                    <p class="text-gray-500 text-sm">Chưa có lịch sử thay đổi trạng thái</p>
+                @endif
+            </div>
+
+            <!-- Order Items -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Chi tiết sản phẩm</h2>
+                
+                <div class="space-y-4">
+                    @foreach($order->orderItems as $item)
+                        <div class="flex items-start gap-4 p-4 border border-gray-200 rounded-lg">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h3 class="font-medium text-gray-900">
+                                            @if($item->productVariant)
+                                                {{ $item->productVariant->product->name }}
+                                                @if($item->productVariant->name)
+                                                    - {{ $item->productVariant->name }}
+                                                @endif
+                                            @elseif($item->combo)
+                                                {{ $item->combo->name }}
+                                            @endif
+                                        </h3>
+                                        <p class="text-sm text-gray-500">Số lượng: {{ $item->quantity }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-gray-900">{{ number_format($item->unit_price) }}₫</p>
+                                        <p class="text-sm text-gray-500">Tổng: {{ number_format($item->total_price) }}₫</p>
+                                    </div>
+                                </div>
+                                
+                                @if($item->toppings->count() > 0)
+                                    <div class="mt-2">
+                                        <p class="text-xs text-gray-500 mb-1">Topping:</p>
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach($item->toppings as $topping)
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                                    {{ $topping->topping->name }} ({{ $topping->quantity }})
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Thông tin khách hàng</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Tên khách hàng</p>
+                        <p class="font-medium text-gray-900">{{ $order->customerName }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Số điện thoại</p>
+                        <p class="font-medium text-gray-900">{{ $order->customerPhone }}</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <p class="text-sm text-gray-500">Địa chỉ giao hàng</p>
+                        <p class="font-medium text-gray-900">
+                            @if($order->address)
+                                {{ $order->address->full_address }}
+                            @else
+                                {{ $order->delivery_address ?? 'Không có thông tin địa chỉ' }}
+                            @endif
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar -->
+        <!-- Order Summary -->
         <div class="space-y-6">
-            <!-- Customer Info -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="customer-card p-6">
-                    <h3 class="text-lg font-semibold flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                        Thông tin khách hàng
-                    </h3>
-                </div>
-                <div class="p-6">
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                NA
-                            </div>
-                            <div>
-                                <div class="font-medium text-gray-900 flex items-center gap-2">
-                                    <span id="customerName">Nguyễn Văn A</span>
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        VIP
-                                    </span>
-                                </div>
-                                <div class="text-sm text-gray-600">Khách hàng thân thiết</div>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3 pt-4 border-t border-gray-200">
-                            <div class="flex items-center gap-3">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                </svg>
-                                <span class="text-sm text-gray-600" id="customerPhone">0901234567</span>
-                                <a href="tel:0901234567" class="text-blue-600 hover:text-blue-700">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                    </svg>
-                                </a>
-                            </div>
-                            
-                            <div class="flex items-start gap-3">
-                                <svg class="w-4 h-4 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                </svg>
-                                <span class="text-sm text-gray-600" id="customerAddress">123 Đường ABC, Quận 1, TP.HCM</span>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                            <div class="text-center">
-                                <div class="text-lg font-semibold text-gray-900">15</div>
-                                <div class="text-xs text-gray-600">Tổng đơn</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-semibold text-gray-900">5%</div>
-                                <div class="text-xs text-gray-600">Tỷ lệ hủy</div>
-                            </div>
-                        </div>
+            <!-- Order Info -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Thông tin đơn hàng</h2>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Mã đơn hàng:</span>
+                        <span class="font-medium">{{ $order->order_code ?? $order->id }}</span>
                     </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Ngày đặt:</span>
+                        <span class="font-medium">{{ $order->order_date->format('d/m/Y H:i') }}</span>
+                    </div>
+                    @if($order->estimated_delivery_time)
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Dự kiến giao:</span>
+                            <span class="font-medium">{{ $order->estimated_delivery_time->format('d/m/Y H:i') }}</span>
+                        </div>
+                    @endif
+                    @if($order->actual_delivery_time)
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Thời gian giao:</span>
+                            <span class="font-medium">{{ $order->actual_delivery_time->format('d/m/Y H:i') }}</span>
+                        </div>
+                    @endif
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Phương thức thanh toán:</span>
+                        <span class="font-medium">{{ $order->payment?->paymentMethod?->name ?? 'Chưa thanh toán' }}</span>
+                    </div>
+                    @if($order->driver)
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Tài xế:</span>
+                            <span class="font-medium">{{ $order->driver->name }}</span>
+                        </div>
+                    @endif
                 </div>
             </div>
 
-            <!-- Payment Info -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="payment-card p-6">
-                    <h3 class="text-lg font-semibold flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
-                        Thanh toán
-                    </h3>
-                </div>
-                <div class="p-6">
-                    <div class="space-y-4">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Phương thức:</span>
-                            <span class="font-medium" id="paymentMethod">Tiền mặt</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Trạng thái:</span>
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                Chưa thanh toán
-                            </span>
-                        </div>
-                        <div class="flex justify-between text-lg font-semibold pt-4 border-t border-gray-200">
-                            <span>Tổng tiền:</span>
-                            <span class="text-blue-600">215.000₫</span>
-                        </div>
+            <!-- Payment Summary -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Tổng thanh toán</h2>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Tạm tính:</span>
+                        <span class="font-medium">{{ number_format($order->subtotal) }}₫</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- Delivery Info -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div class="delivery-card p-6">
-                    <h3 class="text-lg font-semibold flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        Giao hàng
-                    </h3>
-                </div>
-                <div class="p-6">
-                    <div class="space-y-4">
+                    @if($order->delivery_fee > 0)
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Khoảng cách:</span>
-                            <span class="font-medium">2.5 km</span>
+                            <span class="text-gray-500">Phí giao hàng:</span>
+                            <span class="font-medium">{{ number_format($order->delivery_fee) }}₫</span>
                         </div>
+                    @endif
+                    @if($order->discount_amount > 0)
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Thời gian dự kiến:</span>
-                            <span class="font-medium text-green-600">45 phút</span>
+                            <span class="text-gray-500">Giảm giá:</span>
+                            <span class="font-medium text-red-600">-{{ number_format($order->discount_amount) }}₫</span>
                         </div>
+                    @endif
+                    @if($order->tax_amount > 0)
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Phí giao hàng:</span>
-                            <span class="font-medium">Miễn phí</span>
+                            <span class="text-gray-500">Thuế:</span>
+                            <span class="font-medium">{{ number_format($order->tax_amount) }}₫</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tài xế:</span>
-                            <span class="font-medium text-gray-400">Chưa phân công</span>
-                        </div>
+                    @endif
+                    <hr class="my-3">
+                    <div class="flex justify-between text-lg font-bold">
+                        <span>Tổng cộng:</span>
+                        <span>{{ number_format($order->total_amount) }}₫</span>
                     </div>
+                    @if($order->points_earned > 0)
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Điểm tích lũy:</span>
+                            <span class="font-medium text-green-600">+{{ $order->points_earned }} điểm</span>
+                        </div>
+                    @endif
                 </div>
             </div>
 
             <!-- Quick Actions -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                <div class="p-6 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">Thao tác nhanh</h3>
-                </div>
-                <div class="p-6 space-y-3">
-                    <button onclick="callCustomer()" class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                        </svg>
-                        <span>Gọi khách hàng</span>
-                    </button>
+            @if(!in_array($order->status, ['completed', 'cancelled']))
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Thao tác nhanh</h2>
                     
-                    <button onclick="sendSMS()" class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                        </svg>
-                        <span>Gửi tin nhắn</span>
-                    </button>
-                    
-                    <button onclick="assignDriver()" class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                        </svg>
-                        <span>Phân công tài xế</span>
-                    </button>
+                    <div class="space-y-3">
+                        @if($order->status == 'pending')
+                            <button onclick="handleQuickAction({{ $order->id }}, 'confirm', this)" class="action-button w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                ✅ Xác nhận đơn hàng
+                            </button>
+                            <button onclick="handleQuickAction({{ $order->id }}, 'cancel', this)" class="action-button w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                                ❌ Hủy đơn hàng
+                            </button>
+                        @elseif($order->status == 'processing')
+                            <button onclick="handleQuickAction({{ $order->id }}, 'ready', this)" class="action-button w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                ✅ Sẵn sàng giao hàng
+                            </button>
+                        @elseif($order->status == 'ready')
+                            <button onclick="handleQuickAction({{ $order->id }}, 'deliver', this)" class="action-button w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                🚚 Giao cho tài xế
+                            </button>
+                        @elseif($order->status == 'delivery')
+                            <button onclick="handleQuickAction({{ $order->id }}, 'complete', this)" class="action-button w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                ✅ Hoàn thành
+                            </button>
+                        @endif
+                    </div>
                 </div>
-            </div>
+            @endif
+
+            <!-- Cancellation Info -->
+            @if($order->cancellation)
+                <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+                    <h2 class="text-lg font-semibold text-red-900 mb-4">Thông tin hủy đơn</h2>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-500">Lý do hủy:</p>
+                            <p class="font-medium text-gray-900">{{ $order->cancellation->reason }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Người hủy:</p>
+                            <p class="font-medium text-gray-900">{{ $order->cancellation->cancelledBy?->name ?? 'Không xác định' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Thời gian hủy:</p>
+                            <p class="font-medium text-gray-900">{{ $order->cancellation->cancellation_date->format('d/m/Y H:i') }}</p>
+                        </div>
+                        @if($order->cancellation->notes)
+                            <div>
+                                <p class="text-sm text-gray-500">Ghi chú:</p>
+                                <p class="font-medium text-gray-900">{{ $order->cancellation->notes }}</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -532,107 +404,8 @@
 <script src="{{ asset('vendors/js/pickers/flatpickr/flatpickr.min.js') }}"></script>
 @endsection
 
-@section('page-script')
+@section('scripts')
 <script>
-// Order data
-const orderData = {
-    id: "ORD001",
-    customerName: "Nguyễn Văn A",
-    customerPhone: "0901234567",
-    customerAddress: "123 Đường ABC, Quận 1, TP.HCM",
-    customerIsVip: true,
-    customerOrderCount: 15,
-    customerCancelRate: 5,
-    items: [
-        { name: "Phở Bò Tái", quantity: 2, price: 65000, description: "Phở truyền thống với thịt bò tái" },
-        { name: "Chả Cá Lã Vọng", quantity: 1, price: 85000, description: "Chả cá truyền thống Hà Nội" }
-    ],
-    total: 215000,
-    paymentMethod: "Tiền mặt",
-    paymentStatus: "pending",
-    status: "pending",
-    priority: "high",
-    createdAt: "2024-01-15T10:30:00Z",
-    estimatedDelivery: "2024-01-15T11:15:00Z",
-    note: "Không hành, ít muối",
-    distance: 2.5,
-    deliveryFee: 0,
-    discount: 0
-};
-
-// Status configuration
-const statusConfig = {
-    pending: { 
-        label: "Chờ xác nhận", 
-        color: "bg-yellow-500", 
-        icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
-        actions: [
-            { label: "✅ Xác nhận đơn", action: "preparing", color: "bg-green-600 hover:bg-green-700" },
-            { label: "❌ Hủy đơn", action: "cancelled", color: "bg-red-600 hover:bg-red-700" }
-        ]
-    },
-    preparing: { 
-        label: "Đang chuẩn bị", 
-        color: "bg-orange-500", 
-        icon: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-        actions: [
-            { label: "🚚 Giao hàng", action: "delivering", color: "bg-blue-600 hover:bg-blue-700" }
-        ]
-    },
-    delivering: { 
-        label: "Đang giao", 
-        color: "bg-blue-500", 
-        icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-        actions: [
-            { label: "✅ Hoàn thành", action: "completed", color: "bg-green-600 hover:bg-green-700" }
-        ]
-    },
-    completed: { 
-        label: "Đã hoàn thành", 
-        color: "bg-green-500", 
-        icon: "M5 13l4 4L19 7",
-        actions: []
-    },
-    cancelled: { 
-        label: "Đã hủy", 
-        color: "bg-red-500", 
-        icon: "M6 18L18 6M6 6l12 12",
-        actions: []
-    }
-};
-
-// Timeline configuration
-const timelineSteps = [
-    { key: "created", label: "Đơn hàng được tạo", description: "Khách hàng đã đặt đơn hàng thành công" },
-    { key: "pending", label: "Chờ xác nhận", description: "Đơn hàng đang chờ nhà hàng xác nhận" },
-    { key: "preparing", label: "Chuẩn bị món", description: "Nhà hàng đang chuẩn bị món ăn" },
-    { key: "delivering", label: "Đang giao hàng", description: "Tài xế đang giao hàng đến khách" },
-    { key: "completed", label: "Hoàn thành", description: "Đơn hàng đã được giao thành công" }
-];
-
-// Utility functions
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-}
-
-function formatTime(dateString) {
-    return new Date(dateString).toLocaleString('vi-VN');
-}
-
-function formatDeliveryTime(dateString) {
-    const now = new Date();
-    const deliveryTime = new Date(dateString);
-    const diffMinutes = Math.ceil((deliveryTime.getTime() - now.getTime()) / (1000 * 60));
-
-    if (diffMinutes < 0) {
-        return `Trễ ${Math.abs(diffMinutes)} phút`;
-    } else if (diffMinutes < 60) {
-        return `${diffMinutes} phút nữa`;
-    } else {
-        return `${Math.ceil(diffMinutes / 60)} giờ nữa`;
-    }
-}
-
 function showToast(title, message, type = 'success') {
     const toast = document.getElementById('toast');
     const toastIcon = document.getElementById('toastIcon');
@@ -642,7 +415,6 @@ function showToast(title, message, type = 'success') {
     toastTitle.textContent = title;
     toastMessage.textContent = message;
 
-    // Set icon based on type
     if (type === 'success') {
         toastIcon.className = 'w-5 h-5 text-green-500';
         toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
@@ -657,190 +429,136 @@ function showToast(title, message, type = 'success') {
     }, 5000);
 }
 
-// Update order status
-function updateOrderStatus(newStatus) {
-    const oldStatus = orderData.status;
-    orderData.status = newStatus;
+function handleQuickAction(orderId, action, buttonElement) {
+    console.log('handleQuickAction called:', { orderId, action, buttonElement });
     
-    // Update status badge
-    updateStatusBadge();
-    
-    // Update quick actions
-    updateQuickActions();
-    
-    // Update timeline
-    updateTimeline();
-    
-    // Show notification
-    const statusInfo = statusConfig[newStatus];
-    showToast('✅ Cập nhật thành công', `Đơn hàng đã chuyển sang trạng thái: ${statusInfo.label}`);
-    
-    // Add timeline entry
-    addTimelineEntry(newStatus);
-}
+    const statusMap = {
+        'confirm': 'processing',
+        'ready': 'ready',
+        'deliver': 'delivery',
+        'complete': 'completed',
+        'cancel': 'cancelled'
+    };
 
-function updateStatusBadge() {
-    const statusBadge = document.getElementById('statusBadge');
-    const statusInfo = statusConfig[orderData.status];
-    
-    statusBadge.className = `status-badge ${statusInfo.color} text-white`;
-    statusBadge.innerHTML = `
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${statusInfo.icon}"></path>
-        </svg>
-        ${statusInfo.label}
-    `;
-}
-
-function updateQuickActions() {
-    const quickActions = document.getElementById('quickActions');
-    const statusInfo = statusConfig[orderData.status];
-    
-    if (statusInfo.actions.length === 0) {
-        quickActions.innerHTML = '<span class="text-gray-500 text-sm">Không có thao tác khả dụng</span>';
+    const newStatus = statusMap[action];
+    if (!newStatus) {
+        console.error('Invalid action:', action);
         return;
     }
-    
-    quickActions.innerHTML = statusInfo.actions.map(action => `
-        <button onclick="updateOrderStatus('${action.action}')" class="action-button px-4 py-2 ${action.color} text-white rounded-lg text-sm font-medium">
-            ${action.label}
-        </button>
-    `).join('');
-}
 
-function updateTimeline() {
-    const timeline = document.getElementById('orderTimeline');
-    const currentStatusIndex = timelineSteps.findIndex(step => step.key === orderData.status);
-    
-    timeline.innerHTML = timelineSteps.map((step, index) => {
-        let dotClass = 'timeline-dot';
-        let textClass = 'text-gray-400';
-        let timeText = 'Chưa thực hiện';
-        
-        if (index === 0) {
-            dotClass += ' completed';
-            textClass = 'text-gray-900';
-            timeText = formatTime(orderData.createdAt);
-        } else if (index <= currentStatusIndex) {
-            if (index === currentStatusIndex) {
-                dotClass += ' active';
-                textClass = 'text-gray-900';
-                timeText = 'Hiện tại';
-            } else {
-                dotClass += ' completed';
-                textClass = 'text-gray-900';
-                timeText = 'Đã hoàn thành';
-            }
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        showToast('❌ Lỗi', 'Không tìm thấy CSRF token', 'error');
+        return;
+    }
+
+    // Disable all buttons during processing
+    const buttons = document.querySelectorAll('.action-button');
+    console.log('Found buttons:', buttons.length);
+    buttons.forEach(button => {
+        button.disabled = true;
+        button.classList.add('opacity-50', 'cursor-not-allowed');
+    });
+
+    // Show loading state
+    const originalText = buttonElement.innerHTML;
+    buttonElement.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Đang xử lý...';
+
+    const requestBody = {
+        status: newStatus,
+        note: getActionNote(action)
+    };
+
+    console.log('Sending request:', {
+        url: `/branch/orders/${orderId}/status`,
+        method: 'POST',
+        body: requestBody
+    });
+
+    fetch(`/branch/orders/${orderId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken.getAttribute('content')
+        },
+        body: JSON.stringify(requestBody)
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        return `
-            <div class="timeline-item">
-                <div class="${dotClass}"></div>
-                <div>
-                    <div class="font-medium ${textClass}">${step.label}</div>
-                    <div class="text-sm ${textClass === 'text-gray-400' ? 'text-gray-400' : 'text-gray-600'}">${timeText}</div>
-                    ${step.description ? `<div class="text-sm text-gray-500 mt-1">${step.description}</div>` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showToast('✅ Thành công', data.message);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showToast('❌ Lỗi', data.message || 'Có lỗi xảy ra', 'error');
+            // Re-enable buttons on error
+            buttons.forEach(button => {
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+            buttonElement.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        showToast('❌ Lỗi', 'Có lỗi xảy ra khi cập nhật trạng thái: ' + error.message, 'error');
+        // Re-enable buttons on error
+        buttons.forEach(button => {
+            button.disabled = false;
+            button.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+        buttonElement.innerHTML = originalText;
+    });
 }
 
-function addTimelineEntry(status) {
-    // This would typically add a new entry to the timeline
-    // For demo purposes, we'll just update the existing timeline
-    updateTimeline();
+function getActionNote(action) {
+    const notes = {
+        'confirm': 'Xác nhận đơn hàng từ thao tác nhanh',
+        'ready': 'Sẵn sàng giao hàng từ thao tác nhanh',
+        'deliver': 'Giao cho tài xế từ thao tác nhanh',
+        'complete': 'Hoàn thành giao hàng từ thao tác nhanh',
+        'cancel': 'Hủy đơn hàng từ thao tác nhanh'
+    };
+    return notes[action] || 'Thay đổi trạng thái từ thao tác nhanh';
 }
 
-// Internal notes functions
-function addInternalNote() {
-    const noteText = document.getElementById('newNote').value.trim();
-    if (!noteText) return;
-    
-    const notesContainer = document.getElementById('internalNotes');
-    const noteElement = document.createElement('div');
-    noteElement.className = 'bg-blue-50 border border-blue-200 rounded-lg p-4';
-    noteElement.innerHTML = `
-        <div class="flex items-start gap-3">
-            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span class="text-blue-600 font-medium text-sm">QL</span>
-            </div>
-            <div class="flex-1">
-                <div class="font-medium text-gray-900">Quản lý</div>
-                <div class="text-sm text-gray-600 mt-1">${noteText}</div>
-                <div class="text-xs text-gray-500 mt-2">${formatTime(new Date().toISOString())}</div>
-            </div>
-        </div>
-    `;
-    
-    notesContainer.appendChild(noteElement);
-    document.getElementById('newNote').value = '';
-    
-    showToast('📝 Đã thêm ghi chú', 'Ghi chú nội bộ đã được thêm thành công');
+function testButton() {
+    console.log('Test button function called');
+    showToast('🧪 Test', 'Button test successful!', 'success');
 }
 
-// Quick action functions
-function callCustomer() {
-    window.location.href = `tel:${orderData.customerPhone}`;
-    showToast('📞 Đang gọi', `Đang gọi cho ${orderData.customerName}`);
-}
-
-function sendSMS() {
-    showToast('📱 Gửi tin nhắn', 'Tính năng gửi SMS sẽ được triển khai');
-}
-
-function assignDriver() {
-    showToast('🚚 Phân công tài xế', 'Tính năng phân công tài xế sẽ được triển khai');
-}
-
-// Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    // Update initial display
-    updateStatusBadge();
-    updateQuickActions();
-    updateTimeline();
+    console.log('DOM loaded, checking buttons...');
     
-    // Set delivery time
-    document.getElementById('deliveryTime').textContent = formatDeliveryTime(orderData.estimatedDelivery);
+    // Check if buttons exist
+    const buttons = document.querySelectorAll('.action-button');
+    console.log('Found action buttons:', buttons.length);
     
-    // Print button
-    document.getElementById('printBtn').addEventListener('click', function() {
-        window.print();
-        showToast('🖨️ In đơn hàng', 'Đang chuẩn bị in đơn hàng');
+    buttons.forEach((button, index) => {
+        console.log(`Button ${index}:`, button.textContent.trim());
     });
     
-    // Edit button
-    document.getElementById('editBtn').addEventListener('click', function() {
-        showToast('✏️ Chỉnh sửa', 'Tính năng chỉnh sửa sẽ được triển khai');
-    });
+    // Check CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+    console.log('CSRF token found:', !!csrfToken);
     
-    // More actions menu
-    document.getElementById('moreActionsBtn').addEventListener('click', function() {
-        const menu = document.getElementById('moreActionsMenu');
-        menu.classList.toggle('hidden');
-    });
-    
-    // Close menu when clicking outside
-    document.addEventListener('click', function(event) {
-        const menu = document.getElementById('moreActionsMenu');
-        const button = document.getElementById('moreActionsBtn');
-        
-        if (!menu.contains(event.target) && !button.contains(event.target)) {
-            menu.classList.add('hidden');
-        }
-    });
-    
-    // Toast close button
-    document.getElementById('closeToast').addEventListener('click', function() {
-        document.getElementById('toast').classList.add('hidden');
-    });
-    
-    // Enter key for adding notes
-    document.getElementById('newNote').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && e.ctrlKey) {
-            addInternalNote();
-        }
-    });
+    // Toast close functionality
+    const closeToastBtn = document.getElementById('closeToast');
+    if (closeToastBtn) {
+        closeToastBtn.addEventListener('click', function() {
+            document.getElementById('toast').classList.add('hidden');
+        });
+    }
 });
 </script>
 @endsection

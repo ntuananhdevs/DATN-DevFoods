@@ -37,7 +37,9 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [BranchOrderController::class, 'index'])->name('index');
-        Route::get('/show', [BranchOrderController::class, 'show'])->name('show');
+        Route::get('/{id}', [BranchOrderController::class, 'show'])->name('show');
+        Route::post('/{id}/status', [BranchOrderController::class, 'updateStatus'])->name('updateStatus');
+        Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('categories');
