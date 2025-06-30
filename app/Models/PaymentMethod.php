@@ -1,5 +1,4 @@
 <?php
-// TẠO FILE NÀY TẠI: app/Models/PaymentMethod.php
 
 namespace App\Models;
 
@@ -38,10 +37,18 @@ class PaymentMethod extends Model
     ];
 
     /**
-     * Lấy tất cả các giao dịch sử dụng phương thức này.
+     * Get the payments for this payment method.
      */
     public function payments()
     {
         return $this->hasMany(Payment::class, 'payment_method_id');
     }
-}
+
+    /**
+     * Scope to get only active payment methods
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('active', true);
+    }
+} 

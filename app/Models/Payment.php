@@ -1,5 +1,4 @@
 <?php
-// TẠO FILE NÀY TẠI: app/Models/Payment.php
 
 namespace App\Models;
 
@@ -10,18 +9,6 @@ class Payment extends Model
 {
     use HasFactory;
 
-    /**
-     * Tên bảng trong database.
-     *
-     * @var string
-     */
-    protected $table = 'payments';
-
-    /**
-     * Các thuộc tính có thể được gán hàng loạt.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'payment_method_id',
         'payer_name',
@@ -38,33 +25,66 @@ class Payment extends Model
         'payment_method_detail',
         'gateway_response',
         'ip_address',
-        'callback_data',
+        'callback_data'
     ];
 
-    /**
-     * Các thuộc tính nên được ép kiểu.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
+        'payment_amount' => 'integer',
         'payment_date' => 'datetime',
-        'gateway_response' => 'array',
-        'callback_data' => 'array',
     ];
 
     /**
-     * Lấy phương thức thanh toán của giao dịch này.
+     * Get the payment method for this payment.
      */
     public function paymentMethod()
     {
-        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
+        return $this->belongsTo(PaymentMethod::class);
     }
 
     /**
-     * Lấy đơn hàng liên quan đến thanh toán này.
+     * Get the orders for this payment.
      */
-    public function order()
+    public function orders()
     {
-        return $this->hasOne(Order::class, 'payment_id');
+        return $this->hasMany(Order::class);
     }
-}
+
+    /**
+     * Get the payment status text
+     */
+    public function getPaymentStatusTextAttribute()
+    {
+        $statusMap = [
+            'pending' => 'Chờ xử lý',
+            'completed' => 'Thành công',
+            'failed' => 'Thất bại',
+            'refunded' => 'Đã hoàn tiền'
+        ];
+
+        return $statusMap[$this->payment_status] ?? ucfirst($this->payment_status);
+    }
+
+    /**
+     * Check if payment is completed
+     */
+    public function isCompleted()
+    {
+        return $this->payment_status === 'completed';
+    }
+
+    /**
+     * Check if payment is pending
+     */
+    public function isPending()
+    {
+        return $this->payment_status === 'pending';
+    }
+
+    /**
+     * Check if payment is failed
+     */
+    public function isFailed()
+    {
+        return $this->payment_status === 'failed';
+    }
+} 

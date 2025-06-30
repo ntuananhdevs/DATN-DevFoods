@@ -624,6 +624,13 @@ class ProductController extends Controller
             }
         }
         
+        // DEBUG: Log variant prices to find discrepancy
+        \Illuminate\Support\Facades\Log::debug('ProductController@show - Variant Prices for Product ID ' . $product->id, [
+            'variant_prices' => $variantPrices ?? [],
+            'calculated_min_price' => $product->min_price,
+            'base_price' => $product->base_price
+        ]);
+
         // Debug log để kiểm tra giá trị
         \Illuminate\Support\Facades\Log::debug('Product price calculation in show method:', [
             'product_id' => $product->id,

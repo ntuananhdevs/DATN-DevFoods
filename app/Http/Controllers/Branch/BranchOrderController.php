@@ -5,22 +5,18 @@ namespace App\Http\Controllers\Branch;
 use App\Events\NewOrderAvailable;
 use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Branch;
 use App\Models\Order;
-use Illuminate\Http\Request;
 
 class BranchOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $manager = Auth::user();
-        $branch = Branch::where('manager_user_id', $manager->id)->firstOrFail();
-        // Lấy đơn hàng và sắp xếp theo trạng thái, các đơn chờ xác nhận lên đầu
-        $orders = Order::where('branch_id', $branch->id)
-                       ->orderByRaw("FIELD(status, 'awaiting_confirmation') DESC")
-                       ->latest()
-                       ->get();
+        $manager = Auth::guard('manager')->user();
+        $branch = $manager ? $manager->branch : null;
+        $orders = $branch ? Order::where('branch_id', $branch->id)->get() : collect();
         return view('branch.orders', compact('orders', 'branch'));
     }
 

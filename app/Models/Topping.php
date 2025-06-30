@@ -72,4 +72,36 @@ class Topping extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    /**
+     * Get all order items that use this topping
+     */
+    public function orderItemToppings()
+    {
+        return $this->hasMany(OrderItemTopping::class);
+    }
+
+    /**
+     * Get all cart items that use this topping
+     */
+    public function cartItemToppings()
+    {
+        return $this->hasMany(CartItemTopping::class);
+    }
+
+    /**
+     * Get all order items through order item toppings
+     */
+    public function orderItems()
+    {
+        return $this->hasManyThrough(OrderItem::class, OrderItemTopping::class);
+    }
+
+    /**
+     * Get all cart items through cart item toppings
+     */
+    public function cartItems()
+    {
+        return $this->hasManyThrough(CartItem::class, CartItemTopping::class);
+    }
 }

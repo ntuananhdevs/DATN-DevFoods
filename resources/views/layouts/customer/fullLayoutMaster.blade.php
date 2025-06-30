@@ -300,8 +300,11 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <script>
-        axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute(
-            'content');
+        // Lấy CSRF token một cách an toàn
+        const csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMetaTag) {
+            axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfMetaTag.getAttribute('content');
+        }
     </script>
 
     <!-- Firebase SDK -->
@@ -363,9 +366,6 @@
     <script>
         // Global function to update the cart counter
         window.updateCartCount = function(count) {
-            // Save the cart count in localStorage for consistency between pages
-            localStorage.setItem('cart_count', count);
-
             // Update all cart counter elements on the page
             const counters = document.querySelectorAll('#cart-counter');
             counters.forEach(counter => {
@@ -379,31 +379,21 @@
                     counter.classList.add('bg-orange-500');
                 }, 1000);
             });
+            // Update mini cart count nếu có
+            if (typeof updateMiniCartCount === 'function') {
+                updateMiniCartCount(count);
+            }
         };
 
-        // Nếu user đã đăng xuất, reset cart_count về 0
-        @if (!auth()->check())
-        // Khách vãng lai: lấy cart_count từ localStorage, nếu không có thì set về 0 và cập nhật giao diện
-        document.addEventListener('DOMContentLoaded', function() {
-            let guestCartCount = localStorage.getItem('cart_count');
-            if (!guestCartCount) {
-                guestCartCount = 0;
-                localStorage.setItem('cart_count', 0);
-            }
-            window.updateCartCount(guestCartCount);
-        });
-        @endif
+        // Không dùng localStorage cho cart_count nữa
+        // Không cần đoạn code lấy cart_count từ localStorage khi DOMContentLoaded
 
         // Initialize Pusher on every page to listen for cart updates
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if we should restore cart count from localStorage
-            const savedCount = localStorage.getItem('cart_count');
-            if (savedCount) {
-                const sessionCount = {{ session('cart_count', 0) }};
-                // Only use localStorage if it has a newer value than the session
-                if (parseInt(savedCount) > sessionCount) {
-                    window.updateCartCount(savedCount);
-                }
+            // Không dùng localStorage cho cart_count nữa
+            // Khi reload trang, nếu có biến cartCountFromServer thì cập nhật luôn
+            if (typeof window.cartCountFromServer !== 'undefined') {
+                window.updateCartCount(window.cartCountFromServer);
             }
 
             // Set up Pusher if the script is loaded
@@ -502,7 +492,7 @@
                     authEndpoint: '/broadcasting/auth',
                     auth: {
                         headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                         }
                     }
                 });
@@ -528,6 +518,12 @@
         });
     </script>
     @include('components.modal')
+
+    @if(isset($cartItems))
+    <script>
+        window.cartCountFromServer = {{ count($cartItems) }};
+    </script>
+    @endif
 </body>
 
 </html>
