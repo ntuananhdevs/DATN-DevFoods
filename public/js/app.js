@@ -6682,6 +6682,11 @@ window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__["default"]({
   authEndpoint: authEndpoint
 });
 
+// === THÊM DÒNG QUAN TRỌNG NÀY VÀO ===
+// Dòng này sẽ bắn ra một sự kiện tùy chỉnh trên toàn bộ trang
+// để thông báo rằng "Echo đã sẵn sàng để sử dụng!"
+document.dispatchEvent(new Event('echo:ready'));
+
 /***/ }),
 
 /***/ 0:

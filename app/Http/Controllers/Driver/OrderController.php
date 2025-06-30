@@ -94,80 +94,73 @@ class OrderController extends Controller
         return view('driver.orders.navigate', compact('order'));
     }
 
-    // --- CÁC HÀNH ĐỘNG CỦA TÀI XẾ (ĐÃ CẬP NHẬT) ---
+    // === CÁC HÀNH ĐỘNG CỦA TÀI XẾ - ĐƯỢC SẮP XẾP LẠI LOGIC ===
 
     /**
-     * Tài xế chấp nhận một đơn hàng đang chờ.
-     * Trạng thái: awaiting_driver -> driver_picked_up
+     * HÀM HELPER: Xử lý các tác vụ chung.
      */
-
-    public function accept(Order $order): JsonResponse
+    private function processUpdate(Order $order, string $successMessage): JsonResponse
     {
-        // Logic kiểm tra đặc thù của việc "nhận đơn"
-        if ($order->status !== 'awaiting_driver' || !is_null($order->driver_id)) {
-            return response()->json(['success' => false, 'message' => 'Đơn hàng này không còn khả dụng hoặc đã có người nhận.'], 400);
-        }
+        $order->save();
+        $freshOrder = $order->fresh();
+        broadcast(new OrderStatusUpdated($freshOrder));
 
-        // Gán tài xế và cập nhật trạng thái
-        $order->driver_id = Auth::guard('driver')->id();
-        $order->status = 'driver_picked_up'; // Tài xế đã nhận, và đang trên đường đến quán
-
-        // Gọi hàm helper để xử lý các tác vụ chung
-        return $this->processUpdate($order, 'Đã nhận đơn hàng thành công!');
+        return response()->json([
+            'success' => true,
+            'message' => $successMessage,
+            'order'   => $freshOrder
+        ]);
     }
 
     /**
-     * Tài xế xác nhận đã lấy hàng từ chi nhánh.
+     * HÀM 1: Tài xế chấp nhận một đơn hàng.
+     * Trạng thái chuyển đổi: 'awaiting_driver' -> 'driver_accepted'
+     */
+    public function accept(Order $order): JsonResponse
+    {
+        // Điều kiện: Đơn hàng phải đang chờ tài xế và chưa có ai nhận.
+        if ($order->status !== 'awaiting_driver' || !is_null($order->driver_id)) {
+            return response()->json(['success' => false, 'message' => 'Đơn hàng này không còn khả dụng.'], 400);
+        }
+
+        $order->driver_id = Auth::guard('driver')->id();
+        $order->status = 'driver_accepted'; // MỚI: Trạng thái cho biết tài xế đã nhận và đang trên đường đến quán.
+
+        return $this->processUpdate($order, 'Đã nhận đơn hàng! Đang đến điểm lấy hàng.');
+    }
+
+    /**
+     * HÀM 2: Tài xế xác nhận đã lấy hàng từ chi nhánh.
+     * Trạng thái chuyển đổi: 'driver_accepted' -> 'in_transit'
      */
     public function confirmPickup(Order $order): JsonResponse
     {
-        // Kiểm tra quyền và trạng thái
-        if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'driver_picked_up') {
-            return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ.'], 400);
+        // Điều kiện: Phải là tài xế của đơn hàng và đơn hàng phải ở trạng thái "đã chấp nhận".
+        if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'driver_accepted') {
+            return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ hoặc bạn không có quyền.'], 400);
         }
 
-        // Cập nhật trạng thái
-        $order->status = 'in_transit'; // Đang trên đường giao cho khách
+        $order->status = 'in_transit'; // Bây giờ mới chính thức "Đang vận chuyển".
 
-        return $this->processUpdate($order, 'Đã lấy hàng. Bắt đầu giao!');
+        return $this->processUpdate($order, 'Đã lấy hàng thành công. Bắt đầu giao!');
     }
 
     /**
-     * Tài xế xác nhận đã giao hàng thành công.
+     * HÀM 3: Tài xế xác nhận đã giao hàng thành công.
+     * Trạng thái chuyển đổi: 'in_transit' -> 'delivered'
      */
     public function confirmDelivery(Order $order): JsonResponse
     {
-        // Kiểm tra quyền và trạng thái
+        // Điều kiện: Phải là tài xế của đơn hàng và đơn hàng phải đang được vận chuyển.
         if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'in_transit') {
             return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ.'], 400);
         }
 
-        // Cập nhật trạng thái và thời gian giao hàng
         $order->status = 'delivered';
         $order->actual_delivery_time = Carbon::now();
 
         return $this->processUpdate($order, 'Đã giao hàng thành công!');
     }
 
-    /**
-     * HÀM HELPER MỚI: Xử lý các tác vụ chung để tránh lặp code.
-     * @param Order $order - Đối tượng đơn hàng đã được thay đổi.
-     * @param string $successMessage - Tin nhắn trả về khi thành công.
-     * @return JsonResponse
-     */
-    private function processUpdate(Order $order, string $successMessage): JsonResponse
-    {
-        // 1. Lưu thay đổi vào database
-        $order->save();
-
-        // 2. Gửi sự kiện real-time đến các client khác (trừ người gửi)
-        broadcast(new OrderStatusUpdated($order))->toOthers();
-
-        // 3. Trả về phản hồi JSON cho frontend
-        return response()->json([
-            'success' => true,
-            'message' => $successMessage
-        ]);
-    }
-
+    
 }

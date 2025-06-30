@@ -126,6 +126,24 @@ class Order extends Model
         return $this->hasMany(ProductReview::class);
     }
 
+
+    /**
+     * === THÊM KHỐI CODE NÀY VÀO MODEL CỦA BẠN ===
+     *
+     * The accessors to append to the model's array form.
+     * Thuộc tính này yêu cầu Laravel luôn đính kèm các giá trị từ Accessor
+     * vào kết quả JSON, giải quyết lỗi "reading 'bg'".
+     *
+     * @var array
+     */
+    protected $appends = [
+        'status_text', 
+        'status_color', 
+        'status_icon',
+        'customer_name',
+        'customer_phone'
+    ];
+    
     /**
      * Get the customer name (either from User or guest_name)
      */
@@ -133,6 +151,9 @@ class Order extends Model
         'awaiting_confirmation' => ['text' => 'Chờ xác nhận', 'bg' => '#fef9c3', 'text_color' => '#ca8a04', 'icon' => 'fas fa-hourglass-half'],
         'confirmed' => ['text' => 'Đã xác nhận', 'bg' => '#dbeafe', 'text_color' => '#2563eb', 'icon' => 'fas fa-check'],
         'awaiting_driver' => ['text' => 'Chờ tài xế', 'bg' => '#ffedd5', 'text_color' => '#c2410c', 'icon' => 'fas fa-user-clock'],
+        // === DÒNG MỚI ĐƯỢC THÊM VÀO ===
+        'driver_accepted' => ['text' => 'Tài xế đã nhận đơn', 'bg' => '#e0e7ff', 'text_color' => '#4338ca', 'icon' => 'fas fa-user-check'],
+
         'driver_picked_up' => ['text' => 'Tài xế đã nhận', 'bg' => '#e0e7ff', 'text_color' => '#4338ca', 'icon' => 'fas fa-shopping-bag'],
         'in_transit' => ['text' => 'Đang giao', 'bg' => '#ccfbf1', 'text_color' => '#0f766e', 'icon' => 'fas fa-truck'],
         'delivered' => ['text' => 'Đã giao', 'bg' => '#dcfce7', 'text_color' => '#16a34a', 'icon' => 'fas fa-check-double'],

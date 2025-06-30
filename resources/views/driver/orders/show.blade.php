@@ -128,7 +128,7 @@
                         <i class="fas fa-check mr-2"></i>Chấp nhận đơn hàng
                     </button>
                     @break
-                @case('driver_picked_up')
+                @case('driver_accepted')
                     <button onclick="confirmPickup()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700">
                         <i class="fas fa-shopping-bag mr-2"></i>Xác nhận đã lấy hàng
                     </button>
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Cập nhật giao diện không reload (bạn có thể thay đổi lại ở đây nếu muốn)
                     // this.updateUIAfterAction(data.order);
-                    setTimeout(() => window.location.reload(), 1000); 
+                    // setTimeout(() => window.location.reload(), 1000);
 
                 } else {
                     // Ném lỗi với message từ server hoặc message mặc định

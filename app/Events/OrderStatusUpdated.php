@@ -57,9 +57,9 @@ class OrderStatusUpdated implements ShouldBroadcast
         // We send only the necessary data to the frontend.
         return [
             'status' => $this->order->status,
-            'status_text' => $this->order->status_text, // Uses the accessor from your Order model
-            'status_color_bg' => $this->order->status_color['bg'],
-            'status_color_text' => $this->order->status_color['text'],
+            'status_text' => $this->order->status_text,
+            'status_color' => $this->order->status_color, // Gửi cả object/mảng màu sắc
+            'status_icon' => $this->order->status_icon,   // Gửi cả icon để cập nhật giao diện
             'actual_delivery_time' => optional($this->order->actual_delivery_time)->format('H:i - d/m/Y'),
         ];
     }

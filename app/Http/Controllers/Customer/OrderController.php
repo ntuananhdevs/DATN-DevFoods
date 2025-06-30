@@ -53,58 +53,61 @@ class OrderController extends Controller
      */
     public function updateStatus(Request $request, Order $order)
     {
-        // 1. Authorization (giữ nguyên)
+        // 1. Authorization
         if ($order->customer_id !== Auth::id()) {
-            abort(403, 'UNAUTHORIZED ACTION.');
+            // Trả về lỗi JSON với mã 403 (Forbidden)
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện hành động này.'
+            ], 403);
         }
 
-        // 2. Validation (giữ nguyên)
+        // 2. Validation
         $validated = $request->validate([
-            'status' => [
-                'required',
-                'string',
-                Rule::in(['cancelled', 'item_received']),
-            ],
+            'status' => ['required', 'string', Rule::in(['cancelled', 'item_received'])],
         ]);
-
         $newStatus = $validated['status'];
 
-        // 3. Logic (giữ nguyên)
+        // 3. Logic
         $canUpdate = false;
-        $message = ''; // Chuẩn bị message để gửi về
+        $message = '';
         if ($newStatus === 'cancelled' && $order->status === 'awaiting_confirmation') {
             $canUpdate = true;
             $message = 'Đã hủy đơn hàng thành công!';
-            // Broadcast sự kiện hủy đơn đến kênh 'drivers'
+            // Broadcast sự kiện hủy đơn đến các kênh liên quan
             broadcast(new OrderCancelledByCustomer($order->id))->toOthers();
         } elseif ($newStatus === 'item_received' && $order->status === 'delivered') {
             $canUpdate = true;
             $message = 'Đã xác nhận nhận hàng thành công!';
         }
 
+        // THAY ĐỔI 1: Xử lý lỗi và trả về JSON
         if (!$canUpdate) {
-            // Gửi về toast báo lỗi
-            $toast = ['type' => 'error', 'title' => 'Thất bại', 'message' => 'Hành động không được phép.'];
-            return back()->with('toast', $toast);
+            return response()->json([
+                'success' => false,
+                'message' => 'Hành động không được phép hoặc trạng thái đơn hàng không hợp lệ.'
+            ], 422); // 422: Unprocessable Entity, mã lỗi hợp lý cho việc không thể xử lý
         }
 
-        // 4. Update and Save (giữ nguyên)
+        // 4. Update and Save
         $order->status = $newStatus;
         if ($newStatus === 'item_received' && !$order->actual_delivery_time) {
             $order->actual_delivery_time = now();
         }
         $order->save();
         
-        // 5. Broadcast the event (giữ nguyên)
-        broadcast(new OrderStatusUpdated($order))->toOthers();
+        // THAY ĐỔI 2: Lấy dữ liệu mới nhất từ DB để đảm bảo tính toàn vẹn
+        $freshOrder = $order->fresh();
 
-        // THAY ĐỔI DUY NHẤT Ở ĐÂY: Gửi về session 'toast' với cấu trúc mảng
-        $toast = [
-            'type' => 'success', // 'success', 'error', 'info', 'warning'
-            'title' => 'Thành công',
-            'message' => $message
-        ];
+        // 5. Broadcast the event
+        broadcast(new OrderStatusUpdated($freshOrder))->toOthers();
 
-        return back()->with('toast', $toast);
+        // THAY ĐỔI 3: Trả về JSON khi thành công
+        // Gửi về object 'order' để JavaScript có thể cập nhật UI
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'order'   => $freshOrder
+        ]);
     }
 }

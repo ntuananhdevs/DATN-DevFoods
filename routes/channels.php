@@ -141,21 +141,24 @@ Broadcast::channel('discounts', function ($user = null) {
 
 
 Broadcast::channel('order.{orderId}', function ($user, $orderId) {
-    // Biến $user ở đây sẽ là User model nếu Customer đăng nhập (vì default guard là 'web').
-    // Chúng ta sẽ kiểm tra cả hai guard một cách tường minh.
-    
     $order = Order::find($orderId);
     if (!$order) {
         return false;
     }
 
-    // Kiểm tra nếu là Customer sở hữu đơn hàng
+    // 1. Cho phép Customer sở hữu đơn hàng được nghe
     if (Auth::guard('web')->check() && Auth::guard('web')->id() === $order->customer_id) {
         return true;
     }
 
-    // Kiểm tra nếu là Driver được gán cho đơn hàng
+    // 2. Cho phép Driver ĐÃ ĐƯỢC GÁN vào đơn hàng được nghe
     if (Auth::guard('driver')->check() && Auth::guard('driver')->id() === $order->driver_id) {
+        return true;
+    }
+
+    // === BỔ SUNG ĐIỀU KIỆN MỚI ===
+    // 3. Cho phép BẤT KỲ Driver nào cũng được nghe nếu đơn hàng đang ở trạng thái chờ
+    if (Auth::guard('driver')->check() && in_array($order->status, ['confirmed', 'awaiting_driver'])) {
         return true;
     }
 

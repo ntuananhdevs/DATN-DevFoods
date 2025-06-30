@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         const bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
-        toast.className = `fixed bottom-4 right-4 text-white px-4 py-2 rounded-lg shadow-lg z-[101] transition-opacity duration-300 opacity-0 ${bgColor}`;
+        toast.className = `fixed top-5 right-4 text-white px-4 py-2 rounded-lg shadow-lg z-[101] transition-opacity duration-300 opacity-0 ${bgColor}`;
         toast.textContent = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.classList.remove('opacity-0'), 10);
@@ -490,10 +490,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusBadge.style.backgroundColor = '#FEE2E2';
                 statusBadge.style.color = '#DC2626';
             }
-            const actionButtonsContainer = form.parentElement;
-            if (actionButtonsContainer) {
-                actionButtonsContainer.innerHTML = '<span class="text-sm text-gray-500">Đã hủy bởi bạn</span>';
-            }
+            // const actionButtonsContainer = form.parentElement;
+            // if (actionButtonsContainer) {
+            //     actionButtonsContainer.innerHTML = '<span class="text-sm text-gray-500">Đã hủy bởi bạn</span>';
+            // }
+            form.remove(); 
         }
     };
 

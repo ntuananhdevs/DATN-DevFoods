@@ -19,7 +19,8 @@ $progressSteps = [
 $statusMapToStep = [
     'awaiting_confirmation' => 'confirmed',
     'confirmed' => 'confirmed',
-    'awaiting_driver' => 'driver_picked_up',
+    'awaiting_driver' => 'confirmed', // SỬA Ở ĐÂY: Chờ tài xế vẫn là ở bước "Xác nhận"
+    'driver_accepted' => 'driver_picked_up', // MỚI: Tài xế nhận đơn thì mới sang bước "Lấy hàng"
     'driver_picked_up' => 'driver_picked_up',
     'in_transit' => 'in_transit',
     'delivered' => 'item_received',
@@ -319,51 +320,32 @@ if ($order->status == 'cancelled') {
 
 </div>
 
-{{-- Script xử lý modal và real-time --}}
+@endsection
+
+@push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+// Thay vì chạy ngay khi DOM load, chúng ta sẽ lắng nghe sự kiện 'echo:ready'
+document.addEventListener('echo:ready', function () {
     
     /**
-     * Gói toàn bộ logic của trang vào một object để dễ quản lý
+     * Gói toàn bộ logic của trang chi tiết đơn hàng vào một object duy nhất.
+     * PHIÊN BẢN CUỐI CÙNG - ĐẦY ĐỦ CÁC HÀM
      */
     const CustomerOrderPage = {
-        //-------------------------------------------------
-        // PHẦN 1: KHỞI TẠO VÀ CẤU HÌNH
-        //-------------------------------------------------
-        elements: {
-            card: null,
-            productModal: null,
-            productModalContent: null,
-            cancelModal: null,
-            cancelConfirmBtn: null,
-            cancelAbortBtn: null,
-            viewProductButtons: [],
-            actionForms: [], 
-            cancelForms: []
-        },
+        elements: {},
+        state: {},
 
-        state: {
-            orderId: null,
-            formToSubmitForCancel: null
-        },
-
-        /**
-         * Hàm khởi tạo chính, chạy khi DOM đã sẵn sàng
-         */
         init() {
             this.cacheDOMElements();
-            if (!this.elements.card) return; // Dừng lại nếu không phải trang chi tiết đơn hàng
+            if (!this.elements.card) return;
 
             this.state.orderId = this.elements.card.dataset.orderId;
             this.classifyForms();
             this.setupEventListeners();
             this.initRealtimeListener();
-            console.log('[CustomerOrderPage] Initialized successfully.');
+            console.log('[CustomerOrderPage] Initialized successfully for Order #' + this.state.orderId);
         },
 
-        /**
-         * Lấy và lưu trữ các phần tử DOM cần thiết vào object 'elements'
-         */
         cacheDOMElements() {
             this.elements.card = document.getElementById('order-details-card');
             this.elements.productModal = document.getElementById('product-details-modal');
@@ -374,61 +356,37 @@ document.addEventListener('DOMContentLoaded', function () {
             this.elements.viewProductButtons = document.querySelectorAll('.view-product-details-btn');
         },
 
-        /**
-         * Phân loại các form trong khu vực action-buttons
-         */
         classifyForms() {
-            document.querySelectorAll('#action-buttons form').forEach(form => {
-                if (form.classList.contains('cancel-order-form')) {
-                    this.elements.cancelForms.push(form);
-                } else {
-                    this.elements.actionForms.push(form);
-                }
-            });
+            const actionButtonsDiv = document.getElementById('action-buttons');
+            if (actionButtonsDiv) {
+                actionButtonsDiv.querySelectorAll('form').forEach(form => {
+                    if (form.classList.contains('cancel-order-form')) {
+                        this.elements.cancelForms.push(form);
+                    } else {
+                        this.elements.actionForms.push(form);
+                    }
+                });
+            }
         },
         
-        //-------------------------------------------------
-        // PHẦN 2: GÁN SỰ KIỆN
-        //-------------------------------------------------
-
-        /**
-         * Gán tất cả các sự kiện cho các phần tử
-         */
         setupEventListeners() {
-            // Sự kiện cho nút xem chi tiết sản phẩm
             this.elements.viewProductButtons.forEach(button => {
                 button.addEventListener('click', (e) => this.handleViewProduct(e));
             });
-
-            // Sự kiện cho modal sản phẩm (đóng khi click ngoài, nút X)
             this.elements.productModal?.addEventListener('click', (e) => {
-                if (e.target === this.elements.productModal || e.target.classList.contains('close-modal-btn')) {
-                    this.closeProductModal();
-                }
+                if (e.target === this.elements.productModal || e.target.classList.contains('close-modal-btn')) this.closeProductModal();
             });
-
-            // Sự kiện cho form HỦY ĐƠN (mở modal xác nhận)
             this.elements.cancelForms.forEach(form => {
                 form.addEventListener('submit', (e) => this.handleCancelSubmission(e));
             });
-
-            // Sự kiện cho các nút trong modal hủy đơn
             this.elements.cancelConfirmBtn?.addEventListener('click', () => this.confirmCancellation());
             this.elements.cancelAbortBtn?.addEventListener('click', () => this.closeCancelModal());
-
-            // Sự kiện đóng modal hủy đơn khi click ra ngoài
             this.elements.cancelModal?.addEventListener('click', (e) => {
-                if (e.target === this.elements.cancelModal) {
-                    this.closeCancelModal();
-                }
+                if (e.target === this.elements.cancelModal) this.closeCancelModal();
             });
-
-            // Sự kiện cho các form HÀNH ĐỘNG KHÁC (ví dụ: xác nhận nhận hàng) -> Dùng AJAX
             this.elements.actionForms.forEach(form => {
                 form.addEventListener('submit', (e) => this.handleActionFormSubmit(e));
             });
-
-            // Sự kiện chung để đóng các modal bằng phím Escape
             document.addEventListener('keydown', (e) => {
                 if (e.key === "Escape") {
                     this.closeProductModal();
@@ -436,19 +394,29 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         },
-        
-        //-------------------------------------------------
-        // PHẦN 3: CÁC HÀM XỬ LÝ HÀNH ĐỘNG
-        //-------------------------------------------------
 
-        handleCancelSubmission(event) {
-            event.preventDefault();
-            this.state.formToSubmitForCancel = event.target;
-            this.elements.cancelModal?.classList.remove('hidden');
+        showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            let bgColor, iconClass;
+            switch (type) {
+                case 'error': bgColor = 'bg-red-600'; iconClass = 'fas fa-times-circle'; break;
+                case 'info': bgColor = 'bg-blue-600'; iconClass = 'fas fa-info-circle'; break;
+                default: bgColor = 'bg-green-600'; iconClass = 'fas fa-check-circle'; break;
+            }
+            toast.className = `fixed top-5 right-5 text-white px-4 py-3 rounded-lg shadow-lg z-[101] transition-all duration-300 opacity-0 transform translate-x-full ${bgColor}`;
+            toast.innerHTML = `<i class="${iconClass} mr-2"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.remove('opacity-0', 'translate-x-full'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3500);
         },
         
         handleActionFormSubmit(event) {
-            event.preventDefault();
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
             const form = event.target;
             const button = form.querySelector('button[type="submit"]');
             const originalButtonText = button.innerHTML;
@@ -456,40 +424,32 @@ document.addEventListener('DOMContentLoaded', function () {
             button.disabled = true;
 
             fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                }
+                method: 'POST', body: new FormData(form),
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json' }
             })
             .then(res => res.json().then(data => ({ ok: res.ok, data })))
             .then(({ ok, data }) => {
-                if (ok && data.toast) {
-                    if(typeof showToast === 'function') {
-                        showToast(data.toast.type, data.toast.title, data.toast.message);
-                    } else {
-                        alert(data.toast.message);
-                    }
-                    setTimeout(() => window.location.reload(), 2000);
-                } else {
-                    throw new Error(data.message || 'Có lỗi xảy ra.');
-                }
+                if (ok && data.success) {
+                    this.showToast(data.message || 'Thao tác thành công!', 'success');
+                    this.updateUI(data.order);
+                } else { throw new Error(data.message || 'Thao tác thất bại.'); }
             })
             .catch(error => {
-                if(typeof showToast === 'function') {
-                    showToast('error', 'Lỗi', error.message);
-                } else {
-                    alert('Lỗi: ' + error.message);
-                }
+                this.showToast(error.message, 'error');
                 button.innerHTML = originalButtonText;
                 button.disabled = false;
             });
         },
 
+        handleCancelSubmission(event) {
+            event.preventDefault();
+            this.state.formToSubmitForCancel = event.target;
+            this.elements.cancelModal?.classList.remove('hidden');
+        },
+
         confirmCancellation() {
             if (this.state.formToSubmitForCancel) {
-                this.state.formToSubmitForCancel.submit();
+                this.handleActionFormSubmit({ target: this.state.formToSubmitForCancel });
             }
             this.closeCancelModal();
         },
@@ -503,14 +463,10 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const details = JSON.parse(event.currentTarget.dataset.details);
                 this.openProductModal(details);
-            } catch (e) {
-                console.error("Lỗi khi phân tích cú pháp dữ liệu chi tiết sản phẩm:", e);
-                alert("Không thể hiển thị chi tiết sản phẩm.");
-            }
+            } catch (e) { this.showToast("Không thể hiển thị chi tiết sản phẩm.", "error"); }
         },
 
         openProductModal(details) {
-            // ... (Nội dung hàm này đã đầy đủ và chính xác từ lần trước)
             let optionsHtml = '';
             if (details.options && details.options.length > 0) {
                 optionsHtml = `<div><h4 class="font-semibold mb-2 text-gray-800">Tùy chọn</h4><div class="flex flex-wrap gap-2">${details.options.map(option => `<span class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full">${option}</span>`).join('')}</div></div>`;
@@ -519,13 +475,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (details.toppings && details.toppings.length > 0) {
                 toppingsHtml = `<div><h4 class="font-semibold mb-2 text-gray-800">Topping</h4><div class="flex flex-wrap gap-2">${details.toppings.map(topping => `<span class="text-sm bg-orange-100 text-orange-700 px-3 py-1 rounded-full">${topping}</span>`).join('')}</div></div>`;
             }
-            let ingredientsHtml = '';
-            if (details.ingredients && details.ingredients.length > 0) {
-                ingredientsHtml = `<div><h4 class="font-semibold mb-2 text-gray-800">Thành phần</h4><div class="flex flex-wrap gap-2">${details.ingredients.map(ing => `<span class="text-sm bg-gray-100 px-3 py-1 rounded-full">${ing}</span>`).join('')}</div></div>`;
-            }
-
-            this.elements.productModalContent.innerHTML = `<div class="p-6"><div class="flex justify-between items-start mb-4"><h3 class="text-xl font-bold">${details.name}</h3><button type="button" class="close-modal-btn text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button></div><img src="${details.image}" alt="${details.name}" class="w-full h-48 rounded-lg object-cover mb-4 border" /><div class="space-y-4"><div><h4 class="font-semibold mb-2 text-gray-800">Mô tả</h4><p class="text-gray-700 text-sm">${details.description}</p></div>${ingredientsHtml}${optionsHtml}${toppingsHtml}<div class="pt-4 border-t"><div class="flex justify-between items-center"><span class="text-lg font-semibold text-gray-800">Giá:</span><span class="text-xl font-bold text-orange-600">${new Intl.NumberFormat('vi-VN').format(details.price)}đ</span></div><div class="flex justify-between items-center mt-2"><span class="text-gray-600">Số lượng:</span><span class="font-semibold">${details.quantity}</span></div></div></div><div class="mt-6 pt-4 border-t"><button type="button" class="close-modal-btn w-full h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-orange-600 text-white hover:bg-orange-700">Đóng</button></div></div>`;
-
+            this.elements.productModalContent.innerHTML = `<div class="p-6"><div class="flex justify-between items-start mb-4"><h3 class="text-xl font-bold">${details.name}</h3><button type="button" class="close-modal-btn text-gray-400 hover:text-gray-600 text-3xl leading-none">&times;</button></div><img src="${details.image}" alt="${details.name}" class="w-full h-48 rounded-lg object-cover mb-4 border" /><div class="space-y-4"><div><h4 class="font-semibold mb-2 text-gray-800">Mô tả</h4><p class="text-gray-700 text-sm">${details.description}</p></div>${optionsHtml}${toppingsHtml}<div class="pt-4 border-t"><div class="flex justify-between items-center"><span class="text-lg font-semibold text-gray-800">Giá:</span><span class="text-xl font-bold text-orange-600">${new Intl.NumberFormat('vi-VN').format(details.price)}đ</span></div><div class="flex justify-between items-center mt-2"><span class="text-gray-600">Số lượng:</span><span class="font-semibold">${details.quantity}</span></div></div></div><div class="mt-6 pt-4 border-t"><button type="button" class="close-modal-btn w-full h-10 inline-flex items-center justify-center rounded-md text-sm font-medium bg-orange-600 text-white hover:bg-orange-700">Đóng</button></div></div>`;
             this.elements.productModal.style.display = 'flex';
             setTimeout(() => {
                 this.elements.productModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -541,26 +491,68 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.elements.productModal.classList.add('pointer-events-none');
             }, 300);
         },
+        
+        updateUI(eventData) {
+            if (!eventData || !eventData.status) { return; }
+            const progressSteps = { 'confirmed': { stepIndex: 0 }, 'driver_picked_up': { stepIndex: 1 }, 'in_transit': { stepIndex: 2 }, 'item_received': { stepIndex: 3 } };
+            const statusMapToStep = {
+                'awaiting_confirmation':'confirmed', 'confirmed':'confirmed', 'awaiting_driver':'confirmed',
+                'driver_accepted': 'driver_picked_up', 'driver_picked_up': 'driver_picked_up',
+                'in_transit': 'in_transit', 'delivered': 'item_received', 'item_received': 'item_received', 'cancelled': null
+            };
+            const currentStepKey = statusMapToStep[eventData.status];
+            const currentStepIndex = currentStepKey ? progressSteps[currentStepKey].stepIndex : -1;
+            const statusBadge = document.getElementById('order-status-badge');
+            if(statusBadge && eventData.status_color) {
+                statusBadge.innerHTML = `<span class="text-sm font-semibold px-4 py-2 rounded-full capitalize" style="background-color: ${eventData.status_color.bg}; color: ${eventData.status_color.text};">${eventData.status_text}</span>`;
+            }
+            const progressTracker = document.getElementById('progress-tracker');
+            if(progressTracker) {
+                if (currentStepIndex > -1) {
+                    progressTracker.style.display = '';
+                    const totalSteps = Object.keys(progressSteps).length;
+                    const progressBar = document.getElementById('progress-bar');
+                    const newWidth = totalSteps > 1 ? (currentStepIndex / (totalSteps - 1)) * 100 : 100;
+                    if(progressBar) progressBar.style.width = `${newWidth}%`;
+                    progressTracker.querySelectorAll('[data-step-key]').forEach(stepElement => {
+                        const stepKey = stepElement.dataset.stepKey;
+                        const stepIndex = progressSteps[stepKey].stepIndex;
+                        const isCompleted = stepIndex <= currentStepIndex;
+                        const iconDiv = stepElement.querySelector('.progress-icon');
+                        const textP = stepElement.querySelector('.progress-text');
+                        if(isCompleted) {
+                            iconDiv.classList.add('bg-orange-500'); iconDiv.classList.remove('bg-gray-300');
+                            textP.classList.add('text-gray-800'); textP.classList.remove('text-gray-500');
+                        } else {
+                            iconDiv.classList.remove('bg-orange-500'); iconDiv.classList.add('bg-gray-300');
+                            textP.classList.remove('text-gray-800'); textP.classList.add('text-gray-500');
+                        }
+                    });
+                } else {
+                    progressTracker.style.display = 'none';
+                }
+            }
+            const actionButtons = document.getElementById('action-buttons');
+            if(actionButtons) {
+                if(eventData.status !== 'awaiting_confirmation' && actionButtons.querySelector('.cancel-order-form')) {
+                    actionButtons.querySelector('.cancel-order-form').remove();
+                }
+            }
+        },
 
         initRealtimeListener() {
             if (window.Echo) {
                 window.Echo.private(`order.${this.state.orderId}`)
                     .listen('.OrderStatusUpdated', (event) => {
-                        console.log('Real-time event [OrderStatusUpdated] received:', event);
-                        if(typeof showToast === 'function') {
-                             showToast('info', 'Cập nhật trạng thái', `Trạng thái đơn hàng vừa được cập nhật thành: ${event.status_text}`);
-                        }
-                        setTimeout(() => window.location.reload(), 2500);
+                        this.updateUI(event);
+                        this.showToast(`Trạng thái đơn hàng: ${event.status_text}`, 'info');
                     });
-            } else {
-                console.warn('[CustomerOrderPage] Laravel Echo is not defined.');
-            }
+            } else { console.warn('Real-time service (Echo) not defined on this page.'); }
         }
     };
 
     // Chạy hàm khởi tạo
     CustomerOrderPage.init();
-
 });
 </script>
-@endsection
+@endpush
