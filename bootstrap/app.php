@@ -5,6 +5,7 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\Driver\DriverAuth;
 use App\Http\Middleware\Customer\CustomerAuth;
 use App\Http\Middleware\Customer\BranchMiddleware;
+use App\Http\Middleware\Customer\CartTransferMiddleware;
 use App\Http\Middleware\Branch\BranchAuth;
 use App\Http\Middleware\PhoneRequired;
 use App\Http\Middleware\RefreshCsrfToken;
@@ -30,11 +31,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'branch.auth' => BranchAuth::class,
             'phone.required' => PhoneRequired::class,
             'turnstile' => VerifyTurnstile::class,
+            'cart.transfer' => CartTransferMiddleware::class,
             'refresh.csrf' => RefreshCsrfToken::class,
         ]);
 
         $middleware->web(append: [
             BranchMiddleware::class,
+            CartTransferMiddleware::class,
             RefreshCsrfToken::class,
             \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
         ]);
