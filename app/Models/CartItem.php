@@ -56,9 +56,7 @@ class CartItem extends Model
      */
     public function toppings()
     {
-        return $this->belongsToMany(Topping::class, 'cart_item_toppings', 'cart_item_id', 'topping_id')
-                    ->withPivot('quantity')
-                    ->withTimestamps();
+        return $this->hasMany(CartItemTopping::class);
     }
 
     /**

@@ -11,9 +11,10 @@ class BranchOrderController extends Controller
 {
     public function index()
     {
-        $manager = Auth::guard('manager')->user();
-        $branch = $manager ? $manager->branch : null;
-        $orders = $branch ? Order::where('branch_id', $branch->id)->get() : collect();
-        return view('branch.orders', compact('orders', 'branch'));
+        return view('branch.orders.index');
+    }
+    public function show()
+    {
+        return view('branch.orders.show');
     }
 }
