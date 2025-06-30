@@ -359,10 +359,13 @@
     <div class="grid lg:grid-cols-2 gap-8 mb-12">
         <!-- Left column: Images -->
         <div class="space-y-4">
+            @php
+                $primaryImage = $product->images->where('is_primary', 1)->first() ?? $product->images->first();
+            @endphp
             <div class="relative h-[300px] sm:h-[400px] rounded-lg overflow-hidden border">
-                <img src="{{ $product->images->first() ? $product->images->first()->s3_url : '/placeholder.svg?height=600&width=600' }}" 
-                     alt="{{ $product->name }}" 
-                     class="object-cover w-full h-full" 
+                <img src="{{ $primaryImage ? Storage::disk('s3')->url($primaryImage->img) : '/placeholder.svg?height=600&width=600' }}"
+                     alt="{{ $product->name }}"
+                     class="object-cover w-full h-full"
                      id="main-product-image">
                 @if($product->release_at && $product->release_at->diffInDays(now()) <= 7)
                     <span class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">Mới</span>
@@ -371,9 +374,9 @@
 
             <div class="flex gap-2 overflow-x-auto pb-2">
                 @foreach($product->images as $image)
-                <button class="relative w-20 h-20 rounded border-2 {{ $loop->first ? 'border-orange-500' : 'border-transparent' }} overflow-hidden flex-shrink-0 product-thumbnail">
-                    <img src="{{ $image->s3_url }}" 
-                         alt="{{ $product->name }} - Hình {{ $loop->iteration }}" 
+                <button class="relative w-20 h-20 rounded border-2 {{ ($primaryImage && $image->id === $primaryImage->id) ? 'border-orange-500' : 'border-transparent' }} overflow-hidden flex-shrink-0 product-thumbnail">
+                    <img src="{{ Storage::disk('s3')->url($image->img) }}"
+                         alt="{{ $product->name }} - Hình {{ $loop->iteration }}"
                          class="object-cover w-full h-full">
                 </button>
                 @endforeach

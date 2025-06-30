@@ -537,7 +537,7 @@ class CartController extends Controller
             $cart = $cartItem->cart;
 
             // Remove toppings first
-            $cartItem->toppings()->detach();
+            $cartItem->toppings()->delete();
 
             // Delete cart item
             $cartItem->delete();
