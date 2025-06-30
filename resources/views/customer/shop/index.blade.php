@@ -367,7 +367,7 @@
                 <div class="relative">
                     <a href="{{ route('products.show', $product->id) }}" class="block">
                         @if($product->primary_image)
-                            <img src="{{ $product->primary_image->s3_url }}" 
+                            <img src="{{ Storage::disk('s3')->url($product->primary_image->img) }}" 
                                  alt="{{ $product->name }}" 
                                  class="product-image">
                         @else
