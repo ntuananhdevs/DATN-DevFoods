@@ -52,6 +52,11 @@ return [
             'provider' => 'users',
         ],
 
+        'manager' => [
+            'driver' => 'session',
+            'provider' => 'managers',
+        ],
+
         'driver' => [
             'driver' => 'session',
             'provider' => 'drivers',
@@ -82,6 +87,11 @@ return [
 
     'providers' => [
         'users' => [
+            'driver' => 'eloquent',
+            'model' => User::class,
+        ],
+
+        'managers' => [
             'driver' => 'eloquent',
             'model' => User::class,
         ],

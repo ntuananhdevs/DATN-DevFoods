@@ -11,11 +11,11 @@ class RoleSeeder extends Seeder
     {
         $roles = [
             [
-                'name' => 'spadmin',
+                'name' => 'admin',
                 'permissions' => ['*'],
             ],
             [
-                'name' => 'admin',
+                'name' => 'manager',
                 'permissions' => ['create', 'edit', 'view'],
             ],
             [

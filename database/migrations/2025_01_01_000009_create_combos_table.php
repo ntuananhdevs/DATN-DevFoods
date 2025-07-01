@@ -36,6 +36,7 @@ return new class extends Migration
 
             $table->unique(['combo_id', 'product_variant_id']);
         });
+
     }
 
     /**

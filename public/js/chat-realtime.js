@@ -24,8 +24,8 @@ class ChatCommon {
         this.chatList = document.getElementById("chat-list");
 
         // Khởi tạo Pusher
-        this.pusher = new Pusher("6ef607214efab0d72419", {
-            cluster: "ap1",
+        this.pusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
             encrypted: true,
         });
 
@@ -36,8 +36,8 @@ class ChatCommon {
     setupPusherGlobalListeners() {
         // Khởi tạo Pusher nếu chưa có
         if (!window._sidebarPusher) {
-            window._sidebarPusher = new Pusher("6ef607214efab0d72419", {
-                cluster: "ap1",
+            window._sidebarPusher = new Pusher(window.pusherKey, {
+                cluster: window.pusherCluster,
                 encrypted: true,
                 authEndpoint: "/broadcasting/auth",
                 auth: {
@@ -279,6 +279,7 @@ class ChatCommon {
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
                 this.moveConversationToTop(data.message.conversation_id);
+                showChatNotification(data.message.conversation_id);
             }
         });
 
@@ -338,37 +339,66 @@ class ChatCommon {
             if (this.chatList) {
                 this.chatList.insertBefore(chatItem, this.chatList.firstChild);
             }
-        }
-        // Cập nhật preview tin nhắn
-        const previewElement = chatItem.querySelector(".chat-item-preview");
-        if (previewElement) {
-            previewElement.textContent = message.message;
-        }
-        // Cập nhật thời gian
-        const timeElement = chatItem.querySelector(".chat-item-time");
-        if (timeElement) {
-            timeElement.textContent = "Vừa xong";
-        }
-        // Cập nhật số tin nhắn chưa đọc
-        if (message.sender_id !== this.userId) {
-            const unreadBadge = chatItem.querySelector(".unread-badge");
-            if (unreadBadge) {
-                const currentCount = parseInt(unreadBadge.textContent) || 0;
-                unreadBadge.textContent = currentCount + 1;
-            } else {
-                const newBadge = document.createElement("span");
-                newBadge.className =
-                    "unread-badge ml-2 absolute right-2 bottom-2";
-                newBadge.textContent = "1";
-                const flexDiv = chatItem.querySelector(".flex");
-                if (flexDiv) {
-                    flexDiv.appendChild(newBadge);
-                } else {
-                    chatItem.appendChild(newBadge);
+        } else {
+            // Cập nhật preview tin nhắn (giới hạn 30 ký tự)
+            const previewElement = chatItem.querySelector(".chat-item-preview");
+            if (previewElement) {
+                const preview =
+                    (message.message || "...").length > 30
+                        ? (message.message || "...").substring(0, 30) + "..."
+                        : message.message || "...";
+                previewElement.textContent = preview;
+            }
+            // Cập nhật thời gian
+            const timeElement = chatItem.querySelector(".chat-item-time");
+            if (timeElement && message.created_at) {
+                timeElement.textContent = this.formatTime(message.created_at);
+            }
+            // Cập nhật badge trạng thái
+            const badges = chatItem.querySelector(".chat-item-badges");
+            if (badges) {
+                let statusLabel = "";
+                switch (message.status) {
+                    case "distributed":
+                        statusLabel = "Đã phân phối";
+                        break;
+                    case "active":
+                        statusLabel = "Đang xử lý";
+                        break;
+                    case "closed":
+                        statusLabel = "Đã đóng";
+                        break;
+                    case "resolved":
+                        statusLabel = "Đã giải quyết";
+                        break;
+                    default:
+                        statusLabel = "Chờ phản hồi";
                 }
+                badges.innerHTML =
+                    `<span class="badge badge-distributed">${statusLabel}</span>` +
+                    (chatItem.dataset.branchName
+                        ? `<span class="badge" style="background:#374151;color:#fff;">${chatItem.dataset.branchName}</span>`
+                        : "");
+            }
+            // Cập nhật số tin nhắn chưa đọc
+            let unread = message.unread_count || 0;
+            let unreadBadge = chatItem.querySelector(".unread-badge");
+            if (unread > 0) {
+                if (!unreadBadge) {
+                    unreadBadge = document.createElement("span");
+                    unreadBadge.className = "unread-badge";
+                    unreadBadge.textContent = unread;
+                    chatItem
+                        .querySelector(".chat-item-footer")
+                        .appendChild(unreadBadge);
+                } else {
+                    unreadBadge.textContent = unread;
+                }
+            } else if (unreadBadge) {
+                unreadBadge.remove();
             }
         }
-        // Luôn di chuyển lên đầu sidebar (kể cả khi đang không ở conversation đó)
+        // Luôn di chuyển lên đầu sidebar
         if (
             this.chatList &&
             (!this.chatList.firstChild || this.chatList.firstChild !== chatItem)
@@ -407,7 +437,7 @@ class ChatCommon {
         try {
             console.log("📥 Đang tải tin nhắn...");
             const url = this.api.getMessages.replace(
-                ":id",
+                ":conversation",
                 this.conversationId
             );
             const response = await fetch(url);
@@ -511,6 +541,7 @@ class ChatCommon {
         } finally {
             if (this.sendBtn) this.sendBtn.disabled = false;
             if (this.messageInput) {
+                this.messageInput.value = ""; // Luôn xóa nội dung input
                 this.messageInput.focus();
                 this.messageInput.style.height = "auto";
             }
@@ -957,7 +988,7 @@ class ChatCommon {
         try {
             console.log("📥 Đang tải tin nhắn...");
             const url = this.api.getMessages.replace(
-                ":id",
+                ":conversation",
                 this.conversationId
             );
             const response = await fetch(url);
@@ -1108,6 +1139,8 @@ class ChatCommon {
             }
         } catch (e) {
             this.showError("Không thể gửi file");
+        } finally {
+            if (this.messageInput) this.messageInput.value = ""; // Xóa input sau khi gửi file/ảnh
         }
     }
 
@@ -1138,6 +1171,7 @@ class ChatCommon {
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
                 this.moveConversationToTop(data.message.conversation_id);
+                showChatNotification(data.message.conversation_id);
             }
         });
 
@@ -1197,37 +1231,66 @@ class ChatCommon {
             if (this.chatList) {
                 this.chatList.insertBefore(chatItem, this.chatList.firstChild);
             }
-        }
-        // Cập nhật preview tin nhắn
-        const previewElement = chatItem.querySelector(".chat-item-preview");
-        if (previewElement) {
-            previewElement.textContent = message.message;
-        }
-        // Cập nhật thời gian
-        const timeElement = chatItem.querySelector(".chat-item-time");
-        if (timeElement) {
-            timeElement.textContent = "Vừa xong";
-        }
-        // Cập nhật số tin nhắn chưa đọc
-        if (message.sender_id !== this.userId) {
-            const unreadBadge = chatItem.querySelector(".unread-badge");
-            if (unreadBadge) {
-                const currentCount = parseInt(unreadBadge.textContent) || 0;
-                unreadBadge.textContent = currentCount + 1;
-            } else {
-                const newBadge = document.createElement("span");
-                newBadge.className =
-                    "unread-badge ml-2 absolute right-2 bottom-2";
-                newBadge.textContent = "1";
-                const flexDiv = chatItem.querySelector(".flex");
-                if (flexDiv) {
-                    flexDiv.appendChild(newBadge);
-                } else {
-                    chatItem.appendChild(newBadge);
+        } else {
+            // Cập nhật preview tin nhắn (giới hạn 30 ký tự)
+            const previewElement = chatItem.querySelector(".chat-item-preview");
+            if (previewElement) {
+                const preview =
+                    (message.message || "...").length > 30
+                        ? (message.message || "...").substring(0, 30) + "..."
+                        : message.message || "...";
+                previewElement.textContent = preview;
+            }
+            // Cập nhật thời gian
+            const timeElement = chatItem.querySelector(".chat-item-time");
+            if (timeElement && message.created_at) {
+                timeElement.textContent = this.formatTime(message.created_at);
+            }
+            // Cập nhật badge trạng thái
+            const badges = chatItem.querySelector(".chat-item-badges");
+            if (badges) {
+                let statusLabel = "";
+                switch (message.status) {
+                    case "distributed":
+                        statusLabel = "Đã phân phối";
+                        break;
+                    case "active":
+                        statusLabel = "Đang xử lý";
+                        break;
+                    case "closed":
+                        statusLabel = "Đã đóng";
+                        break;
+                    case "resolved":
+                        statusLabel = "Đã giải quyết";
+                        break;
+                    default:
+                        statusLabel = "Chờ phản hồi";
                 }
+                badges.innerHTML =
+                    `<span class="badge badge-distributed">${statusLabel}</span>` +
+                    (chatItem.dataset.branchName
+                        ? `<span class="badge" style="background:#374151;color:#fff;">${chatItem.dataset.branchName}</span>`
+                        : "");
+            }
+            // Cập nhật số tin nhắn chưa đọc
+            let unread = message.unread_count || 0;
+            let unreadBadge = chatItem.querySelector(".unread-badge");
+            if (unread > 0) {
+                if (!unreadBadge) {
+                    unreadBadge = document.createElement("span");
+                    unreadBadge.className = "unread-badge";
+                    unreadBadge.textContent = unread;
+                    chatItem
+                        .querySelector(".chat-item-footer")
+                        .appendChild(unreadBadge);
+                } else {
+                    unreadBadge.textContent = unread;
+                }
+            } else if (unreadBadge) {
+                unreadBadge.remove();
             }
         }
-        // Luôn di chuyển lên đầu sidebar (kể cả khi đang không ở conversation đó)
+        // Luôn di chuyển lên đầu sidebar
         if (
             this.chatList &&
             (!this.chatList.firstChild || this.chatList.firstChild !== chatItem)
@@ -1836,6 +1899,8 @@ class ChatCommon {
             }
         } catch (e) {
             this.showError("Không thể gửi file");
+        } finally {
+            if (this.messageInput) this.messageInput.value = ""; // Xóa input sau khi gửi file/ảnh
         }
     }
 
@@ -1924,40 +1989,61 @@ class ChatCommon {
     // Thêm hàm tạo chat-item cho admin
     createSidebarChatItem(message) {
         const div = document.createElement("div");
-        div.className = "chat-item relative";
+        div.className = "chat-item conversation-item";
         div.dataset.conversationId = message.conversation_id;
         div.dataset.status = message.status || "new";
+        div.dataset.customerName =
+            message.customer?.full_name ||
+            message.sender?.full_name ||
+            "Khách hàng";
+        div.dataset.customerEmail = message.customer?.email || "";
+        div.dataset.branchName =
+            message.branch_name || (message.branch ? message.branch.name : "");
+        // Tạo preview tin nhắn giới hạn 30 ký tự
+        const preview =
+            (message.message || "...").length > 30
+                ? (message.message || "...").substring(0, 30) + "..."
+                : message.message || "...";
+        // Badge trạng thái
+        let statusLabel = "";
+        switch (message.status) {
+            case "distributed":
+                statusLabel = "Đã phân phối";
+                break;
+            case "active":
+                statusLabel = "Đang xử lý";
+                break;
+            case "closed":
+                statusLabel = "Đã đóng";
+                break;
+            case "resolved":
+                statusLabel = "Đã giải quyết";
+                break;
+            default:
+                statusLabel = "Chờ phản hồi";
+        }
         div.innerHTML = `
-            <div class="flex items-center gap-3 w-full min-w-0">
-                <div class="flex flex-col items-center justify-center relative">
-                    <div class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg bg-orange-500">
-                        ${(message.sender?.full_name || "K")
-                            .charAt(0)
-                            .toUpperCase()}
-                    </div>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                        <span class="chat-item-name truncate font-semibold text-base">
-                            ${message.sender?.full_name || "Khách hàng"}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="chat-item-preview truncate text-sm text-gray-500 flex-1">
-                            ${message.message}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="chat-item-time text-xs text-gray-400">
-                            Vừa xong
-                        </span>
-                    </div>
-                </div>
+            <div class="chat-item-header">
+                <span class="chat-item-name">${div.dataset.customerName}</span>
             </div>
-            <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
-                <span class="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                    Mới
-                </span>
+            <div class="chat-item-preview">${preview}</div>
+            <span class="chat-item-time">${
+                message.created_at ? this.formatTime(message.created_at) : ""
+            }</span>
+            <div class="chat-item-footer mt-2">
+                <div class="chat-item-badges">
+                    <span class="badge badge-distributed">${statusLabel}</span>
+                    ${
+                        div.dataset.branchName
+                            ? `<span class="badge" style="background:#374151;color:#fff;">${div.dataset.branchName}</span>`
+                            : ""
+                    }
+                </div>
+                ${
+                    message.unread_count && message.unread_count > 0
+                        ? `<span class="unread-badge">${message.unread_count}</span>`
+                        : ""
+                }
             </div>
         `;
         div.addEventListener("click", () => {
@@ -1980,7 +2066,7 @@ document.addEventListener("DOMContentLoaded", function () {
             userType: "admin",
             api: {
                 send: "/admin/chat/send",
-                getMessages: "/admin/chat/messages/:id",
+                getMessages: "/admin/chat/messages/:conversation",
                 distribute: "/admin/chat/distribute",
             },
         });
@@ -2058,8 +2144,8 @@ class BranchChat {
         this.chatList = document.getElementById("chat-list");
 
         // Khởi tạo Pusher
-        this.pusher = new Pusher("6ef607214efab0d72419", {
-            cluster: "ap1",
+        this.pusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
             encrypted: true,
         });
 
@@ -2069,8 +2155,8 @@ class BranchChat {
 
     setupPusherGlobalListeners() {
         if (!window._sidebarPusher) {
-            window._sidebarPusher = new Pusher("6ef607214efab0d72419", {
-                cluster: "ap1",
+            window._sidebarPusher = new Pusher(window.pusherKey, {
+                cluster: window.pusherCluster,
                 encrypted: true,
                 authEndpoint: "/broadcasting/auth",
                 auth: {
@@ -2256,37 +2342,66 @@ class BranchChat {
             if (this.chatList) {
                 this.chatList.insertBefore(chatItem, this.chatList.firstChild);
             }
-        }
-        // Cập nhật preview tin nhắn
-        const previewElement = chatItem.querySelector(".chat-item-preview");
-        if (previewElement) {
-            previewElement.textContent = message.message;
-        }
-        // Cập nhật thời gian
-        const timeElement = chatItem.querySelector(".chat-item-time");
-        if (timeElement) {
-            timeElement.textContent = "Vừa xong";
-        }
-        // Cập nhật số tin nhắn chưa đọc
-        if (message.sender_id !== this.userId) {
-            const unreadBadge = chatItem.querySelector(".unread-badge");
-            if (unreadBadge) {
-                const currentCount = parseInt(unreadBadge.textContent) || 0;
-                unreadBadge.textContent = currentCount + 1;
-            } else {
-                const newBadge = document.createElement("span");
-                newBadge.className =
-                    "unread-badge ml-2 absolute right-2 bottom-2";
-                newBadge.textContent = "1";
-                const flexDiv = chatItem.querySelector(".flex");
-                if (flexDiv) {
-                    flexDiv.appendChild(newBadge);
-                } else {
-                    chatItem.appendChild(newBadge);
+        } else {
+            // Cập nhật preview tin nhắn (giới hạn 30 ký tự)
+            const previewElement = chatItem.querySelector(".chat-item-preview");
+            if (previewElement) {
+                const preview =
+                    (message.message || "...").length > 30
+                        ? (message.message || "...").substring(0, 30) + "..."
+                        : message.message || "...";
+                previewElement.textContent = preview;
+            }
+            // Cập nhật thời gian
+            const timeElement = chatItem.querySelector(".chat-item-time");
+            if (timeElement && message.created_at) {
+                timeElement.textContent = this.formatTime(message.created_at);
+            }
+            // Cập nhật badge trạng thái
+            const badges = chatItem.querySelector(".chat-item-badges");
+            if (badges) {
+                let statusLabel = "";
+                switch (message.status) {
+                    case "distributed":
+                        statusLabel = "Đã phân phối";
+                        break;
+                    case "active":
+                        statusLabel = "Đang xử lý";
+                        break;
+                    case "closed":
+                        statusLabel = "Đã đóng";
+                        break;
+                    case "resolved":
+                        statusLabel = "Đã giải quyết";
+                        break;
+                    default:
+                        statusLabel = "Chờ phản hồi";
                 }
+                badges.innerHTML =
+                    `<span class="badge badge-distributed">${statusLabel}</span>` +
+                    (chatItem.dataset.branchName
+                        ? `<span class="badge" style="background:#374151;color:#fff;">${chatItem.dataset.branchName}</span>`
+                        : "");
+            }
+            // Cập nhật số tin nhắn chưa đọc
+            let unread = message.unread_count || 0;
+            let unreadBadge = chatItem.querySelector(".unread-badge");
+            if (unread > 0) {
+                if (!unreadBadge) {
+                    unreadBadge = document.createElement("span");
+                    unreadBadge.className = "unread-badge";
+                    unreadBadge.textContent = unread;
+                    chatItem
+                        .querySelector(".chat-item-footer")
+                        .appendChild(unreadBadge);
+                } else {
+                    unreadBadge.textContent = unread;
+                }
+            } else if (unreadBadge) {
+                unreadBadge.remove();
             }
         }
-        // Luôn di chuyển lên đầu sidebar (kể cả khi đang không ở conversation đó)
+        // Luôn di chuyển lên đầu sidebar
         if (
             this.chatList &&
             (!this.chatList.firstChild || this.chatList.firstChild !== chatItem)
@@ -2482,6 +2597,7 @@ class BranchChat {
         } finally {
             if (this.sendBtn) this.sendBtn.disabled = false;
             if (this.messageInput) {
+                this.messageInput.value = ""; // Luôn xóa nội dung input
                 this.messageInput.focus();
                 this.messageInput.style.height = "auto";
             }
@@ -2524,6 +2640,8 @@ class BranchChat {
             }
         } catch (error) {
             this.showError("Không thể gửi file");
+        } finally {
+            if (this.messageInput) this.messageInput.value = ""; // Xóa input sau khi gửi file/ảnh
         }
     }
 
@@ -2736,40 +2854,61 @@ class BranchChat {
     // Thêm hàm tạo chat-item cho admin
     createSidebarChatItem(message) {
         const div = document.createElement("div");
-        div.className = "chat-item relative";
+        div.className = "chat-item conversation-item";
         div.dataset.conversationId = message.conversation_id;
         div.dataset.status = message.status || "new";
+        div.dataset.customerName =
+            message.customer?.full_name ||
+            message.sender?.full_name ||
+            "Khách hàng";
+        div.dataset.customerEmail = message.customer?.email || "";
+        div.dataset.branchName =
+            message.branch_name || (message.branch ? message.branch.name : "");
+        // Tạo preview tin nhắn giới hạn 30 ký tự
+        const preview =
+            (message.message || "...").length > 30
+                ? (message.message || "...").substring(0, 30) + "..."
+                : message.message || "...";
+        // Badge trạng thái
+        let statusLabel = "";
+        switch (message.status) {
+            case "distributed":
+                statusLabel = "Đã phân phối";
+                break;
+            case "active":
+                statusLabel = "Đang xử lý";
+                break;
+            case "closed":
+                statusLabel = "Đã đóng";
+                break;
+            case "resolved":
+                statusLabel = "Đã giải quyết";
+                break;
+            default:
+                statusLabel = "Chờ phản hồi";
+        }
         div.innerHTML = `
-            <div class="flex items-center gap-3 w-full min-w-0">
-                <div class="flex flex-col items-center justify-center relative">
-                    <div class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg bg-orange-500">
-                        ${(message.sender?.full_name || "K")
-                            .charAt(0)
-                            .toUpperCase()}
-                    </div>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                        <span class="chat-item-name truncate font-semibold text-base">
-                            ${message.sender?.full_name || "Khách hàng"}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="chat-item-preview truncate text-sm text-gray-500 flex-1">
-                            ${message.message}
-                        </span>
-                    </div>
-                    <div class="flex items-center gap-2 mt-1">
-                        <span class="chat-item-time text-xs text-gray-400">
-                            Vừa xong
-                        </span>
-                    </div>
-                </div>
+            <div class="chat-item-header">
+                <span class="chat-item-name">${div.dataset.customerName}</span>
             </div>
-            <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
-                <span class="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                    Mới
-                </span>
+            <div class="chat-item-preview">${preview}</div>
+            <span class="chat-item-time">${
+                message.created_at ? this.formatTime(message.created_at) : ""
+            }</span>
+            <div class="chat-item-footer mt-2">
+                <div class="chat-item-badges">
+                    <span class="badge badge-distributed">${statusLabel}</span>
+                    ${
+                        div.dataset.branchName
+                            ? `<span class="badge" style="background:#374151;color:#fff;">${div.dataset.branchName}</span>`
+                            : ""
+                    }
+                </div>
+                ${
+                    message.unread_count && message.unread_count > 0
+                        ? `<span class="unread-badge">${message.unread_count}</span>`
+                        : ""
+                }
             </div>
         `;
         div.addEventListener("click", () => {
@@ -2795,8 +2934,8 @@ class CustomerChatRealtime {
         this.userId = options.userId;
         this.api = options.api || {};
         this.appendMessage = options.appendMessage || function () {};
-        this.pusher = new Pusher("6ef607214efab0d72419", {
-            cluster: "ap1",
+        this.pusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
             encrypted: true,
         });
         this.init();
@@ -2893,5 +3032,89 @@ document.addEventListener("DOMContentLoaded", function () {
     if (btnActivate) btnActivate.onclick = () => updateStatus("active");
     if (btnResolve) btnResolve.onclick = () => updateStatus("resolved");
     if (btnClose) btnClose.onclick = () => updateStatus("closed");
+
+    // Quick reply click handler
+    document.querySelectorAll('.quick-reply-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var input = document.getElementById('chat-input-message');
+            if (input) {
+                input.value = btn.textContent;
+                input.focus();
+            }
+        });
+    });
+
+    // Xử lý chuyển chi nhánh
+    document.querySelectorAll('.distribution-select').forEach(function(select) {
+        select.addEventListener('change', function(e) {
+            var conversationId = select.dataset.conversationId;
+            var branchId = select.value;
+            if (conversationId && branchId) {
+                fetch('/admin/chat/distribute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({
+                        conversation_id: conversationId,
+                        branch_id: branchId
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload hoặc cập nhật UI
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra khi phân phối!');
+                    }
+                })
+                .catch(() => alert('Có lỗi xảy ra khi phân phối!'));
+            }
+        });
+    });
 });
+// ... existing code ...
+
+function showChatNotification(conversationId) {
+    // Hiện badge đỏ ở chuông
+    var bell = document.getElementById('chat-new-msg-badge');
+    if (bell) bell.classList.remove('hidden');
+    // Hiện badge đỏ ở chat-item sidebar
+    var chatItem = document.querySelector('.chat-item[data-conversation-id="' + conversationId + '"]');
+    if (chatItem) {
+        var badge = chatItem.querySelector('.unread-badge');
+        if (badge) {
+            badge.classList.remove('hidden');
+            badge.textContent = parseInt(badge.textContent || '0') + 1;
+        } else {
+            var newBadge = document.createElement('span');
+            newBadge.className = 'unread-badge absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center';
+            newBadge.textContent = '1';
+            chatItem.appendChild(newBadge);
+        }
+    }
+}
+
+function updateChatNewMessageNotify(count) {
+    var notify = document.getElementById('chat-new-message-notify');
+    var countSpan = document.getElementById('chat-new-message-count');
+    var countSpan2 = document.getElementById('chat-new-message-count-2');
+    if (notify && count > 0) {
+        notify.classList.remove('hidden');
+        if (countSpan) countSpan.textContent = count;
+        if (countSpan2) countSpan2.textContent = count;
+    } else if (notify) {
+        notify.classList.add('hidden');
+    }
+}
+// ... existing code ...
+// Giả sử có biến global window.unreadChatCount
+// Khi có tin nhắn mới:
+window.unreadChatCount = (window.unreadChatCount || 0) + 1;
+updateChatNewMessageNotify(window.unreadChatCount);
+// Khi đọc hết:
+// window.unreadChatCount = 0;
+// updateChatNewMessageNotify(0);
 // ... existing code ...

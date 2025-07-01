@@ -18,8 +18,8 @@ class UserRoleSeeder extends Seeder
         // Xóa dữ liệu cũ trong bảng user_roles
         DB::table('user_roles')->truncate();
 
-        // Gán role cho user cụ thể
-        $admin = User::where('user_name', 'spadmin')->first();
+        // Gán role admin cho user admin
+        $admin = User::where('user_name', 'admin')->first();
         $adminRole = Role::where('name', 'admin')->first();
         if ($admin && $adminRole) {
             DB::table('user_roles')->insert([
@@ -29,16 +29,7 @@ class UserRoleSeeder extends Seeder
                 'updated_at' => now(),
             ]);
         }
-        $customer = User::where('user_name', 'customer')->first();
-        $customerRole = Role::where('name', 'customer')->first();
-        if ($customer && $customerRole) {
-            DB::table('user_roles')->insert([
-                'user_id' => $customer->id,
-                'role_id' => $customerRole->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+
         // Gán role manager cho các manager
         $managerRole = Role::where('name', 'manager')->first();
         $managers = User::whereIn('user_name', ['manager1', 'manager2', 'manager3'])->get();
@@ -47,6 +38,20 @@ class UserRoleSeeder extends Seeder
                 DB::table('user_roles')->insert([
                     'user_id' => $manager->id,
                     'role_id' => $managerRole->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        // Gán role customer cho các customer
+        $customerRole = Role::where('name', 'customer')->first();
+        $customers = User::where('user_name', 'like', 'customer%')->get();
+        foreach ($customers as $customer) {
+            if ($customerRole) {
+                DB::table('user_roles')->insert([
+                    'user_id' => $customer->id,
+                    'role_id' => $customerRole->id,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

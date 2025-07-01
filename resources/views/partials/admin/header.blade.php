@@ -94,6 +94,16 @@
                     <div class="h-px my-1 bg-muted"></div>
                     <!-- Notification items -->
                     <div class="space-y-1">
+                        <!-- Thông báo tin nhắn mới -->
+                        <div id="chat-new-message-notify" class="flex items-start gap-3 px-2 py-2 rounded-md bg-orange-100 text-orange-700 font-semibold cursor-pointer hover:bg-orange-200 transition hidden">
+                            <div class="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-600">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium"><span id="chat-new-message-count">0</span> tin nhắn mới</p>
+                                <p class="text-xs text-orange-600">Bạn có <span id="chat-new-message-count-2">0</span> tin nhắn chưa đọc</p>
+                            </div>
+                        </div>
                         <!-- Unread notification -->
                         <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md">
                             <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">

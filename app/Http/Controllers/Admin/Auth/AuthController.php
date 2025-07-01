@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
@@ -40,7 +41,15 @@ class AuthController extends Controller
                 ->with('ratelimit', "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau {$seconds} giây.");
         }
 
-        if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
+        $user = \App\Models\User::where('email', $credentials['email'])->first();
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            RateLimiter::hit($key, 60);
+            return back()->with('error', 'Email hoặc mật khẩu không chính xác')->withInput();
+        }
+
+        // Chỉ cho phép admin đăng nhập vào admin
+        if ($user->hasRole('admin')) {
+            Auth::guard('admin')->login($user, $request->boolean('remember'));
             RateLimiter::clear($key);
             $request->session()->regenerate();
             return redirect()->route('admin.dashboard');
@@ -48,7 +57,7 @@ class AuthController extends Controller
 
         RateLimiter::hit($key, 60);
 
-        return back()->with('error', 'Email hoặc mật khẩu không chính xác')->withInput();
+        return back()->with('error', 'Bạn không có quyền truy cập vào hệ thống quản trị')->withInput();
     }
 
     // Xử lý đăng xuất
