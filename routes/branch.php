@@ -34,7 +34,13 @@ Route::get('/branch/test', function() {
 // Branch Protected Routes
 Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(function () {
     Route::get('/', [BranchDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/orders', [BranchOrderController::class, 'index'])->name('orders');
+
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [BranchOrderController::class, 'index'])->name('index');
+        Route::get('/{id}', [BranchOrderController::class, 'show'])->name('show');
+        Route::post('/{id}/status', [BranchOrderController::class, 'updateStatus'])->name('updateStatus');
+        Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
+    });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('categories');
     Route::get('/staff', [BranchStaffController::class, 'index'])->name('staff');
