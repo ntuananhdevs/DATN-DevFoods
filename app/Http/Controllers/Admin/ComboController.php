@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ComboBranchStock;
+use App\Models\Branch;
 
 class ComboController extends Controller
 {
@@ -39,16 +41,15 @@ class ComboController extends Controller
 
             // Filter by status
             if ($request->has('status') && $request->status !== '') {
-                $query->where('active', $request->status);
+                $query->where('status', $request->status);
             }
 
             // Filter by price range
-            if ($request->has('price_min') && $request->price_min) {
-                $query->where('price', '>=', $request->price_min);
+            if ($request->has('price_from') && $request->price_from !== null && $request->price_from !== '') {
+                $query->where('price', '>=', $request->price_from);
             }
-
-            if ($request->has('price_max') && $request->price_max) {
-                $query->where('price', '<=', $request->price_max);
+            if ($request->has('price_to') && $request->price_to !== null && $request->price_to !== '') {
+                $query->where('price', '<=', $request->price_to);
             }
 
             $combos = $query->latest()->paginate(10);
@@ -59,8 +60,8 @@ class ComboController extends Controller
             // Handle AJAX requests
             if ($request->ajax() || $request->has('ajax')) {
                 $totalCombos = Combo::count();
-                $activeCombos = Combo::where('active', 1)->count();
-                $inactiveCombos = Combo::where('active', 0)->count();
+                $activeCombos = Combo::where('status', 'selling')->count();
+                $inactiveCombos = Combo::where('status', '!=', 'selling')->count();
 
                 // Load combo items for each combo with proper relationships
                 $combosData = $combos->items();
@@ -175,21 +176,22 @@ class ComboController extends Controller
             'description' => 'nullable|string',
             'original_price' => 'required|numeric|min:0',
             'price' => 'required|numeric|min:0',
-            'quantity' => 'nullable|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'product_variants' => 'required|array|min:1',
             'product_variants.*.id' => 'required|exists:product_variants,id',
             'product_variants.*.quantity' => 'required|integer|min:1',
-            'active' => 'boolean'
+            'status' => 'required|in:selling,coming_soon,discontinued',
+            'branch_quantities' => 'required|array',
+            'branch_quantities.*' => 'nullable|integer|min:0',
         ], [
             'name.required' => 'Tên combo là bắt buộc',
             'category_id.required' => 'Danh mục là bắt buộc',
             'category_id.exists' => 'Danh mục không tồn tại',
             'original_price.required' => 'Giá gốc là bắt buộc',
             'price.required' => 'Giá combo là bắt buộc',
-            'quantity.min' => 'Số lượng không được âm',
             'product_variants.required' => 'Phải chọn ít nhất 1 sản phẩm',
             'product_variants.min' => 'Phải chọn ít nhất 1 sản phẩm',
+            'branch_quantities.required' => 'Phải nhập số lượng cho từng chi nhánh',
         ]);
 
         if ($validator->fails()) {
@@ -228,8 +230,7 @@ class ComboController extends Controller
                 'description' => $request->description,
                 'original_price' => $request->original_price,
                 'price' => $request->price,
-                'quantity' => $request->quantity ?? null,
-                'active' => $request->has('active') ? true : false,
+                'status' => $request->input('status', 'selling'),
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id()
             ]);
@@ -241,6 +242,17 @@ class ComboController extends Controller
                     'product_variant_id' => $variant['id'],
                     'quantity' => $variant['quantity']
                 ]);
+            }
+
+            // Thêm số lượng cho từng chi nhánh
+            foreach ($request->branch_quantities as $branch_id => $quantity) {
+                if ($quantity !== null && $quantity >= 0) {
+                    ComboBranchStock::create([
+                        'combo_id' => $combo->id,
+                        'branch_id' => $branch_id,
+                        'quantity' => $quantity
+                    ]);
+                }
             }
 
             DB::commit();
@@ -313,7 +325,8 @@ class ComboController extends Controller
         try {
             $combo = Combo::with([
                 'category',
-                'comboItems.productVariant.product'
+                'comboItems.productVariant.product',
+                'comboBranchStocks'
             ])->findOrFail($id);
 
             $categories = Category::where('status', true)->get();
@@ -344,23 +357,22 @@ class ComboController extends Controller
             'description' => 'nullable|string',
             'original_price' => 'required|numeric|min:0',
             'price' => 'required|numeric|min:0',
-            'quantity' => 'nullable|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'product_variants' => 'required|array|min:1',
             'product_variants.*.id' => 'required|exists:product_variants,id',
             'product_variants.*.quantity' => 'required|integer|min:1',
-            'active' => 'boolean'
+            'status' => 'required|in:selling,coming_soon,discontinued',
+            'branch_quantities' => 'required|array',
+            'branch_quantities.*' => 'nullable|integer|min:0',
         ], [
             'name.required' => 'Tên combo là bắt buộc',
             'category_id.required' => 'Danh mục là bắt buộc',
             'category_id.exists' => 'Danh mục không tồn tại',
-            'quantity.required' => 'Số lượng là bắt buộc',
-            'quantity.integer' => 'Số lượng phải là số nguyên',
-            'quantity.min' => 'Số lượng phải lớn hơn 0',
             'original_price.required' => 'Giá gốc là bắt buộc',
             'price.required' => 'Giá combo là bắt buộc',
             'product_variants.required' => 'Phải chọn ít nhất 1 sản phẩm',
             'product_variants.min' => 'Phải chọn ít nhất 1 sản phẩm',
+            'branch_quantities.required' => 'Phải nhập số lượng cho từng chi nhánh',
         ]);
 
         if ($validator->fails()) {
@@ -371,8 +383,6 @@ class ComboController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            var_dump($validator->errors());
-            die();
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
@@ -401,8 +411,7 @@ class ComboController extends Controller
                 'description' => $request->description,
                 'original_price' => $request->original_price,
                 'price' => $request->price,
-                'quantity' => $request->quantity,
-                'active' => $request->has('active') ? true : false,
+                'status' => $request->input('status', $combo->status),
                 'updated_by' => Auth::id()
             ]);
 
@@ -416,6 +425,18 @@ class ComboController extends Controller
                     'product_variant_id' => $variant['id'],
                     'quantity' => $variant['quantity']
                 ]);
+            }
+
+            // Xóa và cập nhật lại số lượng cho từng chi nhánh
+            \App\Models\ComboBranchStock::where('combo_id', $combo->id)->delete();
+            foreach ($request->branch_quantities as $branch_id => $quantity) {
+                if ($quantity !== null && $quantity >= 0) {
+                    ComboBranchStock::create([
+                        'combo_id' => $combo->id,
+                        'branch_id' => $branch_id,
+                        'quantity' => $quantity
+                    ]);
+                }
             }
 
             DB::commit();
@@ -439,8 +460,6 @@ class ComboController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating combo: ' . $e->getMessage());
-            var_dump($e->getMessage());
-            die();
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -504,17 +523,13 @@ class ComboController extends Controller
     {
         try {
             $combo = Combo::findOrFail($id);
-            $combo->update([
-                'active' => !$combo->active,
-                'updated_by' => Auth::id()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Cập nhật trạng thái thành công!',
-                'status' => $combo->active
-            ]);
-
+            // Chuyển đổi trạng thái: selling -> discontinued -> coming_soon -> selling
+            $statusOrder = ['selling', 'discontinued', 'coming_soon'];
+            $currentIndex = array_search($combo->status, $statusOrder);
+            $nextIndex = ($currentIndex + 1) % count($statusOrder);
+            $combo->status = $statusOrder[$nextIndex];
+            $combo->save();
+            return response()->json(['status' => $combo->status, 'status_text' => $combo->status_text]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -599,7 +614,7 @@ class ComboController extends Controller
             switch ($request->action) {
                 case 'activate':
                     $combos->update([
-                        'active' => true,
+                        'status' => 'selling',
                         'updated_by' => Auth::id()
                     ]);
                     $message = "Đã kích hoạt {$count} combo";
@@ -607,7 +622,7 @@ class ComboController extends Controller
 
                 case 'deactivate':
                     $combos->update([
-                        'active' => false,
+                        'status' => 'discontinued',
                         'updated_by' => Auth::id()
                     ]);
                     $message = "Đã vô hiệu hóa {$count} combo";
@@ -677,7 +692,7 @@ class ComboController extends Controller
             switch ($request->action) {
                 case 'activate':
                     $combos->update([
-                        'active' => true,
+                        'status' => 'selling',
                         'updated_by' => Auth::id()
                     ]);
                     $message = "Đã kích hoạt {$count} combo";
@@ -685,7 +700,7 @@ class ComboController extends Controller
 
                 case 'deactivate':
                     $combos->update([
-                        'active' => false,
+                        'status' => 'discontinued',
                         'updated_by' => Auth::id()
                     ]);
                     $message = "Đã vô hiệu hóa {$count} combo";
@@ -785,18 +800,13 @@ class ComboController extends Controller
         ]);
 
         $combo->quantity = $validated['quantity'];
-        // Nếu quantity về 0 hoặc null thì dừng hoạt động
-        if ($combo->quantity === 0 || is_null($combo->quantity)) {
-            $combo->active = false;
-        } else {
-            $combo->active = true;
-        }
+        // Bỏ logic tự động dừng hoạt động khi quantity về 0
         $combo->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật số lượng thành công!',
-            'active' => $combo->active,
+            'active' => $combo->status === 'selling',
         ]);
     }
 }
