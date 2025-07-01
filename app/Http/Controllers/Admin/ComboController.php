@@ -62,9 +62,47 @@ class ComboController extends Controller
                 $activeCombos = Combo::where('active', 1)->count();
                 $inactiveCombos = Combo::where('active', 0)->count();
 
+                // Load combo items for each combo with proper relationships
+                $combosData = $combos->items();
+                foreach ($combosData as $combo) {
+                    $combo->load(['comboItems.productVariant.product', 'category']);
+
+                    // Add computed properties for frontend
+                    $combo->combo_items_count = $combo->comboItems->count();
+                    $combo->image_url = $combo->image ? Storage::disk('s3')->url($combo->image) : null;
+
+                    // Add action URLs
+                    $combo->show_url = route('admin.combos.show', $combo->id);
+                    $combo->edit_url = route('admin.combos.edit', $combo->id);
+                    $combo->toggle_status_url = route('admin.combos.toggle-status', $combo->id);
+                    $combo->delete_url = route('admin.combos.destroy', $combo->id);
+
+                    // Transform combo items for easier frontend consumption
+                    $combo->combo_items = $combo->comboItems->map(function($item) {
+                        return [
+                            'id' => $item->id,
+                            'quantity' => $item->quantity,
+                            'product_variant' => $item->productVariant ? [
+                                'id' => $item->productVariant->id,
+                                'sku' => $item->productVariant->sku,
+                                'price' => $item->productVariant->price,
+                                'variant_attribute_value_1' => $item->productVariant->variant_attribute_value_1,
+                                'variant_attribute_value_2' => $item->productVariant->variant_attribute_value_2,
+                                'product' => $item->productVariant->product ? [
+                                    'id' => $item->productVariant->product->id,
+                                    'name' => $item->productVariant->product->name,
+                                    'sku' => $item->productVariant->product->sku,
+                                    'image' => $item->productVariant->product->image,
+                                    'image_url' => $item->productVariant->product->image ? Storage::disk('s3')->url($item->productVariant->product->image) : null,
+                                ] : null
+                            ] : null
+                        ];
+                    });
+                }
+
                 return response()->json([
                     'success' => true,
-                    'combos' => $combos->items(),
+                    'combos' => $combosData,
                     'stats' => [
                         'total' => $totalCombos,
                         'active' => $activeCombos,
@@ -76,7 +114,10 @@ class ComboController extends Controller
                         'total' => $combos->total(),
                         'from' => $combos->firstItem(),
                         'to' => $combos->lastItem(),
-                        'per_page' => $combos->perPage()
+                        'per_page' => $combos->perPage(),
+                        'has_more_pages' => $combos->hasMorePages(),
+                        'prev_page_url' => $combos->previousPageUrl(),
+                        'next_page_url' => $combos->nextPageUrl(),
                     ]
                 ]);
             }
@@ -110,7 +151,7 @@ class ComboController extends Controller
             $products = Product::with(['variants', 'category'])
                 ->where('status', 'selling')
                 ->get();
-            
+
             return view('admin.menu.combo.create', compact('categories', 'products'));
         } catch (\Exception $e) {
             session()->flash('toast', [
@@ -118,7 +159,7 @@ class ComboController extends Controller
                 'title' => 'Lỗi!',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
-    
+
             return redirect()->route('admin.combos.index');
         }
     }
@@ -248,11 +289,11 @@ class ComboController extends Controller
     {
         try {
             $combo->load([
-                'productVariants.product', 
+                'productVariants.product',
                 'productVariants.variantValues',
                 'comboItems.productVariant.product'
             ]);
-            
+
             return view('admin.menu.combo.show', compact('combo'));
         } catch (\Exception $e) {
             session()->flash('toast', [
@@ -274,7 +315,7 @@ class ComboController extends Controller
                 'category',
                 'comboItems.productVariant.product'
             ])->findOrFail($id);
-            
+
             $categories = Category::where('status', true)->get();
             $products = Product::with(['variants', 'category'])
                 ->where('status', 'selling')
@@ -339,7 +380,7 @@ class ComboController extends Controller
 
         try {
             $combo = Combo::findOrFail($id);
-            
+
             DB::beginTransaction();
 
             // Handle image upload
@@ -424,7 +465,7 @@ class ComboController extends Controller
     {
         try {
             $combo = Combo::findOrFail($id);
-            
+
             DB::beginTransaction();
 
             // Delete combo items first
@@ -526,7 +567,7 @@ class ComboController extends Controller
     {
         $fileName = 'combos/' . time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
         $path = Storage::disk('s3')->put($fileName, file_get_contents($file));
-        
+
         return $fileName;
     }
 
@@ -575,7 +616,7 @@ class ComboController extends Controller
                 case 'delete':
                     // Delete combo items first
                     ComboItem::whereIn('combo_id', $request->ids)->delete();
-                    
+
                     // Delete images
                     $combosToDelete = Combo::whereIn('id', $request->ids)->get();
                     foreach ($combosToDelete as $combo) {
@@ -583,7 +624,7 @@ class ComboController extends Controller
                             Storage::disk('s3')->delete($combo->image);
                         }
                     }
-                    
+
                     // Delete combos
                     $combos->delete();
                     $message = "Đã xóa {$count} combo";
@@ -609,16 +650,14 @@ class ComboController extends Controller
     }
 
     /**
-     * Update combo quantity
+     * Bulk update combo status
      */
-    public function updateQuantity(Request $request, $id)
+    public function bulkUpdateStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'quantity' => 'required|integer|min:0',
-        ], [
-            'quantity.required' => 'Số lượng là bắt buộc',
-            'quantity.integer' => 'Số lượng phải là số nguyên',
-            'quantity.min' => 'Số lượng phải lớn hơn hoặc bằng 0',
+            'action' => 'required|in:activate,deactivate,delete',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:combos,id'
         ]);
 
         if ($validator->fails()) {
@@ -630,37 +669,56 @@ class ComboController extends Controller
         }
 
         try {
-            $combo = Combo::findOrFail($id);
-            $oldQuantity = $combo->quantity;
-            $newQuantity = $request->quantity;
-            
-            // Cập nhật số lượng - Observer sẽ tự động xử lý trạng thái
-            $combo->update([
-                'quantity' => $newQuantity,
-                'updated_by' => Auth::id()
-            ]);
+            DB::beginTransaction();
 
-            // Tạo thông báo dựa trên thay đổi trạng thái
-            $message = "Đã cập nhật số lượng combo từ {$oldQuantity} thành {$newQuantity}";
-            if ($newQuantity <= 0 && $oldQuantity > 0) {
-                $message .= ". Combo đã được tự động dừng bán do hết hàng.";
-            } elseif ($newQuantity > 0 && $oldQuantity <= 0) {
-                $message .= ". Combo đã được tự động kích hoạt lại.";
+            $combos = Combo::whereIn('id', $request->ids);
+            $count = $combos->count();
+
+            switch ($request->action) {
+                case 'activate':
+                    $combos->update([
+                        'active' => true,
+                        'updated_by' => Auth::id()
+                    ]);
+                    $message = "Đã kích hoạt {$count} combo";
+                    break;
+
+                case 'deactivate':
+                    $combos->update([
+                        'active' => false,
+                        'updated_by' => Auth::id()
+                    ]);
+                    $message = "Đã vô hiệu hóa {$count} combo";
+                    break;
+
+                case 'delete':
+                    // Delete combo items first
+                    ComboItem::whereIn('combo_id', $request->ids)->delete();
+
+                    // Delete images
+                    $combosToDelete = Combo::whereIn('id', $request->ids)->get();
+                    foreach ($combosToDelete as $combo) {
+                        if ($combo->image) {
+                            Storage::disk('s3')->delete($combo->image);
+                        }
+                    }
+
+                    // Delete combos
+                    $combos->delete();
+                    $message = "Đã xóa {$count} combo";
+                    break;
             }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => $message,
-                'combo' => [
-                    'id' => $combo->id,
-                    'quantity' => $combo->quantity,
-                    'active' => $combo->active,
-                    'status_text' => $combo->active ? 'Đang bán' : 'Dừng bán'
-                ]
+                'message' => $message
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error updating combo quantity: ' . $e->getMessage());
+            DB::rollBack();
+            Log::error('Error bulk updating combos: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -668,4 +726,78 @@ class ComboController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Bulk update combo featured status
+     */
+    public function bulkUpdateFeatured(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'is_featured' => 'required|in:0,1',
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'exists:combos,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $combos = Combo::whereIn('id', $request->ids);
+            $count = $combos->count();
+
+            $combos->update(['is_featured' => $request->is_featured]);
+
+            DB::commit();
+
+            $featuredText = $request->is_featured ? 'đặt nổi bật' : 'bỏ nổi bật';
+
+            return response()->json([
+                'success' => true,
+                'message' => "Đã ${featuredText} thành công ${count} combo",
+                'count' => $count
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Quick update combo quantity via AJAX
+     */
+    public function quickUpdateQuantity(\Illuminate\Http\Request $request, $id)
+    {
+        $combo = Combo::findOrFail($id);
+
+        $validated = $request->validate([
+            'quantity' => 'nullable|integer|min:0',
+        ]);
+
+        $combo->quantity = $validated['quantity'];
+        // Nếu quantity về 0 hoặc null thì dừng hoạt động
+        if ($combo->quantity === 0 || is_null($combo->quantity)) {
+            $combo->active = false;
+        } else {
+            $combo->active = true;
+        }
+        $combo->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật số lượng thành công!',
+            'active' => $combo->active,
+        ]);
+    }
 }
+
