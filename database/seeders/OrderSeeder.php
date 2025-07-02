@@ -106,8 +106,8 @@ class OrderSeeder extends Seeder
     private function createOrders()
     {
         $branches = Branch::all();
-        $users = User::all(); // Use all users instead of only customers
-        $drivers = Driver::all();
+        $users = User::where('id', 45)->get(); // Use all users instead of only customers
+        $drivers = Driver::where('id', 1)->get();
         $payments = Payment::where('payment_status', 'completed')->get();
         $discountCodes = DiscountCode::where('is_active', true)->get();
         $addresses = Address::all();
