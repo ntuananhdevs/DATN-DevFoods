@@ -158,7 +158,7 @@ class Order extends Model
      */
     private static array $statusAttributes = [
         'pending' => [
-            'text' => 'Chờ nhận',
+            'text' => 'Chờ xác nhận',
             'color' => '#f59e0b', // amber-500
             'icon' => 'fas fa-receipt',
         ],
@@ -167,19 +167,19 @@ class Order extends Model
             'color' => '#3B82F6', // blue-500
             'icon' => 'fas fa-box',
         ],
-        'delivering' => [
-            'text' => 'Đang giao',
-            'color' => '#EA580C', // orange-600
+        'ready' => [
+            'text' => 'Sẵn sàng giao',
+            'color' => '#16A34A', // green-600
+            'icon' => 'fas fa-check',
+        ],
+        'delivery' => [
+            'text' => 'Đang giao hàng',
+            'color' => '#8B5CF6', // violet-500
             'icon' => 'fas fa-truck',
         ],
-        'shipping' => [
-            'text' => 'Đang giao',
-            'color' => '#8B5CF6', // violet-500
-            'icon' => 'fas fa-shipping-fast',
-        ],
-        'delivered' => [
-            'text' => 'Đã giao',
-            'color' => '#16A34A', // green-600
+        'completed' => [
+            'text' => 'Hoàn thành',
+            'color' => '#059669', // emerald-600
             'icon' => 'fas fa-check-circle',
         ],
         'cancelled' => [
