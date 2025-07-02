@@ -218,7 +218,6 @@
                                         </span>
                                     @endif
                                 </div>
-                                <span class="status-badge {{ $order->statusColor }} text-white rounded-lg px-2">{{ $order->statusText }}</span>
                             </div>
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="text-gray-900 font-medium">{{ $order->customerName }}</span>
