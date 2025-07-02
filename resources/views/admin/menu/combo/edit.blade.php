@@ -42,7 +42,7 @@
                                     value="{{ old('name', $combo->name) }}"
                                     placeholder="Nhập tên combo"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('name') border-red-500 @enderror"
-                                    required
+
                                 >
                                 @error('name')
                                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -121,8 +121,8 @@
                                         min="0"
                                         step="1000"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('price') border-red-500 @enderror"
-                                        required
                                     >
+                                    <div id="price-error-anchor"></div>
                                     <p class="text-xs text-gray-500 mt-1">Tự động: <span id="auto-price">{{ number_format($combo->original_price, 0, ',', '.') }}₫</span></p>
                                     @error('price')
                                         <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -140,7 +140,7 @@
                                         step="1000"
                                         readonly
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('original_price') border-red-500 @enderror"
-                                        required
+
                                     >
                                     @error('original_price')
                                         <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -443,6 +443,34 @@ function updateTotalPrice() {
     } else {
         submitBtn.disabled = true;
     }
+    // Validate giá bán vs giá gốc mỗi lần tổng giá thay đổi
+    validatePriceVsOriginal();
+}
+
+// Validate realtime: Giá bán không được lớn hơn giá gốc
+function validatePriceVsOriginal() {
+    const priceInput = document.getElementById('price');
+    const originalPriceInput = document.getElementById('original_price');
+    const submitBtn = document.getElementById('update-combo-btn');
+    const price = getNumberValue(priceInput);
+    const originalPrice = getNumberValue(originalPriceInput);
+    let errorElem = document.getElementById('price-error');
+    const anchor = document.getElementById('price-error-anchor');
+    if (!errorElem) {
+        errorElem = document.createElement('p');
+        errorElem.id = 'price-error';
+        errorElem.className = 'text-red-500 text-sm mt-1';
+        anchor.appendChild(errorElem);
+    }
+    if (price > originalPrice) {
+        errorElem.textContent = 'Giá bán không được lớn hơn giá gốc!';
+        submitBtn.disabled = true;
+    } else {
+        errorElem.textContent = '';
+        // Chỉ enable nếu có sản phẩm được chọn và không có lỗi
+        const hasItems = Object.keys(selectedItems).length > 0;
+        submitBtn.disabled = !hasItems;
+    }
 }
 
 // Hàm render danh sách sản phẩm đã chọn
@@ -498,27 +526,40 @@ function renderSelectedItems() {
 function showNotification(message, type = 'info') {
     // Tạo element thông báo
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-full`;
+    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-full cursor-pointer border-2`;
 
-    // Thiết lập màu sắc theo loại thông báo
+    // Thiết lập màu sắc và icon theo loại thông báo
+    let icon = '';
     if (type === 'info') {
-        notification.className += ' bg-blue-500 text-white';
+        notification.className += ' bg-blue-50 text-blue-800 border-blue-300';
+        icon = `<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
     } else if (type === 'success') {
-        notification.className += ' bg-green-500 text-white';
+        notification.className += ' bg-green-50 text-green-800 border-green-300';
+        icon = `<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
     } else if (type === 'warning') {
-        notification.className += ' bg-yellow-500 text-white';
+        notification.className += ' bg-yellow-50 text-yellow-800 border-yellow-300';
+        icon = `<svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
     } else if (type === 'error') {
-        notification.className += ' bg-red-500 text-white';
+        notification.className += ' bg-red-50 text-red-800 border-red-400 animate-shake';
+        icon = `<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
     }
 
     notification.innerHTML = `
         <div class="flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            ${icon}
             <span class="text-sm font-medium">${message}</span>
         </div>
     `;
+
+    // Cho phép click để đóng ngay
+    notification.addEventListener('click', function() {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    });
 
     // Thêm vào body
     document.body.appendChild(notification);
@@ -538,6 +579,11 @@ function showNotification(message, type = 'info') {
         }, 300);
     }, 3000);
 }
+
+// Hiệu ứng rung cho lỗi
+const style = document.createElement('style');
+style.innerHTML = `@keyframes shake {0% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-8px); } 80% { transform: translateX(8px); } 100% { transform: translateX(0); }}.animate-shake { animation: shake 0.4s; }`;
+document.head.appendChild(style);
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -824,6 +870,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Xử lý submit form
     document.getElementById('combo-form').addEventListener('submit', function(e) {
+        // Validate giá bán không được lớn hơn giá gốc
+        const priceInput = document.getElementById('price');
+        const originalPriceInput = document.getElementById('original_price');
+        if (priceInput && originalPriceInput) {
+            const price = getNumberValue(priceInput);
+            const originalPrice = getNumberValue(originalPriceInput);
+            if (price > originalPrice) {
+                e.preventDefault();
+                showNotification('Giá bán không được lớn hơn giá gốc!', 'error');
+                priceInput.focus();
+                return false;
+            }
+        }
         // Tạo hidden inputs cho các sản phẩm đã chọn
         const existingInputs = this.querySelectorAll('input[name^="product_variants"]');
         existingInputs.forEach(input => input.remove());
@@ -844,6 +903,23 @@ document.addEventListener('DOMContentLoaded', function() {
             this.appendChild(quantityInput);
         });
     });
+
+    // Validate realtime khi nhập giá bán
+    const priceInput = document.getElementById('price');
+    priceInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = value;
+        validatePriceVsOriginal();
+    });
+    // Validate khi giá gốc thay đổi (tự động update)
+    const originalPriceInput = document.getElementById('original_price');
+    originalPriceInput.addEventListener('input', validatePriceVsOriginal);
 });
+
+function getNumberValue(input) {
+    // Lấy giá trị, thay dấu phẩy thành dấu chấm, loại ký tự không phải số hoặc dấu chấm
+    let value = input.value.replace(',', '.').replace(/[^0-9.]/g, '');
+    return parseFloat(value) || 0;
+}
 </script>
 @endsection

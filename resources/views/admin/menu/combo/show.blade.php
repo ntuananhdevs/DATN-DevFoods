@@ -6,23 +6,20 @@
     <div class="container mx-auto p-6 space-y-6">
         <!-- Header -->
         <div class="flex items-center gap-4 justify-end">
-            <a href="{{ route('admin.combos.index') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>
-                Quay lại
-            </a>
             <div class="flex-1">
                 <h1 class="text-3xl font-bold">Chi Tiết Combo: {{ $combo->name }}</h1>
                 <p class="text-gray-600">Thông tin chi tiết về combo</p>
             </div>
             <div class="flex gap-2">
+                <a href="{{ route('admin.combos.index') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>
+                    Quay lại
+                </a>
                 <a href="{{ route('admin.combos.edit', $combo) }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md">
                     <i class="fas fa-edit w-4 h-4 mr-2"></i>
                     Chỉnh sửa
                 </a>
-                <button onclick="openDeleteModal()" type="button" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md">
-                    <i class="fas fa-trash-2 w-4 h-4 mr-2"></i>
-                    Xóa
-                </button>
+
             </div>
         </div>
 
