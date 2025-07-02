@@ -412,6 +412,138 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
     }
+
+    // XỬ LÝ CHỌN SỐ SAO NGUYÊN (1-5) VÀ MODAL THÔNG BÁO
+    const reviewForm = document.querySelector('form[action*="/review"]');
+    if (reviewForm) {
+        let selectedRating = 0;
+        const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
+        const ratingLabels = reviewForm.querySelectorAll('label[for^="star"]');
+        function updateStarDisplay(rating) {
+            ratingLabels.forEach((label, idx) => {
+                if (idx < rating) {
+                    label.classList.add('text-yellow-400');
+                } else {
+                    label.classList.remove('text-yellow-400');
+                }
+            });
+        }
+        ratingInputs.forEach(input => { input.checked = false; });
+        updateStarDisplay(0);
+        ratingLabels.forEach((label, idx) => {
+            label.addEventListener('click', function(e) {
+                // Nếu click vào ngôi sao đã chọn thì bỏ chọn (rating = 0)
+                if (selectedRating === idx + 1) {
+                    selectedRating = 0;
+                    ratingInputs.forEach((input, i) => { input.checked = false; });
+                    updateStarDisplay(0);
+                } else {
+                    selectedRating = idx + 1;
+                    ratingInputs.forEach((input, i) => { input.checked = (i === idx); });
+                    updateStarDisplay(selectedRating);
+                }
+            });
+        });
+        reviewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (selectedRating === 0) {
+                dtmodalShowToast('error', { title: 'Lỗi', message: 'Vui lòng chọn số sao!' });
+                return;
+            }
+            const formData = new FormData(reviewForm);
+            formData.set('rating', selectedRating);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const submitBtn = reviewForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang gửi...';
+            fetch(reviewForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(async response => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Gửi đánh giá';
+                if (response.ok) {
+                    dtmodalShowToast('success', { title: 'Thành công', message: 'Gửi đánh giá thành công! Đang chờ duyệt.' });
+                    reviewForm.reset();
+                    selectedRating = 0;
+                    updateStarDisplay(0);
+                } else {
+                    let errorMsg = 'Có lỗi xảy ra khi gửi đánh giá!';
+                    try {
+                        const data = await response.json();
+                        if (data && data.errors) {
+                            errorMsg = Object.values(data.errors).join('\n');
+                        } else if (data && data.message) {
+                            errorMsg = data.message;
+                        }
+                    } catch {}
+                    dtmodalShowToast('error', { title: 'Lỗi', message: errorMsg });
+                }
+            })
+            .catch(err => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Gửi đánh giá';
+                dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
+            });
+        });
+    }
+
+    // XỬ LÝ XÓA BÌNH LUẬN (REVIEW)
+    document.querySelectorAll('.delete-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reviewId = this.getAttribute('data-review-id');
+            if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+            fetch(`/reviews/${reviewId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': window.csrfToken,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(async res => {
+                if (res.ok) {
+                    dtmodalShowToast('success', { title: 'Thành công', message: 'Đã xóa bình luận!' });
+                    // Ẩn review khỏi giao diện
+                    const reviewDiv = btn.closest('.p-6');
+                    if (reviewDiv) reviewDiv.remove();
+                } else {
+                    let msg = 'Không thể xóa bình luận!';
+                    try {
+                        const data = await res.json();
+                        if (data && data.message) msg = data.message;
+                    } catch {}
+                    dtmodalShowToast('error', { title: 'Lỗi', message: msg });
+                }
+            })
+            .catch(() => {
+                dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
+            });
+        });
+    });
+
+    // Preview image functionality
+    const input = document.getElementById('review_image');
+    const preview = document.getElementById('preview_image');
+    if (input && preview) {
+        input.addEventListener('change', function(e) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    preview.src = ev.target.result;
+                    preview.classList.remove('hidden');
+                }
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.src = '#';
+                preview.classList.add('hidden');
+            }
+        });
+    }
 });
 
 // Tab switching functionality
@@ -1312,3 +1444,28 @@ discountsChannel.bind('discount-updated', function(data) {
         window.location.reload();
     }, 1000);
 });
+
+// Thêm CSS hiệu ứng nửa sao vào cuối file (nếu chưa có)
+(function() {
+    if (!document.getElementById('star-half-style')) {
+        const style = document.createElement('style');
+        style.id = 'star-half-style';
+        style.innerHTML = `
+        .star-half i.fas.fa-star-half-alt {
+            position: relative;
+        }
+        .star-half i.fas.fa-star-half-alt:before {
+            content: '\f089'; /* FontAwesome fa-star-half-alt */
+            position: absolute;
+            left: 0;
+            width: 50%;
+            overflow: hidden;
+            color: #facc15; /* yellow-400 */
+        }
+        .star-half i.fas.fa-star-half-alt {
+            color: #facc15;
+        }
+        `;
+        document.head.appendChild(style);
+    }
+})();

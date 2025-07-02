@@ -353,6 +353,55 @@
         font-size: 0.8rem;
         font-weight: 400;
     }
+    /* Modern square anonymous checkbox */
+    .custom-checkbox {
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #f97316;
+        border-radius: 6px;
+        background: #fff;
+        outline: none;
+        cursor: pointer;
+        position: relative;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-shadow: 0 1px 3px rgba(249,115,22,0.08);
+        vertical-align: middle;
+        display: inline-block;
+    }
+    .custom-checkbox:checked {
+        background: #f97316;
+        border-color: #f97316;
+    }
+    .custom-checkbox:checked:after {
+        content: '';
+        display: block;
+        position: absolute;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 12px;
+        border: solid #fff;
+        border-width: 0 3px 3px 0;
+        transform: rotate(45deg);
+    }
+    .custom-checkbox:hover {
+        border-color: #ea580c;
+        box-shadow: 0 2px 8px rgba(249,115,22,0.15);
+    }
+    .anonymous-label {
+        margin-left: 10px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 1rem;
+        cursor: pointer;
+        user-select: none;
+        letter-spacing: 0.01em;
+        transition: color 0.2s;
+    }
+    .custom-checkbox:checked + .anonymous-label {
+        color: #f97316;
+    }
 </style>
 <div class="container mx-auto px-4 py-8">
     <!-- Product Info Section -->
@@ -857,7 +906,7 @@
                                 
                                 @if($review->review_image)
                                     <div class="mt-3">
-                                        <img src="{{ Storage::url($review->review_image) }}" 
+                                        <img src="{{ Storage::disk('s3')->url($review->review_image) }}" 
                                              alt="Review image" 
                                              class="rounded-lg max-h-48 object-cover hover:opacity-95 transition-opacity cursor-pointer">
                                     </div>
@@ -874,6 +923,14 @@
                                             {{ $review->report_count }} báo cáo
                                         </span>
                                     @endif
+                                    @auth
+                                        @if($review->user_id === auth()->id())
+                                            <button class="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-700 transition-colors delete-review-btn" data-review-id="{{ $review->id }}">
+                                                <i class="fas fa-trash-alt"></i>
+                                                <span>Xóa</span>
+                                            </button>
+                                        @endif
+                                    @endauth
                                 </div>
                             </div>
                         </div>
@@ -887,6 +944,52 @@
                         </div>
                         @endforelse
                     </div>
+
+                    {{-- Form gửi đánh giá --}}
+                    @auth
+                    <div class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                        <form action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                            @csrf
+                            <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
+                            <div class="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                                <h4 class="font-semibold text-lg">Gửi đánh giá của bạn</h4>
+                                <div class="flex items-center">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" class="sr-only">
+                                        <label for="star{{ $i }}" class="cursor-pointer text-2xl text-yellow-400" style="position: relative;">
+                                            <i class="fas fa-star"></i>
+                                        </label>
+                                    @endfor
+                                </div>
+                            </div>
+                            <div id="review-message" class="mb-4 text-center"></div>
+                            <div>
+                                <textarea name="review" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn...">{{ old('review') }}</textarea>
+                            </div>
+                            <div>
+                                <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
+                                <div class="flex items-center justify-between gap-4 flex-wrap">
+                                    <div>
+                                        <input type="file" name="review_image" id="review_image" accept="image/*" class="hidden">
+                                        <label for="review_image" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
+                                            <i class="fas fa-camera text-3xl text-orange-500"></i>
+                                            <img id="preview_image" src="#" alt="Preview" class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center ml-auto">
+                                        <input type="checkbox" name="is_anonymous" id="is_anonymous" value="1" class="custom-checkbox" {{ old('is_anonymous') ? 'checked' : '' }}>
+                                        <label for="is_anonymous" class="anonymous-label">Ẩn danh</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium">Gửi đánh giá</button>
+                        </form>
+                    </div>
+                    @else
+                    <div class="mt-2 p-2 text-center">
+                        <p class="mb-2">Vui lòng <a href="{{ route('customer.login') }}" class="text-orange-500 font-medium">đăng nhập</a> để gửi đánh giá.</p>
+                    </div>
+                    @endauth
 
                     @if($product->reviews->count() > 0)
                     <div class="mt-6 flex items-center justify-between">
