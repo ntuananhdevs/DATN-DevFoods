@@ -74,8 +74,8 @@ class UserController extends Controller
     {
         try {
             $roles = Role::whereIn('name', ['customer'])->get();
-           
-            
+
+
             return view('admin.users.customer.create', compact('roles'));
         } catch (\Exception $e) {
             Log::error('Lỗi form tạo người dùng: ' . $e->getMessage());
@@ -115,12 +115,12 @@ class UserController extends Controller
                 'role_id.required' => 'Vui lòng chọn vai trò',
                 'role_id.exists' => 'Vai trò không hợp lệ'
             ]);
-    
+
             DB::beginTransaction();
-    
+
             // Kiểm tra role tồn tại
             $role = Role::findOrFail($validated['role_id']);
-    
+
             // Xử lý upload avatar
             $avatarPath = null;
             if ($request->hasFile('avatar')) {
@@ -134,7 +134,7 @@ class UserController extends Controller
                     throw new \Exception('Không thể tải lên ảnh đại diện: ' . $e->getMessage());
                 }
             }
-    
+
             // Tạo user mới
             $user = User::create([
                 'user_name' => $validated['user_name'],
@@ -147,14 +147,14 @@ class UserController extends Controller
                 'balance' => $validated['balance'] ?? 0,
                 'active' => $validated['active'] ?? true
             ]);
-    
+
             // Gán role cho user
             $user->roles()->attach($role->id);
-    
+
             // Xử lý multiple addresses
             if (!empty($validated['addresses'])) {
                 $hasDefault = false;
-                
+
                 // Kiểm tra xem có địa chỉ nào được đánh dấu là default không
                 foreach ($validated['addresses'] as $addressData) {
                     if (!empty($addressData['is_default'])) {
@@ -162,17 +162,17 @@ class UserController extends Controller
                         break;
                     }
                 }
-                
+
                 foreach ($validated['addresses'] as $index => $addressData) {
                     // Bỏ qua địa chỉ trống
-                    if (empty($addressData['address_line']) && empty($addressData['city']) && 
+                    if (empty($addressData['address_line']) && empty($addressData['city']) &&
                         empty($addressData['district']) && empty($addressData['ward'])) {
                         continue;
                     }
-                    
+
                     // Nếu không có địa chỉ nào được đánh dấu default, đặt địa chỉ đầu tiên làm default
                     $isDefault = !empty($addressData['is_default']) || (!$hasDefault && $index === array_key_first($validated['addresses']));
-                    
+
                     Address::create([
                         'user_id' => $user->id,
                         'address_line' => $addressData['address_line'] ?? '',
@@ -184,21 +184,21 @@ class UserController extends Controller
                         'longitude' => $addressData['longitude'] ?? null,
                         'is_default' => $isDefault
                     ]);
-                    
+
                     // Nếu địa chỉ này được đặt làm default, đảm bảo các địa chỉ khác không phải default
                     if ($isDefault && $hasDefault) {
                         $hasDefault = false; // Chỉ cho phép một địa chỉ default
                     }
                 }
             }
-    
-          
+
+
     Mail::to($user->email)->send(new SendWelcomeEmail($user));
             DB::commit();
-            
+
             // Get user's role
             $userRole = $user->roles()->first();
-    
+
             // Determine redirect path and message based on role
             if ($userRole->name === 'customer') {
                 return redirect()->route('admin.users.index')->with([
@@ -217,17 +217,17 @@ class UserController extends Controller
                     ]
                 ]);
             }
-    
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()->withErrors($e->validator)->withInput();
-    
+
         } catch (\Exception $e) {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
             }
-    
+
             Log::error('Lỗi tạo người dùng: ' . $e->getMessage());
-    
+
             return redirect()->back()->withInput()->with([
                 'toast' => [
                     'type' => 'error',
@@ -326,7 +326,7 @@ class UserController extends Controller
                 $managedActiveBranches = Branch::where('manager_user_id', $user->id)
                     ->where('active', true) // Thêm điều kiện chi nhánh đang hoạt động
                     ->count();
-    
+
                 if ($managedActiveBranches > 0) {
                     throw new \Exception('Không thể thay đổi trạng thái quản lý đang quản lý chi nhánh HOẠT ĐỘNG');
                 }
@@ -384,7 +384,7 @@ class UserController extends Controller
             ->withTrashed()
             ->whereHas('roles')
             ->findOrFail($id);
-    
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => true,
@@ -437,11 +437,11 @@ class UserController extends Controller
                     'message' => 'Tải thông tin người dùng thành công'
                 ]);
             }
-    
+
             return view('admin.users.show', compact('user'));
         } catch (\Exception $e) {
             Log::error('UserController@show Error: ' . $e->getMessage());
-    
+
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -449,7 +449,7 @@ class UserController extends Controller
                     'error' => $e->getMessage()
                 ], 404);
             }
-    
+
             return redirect()->back()->with('error', 'Không tìm thấy người dùng: ' . $e->getMessage());
         }
     }
@@ -528,49 +528,49 @@ class UserController extends Controller
         try {
             // Kiểm tra xem dữ liệu đến từ form hay từ AJAX
             $userIds = $request->has('ids') ? $request->ids : explode(',', $request->user_ids);
-    
+
             // Xác định trạng thái từ action hoặc status
             $status = $request->has('action')
                 ? ($request->action === 'activate')
                 : (bool)$request->status;
-    
+
             // Lọc ra những user có thể thay đổi trạng thái
             $eligibleUserIds = [];
             $skippedUsers = [];
-            
+
             foreach ($userIds as $userId) {
                 $user = User::with('roles')->find($userId);
-                
+
                 if (!$user) {
                     continue;
                 }
-                
+
                 // Kiểm tra nếu là quản lý và đang quản lý chi nhánh hoạt động
                 if ($user->roles()->where('name', 'manager')->exists()) {
                     $managedActiveBranches = Branch::where('manager_user_id', $user->id)
                         ->where('active', true)
                         ->count();
-                    
+
                     if ($managedActiveBranches > 0) {
                         $skippedUsers[] = $user->full_name;
                         continue;
                     }
                 }
-                
+
                 $eligibleUserIds[] = $userId;
             }
-    
+
             // Cập nhật trạng thái cho những user đủ điều kiện
             if (!empty($eligibleUserIds)) {
                 User::whereIn('id', $eligibleUserIds)->update(['active' => $status]);
             }
-            
+
             // Tạo thông báo kết quả
             $message = 'Đã cập nhật trạng thái người dùng thành công';
             if (!empty($skippedUsers)) {
                 $message .= '. Bỏ qua: ' . implode(', ', $skippedUsers) . ' (đang quản lý chi nhánh hoạt động)';
             }
-    
+
             // Xử lý phản hồi cho AJAX
             if ($request->ajax()) {
                 return response()->json([
@@ -580,18 +580,18 @@ class UserController extends Controller
                     'skipped_count' => count($skippedUsers)
                 ]);
             }
-    
+
             // Xử lý phản hồi cho form thông thường
             session()->flash('toast', [
                 'type' => 'success',
                 'title' => 'Thành công',
                 'message' => $message
             ]);
-    
+
             return redirect()->back();
         } catch (\Exception $e) {
             Log::error('Lỗi khi cập nhật trạng thái hàng loạt: ' . $e->getMessage());
-    
+
             // Xử lý lỗi cho AJAX
             if ($request->ajax()) {
                 return response()->json([
@@ -599,14 +599,14 @@ class UserController extends Controller
                     'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
                 ], 500);
             }
-    
+
             // Xử lý lỗi cho form thông thường
             session()->flash('toast', [
                 'type' => 'error',
                 'title' => 'Lỗi',
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ]);
-    
+
             return redirect()->back();
         }
     }
