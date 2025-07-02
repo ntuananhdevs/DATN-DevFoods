@@ -7,6 +7,7 @@ use App\Http\Middleware\Customer\CustomerAuth;
 use App\Http\Middleware\Customer\BranchMiddleware;
 use App\Http\Middleware\Branch\BranchAuth;
 use App\Http\Middleware\PhoneRequired;
+use App\Http\Middleware\RefreshCsrfToken;
 
 use App\Http\Middleware\VerifyTurnstile;
 use Illuminate\Foundation\Application;
@@ -29,10 +30,20 @@ return Application::configure(basePath: dirname(__DIR__))
             'branch.auth' => BranchAuth::class,
             'phone.required' => PhoneRequired::class,
             'turnstile' => VerifyTurnstile::class,
+            'refresh.csrf' => RefreshCsrfToken::class,
         ]);
 
         $middleware->web(append: [
             BranchMiddleware::class,
+            RefreshCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+        ]);
+
+        // Exclude API routes from CSRF protection
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'driver/api/*',
+            'branch/chat/api/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
