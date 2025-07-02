@@ -112,8 +112,12 @@ class OrderSeeder extends Seeder
         $discountCodes = DiscountCode::where('is_active', true)->get();
         $addresses = Address::all();
 
-        // Check if required collections are not empty
-        if ($branches->isEmpty()) {
+        // Chuẩn bị bộ đếm cho từng chi nhánh
+        $branchOrderCounters = [];
+
+        // Chỉ chọn 1 chi nhánh duy nhất
+        $branch = Branch::first();
+        if (!$branch) {
             throw new \Exception('No branches found. Please run BranchSeeder first.');
         }
         
@@ -134,35 +138,59 @@ class OrderSeeder extends Seeder
         }
 
         // Check if orders already exist to avoid duplicates
-        if (Order::count() > 0) {
-            echo "Orders already exist, skipping...\n";
-            return; // Skip if orders already exist
-        }
 
-        $statuses = ['pending', 'processing', 'ready', 'delivery', 'completed', 'cancelled'];
-        $statusWeights = [20, 15, 10, 15, 30, 10]; // Tỷ lệ phân bố trạng thái
+        // Các trạng thái mới cho enum
+        $statuses = [
+            'awaiting_confirmation',
+            'awaiting_driver',
+            'driver_picked_up',
+            'in_transit',
+            'delivered',
+            'item_received',
+            'cancelled',
+            'refunded'
+        ];
+        $statusWeights = [15, 15, 10, 10, 20, 10, 10, 10]; // Tỷ lệ phân bố trạng thái
 
         echo "Creating 50 orders...\n";
 
+        // Loại bỏ user admin khỏi danh sách user tạo order
+        $users = $users->filter(function($user) {
+            return $user->email !== 'admin@devfoods.com';
+        })->values();
+        // Lấy danh sách user, driver, address, payment thành mảng để random lặp lại nếu thiếu
+        $userArr = $users->all();
+        $driverArr = $drivers->all();
+        $paymentArr = $payments->all();
+        $addressArr = $addresses->all();
+        $discountCodeArr = $discountCodes->all();
+        $userCount = count($userArr);
+        $driverCount = count($driverArr);
+        $paymentCount = count($paymentArr);
+        $addressCount = count($addressArr);
+        $discountCodeCount = count($discountCodeArr);
+
         // Tạo 50 đơn hàng mẫu
         for ($i = 1; $i <= 50; $i++) {
-            $branch = $branches->random();
-            $customer = $users->random();
-            $driver = $drivers->random();
-            $payment = $payments->random();
-            // Make discount code optional since it might be empty
-            $discountCode = $discountCodes->isNotEmpty() ? $discountCodes->random() : null;
-            $address = $addresses->random();
+            $customer = $userArr[($i-1)%$userCount];
+            $driver = $driverArr[($i-1)%$driverCount];
+            $payment = $paymentArr[($i-1)%$paymentCount];
+            $address = $addressArr[($i-1)%$addressCount];
+            $discountCode = $discountCodeCount > 0 ? $discountCodeArr[($i-1)%$discountCodeCount] : null;
             
             // Chọn trạng thái theo tỷ lệ
             $status = $this->getRandomStatus($statuses, $statusWeights);
+            if (!$status || !in_array($status, $statuses)) {
+                $status = 'awaiting_confirmation';
+            }
             
             // Tạo thời gian đơn hàng
             $orderDate = Carbon::now()->subDays(rand(0, 30))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
             $estimatedDelivery = $orderDate->copy()->addMinutes(rand(30, 90));
             $actualDelivery = null;
             
-            if ($status === 'completed') {
+            // Nếu trạng thái là delivered, item_received thì mới có actualDelivery
+            if (in_array($status, ['delivered', 'item_received'])) {
                 $actualDelivery = $estimatedDelivery->copy()->addMinutes(rand(-15, 30));
             }
 
@@ -174,8 +202,17 @@ class OrderSeeder extends Seeder
             $totalAmount = $subtotal + $deliveryFee - $discountAmount + $taxAmount;
             $pointsEarned = floor($totalAmount / 1000);
 
+            // Xử lý order_code theo branch_code
+            $branchCode = $branch->branch_code;
+            if (!isset($branchOrderCounters[$branchCode])) {
+                $branchOrderCounters[$branchCode] = 1;
+            } else {
+                $branchOrderCounters[$branchCode]++;
+            }
+            $orderCode = $branchCode . str_pad($branchOrderCounters[$branchCode], 4, '0', STR_PAD_LEFT);
+
             $order = Order::create([
-                'order_code' => 'ORD' . str_pad($i, 6, '0', STR_PAD_LEFT),
+                'order_code' => $orderCode,
                 'customer_id' => $customer->id,
                 'branch_id' => $branch->id,
                 'driver_id' => $status === 'delivery' || $status === 'completed' ? $driver->id : null,
@@ -430,11 +467,14 @@ class OrderSeeder extends Seeder
     private function getStatusNote(string $status): string
     {
         $notes = [
-            'pending' => 'Đơn hàng đã được tạo và chờ xác nhận',
-            'processing' => 'Đơn hàng đã được xác nhận và đang chuẩn bị',
-            'ready' => 'Đơn hàng đã sẵn sàng để giao',
-            'delivery' => 'Đơn hàng đang được giao',
-            'completed' => 'Đơn hàng đã hoàn thành',
+            'awaiting_confirmation' => 'Đơn hàng chờ xác nhận',
+            'awaiting_driver' => 'Đang tìm tài xế',
+            'driver_picked_up' => 'Tài xế đã nhận đơn',
+            'in_transit' => 'Đơn hàng đang được giao',
+            'delivered' => 'Đã giao đến địa chỉ',
+            'item_received' => 'Khách đã nhận hàng',
+            'cancelled' => 'Đơn hàng đã bị hủy',
+            'refunded' => 'Đơn hàng đã được hoàn tiền',
         ];
 
         return $notes[$status] ?? 'Cập nhật trạng thái đơn hàng';

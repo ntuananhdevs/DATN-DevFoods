@@ -24,7 +24,7 @@ class ProductFactory extends Factory
             'base_price' => $this->faker->numberBetween(30000, 200000),
             'available' => true,
             'preparation_time' => $this->faker->numberBetween(5, 30),
-            'ingredients' => json_encode($this->generateIngredients($category->name)),
+            'ingredients' => $this->generateIngredients($category->name),
             'short_description' => $this->faker->sentence(),
             'status' => true,
             'created_at' => now(),
@@ -68,46 +68,46 @@ class ProductFactory extends Factory
     {
         $ingredients = [
             'Burger' => [
-                ['name' => 'Bánh mì', 'quantity' => '1 cái'],
-                ['name' => 'Thịt bò xay', 'quantity' => '150g'],
-                ['name' => 'Rau xà lách', 'quantity' => '30g'],
-                ['name' => 'Cà chua', 'quantity' => '2 lát'],
-                ['name' => 'Dưa leo', 'quantity' => '2 lát'],
-                ['name' => 'Sốt mayonnaise', 'quantity' => '20g']
+                'Bánh mì',
+                'Thịt bò xay',
+                'Rau xà lách',
+                'Cà chua',
+                'Dưa leo',
+                'Sốt mayonnaise'
             ],
             'Pizza' => [
-                ['name' => 'Bột bánh', 'quantity' => '200g'],
-                ['name' => 'Sốt cà chua', 'quantity' => '100g'],
-                ['name' => 'Phô mai Mozzarella', 'quantity' => '150g'],
-                ['name' => 'Thịt xông khói', 'quantity' => '50g'],
-                ['name' => 'Nấm', 'quantity' => '30g'],
-                ['name' => 'Ớt chuông', 'quantity' => '30g']
+                'Bột bánh',
+                'Sốt cà chua',
+                'Phô mai Mozzarella',
+                'Thịt xông khói',
+                'Nấm',
+                'Ớt chuông'
             ],
             'Gà Rán' => [
-                ['name' => 'Thịt gà', 'quantity' => '200g'],
-                ['name' => 'Bột chiên giòn', 'quantity' => '100g'],
-                ['name' => 'Gia vị', 'quantity' => '20g'],
-                ['name' => 'Dầu ăn', 'quantity' => '50ml']
+                'Thịt gà',
+                'Bột chiên giòn',
+                'Gia vị',
+                'Dầu ăn'
             ],
             'Cơm' => [
-                ['name' => 'Gạo', 'quantity' => '200g'],
-                ['name' => 'Thịt gà/bò/heo', 'quantity' => '150g'],
-                ['name' => 'Rau cải', 'quantity' => '50g'],
-                ['name' => 'Nước mắm', 'quantity' => '10ml']
+                'Gạo',
+                'Thịt gà/bò/heo',
+                'Rau cải',
+                'Nước mắm'
             ],
             'Mì' => [
-                ['name' => 'Mì', 'quantity' => '200g'],
-                ['name' => 'Thịt bò/gà/tôm', 'quantity' => '100g'],
-                ['name' => 'Rau cải', 'quantity' => '50g'],
-                ['name' => 'Gia vị', 'quantity' => '20g']
+                'Mì',
+                'Thịt bò/gà/tôm',
+                'Rau cải',
+                'Gia vị'
             ],
             'Đồ Uống' => [
-                ['name' => 'Nước lọc', 'quantity' => '300ml'],
-                ['name' => 'Đường', 'quantity' => '30g'],
-                ['name' => 'Hương liệu', 'quantity' => '10ml']
+                'Nước lọc',
+                'Đường',
+                'Hương liệu'
             ]
         ];
 
-        return $ingredients[$category];
+        return $ingredients[$category] ?? ['Nguyên liệu cơ bản'];
     }
 }
