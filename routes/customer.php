@@ -21,6 +21,8 @@ use App\Http\Middleware\Customer\CartCountMiddleware;
 use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Customer\Auth\RegisterController;
+use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
+use Illuminate\Support\Facades\Broadcast;
 
 // API Controllers for Customer
 // use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
@@ -107,6 +109,13 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
     Route::put('/profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.password.update');
     Route::patch('/profile/update', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
+    // Route để hiển thị trang "Tất cả đơn hàng"
+    Route::get('/orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
+
+    // Route để hiển thị trang "Chi tiết đơn hàng"
+    // Sử dụng Route-Model Binding để tự động lấy Order model
+    Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
+    Route::post('/orders/{order}/status', [CustomerOrderController::class, 'updateStatus'])->name('customer.orders.updateStatus');
 });
 
 // Phone Required routes (không cần phone.required middleware)
@@ -154,4 +163,9 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::post('/chat/send', [ChatController::class, 'sendMessage'])->name('customer.chat.send');
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
+
+    
+    Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+        return Broadcast::auth($request);
+    })->middleware(['web']);
 });

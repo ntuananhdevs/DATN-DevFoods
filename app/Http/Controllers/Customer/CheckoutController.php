@@ -192,7 +192,7 @@ class CheckoutController extends Controller
             $order->delivery_address = $request->address . ', ' . $request->ward . ', ' . $request->district . ', ' . $request->city;
             $order->save();
 
-            if ($order->status === 'pending' && is_null($order->driver_id)) {
+            if ($order->status === 'confirmed' && is_null($order->driver_id)) {
                 \App\Events\NewOrderAvailable::dispatch($order);
             }
             

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Branch;
 
+use App\Events\NewOrderAvailable;
+use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -94,55 +96,30 @@ class BranchOrderController extends Controller
         return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods'));
     }
 
-    public function show($id)
+    public function updateStatus(Request $request, Order $order)
     {
-        $branch = Auth::guard('manager')->user()->branch;
-        
-        $order = Order::with([
-            'customer',
-            'driver',
-            'orderItems.productVariant.product',
-            'orderItems.combo',
-            'orderItems.toppings.topping',
-            'statusHistory.changedBy',
-            'cancellation.cancelledBy',
-            'payment.paymentMethod',
-            'address'
-        ])->where('branch_id', $branch->id)
-          ->where('id', $id)
-          ->firstOrFail();
+        $request->validate([
+            'status' => 'required|in:confirmed,cancelled_by_branch',
+        ]);
 
-        return view('branch.orders.show', compact('order'));
-    }
-
-    public function updateStatus(Request $request, $id)
-    {
-        $branch = Auth::guard('manager')->user()->branch;
-        
-        $order = Order::where('branch_id', $branch->id)
-                     ->where('id', $id)
-                     ->firstOrFail();
-
-        $oldStatus = $order->status;
         $newStatus = $request->status;
-        $note = $request->note;
 
-        // Validate status transition
-        $validTransitions = $this->getValidStatusTransitions($oldStatus);
-        if (!in_array($newStatus, $validTransitions)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không thể chuyển từ trạng thái ' . $this->getStatusText($oldStatus) . ' sang ' . $this->getStatusText($newStatus)
-            ], 400);
+        // Chỉ cho phép cập nhật khi đơn hàng đang chờ xác nhận
+        if ($order->status !== 'awaiting_confirmation') {
+            return back()->with('error', 'Hành động không hợp lệ.');
         }
 
-        // Additional validations for specific status changes
-        $validationResult = $this->validateStatusChange($order, $newStatus);
-        if (!$validationResult['valid']) {
-            return response()->json([
-                'success' => false,
-                'message' => $validationResult['message']
-            ], 400);
+        $order->status = $newStatus;
+        $order->save();
+
+        // 1. Luôn thông báo cho khách hàng về sự thay đổi trạng thái
+        broadcast(new OrderStatusUpdated($order));
+
+        // 2. Nếu chi nhánh XÁC NHẬN đơn hàng
+        if ($newStatus === 'confirmed') {
+            // Kích hoạt sự kiện để tất cả tài xế nhận được thông báo đơn hàng mới
+            broadcast(new NewOrderAvailable($order));
+            return back()->with('success', 'Đã xác nhận đơn hàng và gửi thông báo tới tài xế.');
         }
 
         // Update order status

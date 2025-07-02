@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Driver\DriverController;
 use App\Http\Controllers\Driver\OrderController;
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
+use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,20 +52,15 @@ Route::prefix('driver')->name('driver.')->group(function () {
         // Orders management
         // Orders management
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
-        Route::get('orders/{orderId}', [OrderController::class, 'show'])->name('orders.show');
-        Route::post('/orders/{order}/accept', [OrderController::class, 'accept'])->name('orders.accept');
-        Route::post('/orders/{order}/start-pickup', [OrderController::class, 'startPickup'])->name('orders.start_pickup');
-        Route::post('/orders/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('orders.confirm_pickup');
-        Route::post('/orders/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirm_delivery');
-        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+        Route::get('orders/{orderId}', [OrderController::class, 'show'])->name('orders.show');// Các hành động POST để cập nhật trạng thái đơn hàng
+        Route::post('/{order}/accept', [OrderController::class, 'accept'])->name('orders.accept');
+        Route::post('/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('orders.confirm_pickup');
+        Route::post('/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirm_delivery');
+        Route::post('/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+        // Route 'start-pickup' không thấy sử dụng trong JS nên có thể bỏ hoặc giữ lại nếu cần
+        // Route::post('/{order}/start-pickup', [OrderController::class, 'startPickup'])->name('start_pickup');
         Route::get('orders/{orderId}/navigate', [OrderController::class, 'navigate'])->name('orders.navigate');
-         // --- CÁC HÀNH ĐỘNG POST ĐỂ XÁC NHẬN ---
-        // Đây là các route mà JavaScript sẽ gọi đến
-        Route::post('/{order}/accept', [OrderController::class, 'accept'])->name('accept');
-        Route::post('/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('confirm_pickup');
-        Route::post('/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('confirm_delivery');
-        Route::post('/{order}/cancel', [OrderController::class, 'cancel'])->name('cancel');
-    
+        
         // Driver profile and history
         Route::get('/profile', [DriverController::class, 'profile'])->name('profile');
         Route::put('/profile', [DriverController::class, 'updateProfile'])->name('profile.update');
@@ -81,4 +77,9 @@ Route::prefix('driver')->name('driver.')->group(function () {
             Route::get('/stats', [DriverController::class, 'getStats'])->name('stats');
         });
     });
+
+    Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+        return Broadcast::auth($request);
+    })->middleware(['auth:driver']); // Chỉ áp dụng middleware xác thực của driver
+
 });

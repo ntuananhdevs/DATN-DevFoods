@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             DriverOrderSeeder::class, // Chuyển lên trước DiscountUsageHistorySeeder
             DiscountUsageHistorySeeder::class,
             UserRankHistorySeeder::class,
+            OrderSeeder::class,
             GeneralSettingSeeder::class,
             AddressSeeder::class, // Thêm AddressSeeder trước CartSeeder
             CartSeeder::class, // Thêm CartSeeder trước OrderSeeder
