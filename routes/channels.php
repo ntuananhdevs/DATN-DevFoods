@@ -136,3 +136,20 @@ Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
     // Only the authenticated user with the matching ID can listen.
     return (int) $user->id === (int) $userId;
 });
+
+// Branch orders channel
+Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
+    // Only branch managers and staff can listen to their branch orders
+    return (in_array($user->role, ['branch_manager', 'branch_staff']) && $user->branch_id == $branchId) ? [
+        'id' => $user->id,
+        'name' => $user->name,
+        'role' => $user->role,
+        'branch_id' => $user->branch_id,
+    ] : false;
+});
+
+// Public branch orders channel for general updates
+Broadcast::channel('branch-orders-channel', function ($user = null) {
+    // Allow all authenticated users to listen to general order updates
+    return true;
+});

@@ -19,6 +19,8 @@ use App\Observers\ProductVariantObserver;
 use App\Models\ProductVariant;
 use App\Observers\ComboObserver;
 use App\Models\Combo;
+use App\Observers\OrderObserver;
+use App\Models\Order;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -55,6 +57,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register ComboObserver
         Combo::observe(ComboObserver::class);
+
+        // Register OrderObserver
+        Order::observe(OrderObserver::class);
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));
