@@ -83,36 +83,41 @@ document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.variant-input:checked').forEach(input => {
             variantAdjustment += parseFloat(input.dataset.priceAdjustment || 0);
         });
+        
+        // Calculate current variant price
+        const currentVariantPrice = window.basePrice + variantAdjustment;
+
         // Calculate topping price
         let toppingPrice = 0;
         document.querySelectorAll('.topping-input:checked').forEach(input => {
             toppingPrice += parseFloat(input.dataset.price || 0);
         });
-        // Tổng giá gốc (base + variant + topping)
-        const originalPrice = window.basePrice + variantAdjustment + toppingPrice;
-        // Tính số tiền giảm giá tốt nhất
-        const discountAmount = calcBestDiscountAmount(originalPrice);
-        // Giá sau giảm
-        const finalPrice = Math.max(0, originalPrice - discountAmount);
-        // Hiển thị
-        if (discountAmount > 0) {
-            basePriceDisplay.textContent = `${Math.round(originalPrice).toLocaleString('en-US')} đ`;
+
+        // This is the price before any discounts, including toppings
+        const priceBeforeDiscount = currentVariantPrice; 
+        
+        // Calculate the discount amount based on the current variant's price
+        let discountAmount = 0;
+        if (bestDiscount) {
+            if (bestDiscount.discount_type === 'percentage') {
+                discountAmount = priceBeforeDiscount * (bestDiscount.discount_value / 100);
+            } else if (bestDiscount.discount_type === 'fixed_amount') {
+                discountAmount = bestDiscount.discount_value;
+            }
+        }
+        
+        // The total price顧客 pays, including toppings
+        const finalPrice = Math.max(0, priceBeforeDiscount - discountAmount) + toppingPrice;
+        const displayOriginalPrice = priceBeforeDiscount + toppingPrice;
+
+        // Update display
+        if (discountAmount > 0 && finalPrice < displayOriginalPrice) {
+            basePriceDisplay.textContent = `${Math.round(displayOriginalPrice).toLocaleString('vi-VN')} đ`;
             basePriceDisplay.classList.remove('hidden');
-            currentPriceDisplay.textContent = `${Math.round(finalPrice).toLocaleString('en-US')} đ`;
+            currentPriceDisplay.textContent = `${Math.round(finalPrice).toLocaleString('vi-VN')} đ`;
         } else {
             basePriceDisplay.classList.add('hidden');
-            currentPriceDisplay.textContent = `${Math.round(originalPrice).toLocaleString('en-US')} đ`;
-        }
-        // Highlight
-        if (discountAmount > 0) {
-            currentPriceDisplay.classList.add('text-orange-500');
-            currentPriceDisplay.classList.remove('text-green-500');
-        } else if (originalPrice !== window.basePrice) {
-            currentPriceDisplay.classList.add('text-green-500');
-            currentPriceDisplay.classList.remove('text-orange-500');
-        } else {
-            currentPriceDisplay.classList.add('text-orange-500');
-            currentPriceDisplay.classList.remove('text-green-500');
+            currentPriceDisplay.textContent = `${Math.round(displayOriginalPrice).toLocaleString('vi-VN')} đ`;
         }
     };
     

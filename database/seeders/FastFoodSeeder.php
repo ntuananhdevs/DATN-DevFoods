@@ -38,103 +38,88 @@ class FastFoodSeeder extends Seeder
     {
         $commonIngredients = [
             'Burger' => [
-                'base' => ['Bánh mì burger'],
-                'vegetables' => ['Xà lách', 'Cà chua', 'Dưa chuột', 'Hành tây'],
-                'sauces' => ['Sốt mayonnaise', 'Sốt cà chua'],
+                'Bánh mì burger', 'Xà lách', 'Cà chua', 'Dưa chuột', 'Hành tây', 'Sốt mayonnaise', 'Sốt cà chua'
             ],
             'Pizza' => [
-                'base' => ['Đế bánh pizza', 'Sốt cà chua', 'Phô mai Mozzarella'],
-                'vegetables' => ['Ớt chuông', 'Nấm', 'Hành tây'],
-                'herbs' => ['Húng quế', 'Oregano'],
+                'Đế bánh pizza', 'Sốt cà chua', 'Phô mai Mozzarella', 'Ớt chuông', 'Nấm', 'Hành tây', 'Húng quế', 'Oregano'
             ],
             'Gà Rán' => [
-                'main' => ['Thịt gà tươi'],
-                'coating' => ['Bột chiên xù', 'Bột gia vị', 'Dầu chiên'],
-                'spices' => ['Muối', 'Tiêu', 'Bột tỏi', 'Bột ớt'],
+                'Thịt gà tươi', 'Bột chiên xù', 'Bột gia vị', 'Dầu chiên', 'Muối', 'Tiêu', 'Bột tỏi', 'Bột ớt'
             ],
             'Cơm' => [
-                'base' => ['Cơm trắng'],
-                'vegetables' => ['Cà rốt', 'Đậu que', 'Bắp cải'],
-                'spices' => ['Muối', 'Tiêu', 'Dầu hào'],
+                'Cơm trắng', 'Cà rốt', 'Đậu que', 'Bắp cải', 'Muối', 'Tiêu', 'Dầu hào'
             ],
             'Mì' => [
-                'base' => ['Mì Ý', 'Sốt cà chua'],
-                'vegetables' => ['Cà rốt', 'Nấm', 'Hành tây'],
-                'spices' => ['Muối', 'Tiêu', 'Oregano'],
+                'Mì Ý', 'Sốt cà chua', 'Cà rốt', 'Nấm', 'Hành tây', 'Muối', 'Tiêu', 'Oregano'
             ],
             'Đồ Uống' => [
-                'ice' => ['Đá viên'],
-                'additives' => ['Đường', 'Chanh tươi'],
+                'Đá viên', 'Đường', 'Chanh tươi'
             ],
             'Combo' => [
-                'components' => ['Món chính', 'Món phụ', 'Đồ uống'],
-                'benefits' => ['Tiết kiệm chi phí', 'Đa dạng hương vị', 'Phù hợp chia sẻ'],
+                'Món chính', 'Món phụ', 'Đồ uống'
             ],
         ];
 
         foreach ($commonIngredients as $category => $ingredients) {
             if (str_contains($productName, $category)) {
                 $specificIngredients = [];
-                
                 if (str_contains($productName, 'Bò')) {
-                    $specificIngredients['meat'] = ['Thịt bò Úc', 'Thịt bò xay'];
+                    $specificIngredients = array_merge($specificIngredients, ['Thịt bò Úc', 'Thịt bò xay']);
                 }
                 if (str_contains($productName, 'Gà')) {
-                    $specificIngredients['meat'] = ['Thịt gà phi lê', 'Ức gà'];
+                    $specificIngredients = array_merge($specificIngredients, ['Thịt gà phi lê', 'Ức gà']);
                 }
                 if (str_contains($productName, 'Hải Sản')) {
-                    $specificIngredients['seafood'] = ['Tôm', 'Mực', 'Cá hồi'];
+                    $specificIngredients = array_merge($specificIngredients, ['Tôm', 'Mực', 'Cá hồi']);
                 }
                 if (str_contains($productName, 'Phô Mai')) {
-                    $specificIngredients['cheese'] = ['Phô mai Mozzarella', 'Phô mai Cheddar'];
+                    $specificIngredients = array_merge($specificIngredients, ['Phô mai Mozzarella', 'Phô mai Cheddar']);
                 }
                 if (str_contains($productName, 'BBQ')) {
-                    $specificIngredients['sauce'] = ['Sốt BBQ', 'Sốt tiêu đen'];
+                    $specificIngredients = array_merge($specificIngredients, ['Sốt BBQ', 'Sốt tiêu đen']);
                 }
                 if (str_contains($productName, 'Cay')) {
-                    $specificIngredients['spices'] = ['Ớt tươi', 'Bột ớt', 'Sốt cay'];
+                    $specificIngredients = array_merge($specificIngredients, ['Ớt tươi', 'Bột ớt', 'Sốt cay']);
                 }
                 if (str_contains($productName, 'Xông Khói')) {
-                    $specificIngredients['meat'] = ['Thịt xông khói', 'Bacon'];
+                    $specificIngredients = array_merge($specificIngredients, ['Thịt xông khói', 'Bacon']);
                 }
                 if (str_contains($productName, 'Sườn')) {
-                    $specificIngredients['meat'] = ['Sườn heo', 'Sườn non'];
+                    $specificIngredients = array_merge($specificIngredients, ['Sườn heo', 'Sườn non']);
                 }
-
-                return array_merge($ingredients, $specificIngredients);
+                return array_values(array_unique(array_merge($ingredients, $specificIngredients)));
             }
         }
 
         if (str_contains($productName, 'Trà')) {
-            return [
-                'base' => ['Trà', 'Nước'],
-                'additives' => ['Đường', 'Đá'],
-                'extras' => str_contains($productName, 'Đào') ? ['Đào miếng'] : 
-                           (str_contains($productName, 'Vải') ? ['Vải thiều'] : 
-                           ['Chanh tươi'])
-            ];
+            $extras = [];
+            if (str_contains($productName, 'Đào')) {
+                $extras[] = 'Đào miếng';
+            } elseif (str_contains($productName, 'Vải')) {
+                $extras[] = 'Vải thiều';
+            } else {
+                $extras[] = 'Chanh tươi';
+            }
+            return array_merge(['Trà', 'Nước', 'Đường', 'Đá'], $extras);
         }
         if (str_contains($productName, 'Cà Phê')) {
-            return [
-                'base' => ['Cà phê nguyên chất'],
-                'additives' => ['Đường', 'Đá'],
-                'extras' => str_contains($productName, 'Sữa') ? ['Sữa đặc'] : []
-            ];
+            $extras = [];
+            if (str_contains($productName, 'Sữa')) {
+                $extras[] = 'Sữa đặc';
+            }
+            return array_merge(['Cà phê nguyên chất', 'Đường', 'Đá'], $extras);
         }
         if (str_contains($productName, 'Sinh Tố')) {
-            $fruit = str_contains($productName, 'Dâu') ? 'Dâu tây' : 
-                    (str_contains($productName, 'Bơ') ? 'Bơ' : 'Trái cây hỗn hợp');
-            return [
-                'base' => [$fruit, 'Sữa tươi'],
-                'additives' => ['Đường', 'Đá viên'],
-                'extras' => ['Sữa đặc']
-            ];
+            $fruit = 'Trái cây hỗn hợp';
+            if (str_contains($productName, 'Dâu')) {
+                $fruit = 'Dâu tây';
+            } elseif (str_contains($productName, 'Bơ')) {
+                $fruit = 'Bơ';
+            }
+            return [$fruit, 'Sữa tươi', 'Đường', 'Đá viên', 'Sữa đặc'];
         }
 
-        return [
-            'base' => ['Nước có ga'],
-            'additives' => ['Đường', 'Đá viên']
-        ];
+        return ['Nước có ga', 'Đường', 'Đá viên'];
     }
 
     private function generateSku($category, $type = 'product')
@@ -407,7 +392,7 @@ class FastFoodSeeder extends Seeder
                     'short_description' => $shortDescription,
                     'base_price' => $basePrice,
                     'preparation_time' => $preparationTime,
-                    'ingredients' => json_encode($this->getIngredients($productName)),
+                    'ingredients' => $this->getIngredients($productName),
                     'status' => 'selling',
                     'is_featured' => rand(0, 1) === 1,
                     'created_by' => $this->adminUser->id,
@@ -670,92 +655,93 @@ class FastFoodSeeder extends Seeder
         }
     }
 
-private function createCombos()
-{
-    // Lấy category "Combo" hoặc "Combo Set", tạo mới nếu chưa có
-    $comboCategory = Category::where('name', 'Combo Set')
-                           ->orWhere('name', 'Combo')
-                           ->first();
-    
-    if (!$comboCategory) {
-        // Tạo category "Combo" nếu chưa có
-        $comboCategory = Category::create([
-            'name' => 'Combo',
-            'description' => 'Các combo sản phẩm với giá ưu đãi',
-            'image' => 'combo-category.jpg',
-            'status' => true
-        ]);
-        echo "Created category: {$comboCategory->name}\n";
-    }
-
-    $combosData = [
-        [
-            'name' => 'Combo Burger Bò Phô Mai Deluxe',
-            'description' => 'Burger bò phô mai + khoai tây chiên + nước ngọt',
-            'original_price' => 150000, // Giá gốc
-            'price' => 120000, // Giá ưu đãi
-            'products' => ['Burger Bò Phô Mai', 'Coca Cola']
-        ],
-        [
-            'name' => 'Combo Gà Rán Gia Đình',
-            'description' => 'Gà rán giòn + cơm + nước ngọt cho cả gia đình',
-            'original_price' => 300000,
-            'price' => 250000,
-            'products' => ['Gà Rán Giòn', 'Cơm Gà Rán', 'Pepsi']
-        ],
-        [
-            'name' => 'Combo Pizza Hải Sản Cao Cấp',
-            'description' => 'Pizza hải sản + salad + nước ép',
-            'original_price' => 220000,
-            'price' => 180000,
-            'products' => ['Pizza Hải Sản', 'Nước Cam']
-        ],
-        [
-            'name' => 'Combo Học Sinh Tiết Kiệm',
-            'description' => 'Burger gà + nước ngọt với giá ưu đãi',
-            'original_price' => 80000,
-            'price' => 65000,
-            'products' => ['Burger Gà Giòn', '7 Up']
-        ],
-        [
-            'name' => 'Combo Cặp Đôi Lãng Mạn',
-            'description' => '2 burger + 2 nước ngọt + khoai tây chiên',
-            'original_price' => 180000,
-            'price' => 150000,
-            'products' => ['Burger Bò Phô Mai', 'Burger Gà Giòn', 'Coca Cola', 'Pepsi']
-        ]
-    ];
-
-    foreach ($combosData as $comboData) {
-        $combo = Combo::create([
-            'sku' => $this->generateSku('', 'combo'),
-            'name' => $comboData['name'],
-            'description' => $comboData['description'],
-            'original_price' => $comboData['original_price'],
-            'price' => $comboData['price'],
-            'category_id' => $comboCategory->id,
-            'active' => true,
-            'created_by' => $this->adminUser->id,
-            'updated_by' => $this->adminUser->id
-        ]);
-
-        foreach ($comboData['products'] as $productName) {
-            $product = Product::where('name', $productName)->first();
-            if ($product) {
-                $productVariant = ProductVariant::where('product_id', $product->id)->first();
-                if ($productVariant) {
-                    ComboItem::create([
-                        'combo_id' => $combo->id,
-                        'product_variant_id' => $productVariant->id,
-                        'quantity' => 1
-                    ]);
-                }
-            }
+    private function createCombos()
+    {
+        // Lấy category "Combo" hoặc "Combo Set", tạo mới nếu chưa có
+        $comboCategory = Category::where('name', 'Combo Set')
+                               ->orWhere('name', 'Combo')
+                               ->first();
+        
+        if (!$comboCategory) {
+            // Tạo category "Combo" nếu chưa có
+            $comboCategory = Category::create([
+                'name' => 'Combo',
+                'description' => 'Các combo sản phẩm với giá ưu đãi',
+                'image' => 'combo-category.jpg',
+                'status' => true
+            ]);
+            echo "Created category: {$comboCategory->name}\n";
         }
 
-        echo "Created combo: {$combo->name}\n";
+        $combosData = [
+            [
+                'name' => 'Combo Burger Bò Phô Mai Deluxe',
+                'description' => 'Burger bò phô mai + khoai tây chiên + nước ngọt',
+                'original_price' => 150000, // Giá gốc
+                'price' => 120000, // Giá ưu đãi
+                'products' => ['Burger Bò Phô Mai', 'Coca Cola']
+            ],
+            [
+                'name' => 'Combo Gà Rán Gia Đình',
+                'description' => 'Gà rán giòn + cơm + nước ngọt cho cả gia đình',
+                'original_price' => 300000,
+                'price' => 250000,
+                'products' => ['Gà Rán Giòn', 'Cơm Gà Rán', 'Pepsi']
+            ],
+            [
+                'name' => 'Combo Pizza Hải Sản Cao Cấp',
+                'description' => 'Pizza hải sản + salad + nước ép',
+                'original_price' => 220000,
+                'price' => 180000,
+                'products' => ['Pizza Hải Sản', 'Nước Cam']
+            ],
+            [
+                'name' => 'Combo Học Sinh Tiết Kiệm',
+                'description' => 'Burger gà + nước ngọt với giá ưu đãi',
+                'original_price' => 80000,
+                'price' => 65000,
+                'products' => ['Burger Gà Giòn', '7 Up']
+            ],
+            [
+                'name' => 'Combo Cặp Đôi Lãng Mạn',
+                'description' => '2 burger + 2 nước ngọt + khoai tây chiên',
+                'original_price' => 180000,
+                'price' => 150000,
+                'products' => ['Burger Bò Phô Mai', 'Burger Gà Giòn', 'Coca Cola', 'Pepsi']
+            ]
+        ];
+
+        foreach ($combosData as $comboData) {
+            $combo = Combo::create([
+                'sku' => $this->generateSku('', 'combo'),
+                'name' => $comboData['name'],
+                'description' => $comboData['description'],
+                'original_price' => $comboData['original_price'],
+                'price' => $comboData['price'],
+                'category_id' => $comboCategory->id,
+                'active' => true,
+                'created_by' => $this->adminUser->id,
+                'updated_by' => $this->adminUser->id
+            ]);
+
+            foreach ($comboData['products'] as $productName) {
+                $product = Product::where('name', $productName)->first();
+                if ($product) {
+                    $productVariant = ProductVariant::where('product_id', $product->id)->first();
+                    if ($productVariant) {
+                        ComboItem::create([
+                            'combo_id' => $combo->id,
+                            'product_variant_id' => $productVariant->id,
+                            'quantity' => 1
+                        ]);
+                    }
+                }
+            }
+
+            echo "Created combo: {$combo->name}\n";
+        }
     }
-}
+
     private function createStocks()
     {
         $toppingStocksCreated = 0;
@@ -815,49 +801,6 @@ private function createCombos()
         echo "Created product-topping relationships\n";
     }
 
-    private function createSampleReviews()
-    {
-        $users = User::limit(10)->get();
-        $products = Product::all();
-        $branches = Branch::all();
-        $reviewTexts = [
-            'Sản phẩm rất ngon, tôi sẽ đặt lại!',
-            'Chất lượng tốt, giao hàng nhanh.',
-            'Vị rất đậm đà, phù hợp khẩu vị.',
-            'Giá cả hợp lý, chất lượng ổn.',
-            'Món ăn tươi ngon, đóng gói cẩn thận.',
-            'Dịch vụ tốt, nhân viên thân thiện.',
-            'Sẽ giới thiệu cho bạn bè.',
-            'Hương vị độc đáo, rất thích.',
-            'Phần ăn vừa đủ, không quá nhiều.',
-            'Đóng gói đẹp, phù hợp làm quà.'
-        ];
-        $orders = \App\Models\Order::limit(20)->get();
-        if ($orders->isEmpty()) {
-            echo "No orders found, skipping review creation\n";
-            return;
-        }
-        foreach ($products as $product) {
-            $selectedUsers = $users->random(min(5, $users->count()));
-            for ($i = 0; $i < 5; $i++) {
-                $user = $selectedUsers[$i % $selectedUsers->count()];
-                $randomOrder = $orders->random();
-                $branch = $branches->random();
-                ProductReview::create([
-                    'product_id' => $product->id,
-                    'user_id' => $user->id,
-                    'order_id' => $randomOrder->id,
-                    'branch_id' => $branch->id,
-                    'rating' => rand(3, 5),
-                    'review' => $reviewTexts[array_rand($reviewTexts)],
-                    'review_date' => now()->subDays(rand(1, 30)),
-                    'approved' => true,
-                ]);
-            }
-        }
-        echo "Created sample product reviews\n";
-    }
-
     public function run(): void
     {
         try {
@@ -898,9 +841,6 @@ private function createCombos()
             
             // 10. Tạo product-topping relationships
             $this->createProductToppings();
-            
-            // 11. Tạo sample reviews
-            $this->createSampleReviews();
             
             echo "FastFood Seeder completed successfully!\n";
             

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Role;
 use App\Rules\TurnstileRule;
 use App\Services\AvatarUploadService;
+use App\Services\CartTransferService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
@@ -26,10 +27,12 @@ use App\Mail\ForgotPasswordMail;
 class AuthController extends Controller
 {
     protected $avatarUploadService;
+    protected $cartTransferService;
 
-    public function __construct(AvatarUploadService $avatarUploadService)
+    public function __construct(AvatarUploadService $avatarUploadService, CartTransferService $cartTransferService)
     {
         $this->avatarUploadService = $avatarUploadService;
+        $this->cartTransferService = $cartTransferService;
     }
 
     /**
@@ -95,8 +98,27 @@ class AuthController extends Controller
             ]);
         }
 
+        // Lưu session ID trước khi đăng nhập để chuyển giỏ hàng
+        $sessionId = session()->getId();
+
         // Đăng nhập
         Auth::login($user, $request->remember);
+
+        // Chuyển giỏ hàng từ session sang user
+        try {
+            $this->cartTransferService->transferCartFromSessionToUser($user->id, $sessionId);
+            Log::info('Cart transferred successfully after login', [
+                'user_id' => $user->id,
+                'session_id' => $sessionId
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to transfer cart after login', [
+                'user_id' => $user->id,
+                'session_id' => $sessionId,
+                'error' => $e->getMessage()
+            ]);
+            // Không throw exception để không ảnh hưởng đến quá trình đăng nhập
+        }
 
         // Kiểm tra vai trò và chuyển hướng phù hợp
         if ($this->hasRole($user, 'admin')) {
@@ -391,9 +413,28 @@ class AuthController extends Controller
             // 5. Commit transaction
             DB::commit();
 
+            // Lưu session ID trước khi đăng nhập để chuyển giỏ hàng
+            $sessionId = session()->getId();
+
             // 6. Đăng nhập user và regenerate session để tránh session fixation
             Auth::login($user, true);
             $request->session()->regenerate();
+
+            // Chuyển giỏ hàng từ session sang user
+            try {
+                $this->cartTransferService->transferCartFromSessionToUser($user->id, $sessionId);
+                Log::info('Cart transferred successfully after Google login', [
+                    'user_id' => $user->id,
+                    'session_id' => $sessionId
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to transfer cart after Google login', [
+                    'user_id' => $user->id,
+                    'session_id' => $sessionId,
+                    'error' => $e->getMessage()
+                ]);
+                // Không throw exception để không ảnh hưởng đến quá trình đăng nhập
+            }
 
             // 7. Xác định redirect URL theo role
             if ($this->hasRole($user, 'admin')) {
@@ -439,8 +480,27 @@ class AuthController extends Controller
                                  // Lấy lại user vừa bị create bởi luồng khác
                  $user = User::where('email', $emailFromGoogle)->first();
                  if ($user) {
+                     // Lưu session ID trước khi đăng nhập để chuyển giỏ hàng
+                     $sessionId = session()->getId();
+                     
                      Auth::login($user, true);
                      $request->session()->regenerate();
+                     
+                     // Chuyển giỏ hàng từ session sang user
+                     try {
+                         $this->cartTransferService->transferCartFromSessionToUser($user->id, $sessionId);
+                         Log::info('Cart transferred successfully after Google login (duplicate case)', [
+                             'user_id' => $user->id,
+                             'session_id' => $sessionId
+                         ]);
+                     } catch (\Exception $e) {
+                         Log::error('Failed to transfer cart after Google login (duplicate case)', [
+                             'user_id' => $user->id,
+                             'session_id' => $sessionId,
+                             'error' => $e->getMessage()
+                         ]);
+                         // Không throw exception để không ảnh hưởng đến quá trình đăng nhập
+                     }
                      
                      if (empty($user->phone)) {
                          $redirectUrl = route('customer.phone-required');

@@ -2,8 +2,20 @@
 
 use Illuminate\Support\Facades\Broadcast;
 use App\Models\Conversation;
+use App\Models\Driver;
+use App\Models\Order;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+
+// Log::info('--- [DEBUG] channels.php file was loaded ---');
+// Log::info('[DEBUG] Auth Status Check:', [
+//     'default_guard' => Auth::getDefaultDriver(),
+//     'is_web_logged_in' => Auth::guard('web')->check(),
+//     'web_user_id' => Auth::guard('web')->id(),
+//     'is_driver_logged_in' => Auth::guard('driver')->check(),
+//     'driver_user_id' => Auth::guard('driver')->id()
+// ]);
 
 /*
 |--------------------------------------------------------------------------
@@ -29,12 +41,8 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
     }
 
     // Super admin can access all conversations
-    if ($user->role === 'super_admin') {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'role' => $user->role,
-        ];
+    if ($user->role === 'admin') {
+        return true;
     }
 
     // Branch users can access conversations assigned to their branch
@@ -61,7 +69,7 @@ Broadcast::channel('chat.{conversationId}', function ($user, $conversationId) {
 
 // Admin conversations channel
 Broadcast::channel('admin.conversations', function ($user) {
-    return in_array($user->role, ['admin', 'super_admin', 'spadmin']) ? [
+    return in_array($user->role, ['admin']) ? [
         'id' => $user->id,
         'name' => $user->name,
         'role' => $user->role,
@@ -79,10 +87,6 @@ Broadcast::channel('branch.{branchId}.conversations', function ($user, $branchId
 });
 
 
-Broadcast::channel('driver.{driverId}', function ($driver, $driverId) {
-    // Chỉ tài xế đã đăng nhập và có ID trùng khớp mới có thể nghe kênh này
-    return (int) $driver->id === (int) $driverId;
-});
 // Presence chat channel
 Broadcast::channel('presence-chat.{conversationId}', function ($user, $conversationId) {
     Log::info('[Broadcast] presence-chat', [
@@ -135,8 +139,78 @@ Broadcast::channel('discounts', function ($user = null) {
     return true;
 });
 
+
+Broadcast::channel('order.{orderId}', function ($user, $orderId) {
+    $order = Order::find($orderId);
+    if (!$order) {
+        return false;
+    }
+
+    // 1. Cho phép Customer sở hữu đơn hàng được nghe
+    if (Auth::guard('web')->check() && Auth::guard('web')->id() === $order->customer_id) {
+        return true;
+    }
+
+    // 2. Cho phép Driver ĐÃ ĐƯỢC GÁN vào đơn hàng được nghe
+    if (Auth::guard('driver')->check() && Auth::guard('driver')->id() === $order->driver_id) {
+        return true;
+    }
+
+    // === BỔ SUNG ĐIỀU KIỆN MỚI ===
+    // 3. Cho phép BẤT KỲ Driver nào cũng được nghe nếu đơn hàng đang ở trạng thái chờ
+    if (Auth::guard('driver')->check() && in_array($order->status, ['confirmed', 'awaiting_driver'])) {
+        return true;
+    }
+
+    return false;
+});
+
+
+/**
+ * Kênh chung cho tất cả tài xế.
+ */
+Broadcast::channel('drivers', function ($user) {
+    // Thay vì kiểm tra "instanceof Driver", ta kiểm tra trực tiếp guard 'driver'.
+    // Điều này chính xác và an toàn hơn.
+    return Auth::guard('driver')->check();
+});
+
+// =========================================================================
+// === BỔ SUNG KÊNH MỚI CHO CHI NHÁNH ===
+// =========================================================================
+/**
+ * Kênh riêng cho từng chi nhánh.
+ * Dùng để nhận thông báo khi có đơn hàng mới được khách hàng đặt cho chi nhánh đó.
+ * Chỉ nhân viên/quản lý của chi nhánh đó mới được nghe.
+ */
+Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
+    // Giả sử model User của bạn có 'branch_id' và 'role'
+    $isBranchMember = in_array($user->role, ['manager', 'branch_staff']);
+    $isCorrectBranch = (int)$user->branch_id === (int)$branchId;
+
+    return $isBranchMember && $isCorrectBranch;
+});
+
+
 // Wishlist channel for a specific user
 Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
     // Only the authenticated user with the matching ID can listen.
     return (int) $user->id === (int) $userId;
+});
+
+// Branch orders channel
+Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
+    // Only branch managers and staff can listen to their branch orders
+    return (in_array($user->role, ['branch_manager', 'branch_staff']) && $user->branch_id == $branchId) ? [
+        'id' => $user->id,
+        'name' => $user->name,
+        'role' => $user->role,
+        'branch_id' => $user->branch_id,
+    ] : false;
+});
+
+// Public branch orders channel for general updates
+Broadcast::channel('branch-orders-channel', function ($user = null) {
+    // Allow all authenticated users to listen to general order updates
+    return true;
 });

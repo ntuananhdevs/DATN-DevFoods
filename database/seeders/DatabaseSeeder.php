@@ -29,6 +29,9 @@ class DatabaseSeeder extends Seeder
             DiscountUsageHistorySeeder::class,
             UserRankHistorySeeder::class,
             GeneralSettingSeeder::class,
+            AddressSeeder::class, // Đảm bảo AddressSeeder chạy trước
+            CartSeeder::class, // CartSeeder trước OrderSeeder
+            OrderSeeder::class, // OrderSeeder sau khi đã có address
         ]);
     }
 }
