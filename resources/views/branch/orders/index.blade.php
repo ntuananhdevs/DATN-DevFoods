@@ -172,170 +172,117 @@
         </div>
     </div>
 
-    <!-- Status Tabs -->
+    <!-- Status Tabs (đặt ngoài form) -->
     <div class="mb-6">
         <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8 overflow-x-auto">
-                <a href="{{ route('branch.orders.index', array_merge(request()->query(), ['status' => 'all'])) }}" 
-                   class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status', 'all') == 'all' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                    Tất cả (<span>{{ $statusCounts['all'] }}</span>)
+            <nav id="orderStatusTabs" class="-mb-px flex space-x-8 overflow-x-auto">
+                <a href="{{ route('branch.orders.index') }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ !request('status') || request('status') == 'all' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="all">
+                    Tất cả ({{ $statusCounts['all'] ?? 0 }})
                 </a>
-                <a href="{{ route('branch.orders.index', array_merge(request()->query(), ['status' => 'pending'])) }}" 
-                   class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'pending' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Chờ (<span>{{ $statusCounts['pending'] }}</span>)
+                <a href="{{ route('branch.orders.index', ['status' => 'awaiting_confirmation']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'awaiting_confirmation' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="awaiting_confirmation">
+                    Chờ xác nhận ({{ $statusCounts['awaiting_confirmation'] ?? 0 }})
                 </a>
-                <a href="{{ route('branch.orders.index', array_merge(request()->query(), ['status' => 'processing'])) }}" 
-                   class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'processing' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
-                    Chuẩn bị (<span>{{ $statusCounts['processing'] }}</span>)
+                <a href="{{ route('branch.orders.index', ['status' => 'awaiting_driver']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'awaiting_driver' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="awaiting_driver">
+                    Chờ tài xế ({{ $statusCounts['awaiting_driver'] ?? 0 }})
                 </a>
-                <a href="{{ route('branch.orders.index', array_merge(request()->query(), ['status' => 'ready'])) }}" 
-                   class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'ready' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Sẵn sàng (<span>{{ $statusCounts['ready'] }}</span>)
+                <a href="{{ route('branch.orders.index', ['status' => 'in_transit']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'in_transit' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="in_transit">
+                    Đang giao ({{ $statusCounts['in_transit'] ?? 0 }})
                 </a>
-                <a href="{{ route('branch.orders.index', array_merge(request()->query(), ['status' => 'delivery'])) }}" 
-                   class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'delivery' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Giao (<span>{{ $statusCounts['delivery'] }}</span>)
+                <a href="{{ route('branch.orders.index', ['status' => 'delivered']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'delivered' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="delivered">
+                    Đã giao ({{ $statusCounts['delivered'] ?? 0 }})
                 </a>
-                <a href="{{ route('branch.orders.index', array_merge(request()->query(), ['status' => 'completed'])) }}" 
-                   class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'completed' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    Hoàn thành (<span>{{ $statusCounts['completed'] }}</span>)
+                <a href="{{ route('branch.orders.index', ['status' => 'cancelled']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'cancelled' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="cancelled">
+                    Đã hủy ({{ $statusCounts['cancelled'] ?? 0 }})
                 </a>
-                <a href="{{ route('branch.orders.index', array_merge(request()->query(), ['status' => 'cancelled'])) }}" 
-                   class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'cancelled' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
-                    <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Hủy (<span>{{ $statusCounts['cancelled'] }}</span>)
+                <a href="{{ route('branch.orders.index', ['status' => 'refunded']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'refunded' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="refunded">
+                    Đã hoàn tiền ({{ $statusCounts['refunded'] ?? 0 }})
                 </a>
             </nav>
         </div>
     </div>
 
-    <!-- Orders Grid -->
-    <div id="ordersGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Orders Grid + Pagination -->
+    <div id="ordersGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         @forelse($orders as $order)
-            <div class="order-card bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="p-4">
-                    <div class="flex items-start gap-3 mb-3">
+            <div class="order-card bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col relative pb-16" data-order-id="{{ $order->id }}">
+                <div class="p-2 flex flex-col h-full pb-2">
+                    <div class="flex items-start gap-3 mb-2">
                         <input type="checkbox" class="order-checkbox mt-1 rounded" data-order-id="{{ $order->id }}">
                         <div class="flex-1">
-                            <div class="flex justify-between items-start mb-2">
+                            <div class="flex justify-between items-center mb-1">
                                 <div class="flex items-center gap-2">
                                     <h3 class="font-semibold text-lg text-gray-900">#{{ $order->order_code ?? $order->id }}</h3>
                                     @if($order->points_earned > 0)
                                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"></path>
-                                            </svg>
                                             +{{ $order->points_earned }} điểm
                                         </span>
                                     @endif
                                 </div>
-                                <span class="status-badge {{ $order->statusColor }} text-white rounded-lg px-1">{{ $order->statusText }}</span>
+                                <span class="status-badge {{ $order->statusColor }} text-white rounded-lg px-2">{{ $order->statusText }}</span>
                             </div>
-
-                            <div class="flex items-center gap-2 mb-2">
-                                <div class="tooltip flex items-center gap-1 cursor-help">
-                                    <span class="text-sm font-medium text-gray-900">{{ $order->customerName }}</span>
-                                    @if($order->customer)
-                                        <svg class="w-3 h-3 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z" clip-rule="evenodd"></path>
-                                        </svg>
-                                    @endif
-                                    <div class="tooltip-content">
-                                        <div class="text-xs space-y-1">
-                                            <p>📞 {{ $order->customerPhone }}</p>
-                                            @if($order->customer)
-                                                <p>📦 Tổng đơn: {{ $order->customer->orders()->count() }}</p>
-                                                <p>📅 Đơn gần nhất: {{ $order->customer->orders()->latest()->first()?->order_date?->format('Y-m-d') ?? 'N/A' }}</p>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="space-y-2 mb-4 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Tổng tiền:</span>
-                                    <span class="font-medium text-gray-900">{{ number_format($order->total_amount) }}₫</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Thời gian:</span>
-                                    <span class="text-gray-700">{{ $order->order_date->format('d/m/Y H:i') }}</span>
-                                </div>
-                                @if($order->estimated_delivery_time)
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Dự kiến giao:</span>
-                                        <span class="font-medium text-green-600">{{ $order->estimated_delivery_time->diffForHumans() }}</span>
-                                    </div>
-                                @endif
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Thanh toán:</span>
-                                    <span class="text-gray-700">{{ $order->payment?->paymentMethod?->name ?? 'Chưa thanh toán' }}</span>
-                                </div>
-                                @if($order->notes)
-                                    <div class="flex items-start gap-1">
-                                        <svg class="w-3 h-3 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                                        </svg>
-                                        <span class="text-xs text-gray-500 line-clamp-2">{{ $order->notes }}</span>
-                                    </div>
-                                @endif
-                            </div>
-
-                            @if(!in_array($order->status, ['completed', 'cancelled']))
-                                <div class="flex gap-2 mb-3">
-                                    @if($order->status == 'pending')
-                                        <button onclick="handleQuickAction({{ $order->id }}, 'confirm')" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
-                                            ✅ Xác nhận
-                                        </button>
-                                        <button onclick="handleQuickAction({{ $order->id }}, 'cancel')" class="px-2 py-1 text-xs rounded bg-red-500 text-white hover:bg-red-600">
-                                            ❌ Hủy
-                                        </button>
-                                    @elseif($order->status == 'processing')
-                                        <button onclick="handleQuickAction({{ $order->id }}, 'ready')" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
-                                            ✅ Sẵn sàng
-                                        </button>
-                                    @elseif($order->status == 'ready')
-                                        <button onclick="handleQuickAction({{ $order->id }}, 'deliver')" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
-                                            🚚 Giao hàng
-                                        </button>
-                                    @elseif($order->status == 'delivery')
-                                        <button onclick="handleQuickAction({{ $order->id }}, 'complete')" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
-                                            ✅ Hoàn thành
-                                        </button>
-                                    @endif
-                                </div>
-                            @endif
-
-                            <div class="flex gap-2">
-                                <a href="{{ route('branch.orders.show', $order->id) }}" class="flex-1">
-                                    <button class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                        Chi tiết
-                                    </button>
-                                </a>
-                                <a href="tel:{{ $order->customerPhone }}" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                    </svg>
-                                </a>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-gray-900 font-medium">{{ $order->customerName }}</span>
+                                <span class="text-gray-500 text-xs">{{ $order->customerPhone }}</span>
                             </div>
                         </div>
+                    </div>
+                    <div class="border-t border-gray-100 my-2"></div>
+                    <div class="flex flex-col gap-1 text-sm flex-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Tổng tiền:</span>
+                            <span class="font-semibold text-gray-900">{{ number_format($order->total_amount) }}₫</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Thời gian:</span>
+                            <span class="text-gray-700">{{ $order->order_date->format('d/m/Y H:i') }}</span>
+                        </div>
+                        @if($order->estimated_delivery_time)
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Dự kiến giao:</span>
+                            <span class="font-medium text-green-600">{{ $order->estimated_delivery_time->diffForHumans() }}</span>
+                        </div>
+                        @endif
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Thanh toán:</span>
+                            @php $pm = strtolower($order->payment?->paymentMethod?->name ?? ''); @endphp
+                            @if($pm === 'cod' || $pm === 'ship cod')
+                                <span class="inline-block px-2 py-1 rounded bg-green-500 text-white text-xs font-semibold">COD</span>
+                            @elseif($pm === 'vnpay')
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" style="height:1em;width:auto;display:inline;vertical-align:middle;" aria-label="VNPAY Icon">
+                                        <text x="0" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#e30613">VN</text>
+                                        <text x="18" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#0072bc">PAY</text>
+                                    </svg>
+                                </span>
+                            @else
+                                <span class="text-gray-700">{{ $order->payment?->paymentMethod?->name ?? 'Chưa thanh toán' }}</span>
+                            @endif
+                        </div>
+                        @if($order->notes)
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Note:</span>
+                            <span class="text-xs font-medium text-blue-700 bg-blue-50 rounded px-2 py-1 break-words" style="max-height:2rem;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;">
+                                {{ $order->notes }}
+                            </span>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                <div class="absolute left-0 bottom-0 w-full px-4 pb-3">
+                    <div class="flex gap-2 items-end">
+                        @if($order->status == 'awaiting_confirmation')
+                            <button data-quick-action="confirm" data-order-id="{{ $order->id }}" class="px-3 py-2 text-sm rounded-md bg-black text-white hover:bg-gray-800">
+                                Xác nhận
+                            </button>
+                            <button data-quick-action="cancel" data-order-id="{{ $order->id }}" class="px-3 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600">
+                                Hủy
+                            </button>
+                        @endif
+                        <a href="{{ route('branch.orders.show', $order->id) }}" class="flex-1">
+                            <button class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Chi tiết
+                            </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -353,193 +300,90 @@
             </div>
         @endforelse
     </div>
-
-    <!-- Pagination -->
-    @if($orders->hasPages())
-        <div class="mt-6">
-            {{ $orders->appends(request()->query())->links() }}
-        </div>
-    @endif
+    <div id="ordersPagination">
+        @if($orders->hasPages())
+            <div class="mt-6">
+                {{ $orders->appends(request()->query())->links() }}
+            </div>
+        @endif
+    </div>
 
     <!-- Bulk Actions Bar -->
-    <div id="bulkActionsBar" class="bulk-actions-bar">
+    <div id="bulkActionsBar" class="bulk-actions-bar mt-4">
         <div class="flex items-center gap-4">
             <span id="selectedCount" class="font-medium">0 đơn đã chọn</span>
             <button id="bulkConfirmBtn" class="px-3 py-1 bg-white text-blue-600 rounded text-sm font-medium hover:bg-gray-100">
-                ✅ Xác nhận tất cả
+                Xác nhận tất cả
             </button>
             <button id="bulkPrintBtn" class="px-3 py-1 bg-white text-blue-600 rounded text-sm font-medium hover:bg-gray-100">
-                🖨️ In tất cả
+                In tất cả
             </button>
             <button id="bulkCancelBtn" class="px-3 py-1 bg-red-500 text-white rounded text-sm font-medium hover:bg-red-600">
-                ❌ Hủy tất cả
+                Hủy tất cả
             </button>
             <button id="closeBulkActions" class="px-2 py-1 text-white hover:bg-blue-700 rounded">
-                ✕
+                Đóng
             </button>
         </div>
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast" class="fixed top-4 right-4 z-50 hidden">
-    <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm">
-        <div class="flex items-start">
-            <div class="flex-shrink-0">
-                <svg id="toastIcon" class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
-            <div class="ml-3 w-0 flex-1">
-                <p id="toastTitle" class="text-sm font-medium text-gray-900"></p>
-                <p id="toastMessage" class="mt-1 text-sm text-gray-500"></p>
-            </div>
-            <div class="ml-4 flex-shrink-0 flex">
-                <button id="closeToast" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @section('vendor-script')
 <script src="{{ asset('vendors/js/pickers/flatpickr/flatpickr.min.js') }}"></script>
 @endsection
 
+<script>
+window.branchId = @json(Auth::guard('manager')->user()->branch->id);
+window.pusherKey = @json(config('broadcasting.connections.pusher.key'));
+window.pusherCluster = @json(config('broadcasting.connections.pusher.options.cluster'));
+</script>
 @section('page-script')
 <script>
-// Global variables
-let selectedOrders = [];
-
-// Utility functions
-function showToast(title, message, type = 'success') {
-    const toast = document.getElementById('toast');
-    const toastIcon = document.getElementById('toastIcon');
-    const toastTitle = document.getElementById('toastTitle');
-    const toastMessage = document.getElementById('toastMessage');
-
-    toastTitle.textContent = title;
-    toastMessage.textContent = message;
-
-    // Set icon based on type
-    if (type === 'success') {
-        toastIcon.className = 'w-5 h-5 text-green-500';
-        toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
-    } else if (type === 'error') {
-        toastIcon.className = 'w-5 h-5 text-red-500';
-        toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
-    }
-
-    toast.classList.remove('hidden');
-    setTimeout(() => {
-        toast.classList.add('hidden');
-    }, 5000);
-}
-
-// Quick action handler
-function handleQuickAction(orderId, action) {
-    const statusMap = {
-        'confirm': 'processing',
-        'ready': 'ready',
-        'deliver': 'delivery',
-        'complete': 'completed',
-        'cancel': 'cancelled'
-    };
-
-    const newStatus = statusMap[action];
-    if (!newStatus) return;
-
-    // Send AJAX request
-    fetch(`/branch/orders/${orderId}/status`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        },
-        body: JSON.stringify({
-            status: newStatus,
-            note: `Thay đổi trạng thái từ ${action}`
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('✅ Thành công', data.message);
-            // Reload page to reflect changes
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        } else {
-            showToast('❌ Lỗi', data.message || 'Có lỗi xảy ra', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('❌ Lỗi', 'Có lỗi xảy ra khi cập nhật trạng thái', 'error');
-    });
-}
-
-// Initialize page
 document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners to checkboxes
-    document.querySelectorAll('.order-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const orderId = this.dataset.orderId;
-            const isChecked = this.checked;
-
-            if (isChecked) {
-                if (!selectedOrders.includes(orderId)) {
-                    selectedOrders.push(orderId);
-                }
-            } else {
-                selectedOrders = selectedOrders.filter(id => id !== orderId);
+    const tabs = document.querySelectorAll('#orderStatusTabs .status-tab');
+    const ordersGrid = document.getElementById('ordersGrid');
+    const ordersPagination = document.getElementById('ordersPagination');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Tab clicked:', tab.getAttribute('data-status'), tab.getAttribute('href'));
+            tabs.forEach(t => t.classList.remove('active', 'border-blue-500', 'text-blue-600'));
+            tab.classList.add('active', 'border-blue-500', 'text-blue-600');
+            const url = tab.getAttribute('href');
+            history.replaceState(null, '', url);
+            fetchOrdersByUrl(url);
+        });
+    });
+    function fetchOrdersByUrl(url) {
+        console.log('Fetching orders by URL:', url);
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
             }
-
-            updateBulkActionsBar();
+        })
+        .then(res => res.text())
+        .then(html => {
+            console.log('Fetched HTML:', html.substring(0, 200));
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newGrid = doc.getElementById('ordersGrid');
+            const newPagination = doc.getElementById('ordersPagination');
+            if (newGrid) {
+                ordersGrid.innerHTML = newGrid.innerHTML;
+                console.log('Updated ordersGrid');
+            }
+            if (newPagination) {
+                ordersPagination.innerHTML = newPagination.innerHTML;
+                console.log('Updated ordersPagination');
+            }
+        })
+        .catch(err => {
+            console.error('AJAX error:', err);
         });
-    });
-
-    // Toast close button
-    document.getElementById('closeToast').addEventListener('click', function() {
-        document.getElementById('toast').classList.add('hidden');
-    });
-
-    // Bulk actions
-    document.getElementById('closeBulkActions').addEventListener('click', function() {
-        selectedOrders = [];
-        document.querySelectorAll('.order-checkbox').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        updateBulkActionsBar();
-    });
-
-    // Export button
-    document.getElementById('exportBtn').addEventListener('click', function() {
-        showToast('📊 Xuất báo cáo thành công', 'File CSV đã được tải xuống');
-    });
+    }
 });
-
-function updateBulkActionsBar() {
-    const bulkActionsBar = document.getElementById('bulkActionsBar');
-    const selectedCount = document.getElementById('selectedCount');
-
-    if (selectedOrders.length > 0) {
-        bulkActionsBar.style.display = 'block';
-        selectedCount.textContent = `${selectedOrders.length} đơn đã chọn`;
-    } else {
-        bulkActionsBar.style.display = 'none';
-    }
-}
-
-// Simulate new order notifications
-setInterval(() => {
-    if (Math.random() < 0.05) { // 5% chance every 30 seconds
-        showToast('🔔 Đơn hàng mới!', 'Có đơn hàng mới cần xử lý');
-    }
-}, 30000);
 </script>
+<script src="{{ asset('js/branch/orders-realtime.js') }}"></script>
 @endsection

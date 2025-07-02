@@ -16,30 +16,13 @@ class ComboObserver
         if ($combo->isDirty('quantity')) {
             $newQuantity = $combo->quantity;
             $oldQuantity = $combo->getOriginal('quantity');
-            
+
             Log::info('Combo quantity updating', [
                 'combo_id' => $combo->id,
                 'combo_name' => $combo->name,
                 'old_quantity' => $oldQuantity,
                 'new_quantity' => $newQuantity
             ]);
-            
-            // Nếu số lượng về 0, tự động đặt trạng thái thành không hoạt động
-            if ($newQuantity <= 0) {
-                $combo->active = false;
-                Log::info('Combo automatically deactivated due to zero quantity', [
-                    'combo_id' => $combo->id,
-                    'combo_name' => $combo->name
-                ]);
-            }
-            // Nếu số lượng > 0 và combo đang không hoạt động, có thể tự động kích hoạt lại
-            elseif ($newQuantity > 0 && !$combo->active && $oldQuantity <= 0) {
-                $combo->active = true;
-                Log::info('Combo automatically reactivated due to positive quantity', [
-                    'combo_id' => $combo->id,
-                    'combo_name' => $combo->name
-                ]);
-            }
         }
     }
 
@@ -67,8 +50,8 @@ class ComboObserver
     {
         // Kiểm tra trạng thái khi tạo mới
         if ($combo->quantity <= 0) {
-            $combo->update(['active' => false]);
-            Log::info('New combo created with zero quantity, automatically deactivated', [
+            // Không tự động update trạng thái active nữa, chỉ log lại nếu muốn
+            Log::info('New combo created with zero quantity, no auto deactivate', [
                 'combo_id' => $combo->id,
                 'combo_name' => $combo->name
             ]);
