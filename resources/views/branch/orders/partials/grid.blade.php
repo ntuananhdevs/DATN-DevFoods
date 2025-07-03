@@ -107,7 +107,7 @@
             </div>
         </div>
     @empty
-        <div class="col-span-2">
+        <div class="col-span-3">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 mt-8">
                 <div class="p-8 text-center">
                     <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
