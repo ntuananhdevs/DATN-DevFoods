@@ -209,7 +209,46 @@
             <!-- Customer Information -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Thông tin khách hàng</h2>
-                
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="flex items-center justify-center w-11 h-11 rounded-full bg-blue-100 text-blue-700 font-bold text-lg">
+                        {{ strtoupper(mb_substr($order->customerName ?? 'U', 0, 1)) }}
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-base text-gray-900">{{ $order->customerName }}</span>
+                        <div class="flex items-center gap-2 text-gray-500 text-sm">
+                            <span class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 01-2.18 2A19.72 19.72 0 013 5.18 2 2 0 015 3h3a2 2 0 012 1.72c.13.81.36 1.6.68 2.34a2 2 0 01-.45 2.11l-1.27 1.27a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.74.32 1.53.55 2.34.68A2 2 0 0122 16.92z"/>
+                                </svg>
+                                {{ $order->customerPhone }}
+                            </span>
+                            @if(isset($order->distance_km))
+                                <span class="flex items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    {{ number_format($order->distance_km, 1) }} km
+                                </span>
+                            @endif
+                            @php
+                                $statusColors = [
+                                    'awaiting_confirmation' => 'bg-gray-200 text-gray-800',
+                                    'awaiting_driver' => 'bg-blue-100 text-blue-800',
+                                    'in_transit' => 'bg-blue-500 text-white',
+                                    'delivered' => 'bg-green-100 text-green-800',
+                                    'cancelled' => 'bg-red-100 text-red-800',
+                                    'refunded' => 'bg-yellow-100 text-yellow-800',
+                                ];
+                                $statusText = $order->statusText ?? ucfirst($order->status);
+                                $statusColor = $statusColors[$order->status] ?? 'bg-gray-200 text-gray-800';
+                            @endphp
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ $statusColor }}">
+                                {{ $statusText }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <p class="text-sm text-gray-500">Tên khách hàng</p>
