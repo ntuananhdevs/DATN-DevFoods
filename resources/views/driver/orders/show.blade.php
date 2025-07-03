@@ -128,7 +128,7 @@
                         <i class="fas fa-check mr-2"></i>Chấp nhận đơn hàng
                     </button>
                     @break
-                @case('driver_accepted')
+                @case('driver_picked_up')
                     <button onclick="confirmPickup()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700">
                         <i class="fas fa-shopping-bag mr-2"></i>Xác nhận đã lấy hàng
                     </button>
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 2. Cập nhật khu vực nút bấm hành động ở dưới cùng
             let newButtonHTML = '';
             switch(orderData.status) {
-                case 'driver_accepted': // Giả sử trạng thái sau khi accept là đây
+                case 'driver_picked_up': // Giả sử trạng thái sau khi accept là đây
                     newButtonHTML = `<button onclick="DriverOrderDetailPage.confirmPickupAction(this)" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700"><i class="fas fa-shopping-bag mr-2"></i>Xác nhận đã lấy hàng</button>`;
                     break;
                 case 'in_transit': // Giả sử trạng thái sau khi pickup là đây

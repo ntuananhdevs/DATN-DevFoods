@@ -21,7 +21,7 @@
                     <a href="{{ asset('/promotions') }}" class="text-sm font-medium {{ request()->is('promotions*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                         Khuyến Mãi
                     </a>
-                    <a href="{{ asset('/branchs') }}" class="text-sm font-medium {{ request()->is('branchs*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
+                    <a href="{{ asset('/branches') }}" class="text-sm font-medium {{ request()->is('branchs*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
                         Cửa Hàng
                     </a>
                     <a href="{{ asset('/about') }}" class="text-sm font-medium {{ request()->is('about*') ? 'text-orange-500' : 'hover:text-orange-500' }} transition-colors">
@@ -94,7 +94,7 @@
                         <ion-icon class="h-6 w-6" name="person-outline"></ion-icon>
                         <span class="ml-2 text-sm">Đăng nhập</span>
                     </a>
-                    
+
                 @endauth
 
                 <a href="{{ asset('/cart') }}" class="relative p-2">
