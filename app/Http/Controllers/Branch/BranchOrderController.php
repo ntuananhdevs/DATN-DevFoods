@@ -9,6 +9,8 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
+use App\Events\OrderStatusUpdated;
+use App\Events\Branch\NewOrderReceived;
 
 class BranchOrderController extends Controller
 {
@@ -66,19 +68,8 @@ class BranchOrderController extends Controller
             });
         }
 
-        // Sort
-        $sortField = 'order_date';
-        $sortDirection = 'desc';
-        
-        if ($request->filled('sort')) {
-            $sortParts = explode('-', $request->sort);
-            if (count($sortParts) === 2) {
-                $sortField = $sortParts[0];
-                $sortDirection = $sortParts[1];
-            }
-        }
-        
-        $query->orderBy($sortField, $sortDirection);
+        // Luôn sắp xếp đơn hàng mới nhất lên đầu
+        $query->orderBy('order_date', 'desc');
 
         // Get orders with pagination
         $orders = $query->paginate(20);
@@ -86,17 +77,20 @@ class BranchOrderController extends Controller
         // Get status counts
         $statusCounts = [
             'all' => Order::where('branch_id', $branch->id)->count(),
-            'pending' => Order::where('branch_id', $branch->id)->where('status', 'pending')->count(),
-            'processing' => Order::where('branch_id', $branch->id)->where('status', 'processing')->count(),
-            'ready' => Order::where('branch_id', $branch->id)->where('status', 'ready')->count(),
-            'delivery' => Order::where('branch_id', $branch->id)->where('status', 'delivery')->count(),
-            'completed' => Order::where('branch_id', $branch->id)->where('status', 'completed')->count(),
+            'awaiting_confirmation' => Order::where('branch_id', $branch->id)->where('status', 'awaiting_confirmation')->count(),
+            'awaiting_driver' => Order::where('branch_id', $branch->id)->where('status', 'awaiting_driver')->count(),
+            'in_transit' => Order::where('branch_id', $branch->id)->where('status', 'in_transit')->count(),
+            'delivered' => Order::where('branch_id', $branch->id)->where('status', 'delivered')->count(),
             'cancelled' => Order::where('branch_id', $branch->id)->where('status', 'cancelled')->count(),
+            'refunded' => Order::where('branch_id', $branch->id)->where('status', 'refunded')->count(),
         ];
 
         // Get payment methods for filter
         $paymentMethods = \App\Models\PaymentMethod::where('active', true)->get();
 
+        if ($request->ajax()) {
+            return view('branch.orders.partials.grid', compact('orders'))->render();
+        }
         return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods'));
     }
 
@@ -167,6 +161,9 @@ class BranchOrderController extends Controller
             'note' => $note ?: $this->getDefaultNote($oldStatus, $newStatus),
             'changed_at' => now()
         ]);
+
+        // Broadcast order status update event
+        event(new OrderStatusUpdated($order, $oldStatus, $newStatus));
 
         return response()->json([
             'success' => true,

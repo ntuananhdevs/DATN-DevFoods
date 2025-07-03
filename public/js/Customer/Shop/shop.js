@@ -445,51 +445,54 @@ document.addEventListener("DOMContentLoaded", function() {
             });
         });
         reviewForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (selectedRating === 0) {
-                dtmodalShowToast('error', { title: 'Lỗi', message: 'Vui lòng chọn số sao!' });
+            // Nếu là reply thì dùng AJAX, không reload trang
+            if (reviewForm.action.includes('/reply')) {
+                e.preventDefault();
+                const formData = new FormData(reviewForm);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const submitBtn = reviewForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Đang gửi...';
+
+                fetch(reviewForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: formData
+                })
+                .then(async response => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Gửi phản hồi';
+                    if (response.ok) {
+                        dtmodalShowToast('success', { title: 'Thành công', message: 'Phản hồi thành công!' });
+                        // Reset form về chế độ đánh giá
+                        if (cancelReplyBtn) cancelReplyBtn.click();
+                        reviewForm.reset();
+                        // KHÔNG tự động chèn reply vào DOM ở đây, chỉ chờ realtime xử lý
+                    } else {
+                        let errorMsg = 'Có lỗi xảy ra khi gửi phản hồi!';
+                        try {
+                            const data = await response.json();
+                            if (data && data.errors) {
+                                errorMsg = Object.values(data.errors).join('\n');
+                            } else if (data && data.message) {
+                                errorMsg = data.message;
+                            }
+                        } catch {}
+                        dtmodalShowToast('error', { title: 'Lỗi', message: errorMsg });
+                    }
+                    return;
+                })
+                .catch(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Gửi phản hồi';
+                    return;
+                });
                 return;
             }
-            const formData = new FormData(reviewForm);
-            formData.set('rating', selectedRating);
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const submitBtn = reviewForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Đang gửi...';
-            fetch(reviewForm.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: formData
-            })
-            .then(async response => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Gửi đánh giá';
-                if (response.ok) {
-                    dtmodalShowToast('success', { title: 'Thành công', message: 'Gửi đánh giá thành công! Đang chờ duyệt.' });
-                    reviewForm.reset();
-                    selectedRating = 0;
-                    updateStarDisplay(0);
-                } else {
-                    let errorMsg = 'Có lỗi xảy ra khi gửi đánh giá!';
-                    try {
-                        const data = await response.json();
-                        if (data && data.errors) {
-                            errorMsg = Object.values(data.errors).join('\n');
-                        } else if (data && data.message) {
-                            errorMsg = data.message;
-                        }
-                    } catch {}
-                    dtmodalShowToast('error', { title: 'Lỗi', message: errorMsg });
-                }
-            })
-            .catch(err => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Gửi đánh giá';
-                dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
-            });
+            // Nếu là gửi đánh giá thì để code cũ xử lý (submit form bình thường)
         });
     }
 
@@ -498,10 +501,11 @@ document.addEventListener("DOMContentLoaded", function() {
         btn.addEventListener('click', function() {
             const reviewId = this.getAttribute('data-review-id');
             if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             fetch(`/reviews/${reviewId}`, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': window.csrfToken,
+                    'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                 },
             })
@@ -544,6 +548,53 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+
+    // XỬ LÝ XÓA REPLY (fetch API)
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-reply-btn')) {
+            if (!confirm('Bạn có chắc chắn muốn xóa phản hồi này không?')) return;
+            const btn = e.target;
+            const replyId = btn.getAttribute('data-reply-id');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/review-replies/' + replyId, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                credentials: 'same-origin'
+            })
+            .then(async res => {
+                if (res.ok) {
+                    let data = await res.json();
+                    if (window.dtmodalShowToast) {
+                        dtmodalShowToast('success', { title: 'Thành công', message: data.message });
+                    } else {
+                        alert(data.message);
+                    }
+                    btn.closest('.reply-item').remove();
+                } else {
+                    let msg = 'Đã xảy ra lỗi!';
+                    try {
+                        const data = await res.json();
+                        if (data && data.message) msg = data.message;
+                    } catch {}
+                    if (window.dtmodalShowToast) {
+                        dtmodalShowToast('error', { title: 'Lỗi', message: msg });
+                    } else {
+                        alert(msg);
+                    }
+                }
+            })
+            .catch(() => {
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
+                } else {
+                    alert('Lỗi mạng hoặc server!');
+                }
+            });
+        }
+    });
 });
 
 // Tab switching functionality
@@ -1469,3 +1520,238 @@ discountsChannel.bind('discount-updated', function(data) {
         document.head.appendChild(style);
     }
 })();
+
+// === Reply review UX ===
+document.addEventListener('DOMContentLoaded', function() {
+    const reviewForm = document.getElementById('review-reply-form');
+    const replyReviewIdInput = document.getElementById('reply_review_id');
+    const replyingToDiv = document.getElementById('replying-to');
+    const replyingToUser = document.getElementById('replying-to-user');
+    const cancelReplyBtn = document.getElementById('cancel-reply');
+    const reviewTextarea = document.getElementById('review-textarea');
+    const reviewSubmitBtn = document.getElementById('review-submit-btn');
+    const formTitle = document.getElementById('form-title');
+    const defaultAction = reviewForm ? reviewForm.getAttribute('action') : '';
+    const defaultPlaceholder = reviewTextarea ? reviewTextarea.getAttribute('placeholder') : '';
+    const defaultBtnText = reviewSubmitBtn ? reviewSubmitBtn.textContent : '';
+    const defaultTitle = formTitle ? formTitle.textContent : '';
+
+    const ratingRow = document.getElementById('rating-row');
+    // Gắn sự kiện cho nút reply ở mỗi review
+    document.querySelectorAll('.reply-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reviewId = this.getAttribute('data-review-id');
+            const userName = this.getAttribute('data-user-name');
+            const routeReply = this.getAttribute('data-route-reply');
+            console.log('[Reply] Clicked reply for reviewId:', reviewId, 'userName:', userName, 'routeReply:', routeReply);
+            if (reviewForm) {
+                reviewForm.setAttribute('action', routeReply);
+                replyReviewIdInput.value = reviewId;
+                replyingToUser.textContent = userName;
+                replyingToDiv.classList.remove('hidden');
+                reviewTextarea.placeholder = `Phản hồi cho ${userName}...`;
+                reviewSubmitBtn.textContent = 'Gửi phản hồi';
+                formTitle.textContent = 'Gửi phản hồi';
+                reviewTextarea.focus();
+                if (ratingRow) ratingRow.style.display = 'none';
+                console.log('[Reply] Form action set to:', reviewForm.getAttribute('action'));
+            }
+            reviewTextarea.setAttribute('name', 'reply');
+        });
+    });
+    // Hủy reply, trở lại form đánh giá
+    if (cancelReplyBtn) {
+        cancelReplyBtn.addEventListener('click', function() {
+            if (reviewForm) {
+                reviewForm.setAttribute('action', defaultAction);
+                replyReviewIdInput.value = '';
+                replyingToDiv.classList.add('hidden');
+                reviewTextarea.placeholder = defaultPlaceholder;
+                reviewSubmitBtn.textContent = defaultBtnText;
+                formTitle.textContent = defaultTitle;
+                if (ratingRow) ratingRow.style.display = '';
+                console.log('[Reply] Cancel reply, form action reset to:', reviewForm.getAttribute('action'));
+            }
+            reviewTextarea.setAttribute('name', 'review');
+        });
+    }
+    // Debug submit
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', function(e) {
+            console.log('[Submit] Form action:', reviewForm.action, 'selectedRating:', typeof selectedRating !== 'undefined' ? selectedRating : 'N/A');
+        });
+    }
+});
+
+// === Realtime reply (Pusher) ===
+const reviewRepliesPusher = new Pusher(window.pusherKey, {
+    cluster: window.pusherCluster,
+    encrypted: true,
+    enabledTransports: ['ws', 'wss']
+});
+const reviewRepliesChannel = reviewRepliesPusher.subscribe('review-replies');
+reviewRepliesChannel.bind('review-reply-created', function(data) {
+    console.log('[Realtime] Nhận reply mới:', data);
+    const reviewBlock = document.querySelector(`[data-review-id="${data.review_id}"]`);
+    if (!reviewBlock) return;
+    // Kiểm tra quyền xóa
+    const canDelete = (window.currentUserId && (window.currentUserId == data.user_id || window.isAdmin === true));
+    const deleteBtnHtml = canDelete
+        ? `<button class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors delete-reply-btn" data-reply-id="${data.reply_id}">
+                <i class="fas fa-trash-alt"></i> Xóa
+           </button>`
+        : '';
+    // Tạo HTML cho reply mới (format date, có nút xóa nếu đúng quyền)
+    const replyHtml = `
+        <div class="reply-item flex items-start gap-2 ml-8 mt-2 relative">
+            <div class="reply-arrow">
+                <svg width="24" height="24" viewBox="0 0 24 24" class="text-blue-400"><path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-semibold text-blue-700">${data.user_name || 'Ẩn danh'}</span>
+                    <span class="text-xs text-gray-400">${formatDate(data.reply_date)}</span>
+                    ${deleteBtnHtml}
+                </div>
+                <div class="text-gray-700">${data.reply_content}</div>
+            </div>
+        </div>
+    `;
+    // Chèn vào cuối danh sách reply của review này
+    let lastReply = null;
+    let sibling = reviewBlock.nextElementSibling;
+    while (sibling && sibling.classList.contains('reply-item')) {
+        lastReply = sibling;
+        sibling = sibling.nextElementSibling;
+    }
+    let newReplyElem;
+    if (lastReply) {
+        lastReply.insertAdjacentHTML('afterend', replyHtml);
+        newReplyElem = lastReply.nextElementSibling;
+    } else {
+        // Nếu chưa có reply nào, chèn ngay sau reviewBlock
+        reviewBlock.insertAdjacentHTML('afterend', replyHtml);
+        newReplyElem = reviewBlock.nextElementSibling;
+    }
+    // Không highlight nữa, chỉ scroll tới reply mới nếu muốn
+    if (newReplyElem) {
+        newReplyElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+
+// XÓA CSS hiệu ứng highlight nếu có
+(function() {
+    const style = document.getElementById('reply-highlight-style');
+    if (style) style.remove();
+})();
+
+// Format date helper
+function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    const pad = n => n < 10 ? '0' + n : n;
+    return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Listen for review-reply-deleted event
+reviewRepliesChannel.bind('review-reply-deleted', function(data) {
+    console.log('[Realtime] Xóa reply:', data);
+    // Tìm reply-item theo data-reply-id
+    const replyElem = document.querySelector(`.reply-item[data-reply-id="${data.reply_id}"]`);
+    if (replyElem) {
+        replyElem.remove();
+    }
+});
+
+// === Realtime xóa bình luận (review) ===
+const reviewEventsPusher = new Pusher(window.pusherKey, {
+    cluster: window.pusherCluster,
+    encrypted: true,
+    enabledTransports: ['ws', 'wss']
+});
+const reviewEventsChannel = reviewEventsPusher.subscribe('review-events');
+reviewEventsChannel.bind('review-deleted', function(data) {
+    console.log('[Realtime] Xóa bình luận:', data);
+    // Tìm review block theo data-review-id
+    const reviewElem = document.querySelector(`[data-review-id="${data.review_id}"]`);
+    if (reviewElem) {
+        // Xóa cả các reply-item liên tiếp phía sau (nếu có)
+        let sibling = reviewElem.nextElementSibling;
+        while (sibling && sibling.classList.contains('reply-item')) {
+            const toRemove = sibling;
+            sibling = sibling.nextElementSibling;
+            toRemove.remove();
+        }
+        reviewElem.remove();
+    }
+});
+
+// === Hữu ích (AJAX + realtime) ===
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.helpful-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reviewId = this.getAttribute('data-review-id');
+            const countSpan = this.querySelector('.helpful-count');
+            const button = this;
+            const icon = button.querySelector('i');
+            const isHelpful = button.getAttribute('data-helpful') === '1';
+            if (!isHelpful) {
+                // Mark helpful (POST)
+                fetch(`/reviews/${reviewId}/helpful`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': window.csrfToken,
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        countSpan.textContent = data.helpful_count;
+                        button.classList.add('helpful-active', 'text-sky-600');
+                        icon.classList.add('text-sky-600');
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        button.setAttribute('data-helpful', '1');
+                    }
+                });
+            } else {
+                // Unmark helpful (DELETE)
+                fetch(`/reviews/${reviewId}/helpful`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': window.csrfToken,
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        countSpan.textContent = data.helpful_count;
+                        button.classList.remove('helpful-active', 'text-sky-600');
+                        icon.classList.remove('text-sky-600');
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        button.setAttribute('data-helpful', '0');
+                    }
+                });
+            }
+        });
+    });
+});
+
+// Lắng nghe realtime cập nhật số hữu ích và trạng thái nút
+const helpfulPusher = new Pusher(window.pusherKey, {
+    cluster: window.pusherCluster,
+    encrypted: true,
+    enabledTransports: ['ws', 'wss']
+});
+const helpfulChannel = helpfulPusher.subscribe('review-helpful');
+helpfulChannel.bind('review-helpful-updated', function(data) {
+    const btn = document.querySelector(`.helpful-btn[data-review-id="${data.review_id}"]`);
+    if (btn) {
+        const countSpan = btn.querySelector('.helpful-count');
+        if (countSpan) countSpan.textContent = data.helpful_count;
+        // Đã bỏ fetch API kiểm tra trạng thái, chỉ cập nhật số
+    }
+});

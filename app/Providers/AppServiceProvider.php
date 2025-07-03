@@ -19,6 +19,13 @@ use App\Observers\ProductVariantObserver;
 use App\Models\ProductVariant;
 use App\Observers\ComboObserver;
 use App\Models\Combo;
+use App\Observers\OrderObserver;
+use App\Models\Order;
+use App\Models\ReviewReply;
+use App\Observers\ReviewReplyObserver;
+use App\Models\ProductReview;
+use App\Observers\ProductReviewObserver;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -55,6 +62,15 @@ class AppServiceProvider extends ServiceProvider
 
         // Register ComboObserver
         Combo::observe(ComboObserver::class);
+
+        // Register OrderObserver
+        Order::observe(OrderObserver::class);
+
+        // Register ReviewReplyObserver
+        ReviewReply::observe(ReviewReplyObserver::class);
+
+        // Register ProductReviewObserver
+        ProductReview::observe(ProductReviewObserver::class);
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Driver;
 
+use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 
 class OrderController extends Controller
 {
@@ -16,17 +18,23 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $driverId = Auth::guard('driver')->id();
-        $tabStatuses = ['processing', 'delivering', 'delivered', 'cancelled'];
-        $initialStatus = $request->query('status', 'processing');
+
+        // Cập nhật các tab hiển thị cho Driver
+        $tabConfig = [
+            'in_progress' => ['label' => 'Đang thực hiện', 'statuses' => ['driver_picked_up', 'in_transit']],
+            'completed' => ['label' => 'Đã hoàn thành', 'statuses' => ['delivered', 'item_received']],
+            'problem' => ['label' => 'Đơn sự cố', 'statuses' => ['cancelled', 'failed_delivery', 'delivery_incomplete']],
+        ];
         
-        if (!in_array($initialStatus, $tabStatuses)) {
-            $initialStatus = 'processing';
+        $currentTab = $request->query('tab', 'in_progress');
+        if (!array_key_exists($currentTab, $tabConfig)) {
+            $currentTab = 'in_progress';
         }
 
         // Query cơ bản với các thông tin eager-load cần thiết
-        $query = Order::with('customer')
+        $query = Order::with(['customer', 'branch'])
                       ->where('driver_id', $driverId)
-                      ->where('status', $initialStatus);
+                      ->whereIn('status', $tabConfig[$currentTab]['statuses']);
 
         // THÊM LOGIC TÌM KIẾM
         if ($request->filled('search')) {
@@ -40,35 +48,33 @@ class OrderController extends Controller
             });
         }
 
-        // Lấy danh sách đơn hàng và phân trang
         $orders = $query->latest()->paginate(10);
 
         // Đếm số lượng cho mỗi tab
         $statusCounts = [];
-        foreach ($tabStatuses as $status) {
-            $statusCounts[$status] = Order::where('driver_id', $driverId)->where('status', $status)->count();
+        foreach ($tabConfig as $key => $config) {
+            $statusCounts[$key] = Order::where('driver_id', $driverId)->whereIn('status', $config['statuses'])->count();
         }
 
-        return view('driver.orders.index', compact('orders', 'initialStatus', 'tabStatuses', 'statusCounts'));
+        return view('driver.orders.index', compact('orders', 'currentTab', 'tabConfig', 'statusCounts'));
     }
 
     /**
      * Hiển thị chi tiết một đơn hàng.
      */
-    public function show($orderId) // Thay đổi để nhận orderId từ route
+    public function show($orderId)
     {
         $driverId = Auth::guard('driver')->id();
+        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.primaryImage'])->findOrFail($orderId);
 
-        // Lấy chi tiết đơn hàng, kèm theo các thông tin liên quan
-        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.images'])
-                        ->findOrFail($orderId);
-
-        // Logic mới: Chỉ báo lỗi 403 khi đơn hàng đã có người nhận VÀ người đó không phải là mình
-        if ($order->driver_id !== null && $order->driver_id != $driverId) {
+        // Logic mới:
+        // 1. Nếu đơn hàng chưa có tài xế và đang chờ -> Cho phép xem để nhận đơn.
+        // 2. Nếu đơn hàng đã có tài xế và là của mình -> Cho phép xem.
+        // 3. Các trường hợp khác -> Không cho phép.
+        if ($order->status !== 'awaiting_driver' && $order->driver_id != $driverId) {
             abort(403, 'Bạn không có quyền xem đơn hàng này.');
         }
 
-        // Nếu đơn hàng chưa có người nhận (driver_id = null) hoặc là của mình thì cho phép xem
         return view('driver.orders.show', compact('order'));
     }
 
@@ -88,40 +94,73 @@ class OrderController extends Controller
         return view('driver.orders.navigate', compact('order'));
     }
 
-    // --- CÁC HÀNH ĐỘNG CỦA TÀI XẾ ---
+    // === CÁC HÀNH ĐỘNG CỦA TÀI XẾ - ĐƯỢC SẮP XẾP LẠI LOGIC ===
 
-    public function accept(Order $order)
+    /**
+     * HÀM HELPER: Xử lý các tác vụ chung.
+     */
+    private function processUpdate(Order $order, string $successMessage): JsonResponse
     {
-        if ($order->status === 'pending' && is_null($order->driver_id)) {
-            $order->driver_id = Auth::guard('driver')->id();
-            $order->status = 'processing';
-            $order->save();
-            // Gửi event real-time cho khách hàng (nếu có)
-            return response()->json(['success' => true, 'message' => 'Đã nhận đơn hàng thành công!']);
-        }
-        return response()->json(['success' => false, 'message' => 'Đơn hàng này không còn khả dụng.'], 400);
+        $order->save();
+        $freshOrder = $order->fresh();
+        broadcast(new OrderStatusUpdated($freshOrder));
+
+        return response()->json([
+            'success' => true,
+            'message' => $successMessage,
+            'order'   => $freshOrder
+        ]);
     }
 
-    public function confirmPickup(Order $order)
+    /**
+     * HÀM 1: Tài xế chấp nhận một đơn hàng.
+     * Trạng thái chuyển đổi: 'awaiting_driver' -> 'driver_accepted'
+     */
+    public function accept(Order $order): JsonResponse
     {
-        if ($order->driver_id === Auth::guard('driver')->id() && $order->status === 'processing') {
-            $order->status = 'delivering';
-            $order->save();
-            // Gửi event real-time cho khách hàng (nếu có)
-            return response()->json(['success' => true, 'message' => 'Đã lấy hàng. Bắt đầu giao!']);
+        // Điều kiện: Đơn hàng phải đang chờ tài xế và chưa có ai nhận.
+        if ($order->status !== 'awaiting_driver' || !is_null($order->driver_id)) {
+            return response()->json(['success' => false, 'message' => 'Đơn hàng này không còn khả dụng.'], 400);
         }
-        return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ.'], 400);
+
+        $order->driver_id = Auth::guard('driver')->id();
+        $order->status = 'driver_accepted'; // MỚI: Trạng thái cho biết tài xế đã nhận và đang trên đường đến quán.
+
+        return $this->processUpdate($order, 'Đã nhận đơn hàng! Đang đến điểm lấy hàng.');
     }
 
-    public function confirmDelivery(Order $order)
+    /**
+     * HÀM 2: Tài xế xác nhận đã lấy hàng từ chi nhánh.
+     * Trạng thái chuyển đổi: 'driver_accepted' -> 'in_transit'
+     */
+    public function confirmPickup(Order $order): JsonResponse
     {
-        if ($order->driver_id === Auth::guard('driver')->id() && $order->status === 'delivering') {
-            $order->status = 'delivered';
-            $order->delivery_date = Carbon::now();
-            $order->save();
-            // Logic cộng tiền vào ví tài xế, tính toán...
-            return response()->json(['success' => true, 'message' => 'Đã giao hàng thành công!']);
+        // Điều kiện: Phải là tài xế của đơn hàng và đơn hàng phải ở trạng thái "đã chấp nhận".
+        if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'driver_accepted') {
+            return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ hoặc bạn không có quyền.'], 400);
         }
-        return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ.'], 400);
+
+        $order->status = 'in_transit'; // Bây giờ mới chính thức "Đang vận chuyển".
+
+        return $this->processUpdate($order, 'Đã lấy hàng thành công. Bắt đầu giao!');
     }
+
+    /**
+     * HÀM 3: Tài xế xác nhận đã giao hàng thành công.
+     * Trạng thái chuyển đổi: 'in_transit' -> 'delivered'
+     */
+    public function confirmDelivery(Order $order): JsonResponse
+    {
+        // Điều kiện: Phải là tài xế của đơn hàng và đơn hàng phải đang được vận chuyển.
+        if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'in_transit') {
+            return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ.'], 400);
+        }
+
+        $order->status = 'delivered';
+        $order->actual_delivery_time = Carbon::now();
+
+        return $this->processUpdate($order, 'Đã giao hàng thành công!');
+    }
+
+    
 }

@@ -933,4 +933,67 @@ class ProductController extends Controller
         }
         return back()->with('success', 'Xóa bình luận thành công!');
     }
+
+    public function markHelpful($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập!'], 401);
+        }
+
+        $review = \App\Models\ProductReview::findOrFail($id);
+
+        // Kiểm tra nếu user đã bấm rồi thì không cho bấm nữa
+        $already = \App\Models\ReviewHelpful::where('user_id', $user->id)->where('review_id', $review->id)->exists();
+        if ($already) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã bấm hữu ích!',
+                'helpful_count' => $review->helpful_count,
+                'review_id' => $review->id
+            ]);
+        }
+
+        // Tạo record mới
+        \App\Models\ReviewHelpful::create([
+            'user_id' => $user->id,
+            'review_id' => $review->id
+        ]);
+        $review->helpful_count = $review->helpful_count + 1;
+        $review->save();
+
+        return response()->json([
+            'success' => true,
+            'helpful_count' => $review->helpful_count,
+            'review_id' => $review->id
+        ]);
+    }
+
+    public function unmarkHelpful($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập!'], 401);
+        }
+        $review = \App\Models\ProductReview::findOrFail($id);
+        $helpful = \App\Models\ReviewHelpful::where('user_id', $user->id)->where('review_id', $review->id)->first();
+        if (!$helpful) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa bấm hữu ích!',
+                'helpful_count' => $review->helpful_count,
+                'review_id' => $review->id
+            ]);
+        }
+        $helpful->delete();
+        if ($review->helpful_count > 0) {
+            $review->helpful_count = $review->helpful_count - 1;
+            $review->save();
+        }
+        return response()->json([
+            'success' => true,
+            'helpful_count' => $review->helpful_count,
+            'review_id' => $review->id
+        ]);
+    }
 }
