@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             AddressSeeder::class, // Đảm bảo AddressSeeder chạy trước
             CartSeeder::class, // CartSeeder trước OrderSeeder
             OrderSeeder::class, // OrderSeeder sau khi đã có address
+            // ProductReviewSeeder::class,
         ]);
     }
 }
