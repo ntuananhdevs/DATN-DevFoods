@@ -259,7 +259,18 @@ class CartController extends Controller
             }
             $item->best_discount = $maxDiscount;
             $item->best_discount_value = $maxValue;
-            $item->final_price = max(0, $originPrice - $maxValue) + $item->toppings->sum('price');
+            // Debug giá topping từng item
+            $toppingSum = $item->toppings->sum('price');
+            $toppingSumWithRelation = $item->toppings->sum(function($t) { return $t->topping->price ?? 0; });
+            \Log::debug('CartItem debug', [
+                'cart_item_id' => $item->id,
+                'variant_price' => $originPrice,
+                'topping_ids' => $item->toppings->pluck('topping_id'),
+                'topping_sum' => $toppingSum,
+                'topping_sum_with_relation' => $toppingSumWithRelation,
+                'topping_names' => $item->toppings->map(function($t) { return $t->topping->name ?? null; }),
+            ]);
+            $item->final_price = max(0, $originPrice - $maxValue) + $toppingSumWithRelation;
         }
 
         return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart', 'suggestedProducts'));
@@ -373,7 +384,7 @@ class CartController extends Controller
 
                 // Loop through existing items to find an exact match (including toppings)
                 foreach ($existingCartItems as $item) {
-                    $itemToppingIds = $item->toppings->pluck('id')->sort()->values()->all();
+                    $itemToppingIds = $item->toppings->pluck('topping_id')->sort()->values()->all();
                     
                     if ($itemToppingIds == $requestToppingIds) {
                         $matchingCartItem = $item;
