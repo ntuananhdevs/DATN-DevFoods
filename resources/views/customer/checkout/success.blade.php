@@ -208,11 +208,7 @@
                 <div>
                     <h3 class="font-medium mb-2">Phương thức thanh toán</h3>
                     <p class="text-gray-600">
-                        @if($order->payment_id)
-                            {{ $order->payment->method ?? 'Thanh toán khi nhận hàng' }}
-                        @else
-                            Thanh toán khi nhận hàng
-                        @endif
+                        {{ $order->paymentMethodText }}
                     </p>
                 </div>
             </div>

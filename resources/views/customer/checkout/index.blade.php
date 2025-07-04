@@ -117,6 +117,37 @@
                                 @enderror
                             </div>
 
+                            @auth
+                                @if($userAddresses && $userAddresses->count() > 0)
+                                    <div class="md:col-span-2 mb-4">
+                                        <label for="saved_address" class="form-label">Chọn địa chỉ đã lưu</label>
+                                        <select id="saved_address" name="address_id" class="form-control">
+                                            <option value="">-- Chọn địa chỉ hoặc nhập mới --</option>
+                                            @foreach($userAddresses as $savedAddress)
+                                                <option value="{{ $savedAddress->id }}" 
+                                                    data-address="{{ $savedAddress->address_line }}"
+                                                    data-city="{{ $savedAddress->city }}"
+                                                    data-district="{{ $savedAddress->district }}"
+                                                    data-ward="{{ $savedAddress->ward }}"
+                                                    data-phone="{{ $savedAddress->phone_number }}"
+                                                    {{ $savedAddress->is_default ? 'selected' : '' }}>
+                                                    {{ $savedAddress->address_line }}, {{ $savedAddress->ward }}, {{ $savedAddress->district }}, {{ $savedAddress->city }}
+                                                    @if($savedAddress->is_default)
+                                                        <span class="text-green-600">(Mặc định)</span>
+                                                    @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Chọn địa chỉ có sẵn hoặc để trống để nhập địa chỉ mới
+                                        </div>
+                                        @error('address_id')
+                                            <span class="text-red-500 text-sm">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                @endif
+                            @endauth
+
                             <div>
                                 <label for="city" class="form-label required">Tỉnh/Thành phố</label>
                                 <select id="city" name="city" class="form-control" required>
@@ -374,6 +405,8 @@
             const addressInput = document.getElementById('address');
             const addressAutocomplete = document.getElementById('address-autocomplete');
             const checkoutForm = document.getElementById('checkout-form');
+            const savedAddressSelect = document.getElementById('saved_address');
+            const phoneInput = document.getElementById('phone');
 
             console.log('Script loaded, elements:', {
                 district: districtSelect,
@@ -426,6 +459,54 @@
 
             // Fetch districts of Hanoi on page load
             fetchDistricts();
+
+            // Handle saved address selection
+            if (savedAddressSelect) {
+                savedAddressSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    
+                    if (selectedOption.value) {
+                        // Auto-fill form fields with saved address data
+                        const addressData = {
+                            address: selectedOption.dataset.address,
+                            city: selectedOption.dataset.city,
+                            district: selectedOption.dataset.district,
+                            ward: selectedOption.dataset.ward,
+                            phone: selectedOption.dataset.phone
+                        };
+
+                        // Fill address fields
+                        addressInput.value = addressData.address;
+                        if (phoneInput && addressData.phone) {
+                            phoneInput.value = addressData.phone;
+                        }
+
+                        // Set city (should be Hà Nội by default)
+                        document.getElementById('city').value = addressData.city;
+
+                        // Trigger district fetch and set district value
+                        fetchDistricts().then(() => {
+                            setTimeout(() => {
+                                districtSelect.value = addressData.district;
+                                
+                                // Trigger ward fetch and set ward value
+                                fetchWards().then(() => {
+                                    setTimeout(() => {
+                                        wardSelect.value = addressData.ward;
+                                    }, 100);
+                                });
+                            }, 100);
+                        });
+
+                        showToast('Đã điền thông tin từ địa chỉ đã lưu');
+                    } else {
+                        // Clear form fields when no address is selected
+                        addressInput.value = '';
+                        districtSelect.selectedIndex = 0;
+                        wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
+                    }
+                });
+            }
 
             // Add event listeners
             districtSelect.addEventListener('change', function() {
@@ -651,7 +732,7 @@
                 districtSelect.innerHTML = '<option value="">Đang tải...</option>';
 
                 // Fetch districts from API
-                fetch(`https://provinces.open-api.vn/api/p/${HANOI_PROVINCE_CODE}?depth=2`)
+                return fetch(`https://provinces.open-api.vn/api/p/${HANOI_PROVINCE_CODE}?depth=2`)
                     .then(response => response.json())
                     .then(data => {
                         console.log('Districts data:', data);
@@ -668,10 +749,12 @@
                                 districtSelect.appendChild(option);
                             });
                         }
+                        return data;
                     })
                     .catch(error => {
                         console.error('Error fetching districts:', error);
                         districtSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
+                        throw error;
                     });
             }
 
@@ -682,7 +765,7 @@
 
                 const selectedDistrict = districtSelect.options[districtSelect.selectedIndex];
                 if (!selectedDistrict || !selectedDistrict.dataset.code) {
-                    return;
+                    return Promise.resolve();
                 }
 
                 const districtCode = selectedDistrict.dataset.code;
@@ -691,7 +774,7 @@
                 wardSelect.innerHTML = '<option value="">Đang tải...</option>';
 
                 // Fetch wards from API
-                fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+                return fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
                     .then(response => response.json())
                     .then(data => {
                         console.log('Wards data:', data);
@@ -707,10 +790,12 @@
                                 wardSelect.appendChild(option);
                             });
                         }
+                        return data;
                     })
                     .catch(error => {
                         console.error('Error fetching wards:', error);
                         wardSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
+                        throw error;
                     });
             }
 
