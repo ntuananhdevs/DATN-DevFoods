@@ -31,11 +31,11 @@ class ProductController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {        
+    {
         // Get selected branch ID from BranchService
         $currentBranch = $this->branchService->getCurrentBranch();
         $selectedBranchId = $currentBranch ? $currentBranch->id : null;
-        
+
         // Lấy tất cả categories để hiển thị filter
         $categories = Category::where('status', true)
             ->withCount(['products' => function($query) {
@@ -45,10 +45,10 @@ class ProductController extends Controller
 
         // Query cơ bản cho products
         $query = Product::with([
-            'category', 
+            'category',
             'images' => function($query) {
                 $query->orderBy('is_primary', 'desc');
-            }, 
+            },
             'reviews' => function($query) {
                 $query->where('approved', true);
             },
@@ -60,7 +60,7 @@ class ProductController extends Controller
             'variants.variantValues'
         ])
         ->where('status', 'selling');
-        
+
         // Filter by branch but show all products (including out of stock)
         if ($selectedBranchId) {
             $query->whereHas('variants.branchStocks', function($query) use ($selectedBranchId) {
@@ -116,7 +116,7 @@ class ProductController extends Controller
         }
 
         $products = $query->paginate(15);
-        
+
         // Lấy danh sách mã giảm giá đang hoạt động
         $now = Carbon::now();
         $currentDayOfWeek = $now->dayOfWeekIso;
@@ -133,11 +133,11 @@ class ProductController extends Controller
                         });
                 }
             });
-        
+
         // Chỉ lấy mã giảm giá công khai hoặc mã riêng tư được gán cho người dùng hiện tại
         $activeDiscountCodesQuery->where(function($query) {
             $query->where('usage_type', 'public');
-            
+
             if (Auth::check()) {
                 $query->orWhere(function($q) {
                     $q->where('usage_type', 'personal')
@@ -147,7 +147,7 @@ class ProductController extends Controller
                 });
             }
         });
-            
+
         $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
@@ -172,7 +172,7 @@ class ProductController extends Controller
                 }
                 return true;
             });
-            
+
         // Log discount codes for debugging
         \Illuminate\Support\Facades\Log::debug('Active Discount Codes in index page:', [
             'total_codes' => $activeDiscountCodes->count(),
@@ -187,7 +187,7 @@ class ProductController extends Controller
                 ];
             })
         ]);
-            
+
         // Obtener favoritos del usuario
         $favorites = [];
         if (Auth::check()) {
@@ -199,22 +199,22 @@ class ProductController extends Controller
             // Si no está autenticado pero tiene favoritos en sesión
             $favorites = $request->session()->get('wishlist_items', []);
         }
-        
+
         // Thêm thông tin rating trung bình cho mỗi sản phẩm
         $products->getCollection()->transform(function ($product) use ($favorites, $selectedBranchId, $activeDiscountCodes) {
             $product->average_rating = $product->reviews->avg('rating') ?? 0;
             $product->reviews_count = $product->reviews->count();
-            $product->primary_image = $product->images->where('is_primary', true)->first() 
+            $product->primary_image = $product->images->where('is_primary', true)->first()
                                     ?? $product->images->first();
-            
+
             // Transform image URL to S3 URL if using S3
             if ($product->primary_image) {
                 $product->primary_image->s3_url = asset('storage/' . $product->primary_image->img);
             }
-            
+
             // Marcar como favorito si está en la lista
             $product->is_favorite = in_array($product->id, $favorites);
-            
+
             // Check if the product has stock
             if ($selectedBranchId) {
                 // Find any variant with stock > 0
@@ -223,7 +223,7 @@ class ProductController extends Controller
                         return $stock->branch_id == $selectedBranchId && $stock->stock_quantity > 0;
                     });
                 });
-                
+
                 // Get first variant (regardless of stock)
                 $product->first_variant = ProductVariant::where('product_id', $product->id)
                                         ->whereHas('branchStocks', function($query) use ($selectedBranchId) {
@@ -238,21 +238,21 @@ class ProductController extends Controller
                         return $stock->stock_quantity > 0;
                     });
                 });
-                
+
                 // Get first variant (regardless of stock)
                 $product->first_variant = ProductVariant::where('product_id', $product->id)
                                         ->whereHas('branchStocks')
                                         ->orderBy('id', 'asc')
                                         ->first();
             }
-            
+
             // Tính giá thấp nhất bao gồm cả biến thể
             $product->min_price = $product->base_price;
             $product->max_price = $product->base_price;
-            
+
             if ($product->variants && $product->variants->count() > 0) {
                 $variantPrices = [];
-                
+
                 foreach ($product->variants as $variant) {
                     // Tính giá của biến thể này
                     $variantPrice = $product->base_price;
@@ -261,13 +261,13 @@ class ProductController extends Controller
                     }
                     $variantPrices[] = $variantPrice;
                 }
-                
+
                 if (!empty($variantPrices)) {
                     $product->min_price = min($variantPrices);
                     $product->max_price = max($variantPrices);
                 }
             }
-            
+
             // Lấy các mã giảm giá áp dụng cho sản phẩm này
             $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
                 // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
@@ -303,10 +303,10 @@ class ProductController extends Controller
                 }
                 return $applies;
             });
-            
+
             return $product;
         });
-        
+
         // Nếu là AJAX (lazy load 1 category)
         if ($request->ajax() || $request->has('ajax')) {
             $categoryId = $request->get('category');
@@ -315,7 +315,7 @@ class ProductController extends Controller
                 'products' => $catProducts,
             ])->render();
         }
-        
+
         return view("customer.shop.index", compact('products', 'categories', 'selectedCategoryIds'));
     }
 
@@ -327,7 +327,7 @@ class ProductController extends Controller
         // Get selected branch ID from BranchService
         $currentBranch = $this->branchService->getCurrentBranch();
         $selectedBranchId = $currentBranch ? $currentBranch->id : null;
-        
+
         $product = Product::with([
             'category',
             'images' => function($query) {
@@ -346,7 +346,7 @@ class ProductController extends Controller
             },
             'toppings' => function($query) use ($selectedBranchId) {
                 $query->where('active', true);
-                
+
                 if ($selectedBranchId) {
                     // Only include toppings that have stock at this branch
                     $query->whereHas('toppingStocks', function($q) use ($selectedBranchId) {
@@ -365,12 +365,12 @@ class ProductController extends Controller
         // Tính toán thông tin rating
         $product->average_rating = $product->reviews->avg('rating') ?? 0;
         $product->reviews_count = $product->reviews->count();
-        
+
         // Add S3 URLs to all product images
         foreach ($product->images as $image) {
             $image->s3_url = asset('storage/' . $image->img);
         }
-        
+
         // Check if the product has stock
         if ($selectedBranchId) {
             // Find any variant with stock > 0
@@ -387,7 +387,7 @@ class ProductController extends Controller
                 });
             });
         }
-        
+
         // Lấy các mã giảm giá áp dụng cho sản phẩm này
         $now = Carbon::now();
         $currentDayOfWeek = $now->dayOfWeekIso; // 1 (Monday) - 7 (Sunday)
@@ -404,11 +404,11 @@ class ProductController extends Controller
                         });
                 }
             });
-            
+
         // Chỉ lấy mã giảm giá công khai hoặc mã riêng tư được gán cho người dùng hiện tại
         $activeDiscountCodesQuery->where(function($query) {
             $query->where('usage_type', 'public');
-            
+
             if (Auth::check()) {
                 $query->orWhere(function($q) {
                     $q->where('usage_type', 'personal')
@@ -418,7 +418,7 @@ class ProductController extends Controller
                 });
             }
         });
-        
+
         $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
                 $query->with(['product', 'category']);
             }])
@@ -443,7 +443,7 @@ class ProductController extends Controller
                 }
                 return true;
             });
-            
+
         // Log discount codes for debugging
         \Illuminate\Support\Facades\Log::debug('Active Discount Codes in product detail page:', [
             'product_id' => $product->id,
@@ -459,7 +459,7 @@ class ProductController extends Controller
                 ];
             })
         ]);
-            
+
         $product->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($product) {
             // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
             if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
@@ -522,7 +522,7 @@ class ProductController extends Controller
         ->where('category_id', $product->category_id)
         ->where('id', '!=', $product->id)
         ->where('status', 'selling');
-        
+
         // Filter related products by selected branch
         if ($selectedBranchId) {
             $relatedProductsQuery->whereHas('variants', function($q) use ($selectedBranchId) {
@@ -532,29 +532,29 @@ class ProductController extends Controller
                 });
             });
         }
-        
+
         $relatedProducts = $relatedProductsQuery->limit(5)->get();
 
         // Thêm thông tin rating cho related products
         $relatedProducts->transform(function ($relatedProduct) use ($activeDiscountCodes) {
             $relatedProduct->average_rating = $relatedProduct->reviews->avg('rating') ?? 0;
             $relatedProduct->reviews_count = $relatedProduct->reviews->count();
-            
+
             // Add primary image and S3 URL
-            $relatedProduct->primary_image = $relatedProduct->images->where('is_primary', true)->first() 
+            $relatedProduct->primary_image = $relatedProduct->images->where('is_primary', true)->first()
                                     ?? $relatedProduct->images->first();
-            
+
             if ($relatedProduct->primary_image) {
                 $relatedProduct->primary_image->s3_url = asset('storage/' . $relatedProduct->primary_image->img);
             }
-            
+
             // Tính giá thấp nhất và cao nhất bao gồm cả biến thể
             $relatedProduct->min_price = $relatedProduct->base_price;
             $relatedProduct->max_price = $relatedProduct->base_price;
-            
+
             if ($relatedProduct->variants && $relatedProduct->variants->count() > 0) {
                 $variantPrices = [];
-                
+
                 foreach ($relatedProduct->variants as $variant) {
                     // Tính giá của biến thể này
                     $variantPrice = $relatedProduct->base_price;
@@ -563,13 +563,13 @@ class ProductController extends Controller
                     }
                     $variantPrices[] = $variantPrice;
                 }
-                
+
                 if (!empty($variantPrices)) {
                     $relatedProduct->min_price = min($variantPrices);
                     $relatedProduct->max_price = max($variantPrices);
                 }
             }
-            
+
             // Lấy các mã giảm giá áp dụng cho sản phẩm liên quan
             $relatedProduct->applicable_discount_codes = $activeDiscountCodes->filter(function($discountCode) use ($relatedProduct) {
                 // Chỉ áp dụng cho tất cả sản phẩm nếu applicable_items === 'all_items' (và giữ applicable_scope === 'all' nếu có)
@@ -587,7 +587,7 @@ class ProductController extends Controller
                     return false;
                 });
             });
-            
+
             return $relatedProduct;
         });
 
@@ -605,10 +605,10 @@ class ProductController extends Controller
         // Tính giá thấp nhất và cao nhất bao gồm cả biến thể (đồng nhất với index)
         $product->min_price = $product->base_price;
         $product->max_price = $product->base_price;
-        
+
         if ($product->variants && $product->variants->count() > 0) {
             $variantPrices = [];
-            
+
             foreach ($product->variants as $variant) {
                 // Tính giá của biến thể này
                 $variantPrice = $product->base_price;
@@ -617,13 +617,13 @@ class ProductController extends Controller
                 }
                 $variantPrices[] = $variantPrice;
             }
-            
+
             if (!empty($variantPrices)) {
                 $product->min_price = min($variantPrices);
                 $product->max_price = max($variantPrices);
             }
         }
-        
+
         // DEBUG: Log variant prices to find discrepancy
         \Illuminate\Support\Facades\Log::debug('ProductController@show - Variant Prices for Product ID ' . $product->id, [
             'variant_prices' => $variantPrices ?? [],
@@ -759,7 +759,7 @@ class ProductController extends Controller
                 });
             }
         });
-        
+
         $allActiveCodesFromDB = $activeDiscountCodesQuery->with(['products:id,product_id,category_id'])->get();
 
         // Filter by valid time, just like the index() method does.
@@ -795,7 +795,7 @@ class ProductController extends Controller
             // Calculate min_price and max_price, to match the logic from the index page perfectly
             $product->min_price = $product->base_price;
             $product->max_price = $product->base_price;
-            
+
             if ($product->variants && $product->variants->count() > 0) {
                 $variantPrices = [];
                 foreach ($product->variants as $variant) {
@@ -825,7 +825,7 @@ class ProductController extends Controller
                     }
                     return true;
                 }
-                
+
                 $applies = $discountCode->products->contains(function($discountProduct) use ($product) {
                     if ($discountProduct->product_id === $product->id) return true;
                     if ($discountProduct->category_id === $product->category_id) return true;
@@ -837,7 +837,7 @@ class ProductController extends Controller
                         return false;
                     }
                 }
-                
+
                 return $applies;
             });
 
