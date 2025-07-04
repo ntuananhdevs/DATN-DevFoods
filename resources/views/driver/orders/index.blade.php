@@ -4,7 +4,6 @@
 
 @section('content')
 <div class="pt-4 p-4">
-    {{-- Form tìm kiếm và các tab trạng thái giữ nguyên, chúng đã responsive khá tốt --}}
     <form action="{{ route('driver.orders.index') }}" method="GET" class="mb-4">
         <div class="relative">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Tìm kiếm theo ID, địa chỉ..." class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
@@ -13,7 +12,6 @@
         <input type="hidden" name="status" value="{{ $currentTab }}">
     </form>
 
-    {{-- Cập nhật Tabs --}}
     <div class="flex space-x-2 mb-4 overflow-x-auto pb-2">
         @foreach($tabConfig as $key => $config)
             <a href="{{ route('driver.orders.index', ['tab' => $key, 'search' => request('search')]) }}" class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition {{ $currentTab == $key ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
@@ -23,7 +21,6 @@
         @endforeach
     </div>
 
-    {{-- Danh sách đơn hàng (giữ nguyên, vì đã sử dụng accessor) --}}
     <div class="space-y-3">
         @forelse($orders as $order)
         <a href="{{ route('driver.orders.show', $order->id) }}" class="flex items-center space-x-4 bg-white p-3 rounded-lg shadow-sm hover:shadow-md hover:ring-2 hover:ring-blue-500 transition-all duration-200">

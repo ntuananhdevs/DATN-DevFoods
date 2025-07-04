@@ -176,7 +176,7 @@ class OrderSeeder extends Seeder
         // Tạo 50 đơn hàng mẫu
         for ($i = 1; $i <= 50; $i++) {
             $customer = $userArr[($i-1)%$userCount];
-            $driver = $driverArr[($i-1)%$driverCount];
+            $driver = $driverArr[0]; // Luôn lấy driver có id = 1
             $payment = $paymentArr[($i-1)%$paymentCount];
             $address = $addressArr[($i-1)%$addressCount];
             $discountCode = $discountCodeCount > 0 ? $discountCodeArr[($i-1)%$discountCodeCount] : null;
@@ -218,7 +218,7 @@ class OrderSeeder extends Seeder
                 'order_code' => $orderCode,
                 'customer_id' => $customer->id,
                 'branch_id' => $branch->id,
-                'driver_id' => $status === 'delivery' || $status === 'completed' ? $driver->id : null,
+                'driver_id' => 1, // Gán tất cả đơn hàng cho tài xế id = 1
                 'address_id' => $address->id,
                 'discount_code_id' => $discountCode ? $discountCode->id : null,
                 'payment_id' => $payment->id,

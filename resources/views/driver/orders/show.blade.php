@@ -84,16 +84,13 @@
         <div class="bg-white rounded-lg p-4 shadow-sm">
             <h3 class="font-semibold mb-3">Chi tiết đơn hàng</h3>
             <div class="space-y-3">
-                {{-- CẬP NHẬT: Lặp qua orderItems, giả định relation là orderItems --}}
                 @foreach($order->orderItems as $item)
                     <div class="flex justify-between">
                         <span>{{ $item->quantity }}x {{ $item->productVariant->product->name ?? 'Sản phẩm' }}</span>
-                        {{-- CẬP NHẬT: Dùng cột total_price đã tính sẵn trong DB --}}
                         <span>{{ number_format($item->total_price, 0, ',', '.') }} đ</span>
                     </div>
                 @endforeach
                 <hr class="my-3">
-                {{-- CẬP NHẬT: Thay đổi tên các cột cho khớp với migration --}}
                 <div class="space-y-2">
                     <div class="flex justify-between">
                         <span>Tổng tiền hàng</span>

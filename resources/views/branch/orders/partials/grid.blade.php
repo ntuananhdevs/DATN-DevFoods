@@ -28,10 +28,21 @@
                                     'cancelled' => '#ef4444',
                                     'refunded' => '#6b7280',
                                 ];
+                                $statusTexts = [
+                                    'awaiting_confirmation' => 'Chờ xác nhận',
+                                    'awaiting_driver' => 'Đang chờ tài xế',
+                                    'driver_picked_up' => 'Tài xế đã nhận',
+                                    'in_transit' => 'Đang giao',
+                                    'delivered' => 'Đã giao',
+                                    'item_received' => 'Đã nhận',
+                                    'cancelled' => 'Đã hủy',
+                                    'refunded' => 'Đã hoàn tiền',
+                                ];
                                 $statusColor = $statusColors[$order->status] ?? '#6b7280';
+                                $statusText = $statusTexts[$order->status] ?? ucfirst(str_replace('_', ' ', $order->status));
                             @endphp
                             <span class="status-badge text-white rounded-lg px-2 py-1 text-xs font-medium" style="background-color: {{ $statusColor }}">
-                                {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                                {{ $statusText }}
                             </span>
                         </div>
                         <div class="flex items-center gap-2 mb-1">

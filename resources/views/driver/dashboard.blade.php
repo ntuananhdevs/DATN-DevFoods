@@ -34,7 +34,6 @@
         </div>
     </div>
 
-    {{-- Card Trạng thái làm việc (giữ nguyên, đã ổn) --}}
     <div class="bg-white rounded-lg p-4 shadow-sm">
         <div class="flex items-center justify-between">
             <div><h3 class="font-medium">Trạng thái làm việc</h3><p class="driver-status-text text-sm text-gray-500">{{ $driver->is_available ? 'Bạn đang Online' : 'Bạn đang Offline' }}</p></div>
@@ -45,7 +44,6 @@
         </div>
     </div>
 
-    {{-- Card Thu nhập --}}
     <div class="bg-white rounded-lg p-4 shadow-sm">
         <div class="flex items-center justify-between mb-3"><h3 class="font-medium">Thu nhập</h3><a href="{{ route('driver.earnings') }}" class="text-blue-600 text-sm font-medium">Chi tiết</a></div>
         {{-- CẬP NHẬT RESPONSIVE: Dùng grid trên mobile, chuyển sang flex trên desktop (sm) --}}
@@ -61,7 +59,6 @@
         </div>
     </div>
 
-    {{-- Card Đơn hàng đang xử lý --}}
     <div class="bg-white rounded-lg p-4 shadow-sm">
         <div class="flex items-center justify-between mb-3"><h3 class="font-medium">Đơn hàng đang xử lý</h3><a href="{{ route('driver.orders.index') }}" class="text-blue-600 text-sm font-medium">Xem tất cả</a></div>
         <div class="space-y-3">
@@ -82,7 +79,6 @@
         </div>
     </div>
 
-    {{-- Card Đơn hàng mới --}}
     <div class="bg-white rounded-lg p-4 shadow-sm">
         <div class="flex items-center justify-between mb-3"><h3 class="font-medium">Đơn hàng mới có sẵn</h3></div>
         {{-- DANH SÁCH ĐƠN HÀNG MỚI SẼ ĐƯỢC THÊM VÀO ĐÂY --}}
@@ -106,7 +102,6 @@
 @endsection
 
 @push('scripts')
-{{-- Giữ nguyên JS, chỉ cần thay đổi CSS và HTML --}}
 <style>
     @keyframes pulse-fade-in { 0% { background-color: #eff6ff; opacity: 0; } 50% { background-color: #dbeafe; opacity: 1; } 100% { background-color: #f9fafb; opacity: 1; } }
     .animate-pulse-fade-in { animation: pulse-fade-in 1.5s ease-in-out; }
@@ -260,4 +255,4 @@
     }
 });
 </script>
-@endpush
+@endpushzzzz
