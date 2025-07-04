@@ -118,8 +118,7 @@
                             <span class="badge badge-xs branch-badge ml-2"
                                 id="main-branch-badge">{{ $conversation->branch->name }}</span>
                         @endif
-                        <button class="chat-tools-btn"><i class="fas fa-phone"></i></button>
-                        <button class="chat-tools-btn"><i class="fas fa-video"></i></button>
+
                     </div>
                 </div>
                 <div class="chat-messages" id="chat-messages">
