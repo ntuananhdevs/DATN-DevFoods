@@ -19,6 +19,7 @@ class DriverController extends Controller
         $driver = Auth::guard('driver')->user();
 
         // CẬP NHẬT: Lấy thu nhập từ các đơn có trạng thái 'delivered' hoặc 'item_received'
+        // Vẫn giữ nguyên logic này để hiển thị ban đầu trên dashboard
         $ordersDeliveredToday = Order::where('driver_id', $driver->id)
             ->whereIn('status', ['delivered', 'item_received'])
             ->whereDate('actual_delivery_time', Carbon::today())
@@ -29,23 +30,18 @@ class DriverController extends Controller
         $processingOrders = Order::where('driver_id', $driver->id)
             ->whereIn('status', ['driver_picked_up', 'in_transit'])
             ->latest()->get();
-            
+
         // CẬP NHẬT: Lấy các đơn hàng mới đang chờ tài xế
         $availableOrders = Order::whereNull('driver_id')
             ->where('status', 'awaiting_driver')
             ->latest()->take(5)->get();
 
-        // 5. Lấy số thông báo chưa đọc (nếu có)
-        // $unreadNotificationsCount = $driver->unreadNotifications()->count();
-
-        // 6. Gửi tất cả dữ liệu đến view
         return view('driver.dashboard', compact(
             'driver',
             'ordersDeliveredToday',
             'totalEarnedToday',
             'processingOrders',
             'availableOrders',
-            // 'unreadNotificationsCount'
         ));
     }
 
@@ -75,27 +71,27 @@ class DriverController extends Controller
         $driverId = Auth::guard('driver')->id();
         $filter = $request->query('filter', 'all');
 
+        // CẬP NHẬT: Sử dụng cả 'delivered' và 'item_received' và 'actual_delivery_time'
         $query = Order::where('driver_id', $driverId)
-                      ->where('status', 'delivered');
+            ->whereIn('status', ['delivered', 'item_received']);
 
         switch ($filter) {
             case 'today':
-                $query->whereDate('delivery_date', Carbon::today());
+                $query->whereDate('actual_delivery_time', Carbon::today());
                 break;
             case 'week':
-                $query->whereBetween('delivery_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
                 break;
             case 'month':
-                $query->whereMonth('delivery_date', Carbon::now()->month);
+                $query->whereMonth('actual_delivery_time', Carbon::now()->month);
                 break;
+                // Case 'all' không cần thêm điều kiện ngày
         }
 
-        $filteredHistory = $query->latest('delivery_date')->get();
-        
+        $filteredHistory = $query->latest('actual_delivery_time')->get();
+
         $totalEarnings = $filteredHistory->sum('driver_earning');
         $totalOrders = $filteredHistory->count();
-        // Giả sử đơn hàng có rating từ khách hàng
-        // $averageRating = $filteredHistory->avg('rating'); 
 
         return view('driver.history', compact('filteredHistory', 'filter', 'totalEarnings', 'totalOrders'));
     }
@@ -108,20 +104,21 @@ class DriverController extends Controller
         $driverId = Auth::guard('driver')->id();
         $filter = $request->query('filter', 'today');
 
-        $query = Order::where('driver_id', $driverId)->where('status', 'delivered');
+        // CẬP NHẬT: Sử dụng cả 'delivered' và 'item_received' và 'actual_delivery_time'
+        $query = Order::where('driver_id', $driverId)->whereIn('status', ['delivered', 'item_received']);
         $label = 'hôm nay';
 
         switch ($filter) {
             case 'week':
-                $query->whereBetween('delivery_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
                 $label = 'tuần này';
                 break;
             case 'month':
-                $query->whereMonth('delivery_date', Carbon::now()->month);
+                $query->whereMonth('actual_delivery_time', Carbon::now()->month);
                 $label = 'tháng này';
                 break;
             default: // today
-                $query->whereDate('delivery_date', Carbon::today());
+                $query->whereDate('actual_delivery_time', Carbon::today());
                 break;
         }
 
@@ -140,14 +137,14 @@ class DriverController extends Controller
     /**
      * Hiển thị thông báo.
      */
-    public function notifications()
-    {
-        $driver = Auth::guard('driver')->user();
-        $notifications = $driver->notifications()->get();
-        $unreadCount = $driver->unreadNotifications()->count();
+    // public function notifications()
+    // {
+    //     $driver = Auth::guard('driver')->user();
+    //     $notifications = $driver->notifications()->get();
+    //     $unreadCount = $driver->unreadNotifications()->count();
 
-        return view('driver.notifications', compact('notifications', 'unreadCount'));
-    }
+    //     return view('driver.notifications', compact('notifications', 'unreadCount'));
+    // }
 
     // --- Các phương thức API ---
 
@@ -175,17 +172,18 @@ class DriverController extends Controller
         $driverId = $request->user('driver')->id;
         $period = $request->query('period', 'today');
 
-        $query = Order::where('driver_id', $driverId)->where('status', 'delivered');
-        
+        // CẬP NHẬT QUAN TRỌNG: Thay đổi where('status', 'delivered') thành whereIn và sử dụng actual_delivery_time
+        $query = Order::where('driver_id', $driverId)->whereIn('status', ['delivered', 'item_received']);
+
         switch ($period) {
             case 'week':
-                $query->whereBetween('delivery_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
                 break;
             case 'month':
-                $query->whereMonth('delivery_date', Carbon::now()->month);
+                $query->whereMonth('actual_delivery_time', Carbon::now()->month);
                 break;
             default: // today
-                $query->whereDate('delivery_date', Carbon::today());
+                $query->whereDate('actual_delivery_time', Carbon::today());
                 break;
         }
 
