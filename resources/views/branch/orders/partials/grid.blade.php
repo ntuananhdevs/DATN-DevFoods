@@ -13,9 +13,7 @@
                                         +{{ $order->points_earned }} điểm
                                     </span>
                                 @endif
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    {{ $order->orderItems->sum('quantity') ?? 0 }} sản phẩm
-                                </span>
+                                
                             </div>
                             @php
                                 $statusColors = [
@@ -77,6 +75,12 @@
                     <div class="flex justify-between">
                         <span class="text-gray-500">Tổng tiền:</span>
                         <span class="font-semibold text-gray-900">{{ number_format($order->total_amount) }}₫</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Sản phẩm:</span>
+                        <span class="text-gray-700">
+                            {{ $order->orderItems->sum('quantity') ?? 0 }} sản phẩm
+                        </span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Thời gian:</span>
