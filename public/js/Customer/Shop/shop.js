@@ -242,10 +242,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (cartCounter) {
                     cartCounter.textContent = data.cart_count;
                 }
-                // Chờ toast biến mất (5 giây) rồi chuyển hướng đến trang giỏ hàng
-                setTimeout(() => {
-                    window.location.href = '/cart';
-                }, 5000);
             } else {
                 dtmodalShowToast('error', {
                     title: 'Lỗi',
