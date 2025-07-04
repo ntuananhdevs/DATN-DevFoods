@@ -94,8 +94,8 @@
                     @endif
                     <div class="flex justify-between">
                         <span class="text-gray-500">Thanh toán:</span>
-                        @php $pm = strtolower($order->payment?->paymentMethod?->name ?? ''); @endphp
-                        @if($pm === 'cod' || $pm === 'ship cod')
+                        @php $pm = strtolower($order->payment_method ?? ''); @endphp
+                        @if($pm === 'cod')
                             <span class="inline-block px-2 py-1 rounded bg-green-500 text-white text-xs font-semibold">COD</span>
                         @elseif($pm === 'vnpay')
                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
@@ -104,8 +104,10 @@
                                     <text x="18" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#0072bc">PAY</text>
                                 </svg>
                             </span>
+                        @elseif($pm === 'balance')
+                            <span class="inline-block px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Số dư</span>
                         @else
-                            <span class="text-gray-700">{{ $order->payment?->paymentMethod?->name ?? 'Chưa thanh toán' }}</span>
+                            <span class="text-gray-700">{{ $order->paymentMethodText }}</span>
                         @endif
                     </div>
                     @if($order->notes)
