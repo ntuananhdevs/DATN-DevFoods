@@ -246,12 +246,12 @@
                         Thẻ
                     </button>
                 </div>
-                <button class="btn btn-outline flex items-center" id="selectAllButton" style="display: none;">
+                <button id="selectAllButton" class="btn btn-outline flex items-center" type="button" style="display: none;" onclick="handleSelectAllButton()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
                         <rect width="18" height="18" x="3" y="3" rx="2"></rect>
                         <path d="m9 12 2 2 4-4"></path>
                     </svg>
-                    <span>Chọn tất cả</span>
+                    <span id="selectAllButtonText">Chọn tất cả</span>
                 </button>
                 <div class="dropdown relative">
                     <button class="btn btn-outline flex items-center" id="actionsDropdown" onclick="toggleDropdown('actionsMenu')">
@@ -272,7 +272,13 @@
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                                     <path d="m9 11 3 3L22 4"></path>
                                 </svg>
-                                Kích hoạt đã chọn
+                                Đang bán
+                            </a>
+                            <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(2)">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-yellow-500">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                                Sắp bán
                             </a>
                             <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedStatus(0)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-red-500">
@@ -280,7 +286,7 @@
                                     <path d="m15 9-6 6"></path>
                                     <path d="m9 9 6 6"></path>
                                 </svg>
-                                Vô hiệu hóa đã chọn
+                                Dừng bán
                             </a>
                             <a href="#" class="flex items-center rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground" onclick="updateSelectedFeatured(1)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 text-yellow-500">
@@ -294,6 +300,7 @@
                                 </svg>
                                 Bỏ nổi bật
                             </a>
+
                         </div>
                     </div>
                 </div>
@@ -640,6 +647,28 @@
                 @method('DELETE')
                 <button type="submit" class="btn btn-destructive w-full">Xóa</button>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Status Change Confirmation Modal -->
+<div id="statusModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-blue-600">Xác nhận thay đổi trạng thái</h3>
+            <button onclick="toggleModal('statusModal')" class="text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m18 6-12 12"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="mb-6">
+            <p class="text-gray-700 mb-2" id="statusModalMessage"></p>
+        </div>
+        <div class="flex gap-3">
+            <button type="button" onclick="toggleModal('statusModal')" class="btn btn-outline flex-1">Hủy</button>
+            <button type="button" id="statusModalConfirmBtn" class="btn btn-primary flex-1">Xác nhận</button>
         </div>
     </div>
 </div>
@@ -1103,6 +1132,7 @@
         });
 
         updateBulkActions();
+        updateSelectAllButtonText();
     }
 
     function updateBulkActions() {
@@ -1116,54 +1146,104 @@
                 bulkActions.classList.add('hidden');
             }
         }
+        updateSelectAllButtonText();
+    }
+
+    // Nút chọn tất cả ngoài toolbar
+    function handleSelectAllButton() {
+        const checkboxes = document.querySelectorAll('.combo-checkbox');
+        const selectAll = document.getElementById('selectAllButton');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => { cb.checked = !allChecked; });
+        updateBulkActions();
+        updateSelectAllButtonText();
+    }
+
+    function updateSelectAllButtonText() {
+        const checkboxes = document.querySelectorAll('.combo-checkbox');
+        const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+        const selectAllBtn = document.getElementById('selectAllButton');
+        const text = document.getElementById('selectAllButtonText');
+        if (!selectAllBtn || !text) return;
+        if (checkboxes.length === 0) {
+            selectAllBtn.style.display = 'none';
+        } else {
+            selectAllBtn.style.display = '';
+            if (checked === checkboxes.length) {
+                text.textContent = 'Bỏ chọn tất cả';
+            } else {
+                text.textContent = 'Chọn tất cả';
+            }
+        }
     }
 
     // Bulk status update functions
     function updateSelectedStatus(status) {
+        // status: 1 = selling, 0 = discontinued, 2 = coming_soon
+        let action;
+        let actionText;
+        if (status === 1) { action = 'activate'; actionText = 'kích hoạt'; }
+        else if (status === 0) { action = 'deactivate'; actionText = 'dừng bán'; }
+        else if (status === 2) { action = 'coming_soon'; actionText = 'chuyển sang sắp bán'; }
+
         const checkedItems = document.querySelectorAll('.combo-checkbox:checked');
         const ids = Array.from(checkedItems).map(item => item.value);
 
         if (ids.length === 0) {
-            alert('Vui lòng chọn ít nhất một combo');
+            dtmodalShowToast('warning', {
+                title: 'Cảnh báo',
+                message: 'Vui lòng chọn ít nhất một combo'
+            });
             return;
         }
 
-        const statusText = status === 1 ? 'kích hoạt' : 'vô hiệu hóa';
-        if (confirm(`Bạn có chắc chắn muốn ${statusText} ${ids.length} combo đã chọn?`)) {
-            // Create form and submit
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/admin/combos/bulk-update-status';
-
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = '_token';
-            csrfToken.value = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            form.appendChild(csrfToken);
-
-            const methodInput = document.createElement('input');
-            methodInput.type = 'hidden';
-            methodInput.name = '_method';
-            methodInput.value = 'PATCH';
-            form.appendChild(methodInput);
-
-            const actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = status === 1 ? 'activate' : 'deactivate';
-            form.appendChild(actionInput);
-
-            ids.forEach(id => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'ids[]';
-                input.value = id;
-                form.appendChild(input);
-            });
-
-            document.body.appendChild(form);
-            form.submit();
-        }
+        // Sử dụng modal xác nhận từ modal.js
+        dtmodalCreateModal({
+            type: 'warning',
+            title: 'Xác nhận thay đổi trạng thái',
+            message: `Bạn có chắc chắn muốn <strong>${actionText}</strong> ${ids.length} combo đã chọn?`,
+            confirmText: 'Xác nhận',
+            cancelText: 'Hủy',
+            onConfirm: function() {
+                fetch('/admin/combos/bulk-update-status', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        ids: ids
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: data.message || 'Cập nhật trạng thái thành công!'
+                        });
+                        // Bỏ chọn tất cả sau khi thao tác xong
+                        document.querySelectorAll('.combo-checkbox').forEach(cb => cb.checked = false);
+                        updateBulkActions();
+                        updateSelectAllButtonText();
+                        performSearch();
+                    } else {
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Có lỗi xảy ra khi cập nhật trạng thái.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Có lỗi xảy ra khi cập nhật trạng thái.'
+                    });
+                });
+            }
+        });
     }
 
     function updateSelectedFeatured(featured) {
@@ -1266,30 +1346,46 @@
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const statusText = newStatus === 'active' ? 'kích hoạt' : 'vô hiệu hóa';
 
-        if (confirm(`Bạn có muốn ${statusText} combo này?`)) {
-            fetch(`/admin/combos/${id}/toggle-status`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Đã cập nhật trạng thái thành công!');
-                    // Refresh the search results instead of reloading page
-                    loadCombos(currentPage, currentSearch);
-                } else {
-                    showToast('Lỗi: ' + data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showToast('Có lỗi xảy ra khi thay đổi trạng thái.', 'error');
-            });
-        }
+        // Sử dụng modal xác nhận từ modal.js
+        dtmodalCreateModal({
+            type: 'warning',
+            title: 'Xác nhận thay đổi trạng thái',
+            message: `Bạn có muốn <strong>${statusText}</strong> combo này?`,
+            confirmText: 'Xác nhận',
+            cancelText: 'Hủy',
+            onConfirm: function() {
+                fetch(`/admin/combos/${id}/toggle-status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        dtmodalShowToast('success', {
+                            title: 'Thành công',
+                            message: 'Đã cập nhật trạng thái thành công!'
+                        });
+                        loadCombos(currentPage, currentSearch);
+                    } else {
+                        dtmodalShowToast('error', {
+                            title: 'Lỗi',
+                            message: data.message || 'Có lỗi xảy ra khi cập nhật trạng thái.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    dtmodalShowToast('error', {
+                        title: 'Lỗi',
+                        message: 'Có lỗi xảy ra khi thay đổi trạng thái.'
+                    });
+                });
+            }
+        });
     }
 
     // Auto submit form when filter changes
@@ -1320,6 +1416,7 @@
         document.addEventListener('change', function(e) {
             if (e.target.classList.contains('combo-checkbox')) {
                 updateBulkActions();
+                updateSelectAllButtonText();
             }
         });
 
@@ -1469,6 +1566,8 @@
                 }
             }
         }, true);
+
+        updateSelectAllButtonText();
     });
 </script>
 @endpush

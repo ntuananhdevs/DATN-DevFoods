@@ -53,57 +53,68 @@ class OrderController extends Controller
      */
     public function updateStatus(Request $request, Order $order)
     {
-        // 1. Authorization
+        // 1. Authorization: Kiểm tra quyền truy cập của khách hàng
         if ($order->customer_id !== Auth::id()) {
-            // Trả về lỗi JSON với mã 403 (Forbidden)
             return response()->json([
                 'success' => false,
                 'message' => 'Bạn không có quyền thực hiện hành động này.'
-            ], 403);
+            ], 403); // Trả về mã lỗi 403 khi không có quyền
         }
 
-        // 2. Validation
+        // 2. Validation: Kiểm tra dữ liệu đầu vào
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::in(['cancelled', 'item_received'])],
+            'rating' => 'nullable|integer|min:1|max:5',
+            'review' => 'nullable|string|max:500'
         ]);
         $newStatus = $validated['status'];
 
-        // 3. Logic
+        // 3. Logic: Kiểm tra trạng thái và điều kiện để thay đổi
         $canUpdate = false;
         $message = '';
+
+        // Kiểm tra trạng thái hủy đơn
         if ($newStatus === 'cancelled' && $order->status === 'awaiting_confirmation') {
             $canUpdate = true;
             $message = 'Đã hủy đơn hàng thành công!';
             // Broadcast sự kiện hủy đơn đến các kênh liên quan
             broadcast(new OrderCancelledByCustomer($order->id))->toOthers();
-        } elseif ($newStatus === 'item_received' && $order->status === 'delivered') {
+        }
+        // Kiểm tra trạng thái xác nhận đã nhận hàng
+        elseif ($newStatus === 'item_received' && $order->status === 'delivered') {
             $canUpdate = true;
+            // Lưu rating và review nếu có
+            if ($request->rating) {
+                $order->rating = $request->rating;
+            }
+            if ($request->review) {
+                $order->review = $request->review;
+            }
             $message = 'Đã xác nhận nhận hàng thành công!';
         }
 
-        // THAY ĐỔI 1: Xử lý lỗi và trả về JSON
+        // Xử lý lỗi nếu không thể thay đổi trạng thái
         if (!$canUpdate) {
             return response()->json([
                 'success' => false,
                 'message' => 'Hành động không được phép hoặc trạng thái đơn hàng không hợp lệ.'
-            ], 422); // 422: Unprocessable Entity, mã lỗi hợp lý cho việc không thể xử lý
+            ], 422); // Trả về mã lỗi 422 nếu không thể xử lý
         }
 
-        // 4. Update and Save
+        // 4. Cập nhật trạng thái và lưu dữ liệu
         $order->status = $newStatus;
         if ($newStatus === 'item_received' && !$order->actual_delivery_time) {
             $order->actual_delivery_time = now();
         }
         $order->save();
         
-        // THAY ĐỔI 2: Lấy dữ liệu mới nhất từ DB để đảm bảo tính toàn vẹn
+        // Lấy dữ liệu mới nhất từ cơ sở dữ liệu
         $freshOrder = $order->fresh();
 
-        // 5. Broadcast the event
+        // 5. Broadcast sự kiện cập nhật trạng thái đơn hàng
         broadcast(new OrderStatusUpdated($freshOrder))->toOthers();
 
-        // THAY ĐỔI 3: Trả về JSON khi thành công
-        // Gửi về object 'order' để JavaScript có thể cập nhật UI
+        // Trả về kết quả thành công và dữ liệu đơn hàng đã được cập nhật
         return response()->json([
             'success' => true,
             'message' => $message,

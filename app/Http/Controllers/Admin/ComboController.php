@@ -670,7 +670,7 @@ class ComboController extends Controller
     public function bulkUpdateStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'action' => 'required|in:activate,deactivate,delete',
+            'action' => 'required|in:activate,deactivate,coming_soon,delete',
             'ids' => 'required|array|min:1',
             'ids.*' => 'exists:combos,id'
         ]);
@@ -704,6 +704,14 @@ class ComboController extends Controller
                         'updated_by' => Auth::id()
                     ]);
                     $message = "Đã vô hiệu hóa {$count} combo";
+                    break;
+
+                case 'coming_soon':
+                    $combos->update([
+                        'status' => 'coming_soon',
+                        'updated_by' => Auth::id()
+                    ]);
+                    $message = "Đã chuyển {$count} combo sang trạng thái sắp bán";
                     break;
 
                 case 'delete':

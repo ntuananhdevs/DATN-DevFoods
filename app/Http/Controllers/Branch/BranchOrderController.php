@@ -22,6 +22,10 @@ class BranchOrderController extends Controller
             return redirect()->back()->with('error', 'Không tìm thấy thông tin chi nhánh');
         }
 
+        // Lấy vị trí chi nhánh
+        $branchLat = $branch->latitude;
+        $branchLng = $branch->longitude;
+
         // Build query
         $query = Order::with([
             'customer',
@@ -31,7 +35,8 @@ class BranchOrderController extends Controller
             'orderItems.toppings.topping',
             'statusHistory.changedBy',
             'cancellation.cancelledBy',
-            'payment.paymentMethod'
+            'payment.paymentMethod',
+            'address' // Đảm bảo load address
         ])->where('branch_id', $branch->id);
 
         // Search filter
@@ -73,6 +78,17 @@ class BranchOrderController extends Controller
 
         // Get orders with pagination
         $orders = $query->paginate(20);
+
+        // Tính khoảng cách cho từng order
+        foreach ($orders as $order) {
+            $orderLat = $order->address->latitude ?? null;
+            $orderLng = $order->address->longitude ?? null;
+            if ($branchLat && $branchLng && $orderLat && $orderLng) {
+                $order->distance_km = $this->calculateDistance($branchLat, $branchLng, $orderLat, $orderLng);
+            } else {
+                $order->distance_km = null;
+            }
+        }
 
         // Get status counts
         $statusCounts = [
@@ -179,12 +195,12 @@ class BranchOrderController extends Controller
     private function getValidStatusTransitions($currentStatus)
     {
         $transitions = [
-            'pending' => ['processing', 'cancelled'],
-            'processing' => ['ready', 'cancelled'],
-            'ready' => ['delivery', 'cancelled'],
-            'delivery' => ['completed', 'cancelled'],
-            'completed' => [],
-            'cancelled' => []
+            'awaiting_confirmation' => ['awaiting_driver', 'cancelled'],
+            'awaiting_driver' => ['in_transit', 'cancelled'],
+            'in_transit' => ['delivered', 'cancelled'],
+            'delivered' => ['refunded'],
+            'cancelled' => [],
+            'refunded' => [],
         ];
 
         return $transitions[$currentStatus] ?? [];
@@ -299,12 +315,12 @@ class BranchOrderController extends Controller
     private function getStatusText($status)
     {
         $statusTexts = [
-            'pending' => 'Chờ xác nhận',
-            'processing' => 'Đang xử lý',
-            'ready' => 'Sẵn sàng giao',
-            'delivery' => 'Đang giao hàng',
-            'completed' => 'Hoàn thành',
-            'cancelled' => 'Đã hủy'
+            'awaiting_confirmation' => 'Chờ xác nhận',
+            'awaiting_driver' => 'Chờ tài xế',
+            'in_transit' => 'Đang giao',
+            'delivered' => 'Đã giao',
+            'cancelled' => 'Đã hủy',
+            'refunded' => 'Đã hoàn tiền',
         ];
 
         return $statusTexts[$status] ?? $status;
@@ -359,5 +375,24 @@ class BranchOrderController extends Controller
         ];
 
         return $stageMap[$status] ?? 'before_processing';
+    }
+
+    /**
+     * Tính khoảng cách giữa 2 điểm lat/lng (Haversine formula, trả về km)
+     */
+    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    {
+        $earthRadius = 6371; // km
+        $latFrom = deg2rad($lat1);
+        $latTo = deg2rad($lat2);
+        $lonFrom = deg2rad($lng1);
+        $lonTo = deg2rad($lng2);
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+            cos($latFrom) * cos($latTo) *
+            sin($lonDelta / 2) * sin($lonDelta / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return round($earthRadius * $c, 1);
     }
 }
