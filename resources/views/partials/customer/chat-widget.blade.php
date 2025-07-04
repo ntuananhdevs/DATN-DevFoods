@@ -104,10 +104,10 @@
                             class="h-8 w-8 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded flex items-center justify-center transition-colors">
                             <i class="fas fa-smile text-sm"></i>
                         </button>
-                        <button id="endChatBtn"
+                        {{-- <button id="endChatBtn"
                             class="text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 px-3 py-1 rounded text-sm transition-colors">
                             Kết thúc
-                        </button>
+                        </button> --}}
                     </div>
 
                     <!-- Emoji picker -->
@@ -140,7 +140,7 @@
     <!-- Content will be moved here when fullscreen -->
 </div>
 
-<!-- Rating Modal -->
+{{-- <!-- Rating Modal -->
 <div id="ratingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
     <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <h3 class="text-lg font-semibold mb-4">Đánh giá cuộc trò chuyện</h3>
@@ -172,9 +172,9 @@
             </div>
         </div>
     </div>
-</div>
+</div> --}}
 
-<!-- Success notification -->
+{{-- <!-- Success notification -->
 <div id="successNotification"
     class="fixed bottom-4 left-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 hidden">
     <div class="flex items-center gap-2">
@@ -184,7 +184,7 @@
             <i class="fas fa-times text-xs"></i>
         </button>
     </div>
-</div>
+</div> --}}
 
 <!-- Hidden file inputs -->
 <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.txt,.zip,.rar">
@@ -424,8 +424,14 @@
             messageInput.value = '';
             formData.append('conversation_id', conversationId);
             formData.append('message', content);
-            if (pendingFile) formData.append('attachment', pendingFile);
-            if (pendingImage) formData.append('attachment', pendingImage);
+            if (pendingFile) {
+                formData.append('attachment', pendingFile);
+                formData.append('attachment_type', 'file');
+            }
+            if (pendingImage) {
+                formData.append('attachment', pendingImage);
+                formData.append('attachment_type', 'image');
+            }
             sendBtn.disabled = true;
 
             // Hiển thị tin nhắn ngay lập tức nếu là text (không file/image)
@@ -442,7 +448,6 @@
                 handleInputChange();
                 autoResizeTextarea();
             }
-            // Nếu là file/ảnh, KHÔNG gọi addMessage ở đây, chỉ nhận qua Pusher
 
             fetch('/customer/chat/send', {
                     method: 'POST',
@@ -454,7 +459,25 @@
                 })
                 .then(res => res.json())
                 .then(data => {
-                    // KHÔNG gọi addMessage với file/ảnh ở đây nữa!
+                    if (data.success && (pendingFile || pendingImage)) {
+                        // Hiển thị ngay tin nhắn file/ảnh vừa gửi
+                        addMessage({
+                            id: data.data.id,
+                            content: data.data.message,
+                            sender: 'user',
+                            timestamp: new Date(data.data.sent_at || data.data.created_at),
+                            type: data.data.attachment ? (data.data.attachment_type === 'image' ?
+                                'image' : 'file') : 'text',
+                            imageUrl: data.data.attachment_type === 'image' && data.data
+                                .attachment ? '/storage/' + data.data.attachment : undefined,
+                            fileName: data.data.attachment_type !== 'image' && data.data
+                                .attachment ? data.data.attachment.split('/').pop() : undefined,
+                            fileSize: data.data.attachment_type !== 'image' && data.data
+                                .attachment ? '' : undefined,
+                            fileUrl: data.data.attachment_type !== 'image' && data.data.attachment ?
+                                '/storage/' + data.data.attachment : undefined,
+                        });
+                    }
                     pendingFile = null;
                     pendingImage = null;
                     fileInput.value = '';

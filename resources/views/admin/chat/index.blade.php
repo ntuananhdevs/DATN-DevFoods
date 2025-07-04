@@ -3,6 +3,16 @@
 @section('title', 'Quản Lý Chat')
 <link rel="stylesheet" href="/css/admin/chat.css">
 
+@php
+    $statusLabels = [
+        'new' => ['label' => 'Chờ phản hồi', 'class' => 'badge badge-waiting', 'icon' => '⏰'],
+        'distributed' => ['label' => 'Đã phân phối', 'class' => 'badge badge-distributed', 'icon' => '📤'],
+        'active' => ['label' => 'Đang xử lý', 'class' => 'badge badge-active', 'icon' => '🟠'],
+        'resolved' => ['label' => 'Đã giải quyết', 'class' => 'badge badge-resolved', 'icon' => '✅'],
+        'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed', 'icon' => '🔒'],
+    ];
+@endphp
+
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -13,15 +23,23 @@
         <div class="chat-sidebar" style="width:26%">
             <div class="chat-sidebar-header">
                 <div class="relative mb-2">
-                    <span class="absolute left-3 top-2.5 text-gray-400"></span>
-                    <input id="chat-search" type="text" class="form-control w-100 w-full" style="width:100%"
-                        placeholder="Tìm kiếm cuộc trò chuyện...">
+                    <span class="absolute left-3 top-2.5 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+                        </svg>
+                    </span>
+                    <input id="chat-search" type="text"
+                        class="form-control w-100 w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition placeholder-gray-400"
+                        style="width:100%" placeholder="Tìm kiếm theo tên, email khách hàng...">
                 </div>
                 <div class="flex items-center gap-2">
                     <select id="chat-status-filter" class="form-select flex-1">
                         <option value="all">Tất cả trạng thái</option>
                         <option value="new">Chờ phản hồi</option>
                         <option value="distributed">Đã phân phối</option>
+                        <option value="active">Đang xử lý</option>
                         <option value="closed">Đã đóng</option>
                     </select>
                     <button id="refresh-chat-list" class="btn btn-light px-2"><i class="fas fa-sync-alt"></i></button>
@@ -62,25 +80,11 @@
                             @endif
                         </div>
                         <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
-                            @if ($conv->status == 'new')
-                                <span class="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                                    Chờ phản hồi
-                                </span>
-                            @elseif ($conv->status == 'active' || $conv->status == 'distributed')
-                                <span class="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                                    Đã phân phối
-                                </span>
-                            @elseif ($conv->status == 'closed')
-                                <span class="px-3 py-1 text-xs rounded-full bg-gray-200 text-gray-800">
-                                    Đã đóng
-                                </span>
-                            @endif
-
-                            @if ($conv->branch)
-                                <span class="px-3 py-1 text-xs rounded-full bg-gray-800 text-white">
-                                    {{ $conv->branch->name }}
-                                </span>
-                            @endif
+                            <span class="{{ $statusLabels[$conv->status]['class'] ?? 'badge' }}">
+                                {{ $statusLabels[$conv->status]['icon'] ?? '' }}
+                                {{ $statusLabels[$conv->status]['label'] ?? $conv->status }}
+                            </span>
+                            <span class="badge badge-branch">{{ $conv->branch?->name }}</span>
                         </div>
 
                     </div>
@@ -277,6 +281,22 @@
 
         .dark .typing-indicator .dot {
             background: #ccc;
+        }
+
+        #chat-search {
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            padding-left: 40px;
+            padding-right: 16px;
+            height: 40px;
+            font-size: 15px;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        #chat-search:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px #dbeafe;
         }
     </style>
 @endsection

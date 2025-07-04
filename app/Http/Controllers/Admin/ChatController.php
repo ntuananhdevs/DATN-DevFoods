@@ -82,12 +82,12 @@ class ChatController extends Controller
             'attachment_type' => $attachmentType,
             'sent_at' => now(),
             'status' => 'sent',
-            'branch_id' => $conversation->branch_id, // <--- THÊM DÒNG NÀY
+            'branch_id' => $conversation->branch_id,
         ]);
         Log::info('Admin đã tạo message', ['message_id' => $message->id, 'message' => $message->toArray()]);
-        $message->load(['sender' => function ($query) {
+        $message = ChatMessage::with(['sender' => function ($query) {
             $query->select('id', 'full_name');
-        }]);
+        }])->find($message->id);
         Log::info('Sender loaded:', ['sender' => $message->sender]);
         broadcast(new NewMessage($message, $conversation->id))->toOthers();
         broadcast(new ConversationUpdated($conversation, 'created'))->toOthers();

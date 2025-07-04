@@ -13,7 +13,7 @@
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="lucide lucide-settings">
                     <path
-                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
                     </path>
                     <circle cx="12" cy="12" r="3"></circle>
                 </svg>
@@ -188,8 +188,8 @@
                 </a>
                 <!-- Chat -->
                 <a href="{{ route('admin.chat.index') }}"
-                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.chat.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
-                    data-tooltip="Chat">
+                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('admin.chat.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip relative"
+                    data-tooltip="Chat" id="sidebar-chat-link">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -199,6 +199,9 @@
                         </svg>
                     </span>
                     <span class="sidebar-text">Chat</span>
+                    <span id="sidebar-chat-badge"
+                        style="display:none; position:absolute;margin-top:3px; top:8px; right:12px; min-width:20px;"
+                        class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">1</span>
                 </a>
 
 
@@ -501,8 +504,8 @@
                 </div>
 
                 <a href="{{ route('branch.chat.index') }}"
-                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.chat.index') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
-                    data-tooltip="Chat">
+                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.chat.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip relative"
+                    data-tooltip="Chat" id="sidebar-chat-link">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -512,6 +515,9 @@
                         </svg>
                     </span>
                     <span class="sidebar-text">Chat</span>
+                    <span id="sidebar-chat-badge"
+                        style="display:none; position:absolute;margin-top:3px; top:8px; right:12px; min-width:20px;"
+                        class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">1</span>
                 </a>
 
 
@@ -592,4 +598,55 @@
             });
         });
     });
+</script>
+
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script>
+    window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
+    window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
+    let sidebarChatCount = 0;
+
+    function updateSidebarChatBadge() {
+        sidebarChatCount++;
+        const badge = document.getElementById('sidebar-chat-badge');
+        if (badge) {
+            badge.textContent = sidebarChatCount;
+            badge.style.display = 'inline-flex';
+        }
+    }
+
+    function resetSidebarChatBadge() {
+        sidebarChatCount = 0;
+        const badge = document.getElementById('sidebar-chat-badge');
+        if (badge) {
+            badge.textContent = '';
+            badge.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.PUSHER_APP_KEY && window.PUSHER_APP_CLUSTER) {
+            const pusher = new Pusher(window.PUSHER_APP_KEY, {
+                cluster: window.PUSHER_APP_CLUSTER,
+                encrypted: true
+            });
+            // Lắng nghe kênh tổng admin
+            const channel = pusher.subscribe('admin.conversations');
+            channel.bind('new-message', function(data) {
+                // Lấy user id hiện tại từ meta hoặc biến PHP
+                var currentUserId = {{ auth()->id() ?? 'null' }};
+                if (data.message && data.message.sender_id && String(data.message.sender_id) !== String(
+                        currentUserId)) {
+                    updateSidebarChatBadge();
+                }
+            });
+        }
+    });
+
+    // Gọi resetSidebarChatBadge khi vào trang chat hoặc đọc tin nhắn
+    if (window.location.pathname.includes('/admin/chat')) {
+        document.addEventListener('DOMContentLoaded', function() {
+            resetSidebarChatBadge();
+        });
+    }
 </script>

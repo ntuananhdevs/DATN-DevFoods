@@ -62,6 +62,8 @@ class NewMessage implements ShouldBroadcast
                 'conversation_id' => $this->message->conversation_id,
                 'sender_id' => $this->message->sender_id,
                 'message' => $this->message->message,
+                'attachment' => $this->message->attachment ?? null,
+                'attachment_type' => $this->message->attachment_type ?? null,
                 'created_at' => $this->message->created_at,
                 'sender' => [
                     'id' => $this->message->sender->id,

@@ -38,7 +38,7 @@ class BranchChatController extends Controller
         $conversations = Conversation::with(['customer', 'messages.sender'])
             ->whereNotNull('branch_id')
             ->where('branch_id', $branchId)
-            ->whereIn('status', ['distributed', 'active', 'resolved'])
+            ->whereIn('status', ['distributed', 'active', 'resolved', 'closed',])
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -213,8 +213,13 @@ class BranchChatController extends Controller
                 'attachment_type' => $attachmentType,
                 'sent_at' => now(),
                 'status' => 'sent',
-                'branch_id' => $conversation->branch_id, // <--- THÊM DÒNG NÀY
+                'branch_id' => $conversation->branch_id,
             ]);
+            // Load lại message từ DB để đảm bảo đủ trường attachment, attachment_type
+            $message = ChatMessage::with(['sender' => function ($query) {
+                $query->select('id', 'full_name');
+            }])->find($message->id);
+            broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
 
             if ($conversation->status === 'distributed') {
                 $conversation->update([
@@ -224,12 +229,6 @@ class BranchChatController extends Controller
             } else {
                 $conversation->update(['updated_at' => now()]);
             }
-
-            $message->load(['sender' => function ($query) {
-                $query->select('id', 'full_name');
-            }]);
-
-            broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
 
             return response()->json([
                 'success' => true,

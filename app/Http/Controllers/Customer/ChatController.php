@@ -90,9 +90,10 @@ class ChatController extends Controller
             ];
             Log::info('Customer message data before create', $messageData);
             $message = ChatMessage::create($messageData);
-            $message->load(['sender' => function ($query) {
+            // Load lại message từ DB để đảm bảo đủ trường attachment, attachment_type
+            $message = ChatMessage::with(['sender' => function ($query) {
                 $query->select('id', 'full_name');
-            }]);
+            }])->find($message->id);
             broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
             return response()->json([
                 'success' => true,
