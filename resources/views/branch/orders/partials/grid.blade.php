@@ -17,7 +17,22 @@
                                     {{ $order->orderItems->sum('quantity') ?? 0 }} sản phẩm
                                 </span>
                             </div>
-                            
+                            @php
+                                $statusColors = [
+                                    'awaiting_confirmation' => '#f59e0b',
+                                    'awaiting_driver' => '#3b82f6',
+                                    'driver_picked_up' => '#8b5cf6',
+                                    'in_transit' => '#06b6d4',
+                                    'delivered' => '#10b981',
+                                    'item_received' => '#059669',
+                                    'cancelled' => '#ef4444',
+                                    'refunded' => '#6b7280',
+                                ];
+                                $statusColor = $statusColors[$order->status] ?? '#6b7280';
+                            @endphp
+                            <span class="status-badge text-white rounded-lg px-2 py-1 text-xs font-medium" style="background-color: {{ $statusColor }}">
+                                {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                            </span>
                         </div>
                         <div class="flex items-center gap-2 mb-1">
                             <div class="flex items-center justify-center w-11 h-11 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
