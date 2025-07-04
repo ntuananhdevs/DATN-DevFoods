@@ -460,13 +460,34 @@ document.addEventListener("DOMContentLoaded", function() {
                 })
                 .then(async response => {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Gửi phản hồi';
+                    submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
                     if (response.ok) {
                         dtmodalShowToast('success', { title: 'Thành công', message: 'Phản hồi thành công!' });
-                        // Reset form về chế độ đánh giá
-                        if (cancelReplyBtn) cancelReplyBtn.click();
-                        reviewForm.reset();
-                        // KHÔNG tự động chèn reply vào DOM ở đây, chỉ chờ realtime xử lý
+                        setTimeout(() => {
+                            // Lấy lại DOM mỗi lần
+                            const reviewForm = document.getElementById('review-reply-form');
+                            const replyReviewIdInput = document.getElementById('reply_review_id');
+                            const replyingToDiv = document.getElementById('replying-to');
+                            const reviewTextarea = document.getElementById('review-textarea');
+                            const reviewSubmitBtn = document.getElementById('review-submit-btn');
+                            const formTitle = document.getElementById('form-title');
+                            const ratingRow = document.getElementById('rating-row');
+                            // Lấy lại giá trị mặc định từ data-attribute
+                            if (reviewForm) reviewForm.setAttribute('action', reviewForm.getAttribute('data-default-action') || '/products/review');
+                            if (replyReviewIdInput) replyReviewIdInput.value = '';
+                            if (replyingToDiv) replyingToDiv.classList.add('hidden');
+                            if (reviewTextarea) {
+                                reviewTextarea.value = '';
+                                reviewTextarea.placeholder = reviewTextarea.getAttribute('data-default-placeholder') || 'Chia sẻ cảm nhận của bạn...';
+                                reviewTextarea.setAttribute('name', 'review');
+                            }
+                            if (reviewSubmitBtn) reviewSubmitBtn.textContent = reviewSubmitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
+                            if (formTitle) formTitle.textContent = formTitle.getAttribute('data-default-title') || 'Gửi đánh giá của bạn';
+                            if (ratingRow) ratingRow.style.display = '';
+                            if (typeof selectedRating !== 'undefined') selectedRating = 0;
+                            if (typeof updateStarDisplay === 'function') updateStarDisplay(0);
+                            console.log('[DEBUG] Reset reply form to default UI (after realtime)');
+                        }, 200);
                     } else {
                         let errorMsg = 'Có lỗi xảy ra khi gửi phản hồi!';
                         try {
@@ -483,12 +504,83 @@ document.addEventListener("DOMContentLoaded", function() {
                 })
                 .catch(() => {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Gửi phản hồi';
+                    submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
                     return;
                 });
                 return;
             }
-            // Nếu là gửi đánh giá thì để code cũ xử lý (submit form bình thường)
+            // Nếu là gửi bình luận mới (không phải reply), cũng dùng AJAX
+            e.preventDefault();
+            const formData = new FormData(reviewForm);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const submitBtn = reviewForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang gửi...';
+            fetch(reviewForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: formData
+            })
+            .then(async response => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
+                if (response.ok) {
+                    dtmodalShowToast('success', { title: 'Thành công', message: 'Đánh giá của bạn đã được gửi!' });
+                    setTimeout(() => {
+                        // Lấy lại DOM mỗi lần
+                        const reviewForm = document.getElementById('review-reply-form');
+                        const replyReviewIdInput = document.getElementById('reply_review_id');
+                        const replyingToDiv = document.getElementById('replying-to');
+                        const reviewTextarea = document.getElementById('review-textarea');
+                        const reviewSubmitBtn = document.getElementById('review-submit-btn');
+                        const formTitle = document.getElementById('form-title');
+                        const ratingRow = document.getElementById('rating-row');
+                        if (reviewForm) reviewForm.setAttribute('action', reviewForm.getAttribute('data-default-action') || '/products/review');
+                        if (replyReviewIdInput) replyReviewIdInput.value = '';
+                        if (replyingToDiv) replyingToDiv.classList.add('hidden');
+                        if (reviewTextarea) {
+                            reviewTextarea.value = '';
+                            reviewTextarea.placeholder = reviewTextarea.getAttribute('data-default-placeholder') || 'Chia sẻ cảm nhận của bạn...';
+                            reviewTextarea.setAttribute('name', 'review');
+                        }
+                        if (reviewSubmitBtn) reviewSubmitBtn.textContent = reviewSubmitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
+                        if (formTitle) formTitle.textContent = formTitle.getAttribute('data-default-title') || 'Gửi đánh giá của bạn';
+                        if (ratingRow) ratingRow.style.display = '';
+                        if (typeof selectedRating !== 'undefined') selectedRating = 0;
+                        if (typeof updateStarDisplay === 'function') updateStarDisplay(0);
+                        // Reset ảnh preview nếu có
+                        const preview = document.getElementById('preview_image');
+                        if (preview) { preview.src = '#'; preview.classList.add('hidden'); }
+                        // Reset checkbox ẩn danh
+                        const isAnonymous = document.getElementById('is_anonymous');
+                        if (isAnonymous) isAnonymous.checked = false;
+                        // Reset rating radio
+                        const ratingInputs = reviewForm.querySelectorAll('input[name="rating"]');
+                        ratingInputs.forEach(input => { input.checked = false; });
+                        console.log('[DEBUG] Reset review form to default UI (after review submit)');
+                    }, 200);
+                } else {
+                    let errorMsg = 'Có lỗi xảy ra khi gửi đánh giá!';
+                    try {
+                        const data = await response.json();
+                        if (data && data.errors) {
+                            errorMsg = Object.values(data.errors).join('\n');
+                        } else if (data && data.message) {
+                            errorMsg = data.message;
+                        }
+                    } catch {}
+                    dtmodalShowToast('error', { title: 'Lỗi', message: errorMsg });
+                }
+                return;
+            })
+            .catch(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.getAttribute('data-default-text') || 'Gửi đánh giá';
+                dtmodalShowToast('error', { title: 'Lỗi', message: 'Có lỗi xảy ra khi gửi đánh giá!' });
+            });
         });
     }
 
@@ -1527,12 +1619,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const reviewTextarea = document.getElementById('review-textarea');
     const reviewSubmitBtn = document.getElementById('review-submit-btn');
     const formTitle = document.getElementById('form-title');
+    const ratingRow = document.getElementById('rating-row');
+    // Lưu mặc định ngay khi DOM load
     const defaultAction = reviewForm ? reviewForm.getAttribute('action') : '';
     const defaultPlaceholder = reviewTextarea ? reviewTextarea.getAttribute('placeholder') : '';
     const defaultBtnText = reviewSubmitBtn ? reviewSubmitBtn.textContent : '';
     const defaultTitle = formTitle ? formTitle.textContent : '';
-
-    const ratingRow = document.getElementById('rating-row');
     // Gắn sự kiện cho nút reply ở mỗi review
     document.querySelectorAll('.reply-review-btn').forEach(btn => {
         btn.addEventListener('click', function() {

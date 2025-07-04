@@ -994,7 +994,7 @@
 
                     {{-- Form gửi đánh giá hoặc phản hồi --}}
                     <div id="review-reply-form-container" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
-                        <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-default-action="{{ route('products.review', $product->id) }}">
                             @csrf
                             <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
                             <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
@@ -1003,7 +1003,7 @@
                                 <button type="button" id="cancel-reply" class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
                             </div>
                             <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
-                                <h4 class="font-semibold text-lg" id="form-title">Gửi đánh giá của bạn</h4>
+                                <h4 class="font-semibold text-lg" id="form-title" data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
                                 <div class="flex items-center" id="rating-stars">
                                     @for($i = 1; $i <= 5; $i++)
                                         <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" class="sr-only">
@@ -1015,7 +1015,7 @@
                             </div>
                             <div id="review-message" class="mb-4 text-center"></div>
                             <div>
-                                <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+                                <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
                             </div>
                             <div>
                                 <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
@@ -1033,7 +1033,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button type="submit" id="review-submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium">Gửi đánh giá</button>
+                            <button type="submit" id="review-submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium" data-default-text="Gửi đánh giá">Gửi đánh giá</button>
                         </form>
                     </div>
 
