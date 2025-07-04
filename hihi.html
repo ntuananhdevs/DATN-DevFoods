@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apple Vietnam - Tìm kiếm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* Header Styles */
+        .header {
+            border-bottom: 1px solid #424242;
+            background-color: #000;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 48px;
+        }
+
+        .apple-logo {
+            width: 16px;
+            height: 16px;
+            fill: #fff;
+        }
+
+        .nav-links {
+            display: none;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .nav-links {
+                display: flex;
+            }
+        }
+
+        .nav-link {
+            color: #d1d5db;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 400;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #d1d5db;
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: #fff;
+        }
+
+        .icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Search Section Styles */
+        .search-section {
+            background-color: #1f2937;
+            border-bottom: 1px solid #424242;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: all 0.5s ease-in-out;
+        }
+
+        .search-section.open {
+            max-height: 400px;
+            opacity: 1;
+        }
+
+        .search-container {
+            max-width: 1024px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .search-input-container {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px 12px 48px;
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 18px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            color: #9ca3af;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 8px;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        .quick-links {
+            margin-top: 1rem;
+        }
+
+        .quick-links-title {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-link {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .quick-link:hover .arrow,
+        .quick-link:hover .link-text {
+            color: #fff;
+        }
+
+        .arrow {
+            color: #9ca3af;
+            margin-right: 12px;
+            transition: color 0.2s;
+        }
+
+        .link-text {
+            color: #d1d5db;
+            transition: color 0.2s;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 1rem;
+            text-align: center;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+        }
+
+        .main-subtitle {
+            font-size: 1.25rem;
+            color: #9ca3af;
+            margin-bottom: 2rem;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        @media (min-width: 768px) {
+            .product-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .product-card {
+            background-color: #1f2937;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #374151;
+            transition: border-color 0.2s;
+        }
+
+        .product-card:hover {
+            border-color: #4b5563;
+        }
+
+        .product-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .product-description {
+            color: #9ca3af;
+        }
+
+        /* Background Gradient */
+        .bg-gradient {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 256px;
+            background: linear-gradient(to top, rgba(55, 65, 81, 0.2), transparent);
+            pointer-events: none;
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            display: none;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <nav class="nav">
+                <!-- Apple Logo -->
+                <div>
+                    <svg class="apple-logo" viewBox="0 0 24 24">
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="nav-links">
+                    <a href="#" class="nav-link">Cửa Hàng</a>
+                    <a href="#" class="nav-link">Mac</a>
+                    <a href="#" class="nav-link">iPad</a>
+                    <a href="#" class="nav-link">iPhone</a>
+                    <a href="#" class="nav-link">Watch</a>
+                    <a href="#" class="nav-link">AirPods</a>
+                    <a href="#" class="nav-link">TV & Nhà</a>
+                    <a href="#" class="nav-link">Giải Trí</a>
+                    <a href="#" class="nav-link">Phụ Kiện</a>
+                    <a href="#" class="nav-link">Hỗ Trợ</a>
+                </div>
+
+                <!-- Right Icons -->
+                <div class="nav-icons">
+                    <button class="icon-btn" id="searchBtn">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 0 0-8 0v4M5 9h14l1 12H4L5 9Z"/>
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Search Section -->
+    <div class="search-section" id="searchSection">
+        <div class="search-container">
+            <!-- Search Input -->
+            <div class="search-input-container">
+                <div class="search-input-wrapper">
+                    <input type="text" class="search-input" placeholder="Tìm kiếm trên apple.com" id="searchInput">
+                    <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+                    </svg>
+                    <button class="close-btn" id="closeBtn">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="quick-links">
+                <h2 class="quick-links-title">Liên Kết Nhanh</h2>
+                <div class="quick-link">
+                    <span class="arrow">→</span>
+                    <span class="link-text">Mua Sắm Apple Store Trực Tuyến</span>
+                </div>
+                <div class="quick-link">
+                    <span class="arrow">→</span>
+                    <span class="link-text">Phụ Kiện</span>
+                </div>
+                <div class="quick-link">
+                    <span class="arrow">→</span>
+                    <span class="link-text">AirPods</span>
+                </div>
+                <div class="quick-link">
+                    <span class="arrow">→</span>
+                    <span class="link-text">Apple Intelligence</span>
+                </div>
+                <div class="quick-link">
+                    <span class="arrow">→</span>
+                    <span class="link-text">Apple Trade In</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <h1 class="main-title">Apple Vietnam</h1>
+        <p class="main-subtitle">Nhấn vào biểu tượng tìm kiếm ở trên để mở thanh tìm kiếm</p>
+
+        <!-- Product Grid -->
+        <div class="product-grid">
+            <div class="product-card">
+                <h3 class="product-title">iPhone 15 Pro</h3>
+                <p class="product-description">Titanium. So strong. So light. So Pro.</p>
+            </div>
+            <div class="product-card">
+                <h3 class="product-title">MacBook Air</h3>
+                <p class="product-description">Supercharged by M3 chip.</p>
+            </div>
+            <div class="product-card">
+                <h3 class="product-title">AirPods Pro</h3>
+                <p class="product-description">Adaptive Audio. Now playing.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Background Gradient -->
+    <div class="bg-gradient"></div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <script>
+        // Get elements
+        const searchBtn = document.getElementById('searchBtn');
+        const searchSection = document.getElementById('searchSection');
+        const closeBtn = document.getElementById('closeBtn');
+        const overlay = document.getElementById('overlay');
+        const searchInput = document.getElementById('searchInput');
+
+        // Toggle search function
+        function toggleSearch() {
+            const isOpen = searchSection.classList.contains('open');
+
+            if (isOpen) {
+                searchSection.classList.remove('open');
+                overlay.classList.remove('show');
+            } else {
+                searchSection.classList.add('open');
+                overlay.classList.add('show');
+                // Focus on input after animation
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 300);
+            }
+        }
+
+        // Event listeners
+        searchBtn.addEventListener('click', toggleSearch);
+        closeBtn.addEventListener('click', toggleSearch);
+        overlay.addEventListener('click', toggleSearch);
+
+        // Close search with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && searchSection.classList.contains('open')) {
+                toggleSearch();
+            }
+        });
+
+        // Quick links click handlers
+        const quickLinks = document.querySelectorAll('.quick-link');
+        quickLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                const linkText = this.querySelector('.link-text').textContent;
+                alert('Bạn đã click vào: ' + linkText);
+            });
+        });
+    </script>
+</body>
+</html>
