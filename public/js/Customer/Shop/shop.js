@@ -1751,3 +1751,30 @@ helpfulChannel.bind('review-helpful-updated', function(data) {
         // Đã bỏ fetch API kiểm tra trạng thái, chỉ cập nhật số
     }
 });
+
+// === Wishlist realtime (Pusher) ===
+if (window.currentUserId) {
+    const wishlistPusher = new Pusher(window.pusherKey, {
+        cluster: window.pusherCluster,
+        encrypted: true,
+        enabledTransports: ['ws', 'wss']
+    });
+    const wishlistChannel = wishlistPusher.subscribe('private-user-wishlist-channel.' + window.currentUserId);
+    wishlistChannel.bind('wishlist-updated', function(data) {
+        // Cập nhật UI icon yêu thích ở đây
+        const favoriteBtn = document.querySelector('.favorite-btn');
+        if (favoriteBtn) {
+            const icon = favoriteBtn.querySelector('i');
+            if (data.product_id == window.productId) {
+                if (data.action === 'added') {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas', 'text-red-500');
+                } else if (data.action === 'removed') {
+                    icon.classList.remove('fas', 'text-red-500');
+                    icon.classList.add('far');
+                }
+            }
+        }
+    });
+    console.log('Subscribed to wishlist channel: private-user-wishlist-channel.' + window.currentUserId);
+}
