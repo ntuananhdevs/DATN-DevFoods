@@ -321,4 +321,12 @@ class Order extends Model
         }
         return $svg;
     }
+
+    /**
+     * Get the payment associated with the order.
+     */
+    public function payment()
+    {
+        return $this->belongsTo(Payment::class, 'payment_id');
+    }
 }

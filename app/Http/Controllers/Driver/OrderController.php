@@ -142,7 +142,6 @@ class OrderController extends Controller
         return view('driver.orders.navigate', compact('order'));
     }
 
-    // === CÁC HÀNH ĐỘNG CỦA TÀI XẾ - ĐƯỢC SẮP XẾP LẠI LOGIC ===
 
     /**
      * HÀM HELPER: Xử lý các tác vụ chung.

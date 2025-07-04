@@ -594,5 +594,5 @@ class BranchOrdersRealtime {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Luôn khởi tạo để xử lý sự kiện click, ngay cả khi không có Pusher
-    window.branchOrdersRealtime = new BranchOrdersRealtime();
+        window.branchOrdersRealtime = new BranchOrdersRealtime();
 }); 

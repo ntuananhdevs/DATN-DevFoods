@@ -26,6 +26,8 @@
                 </a>
             @endforeach
         </div>
+        <input type="hidden" name="status" value="{{ $initialStatus }}">
+    </form>
 
         {{-- Danh sách đơn hàng --}}
         <div class="space-y-3">
@@ -160,6 +162,52 @@
             </div>
         @endif
     </div>
+
+    {{-- CẬP NHẬT: Danh sách đơn hàng sử dụng accessor và giao diện responsive --}}
+    <div class="space-y-3">
+        @forelse($orders as $order)
+        <a href="{{ route('driver.orders.show', $order->id) }}" class="flex items-center space-x-4 bg-white p-3 rounded-lg shadow-sm hover:shadow-md hover:ring-2 hover:ring-blue-500 transition-all duration-200">
+            
+            {{-- Phần icon, sử dụng status_color và status_icon từ accessor --}}
+            <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl" style="background-color: {{ $order->status_color }};">
+                <i class="{{ $order->status_icon }}"></i>
+            </div>
+
+            {{-- Phần thông tin chính --}}
+            <div class="flex-grow min-w-0">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-gray-800">Đơn #{{ $order->id }}</span>
+                    <span class="text-sm font-bold text-green-600">{{ number_format($order->total_amount, 0, ',', '.') }} đ</span>
+                </div>
+                {{-- Địa chỉ được rút gọn tự động --}}
+                <p class="text-sm text-gray-600 truncate">
+                    {{ $order->delivery_address }}
+                </p>
+                <p class="text-xs text-gray-400 mt-1">
+                    {{-- Dùng accessor status_text --}}
+                    {{ $order->status_text }}
+                </p>
+            </div>
+
+            <div class="flex-shrink-0 text-gray-300">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </a>
+        @empty
+        <div class="text-center text-gray-500 py-16">
+            <i class="fas fa-box-open text-5xl mb-4 text-gray-300"></i>
+            <p class="font-medium">Không có đơn hàng nào</p>
+            <p class="text-sm">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+        </div>
+        @endforelse
+    </div>
+
+    @if ($orders->hasPages())
+    <div class="mt-6">
+        {{ $orders->appends(request()->query())->links() }}
+    </div>
+    @endif
+</div>
 @endsection
 
 @push('styles')

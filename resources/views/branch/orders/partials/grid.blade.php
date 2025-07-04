@@ -13,9 +13,7 @@
                                         +{{ $order->points_earned }} điểm
                                     </span>
                                 @endif
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    {{ $order->orderItems->sum('quantity') ?? 0 }} sản phẩm
-                                </span>
+                                
                             </div>
                             @php
                                 $statusColors = [
@@ -28,10 +26,21 @@
                                     'cancelled' => '#ef4444',
                                     'refunded' => '#6b7280',
                                 ];
+                                $statusTexts = [
+                                    'awaiting_confirmation' => 'Chờ xác nhận',
+                                    'awaiting_driver' => 'Đang chờ tài xế',
+                                    'driver_picked_up' => 'Tài xế đã nhận',
+                                    'in_transit' => 'Đang giao',
+                                    'delivered' => 'Đã giao',
+                                    'item_received' => 'Đã nhận',
+                                    'cancelled' => 'Đã hủy',
+                                    'refunded' => 'Đã hoàn tiền',
+                                ];
                                 $statusColor = $statusColors[$order->status] ?? '#6b7280';
+                                $statusText = $statusTexts[$order->status] ?? ucfirst(str_replace('_', ' ', $order->status));
                             @endphp
                             <span class="status-badge text-white rounded-lg px-2 py-1 text-xs font-medium" style="background-color: {{ $statusColor }}">
-                                {{ ucfirst(str_replace('_', ' ', $order->status)) }}
+                                {{ $statusText }}
                             </span>
                         </div>
                         <div class="flex items-center gap-2 mb-1">
@@ -68,6 +77,12 @@
                         <span class="font-semibold text-gray-900">{{ number_format($order->total_amount) }}₫</span>
                     </div>
                     <div class="flex justify-between">
+                        <span class="text-gray-500">Sản phẩm:</span>
+                        <span class="text-gray-700">
+                            {{ $order->orderItems->sum('quantity') ?? 0 }} sản phẩm
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
                         <span class="text-gray-500">Thời gian:</span>
                         <span class="text-gray-700">{{ $order->order_date->format('H:i') }}</span>
                     </div>
@@ -79,9 +94,9 @@
                     @endif
                     <div class="flex justify-between">
                         <span class="text-gray-500">Thanh toán:</span>
-                        @php $pm = strtolower($order->payment_method ?? ''); @endphp
+                        @php $pm = strtolower($order->payment?->payment_method ?? ''); @endphp
                         @if($pm === 'cod')
-                            <span class="inline-block px-2 py-1 rounded bg-green-500 text-white text-xs font-semibold">COD</span>
+                            <span class="inline-block px-2 py-0.5 rounded bg-green-700 text-white text-xs font-semibold">COD</span>
                         @elseif($pm === 'vnpay')
                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" style="height:1em;width:auto;display:inline;vertical-align:middle;" aria-label="VNPAY Icon">
@@ -91,8 +106,6 @@
                             </span>
                         @elseif($pm === 'balance')
                             <span class="inline-block px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Số dư</span>
-                        @else
-                            <span class="text-gray-700">{{ $order->paymentMethodText }}</span>
                         @endif
                     </div>
                     @if($order->notes)
