@@ -12,12 +12,13 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
+        'order_code',
         'customer_id',
         'branch_id',
         'driver_id',
         'address_id',
         'discount_code_id',
-        'payment_id',
+        'payment_method',
         'guest_name',
         'guest_phone',
         'guest_email',
@@ -90,13 +91,7 @@ class Order extends Model
         return $this->belongsTo(Address::class);
     }
 
-    /**
-     * Get the payment associated with the order.
-     */
-    public function payment()
-    {
-        return $this->belongsTo(Payment::class);
-    }
+
 
     /**
      * Get the discount code associated with the order.
@@ -142,7 +137,9 @@ class Order extends Model
         'status_color',
         'status_icon',
         'customer_name',
-        'customer_phone'
+        'customer_phone',
+        'payment_method_text',
+        'payment_status'
     ];
 
     /**
@@ -248,6 +245,38 @@ class Order extends Model
     {
         return Attribute::make(
             get: fn() => $this->customer->phone ?? $this->guest_phone ?? 'Không có',
+        );
+    }
+
+    /**
+     * Lấy text trạng thái tĩnh cho các tab
+     *
+     * Lấy text phương thức thanh toán
+     */
+    protected function paymentMethodText(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => match ($this->payment_method) {
+                'cod' => 'COD (Thanh toán khi nhận hàng)',
+                'vnpay' => 'VNPAY',
+                'balance' => 'Số dư tài khoản',
+                default => 'Không xác định',
+            }
+        );
+    }
+
+    /**
+     * Lấy trạng thái thanh toán
+     */
+    protected function paymentStatus(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => match ($this->payment_method) {
+                'cod' => $this->status === 'item_received' ? 'completed' : 'pending', // COD completed khi khách nhận hàng
+                'vnpay' => $this->status === 'pending_payment' ? 'pending' : 'completed',
+                'balance' => 'completed', // Số dư đã trừ tiền ngay
+                default => 'pending',
+            }
         );
     }
 

@@ -301,7 +301,7 @@
                     @endif
                     <div class="flex justify-between">
                         <span class="text-gray-500">Phương thức thanh toán:</span>
-                        <span class="font-medium">{{ $order->payment?->paymentMethod?->name ?? 'Chưa thanh toán' }}</span>
+                        <span class="font-medium">{{ $order->paymentMethodText }}</span>
                     </div>
                     @if($order->driver)
                         <div class="flex justify-between">
