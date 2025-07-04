@@ -11,13 +11,18 @@ class BranchOrdersRealtime {
     }
 
     init() {
-        if (!this.branchId || !this.pusherKey || !this.pusherCluster) {
-            console.error('Missing required configuration for realtime orders');
-            return;
-        }
-
-        this.initializePusher();
+        // Luôn bind events để xử lý click
         this.bindEvents();
+        
+        // Đồng bộ số đếm với server
+        this.syncStatusCounts();
+        
+        // Chỉ khởi tạo Pusher khi có đủ điều kiện
+        if (this.branchId && this.pusherKey && this.pusherCluster) {
+            this.initializePusher();
+        } else {
+            console.log('Pusher configuration not available, realtime features disabled');
+        }
     }
 
     initializePusher() {
@@ -38,8 +43,10 @@ class BranchOrdersRealtime {
     }
 
     bindEvents() {
+        console.log('Binding events...');
         document.addEventListener('click', (e) => {
             if (e.target.matches('[data-quick-action]')) {
+                console.log('Quick action clicked:', e.target.dataset);
                 e.preventDefault();
                 const orderId = e.target.dataset.orderId;
                 const action = e.target.dataset.quickAction;
@@ -101,7 +108,7 @@ class BranchOrdersRealtime {
             }, 10);
         }
 
-        // Update status counts
+        // Update status counts - cập nhật cả tab "Tất cả" và tab trạng thái cụ thể
         this.updateStatusCount('all', 1);
         this.updateStatusCount(data.order.status, 1);
 
@@ -125,8 +132,14 @@ class BranchOrdersRealtime {
                 statusBadge.style.backgroundColor = data.order.status_color;
             }
         }
+        
+        // Cập nhật số đếm: giảm trạng thái cũ, tăng trạng thái mới
         this.updateStatusCount(data.old_status, -1);
         this.updateStatusCount(data.new_status, 1);
+        
+        // Di chuyển card sang tab mới nếu cần
+        this.moveOrderCardToNewStatus(data.order.id, data.new_status);
+        
         dtmodalShowToast('info', {
             title: 'Cập nhật trạng thái',
             message: `Đơn hàng #${data.order.order_code || data.order.id} đã chuyển sang ${data.order.status_text}`
@@ -134,11 +147,12 @@ class BranchOrdersRealtime {
     }
 
     async handleQuickAction(orderId, action) {
+        console.log('handleQuickAction called:', orderId, action);
         const statusMap = {
-            'confirm': 'processing',
-            'ready': 'ready',
-            'deliver': 'delivery',
-            'complete': 'completed',
+            'confirm': 'awaiting_driver',
+            'ready': 'in_transit',
+            'deliver': 'delivered',
+            'complete': 'item_received',
             'cancel': 'cancelled'
         };
 
@@ -171,6 +185,7 @@ class BranchOrdersRealtime {
                     title: 'Thành công',
                     message: result.message
                 });
+                this.moveOrderCardToNewStatus(orderId, newStatus);
             } else {
                 dtmodalShowToast('error', {
                     title: 'Lỗi',
@@ -266,21 +281,85 @@ class BranchOrdersRealtime {
     }
 
     updateStatusCount(status, change) {
+        console.log('Updating status count:', status, change);
         const statusTabs = document.querySelectorAll('.status-tab');
         statusTabs.forEach(tab => {
             const href = tab.getAttribute('href');
-            if (href.includes(`status=${status}`) || (status === 'all' && href.includes('status=all'))) {
-                const countSpan = tab.querySelector('span');
-                if (countSpan) {
-                    const currentCount = parseInt(countSpan.textContent) || 0;
+            const tabStatus = tab.dataset.status;
+            
+            // Cập nhật tab "Tất cả" nếu thay đổi bất kỳ trạng thái nào
+            if (tabStatus === 'all') {
+                const countSpan = tab.querySelector('span') || tab;
+                const currentText = countSpan.textContent;
+                const match = currentText.match(/\((\d+)\)/);
+                if (match) {
+                    const currentCount = parseInt(match[1]) || 0;
                     const newCount = Math.max(0, currentCount + change);
-                    countSpan.textContent = newCount;
+                    countSpan.textContent = currentText.replace(/\(\d+\)/, `(${newCount})`);
+                }
+            }
+            // Cập nhật tab cụ thể nếu trạng thái khớp
+            else if (tabStatus === status) {
+                const countSpan = tab.querySelector('span') || tab;
+                const currentText = countSpan.textContent;
+                const match = currentText.match(/\((\d+)\)/);
+                if (match) {
+                    const currentCount = parseInt(match[1]) || 0;
+                    const newCount = Math.max(0, currentCount + change);
+                    countSpan.textContent = currentText.replace(/\(\d+\)/, `(${newCount})`);
                 }
             }
         });
     }
 
-
+    moveOrderCardToNewStatus(orderId, newStatus) {
+        const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+        if (!orderCard) return;
+        
+        // Lấy trạng thái cũ từ status badge
+        const statusBadge = orderCard.querySelector('.status-badge');
+        let oldStatus = null;
+        
+        if (statusBadge) {
+            const statusText = statusBadge.textContent?.trim();
+            // Map text status sang status code
+            const statusMap = {
+                'Chờ xác nhận': 'awaiting_confirmation',
+                'Chờ tài xế': 'awaiting_driver', 
+                'Tài xế đã nhận': 'driver_picked_up',
+                'Đang giao': 'in_transit',
+                'Đã giao': 'delivered',
+                'Đã nhận': 'item_received',
+                'Đã hủy': 'cancelled',
+                'Đã hoàn tiền': 'refunded'
+            };
+            oldStatus = statusMap[statusText] || statusText?.toLowerCase().replace(/\s/g, '_');
+        }
+        
+        console.log('Moving order card:', orderId, 'from', oldStatus, 'to', newStatus);
+        
+        // Xóa thẻ khỏi tab hiện tại
+        orderCard.remove();
+        
+        // Cập nhật số đếm tab
+        if (oldStatus && oldStatus !== newStatus) {
+            this.updateStatusCount(oldStatus, -1);
+        }
+        this.updateStatusCount(newStatus, 1);
+        
+        // Cập nhật URL nếu đang ở tab cụ thể và không còn đơn hàng nào
+        const currentTab = document.querySelector('.status-tab.active');
+        if (currentTab && currentTab.dataset.status === oldStatus) {
+            const remainingCards = document.querySelectorAll('.order-card');
+            if (remainingCards.length === 0) {
+                // Chuyển về tab "Tất cả" nếu không còn đơn hàng nào
+                const allTab = document.querySelector('.status-tab[data-status="all"]');
+                if (allTab) {
+                    allTab.click();
+                }
+            }
+        }
+    }
 
     createOrderCard(order) {
         const card = document.createElement('div');
@@ -374,12 +453,12 @@ class BranchOrdersRealtime {
     }
 
     getQuickActionsHTML(orderId, status) {
-        if (['completed', 'cancelled'].includes(status)) {
+        if (['item_received', 'cancelled', 'refunded'].includes(status)) {
             return '';
         }
 
         let actions = '';
-        if (status === 'pending') {
+        if (status === 'awaiting_confirmation') {
             actions = `
                 <button data-quick-action="confirm" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
                     Xác nhận
@@ -388,19 +467,19 @@ class BranchOrdersRealtime {
                     Hủy
                 </button>
             `;
-        } else if (status === 'processing') {
+        } else if (status === 'awaiting_driver') {
             actions = `
                 <button data-quick-action="ready" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
                     Sẵn sàng
                 </button>
             `;
-        } else if (status === 'ready') {
+        } else if (status === 'driver_picked_up') {
             actions = `
                 <button data-quick-action="deliver" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
                     Giao hàng
                 </button>
             `;
-        } else if (status === 'delivery') {
+        } else if (status === 'in_transit') {
             actions = `
                 <button data-quick-action="complete" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
                     Hoàn thành
@@ -480,11 +559,40 @@ class BranchOrdersRealtime {
         };
         return statusTexts[status] || status;
     }
+
+    // Thêm hàm đồng bộ số đếm với server
+    async syncStatusCounts() {
+        // Tạm thời bỏ qua vì route chưa có
+        console.log('Status counts sync disabled - route not implemented yet');
+        return;
+        
+        try {
+            const response = await fetch('/branch/orders/status-counts', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Cập nhật số đếm từ server
+                Object.keys(data).forEach(status => {
+                    const tab = document.querySelector(`.status-tab[data-status="${status}"]`);
+                    if (tab) {
+                        const currentText = tab.textContent;
+                        const newText = currentText.replace(/\(\d+\)/, `(${data[status]})`);
+                        tab.textContent = newText;
+                    }
+                });
+            }
+        } catch (error) {
+            console.log('Could not sync status counts:', error);
+        }
+    }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    if (window.branchId && window.pusherKey && window.pusherCluster) {
-        window.branchOrdersRealtime = new BranchOrdersRealtime();
-    }
+    // Luôn khởi tạo để xử lý sự kiện click, ngay cả khi không có Pusher
+    window.branchOrdersRealtime = new BranchOrdersRealtime();
 }); 

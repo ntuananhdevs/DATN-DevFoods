@@ -40,20 +40,12 @@
             </div>
 
             <div class="flex items-center gap-4">
-                <div id="search-container" class="relative">
-                    <button id="search-button" class="p-2">
-                        <ion-icon class="h-6 w-6" name="search-outline"></ion-icon>
-                        <span class="sr-only">Tìm kiếm</span>
-                    </button>
-                    <div id="search-input-container" class="hidden absolute right-0 top-full mt-1 w-64 bg-white shadow-lg rounded-lg p-2 z-50">
-                        <div class="flex items-center">
-                            <input type="text" class="w-full border rounded-md px-3 py-2 text-sm" placeholder="Tìm kiếm...">
-                            <button id="close-search" class="ml-2">
-                                <i class="fas fa-times h-4 w-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Nút tìm kiếm bằng icon (kính lúp) -->
+                <button class="icon-btn" id="searchBtn" title="Tìm kiếm" aria-label="Tìm kiếm">
+                    <svg class="icon h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+                    </svg>
+                </button>
 
                 <div id="wishlist-container" class="relative">
                     <a href="{{ route('wishlist.index') }}" class="relative">
@@ -107,6 +99,57 @@
     </div>
 </header>
 
+<!-- Search Section (Apple style, drop from header, white background) -->
+<div class="search-section absolute left-0 right-0 bg-white border-b border-gray-200 z-50 transition-all duration-500 ease-in-out max-h-0 opacity-0 overflow-hidden" id="searchSection" style="top: 64px;">
+    <div class="search-container max-w-2xl mx-auto py-8 px-4">
+        <div class="search-input-container mb-6 relative">
+            <form action="/" method="GET" class="search-input-wrapper flex items-center gap-2 w-full">
+                <input type="text" name="search" class="search-input flex-1 px-5 py-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Tìm kiếm sản phẩm..." id="searchInput">
+                <button type="submit" class="ml-2 p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg">
+                    <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+                    </svg>
+                </button>
+                <button type="button" class="close-btn ml-2 p-2" id="closeBtn">
+                    <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        <div id="search-results-container" class="mt-6">
+            <div id="search-loader" style="display:none;text-align:center;padding:20px;">
+                <i class="fas fa-spinner fa-spin fa-2x text-orange-500"></i>
+            </div>
+            <div id="search-results"></div>
+        </div>
+        <div class="quick-links mt-4">
+            <h2 class="quick-links-title text-gray-500 text-sm mb-4">Liên Kết Nhanh</h2>
+            <div class="flex flex-col gap-2">
+                <a href="/shop/products" class="quick-link flex items-center gap-2 cursor-pointer hover:text-orange-500">
+                    <span class="arrow text-gray-400">→</span>
+                    <span class="link-text text-gray-700">Tất cả sản phẩm</span>
+                </a>
+                <a href="/promotions" class="quick-link flex items-center gap-2 cursor-pointer hover:text-orange-500">
+                    <span class="arrow text-gray-400">→</span>
+                    <span class="link-text text-gray-700">Khuyến mãi</span>
+                </a>
+                <a href="/branches" class="quick-link flex items-center gap-2 cursor-pointer hover:text-orange-500">
+                    <span class="arrow text-gray-400">→</span>
+                    <span class="link-text text-gray-700">Cửa hàng gần bạn</span>
+                </a>
+                <a href="/about" class="quick-link flex items-center gap-2 cursor-pointer hover:text-orange-500">
+                    <span class="arrow text-gray-400">→</span>
+                    <span class="link-text text-gray-700">Về chúng tôi</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="overlay fixed inset-0 bg-black bg-opacity-40 z-40 hidden" id="overlay"></div>
+
+
+
 <!-- Mobile Menu Sidebar -->
 <div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
     <div class="bg-white h-full w-[300px] p-4 transform -translate-x-full transition-transform duration-300" id="mobile-menu-content">
@@ -141,3 +184,5 @@
         </nav>
     </div>
 </div>
+<link rel="stylesheet" href="{{ asset('css/customer-search.css') }}">
+<script src="{{ asset('js/customer-search.js') }}"></script>
