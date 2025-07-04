@@ -234,6 +234,23 @@
 console.log('Script loaded!');
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM fully loaded!');
+    
+    // Test button để kiểm tra JavaScript
+    const testBtn = document.createElement('button');
+    testBtn.textContent = 'Test JS';
+    testBtn.onclick = () => {
+        console.log('Test button clicked!');
+        alert('JavaScript is working!');
+    };
+    document.body.appendChild(testBtn);
+    
+    // Test event listener cho quick actions
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('[data-quick-action]')) {
+            console.log('Quick action detected in main script:', e.target.dataset);
+        }
+    });
+    
     const tabs = document.querySelectorAll('#orderStatusTabs .status-tab');
     const ordersGrid = document.getElementById('ordersGrid');
     const ordersPagination = document.getElementById('ordersPagination');
@@ -267,13 +284,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const doc = parser.parseFromString(html, 'text/html');
             const newGrid = doc.getElementById('ordersGrid');
             const newPagination = doc.getElementById('ordersPagination');
+            const newTabs = doc.querySelectorAll('#orderStatusTabs .status-tab');
+            
+            // Cập nhật grid và pagination
             if (newGrid) {
                 ordersGrid.innerHTML = newGrid.innerHTML;
             }
             if (newPagination) {
                 ordersPagination.innerHTML = newPagination.innerHTML;
             }
-            // Không cập nhật lại active tab ở đây nữa
+            
+            // Cập nhật số đếm trên tất cả tab
+            const currentTabs = document.querySelectorAll('#orderStatusTabs .status-tab');
+            currentTabs.forEach((tab, index) => {
+                if (newTabs[index]) {
+                    tab.innerHTML = newTabs[index].innerHTML;
+                }
+            });
+            
             if (updateHistory) {
                 history.replaceState(null, '', url);
             }
@@ -288,67 +316,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('AJAX error:', err);
         });
     }
-
-    // Xử lý nút xác nhận trạng thái đơn hàng
-    document.body.addEventListener('click', function(e) {
-        if (e.target && e.target.matches('[data-quick-action="confirm"]')) {
-            e.preventDefault();
-            const orderId = e.target.getAttribute('data-order-id');
-            if (!orderId) return;
-            fetch(`/branch/orders/${orderId}/status`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    status: 'awaiting_driver'
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    // Cập nhật trạng thái trên card đơn hàng
-                    const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
-                    if (card) {
-                        // Ẩn nút xác nhận/hủy, có thể cập nhật lại nội dung card nếu muốn
-                        card.querySelectorAll('[data-quick-action]').forEach(btn => btn.style.display = 'none');
-                        // Thêm badge trạng thái mới hoặc cập nhật lại card
-                        let badge = card.querySelector('.status-badge');
-                        if (!badge) {
-                            badge = document.createElement('span');
-                            badge.className = 'status-badge bg-blue-100 text-blue-800';
-                            card.querySelector('.flex.items-center.gap-2.mb-1').appendChild(badge);
-                        }
-                        badge.textContent = data.status_text || 'Chờ tài xế';
-                    }
-                    if (typeof dtmodalShowToast === 'function') {
-                        dtmodalShowToast('success', {
-                            title: 'Thành công',
-                            message: 'Đã xác nhận đơn hàng!'
-                        });
-                    }
-                } else {
-                    if (typeof dtmodalShowToast === 'function') {
-                        dtmodalShowToast('error', {
-                            title: 'Lỗi',
-                            message: data.message || 'Có lỗi xảy ra!'
-                        });
-                    }
-                }
-            })
-            .catch(err => {
-                if (typeof dtmodalShowToast === 'function') {
-                    dtmodalShowToast('error', {
-                        title: 'Lỗi',
-                        message: 'Có lỗi xảy ra!'
-                    });
-                }
-                console.error(err);
-            });
-        }
-    });
 });
 </script>
 <script src="{{ asset('js/branch/orders-realtime.js') }}" defer></script>
