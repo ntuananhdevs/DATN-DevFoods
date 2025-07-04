@@ -25,7 +25,7 @@
                 <div class="flex items-center space-x-3">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center text-xl"
                         style="background-color: {{ $order->status_color['bg'] ?? '#f0f0f0' }}; color: {{ $order->status_color['text'] ?? '#333' }};">
-                        <i class="{{ $order->status_icon }}"></i>
+                        {!! $order->status_svg_icon !!} {{-- Sử dụng thuộc tính mới và nhớ dùng {!! !!} để render HTML --}}
                     </div>
                     <div>
                         <h2 class="font-semibold">{{ $order->status_text }}</h2>
@@ -121,35 +121,82 @@
             <div class="space-y-3" id="action-buttons-container"> {{-- Add an ID here for easier targeting --}}
                 @switch($order->status)
                     @case('awaiting_driver')
-                        {{-- Use data-action attribute instead of onclick --}}
+                        {{-- Nút "Chấp nhận đơn hàng" --}}
                         <button data-action="accept-order"
-                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-blue-700">
-                            <i class="fas fa-check mr-2"></i>Chấp nhận đơn hàng
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-blue-700 flex items-center justify-center">
+                            {{-- Icon tương ứng với 'accepted' hoặc 'awaiting_driver' (package icon) trong index --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-package w-4 h-4 mr-2">
+                                <path d="m7.5 4.27 9 5.15"></path>
+                                <path
+                                    d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z">
+                                </path>
+                                <path d="m3.3 7 8.7 5 8.7-5"></path>
+                                <path d="M12 22V12"></path>
+                            </svg>
+                            Chấp nhận đơn hàng
                         </button>
                     @break
 
                     @case('driver_picked_up')
+                        {{-- Nút "Xác nhận đã lấy hàng" --}}
                         <button data-action="confirm-pickup"
-                            class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700">
-                            <i class="fas fa-shopping-bag mr-2"></i>Xác nhận đã lấy hàng
+                            class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 flex items-center justify-center">
+                            {{-- Icon 'truck' (driver_picked_up, in_transit) trong index --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-truck w-4 h-4 mr-2">
+                                <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path>
+                                <path d="M15 18H9"></path>
+                                <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 2 0 0 0 17.52 8H14"></path>
+                                <circle cx="17" cy="18" r="2"></circle>
+                                <circle cx="7" cy="18" r="2"></circle>
+                            </svg>
+                            Xác nhận đã lấy hàng
                         </button>
                     @break
 
                     @case('in_transit')
+                        {{-- Nút "Xác nhận đã giao hàng" --}}
                         <button data-action="confirm-delivery"
-                            class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700">
-                            <i class="fas fa-check-double mr-2"></i>Xác nhận đã giao hàng
+                            class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700 flex items-center justify-center mb-2">
+                            {{-- Icon 'circle-check-big' (delivered) trong index --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-circle-check-big w-4 h-4 mr-2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <path d="m9 11 3 3L22 4"></path>
+                            </svg>
+                            Xác nhận đã giao hàng
                         </button>
+                        {{-- Nút "Xem bản đồ lớn" --}}
                         <button data-action="start-delivery"
-                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700">
-                            <i class="fas fa-route mr-2"></i>Xem bản đồ lớn
+                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center">
+                            {{-- Icon 'map-pin' (đã dùng cho địa chỉ trong index) hoặc 'route' (thích hợp hơn cho bản đồ) --}}
+                            {{-- Tôi dùng icon 'route' vì nó phù hợp hơn với chức năng "Xem bản đồ lớn" --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-route w-4 h-4 mr-2">
+                                <path d="M3 17h3L10 3h4l4 14h3" />
+                                <path d="M14 17h7" />
+                                <path d="M3 21h18" />
+                            </svg>
+                            Xem bản đồ lớn
                         </button>
                     @break
 
                     @case('delivered')
                     @case('item_received')
                         <div class="bg-green-50 p-4 rounded-lg text-center">
-                            <i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i>
+                            {{-- Icon 'circle-check-big' (delivered) trong index --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-circle-check-big text-green-600 w-8 h-8 mx-auto mb-2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <path d="m9 11 3 3L22 4"></path>
+                            </svg>
                             <p class="text-green-800 font-medium">Đơn hàng đã được giao thành công</p>
                             <p class="text-sm text-green-600">Lúc:
                                 {{ optional($order->actual_delivery_time)->format('H:i d/m/Y') }}</p>
@@ -158,7 +205,14 @@
 
                     @case('cancelled')
                         <div class="bg-red-50 p-4 rounded-lg text-center">
-                            <i class="fas fa-times-circle text-red-600 text-2xl mb-2"></i>
+                            {{-- Icon 'x-circle' (cancelled) trong index --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-x-circle text-red-600 w-8 h-8 mx-auto mb-2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="m15 9-6 6"></path>
+                                <path d="m9 9 6 6"></path>
+                            </svg>
                             <p class="text-red-800 font-medium">Đơn hàng đã bị hủy</p>
                         </div>
                     @break

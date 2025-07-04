@@ -18,45 +18,93 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $driverId = Auth::guard('driver')->id();
+        $search = $request->query('search');
+        $currentTab = $request->query('tab', 'all'); // Mặc định là 'all'
 
-        // Cập nhật các tab hiển thị cho Driver
-        $tabConfig = [
-            'in_progress' => ['label' => 'Đang thực hiện', 'statuses' => ['driver_picked_up', 'in_transit']],
-            'completed' => ['label' => 'Đã hoàn thành', 'statuses' => ['delivered', 'item_received']],
-            'problem' => ['label' => 'Đơn sự cố', 'statuses' => ['cancelled', 'failed_delivery', 'delivery_incomplete']],
+        $statuses = [
+            'all' => 'Tất cả',
+            'driver_picked_up' => 'Đã nhận',
+            'in_transit' => 'Đang giao',
+            'delivered' => 'Đã giao',
+            'cancelled' => 'Đã hủy',
         ];
-        
-        $currentTab = $request->query('tab', 'in_progress');
-        if (!array_key_exists($currentTab, $tabConfig)) {
-            $currentTab = 'in_progress';
+
+        $tabConfig = [];
+        $baseQuery = Order::query();
+
+        // Cần eager load các mối quan hệ để hiển thị trên blade
+        $baseQuery->with([
+            'customer',
+            'orderItems.productVariant.product.category' // Để lấy tên danh mục cho tags
+        ]);
+
+        // Tính toán số lượng cho từng tab
+        // Thay đổi logic tính toán số lượng để xử lý 'all' trước
+        $allOrdersCount = Order::query(); // Query riêng cho tổng tất cả
+        if ($driverId) {
+            $allOrdersCount->where('driver_id', $driverId);
+        }
+        if ($search) {
+            $allOrdersCount->where(function ($query) use ($search) {
+                $query->where('order_code', 'like', '%' . $search . '%')
+                    ->orWhere('delivery_address', 'like', '%' . $search . '%')
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('phone', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+        $tabConfig['all']['count'] = $allOrdersCount->count();
+        $tabConfig['all']['label'] = 'Tất cả'; // Gán nhãn cho 'all'
+
+        foreach ($statuses as $key => $label) {
+            if ($key === 'all') {
+                continue; // Bỏ qua 'all' vì đã xử lý ở trên
+            }
+
+            $query = Order::query();
+            if ($driverId) {
+                $query->where('driver_id', $driverId);
+            }
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('order_code', 'like', '%' . $search . '%')
+                        ->orWhere('delivery_address', 'like', '%' . $search . '%')
+                        ->orWhereHas('customer', function ($subQ) use ($search) {
+                            $subQ->where('name', 'like', '%' . $search . '%')
+                                ->orWhere('phone', 'like', '%' . $search . '%');
+                        });
+                });
+            }
+            $query->where('status', $key);
+            $tabConfig[$key]['count'] = $query->count();
+            $tabConfig[$key]['label'] = $label;
         }
 
-        // Query cơ bản với các thông tin eager-load cần thiết
-        $query = Order::with(['customer', 'branch'])
-                      ->where('driver_id', $driverId)
-                      ->whereIn('status', $tabConfig[$currentTab]['statuses']);
+        // Lấy đơn hàng cho tab hiện tại
+        $ordersQuery = Order::query();
+        if ($driverId) {
+            $ordersQuery->where('driver_id', $driverId);
+        }
 
-        // THÊM LOGIC TÌM KIẾM
-        if ($request->filled('search')) {
-            $searchTerm = $request->input('search');
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('id', 'like', "%{$searchTerm}%") // Tìm theo ID đơn hàng
-                  ->orWhere('delivery_address', 'like', "%{$searchTerm}%") // Tìm theo địa chỉ
-                  ->orWhereHas('customer', function($customerQuery) use ($searchTerm) {
-                      $customerQuery->where('full_name', 'like', "%{$searchTerm}%"); // Tìm theo tên khách hàng
-                  });
+        if ($currentTab !== 'all') {
+            $ordersQuery->where('status', $currentTab);
+        }
+
+        if ($search) {
+            $ordersQuery->where(function ($query) use ($search) {
+                $query->where('order_code', 'like', '%' . $search . '%')
+                    ->orWhere('delivery_address', 'like', '%' . $search . '%')
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('phone', 'like', '%' . $search . '%');
+                    });
             });
         }
 
-        $orders = $query->latest()->paginate(10);
+        $orders = $ordersQuery->orderBy('created_at', 'desc')->paginate(10);
 
-        // Đếm số lượng cho mỗi tab
-        $statusCounts = [];
-        foreach ($tabConfig as $key => $config) {
-            $statusCounts[$key] = Order::where('driver_id', $driverId)->whereIn('status', $config['statuses'])->count();
-        }
-
-        return view('driver.orders.index', compact('orders', 'currentTab', 'tabConfig', 'statusCounts'));
+        return view('driver.orders.index', compact('orders', 'tabConfig', 'currentTab', 'search'));
     }
 
     /**
@@ -84,12 +132,12 @@ class OrderController extends Controller
     public function navigate($orderId)
     {
         $driverId = Auth::guard('driver')->id();
-        
+
         // Lấy thông tin đơn hàng để biết tọa độ của khách hàng và chi nhánh
         $order = Order::with(['customer.addresses', 'branch', 'address'])
-                        ->where('id', $orderId)
-                        ->where('driver_id', $driverId)
-                        ->firstOrFail();
+            ->where('id', $orderId)
+            ->where('driver_id', $driverId)
+            ->firstOrFail();
 
         return view('driver.orders.navigate', compact('order'));
     }
@@ -153,6 +201,4 @@ class OrderController extends Controller
 
         return $this->processUpdate($order, 'Đã giao hàng thành công!');
     }
-
-    
 }
