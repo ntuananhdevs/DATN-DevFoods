@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use App\Models\Role;
 use App\Rules\TurnstileRule;
 use App\Services\AvatarUploadService;
+use App\Services\CartTransferService;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,13 @@ use App\Mail\SendWelcomeEmail;
 
 class RegisterController extends Controller
 {
+    protected $cartTransferService;
+
+    public function __construct(CartTransferService $cartTransferService)
+    {
+        $this->cartTransferService = $cartTransferService;
+    }
+
     /**
      * Xử lý đăng ký tạm thời: lưu cache và gửi OTP
      */
@@ -163,20 +171,63 @@ class RegisterController extends Controller
             return back()->withErrors(['otp' => 'Email đã tồn tại trong hệ thống.'])->withInput();
         }
 
-        // Ghi vào DB
-        $user = User::create([
-            'user_name' => $this->generateUniqueUserName($data['email']),
-            'full_name' => $data['full_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'password' => $data['password'],
-            'active' => true,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        // Xóa cache
-        Cache::forget($cacheKey);
+            // Lưu session ID trước khi tạo user để chuyển giỏ hàng
+            $sessionId = session()->getId();
 
-        return redirect()->route('customer.login')->with('status', 'Đăng ký thành công! Bạn có thể đăng nhập.');
+            // Ghi vào DB
+            $user = User::create([
+                'user_name' => $this->generateUniqueUserName($data['email']),
+                'full_name' => $data['full_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'password' => $data['password'],
+                'active' => true,
+            ]);
+
+            // Gán role customer
+            $customerRole = Role::firstOrCreate(
+                ['name' => 'customer'],
+                ['display_name' => 'Khách hàng']
+            );
+            $user->roles()->attach($customerRole->id);
+
+            // Xóa cache
+            Cache::forget($cacheKey);
+
+            DB::commit();
+
+            // Tự động đăng nhập user
+            Auth::login($user);
+
+            // Chuyển giỏ hàng từ session sang user
+            try {
+                $this->cartTransferService->transferCartFromSessionToUser($user->id, $sessionId);
+                Log::info('Cart transferred successfully after registration', [
+                    'user_id' => $user->id,
+                    'session_id' => $sessionId
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to transfer cart after registration', [
+                    'user_id' => $user->id,
+                    'session_id' => $sessionId,
+                    'error' => $e->getMessage()
+                ]);
+                // Không throw exception để không ảnh hưởng đến quá trình đăng ký
+            }
+
+            return redirect()->route('home')->with('status', 'Đăng ký thành công! Chào mừng bạn đến với FastFood.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error during registration', [
+                'error' => $e->getMessage(),
+                'email' => $data['email']
+            ]);
+            return back()->withErrors(['otp' => 'Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại.'])->withInput();
+        }
     }
 
     /**

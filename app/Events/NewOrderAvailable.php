@@ -3,17 +3,16 @@
 namespace App\Events;
 
 use App\Models\Order;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log; // <-- THÊM DÒNG NÀY
 
 class NewOrderAvailable implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
-    public $order;
+    public Order $order;
 
     public function __construct(Order $order)
     {
@@ -22,23 +21,25 @@ class NewOrderAvailable implements ShouldBroadcast
 
     public function broadcastOn(): array
     {
-        return [new Channel('available-orders')];
+        // Gửi đến kênh riêng tư 'drivers'
+        return [new PrivateChannel('drivers')];
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
-        return 'new-order-event';
+        return 'new-order-event'; // Tên sự kiện để JS lắng nghe
     }
 
-    /**
-     * THÊM PHƯƠNG THỨC NÀY VÀO
-     * Định dạng dữ liệu sẽ được gửi đi.
-     */
     public function broadcastWith(): array
     {
-        // Ghi log ngay trước khi gửi đi
-        Log::info('Broadcasting NewOrderAvailable event for order ID: ' . $this->order->id);
-        
-        return ['order' => $this->order->toArray()];
+        // Gửi đi các dữ liệu cần thiết để hiển thị trên dashboard của tài xế
+        return [
+            'order' => [
+                'id' => $this->order->id,
+                'order_code' => $this->order->order_code ?? $this->order->id,
+                'delivery_address' => $this->order->delivery_address,
+                'total_amount' => $this->order->total_amount,
+            ]
+        ];
     }
 }

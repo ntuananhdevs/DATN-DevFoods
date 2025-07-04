@@ -126,7 +126,6 @@
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-900">Trạng thái đơn hàng</h2>
-                    <span class="status-badge {{ $order->statusColor }} text-white rounded-lg px-3 py-1">{{ $order->statusText }}</span>
                 </div>
                 
                 @if($order->statusHistory->count() > 0)
