@@ -26,6 +26,8 @@
             <form action="{{ route('admin.combos.store') }}" method="POST" enctype="multipart/form-data" id="combo-form">
                 @csrf
 
+
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Thông tin combo -->
                     <div class="lg:col-span-1">
@@ -40,9 +42,9 @@
                                     <input type="text" id="name" name="name" value="{{ old('name') }}"
                                         placeholder="Nhập tên combo"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('name') border-red-500 @enderror"
-                                        required>
+                                        >
                                     @error('name')
-                                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
 
@@ -78,7 +80,7 @@
                                         </div>
                                     </div>
                                     @error('image')
-                                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
 
@@ -99,7 +101,7 @@
                                         @endforeach
                                     </div>
                                     @error('branch_quantities')
-                                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <!-- Trạng thái -->
@@ -123,7 +125,7 @@
                                         </label>
                                     </div>
                                     @error('status')
-                                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
@@ -139,7 +141,7 @@
                                         placeholder="Mô tả combo"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
                                     @error('description')
-                                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
 
@@ -150,10 +152,10 @@
                                         <input type="number" id="price" name="price" value="{{ old('price') }}"
                                             placeholder="0" min="0" step="1000"
                                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('price') border-red-500 @enderror"
-                                            required>
+                                            >
                                         <p class="text-xs text-gray-500 mt-1">Tự động: <span id="auto-price">0₫</span></p>
                                         @error('price')
-                                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                         @enderror
                                     </div>
                                     <div>
@@ -163,9 +165,9 @@
                                             value="{{ old('original_price') }}" placeholder="0" min="0"
                                             step="1000" readonly
                                             class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 @error('original_price') border-red-500 @enderror"
-                                            required>
+                                            >
                                         @error('original_price')
-                                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                         @enderror
                                     </div>
                                 </div>
@@ -848,6 +850,7 @@
                     autoPriceSpan.textContent = '0₫';
                     originalPriceInput.value = 0;
                     createComboBtn.disabled = true;
+                    validatePriceVsOriginal();
                     return;
                 }
 
@@ -893,7 +896,7 @@
                 totalPriceSpan.textContent = formatPrice(totalPrice);
                 autoPriceSpan.textContent = formatPrice(totalPrice);
                 originalPriceInput.value = totalPrice;
-                createComboBtn.disabled = false;
+                validatePriceVsOriginal();
             }
 
             // Format price function
@@ -946,7 +949,35 @@
             priceInput.addEventListener('input', function(e) {
                 let value = e.target.value.replace(/[^0-9]/g, '');
                 e.target.value = value;
+                validatePriceVsOriginal();
             });
+            // Validate realtime: Giá bán không được lớn hơn giá gốc
+            function validatePriceVsOriginal() {
+                const price = parseInt(priceInput.value.replace(/[^0-9]/g, '')) || 0;
+                const originalPrice = parseInt(originalPriceInput.value.replace(/[^0-9]/g, '')) || 0;
+                let errorElem = document.getElementById('price-error');
+                if (!errorElem) {
+                    errorElem = document.createElement('p');
+                    errorElem.id = 'price-error';
+                    errorElem.className = 'text-red-500 text-sm mt-1';
+                    if (priceInput.nextElementSibling) {
+                        priceInput.parentNode.insertBefore(errorElem, priceInput.nextElementSibling);
+                    } else {
+                        priceInput.parentNode.appendChild(errorElem);
+                    }
+                }
+                if (price > originalPrice) {
+                    errorElem.textContent = 'Giá bán không được lớn hơn giá gốc!';
+                    createComboBtn.disabled = true;
+                } else {
+                    errorElem.textContent = '';
+                    // Chỉ enable nếu có sản phẩm được chọn và không có lỗi
+                    const variants = Object.values(selectedVariants);
+                    createComboBtn.disabled = variants.length === 0;
+                }
+            }
+            // Gọi validate khi thay đổi giá gốc (auto update)
+            originalPriceInput.addEventListener('input', validatePriceVsOriginal);
 
             // Image upload preview
             const imageInput = document.getElementById('image');
@@ -1034,28 +1065,40 @@
             function showNotification(message, type = 'info') {
                 // Tạo element thông báo
                 const notification = document.createElement('div');
-                notification.className =
-                    `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-full`;
+                notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-md shadow-lg transition-all duration-300 transform translate-x-full cursor-pointer border-2`;
 
-                // Thiết lập màu sắc theo loại thông báo
+                // Thiết lập màu sắc và icon theo loại thông báo
+                let icon = '';
                 if (type === 'info') {
-                    notification.className += ' bg-blue-500 text-white';
+                    notification.className += ' bg-blue-50 text-blue-800 border-blue-300';
+                    icon = `<svg class=\"w-5 h-5 text-blue-500\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"/></svg>`;
                 } else if (type === 'success') {
-                    notification.className += ' bg-green-500 text-white';
+                    notification.className += ' bg-green-50 text-green-800 border-green-300';
+                    icon = `<svg class=\"w-5 h-5 text-green-500\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\"/></svg>`;
                 } else if (type === 'warning') {
-                    notification.className += ' bg-yellow-500 text-white';
+                    notification.className += ' bg-yellow-50 text-yellow-800 border-yellow-300';
+                    icon = `<svg class=\"w-5 h-5 text-yellow-500\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"/></svg>`;
                 } else if (type === 'error') {
-                    notification.className += ' bg-red-500 text-white';
+                    notification.className += ' bg-red-50 text-red-800 border-red-400 animate-shake';
+                    icon = `<svg class=\"w-5 h-5 text-red-500\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"/></svg>`;
                 }
 
                 notification.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-sm font-medium">${message}</span>
-                </div>
-            `;
+                    <div class=\"flex items-center gap-2\">
+                        ${icon}
+                        <span class=\"text-sm font-medium\">${message}</span>
+                    </div>
+                `;
+
+                // Cho phép click để đóng ngay
+                notification.addEventListener('click', function() {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                });
 
                 // Thêm vào body
                 document.body.appendChild(notification);
@@ -1088,6 +1131,29 @@
 
             // Initialize
             updateSelectedItems();
+
+            // Đảm bảo chỉ gắn event submit một lần
+            const comboForm = document.getElementById('combo-form');
+            if (comboForm) {
+                comboForm.addEventListener('submit', function(e) {
+                    const priceInput = document.getElementById('price');
+                    const originalPriceInput = document.getElementById('original_price');
+                    if (!priceInput || !originalPriceInput) return;
+                    const price = parseInt(priceInput.value.replace(/[^0-9]/g, '')) || 0;
+                    const originalPrice = parseInt(originalPriceInput.value.replace(/[^0-9]/g, '')) || 0;
+                    if (price > originalPrice) {
+                        e.preventDefault();
+                        showNotification('Giá bán không được lớn hơn giá gốc!', 'error');
+                        priceInput.focus();
+                        return false;
+                    }
+                });
+            }
+
+            // Hiệu ứng rung cho lỗi
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes shake {0% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-8px); } 80% { transform: translateX(8px); } 100% { transform: translateX(0); }}.animate-shake { animation: shake 0.4s; }`;
+            document.head.appendChild(style);
         });
     </script>
 @endpush

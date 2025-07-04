@@ -112,35 +112,27 @@ class OrderController extends Controller
         ]);
     }
 
-    /**
-     * HÀM 1: Tài xế chấp nhận một đơn hàng.
-     * Trạng thái chuyển đổi: 'awaiting_driver' -> 'driver_accepted'
-     */
+    // Khi tài xế nhận đơn:
     public function accept(Order $order): JsonResponse
     {
-        // Điều kiện: Đơn hàng phải đang chờ tài xế và chưa có ai nhận.
         if ($order->status !== 'awaiting_driver' || !is_null($order->driver_id)) {
             return response()->json(['success' => false, 'message' => 'Đơn hàng này không còn khả dụng.'], 400);
         }
 
         $order->driver_id = Auth::guard('driver')->id();
-        $order->status = 'driver_accepted'; // MỚI: Trạng thái cho biết tài xế đã nhận và đang trên đường đến quán.
+        $order->status = 'driver_picked_up'; // Đúng với enum mới
 
         return $this->processUpdate($order, 'Đã nhận đơn hàng! Đang đến điểm lấy hàng.');
     }
 
-    /**
-     * HÀM 2: Tài xế xác nhận đã lấy hàng từ chi nhánh.
-     * Trạng thái chuyển đổi: 'driver_accepted' -> 'in_transit'
-     */
+    // Khi tài xế xác nhận đã lấy hàng:
     public function confirmPickup(Order $order): JsonResponse
     {
-        // Điều kiện: Phải là tài xế của đơn hàng và đơn hàng phải ở trạng thái "đã chấp nhận".
-        if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'driver_accepted') {
+        if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'driver_picked_up') {
             return response()->json(['success' => false, 'message' => 'Hành động không hợp lệ hoặc bạn không có quyền.'], 400);
         }
 
-        $order->status = 'in_transit'; // Bây giờ mới chính thức "Đang vận chuyển".
+        $order->status = 'in_transit';
 
         return $this->processUpdate($order, 'Đã lấy hàng thành công. Bắt đầu giao!');
     }

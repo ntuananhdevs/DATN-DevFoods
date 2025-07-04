@@ -106,8 +106,8 @@ class OrderSeeder extends Seeder
     private function createOrders()
     {
         $branches = Branch::all();
-        $users = User::all(); // Use all users instead of only customers
-        $drivers = Driver::all();
+        $users = User::where('email', '!=', 'admin@devfoods.com')->get();
+        $drivers = Driver::where('id', 1)->get();
         $payments = Payment::where('payment_status', 'completed')->get();
         $discountCodes = DiscountCode::where('is_active', true)->get();
         $addresses = Address::all();
@@ -137,6 +137,13 @@ class OrderSeeder extends Seeder
             throw new \Exception('No addresses found. Please run AddressSeeder first.');
         }
 
+        // Lọc địa chỉ trong bán kính 10km từ chi nhánh
+        $branchLat = $branch->latitude;
+        $branchLng = $branch->longitude;
+        $addresses = $addresses->filter(function($address) use ($branchLat, $branchLng) {
+            return $this->calculateDistance($branchLat, $branchLng, $address->latitude, $address->longitude) <= 10;
+        })->values();
+
         // Check if orders already exist to avoid duplicates
 
         // Các trạng thái mới cho enum
@@ -154,10 +161,6 @@ class OrderSeeder extends Seeder
 
         echo "Creating 50 orders...\n";
 
-        // Loại bỏ user admin khỏi danh sách user tạo order
-        $users = $users->filter(function($user) {
-            return $user->email !== 'admin@devfoods.com';
-        })->values();
         // Lấy danh sách user, driver, address, payment thành mảng để random lặp lại nếu thiếu
         $userArr = $users->all();
         $driverArr = $drivers->all();
@@ -186,7 +189,7 @@ class OrderSeeder extends Seeder
             
             // Tạo thời gian đơn hàng
             $orderDate = Carbon::now()->subDays(rand(0, 30))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
-            $estimatedDelivery = $orderDate->copy()->addMinutes(rand(30, 90));
+            $estimatedDelivery = $orderDate->copy()->addMinutes(rand(10, 40));
             $actualDelivery = null;
             
             // Nếu trạng thái là delivered, item_received thì mới có actualDelivery
@@ -478,5 +481,19 @@ class OrderSeeder extends Seeder
         ];
 
         return $notes[$status] ?? 'Cập nhật trạng thái đơn hàng';
+    }
+
+    // Thêm hàm tính khoảng cách Haversine
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371; // km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat/2) * sin($dLat/2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon/2) * sin($dLon/2);
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        $distance = $earthRadius * $c;
+        return $distance;
     }
 }

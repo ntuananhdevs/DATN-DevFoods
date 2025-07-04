@@ -72,6 +72,7 @@
     @yield('scripts')
     @stack('scripts')
     @include('components.modal')
+    @yield('page-script')
 </body>
 
 </html> 

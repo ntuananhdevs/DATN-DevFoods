@@ -39,14 +39,14 @@ return new class extends Migration
             $table->timestamp('order_date')->useCurrent();
             $table->timestamp('delivery_date')->nullable();
             $table->enum('status', [
-                            'awaiting_confirmation',
-                            'awaiting_driver',
-                            'driver_picked_up',
-                            'in_transit',
-                            'delivered',
-                            'item_received',
-                            'cancelled',
-                            'refunded'
+                            'awaiting_confirmation', //  chờ xác nhận
+                            'awaiting_driver', //  chờ tài xế nhận đơn
+                            'driver_picked_up', // Tài xế đã nhận đơn
+                            'in_transit', // Đơn hàng đang trong quá trình giao hàng
+                            'delivered', // Đơn hàng đã giao thành công
+                            'item_received', // Khách hàng đã nhận hàng
+                            'cancelled', // Đơn hàng đã bị hủy
+                            'refunded' // Đơn hàng đã được hoàn tiền
             ])->default('awaiting_confirmation');
             $table->integer('points_earned')->default(0);
             $table->decimal('subtotal', 12, 2);
