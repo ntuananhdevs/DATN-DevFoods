@@ -45,7 +45,7 @@ class DriverOrderSeeder extends Seeder
         Order::create([
             'customer_id' => $customer->id,
             'driver_id' => $driver->id,
-            'branch_id' => 2,
+            'branch_id' => 1,
             'delivery_address' => '456 Đường Lê Lợi, Quận 1, TP.HCM',
             'status' => 'delivering',
             'subtotal' => 250000,
@@ -59,7 +59,7 @@ class DriverOrderSeeder extends Seeder
         Order::create([
             'customer_id' => $customer->id,
             'driver_id' => $driver->id,
-            'branch_id' => 2,
+            'branch_id' => 1,
             'delivery_address' => '666 Đường Lê Lợi, Quận 1, TP.HCM',
             'status' => 'delivering',
             'subtotal' => 250000,
@@ -87,7 +87,7 @@ class DriverOrderSeeder extends Seeder
         Order::create([
             'customer_id' => $customer->id,
             'driver_id' => null,
-            'branch_id' => 2,
+            'branch_id' => 1,
             'delivery_address' => '101 Đường Trần Hưng Đạo, Quận 1, TP.HCM',
             'status' => 'pending',
             'subtotal' => 300000,
