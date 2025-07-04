@@ -62,7 +62,7 @@ class CartController extends Controller
                     $query->with('images', 'variants.variantValues');
                 },
                 'variant.variantValues.attribute',
-                'toppings'
+                'toppings.topping'
             ])->where('cart_id', $cart->id)->get();
             
             // Calculate subtotal
@@ -397,11 +397,13 @@ class CartController extends Controller
 
                     // Attach toppings if they exist in the request
                     if (!empty($requestToppingIds)) {
-                        $toppings = collect($requestToppingIds)->mapWithKeys(function ($toppingId) {
-                            return [$toppingId => ['quantity' => 1]];
+                        $toppingData = collect($requestToppingIds)->map(function ($toppingId) {
+                            return [
+                                'topping_id' => $toppingId,
+                                'quantity' => 1
+                            ];
                         })->all();
-                        
-                        $cartItem->toppings()->attach($toppings);
+                        $cartItem->toppings()->createMany($toppingData);
                     }
                 }
 
