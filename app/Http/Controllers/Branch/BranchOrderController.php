@@ -35,7 +35,7 @@ class BranchOrderController extends Controller
             'orderItems.toppings.topping',
             'statusHistory.changedBy',
             'cancellation.cancelledBy',
-            'payment.paymentMethod',
+            'payment',
             'address' // Đảm bảo load address
         ])->where('branch_id', $branch->id);
 
@@ -68,8 +68,8 @@ class BranchOrderController extends Controller
 
         // Payment method filter
         if ($request->filled('payment_method') && $request->payment_method !== 'all') {
-            $query->whereHas('payment.paymentMethod', function($q) use ($request) {
-                $q->where('name', $request->payment_method);
+            $query->whereHas('payment', function($q) use ($request) {
+                $q->where('payment_method', $request->payment_method);
             });
         }
 
@@ -102,7 +102,12 @@ class BranchOrderController extends Controller
         ];
 
         // Get payment methods for filter
-        $paymentMethods = \App\Models\PaymentMethod::where('active', true)->get();
+        $paymentMethods = [
+            ['key' => 'all', 'label' => 'Tất cả'],
+            ['key' => 'cod', 'label' => 'Tiền mặt'],
+            ['key' => 'vnpay', 'label' => 'VNPay'],
+            ['key' => 'balance', 'label' => 'Số dư tài khoản'],
+        ];
 
         if ($request->ajax()) {
             return view('branch.orders.partials.grid', compact('orders'))->render();
@@ -122,7 +127,7 @@ class BranchOrderController extends Controller
             'orderItems.toppings.topping',
             'statusHistory.changedBy',
             'cancellation.cancelledBy',
-            'payment.paymentMethod',
+            'payment',
             'address'
         ])->where('branch_id', $branch->id)
           ->where('id', $id)

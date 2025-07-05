@@ -94,151 +94,212 @@
                                                 </div>
                                                 <p class="progress-text text-xs text-center mt-2 font-medium {{ $isCompleted ? 'text-gray-800' : 'text-gray-500' }}">{{ $stepInfo['text'] }}</p>
                                             </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                            <hr class="border-gray-100" />
-                        @endif
-                        {{-- Các khối thông tin chi tiết --}}
-                        <div class="space-y-6">
-                            {{-- Địa chỉ giao hàng --}}
-                            <div>
-                                <h3 class="font-semibold mb-3 flex items-center text-gray-800"><i class="fas fa-map-marker-alt mr-2 h-5 w-5 text-orange-500"></i>Địa chỉ giao hàng</h3>
-                                <div class="bg-gray-50 p-4 rounded-lg text-sm space-y-1">
-                                    <p class="font-medium text-gray-800">{{ $order->customerName }}</p>
-                                    <p class="text-gray-600">{{ $order->customerPhone }}</p>
-                                    <p class="text-gray-600 mt-1">{{ $order->delivery_address }}</p>
-                                </div>
-                            </div>
-                            {{-- Thông tin tài xế --}}
-                            @if ($order->driver)
-                                <hr class="border-gray-100" />
-                                <div>
-                                    <h3 class="font-semibold mb-3 flex items-center text-gray-800"><i class="fas fa-motorcycle mr-2 h-5 w-5 text-orange-500"></i>Thông tin tài xế</h3>
-                                    <div class="bg-gray-50 p-4 rounded-lg text-sm">
-                                        <div class="grid grid-cols-2 gap-4">
-                                            <div class="flex items-center space-x-3">
-                                                <img src="{{ asset('images/default-avatar.png') }}" class="w-12 h-12 rounded-full object-cover" />
-                                                <div>
-                                                    <p class="font-medium text-gray-800">{{ $order->driver->full_name }}</p>
-                                                    <div class="flex items-center text-gray-600"><i class="fas fa-star text-yellow-400 mr-1"></i><span>{{ $order->driver->rating ?? 'N/A' }} sao</span></div>
-                                                </div>
-                                            </div>
-                                            <div class="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <span class="text-gray-500">Số điện thoại:</span>
-                                                    <p class="font-medium text-gray-800">{{ $order->driver->phone_number }}</p>
-                                                </div>
-                                                <div>
-                                                    <span class="text-gray-500">Biển số xe:</span>
-                                                    <p class="font-medium text-gray-800">{{ $order->driver->vehicle_number ?? 'N/A' }}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        @if (in_array($order->status, ['driver_picked_up', 'in_transit']))
-                                            <div class="flex space-x-2 mt-4 border-t pt-3">
-                                                <a href="tel:{{ $order->driver->phone_number }}" class="flex-1 inline-flex items-center justify-center rounded-md font-medium h-9 px-3 bg-white border hover:bg-gray-100"><i class="fas fa-phone-alt mr-2 h-4 w-4"></i>Gọi tài xế</a>
-                                                <a href="#" class="flex-1 inline-flex items-center justify-center rounded-md font-medium h-9 px-3 bg-white border hover:bg-gray-100"><i class="fas fa-route mr-2 h-4 w-4"></i>Theo dõi</a>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
-                            {{-- Chi tiết sản phẩm --}}
-                            <div>
-                                <h3 class="font-semibold mb-4">Sản phẩm đã đặt</h3>
-                                <div class="space-y-4">
-                                    @foreach ($order->orderItems as $item)
-                                        @php
-                                            $product = optional(optional($item->productVariant)->product);
-                                            $variant = $item->productVariant;
-                                            $options = $variant && $variant->attributeValues && $variant->attributeValues->isNotEmpty() ? $variant->attributeValues->map(fn($av) => $av->value)->all() : [];
-                                            $toppings = $item->toppings && $item->toppings->isNotEmpty() ? $item->toppings->pluck('name')->all() : [];
-                                            $modalData = [
-                                                'name' => $product->name ?? (optional($item->combo)->name ?? 'Sản phẩm'),
-                                                'image' => optional($product->primaryImage)->url ?? asset('images/default-product.png'),
-                                                'description' => $product->description ?? 'Chưa có mô tả cho sản phẩm này.',
-                                                'ingredients' => $product->ingredients ?? [],
-                                                'options' => $options,
-                                                'toppings' => $toppings,
-                                                'price' => $item->unit_price,
-                                                'quantity' => $item->quantity,
-                                            ];
-                                        @endphp
-                                        <div class="flex items-start space-x-4 p-4 border rounded-lg bg-white hover:shadow-sm">
-                                            <img src="{{ $modalData['image'] }}" class="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-start mb-2">
-                                                    <h4 class="font-medium text-lg text-gray-800">{{ $modalData['name'] }}</h4>
-                                                    <p class="font-semibold text-orange-600 text-lg text-right">{{ number_format($item->total_price, 0, ',', '.') }}đ</p>
-                                                </div>
-                                                <div class="text-sm text-gray-500 mb-2">Đơn giá: {{ number_format($item->unit_price, 0, ',', '.') }}đ x {{ $item->quantity }}</div>
-                                                @if (!empty($modalData['options']))
-                                                    <div class="flex items-center flex-wrap gap-1.5 mt-2">
-                                                        @foreach ($modalData['options'] as $option)
-                                                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md">{{ $option }}</span>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
-                                                @if (!empty($modalData['toppings']))
-                                                    <div class="flex items-center flex-wrap gap-1.5 mt-2">
-                                                        @foreach ($modalData['toppings'] as $topping)
-                                                            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-md">+ {{ $topping }}</span>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
-                                                <div class="flex justify-end mt-3">
-                                                    <button type="button" class="view-product-details-btn inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 bg-gray-100 text-gray-800 hover:bg-gray-200" data-details='@json($modalData)'>Xem chi tiết</button>
-                                                </div>
-                                            </div>
+                                            <p
+                                                class="progress-text text-xs text-center mt-2 font-medium {{ $isCompleted ? 'text-gray-800' : 'text-gray-500' }}">
+                                                {{ $stepInfo['text'] }}</p>
                                         </div>
                                     @endforeach
                                 </div>
                             </div>
-                            {{-- Thông tin người nhận --}}
-                            <hr class="border-gray-100" />
+                        </div>
+                        <hr class="border-gray-100" />
+                    @endif
+
+                    {{-- Các khối thông tin chi tiết --}}
+                    <div class="space-y-6">
+                        {{-- Địa chỉ giao hàng (giống mẫu) --}}
+                        <div>
+                            <h3 class="font-semibold mb-3 flex items-center text-gray-800"><i
+                                    class="fas fa-map-marker-alt mr-2 h-5 w-5 text-orange-500"></i>Địa chỉ giao hàng</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg text-sm space-y-1">
+                                <p class="font-medium text-gray-800">{{ $order->customerName }}</p>
+                                <p class="text-gray-600">{{ $order->customerPhone }}</p>
+                                <p class="text-gray-600 mt-1">{{ $order->delivery_address }}</p>
+                            </div>
+                        </div>
+
+                        {{-- Thông tin tài xế (giống mẫu) --}}
+                        @if ($order->driver)
+                            <hr class="border-gray-100" /><!-- Separator -->
                             <div>
-                                <h3 class="font-semibold mb-3 flex items-center text-gray-800"><i class="fas fa-user mr-2 h-5 w-5 text-orange-500"></i>Thông tin người nhận</h3>
-                                <div class="bg-gray-50 p-4 rounded-lg">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                        <div><span class="text-gray-500">Tên người nhận:</span>
-                                            <p class="font-semibold">{{ $order->customerName }}</p>
+                                <h3 class="font-semibold mb-3 flex items-center text-gray-800"><i
+                                        class="fas fa-motorcycle mr-2 h-5 w-5 text-orange-500"></i>Thông tin tài xế</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg text-sm">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="flex items-center space-x-3">
+                                            <img src="{{ asset('images/default-avatar.png') }}"
+                                                class="w-12 h-12 rounded-full object-cover" />
+                                            <div>
+                                                <p class="font-medium text-gray-800">{{ $order->driver->full_name }}</p>
+                                                <div class="flex items-center text-gray-600"><i
+                                                        class="fas fa-star text-yellow-400 mr-1"></i><span>{{ $order->driver->rating ?? 'N/A' }}
+                                                        sao</span></div>
+                                            </div>
                                         </div>
-                                        <div><span class="text-gray-500">Số điện thoại:</span>
-                                            <p class="font-semibold">{{ $order->customerPhone }}</p>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <span class="text-gray-500">Số điện thoại:</span>
+                                                <p class="font-medium text-gray-800">{{ $order->driver->phone_number }}</p>
+                                            </div>
+                                            <div>
+                                                <span class="text-gray-500">Biển số xe:</span>
+                                                <p class="font-medium text-gray-800">
+                                                    {{ $order->driver->vehicle_number ?? 'N/A' }}</p>
+                                            </div>
                                         </div>
-                                        <div class="md:col-span-2"><span class="text-gray-500">Email:</span>
-                                            <p class="font-semibold">{{ $order->customer->email ?? 'Không có' }}</p>
+                                    </div>
+                                    @if (in_array($order->status, ['driver_picked_up', 'in_transit']))
+                                        <div class="flex space-x-2 mt-4 border-t pt-3">
+                                            <a href="tel:{{ $order->driver->phone_number }}"
+                                                class="flex-1 inline-flex items-center justify-center rounded-md font-medium h-9 px-3 bg-white border hover:bg-gray-100"><i
+                                                    class="fas fa-phone-alt mr-2 h-4 w-4"></i>Gọi tài xế</a>
+                                            <a href="#"
+                                                class="flex-1 inline-flex items-center justify-center rounded-md font-medium h-9 px-3 bg-white border hover:bg-gray-100"><i
+                                                    class="fas fa-route mr-2 h-4 w-4"></i>Theo dõi</a>
                                         </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Chi tiết sản phẩm (giữ nguyên, đã fix lỗi) --}}
+                        <div>
+                            <h3 class="font-semibold mb-4">Sản phẩm đã đặt</h3>
+                            <div class="space-y-4">
+                                @foreach ($order->orderItems as $item)
+                                    @php
+                                        $product = optional(optional($item->productVariant)->product);
+                                        $variant = $item->productVariant;
+                                        // Sửa lỗi: Kiểm tra collection trước khi gọi map/pluck
+                                        $options =
+                                            $variant &&
+                                            $variant->attributeValues &&
+                                            $variant->attributeValues->isNotEmpty()
+                                                ? $variant->attributeValues->map(fn($av) => $av->value)->all()
+                                                : [];
+                                        $toppings =
+                                            $item->toppings && $item->toppings->isNotEmpty()
+                                                ? $item->toppings->pluck('name')->all()
+                                                : [];
+                                        $modalData = [
+                                            'name' => $product->name ?? (optional($item->combo)->name ?? 'Sản phẩm'),
+                                            'image' =>
+                                                optional($product->primaryImage)->url ??
+                                                asset('images/default-product.png'),
+                                            'description' => $product->description ?? 'Chưa có mô tả cho sản phẩm này.',
+                                            'ingredients' => $product->ingredients ?? [],
+                                            'options' => $options,
+                                            'toppings' => $toppings,
+                                            'price' => $item->unit_price,
+                                            'quantity' => $item->quantity,
+                                        ];
+                                    @endphp
+                                    {{-- Khắc phục lỗi bằng @json() --}}
+                                    <div class="flex items-start space-x-4 p-4 border rounded-lg bg-white hover:shadow-sm">
+                                        <img src="{{ $modalData['image'] }}"
+                                            class="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <h4 class="font-medium text-lg text-gray-800">{{ $modalData['name'] }}</h4>
+                                                <p class="font-semibold text-orange-600 text-lg text-right">
+                                                    {{ number_format($item->total_price, 0, ',', '.') }}đ</p>
+                                            </div>
+                                            <div class="text-sm text-gray-500 mb-2">Đơn giá:
+                                                {{ number_format($item->unit_price, 0, ',', '.') }}đ x
+                                                {{ $item->quantity }}</div>
+                                            @if (!empty($modalData['options']))
+                                                <div class="flex items-center flex-wrap gap-1.5 mt-2">
+                                                    @foreach ($modalData['options'] as $option)
+                                                        <span
+                                                            class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md">{{ $option }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                            @if (!empty($modalData['toppings']))
+                                                <div class="flex items-center flex-wrap gap-1.5 mt-2">
+                                                    @foreach ($modalData['toppings'] as $topping)
+                                                        <span
+                                                            class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-md">+
+                                                            {{ $topping }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                            <div class="flex justify-end mt-3">
+                                                <button type="button"
+                                                    class="view-product-details-btn inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                                    data-details='@json($modalData)'>
+                                                    Xem chi tiết
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Thông tin người nhận (giống mẫu) --}}
+                        <hr class="border-gray-100" />
+                        <div>
+                            <h3 class="font-semibold mb-3 flex items-center text-gray-800"><i
+                                    class="fas fa-user mr-2 h-5 w-5 text-orange-500"></i>Thông tin người nhận</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div><span class="text-gray-500">Tên người nhận:</span>
+                                        <p class="font-semibold">{{ $order->customerName }}</p>
+                                    </div>
+                                    <div><span class="text-gray-500">Số điện thoại:</span>
+                                        <p class="font-semibold">{{ $order->customerPhone }}</p>
+                                    </div>
+                                    <div class="md:col-span-2"><span class="text-gray-500">Email:</span>
+                                        <p class="font-semibold">{{ $order->customer->email ?? 'Không có' }}</p>
                                     </div>
                                 </div>
                             </div>
-                            {{-- Thanh toán & Chi nhánh --}}
-                            <hr class="border-gray-100" />
-                            <div class="grid md:grid-cols-2 gap-x-8 gap-y-6">
-                                <div>
-                                    <h3 class="font-semibold mb-3 flex items-center"><i class="fas fa-wallet mr-2 h-5 w-5 text-orange-500"></i>Thông tin thanh toán</h3>
-                                    <div class="bg-gray-50 p-4 rounded-lg space-y-3 text-sm">
-                                        <div class="flex justify-between"><span>Tạm tính:</span><span>{{ number_format($order->subtotal, 0, ',', '.') }}đ</span></div>
-                                        <div class="flex justify-between"><span>Phí giao hàng:</span><span>{{ number_format($order->delivery_fee, 0, ',', '.') }}đ</span></div>
-                                        @if ($order->discount_amount > 0)
-                                            <div class="flex justify-between text-green-600"><span>Giảm giá ({{ optional($order->discountCode)->code }}):</span><span>-{{ number_format($order->discount_amount, 0, ',', '.') }}đ</span></div>
-                                        @endif
-                                        <hr class="border-dashed my-2" />
-                                        <div class="flex justify-between font-bold text-lg"><span>Tổng cộng:</span><span class="text-orange-600">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span></div>
+                        </div>
+
+                        {{-- Thanh toán & Chi nhánh (giống mẫu) --}}
+                        <hr class="border-gray-100" />
+                        <div class="grid md:grid-cols-2 gap-x-8 gap-y-6">
+                            <div>
+                                <h3 class="font-semibold mb-3 flex items-center"><i
+                                        class="fas fa-wallet mr-2 h-5 w-5 text-orange-500"></i>Thông tin thanh toán</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg space-y-3 text-sm">
+                                    <div class="flex justify-between"><span>Tạm
+                                            tính:</span><span>{{ number_format($order->subtotal, 0, ',', '.') }}đ</span>
+                                    </div>
+                                    <div class="flex justify-between"><span>Phí giao
+                                            hàng:</span><span>{{ number_format($order->delivery_fee, 0, ',', '.') }}đ</span>
+                                    </div>
+                                    @if ($order->discount_amount > 0)
+                                        <div class="flex justify-between text-green-600"><span>Giảm giá
+                                                ({{ optional($order->discountCode)->code }}):</span><span>-{{ number_format($order->discount_amount, 0, ',', '.') }}đ</span>
+                                        </div>
+                                    @endif
+                                    <hr class="border-dashed my-2" />
+                                    <div class="flex justify-between font-bold text-lg"><span>Tổng cộng:</span><span
+                                            class="text-orange-600">{{ number_format($order->total_amount, 0, ',', '.') }}đ</span>
                                     </div>
                                 </div>
-                                <div>
-                                    <h3 class="font-semibold mb-3 flex items-center"><i class="fas fa-building mr-2 h-5 w-5 text-orange-500"></i>Chi tiết đơn hàng</h3>
-                                    <div class="bg-gray-50 p-4 rounded-lg text-sm space-y-3">
-                                        <div class="flex justify-between"><span class="text-gray-500">Mã đơn hàng:</span><p class="font-semibold">#{{ $order->order_code }}</p></div>
-                                        <div class="flex justify-between"><span class="text-gray-500">Chi nhánh:</span><p class="font-semibold">{{ $order->branch->name ?? 'N/A' }}</p></div>
-                                        <div class="flex justify-between"><span class="text-gray-500">Thanh toán:</span><p class="font-semibold">{{ optional(optional($order->payment)->paymentMethod)->name ?? 'Tiền mặt' }}</p></div>
-                                        <div class="flex justify-between items-center pt-2 border-t border-dashed">
-                                            <span class="text-gray-500">Trạng thái:</span>
-                                            <span class="font-medium px-2 py-0.5 rounded-full text-xs {{ optional($order->payment)->payment_status == 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ optional($order->payment)->payment_status == 'completed' ? 'Đã thanh toán' : 'Chưa thanh toán' }}</span>
-                                        </div>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold mb-3 flex items-center"><i
+                                        class="fas fa-building mr-2 h-5 w-5 text-orange-500"></i>Chi tiết đơn hàng</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg text-sm space-y-3">
+                                    <div class="flex justify-between"><span class="text-gray-500">Mã đơn hàng:</span>
+                                        <p class="font-semibold">#{{ $order->order_code }}</p>
+                                    </div>
+                                    <div class="flex justify-between"><span class="text-gray-500">Chi nhánh:</span>
+                                        <p class="font-semibold">{{ $order->branch->name ?? 'N/A' }}</p>
+                                    </div>
+                                    <div class="flex justify-between"><span class="text-gray-500">Thanh toán:</span>
+                                        <p class="font-semibold">
+                                            {{ optional(optional($order->payment)->paymentMethod)->name ?? 'Tiền mặt' }}
+                                        </p>
+                                    </div>
+                                    <div class="flex justify-between items-center pt-2 border-t border-dashed">
+                                        <span class="text-gray-500">Trạng thái:</span>
+                                        <span
+                                            class="font-medium px-2 py-0.5 rounded-full text-xs {{ optional($order->payment)->payment_status == 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ optional($order->payment)->payment_status == 'completed' ? 'Đã thanh toán' : 'Chưa thanh toán' }}</span>
                                     </div>
                                 </div>
                             </div>

@@ -79,23 +79,30 @@ class UserSeeder extends Seeder
             }
         }
 
-        // Check if customer users already exist
-        $existingCustomers = User::where('user_name', 'like', 'customer%')->count();
-        
-        if ($existingCustomers === 0) {
-            // Tạo 20 khách hàng mẫu
-            for ($i = 1; $i <= 20; $i++) {
-                User::factory()->create([
-                    'user_name' => 'customer' . $i,
-                    'full_name' => 'Khách hàng ' . $i,
-                    'email' => 'customer' . $i . '@example.com',
-                    'password' => bcrypt('password'),
-                    'user_rank_id' => $defaultRankId,
-                    'total_spending' => rand(0, 2000000),
-                    'total_orders' => rand(0, 50),
-                    'rank_updated_at' => now(),
-                ]);
-            }
+        // Đảm bảo luôn có user id=1 là customer chuẩn
+        $customer = User::find(1);
+        if (!$customer) {
+            $customer = User::create([
+                'user_name' => 'customer',
+                'full_name' => 'Nguyen Kha Banh',
+                'email' => 'customer@devfoods.com',
+                'password' => bcrypt('customer'),
+                'user_rank_id' => $defaultRankId,
+                'total_spending' => 0,
+                'total_orders' => 0,
+                'rank_updated_at' => now(),
+            ]);
+        } else {
+            $customer->update([
+                'user_name' => 'customer',
+                'full_name' => 'Nguyen Kha Banh',
+                'email' => 'customer@devfoods.com',
+                'password' => bcrypt('customer'),
+                'user_rank_id' => $defaultRankId,
+                'total_spending' => 0,
+                'total_orders' => 0,
+                'rank_updated_at' => now(),
+            ]);
         }
     }
 }

@@ -129,26 +129,8 @@
                 @foreach($order->orderItems as $item)
                     <div class="flex justify-between border-b pb-4">
                         <div class="flex">
-                            <div class="mr-4">
-                                @if($item->productVariant->product->images()->exists())
-                                    <img src="{{ Storage::disk('s3')->url($item->productVariant->product->images->first()->img) }}" alt="{{ $item->productVariant->product->name }}" class="w-16 h-16 object-cover rounded">
-                                @else
-                                    <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
-                                        <i class="fas fa-image text-gray-400"></i>
-                                    </div>
-                                @endif
-                            </div>
-                            <div>
-                                <h3 class="font-medium">{{ $item->productVariant->product->name }}</h3>
-                                <p class="text-sm text-gray-500">
-                                    @if($item->productVariant->variant_description)
-                                        {{ $item->productVariant->variant_description }}
-                                    @else
-                                        Phiên bản cơ bản
-                                    @endif
-                                </p>
-                                <p class="text-sm text-gray-500">Số lượng: {{ $item->quantity }}</p>
-                            </div>
+                            
+                            
                         </div>
                         <div class="text-right">
                             <p class="font-medium">{{ number_format($item->unit_price) }}đ</p>
@@ -208,11 +190,7 @@
                 <div>
                     <h3 class="font-medium mb-2">Phương thức thanh toán</h3>
                     <p class="text-gray-600">
-                        @if($order->payment_id)
-                            {{ $order->payment->method ?? 'Thanh toán khi nhận hàng' }}
-                        @else
-                            Thanh toán khi nhận hàng
-                        @endif
+                        {{ $order->paymentMethodText }}
                     </p>
                 </div>
             </div>

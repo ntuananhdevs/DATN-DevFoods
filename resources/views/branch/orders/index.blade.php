@@ -123,8 +123,8 @@
                             <select name="payment_method" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
                                 <option value="all">Tất cả thanh toán</option>
                                 @foreach($paymentMethods as $method)
-                                    <option value="{{ $method->name }}" {{ request('payment_method') == $method->name ? 'selected' : '' }}>
-                                        {{ $method->name }}
+                                    <option value="{{ $method['key'] }}" {{ request('payment_method') == $method['key'] ? 'selected' : '' }}>
+                                        {{ $method['label'] }}
                                     </option>
                                 @endforeach
                             </select>
