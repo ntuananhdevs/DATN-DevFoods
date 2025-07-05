@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Customer\CheckoutController;
-use App\Http\Controllers\ShopController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +30,3 @@ Route::post('/checkout/process', [App\Http\Controllers\Customer\CheckoutControll
 //VNPAY Routes
 Route::get('/checkout/vnpay-return', [App\Http\Controllers\Customer\CheckoutController::class, 'vnpayReturn'])->name('checkout.vnpay_return');
 Route::get('/checkout/vnpay-ipn', [App\Http\Controllers\Customer\CheckoutController::class, 'vnpayIpn'])->name('checkout.vnpay_ipn');
-
-Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
-Route::get('/shop/product/{id}', [ShopController::class, 'show'])->name('shop.show');
