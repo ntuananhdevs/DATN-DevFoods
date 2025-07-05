@@ -250,6 +250,21 @@ class BranchOrderController extends Controller
     private function handleStatusSpecificActions($order, $newStatus)
     {
         switch ($newStatus) {
+            case 'awaiting_driver':
+                // Tìm driver ngẫu nhiên đang active và available
+                $driver = \App\Models\Driver::where('status', 'active')
+                    ->where('is_available', true)
+                    ->inRandomOrder()
+                    ->first();
+
+                if ($driver) {
+                    $order->update(['driver_id' => $driver->id]);
+                    // Nếu muốn, cập nhật trạng thái driver thành không sẵn sàng
+                    // $driver->update(['is_available' => false]);
+                }
+                // Có thể gửi thông báo cho driver ở đây nếu muốn
+                break;
+            
             case 'processing':
                 // Có thể thêm logic gửi thông báo cho khách hàng
                 break;

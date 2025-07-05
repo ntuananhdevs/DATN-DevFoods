@@ -39,23 +39,6 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
     Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
 
-    // Debug routes for discount codes
-    Route::get('/debug/discount-codes', function () {
-        $now = \Carbon\Carbon::now();
-        $publicCodes = \App\Models\DiscountCode::where('is_active', true)
-            ->where('start_date', '<=', $now)
-            ->where('end_date', '>=', $now)
-            ->where('usage_type', 'public')
-            ->get();
-
-        return response()->json([
-            'count' => $publicCodes->count(),
-            'codes' => $publicCodes
-        ]);
-    });
-
-    Route::get('/debug/product/{id}/discount-codes', [CustomerProductController::class, 'showProductDiscounts']);
-
     // Wishlist
     Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
@@ -113,9 +96,9 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
 
     // Route để hiển thị trang "Chi tiết đơn hàng"
-    // Sử dụng Route-Model Binding để tự động lấy Order model
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
     Route::post('/orders/{order}/status', [CustomerOrderController::class, 'updateStatus'])->name('customer.orders.updateStatus');
+    Route::get('/orders/list', [CustomerOrderController::class, 'listPartial'])->name('customer.orders.listPartial');
 });
 
 // Phone Required routes (không cần phone.required middleware)

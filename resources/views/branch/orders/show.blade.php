@@ -354,27 +354,16 @@
             </div>
 
             <!-- Quick Actions -->
-            @if(!in_array($order->status, ['delivered', 'cancelled', 'refunded', 'item_received']))
+            @if($order->status == 'awaiting_confirmation')
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Thao tác nhanh</h2>
-                    
                     <div class="space-y-3">
-                        @if($order->status == 'awaiting_confirmation')
-                            <button onclick="handleQuickAction({{ $order->id }}, 'confirm', this)" class="action-button w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                                ✅ Xác nhận đơn hàng
-                            </button>
-                            <button onclick="handleQuickAction({{ $order->id }}, 'cancel', this)" class="action-button w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
-                                ❌ Hủy đơn hàng
-                            </button>
-                        @elseif($order->status == 'awaiting_driver')
-                            <button onclick="handleQuickAction({{ $order->id }}, 'in_transit', this)" class="action-button w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                                🚚 Đang giao hàng
-                            </button>
-                        @elseif($order->status == 'in_transit')
-                            <button onclick="handleQuickAction({{ $order->id }}, 'delivered', this)" class="action-button w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                                ✅ Đã giao hàng
-                            </button>
-                        @endif
+                        <button onclick="handleQuickAction({{ $order->id }}, 'confirm', this)" class="action-button w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            <span>✅ Xác nhận đơn hàng</span>
+                        </button>
+                        <button onclick="handleQuickAction({{ $order->id }}, 'cancel', this)" class="action-button w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                            <span>❌ Hủy đơn hàng</span>
+                        </button>
                     </div>
                 </div>
             @endif
@@ -440,7 +429,25 @@
 @endsection
 
 @section('scripts')
+<script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 <script>
+    // Enable pusher logging - remove in production!
+    Pusher.logToConsole = true;
+
+    var pusher = new Pusher('2a1310e928036cd9f6d5', {
+        cluster: 'ap1',
+        encrypted: true
+    });
+
+    var orderId = @json($order->id);
+    var channel = pusher.subscribe('private-order.' + orderId);
+    channel.bind('OrderStatusUpdated', function(data) {
+        showToast('🔄 Đơn hàng cập nhật', 'Trạng thái đơn hàng đã thay đổi. Đang tải lại...');
+        setTimeout(function() {
+            window.location.reload();
+        }, 1200);
+    });
+
 function showToast(title, message, type = 'success') {
     const toast = document.getElementById('toast');
     const toastIcon = document.getElementById('toastIcon');
@@ -451,10 +458,10 @@ function showToast(title, message, type = 'success') {
     toastMessage.textContent = message;
 
     if (type === 'success') {
-        toastIcon.className = 'w-5 h-5 text-green-500';
+        toastIcon.className = 'text-green-500';
         toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
     } else if (type === 'error') {
-        toastIcon.className = 'w-5 h-5 text-red-500';
+        toastIcon.className = 'text-red-500';
         toastIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
     }
 
