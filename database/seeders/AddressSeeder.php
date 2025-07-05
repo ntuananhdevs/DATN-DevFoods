@@ -135,5 +135,21 @@ class AddressSeeder extends Seeder
                 Address::create($addressData);
             }
         }
+
+        // Đảm bảo luôn có address cho user id=1
+        $user1 = \App\Models\User::find(1);
+        if ($user1 && !\App\Models\Address::where('user_id', 1)->exists()) {
+            \App\Models\Address::create([
+                'user_id' => 1,
+                'phone_number' => '0909123456',
+                'address_line' => '1 Test St',
+                'ward' => 'Phường 1',
+                'district' => 'Quận 1',
+                'city' => 'HCM',
+                'latitude' => 10.762622,
+                'longitude' => 106.660172,
+                'is_default' => true,
+            ]);
+        }
     }
 } 

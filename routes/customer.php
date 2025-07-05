@@ -17,6 +17,7 @@ use App\Http\Controllers\Customer\AboutController as CustomerAboutController;
 use App\Http\Controllers\Customer\ContactController as CustomerContactController;
 use App\Http\Controllers\Customer\ChatController;
 use App\Http\Controllers\Customer\WishlistController as CustomerWishlistController;
+use App\Http\Controllers\Customer\CouponController as CustomerCouponController;
 use App\Http\Middleware\Customer\CartCountMiddleware;
 use App\Http\Controllers\FirebaseConfigController;
 use App\Http\Controllers\Admin\HiringController;
@@ -70,6 +71,10 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
     Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
+    
+    // Coupon
+    Route::post('/coupon/apply', [CustomerCouponController::class, 'apply'])->name('coupon.apply');
+    Route::post('/coupon/remove', [CustomerCouponController::class, 'remove'])->name('coupon.remove');
 
     // Checkout
     Route::get('/checkout', [CustomerCheckoutController::class, 'index'])->name('checkout.index');

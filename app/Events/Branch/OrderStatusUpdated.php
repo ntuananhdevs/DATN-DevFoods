@@ -76,9 +76,9 @@ class OrderStatusUpdated implements ShouldBroadcastNow
                     'orders_count' => $this->order->customer->orders()->count(),
                     'last_order_date' => $this->order->customer->orders()->latest()->first()?->order_date?->format('Y-m-d')
                 ] : null,
-                'payment' => $this->order->payment ? [
-                    'method_name' => $this->order->payment->paymentMethod?->name
-                ] : null
+                'payment' => [
+                    'method_name' => $this->order->paymentMethodText
+                ]
             ],
             'old_status' => $this->oldStatus,
             'new_status' => $this->newStatus,
