@@ -307,15 +307,6 @@ class ProductController extends Controller
             return $product;
         });
         
-        // Nếu là AJAX (lazy load 1 category)
-        if ($request->ajax() || $request->has('ajax')) {
-            $categoryId = $request->get('category');
-            $catProducts = $products->where('category_id', $categoryId);
-            return view('customer.shop._product_grid', [
-                'products' => $catProducts,
-            ])->render();
-        }
-        
         return view("customer.shop.index", compact('products', 'categories', 'selectedCategoryIds'));
     }
 
