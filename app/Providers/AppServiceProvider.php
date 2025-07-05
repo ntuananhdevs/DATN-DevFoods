@@ -21,6 +21,9 @@ use App\Observers\ComboObserver;
 use App\Models\Combo;
 use App\Observers\OrderObserver;
 use App\Models\Order;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Auth;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -63,5 +66,21 @@ class AppServiceProvider extends ServiceProvider
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));
+
+        // View Composer cho layout/partials profile
+        View::composer([
+            'layouts.profile.fullLayoutProfile',
+            'partials.profile.header',
+            'partials.profile.sidebar',
+        ], function ($view) {
+            $user = Auth::user();
+            $currentRank = $user?->currentRank ?? null;
+            $currentPoints = $user?->points ?? 0;
+            $view->with([
+                'user' => $user,
+                'currentRank' => $currentRank,
+                'currentPoints' => $currentPoints,
+            ]);
+        });
     }
 }
