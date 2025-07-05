@@ -42,9 +42,7 @@
             <div class="flex items-center gap-4">
                 <!-- Nút tìm kiếm bằng icon (kính lúp) -->
                 <button class="icon-btn" id="searchBtn" title="Tìm kiếm" aria-label="Tìm kiếm">
-                    <svg class="icon h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
-                    </svg>
+                    <ion-icon class="h-6 w-6" name="search-outline"></ion-icon>
                 </button>
 
                 <div id="wishlist-container" class="relative">
@@ -101,20 +99,17 @@
 
 <!-- Search Section (Apple style, drop from header, white background) -->
 <div class="search-section absolute left-0 right-0 bg-white border-b border-gray-200 z-50 transition-all duration-500 ease-in-out max-h-0 opacity-0 overflow-hidden" id="searchSection" style="top: 64px;">
-    <div class="search-container max-w-2xl mx-auto py-8 px-4">
+    <div class="search-container max-w-7xl mx-auto py-8 px-4">
         <div class="search-input-container mb-6 relative">
-            <form action="/" method="GET" class="search-input-wrapper flex items-center gap-2 w-full">
-                <input type="text" name="search" class="search-input flex-1 px-5 py-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Tìm kiếm sản phẩm..." id="searchInput">
-                <button type="submit" class="ml-2 p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg">
-                    <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
-                    </svg>
-                </button>
-                <button type="button" class="close-btn ml-2 p-2" id="closeBtn">
-                    <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
+            <form action="{{ route('customer.search') }}" method="GET" class="search-input-wrapper flex items-center gap-2 w-full">
+                <ion-icon class="h-6 w-6 opacity-50 text-gray-950" name="search-outline"></ion-icon>
+                <input
+                  type="text"
+                  name="search"
+                  id="searchInput"
+                  class="search-input flex-1 bg-transparent border-none text-gray-950 text-lg focus:outline-none focus:ring-0"
+                  placeholder="Tìm kiếm sản phẩm..."
+                >
             </form>
         </div>
         <div id="search-results-container" class="mt-6">
@@ -186,3 +181,10 @@
 </div>
 <link rel="stylesheet" href="{{ asset('css/customer-search.css') }}">
 <script src="{{ asset('js/customer-search.js') }}"></script>
+
+<style>
+header.search-active {
+    background: #fff !important;
+    transition: background 0.2s;
+}
+</style>

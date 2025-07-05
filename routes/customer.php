@@ -34,6 +34,10 @@ use Illuminate\Support\Facades\Broadcast;
 Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
+    // Search
+    Route::get('/search', [CustomerHomeController::class, 'search'])->name('customer.search');
+    Route::post('/search/ajax', [CustomerHomeController::class, 'searchAjax'])->name('customer.search.ajax');
+
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
@@ -164,7 +168,7 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
 
-    
+
     Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
         return Broadcast::auth($request);
     })->middleware(['web']);

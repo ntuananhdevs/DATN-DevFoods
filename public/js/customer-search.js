@@ -10,15 +10,16 @@
 
         function toggleSearch() {
             const isOpen = searchSection.classList.contains('open');
+            const header = document.querySelector('header');
             if (isOpen) {
                 searchSection.classList.remove('open');
                 overlay.classList.add('hidden');
+                if (header) header.classList.remove('search-active');
             } else {
                 searchSection.classList.add('open');
                 overlay.classList.remove('hidden');
-                setTimeout(() => {
-                    searchInput.focus();
-                }, 300);
+                if (header) header.classList.add('search-active');
+                searchInput.focus();
             }
         }
         if (searchBtn) searchBtn.addEventListener('click', toggleSearch);

@@ -30,110 +30,6 @@ class HomeController extends Controller
         $currentBranch = $this->branchService->getCurrentBranch();
         $selectedBranchId = $currentBranch ? $currentBranch->id : null;
 
-        // Nếu có tham số search thì thực hiện tìm kiếm sản phẩm
-        $search = $request->input('search');
-        if ($search) {
-            $products = Product::with(['category', 'images' => function($query) {
-                $query->orderBy('is_primary', 'desc');
-            }, 'reviews'])
-            ->where('status', 'selling')
-            ->where(function($q) use ($search) {
-                $q->where('name', 'like', "%$search%")
-                  ->orWhere('sku', 'like', "%$search%")
-                  ->orWhere('short_description', 'like', "%$search%")
-                  ->orWhere('description', 'like', "%$search%")
-                  ->orWhereRaw("JSON_EXTRACT(products.ingredients, '$[*]') like ?", ["%$search%"]);
-            });
-            // Filter by branch nếu có
-            if ($selectedBranchId) {
-                $products->whereHas('variants.branchStocks', function($q) use ($selectedBranchId) {
-                    $q->where('branch_id', $selectedBranchId)
-                      ->where('stock_quantity', '>', 0);
-                });
-            }
-            $products = $products->paginate(16);
-            // Bổ sung transform để gán has_stock, first_variant, primary_image, average_rating, reviews_count
-            $products->getCollection()->transform(function ($product) use ($selectedBranchId) {
-                // Check stock status
-                if ($selectedBranchId) {
-                    $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
-                        return $variant->branchStocks->contains(function($stock){
-                            return $stock->stock_quantity > 0;
-                        });
-                    });
-                    $product->first_variant = ProductVariant::where('product_id', $product->id)
-                        ->whereHas('branchStocks', function($query) use ($selectedBranchId) {
-                            $query->where('branch_id', $selectedBranchId);
-                        })
-                        ->orderBy('id', 'asc')
-                        ->first();
-                } else {
-                    $product->has_stock = $product->variants->contains(function($variant) {
-                        return $variant->branchStocks->contains(function($stock) {
-                            return $stock->stock_quantity > 0;
-                        });
-                    });
-                    $product->first_variant = ProductVariant::where('product_id', $product->id)
-                        ->whereHas('branchStocks')
-                        ->orderBy('id', 'asc')
-                        ->first();
-                }
-                // Xử lý ảnh chính
-                $product->primary_image = $product->images->where('is_primary', true)->first() ?? $product->images->first();
-                if ($product->primary_image && $product->primary_image->img) {
-                    $product->primary_image->s3_url = Storage::disk('s3')->url($product->primary_image->img);
-                } else {
-                    if ($product->primary_image) {
-                        $product->primary_image->s3_url = null;
-                    }
-                }
-                // Đánh giá
-                $product->average_rating = $product->reviews->avg('rating') ?? 0;
-                $product->reviews_count = $product->reviews->count();
-                return $product;
-            });
-            // Tìm kiếm combo
-            $combos = Combo::with(['category', 'comboBranchStocks'])
-                ->where('status', 'selling')
-                ->where(function($q) use ($search) {
-                    $q->where('name', 'like', "%$search%")
-                      ->orWhere('sku', 'like', "%$search%")
-                      ->orWhere('description', 'like', "%$search%")
-                      ->orWhere('original_price', 'like', "%$search%")
-                      ->orWhere('price', 'like', "%$search%")
-                      ;
-                });
-            // Filter by branch nếu có
-            if ($selectedBranchId) {
-                $combos->whereHas('comboBranchStocks', function($q) use ($selectedBranchId) {
-                    $q->where('branch_id', $selectedBranchId)
-                      ->where('quantity', '>', 0);
-                });
-            }
-            $combos = $combos->paginate(12);
-            // Bổ sung các thuộc tính cần thiết cho view
-            $combos->getCollection()->transform(function ($combo) use ($selectedBranchId) {
-                // Kiểm tra còn hàng ở branch
-                if ($selectedBranchId) {
-                    $combo->has_stock = $combo->comboBranchStocks->where('branch_id', $selectedBranchId)->sum('quantity') > 0;
-                } else {
-                    $combo->has_stock = $combo->comboBranchStocks->sum('quantity') > 0;
-                }
-                // Ảnh
-                $combo->image_url = $combo->image ? Storage::disk('s3')->url($combo->image) : asset('images/default-combo.png');
-                // Tính phần trăm giảm giá nếu có
-                if ($combo->original_price && $combo->original_price > $combo->price) {
-                    $combo->discount_percent = round((($combo->original_price - $combo->price) / $combo->original_price) * 100);
-                } else {
-                    $combo->discount_percent = 0;
-                }
-                return $combo;
-            });
-            $categories = Category::withCount('products')->where('status', 1)->get();
-            $banners = Banner::where('is_active', 1)->get();
-            return view('customer.home', compact('products', 'categories', 'banners', 'search', 'combos'));
-        }
-
         // Query for general products (existing logic)
         $productsQuery = Product::with(['category', 'images' => function($query) {
             $query->orderBy('is_primary', 'desc');
@@ -155,8 +51,8 @@ class HomeController extends Controller
 
         // Get user's favorites
         $favorites = [];
-        if (Auth::check()) {
-            $favorites = Favorite::where('user_id', Auth::id())
+        if (auth()->check()) {
+            $favorites = Favorite::where('user_id', auth()->id())
                 ->pluck('product_id')
                 ->toArray();
         } elseif ($request->session()->has('wishlist_items')) {
@@ -279,38 +175,310 @@ class HomeController extends Controller
             return $product;
         });
 
-        // --- Lấy danh sách combo cho trang chủ ---
-        $combosQuery = Combo::with(['category', 'comboBranchStocks'])
-            ->where('status', 'selling');
-        if ($selectedBranchId) {
-            $combosQuery->whereHas('comboBranchStocks', function($q) use ($selectedBranchId) {
-                $q->where('branch_id', $selectedBranchId)
-                  ->where('quantity', '>', 0);
-            });
-        }
-        $combos = $combosQuery->take(8)->get();
-        $combos->transform(function ($combo) use ($selectedBranchId) {
-            // Kiểm tra còn hàng ở branch
-            if ($selectedBranchId) {
-                $combo->has_stock = $combo->comboBranchStocks->where('branch_id', $selectedBranchId)->sum('quantity') > 0;
-            } else {
-                $combo->has_stock = $combo->comboBranchStocks->sum('quantity') > 0;
-            }
-            // Ảnh
-            $combo->image_url = $combo->image ? (method_exists(Storage::disk('s3'), 'url') ? Storage::disk('s3')->url($combo->image) : null) : asset('images/default-combo.png');
-            // Tính phần trăm giảm giá nếu có
-            if ($combo->original_price && $combo->original_price > $combo->price) {
-                $combo->discount_percent = round((($combo->original_price - $combo->price) / $combo->original_price) * 100);
-            } else {
-                $combo->discount_percent = 0;
-            }
-            return $combo;
-        });
 
         $categories = Category::withCount('products')->where('status', 1)->get();
         $banners = Banner::where('is_active', 1)->get();
 
         // Pass all necessary data to the view
-        return view('customer.home', compact('products', 'featuredProducts', 'topRatedProducts', 'categories', 'banners', 'combos'));
+        return view('customer.home', compact('products', 'featuredProducts', 'topRatedProducts', 'categories', 'banners'));
+    }
+
+    public function search(Request $request)
+    {
+        // Get selected branch ID from BranchService
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $selectedBranchId = $currentBranch ? $currentBranch->id : null;
+
+        // Get search parameters
+        $search = $request->input('search');
+        $category = $request->input('category');
+        $maxPrice = $request->input('max_price', 200000);
+        $minRating = $request->input('min_rating', 0);
+        $sortBy = $request->input('sort', 'rating');
+
+        // Build products query
+        $products = Product::with(['category', 'images' => function($query) {
+            $query->orderBy('is_primary', 'desc');
+        }, 'reviews'])
+        ->where('status', 'selling');
+
+        // Apply search filter
+        if ($search) {
+            $products->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('sku', 'like', "%$search%")
+                  ->orWhere('short_description', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%")
+                  ->orWhereRaw("JSON_EXTRACT(products.ingredients, '$[*]') like ?", ["%$search%"]);
+            });
+        }
+
+        // Apply category filter
+        if ($category && $category !== 'Tất cả') {
+            $products->where('category_id', $category);
+        }
+
+        // Apply price filter
+        if ($maxPrice && $maxPrice < 200000) {
+            $products->where(function($q) use ($maxPrice) {
+                $q->where('base_price', '<=', $maxPrice)
+                  ->orWhere('discount_price', '<=', $maxPrice);
+            });
+        }
+
+        // Apply rating filter
+        if ($minRating > 0) {
+            $products->whereHas('reviews', function($q) use ($minRating) {
+                $q->where('approved', true);
+            });
+        }
+
+        // Apply sorting
+        switch ($sortBy) {
+            case 'price-low':
+                $products->orderBy('base_price', 'asc');
+                break;
+            case 'price-high':
+                $products->orderBy('base_price', 'desc');
+                break;
+            case 'reviews':
+                $products->withCount('reviews')->orderBy('reviews_count', 'desc');
+                break;
+            default: // rating
+                $products->withAvg('reviews', 'rating')->orderBy('reviews_avg_rating', 'desc');
+                break;
+        }
+
+        // Filter by branch nếu có
+        if ($selectedBranchId) {
+            $products->whereHas('variants.branchStocks', function($q) use ($selectedBranchId) {
+                $q->where('branch_id', $selectedBranchId)
+                  ->where('stock_quantity', '>', 0);
+            });
+        }
+
+        $products = $products->paginate(16);
+
+        // Transform products to add necessary details
+        $products->getCollection()->transform(function ($product) use ($selectedBranchId) {
+            // Check stock status
+            if ($selectedBranchId) {
+                $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
+                    return $variant->branchStocks->contains(function($stock){
+                        return $stock->stock_quantity > 0;
+                    });
+                });
+                $product->first_variant = ProductVariant::where('product_id', $product->id)
+                    ->whereHas('branchStocks', function($query) use ($selectedBranchId) {
+                        $query->where('branch_id', $selectedBranchId);
+                    })
+                    ->orderBy('id', 'asc')
+                    ->first();
+            } else {
+                $product->has_stock = $product->variants->contains(function($variant) {
+                    return $variant->branchStocks->contains(function($stock) {
+                        return $stock->stock_quantity > 0;
+                    });
+                });
+                $product->first_variant = ProductVariant::where('product_id', $product->id)
+                    ->whereHas('branchStocks')
+                    ->orderBy('id', 'asc')
+                    ->first();
+            }
+
+            // Xử lý ảnh chính
+            $product->primary_image = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+            if ($product->primary_image && $product->primary_image->img) {
+                $product->primary_image->s3_url = Storage::disk('s3')->url($product->primary_image->img);
+            } else {
+                if ($product->primary_image) {
+                    $product->primary_image->s3_url = null;
+                }
+            }
+
+            // Đánh giá
+            $product->average_rating = $product->reviews->avg('rating') ?? 0;
+            $product->reviews_count = $product->reviews->count();
+
+            return $product;
+        });
+
+        // Search combos if search term exists
+        $combos = null;
+        if ($search) {
+            $combos = Combo::with(['category', 'comboBranchStocks'])
+                ->where('status', 'selling')
+                ->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                      ->orWhere('sku', 'like', "%$search%")
+                      ->orWhere('description', 'like', "%$search%");
+                });
+
+            // Filter by branch nếu có
+            if ($selectedBranchId) {
+                $combos->whereHas('comboBranchStocks', function($q) use ($selectedBranchId) {
+                    $q->where('branch_id', $selectedBranchId)
+                      ->where('quantity', '>', 0);
+                });
+            }
+
+            $combos = $combos->paginate(12);
+
+            // Transform combos
+            $combos->getCollection()->transform(function ($combo) use ($selectedBranchId) {
+                // Kiểm tra còn hàng ở branch
+                if ($selectedBranchId) {
+                    $combo->has_stock = $combo->comboBranchStocks->where('branch_id', $selectedBranchId)->sum('quantity') > 0;
+                } else {
+                    $combo->has_stock = $combo->comboBranchStocks->sum('quantity') > 0;
+                }
+                // Ảnh
+                $combo->image_url = $combo->image ? Storage::disk('s3')->url($combo->image) : asset('images/default-combo.png');
+                // Tính phần trăm giảm giá nếu có
+                if ($combo->original_price && $combo->original_price > $combo->price) {
+                    $combo->discount_percent = round((($combo->original_price - $combo->price) / $combo->original_price) * 100);
+                } else {
+                    $combo->discount_percent = 0;
+                }
+                return $combo;
+            });
+        }
+
+        $categories = Category::withCount('products')->where('status', 1)->get();
+        $banners = Banner::where('is_active', 1)->get();
+
+        return view('customer.shop.search', compact('products', 'categories', 'banners', 'search', 'combos'));
+    }
+
+    public function searchAjax(Request $request)
+    {
+        // Get selected branch ID from BranchService
+        $currentBranch = $this->branchService->getCurrentBranch();
+        $selectedBranchId = $currentBranch ? $currentBranch->id : null;
+
+        // Get search parameters
+        $search = $request->input('search');
+        $category = $request->input('category');
+        $maxPrice = $request->input('max_price', 200000);
+        $minRating = $request->input('min_rating', 0);
+        $sortBy = $request->input('sort', 'rating');
+
+        // Build products query
+        $products = Product::with(['category', 'images' => function($query) {
+            $query->orderBy('is_primary', 'desc');
+        }, 'reviews'])
+        ->where('status', 'selling');
+
+        // Apply search filter
+        if ($search) {
+            $products->where(function($q) use ($search) {
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('sku', 'like', "%$search%")
+                  ->orWhere('short_description', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%")
+                  ->orWhereRaw("JSON_EXTRACT(products.ingredients, '$[*]') like ?", ["%$search%"]);
+            });
+        }
+
+        // Apply category filter
+        if ($category && $category !== 'Tất cả') {
+            $products->where('category_id', $category);
+        }
+
+        // Apply price filter
+        if ($maxPrice && $maxPrice < 200000) {
+            $products->where(function($q) use ($maxPrice) {
+                $q->where('base_price', '<=', $maxPrice)
+                  ->orWhere('discount_price', '<=', $maxPrice);
+            });
+        }
+
+        // Apply rating filter
+        if ($minRating > 0) {
+            $products->whereHas('reviews', function($q) use ($minRating) {
+                $q->where('approved', true);
+            });
+        }
+
+        // Apply sorting
+        switch ($sortBy) {
+            case 'price-low':
+                $products->orderBy('base_price', 'asc');
+                break;
+            case 'price-high':
+                $products->orderBy('base_price', 'desc');
+                break;
+            case 'reviews':
+                $products->withCount('reviews')->orderBy('reviews_count', 'desc');
+                break;
+            default: // rating
+                $products->withAvg('reviews', 'rating')->orderBy('reviews_avg_rating', 'desc');
+                break;
+        }
+
+        // Filter by branch nếu có
+        if ($selectedBranchId) {
+            $products->whereHas('variants.branchStocks', function($q) use ($selectedBranchId) {
+                $q->where('branch_id', $selectedBranchId)
+                  ->where('stock_quantity', '>', 0);
+            });
+        }
+
+        $products = $products->paginate(16);
+
+        // Transform products to add necessary details
+        $products->getCollection()->transform(function ($product) use ($selectedBranchId) {
+            // Check stock status
+            if ($selectedBranchId) {
+                $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
+                    return $variant->branchStocks->contains(function($stock){
+                        return $stock->stock_quantity > 0;
+                    });
+                });
+                $product->first_variant = ProductVariant::where('product_id', $product->id)
+                    ->whereHas('branchStocks', function($query) use ($selectedBranchId) {
+                        $query->where('branch_id', $selectedBranchId);
+                    })
+                    ->orderBy('id', 'asc')
+                    ->first();
+            } else {
+                $product->has_stock = $product->variants->contains(function($variant) {
+                    return $variant->branchStocks->contains(function($stock) {
+                        return $stock->stock_quantity > 0;
+                    });
+                });
+                $product->first_variant = ProductVariant::where('product_id', $product->id)
+                    ->whereHas('branchStocks')
+                    ->orderBy('id', 'asc')
+                    ->first();
+            }
+
+            // Xử lý ảnh chính
+            $product->primary_image = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+            if ($product->primary_image && $product->primary_image->img) {
+                $product->primary_image->s3_url = Storage::disk('s3')->url($product->primary_image->img);
+            } else {
+                if ($product->primary_image) {
+                    $product->primary_image->s3_url = null;
+                }
+            }
+
+            // Đánh giá
+            $product->average_rating = $product->reviews->avg('rating') ?? 0;
+            $product->reviews_count = $product->reviews->count();
+
+            return $product;
+        });
+
+        // Return JSON response
+        return response()->json([
+            'success' => true,
+            'products' => $products->items(),
+            'total' => $products->total(),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'per_page' => $products->perPage(),
+            'html' => view('customer.shop.search', compact('products'))->render()
+        ]);
     }
 }
