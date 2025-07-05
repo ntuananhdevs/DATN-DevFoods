@@ -48,14 +48,24 @@ class OrderSeeder extends Seeder
 
     private function createPayments()
     {
-        $user = User::find(1);
+        $user = User::find(6);
         if (!$user) {
             $user = User::create([
-                'name' => 'customer',
-                'email' => 'customer@devfoods.com',
+                'user_name' => 'customer',
+                'full_name' => 'Nguyen Kha Banh',
+                'email' => 'khabanh@devfoods.com',
                 'phone' => '0123456789',
                 'password' => bcrypt('customer'),
+                'balance' => 0,
+                'total_spending' => 0,
+                'total_orders' => 0,
+                'active' => true,
             ]);
+        } else {
+            // Cập nhật số điện thoại nếu user chưa có
+            if (!$user->phone) {
+                $user->update(['phone' => '0123456789']);
+            }
         }
 
         // Không cần check nữa vì đã truncate ở trên
@@ -79,7 +89,7 @@ class OrderSeeder extends Seeder
             
             Payment::create([
                 'payment_method' => $paymentMethod,
-                'payer_name' => $user->name,
+                'payer_name' => $user->full_name,
                 'payer_email' => $user->email,
                 'payer_phone' => $user->phone,
                 'txn_ref' => $txnRef,
@@ -109,10 +119,10 @@ class OrderSeeder extends Seeder
         if (!$branch) {
             throw new \Exception('Không tìm thấy branch id=1. Vui lòng chạy BranchSeeder trước.');
         }
-        $user = User::find(1);
-        echo "User ID 1: " . ($user ? "FOUND - " . $user->email : "NOT FOUND") . "\n";
+        $user = User::find(6);
+        echo "User ID 6: " . ($user ? "FOUND - " . $user->email : "NOT FOUND") . "\n";
         if (!$user) {
-            throw new \Exception('Không tìm thấy user id=1. Vui lòng chạy UserSeeder trước.');
+            throw new \Exception('Không tìm thấy user id=6. Vui lòng chạy UserSeeder trước.');
         }
         $driver = Driver::find(1);
         if (!$driver) {

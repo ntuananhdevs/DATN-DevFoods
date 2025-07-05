@@ -59,7 +59,7 @@
                     <span class="sidebar-text">Danh mục</span>
                 </a>
                 <a href="{{ route('branch.orders.index') }}"
-                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.orders') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.orders.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
                     data-tooltip="Đơn hàng">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -92,7 +92,7 @@
                 </a>
                 <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Thực đơn">
                     <button type="button"
-                        class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.products') || request()->routeIs('branch.combos') || request()->routeIs('branch.toppings') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.products.*') || request()->routeIs('branch.combos.*') || request()->routeIs('branch.toppings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
                                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -111,19 +111,19 @@
                         </svg>
                     </button>
                     <div
-                        class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 {{ request()->routeIs('branch.products') || request()->routeIs('branch.combos') || request()->routeIs('branch.toppings') ? '' : 'hidden' }}">
+                        class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 {{ request()->routeIs('branch.products.*') || request()->routeIs('branch.combos.*') || request()->routeIs('branch.toppings.*') ? '' : 'hidden' }}">
                         <a href="{{ route('branch.products') }}"
-                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món
+                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món
                             ăn</a>
                         <a href="{{ route('branch.combos') }}"
-                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.combos') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Combo</a>
+                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.combos.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Combo</a>
                         <a href="{{ route('branch.toppings') }}"
-                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.toppings') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Topping</a>
+                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.toppings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Topping</a>
                     </div>
                 </div>
 
                 <a href="{{ route('branch.chat.index') }}"
-                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.chat.index') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
+                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.chat.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
                     data-tooltip="Chat">
                     <span class="sidebar-icon-container mr-2 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
@@ -177,6 +177,74 @@
 
     .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background-color: #6b7280;
+    }
+
+    /* Active menu item styles */
+    .sidebar-menu-item.bg-sidebar-accent,
+    .sidebar-dropdown-trigger.bg-sidebar-accent {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        transform: translateX(2px);
+        transition: all 0.3s ease;
+    }
+
+    .sidebar-menu-item.bg-sidebar-accent:hover,
+    .sidebar-dropdown-trigger.bg-sidebar-accent:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+        transform: translateX(4px);
+        box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    }
+
+    .sidebar-menu-item.bg-sidebar-accent .sidebar-icon-container,
+    .sidebar-dropdown-trigger.bg-sidebar-accent .sidebar-icon-container {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        padding: 2px;
+    }
+
+    /* Active dropdown content items */
+    .sidebar-dropdown-content a.bg-sidebar-accent {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        color: white !important;
+        border-left: 3px solid #ffffff;
+        margin-left: -3px;
+        padding-left: 12px;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    }
+
+    .sidebar-dropdown-content a.bg-sidebar-accent:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+    }
+
+    /* Hover effects for non-active items */
+    .sidebar-menu-item:hover:not(.bg-sidebar-accent),
+    .sidebar-dropdown-trigger:hover:not(.bg-sidebar-accent) {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: #3b82f6 !important;
+        transform: translateX(2px);
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-dropdown-content a:hover:not(.bg-sidebar-accent) {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: #3b82f6 !important;
+        border-left: 2px solid #3b82f6;
+        margin-left: -2px;
+        padding-left: 11px;
+    }
+
+    /* Animation for active state */
+    @keyframes activePulse {
+        0% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+        50% { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5); }
+        100% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
+    }
+
+    .sidebar-menu-item.bg-sidebar-accent,
+    .sidebar-dropdown-trigger.bg-sidebar-accent,
+    .sidebar-dropdown-content a.bg-sidebar-accent {
+        animation: activePulse 2s ease-in-out infinite;
     }
 </style>
 
