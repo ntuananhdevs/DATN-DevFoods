@@ -128,8 +128,8 @@
                                         <ul class="text-xs text-gray-600 pl-2">
                                             @foreach($item->toppings as $topping)
                                                 <li class="flex justify-between">
-                                                    <span>• {{ $topping->name }}</span>
-                                                    <span class="font-medium">+{{ number_format($topping->price) }}đ</span>
+                                                    <span>• {{ $topping->topping->name ?? '' }}</span>
+                                                    <span class="font-medium">+{{ number_format($topping->topping->price ?? 0) }}đ</span>
                                                 </li>
                                             @endforeach
                                         </ul>
@@ -361,7 +361,7 @@
                     @if($item->toppings && $item->toppings->count() > 0)
                         <div class="mt-1">
                             <p class="text-xs text-orange-500">
-                                Toppings: {{ implode(', ', $item->toppings->pluck('name')->toArray()) }}
+                                Toppings: {{ implode(', ', $item->toppings->pluck('topping.name')->toArray()) }}
                             </p>
                         </div>
                     @endif

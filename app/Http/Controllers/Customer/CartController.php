@@ -62,7 +62,7 @@ class CartController extends Controller
                     $query->with('images', 'variants.variantValues');
                 },
                 'variant.variantValues.attribute',
-                'toppings'
+                'toppings.topping'
             ])->where('cart_id', $cart->id)->get();
             
             // Calculate subtotal
@@ -259,7 +259,18 @@ class CartController extends Controller
             }
             $item->best_discount = $maxDiscount;
             $item->best_discount_value = $maxValue;
-            $item->final_price = max(0, $originPrice - $maxValue) + $item->toppings->sum('price');
+            // Debug giá topping từng item
+            $toppingSum = $item->toppings->sum('price');
+            $toppingSumWithRelation = $item->toppings->sum(function($t) { return $t->topping->price ?? 0; });
+            \Log::debug('CartItem debug', [
+                'cart_item_id' => $item->id,
+                'variant_price' => $originPrice,
+                'topping_ids' => $item->toppings->pluck('topping_id'),
+                'topping_sum' => $toppingSum,
+                'topping_sum_with_relation' => $toppingSumWithRelation,
+                'topping_names' => $item->toppings->map(function($t) { return $t->topping->name ?? null; }),
+            ]);
+            $item->final_price = max(0, $originPrice - $maxValue) + $toppingSumWithRelation;
         }
 
         return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart', 'suggestedProducts'));
@@ -373,7 +384,7 @@ class CartController extends Controller
 
                 // Loop through existing items to find an exact match (including toppings)
                 foreach ($existingCartItems as $item) {
-                    $itemToppingIds = $item->toppings->pluck('id')->sort()->values()->all();
+                    $itemToppingIds = $item->toppings->pluck('topping_id')->sort()->values()->all();
                     
                     if ($itemToppingIds == $requestToppingIds) {
                         $matchingCartItem = $item;
@@ -397,11 +408,13 @@ class CartController extends Controller
 
                     // Attach toppings if they exist in the request
                     if (!empty($requestToppingIds)) {
-                        $toppings = collect($requestToppingIds)->mapWithKeys(function ($toppingId) {
-                            return [$toppingId => ['quantity' => 1]];
+                        $toppingData = collect($requestToppingIds)->map(function ($toppingId) {
+                            return [
+                                'topping_id' => $toppingId,
+                                'quantity' => 1
+                            ];
                         })->all();
-                        
-                        $cartItem->toppings()->attach($toppings);
+                        $cartItem->toppings()->createMany($toppingData);
                     }
                 }
 
