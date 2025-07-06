@@ -73,7 +73,11 @@ class Combo extends Model
 
     public function getTotalOriginalPriceAttribute()
     {
-        return $this->products()->sum('price');
+        // Tính tổng giá gốc của combo dựa trên các biến thể sản phẩm và số lượng từng biến thể
+        return $this->productVariants()->get()->sum(function($variant) {
+            $quantity = $variant->pivot->quantity ?? 1;
+            return $variant->price * $quantity;
+        });
     }
 
     public function getDiscountPercentAttribute()

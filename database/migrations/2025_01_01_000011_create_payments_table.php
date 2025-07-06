@@ -11,17 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payment_methods', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->boolean('active')->default(true);
-            $table->timestamps();
-        });
-        
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('payment_method_id')->constrained('payment_methods');
+            $table->enum('payment_method', 
+                            [
+                                'cod',
+                                'vnpay',
+                                'balance'
+                            ])->default('cod');
             $table->string('payer_name');
             $table->string('payer_email');
             $table->string('payer_phone');
@@ -47,6 +44,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('payments');
-        Schema::dropIfExists('payment_methods');
     }
 };

@@ -299,13 +299,13 @@
                                     </div>
                                     <div class="flex justify-between"><span class="text-gray-500">Thanh toán:</span>
                                         <p class="font-semibold">
-                                            {{ optional(optional($order->payment)->paymentMethod)->name ?? 'Tiền mặt' }}
+                                            {{ $order->paymentMethodText }}
                                         </p>
                                     </div>
                                     <div class="flex justify-between items-center pt-2 border-t border-dashed">
                                         <span class="text-gray-500">Trạng thái:</span>
                                         <span
-                                            class="font-medium px-2 py-0.5 rounded-full text-xs {{ optional($order->payment)->payment_status == 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ optional($order->payment)->payment_status == 'completed' ? 'Đã thanh toán' : 'Chưa thanh toán' }}</span>
+                                            class="font-medium px-2 py-0.5 rounded-full text-xs {{ $order->payment_status == 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ $order->payment_status == 'completed' ? 'Đã thanh toán' : 'Chưa thanh toán' }}</span>
                                     </div>
                                 </div>
                             </div>
