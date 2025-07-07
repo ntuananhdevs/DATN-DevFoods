@@ -21,6 +21,10 @@ use App\Observers\ComboObserver;
 use App\Models\Combo;
 use App\Observers\OrderObserver;
 use App\Models\Order;
+use App\Models\ProductReview;
+use App\Models\ReviewReply;
+use App\Observers\ProductReviewObserver;
+use App\Observers\ReviewReplyObserver;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
 
