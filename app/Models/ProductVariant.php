@@ -71,8 +71,16 @@ class ProductVariant extends Model
         return $this->hasMany(ProductVariantDetail::class);
     }
     
-    public function discountCodes()
+    // public function discountCodes()
+    // {
+    //     return $this->hasMany(DiscountCodeProductVariant::class);
+    // }
+
+    /**
+     * Get the order items for this product variant.
+     */
+    public function orderItems()
     {
-        return $this->hasMany(DiscountCodeProductVariant::class);
+        return $this->hasMany(OrderItem::class);
     }
 }

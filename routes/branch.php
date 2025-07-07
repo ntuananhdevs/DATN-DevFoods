@@ -10,6 +10,7 @@ use App\Http\Controllers\Branch\BranchRevenueController;
 use App\Http\Controllers\Branch\BranchCategoryController;
 use App\Http\Controllers\Branch\Auth\AuthController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Broadcast;
 
 // Branch Authentication Routes
 Route::prefix('branch')->name('branch.')->group(function () {
@@ -40,6 +41,8 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::get('/{id}', [BranchOrderController::class, 'show'])->name('show');
         Route::post('/{id}/status', [BranchOrderController::class, 'updateStatus'])->name('updateStatus');
         Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
+        Route::post('/{id}/confirm', [BranchOrderController::class, 'confirmOrder'])->name('confirm');
+        Route::get('/{id}/card', [BranchOrderController::class, 'card'])->name('card');
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('categories');
@@ -55,4 +58,26 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::post('/send-message', [BranchChatController::class, 'sendMessage'])->name('send');
         Route::post('/update-status', [BranchChatController::class, 'updateStatus'])->name('status');
     });
+
+    // Broadcasting authentication route for branch
+    Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+        \Log::info('[Broadcasting] Auth request received', [
+            'channel' => $request->input('channel_name'),
+            'socket_id' => $request->input('socket_id'),
+            'user' => \Illuminate\Support\Facades\Auth::guard('manager')->user(),
+            'session' => $request->session()->all()
+        ]);
+        
+        try {
+            $result = \Illuminate\Support\Facades\Broadcast::auth($request);
+            \Log::info('[Broadcasting] Auth successful', ['result' => $result]);
+            return $result;
+        } catch (\Exception $e) {
+            \Log::error('[Broadcasting] Auth failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    })->middleware(['web']);
 });

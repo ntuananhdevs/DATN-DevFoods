@@ -11,6 +11,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
 use App\Events\OrderStatusUpdated;
 use App\Events\Branch\NewOrderReceived;
+use Illuminate\Support\Facades\Log;
 
 class BranchOrderController extends Controller
 {
@@ -20,6 +21,28 @@ class BranchOrderController extends Controller
         
         if (!$branch) {
             return redirect()->back()->with('error', 'Không tìm thấy thông tin chi nhánh');
+        }
+
+        // Handle check_new parameter for polling fallback
+        if ($request->has('check_new') && $request->check_new === 'true') {
+            $lastOrderTime = $request->input('last_order_time');
+            $hasNewOrders = false;
+            
+            if ($lastOrderTime) {
+                $hasNewOrders = Order::where('branch_id', $branch->id)
+                    ->where('created_at', '>', $lastOrderTime)
+                    ->exists();
+            } else {
+                // If no last_order_time provided, check if there are any orders created in the last 5 minutes
+                $hasNewOrders = Order::where('branch_id', $branch->id)
+                    ->where('created_at', '>', now()->subMinutes(5))
+                    ->exists();
+            }
+            
+            return response()->json([
+                'hasNewOrders' => $hasNewOrders,
+                'timestamp' => now()->toISOString()
+            ]);
         }
 
         // Lấy vị trí chi nhánh
@@ -55,7 +78,17 @@ class BranchOrderController extends Controller
 
         // Status filter
         if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', $request->status);
+            if ($request->status === 'awaiting_driver') {
+                $query->whereIn('status', [
+                    'awaiting_driver',
+                    'confirmed',
+                    'driver_assigned',
+                    'driver_confirmed',
+                    'driver_picked_up'
+                ]);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Date range filter
@@ -94,7 +127,14 @@ class BranchOrderController extends Controller
         $statusCounts = [
             'all' => Order::where('branch_id', $branch->id)->count(),
             'awaiting_confirmation' => Order::where('branch_id', $branch->id)->where('status', 'awaiting_confirmation')->count(),
-            'awaiting_driver' => Order::where('branch_id', $branch->id)->where('status', 'awaiting_driver')->count(),
+            'awaiting_driver' => Order::where('branch_id', $branch->id)
+                ->whereIn('status', [
+                    'awaiting_driver',
+                    'confirmed',
+                    'driver_assigned',
+                    'driver_confirmed',
+                    'driver_picked_up'
+                ])->count(),
             'in_transit' => Order::where('branch_id', $branch->id)->where('status', 'in_transit')->count(),
             'delivered' => Order::where('branch_id', $branch->id)->where('status', 'delivered')->count(),
             'cancelled' => Order::where('branch_id', $branch->id)->where('status', 'cancelled')->count(),
@@ -110,9 +150,9 @@ class BranchOrderController extends Controller
         ];
 
         if ($request->ajax()) {
-            return view('branch.orders.partials.grid', compact('orders'))->render();
+            return response()->view('branch.orders.partials.orders_grid', compact('orders'));
         }
-        return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods'));
+        return view('branch.orders.index', compact('orders', 'statusCounts', 'paymentMethods', 'branch'));
     }
 
     public function show($id)
@@ -399,5 +439,151 @@ class BranchOrderController extends Controller
             sin($lonDelta / 2) * sin($lonDelta / 2);
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
         return round($earthRadius * $c, 1);
+    }
+
+    /**
+     * Xác nhận đơn hàng và tìm tài xế
+     */
+    public function confirmOrder(Request $request, $id)
+    {
+        $branch = Auth::guard('manager')->user()->branch;
+        $order = Order::where('branch_id', $branch->id)
+                     ->where('id', $id)
+                     ->firstOrFail();
+
+        Log::info('Bắt đầu xác nhận đơn hàng', ['order_id' => $order->id]);
+
+        if ($order->status !== 'awaiting_confirmation') {
+            Log::warning('Trạng thái không hợp lệ khi xác nhận', ['order_id' => $order->id, 'status' => $order->status]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ có thể xác nhận đơn hàng đang chờ xác nhận',
+                'current_status' => $order->status
+            ], 400);
+        }
+
+        $lat = $order->address->latitude ?? $order->guest_latitude;
+        $lng = $order->address->longitude ?? $order->guest_longitude;
+        if (!$lat || !$lng) {
+            Log::warning('Thiếu toạ độ giao hàng', ['order_id' => $order->id, 'lat' => $lat, 'lng' => $lng]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Đơn hàng thiếu thông tin địa chỉ giao hàng (latitude/longitude)'
+            ], 500);
+        }
+
+        try {
+            Log::info('Cập nhật trạng thái confirmed', ['order_id' => $order->id]);
+            $order->update(['status' => 'confirmed']);
+            $order->refresh();
+            OrderStatusHistory::create([
+                'order_id' => $order->id,
+                'old_status' => 'awaiting_confirmation',
+                'new_status' => 'confirmed',
+                'changed_by' => Auth::guard('manager')->id(),
+                'changed_by_role' => 'branch_manager',
+                'note' => 'Xác nhận đơn hàng',
+                'changed_at' => now()
+            ]);
+            event(new OrderStatusUpdated($order, 'awaiting_confirmation', 'confirmed'));
+
+            Log::info('Tìm tài xế gần nhất', ['order_id' => $order->id, 'lat' => $lat, 'lng' => $lng]);
+            $driver = $this->findNearestDriverByLatLng($lat, $lng);
+            if ($driver) {
+                $oldStatus = $order->status;
+                Log::info('Cập nhật trạng thái driver_assigned', ['order_id' => $order->id, 'driver_id' => $driver->id]);
+                $order->update([
+                    'status' => 'driver_assigned',
+                    'driver_id' => $driver->id
+                ]);
+                $order->refresh();
+                OrderStatusHistory::create([
+                    'order_id' => $order->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => 'driver_assigned',
+                    'changed_by' => Auth::guard('manager')->id(),
+                    'changed_by_role' => 'branch_manager',
+                    'note' => 'Tìm thấy tài xế phù hợp',
+                    'changed_at' => now()
+                ]);
+                event(new OrderStatusUpdated($order, $oldStatus, 'driver_assigned'));
+                event(new \App\Events\Branch\DriverFound($order, $driver));
+                Log::info('Đã xác nhận và gán tài xế thành công', ['order_id' => $order->id, 'driver_id' => $driver->id]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xác nhận và gán tài xế thành công',
+                    'driver' => [
+                        'id' => $driver->id,
+                        'name' => $driver->name,
+                        'phone' => $driver->phone
+                    ],
+                    'new_status' => 'driver_assigned',
+                    'order_code' => $order->order_code ?? $order->id,
+                ]);
+            } else {
+                Log::info('Không tìm được tài xế', ['order_id' => $order->id]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xác nhận đơn hàng, đang tìm tài xế...',
+                    'driver' => null,
+                    'new_status' => 'confirmed'
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Lỗi xác nhận đơn hàng', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage(),
+                'current_status' => $order->status
+            ], 500);
+        }
+    }
+
+    // Hàm tìm tài xế theo lat/lng
+    private function findNearestDriverByLatLng($lat, $lng)
+    {
+        if (!$lat || !$lng) {
+            return null;
+        }
+        $drivers = \App\Models\Driver::where('status', 'online')
+            ->where('is_available', true)
+            ->whereHas('location')
+            ->with('location')
+            ->get();
+
+        $nearestDriver = null;
+        $shortestDistance = PHP_FLOAT_MAX;
+
+        foreach ($drivers as $driver) {
+            $location = $driver->location;
+            if (!$location) continue;
+            $distance = $this->calculateDistance(
+                $lat,
+                $lng,
+                $location->latitude,
+                $location->longitude
+            );
+            if ($distance <= 10 && $distance < $shortestDistance) {
+                $shortestDistance = $distance;
+                $nearestDriver = $driver;
+            }
+        }
+        return $nearestDriver;
+    }
+
+    /**
+     * Trả về HTML partial card cho 1 order (dùng cho realtime)
+     */
+    public function card($id)
+    {
+        $branch = Auth::guard('manager')->user()->branch;
+        $order = \App\Models\Order::with(['orderItems', 'payment', 'address'])
+            ->where('branch_id', $branch->id)
+            ->findOrFail($id);
+        return view('branch.orders.partials.order_card', compact('order'));
     }
 }

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="branch-id" content="{{ Auth::guard('manager')->user()->branch_id ?? '' }}">
     <title>@yield('title', 'FastFood Branch')</title>
     <meta name="description" content="@yield('description', 'Branch dashboard')">
     <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/x-icon">
@@ -68,6 +69,14 @@
     
     <!-- Pusher for realtime -->
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    
+    <!-- Order notifications for all branch pages -->
+    <script>
+        // Pusher configuration
+        window.PUSHER_KEY = '{{ config("broadcasting.connections.pusher.key") }}';
+        window.PUSHER_CLUSTER = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
+    </script>
+    <script src="{{ asset('js/branch/orders-realtime-simple.js') }}"></script>
     
     @yield('scripts')
     @stack('scripts')
