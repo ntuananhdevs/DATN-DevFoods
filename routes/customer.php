@@ -71,7 +71,7 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
     Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
-    
+
     // Coupon
     Route::post('/coupon/apply', [CustomerCouponController::class, 'apply'])->name('coupon.apply');
     Route::post('/coupon/remove', [CustomerCouponController::class, 'remove'])->name('coupon.remove');

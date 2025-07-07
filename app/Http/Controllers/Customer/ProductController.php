@@ -641,7 +641,7 @@ class ProductController extends Controller
             'applicable_discount_codes_count' => $product->applicable_discount_codes->count()
         ]);
 
-        return view('customer.shop.show', compact(
+                return view('customer.shop.show', compact(
             'product',
             'variantAttributes',
             'relatedProducts',

@@ -73,7 +73,11 @@ class Combo extends Model
 
     public function getTotalOriginalPriceAttribute()
     {
-        return $this->products()->sum('price');
+        return $this->comboItems()
+            ->join('product_variants', 'combo_items.product_variant_id', '=', 'product_variants.id')
+            ->join('products', 'product_variants.product_id', '=', 'products.id')
+            ->selectRaw('SUM(products.base_price * combo_items.quantity) as total_price')
+            ->value('total_price') ?? 0;
     }
 
     public function getDiscountPercentAttribute()

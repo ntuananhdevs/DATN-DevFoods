@@ -32,30 +32,30 @@ class CartController extends Controller
         // Debug session id và user id
         \Log::info('CartController@index - Session ID: ' . session()->getId());
         \Log::info('CartController@index - User ID: ' . (Auth::id() ?? 'null'));
-        
+
         // Determine if user is authenticated or using session
         $userId = Auth::id();
         $sessionId = session()->getId();
-        
+
         // Query the cart based on user_id or session_id
         $cartQuery = Cart::query()->where('status', 'active');
-        
+
         if ($userId) {
             $cartQuery->where('user_id', $userId);
         } else {
             $cartQuery->where('session_id', $sessionId);
         }
-        
+
         $cart = $cartQuery->first();
         \Log::info('CartController@index - Cart found: ' . ($cart ? 'YES' : 'NO'));
         if ($cart) {
             \Log::info('CartController@index - Cart ID: ' . $cart->id . ' | session_id: ' . $cart->session_id . ' | user_id: ' . $cart->user_id);
         }
-        
+
         // Initialize cartItems as an empty collection rather than an array
         $cartItems = collect();
         $subtotal = 0;
-        
+
         if ($cart) {
             $cartItems = CartItem::with([
                 'variant.product' => function($query) {
@@ -64,23 +64,23 @@ class CartController extends Controller
                 'variant.variantValues.attribute',
                 'toppings'
             ])->where('cart_id', $cart->id)->get();
-            
+
             // Calculate subtotal
             foreach ($cartItems as $item) {
                 $subtotal += $item->variant->price * $item->quantity;
-                
+
                 // Add topping prices to subtotal
                 foreach ($item->toppings as $topping) {
                     $subtotal += $topping->price * $item->quantity;
                 }
-                
+
                 // Set primary image for display
                 $item->variant->product->primary_image = $item->variant->product->images
                     ->where('is_primary', true)
                     ->first() ?? $item->variant->product->images->first();
             }
         }
-        
+
         // Store cart count in session
         $cartCount = $cartItems->count();
         session(['cart_count' => $cartCount]);
@@ -264,7 +264,7 @@ class CartController extends Controller
 
         return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart', 'suggestedProducts'));
     }
-    
+
     /**
      * Add a product to cart
      */
@@ -273,7 +273,7 @@ class CartController extends Controller
         try {
             // Log request data
             \Log::debug('Add to cart request:', $request->all());
-            
+
             // Log variant values details
             $variantValues = $request->variant_values;
             foreach ($variantValues as $valueId) {
@@ -298,7 +298,7 @@ class CartController extends Controller
             // Get or create cart
             $userId = Auth::id();
             $sessionId = session()->getId();
-            
+
             $cart = Cart::where('status', 'active')
                 ->when($userId, function($query) use ($userId) {
                     return $query->where('user_id', $userId);
@@ -374,7 +374,7 @@ class CartController extends Controller
                 // Loop through existing items to find an exact match (including toppings)
                 foreach ($existingCartItems as $item) {
                     $itemToppingIds = $item->toppings->pluck('id')->sort()->values()->all();
-                    
+
                     if ($itemToppingIds == $requestToppingIds) {
                         $matchingCartItem = $item;
                         break;
@@ -400,7 +400,7 @@ class CartController extends Controller
                         $toppings = collect($requestToppingIds)->mapWithKeys(function ($toppingId) {
                             return [$toppingId => ['quantity' => 1]];
                         })->all();
-                        
+
                         $cartItem->toppings()->attach($toppings);
                     }
                 }
@@ -440,7 +440,7 @@ class CartController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
