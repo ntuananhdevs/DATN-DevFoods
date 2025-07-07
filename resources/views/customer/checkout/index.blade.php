@@ -477,9 +477,17 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố, Quận/Huyện, Phường/Xã</label>
+                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Hà Nội</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Quận/Huyện</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Quận Hoàng Mai</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Phường/Xã</label>
                             <select class="w-full border rounded px-3 py-2">
-                                <option>Hà Nội, Quận Hoàng Mai, Phường Đại Kim</option>
+                                <option>Phường Đại Kim</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -528,9 +536,17 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố, Quận/Huyện, Phường/Xã</label>
+                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Hà Nội</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Quận/Huyện</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Quận Hoàng Mai</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Phường/Xã</label>
                             <select class="w-full border rounded px-3 py-2">
-                                <option>Hà Nội, Quận Hoàng Mai, Phường Đại Kim</option>
+                                <option>Phường Đại Kim</option>
                             </select>
                         </div>
                         <div class="mb-3">
