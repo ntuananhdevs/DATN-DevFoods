@@ -64,6 +64,12 @@ class AppServiceProvider extends ServiceProvider
         // Register OrderObserver
         Order::observe(OrderObserver::class);
 
+        // Register ReviewReplyObserver
+        ReviewReply::observe(ReviewReplyObserver::class);
+
+        // Register ProductReviewObserver
+        ProductReview::observe(ProductReviewObserver::class);
+
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));
 

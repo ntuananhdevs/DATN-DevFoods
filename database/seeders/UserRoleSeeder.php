@@ -15,8 +15,13 @@ class UserRoleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Xóa dữ liệu cũ trong bảng user_roles
-        DB::table('user_roles')->truncate();
+        // Chỉ chạy seeder này nếu chưa có dữ liệu trong bảng user_roles
+        if (DB::table('user_roles')->count() > 0) {
+            echo "UserRoleSeeder: Bảng user_roles đã có dữ liệu, bỏ qua.\n";
+            return;
+        }
+
+        echo "UserRoleSeeder: Bắt đầu gán roles cho users...\n";
 
         // Gán role admin cho user admin
         $admin = User::where('user_name', 'admin')->first();
@@ -28,6 +33,9 @@ class UserRoleSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            echo "Đã gán role admin cho user: {$admin->email}\n";
+        } else {
+            echo "Không tìm thấy admin user hoặc admin role\n";
         }
 
         // Gán role manager cho các manager
@@ -41,12 +49,13 @@ class UserRoleSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                echo "Đã gán role manager cho user: {$manager->email}\n";
             }
         }
 
         // Gán role customer cho các customer
         $customerRole = Role::where('name', 'customer')->first();
-        $customers = User::where('user_name', 'like', 'customer%')->get();
+        $customers = User::where('user_name', 'customer')->get();
         foreach ($customers as $customer) {
             if ($customerRole) {
                 DB::table('user_roles')->insert([
@@ -55,7 +64,10 @@ class UserRoleSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                echo "Đã gán role customer cho user: {$customer->email}\n";
             }
         }
+
+        echo "UserRoleSeeder: Hoàn thành gán roles.\n";
     }
 }
