@@ -83,6 +83,29 @@
 
         <form action="{{ route('checkout.process') }}" method="POST" id="checkout-form">
             @csrf
+
+            <!-- Địa chỉ nhận hàng (giống Shopee) -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex items-center border border-orange-200 relative">
+                <span class="text-orange-500 mr-3 text-xl">
+                    <i class="fas fa-map-marker-alt"></i>
+                </span>
+                <div class="flex-1">
+                    <div class="font-semibold text-base mb-1">
+                        <span class="font-bold">Bùi Đức Dương</span>
+                        <span class="ml-2">(+84) 355032605</span>
+                        <span class="ml-2 align-middle">
+                            <span class="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs font-medium bg-white">Mặc Định</span>
+                        </span>
+                    </div>
+                    <div class="text-gray-800 text-sm">
+                        Số Nhà 26, Ngách 66 Ngõ 250 Kim Giang, Phường Đại Kim, Quận Hoàng Mai, Hà Nội
+                    </div>
+                </div>
+                <a href="#" id="changeAddressBtn" class="ml-4 text-blue-600 hover:underline font-medium text-sm">Thay Đổi</a>
+            </div>
+
+            
+
             <div class="grid lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2">
                     <!-- Thông tin khách hàng -->
@@ -116,6 +139,37 @@
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
                             </div>
+
+                            @auth
+                                @if($userAddresses && $userAddresses->count() > 0)
+                                    <div class="md:col-span-2 mb-4">
+                                        <label for="saved_address" class="form-label">Chọn địa chỉ đã lưu</label>
+                                        <select id="saved_address" name="address_id" class="form-control">
+                                            <option value="">-- Chọn địa chỉ hoặc nhập mới --</option>
+                                            @foreach($userAddresses as $savedAddress)
+                                                <option value="{{ $savedAddress->id }}" 
+                                                    data-address="{{ $savedAddress->address_line }}"
+                                                    data-city="{{ $savedAddress->city }}"
+                                                    data-district="{{ $savedAddress->district }}"
+                                                    data-ward="{{ $savedAddress->ward }}"
+                                                    data-phone="{{ $savedAddress->phone_number }}"
+                                                    {{ $savedAddress->is_default ? 'selected' : '' }}>
+                                                    {{ $savedAddress->address_line }}, {{ $savedAddress->ward }}, {{ $savedAddress->district }}, {{ $savedAddress->city }}
+                                                    @if($savedAddress->is_default)
+                                                        <span class="text-green-600">(Mặc định)</span>
+                                                    @endif
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            Chọn địa chỉ có sẵn hoặc để trống để nhập địa chỉ mới
+                                        </div>
+                                        @error('address_id')
+                                            <span class="text-red-500 text-sm">{{ $message }}</span>
+                                        @enderror
+                                    </div>
+                                @endif
+                            @endauth
 
                             <div>
                                 <label for="city" class="form-label required">Tỉnh/Thành phố</label>
@@ -168,87 +222,66 @@
                         </div>
                     </div>
 
-                    <!-- Phương thức giao hàng -->
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <h2 class="text-xl font-bold mb-4">Phương Thức Giao Hàng</h2>
 
-                        <div class="space-y-3">
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="shipping_method" value="standard"
-                                    class="h-5 w-5 text-orange-500" checked>
-                                <div class="ml-3">
-                                    <span class="block font-medium">Giao hàng tiêu chuẩn</span>
-                                    <span class="block text-sm text-gray-500">Nhận hàng sau 30-60 phút</span>
-                                </div>
-                                <span class="ml-auto font-medium">{{ $subtotal > 100000 ? 'Miễn phí' : '15.000đ' }}</span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="shipping_method" value="express"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Giao hàng nhanh</span>
-                                    <span class="block text-sm text-gray-500">Nhận hàng trong 15-30 phút</span>
-                                </div>
-                                <span class="ml-auto font-medium">30.000đ</span>
-                            </label>
-                        </div>
-                    </div>
 
                     <!-- Phương thức thanh toán -->
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <h2 class="text-xl font-bold mb-4">Phương Thức Thanh Toán</h2>
+                    <div class="mt-8">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Phương thức thanh toán</h3>
+                        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div class="space-y-4">
+                                <!-- COD -->
+                                <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="payment_method" value="cod" class="h-5 w-5 text-orange-500" checked>
+                                    <div class="ml-3">
+                                        <span class="block font-medium">COD</span>
+                                        <span class="block text-sm text-gray-500">Thanh toán trực tiếp cho tài xế</span>
+                                    </div>
+                                    <span class="ml-auto">
+                                        <i class="fas fa-money-bill-wave text-green-500 text-xl"></i>
+                                    </span>
+                                </label>
+                                
+                                <!-- VNPAY -->
+                                <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                    <input type="radio" name="payment_method" value="vnpay" class="h-5 w-5 text-orange-500">
+                                    <div class="ml-3">
+                                        <span class="block font-medium">VNPAY</span>
+                                        <span class="block text-sm text-gray-500">Thanh toán tiện lợi thông qua VNPAY</span>
+                                    </div>
+                                    <span class="ml-auto">
+                                        <i class="fas fa-credit-card text-blue-600 text-xl"></i>
+                                    </span>
+                                </label>
 
-                        <div class="space-y-3">
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="cod"
-                                    class="h-5 w-5 text-orange-500" checked>
-                                <div class="ml-3">
-                                    <span class="block font-medium">Thanh toán khi nhận hàng</span>
-                                    <span class="block text-sm text-gray-500">Trả tiền mặt khi nhận hàng</span>
-                                </div>
-                                <span class="ml-auto">
-                                    <i class="fas fa-money-bill-wave text-gray-400 text-xl"></i>
-                                </span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="bank_transfer"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Chuyển khoản ngân hàng</span>
-                                    <span class="block text-sm text-gray-500">Chuyển khoản đến tài khoản của chúng
-                                        tôi</span>
-                                </div>
-                                <span class="ml-auto">
-                                    <i class="fas fa-university text-gray-400 text-xl"></i>
-                                </span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="credit_card"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Thẻ tín dụng / Ghi nợ</span>
-                                    <span class="block text-sm text-gray-500">Thanh toán an toàn qua cổng thanh toán</span>
-                                </div>
-                                <span class="ml-auto flex gap-2">
-                                    <i class="fab fa-cc-visa text-blue-600 text-xl"></i>
-                                    <i class="fab fa-cc-mastercard text-red-500 text-xl"></i>
-                                </span>
-                            </label>
-
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="radio" name="payment_method" value="e_wallet"
-                                    class="h-5 w-5 text-orange-500">
-                                <div class="ml-3">
-                                    <span class="block font-medium">Ví điện tử</span>
-                                    <span class="block text-sm text-gray-500">Thanh toán bằng MoMo, ZaloPay, VNPay</span>
-                                </div>
-                                <span class="ml-auto flex gap-2">
-                                    <i class="fas fa-wallet text-pink-500 text-xl"></i>
-                                </span>
-                            </label>
+                                <!-- Dành cho người dùng đã đăng nhập -->
+                                @auth
+                                    <label class="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                        <input type="radio" name="payment_method" value="balance" class="h-5 w-5 text-orange-500">
+                                        <div class="ml-3">
+                                            <span class="block font-medium">Số dư</span>
+                                            <span class="block text-sm text-gray-500">
+                                                Thanh toán bằng số dư tài khoản của bạn: 
+                                                <strong>{{ number_format(Auth::user()->balance ?? 0, 0, ',', '.') }} đ</strong>
+                                            </span>
+                                        </div>
+                                        <span class="ml-auto">
+                                            <i class="fas fa-wallet text-purple-500 text-xl"></i>
+                                        </span>
+                                    </label>
+                                @endauth
+                                
+                                <!-- Dành cho khách -->
+                                @guest
+                                    <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                                        <p class="text-sm text-blue-700">
+                                            <a href="{{ route('customer.login') }}" class="font-bold underline hover:text-blue-800">Đăng nhập</a> để sử dụng số dư và nhận nhiều ưu đãi hơn!
+                                        </p>
+                                    </div>
+                                @endguest
+                            </div>
+                            @error('payment_method')
+                                <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -380,6 +413,168 @@
                 </div>
             </div>
         </form>
+
+        <!-- Modal chọn địa chỉ nhận hàng (tĩnh, giống Shopee) -->
+        <div id="addressModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                <div class="px-6 py-4 border-b">
+                    <span class="text-lg font-semibold">Địa Chỉ Của Tôi</span>
+                </div>
+                <div class="px-6 py-4 max-h-96 overflow-y-auto divide-y">
+                    <div class="flex items-start py-3">
+                        <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500" checked>
+                        <div class="flex-1">
+                            <div class="font-semibold">Nhữ Thị Minh <span class="font-normal text-gray-600">(+84) 975 154 746</span></div>
+                            <div class="text-sm text-gray-700">Hẻm số 4,Hẻm 144 Đồ Lương<br>Phường 11, Thành Phố Vũng Tàu, Bà Rịa - Vũng Tàu</div>
+                        </div>
+                        <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                    </div>
+                    <div class="flex items-start py-3">
+                        <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500">
+                        <div class="flex-1">
+                            <div class="font-semibold">Nguyễn Thị Huê <span class="font-normal text-gray-600">(+84) 966 189 711</span></div>
+                            <div class="text-sm text-gray-700">Cổng chợ mền Thanh Khê<br>Xã Thanh Hải, Huyện Thanh Liêm, Hà Nam</div>
+                        </div>
+                        <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                    </div>
+                    <div class="flex items-start py-3">
+                        <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500">
+                        <div class="flex-1">
+                            <div class="font-semibold">Mai Xuân Cường <span class="font-normal text-gray-600">(+84) 977 312 936</span></div>
+                            <div class="text-sm text-gray-700">Nhà Nghỉ Thế Cường, Thanh Khê<br>Xã Thanh Hải, Huyện Thanh Liêm, Hà Nam</div>
+                        </div>
+                        <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                    </div>
+                </div>
+                <div class="px-6 py-3">
+                    <button class="flex items-center text-orange-600 border border-orange-500 rounded px-3 py-1 text-sm font-medium hover:bg-orange-50 mb-3">
+                        <i class="fas fa-plus mr-2"></i> Thêm Địa Chỉ Mới
+                    </button>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" id="addressModalCancel" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Hủy</button>
+                        <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Xác nhận</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal cập nhật địa chỉ (tĩnh, giống Shopee) -->
+        <div id="updateAddressModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                <div class="max-h-[80vh] overflow-y-auto scrollbar-none" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <div class="px-6 py-4 border-b">
+                        <span class="text-lg font-semibold">Cập nhật địa chỉ</span>
+                    </div>
+                    <form class="px-6 py-4">
+                        <div class="flex gap-3 mb-3">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Họ và tên</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="Bùi Đức Dương">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Số điện thoại</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="(+84) 355 032 605">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Hà Nội</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Quận/Huyện</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Quận Hoàng Mai</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Phường/Xã</label>
+                            <select class="w-full border rounded px-3 py-2">
+                                <option>Phường Đại Kim</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Địa chỉ cụ thể</label>
+                            <textarea class="w-full border rounded px-3 py-2" rows="2">Số Nhà 26, Ngách 66 Ngõ 250 Kim Giang</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <img src="https://maps.googleapis.com/maps/api/staticmap?center=21.002,105.825&zoom=16&size=400x120&markers=color:red%7C21.002,105.825&key=AIzaSyDUMMYKEY" alt="Google Map" class="w-full rounded border" style="height:120px;object-fit:cover;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Loại địa chỉ:</label>
+                            <div class="flex gap-2">
+                                <button type="button" class="border border-orange-500 text-orange-600 bg-orange-50 px-4 py-1 rounded font-medium">Nhà Riêng</button>
+                                <button type="button" class="border border-gray-300 text-gray-700 bg-white px-4 py-1 rounded font-medium">Văn Phòng</button>
+                            </div>
+                        </div>
+                        <div class="mb-3 flex items-center">
+                            <input type="checkbox" id="setDefaultAddress" class="mr-2" checked disabled>
+                            <label for="setDefaultAddress" class="text-xs text-gray-400 select-none">Đặt làm địa chỉ mặc định</label>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" id="updateAddressBack" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Trở Lại</button>
+                            <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Hoàn thành</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal thêm địa chỉ mới (tĩnh, giống modal cập nhật) -->
+        <div id="addAddressModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                <div class="max-h-[80vh] overflow-y-auto scrollbar-none" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <div class="px-6 py-4 border-b">
+                        <span class="text-lg font-semibold">Thêm địa chỉ mới</span>
+                    </div>
+                    <form class="px-6 py-4">
+                        <div class="flex gap-3 mb-3">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Họ và tên</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Số điện thoại</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Hà Nội</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Quận/Huyện</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Quận Hoàng Mai</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Phường/Xã</label>
+                            <select class="w-full border rounded px-3 py-2">
+                                <option>Phường Đại Kim</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Địa chỉ cụ thể</label>
+                            <textarea class="w-full border rounded px-3 py-2" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <img src="https://maps.googleapis.com/maps/api/staticmap?center=21.002,105.825&zoom=16&size=400x120&markers=color:red%7C21.002,105.825&key=AIzaSyDUMMYKEY" alt="Google Map" class="w-full rounded border" style="height:120px;object-fit:cover;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Loại địa chỉ:</label>
+                            <div class="flex gap-2">
+                                <button type="button" class="border border-orange-500 text-orange-600 bg-orange-50 px-4 py-1 rounded font-medium">Nhà Riêng</button>
+                                <button type="button" class="border border-gray-300 text-gray-700 bg-white px-4 py-1 rounded font-medium">Văn Phòng</button>
+                            </div>
+                        </div>
+                        <div class="mb-3 flex items-center">
+                            <input type="checkbox" id="setDefaultAddressAdd" class="mr-2">
+                            <label for="setDefaultAddressAdd" class="text-xs text-gray-500 select-none">Đặt làm địa chỉ mặc định</label>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" id="addAddressBack" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Trở Lại</button>
+                            <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Hoàn thành</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -395,6 +590,8 @@
             const addressInput = document.getElementById('address');
             const addressAutocomplete = document.getElementById('address-autocomplete');
             const checkoutForm = document.getElementById('checkout-form');
+            const savedAddressSelect = document.getElementById('saved_address');
+            const phoneInput = document.getElementById('phone');
 
             console.log('Script loaded, elements:', {
                 district: districtSelect,
@@ -447,6 +644,54 @@
 
             // Fetch districts of Hanoi on page load
             fetchDistricts();
+
+            // Handle saved address selection
+            if (savedAddressSelect) {
+                savedAddressSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    
+                    if (selectedOption.value) {
+                        // Auto-fill form fields with saved address data
+                        const addressData = {
+                            address: selectedOption.dataset.address,
+                            city: selectedOption.dataset.city,
+                            district: selectedOption.dataset.district,
+                            ward: selectedOption.dataset.ward,
+                            phone: selectedOption.dataset.phone
+                        };
+
+                        // Fill address fields
+                        addressInput.value = addressData.address;
+                        if (phoneInput && addressData.phone) {
+                            phoneInput.value = addressData.phone;
+                        }
+
+                        // Set city (should be Hà Nội by default)
+                        document.getElementById('city').value = addressData.city;
+
+                        // Trigger district fetch and set district value
+                        fetchDistricts().then(() => {
+                            setTimeout(() => {
+                                districtSelect.value = addressData.district;
+                                
+                                // Trigger ward fetch and set ward value
+                                fetchWards().then(() => {
+                                    setTimeout(() => {
+                                        wardSelect.value = addressData.ward;
+                                    }, 100);
+                                });
+                            }, 100);
+                        });
+
+                        showToast('Đã điền thông tin từ địa chỉ đã lưu');
+                    } else {
+                        // Clear form fields when no address is selected
+                        addressInput.value = '';
+                        districtSelect.selectedIndex = 0;
+                        wardSelect.innerHTML = '<option value="">-- Chọn Xã/Phường --</option>';
+                    }
+                });
+            }
 
             // Add event listeners
             districtSelect.addEventListener('change', function() {
@@ -672,7 +917,7 @@
                 districtSelect.innerHTML = '<option value="">Đang tải...</option>';
 
                 // Fetch districts from API
-                fetch(`https://provinces.open-api.vn/api/p/${HANOI_PROVINCE_CODE}?depth=2`)
+                return fetch(`https://provinces.open-api.vn/api/p/${HANOI_PROVINCE_CODE}?depth=2`)
                     .then(response => response.json())
                     .then(data => {
                         console.log('Districts data:', data);
@@ -689,10 +934,12 @@
                                 districtSelect.appendChild(option);
                             });
                         }
+                        return data;
                     })
                     .catch(error => {
                         console.error('Error fetching districts:', error);
                         districtSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
+                        throw error;
                     });
             }
 
@@ -703,7 +950,7 @@
 
                 const selectedDistrict = districtSelect.options[districtSelect.selectedIndex];
                 if (!selectedDistrict || !selectedDistrict.dataset.code) {
-                    return;
+                    return Promise.resolve();
                 }
 
                 const districtCode = selectedDistrict.dataset.code;
@@ -712,7 +959,7 @@
                 wardSelect.innerHTML = '<option value="">Đang tải...</option>';
 
                 // Fetch wards from API
-                fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+                return fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
                     .then(response => response.json())
                     .then(data => {
                         console.log('Wards data:', data);
@@ -728,10 +975,12 @@
                                 wardSelect.appendChild(option);
                             });
                         }
+                        return data;
                     })
                     .catch(error => {
                         console.error('Error fetching wards:', error);
                         wardSelect.innerHTML = '<option value="">Không thể tải dữ liệu</option>';
+                        throw error;
                     });
             }
 
@@ -787,6 +1036,60 @@
                         document.body.removeChild(toast);
                     }, 300);
                 }, 3000);
+            }
+
+            // Khai báo các modal ngoài form
+            const addressModal = document.getElementById('addressModal');
+            const updateAddressModal = document.getElementById('updateAddressModal');
+            const addAddressModal = document.getElementById('addAddressModal');
+
+            // Nút mở modal chọn địa chỉ
+            const changeAddressBtn = document.getElementById('changeAddressBtn');
+            if (changeAddressBtn && addressModal) {
+                changeAddressBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.remove('hidden');
+                });
+            }
+            // Nút đóng modal chọn địa chỉ
+            const addressModalCancel = document.getElementById('addressModalCancel');
+            if (addressModalCancel && addressModal) {
+                addressModalCancel.addEventListener('click', function() {
+                    addressModal.classList.add('hidden');
+                });
+            }
+            // Nút cập nhật trong modal chọn địa chỉ (mở modal cập nhật)
+            document.querySelectorAll('#addressModal a.text-blue-600').forEach(function(updateBtn) {
+                updateBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.add('hidden');
+                    updateAddressModal.classList.remove('hidden');
+                });
+            });
+            // Nút Trở Lại trong modal cập nhật địa chỉ
+            const updateAddressBack = document.getElementById('updateAddressBack');
+            if (updateAddressBack && updateAddressModal && addressModal) {
+                updateAddressBack.addEventListener('click', function() {
+                    updateAddressModal.classList.add('hidden');
+                    addressModal.classList.remove('hidden');
+                });
+            }
+            // Nút Thêm Địa Chỉ Mới trong modal chọn địa chỉ (mở modal thêm địa chỉ)
+            const addAddressBtn = document.querySelector('#addressModal button.flex.items-center');
+            if (addAddressBtn && addAddressModal && addressModal) {
+                addAddressBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.add('hidden');
+                    addAddressModal.classList.remove('hidden');
+                });
+            }
+            // Nút Trở Lại trong modal thêm địa chỉ mới
+            const addAddressBack = document.getElementById('addAddressBack');
+            if (addAddressBack && addAddressModal && addressModal) {
+                addAddressBack.addEventListener('click', function() {
+                    addAddressModal.classList.add('hidden');
+                    addressModal.classList.remove('hidden');
+                });
             }
         });
     </script>

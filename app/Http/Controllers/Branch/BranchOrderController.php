@@ -35,7 +35,7 @@ class BranchOrderController extends Controller
             'orderItems.toppings.topping',
             'statusHistory.changedBy',
             'cancellation.cancelledBy',
-            'payment.paymentMethod',
+            'payment',
             'address' // Đảm bảo load address
         ])->where('branch_id', $branch->id);
 
@@ -68,8 +68,8 @@ class BranchOrderController extends Controller
 
         // Payment method filter
         if ($request->filled('payment_method') && $request->payment_method !== 'all') {
-            $query->whereHas('payment.paymentMethod', function($q) use ($request) {
-                $q->where('name', $request->payment_method);
+            $query->whereHas('payment', function($q) use ($request) {
+                $q->where('payment_method', $request->payment_method);
             });
         }
 
@@ -102,7 +102,12 @@ class BranchOrderController extends Controller
         ];
 
         // Get payment methods for filter
-        $paymentMethods = \App\Models\PaymentMethod::where('active', true)->get();
+        $paymentMethods = [
+            ['key' => 'all', 'label' => 'Tất cả'],
+            ['key' => 'cod', 'label' => 'Tiền mặt'],
+            ['key' => 'vnpay', 'label' => 'VNPay'],
+            ['key' => 'balance', 'label' => 'Số dư tài khoản'],
+        ];
 
         if ($request->ajax()) {
             return view('branch.orders.partials.grid', compact('orders'))->render();
@@ -122,7 +127,7 @@ class BranchOrderController extends Controller
             'orderItems.toppings.topping',
             'statusHistory.changedBy',
             'cancellation.cancelledBy',
-            'payment.paymentMethod',
+            'payment',
             'address'
         ])->where('branch_id', $branch->id)
           ->where('id', $id)
@@ -250,6 +255,21 @@ class BranchOrderController extends Controller
     private function handleStatusSpecificActions($order, $newStatus)
     {
         switch ($newStatus) {
+            case 'awaiting_driver':
+                // Tìm driver ngẫu nhiên đang active và available
+                $driver = \App\Models\Driver::where('status', 'active')
+                    ->where('is_available', true)
+                    ->inRandomOrder()
+                    ->first();
+
+                if ($driver) {
+                    $order->update(['driver_id' => $driver->id]);
+                    // Nếu muốn, cập nhật trạng thái driver thành không sẵn sàng
+                    // $driver->update(['is_available' => false]);
+                }
+                // Có thể gửi thông báo cho driver ở đây nếu muốn
+                break;
+            
             case 'processing':
                 // Có thể thêm logic gửi thông báo cho khách hàng
                 break;

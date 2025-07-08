@@ -10,7 +10,7 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'payment_method_id',
+        'payment_method',
         'payer_name',
         'payer_email',
         'payer_phone',
@@ -32,14 +32,6 @@ class Payment extends Model
         'payment_amount' => 'integer',
         'payment_date' => 'datetime',
     ];
-
-    /**
-     * Get the payment method for this payment.
-     */
-    public function paymentMethod()
-    {
-        return $this->belongsTo(PaymentMethod::class);
-    }
 
     /**
      * Get the orders for this payment.

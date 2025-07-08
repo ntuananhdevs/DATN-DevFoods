@@ -9,7 +9,6 @@ use App\Models\OrderItemTopping;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
 use App\Models\Payment;
-use App\Models\PaymentMethod;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Driver;
@@ -20,6 +19,7 @@ use App\Models\Topping;
 use App\Models\Address;
 use App\Models\DiscountCode;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class OrderSeeder extends Seeder
 {
@@ -28,8 +28,16 @@ class OrderSeeder extends Seeder
      */
     public function run(): void
     {
-        // Tạo Payment Methods trước
-        $this->createPaymentMethods();
+        // Xóa dữ liệu cũ để tránh duplicate
+        echo "Cleaning old data...\n";
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        OrderItemTopping::truncate();
+        OrderItem::truncate();
+        OrderCancellation::truncate();
+        OrderStatusHistory::truncate();
+        Order::truncate();
+        Payment::truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
         
         // Tạo Payments
         $this->createPayments();
@@ -38,104 +46,107 @@ class OrderSeeder extends Seeder
         $this->createOrders();
     }
 
-    private function createPaymentMethods()
-    {
-        // Check if payment methods already exist to avoid duplicates
-        if (PaymentMethod::count() > 0) {
-            return; // Skip if payment methods already exist
-        }
-
-        $paymentMethods = [
-            ['name' => 'Tiền mặt', 'description' => 'Thanh toán bằng tiền mặt khi nhận hàng'],
-            ['name' => 'MOMO', 'description' => 'Thanh toán qua ví điện tử MOMO'],
-            ['name' => 'ZaloPay', 'description' => 'Thanh toán qua ví điện tử ZaloPay'],
-            ['name' => 'VNPay', 'description' => 'Thanh toán qua cổng VNPay'],
-            ['name' => 'Bank Transfer', 'description' => 'Chuyển khoản ngân hàng'],
-        ];
-
-        foreach ($paymentMethods as $method) {
-            PaymentMethod::create($method);
-        }
-    }
-
     private function createPayments()
     {
-        $paymentMethods = PaymentMethod::all();
-        $users = User::all(); // Use all users instead of only customers
-
-        // Check if payments already exist to avoid duplicates
-        if (Payment::count() > 0) {
-            return; // Skip if payments already exist
-        }
-
-        foreach ($users as $user) {
-            // Tạo 1-3 payments cho mỗi user
-            $paymentCount = rand(1, 3);
-            
-            for ($i = 0; $i < $paymentCount; $i++) {
-                $amount = rand(50000, 500000);
-                $status = ['pending', 'completed', 'failed', 'refunded'][rand(0, 3)];
-                
-                // Generate unique transaction reference
-                $timestamp = microtime(true) * 1000; // Use microtime for more precision
-                $random = mt_rand(1000, 9999);
-                $txnRef = 'TXN' . (int)$timestamp . $random;
-                
-                Payment::create([
-                    'payment_method_id' => $paymentMethods->random()->id,
-                    'payer_name' => $user->name,
-                    'payer_email' => $user->email,
-                    'payer_phone' => $user->phone,
-                    'txn_ref' => $txnRef,
-                    'transaction_id' => $status === 'completed' ? 'TXN' . (int)$timestamp . mt_rand(10000, 99999) : null,
-                    'response_code' => $status === 'completed' ? '00' : null,
-                    'bank_code' => null,
-                    'payment_amount' => $amount,
-                    'payment_currency' => 'VND',
-                    'payment_status' => $status,
-                    'payment_date' => $status === 'completed' ? Carbon::now()->subDays(rand(1, 30)) : null,
-                    'payment_method_detail' => null,
-                    'gateway_response' => null,
-                    'ip_address' => '127.0.0.1',
-                    'callback_data' => null,
-                ]);
+        $user = User::find(6);
+        if (!$user) {
+            $user = User::create([
+                'user_name' => 'customer',
+                'full_name' => 'Nguyen Kha Banh',
+                'email' => 'khabanh@devfoods.com',
+                'phone' => '0123456789',
+                'password' => bcrypt('customer'),
+                'balance' => 0,
+                'total_spending' => 0,
+                'total_orders' => 0,
+                'active' => true,
+            ]);
+        } else {
+            // Cập nhật số điện thoại nếu user chưa có
+            if (!$user->phone) {
+                $user->update(['phone' => '0123456789']);
             }
         }
+
+        // Không cần check nữa vì đã truncate ở trên
+
+        echo "Creating payments...\n";
+
+        // Tạo 10 payments với tỷ lệ hợp lý
+        for ($i = 0; $i < 10; $i++) {
+            $amount = rand(50000, 500000);
+            
+            // Tăng tỷ lệ completed payments (60% completed, 20% pending, 10% failed, 10% refunded)
+            $statusWeights = [20, 60, 10, 10]; // pending, completed, failed, refunded
+            $statuses = ['pending', 'completed', 'failed', 'refunded'];
+            $status = $this->getRandomStatus($statuses, $statusWeights);
+            
+            $timestamp = microtime(true) * 1000;
+            $random = mt_rand(1000, 9999);
+            $txnRef = 'TXN' . (int)$timestamp . $random;
+            $paymentMethodEnum = ['cod', 'vnpay', 'balance'];
+            $paymentMethod = $paymentMethodEnum[array_rand($paymentMethodEnum)];
+            
+            Payment::create([
+                'payment_method' => $paymentMethod,
+                'payer_name' => $user->full_name,
+                'payer_email' => $user->email,
+                'payer_phone' => $user->phone,
+                'txn_ref' => $txnRef,
+                'transaction_id' => $status === 'completed' ? 'TXN' . (int)$timestamp . mt_rand(10000, 99999) : null,
+                'response_code' => $status === 'completed' ? '00' : null,
+                'bank_code' => null,
+                'payment_amount' => $amount,
+                'payment_currency' => 'VND',
+                'payment_status' => $status,
+                'payment_date' => $status === 'completed' ? Carbon::now()->subDays(rand(1, 30)) : null,
+                'payment_method_detail' => null,
+                'gateway_response' => null,
+                'ip_address' => '127.0.0.1',
+                'callback_data' => null,
+            ]);
+        }
+
+        $completedPayments = Payment::where('payment_status', 'completed')->count();
+        $totalPayments = Payment::count();
+        echo "Created {$totalPayments} payments, {$completedPayments} completed.\n";
     }
 
     private function createOrders()
     {
-        $branches = Branch::all();
-        $users = User::where('id', 45)->get(); // Use all users instead of only customers
-        $drivers = Driver::where('id', 1)->get();
+        $branch = Branch::find(1);
+        echo "Branch ID 1: " . ($branch ? "FOUND - " . $branch->name : "NOT FOUND") . "\n";
+        if (!$branch) {
+            throw new \Exception('Không tìm thấy branch id=1. Vui lòng chạy BranchSeeder trước.');
+        }
+        $user = User::find(6);
+        echo "User ID 6: " . ($user ? "FOUND - " . $user->email : "NOT FOUND") . "\n";
+        if (!$user) {
+            throw new \Exception('Không tìm thấy user id=6. Vui lòng chạy UserSeeder trước.');
+        }
+        $driver = Driver::find(1);
+        if (!$driver) {
+            throw new \Exception('Không tìm thấy driver id=1. Vui lòng chạy DriverSeeder trước.');
+        }
         $payments = Payment::where('payment_status', 'completed')->get();
+        echo "Completed payments: " . $payments->count() . "\n";
         $discountCodes = DiscountCode::where('is_active', true)->get();
         $addresses = Address::all();
+        echo "Total addresses: " . $addresses->count() . "\n";
 
         // Chuẩn bị bộ đếm cho từng chi nhánh
         $branchOrderCounters = [];
 
-        // Chỉ chọn 1 chi nhánh duy nhất
-        $branch = Branch::first();
-        if (!$branch) {
-            throw new \Exception('No branches found. Please run BranchSeeder first.');
+        if (!$branch || !$user || !$driver || $addresses->isEmpty()) {
+            throw new \Exception('Thiếu dữ liệu test: branch, user, driver, address.');
         }
-        
-        if ($users->isEmpty()) {
-            throw new \Exception('No users found. Please run UserSeeder or FastFoodSeeder first.');
-        }
-        
-        if ($drivers->isEmpty()) {
-            throw new \Exception('No drivers found. Please run DriverSeeder first.');
-        }
-        
-        if ($payments->isEmpty()) {
-            throw new \Exception('No completed payments found. Please run PaymentSeeder first.');
-        }
-        
-        if ($addresses->isEmpty()) {
-            throw new \Exception('No addresses found. Please run AddressSeeder first.');
-        }
+
+        // Lọc địa chỉ trong bán kính 10km từ chi nhánh
+        $branchLat = $branch->latitude;
+        $branchLng = $branch->longitude;
+        $addresses = $addresses->filter(function($address) use ($branchLat, $branchLng) {
+            return $this->calculateDistance($branchLat, $branchLng, $address->latitude, $address->longitude) <= 10;
+        })->values();
 
         // Check if orders already exist to avoid duplicates
 
@@ -154,27 +165,32 @@ class OrderSeeder extends Seeder
 
         echo "Creating 50 orders...\n";
 
-        // Loại bỏ user admin khỏi danh sách user tạo order
-        $users = $users->filter(function($user) {
-            return $user->email !== 'admin@devfoods.com';
-        })->values();
         // Lấy danh sách user, driver, address, payment thành mảng để random lặp lại nếu thiếu
-        $userArr = $users->all();
-        $driverArr = $drivers->all();
+        $userArr = [$user];
+        $driverArr = [$driver];
         $paymentArr = $payments->all();
         $addressArr = $addresses->all();
         $discountCodeArr = $discountCodes->all();
-        $userCount = count($userArr);
-        $driverCount = count($driverArr);
+        $userCount = 1;
+        $driverCount = 1;
         $paymentCount = count($paymentArr);
         $addressCount = count($addressArr);
         $discountCodeCount = count($discountCodeArr);
 
+        if ($addressCount === 0) {
+            echo "Không có địa chỉ nào cho user id=1. Bỏ qua tạo order!\n";
+            return;
+        }
+
+        if ($paymentCount === 0) {
+            echo "Không có payment completed nào. Tạo order không có payment.\n";
+        }
+
         // Tạo 50 đơn hàng mẫu
         for ($i = 1; $i <= 50; $i++) {
             $customer = $userArr[($i-1)%$userCount];
-            $driver = $driverArr[($i-1)%$driverCount];
-            $payment = $paymentArr[($i-1)%$paymentCount];
+            $driver = $driverArr[0]; // Luôn lấy driver có id = 1
+            $payment = $paymentCount > 0 ? $paymentArr[($i-1)%$paymentCount] : null;
             $address = $addressArr[($i-1)%$addressCount];
             $discountCode = $discountCodeCount > 0 ? $discountCodeArr[($i-1)%$discountCodeCount] : null;
             
@@ -186,7 +202,7 @@ class OrderSeeder extends Seeder
             
             // Tạo thời gian đơn hàng
             $orderDate = Carbon::now()->subDays(rand(0, 30))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
-            $estimatedDelivery = $orderDate->copy()->addMinutes(rand(30, 90));
+            $estimatedDelivery = $orderDate->copy()->addMinutes(rand(10, 40));
             $actualDelivery = null;
             
             // Nếu trạng thái là delivered, item_received thì mới có actualDelivery
@@ -215,10 +231,10 @@ class OrderSeeder extends Seeder
                 'order_code' => $orderCode,
                 'customer_id' => $customer->id,
                 'branch_id' => $branch->id,
-                'driver_id' => $status === 'delivery' || $status === 'completed' ? $driver->id : null,
+                'driver_id' => 1, // Gán tất cả đơn hàng cho tài xế id = 1
                 'address_id' => $address->id,
                 'discount_code_id' => $discountCode ? $discountCode->id : null,
-                'payment_id' => $payment->id,
+                'payment_id' => $payment ? $payment->id : null,
                 'guest_name' => null, // Sử dụng customer thật
                 'guest_phone' => null,
                 'guest_email' => null,
@@ -243,7 +259,7 @@ class OrderSeeder extends Seeder
                 'notes' => $this->getRandomNotes(),
             ]);
 
-            echo "Created order {$i}: {$order->order_code}\n";
+            echo "Created order {$i}: {$order->order_code} - Payment ID: " . ($payment ? $payment->id : 'NULL') . "\n";
 
             // Tạo Order Items
             $this->createOrderItems($order);
@@ -478,5 +494,19 @@ class OrderSeeder extends Seeder
         ];
 
         return $notes[$status] ?? 'Cập nhật trạng thái đơn hàng';
+    }
+
+    // Thêm hàm tính khoảng cách Haversine
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $earthRadius = 6371; // km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat/2) * sin($dLat/2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon/2) * sin($dLon/2);
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        $distance = $earthRadius * $c;
+        return $distance;
     }
 }
