@@ -271,20 +271,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Ẩn quick-links khi có kết quả live search
     const quickLinks = document.getElementById('quick-links');
     const dropdown = document.getElementById('search-ajax-dropdown');
-    if (dropdown && quickLinks && searchInput) {
-        function updateQuickLinks() {
-            const inputHasValue = searchInput.value.trim().length > 0;
-            const hasLiveSearch = dropdown.style.display !== 'none' && dropdown.innerHTML.trim() !== '';
-            if (hasLiveSearch || inputHasValue) {
+    if (dropdown && quickLinks) {
+        const observerQuickLinks = new MutationObserver(() => {
+            if (dropdown.style.display !== 'none' && dropdown.innerHTML.trim() !== '') {
                 quickLinks.style.display = 'none';
             } else {
                 quickLinks.style.display = '';
             }
-        }
-        searchInput.addEventListener('input', updateQuickLinks);
-        const observerQuickLinks = new MutationObserver(updateQuickLinks);
+        });
         observerQuickLinks.observe(dropdown, { attributes: true, childList: true, subtree: true });
-        updateQuickLinks();
     }
 });
 </script>

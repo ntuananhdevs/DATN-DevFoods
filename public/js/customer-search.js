@@ -42,6 +42,10 @@
                     searchAjaxDropdown.innerHTML = '';
                     return;
                 }
+                searchAjaxDropdown.innerHTML = "<div class='lds-ring'><div></div><div></div><div></div><div></div></div>";
+                searchAjaxDropdown.style.display = 'flex';
+                searchAjaxDropdown.style.justifyContent = 'center';
+                searchAjaxDropdown.style.alignItems = 'center';
                 searchAjaxDropdown.style.display = 'block';
                 searchTimeout = setTimeout(() => {
                     fetch("/search/ajax", {
@@ -74,6 +78,10 @@
                                     </a>
                                 `;
                             }).join('');
+                            searchAjaxDropdown.style.display = 'block';
+                        } else {
+                            searchAjaxDropdown.innerHTML = '';
+                            searchAjaxDropdown.style.display = 'none';
                         }
                     })
                     .catch(() => {
@@ -83,7 +91,8 @@
                 }, 400);
             });
             // Ẩn dropdown khi click ra ngoài
-            document.addEventListener('click', function(e) {
+            document.addEventListener('mousedown', function(e) {
+                // Chỉ ẩn dropdown nếu click ra ngoài cả input và dropdown (không phải hover/rê chuột)
                 if (!searchInput.contains(e.target) && !searchAjaxDropdown.contains(e.target)) {
                     searchAjaxDropdown.style.display = 'none';
                 }
@@ -99,3 +108,15 @@
         }
     });
 })();
+
+// Thêm CSS vòng quay loading vào cuối file (nếu chưa có)
+const style = document.createElement('style');
+style.innerHTML = `
+.lds-ring { display: inline-block; position: relative; width: 28px; height: 28px; }
+.lds-ring div { box-sizing: border-box; display: block; position: absolute; width: 20px; height: 20px; margin: 3px; border: 3px solid #f97316; border-radius: 50%; animation: lds-ring 1.2s linear infinite; border-color: #f97316 transparent transparent transparent; }
+.lds-ring div:nth-child(1) { animation-delay: -0.45s; }
+.lds-ring div:nth-child(2) { animation-delay: -0.3s; }
+.lds-ring div:nth-child(3) { animation-delay: -0.15s; }
+@keyframes lds-ring { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+`;
+document.head.appendChild(style);
