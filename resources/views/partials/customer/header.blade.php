@@ -42,9 +42,7 @@
             <div class="flex items-center gap-4">
                 <!-- Nút tìm kiếm bằng icon (kính lúp) -->
                 <button class="icon-btn" id="searchBtn" title="Tìm kiếm" aria-label="Tìm kiếm">
-                    <svg class="icon h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
-                    </svg>
+                    <ion-icon class="h-6 w-6" name="search-outline"></ion-icon>
                 </button>
 
                 <div id="wishlist-container" class="relative">
@@ -101,20 +99,18 @@
 
 <!-- Search Section (Apple style, drop from header, white background) -->
 <div class="search-section absolute left-0 right-0 bg-white border-b border-gray-200 z-50 transition-all duration-500 ease-in-out max-h-0 opacity-0 overflow-hidden" id="searchSection" style="top: 64px;">
-    <div class="search-container max-w-2xl mx-auto py-8 px-4">
+    <div class="search-container max-w-7xl mx-auto py-8 px-4">
         <div class="search-input-container mb-6 relative">
-            <form action="/" method="GET" class="search-input-wrapper flex items-center gap-2 w-full">
-                <input type="text" name="search" class="search-input flex-1 px-5 py-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Tìm kiếm sản phẩm..." id="searchInput">
-                <button type="submit" class="ml-2 p-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg">
-                    <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
-                    </svg>
-                </button>
-                <button type="button" class="close-btn ml-2 p-2" id="closeBtn">
-                    <svg class="icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
+            <form action="{{ route('customer.search') }}" method="GET" class="search-input-wrapper flex items-center gap-2 w-full" style="position:relative;">
+                <ion-icon class="h-6 w-6 opacity-50 text-gray-950" name="search-outline"></ion-icon>
+                <input
+                  type="text"
+                  name="search"
+                  id="searchInput"
+                  class="search-input flex-1 bg-transparent border-none text-gray-950 text-lg focus:outline-none focus:ring-0"
+                  placeholder="Tìm kiếm sản phẩm..."
+                >
+                <div id="search-ajax-dropdown" style="position:absolute;top:100%;left:0;width:100%;background:white;border:none;border-radius:0 0 0.5rem 0.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.08);z-index:100;display:none;max-height:250px;overflow-y:auto;"></div>
             </form>
         </div>
         <div id="search-results-container" class="mt-6">
@@ -123,7 +119,7 @@
             </div>
             <div id="search-results"></div>
         </div>
-        <div class="quick-links mt-4">
+        <div class="quick-links mt-4" id="quick-links">
             <h2 class="quick-links-title text-gray-500 text-sm mb-4">Liên Kết Nhanh</h2>
             <div class="flex flex-col gap-2">
                 <a href="/shop/products" class="quick-link flex items-center gap-2 cursor-pointer hover:text-orange-500">
@@ -146,9 +142,8 @@
         </div>
     </div>
 </div>
+
 <div class="overlay fixed inset-0 bg-black bg-opacity-40 z-40 hidden" id="overlay"></div>
-
-
 
 <!-- Mobile Menu Sidebar -->
 <div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
@@ -184,5 +179,110 @@
         </nav>
     </div>
 </div>
+
+<style>
+header.search-active {
+    background: #fff !important;
+    transition: background 0.2s;
+}
+
+/* Đảm bảo dropdown luôn hiển thị trên tất cả các element khác */
+#search-ajax-dropdown {
+    position: absolute !important;
+    z-index: 100 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    left: 0 !important;
+    transform: none !important;
+    border: none !important;
+    border-top: none !important;
+    background: #fff !important;
+}
+
+/* Style cho dropdown items */
+#search-ajax-dropdown .dropdown-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#search-ajax-dropdown .dropdown-item:hover {
+    background-color: #f8fafc;
+}
+
+#search-ajax-dropdown .dropdown-item:last-child {
+    border-bottom: none;
+}
+</style>
+
+<script>
+window.LaravelRoutes = {
+    productShow: '{{ route('products.show', ['id' => 'REPLACE_ID']) }}',
+    comboShow: '{{ route('combos.show', ['id' => 'REPLACE_ID']) }}'
+};
+</script>
+
+<script>
+// JavaScript để xử lý vị trí của dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const dropdown = document.getElementById('search-ajax-dropdown');
+    const searchSection = document.getElementById('searchSection');
+
+    function updateDropdownPosition() {
+        if (searchInput && dropdown) {
+            const inputRect = searchInput.getBoundingClientRect();
+            const searchSectionRect = searchSection.getBoundingClientRect();
+
+            // Đặt dropdown cách input 5px
+            dropdown.style.top = (inputRect.bottom + window.scrollY + 5) + 'px';
+            // Dropdown nằm trong form, sát dưới input
+            dropdown.style.left = '0px';
+            dropdown.style.width = searchInput.offsetWidth + 'px';
+            dropdown.style.maxWidth = '100%';
+        }
+    }
+
+    // Cập nhật vị trí khi search section mở/đóng
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) {
+        searchBtn.addEventListener('click', function() {
+            setTimeout(updateDropdownPosition, 100); // Delay để đảm bảo animation hoàn thành
+        });
+    }
+
+    // Cập nhật vị trí khi window resize
+    window.addEventListener('resize', updateDropdownPosition);
+
+    // Cập nhật vị trí khi scroll
+    window.addEventListener('scroll', updateDropdownPosition);
+
+    // Disable scroll when dropdown is visible, enable when hidden
+    const observer = new MutationObserver(() => {
+        if (dropdown.style.display !== 'none' && dropdown.innerHTML.trim() !== '') {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    });
+    observer.observe(dropdown, { attributes: true, childList: true, subtree: true });
+
+    // Ẩn quick-links khi có kết quả live search
+    const quickLinks = document.getElementById('quick-links');
+    const dropdown = document.getElementById('search-ajax-dropdown');
+    if (dropdown && quickLinks) {
+        const observerQuickLinks = new MutationObserver(() => {
+            if (dropdown.style.display !== 'none' && dropdown.innerHTML.trim() !== '') {
+                quickLinks.style.display = 'none';
+            } else {
+                quickLinks.style.display = '';
+            }
+        });
+        observerQuickLinks.observe(dropdown, { attributes: true, childList: true, subtree: true });
+    }
+});
+</script>
+
 <link rel="stylesheet" href="{{ asset('css/customer-search.css') }}">
 <script src="{{ asset('js/customer-search.js') }}"></script>
