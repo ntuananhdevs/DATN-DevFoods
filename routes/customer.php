@@ -36,9 +36,14 @@ use App\Http\Controllers\Customer\ReviewReplyController;
 Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
+    // Search
+    Route::get('/search', [CustomerHomeController::class, 'search'])->name('customer.search');
+    Route::post('/search/ajax', [CustomerHomeController::class, 'searchAjax'])->name('customer.search.ajax');
+
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
+    Route::get('/shop/combos/{id}', [CustomerProductController::class, 'showComboDetail'])->name('combos.show');
     Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
 
     // Wishlist
@@ -51,7 +56,7 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
     Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
-    
+
     // Coupon
     Route::post('/coupon/apply', [CustomerCouponController::class, 'apply'])->name('coupon.apply');
     Route::post('/coupon/remove', [CustomerCouponController::class, 'remove'])->name('coupon.remove');
@@ -159,7 +164,7 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
 
-    
+
     Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
         return Broadcast::auth($request);
     })->middleware(['web']);
