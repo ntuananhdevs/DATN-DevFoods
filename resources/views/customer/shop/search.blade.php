@@ -418,11 +418,6 @@
                         Tìm thấy <strong id="resultsCount">{{ (isset($products) ? $products->count() : 0) + (isset($combos) ? $combos->count() : 0) }}</strong> kết quả
                     </div>
                     <div class="flex items-center gap-4">
-                        <select id="typeSelect" class="sort-select">
-                            <option value="all" {{ ($searchType ?? 'all') === 'all' ? 'selected' : '' }}>Tất cả</option>
-                            <option value="products" {{ ($searchType ?? '') === 'products' ? 'selected' : '' }}>Sản phẩm</option>
-                            <option value="combos" {{ ($searchType ?? '') === 'combos' ? 'selected' : '' }}>Combo</option>
-                        </select>
                         <select id="sortSelect" class="sort-select">
                             <option value="rating">Đánh giá cao nhất</option>
                             <option value="reviews">Nhiều đánh giá nhất</option>
@@ -510,7 +505,7 @@
                             data-rating="0"
                             data-category="{{ $combo->category_id }}">
                             <div class="relative">
-                                <a href="" class="block relative h-48 overflow-hidden">
+                                <a href="{{ route('combos.show', $combo->id) }}" class="block relative h-48 overflow-hidden">
                                     @if($combo->primary_image)
                                         <img src="{{ $combo->primary_image }}" alt="{{ $combo->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                                     @else
@@ -527,7 +522,7 @@
                             <div class="p-4">
                                 <a href="">
                                     <h3 class="card-title font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
-                                        {{ $combo->name }}
+                                        <a href="{{ route('combos.show', $combo->id) }}">{{ $combo->name }}</a>
                                     </h3>
                                 </a>
                                 <p class="card-description text-gray-500 text-sm mb-3 line-clamp-2">
@@ -540,7 +535,10 @@
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="font-bold text-lg">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
-                                    <a href="" class="add-btn">Xem chi tiết</a>
+                                    <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors" data-combo-id="{{ $combo->id }}">
+                                        <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
+                                        Thêm
+                                    </button>
                                 </div>
                             </div>
                         </div>

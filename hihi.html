@@ -17,49 +17,44 @@
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             line-height: 1.6;
             color: #1f2937;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 1rem;
+            min-height: 100vh;
         }
 
         /* Header */
         .header {
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 1rem 0;
         }
 
         .back-btn {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #6b7280;
+            color: #64748b;
             text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
+            transition: color 0.2s;
         }
 
         .back-btn:hover {
-            background: #f3f4f6;
             color: #f97316;
         }
 
         .header-actions {
             display: flex;
-            gap: 1rem;
+            gap: 0.75rem;
         }
 
         .header-btn {
@@ -67,12 +62,13 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1rem;
-            border: 2px solid #e5e7eb;
+            border: 2px solid #e2e8f0;
             border-radius: 0.5rem;
             background: white;
-            color: #6b7280;
+            color: #64748b;
             text-decoration: none;
             transition: all 0.2s;
+            cursor: pointer;
         }
 
         .header-btn:hover {
@@ -80,158 +76,208 @@
             color: #f97316;
         }
 
-        /* Main Layout - Improved */
-        .main-content {
-            padding: 2rem 0;
+        .header-btn.active {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
         }
 
-        .combo-detail {
+        /* Main Container */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .main-grid {
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
+            grid-template-columns: 2fr 1fr;
             gap: 2rem;
-            margin-bottom: 3rem;
         }
 
-        /* Left Column - Enhanced */
+        /* Left Column */
         .left-column {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
-        /* Image Gallery - Larger */
-        .image-gallery {
-            position: relative;
-        }
-
-        .main-image {
-            position: relative;
+        .product-card {
+            background: white;
             border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Product Image */
+        .product-image {
+            position: relative;
+            border-radius: 0.75rem;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-            margin-bottom: 1rem;
-            height: 450px;
+            margin-bottom: 1.5rem;
+            group: hover;
         }
 
-        .main-image img {
+        .product-image img {
             width: 100%;
-            height: 100%;
+            height: 320px;
             object-fit: cover;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s;
         }
 
-        .main-image:hover img {
-            transform: scale(1.02);
+        .product-image:hover img {
+            transform: scale(1.05);
         }
 
         .image-badges {
             position: absolute;
-            top: 1.5rem;
-            left: 1.5rem;
+            top: 1rem;
+            left: 1rem;
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
         }
 
         .badge {
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 9999px;
             font-size: 0.875rem;
             font-weight: 600;
             color: white;
-            backdrop-filter: blur(10px);
         }
 
-        .badge-new {
-            background: linear-gradient(135deg, #10b981, #059669);
+        .badge-popular {
+            background: linear-gradient(135deg, #f59e0b, #f97316);
         }
 
         .badge-sale {
             background: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
-        .badge-popular {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+        /* Product Info */
+        .product-info {
+            border-top: 1px solid #f1f5f9;
+            padding-top: 1.5rem;
         }
 
-        .thumbnail-gallery {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0.75rem;
+        .product-header {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
         }
 
-        .thumbnail {
-            aspect-ratio: 1;
+        .product-title {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-subtitle {
+            color: #64748b;
+            font-size: 1.125rem;
+        }
+
+        .price-section {
+            text-align: right;
+        }
+
+        .current-price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ef4444;
+            margin-bottom: 0.25rem;
+        }
+
+        .original-price {
+            color: #94a3b8;
+            text-decoration: line-through;
+            font-size: 1.125rem;
+        }
+
+        .savings {
+            background: #10b981;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+
+        /* Rating */
+        .rating-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stars {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .star {
+            color: #fbbf24;
+            font-size: 1.125rem;
+        }
+
+        .rating-text {
+            color: #64748b;
+        }
+
+        .rating-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Combo Items */
+        .combo-items {
+            background: #f8fafc;
             border-radius: 0.75rem;
-            overflow: hidden;
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .thumbnail.active {
-            border-color: #f97316;
-            transform: scale(1.05);
-        }
-
-        .thumbnail img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* Combo Items - Enhanced */
-        .combo-items-detailed {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #e5e7eb;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .section-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
         }
 
-        .items-detailed-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .combo-item-detailed {
+        .combo-item {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: #f9fafb;
-            border-radius: 0.75rem;
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
         }
 
-        .combo-item-detailed:hover {
-            background: #fff7ed;
-            border-color: #fed7aa;
+        .combo-item:last-child {
+            margin-bottom: 0;
         }
 
-        .item-image-large {
-            width: 80px;
-            height: 80px;
-            border-radius: 0.75rem;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .item-image-large img {
-            width: 100%;
-            height: 100%;
+        .item-image {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
             object-fit: cover;
         }
 
@@ -241,50 +287,29 @@
 
         .item-name {
             font-weight: 600;
-            color: #1f2937;
+            color: #1e293b;
             margin-bottom: 0.25rem;
-            font-size: 1rem;
         }
 
-        .item-description-detailed {
-            color: #6b7280;
+        .item-description {
             font-size: 0.875rem;
-            margin-bottom: 0.5rem;
+            color: #64748b;
         }
 
-        .item-features {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.25rem;
-        }
-
-        .feature-tag {
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 0.125rem 0.5rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .item-price-large {
+        .item-price {
             color: #f97316;
-            font-weight: bold;
-            font-size: 1rem;
+            font-weight: 600;
         }
 
-        /* Customer Photos Section */
+        /* Customer Photos */
         .customer-photos {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #e5e7eb;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 1.5rem;
         }
 
         .photos-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 0.5rem;
         }
 
@@ -306,201 +331,131 @@
             object-fit: cover;
         }
 
-        /* Right Column */
+        /* Nutrition Info */
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+        }
+
+        .nutrition-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .nutrition-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f97316;
+            margin-bottom: 0.5rem;
+        }
+
+        .nutrition-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        /* Right Column - Order Section */
         .right-column {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
         }
 
-        .product-header {
+        .order-card {
             background: white;
             border-radius: 1rem;
             padding: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #e5e7eb;
-        }
-
-        .product-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #f97316, #ea580c);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .product-subtitle {
-            font-size: 1rem;
-            color: #6b7280;
-            margin-bottom: 1rem;
-        }
-
-        .rating-section {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .stars {
-            display: flex;
-            gap: 0.25rem;
-        }
-
-        .star {
-            color: #fbbf24;
-            font-size: 1.125rem;
-        }
-
-        .star.empty {
-            color: #d1d5db;
-        }
-
-        .rating-text {
-            color: #6b7280;
-            font-size: 0.875rem;
-        }
-
-        .rating-badge {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-
-        /* Price Section */
-        .price-section {
-            background: linear-gradient(135deg, #fff7ed, #fed7aa);
-            border-radius: 1rem;
-            padding: 1.5rem;
-            border: 1px solid #fed7aa;
-        }
-
-        .price-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .current-price {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #dc2626;
-        }
-
-        .original-price {
-            font-size: 1.125rem;
-            color: #6b7280;
-            text-decoration: line-through;
-        }
-
-        .savings {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-
-        /* Customization */
-        .customization {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            position: sticky;
+            top: 6rem;
         }
 
         .custom-option {
             margin-bottom: 1.5rem;
         }
 
-        .custom-option:last-child {
-            margin-bottom: 0;
-        }
-
-        .option-title {
-            font-weight: 600;
-            color: #1f2937;
+        .option-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
             margin-bottom: 0.75rem;
         }
 
-        .option-choices {
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .option-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .option-grid-1 {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 0.5rem;
         }
 
         .choice-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 2rem;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
             background: white;
-            color: #6b7280;
+            color: #374151;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 0.875rem;
+            text-align: left;
         }
 
         .choice-btn:hover {
             border-color: #fed7aa;
-            background: #fff7ed;
         }
 
         .choice-btn.active {
             border-color: #f97316;
-            background: #f97316;
-            color: white;
+            background: #fff7ed;
+            color: #ea580c;
         }
 
-        .choice-btn.extra-cost::after {
-            content: ' (+5.000đ)';
+        .extra-cost {
             font-size: 0.75rem;
-            opacity: 0.8;
+            color: #64748b;
+            display: block;
         }
 
-        /* Purchase Section */
-        .purchase-section {
-            background: white;
-            border-radius: 1rem;
-            padding: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #e5e7eb;
+        .extra-cost-inline {
+            font-size: 0.75rem;
+            color: #64748b;
+            float: right;
         }
 
-        .quantity-selector {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        /* Quantity */
+        .quantity-section {
             margin-bottom: 1.5rem;
-        }
-
-        .quantity-label {
-            font-weight: 600;
-            color: #1f2937;
         }
 
         .quantity-controls {
             display: flex;
             align-items: center;
-            border: 2px solid #e5e7eb;
-            border-radius: 0.5rem;
-            overflow: hidden;
+            justify-content: center;
         }
 
         .qty-btn {
             width: 40px;
             height: 40px;
-            border: none;
-            background: #f9fafb;
-            color: #6b7280;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            color: #64748b;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
@@ -511,29 +466,38 @@
         .qty-btn:hover {
             background: #f97316;
             color: white;
+            border-color: #f97316;
+        }
+
+        .qty-btn:first-child {
+            border-radius: 0.5rem 0 0 0.5rem;
+        }
+
+        .qty-btn:last-child {
+            border-radius: 0 0.5rem 0.5rem 0;
         }
 
         .qty-input {
-            width: 60px;
+            width: 64px;
             height: 40px;
-            border: none;
+            border: 2px solid #e2e8f0;
+            border-left: none;
+            border-right: none;
+            background: white;
             text-align: center;
             font-weight: 600;
-            background: white;
         }
 
-        .action-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .btn {
-            flex: 1;
+        /* Add to Cart Button */
+        .add-to-cart {
+            width: 100%;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
             padding: 1rem 2rem;
             border: none;
             border-radius: 0.75rem;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 1.125rem;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
@@ -542,102 +506,56 @@
             gap: 0.5rem;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, #f97316, #ea580c);
-            color: white;
-            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
-        }
-
-        .btn-primary:hover {
+        .add-to-cart:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
         }
 
-        .btn-secondary {
-            background: white;
-            color: #f97316;
-            border: 2px solid #f97316;
+        .add-to-cart:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .btn-secondary:hover {
-            background: #f97316;
-            color: white;
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        /* Full Width Sections */
-        .full-width-section {
-            grid-column: 1 / -1;
-            margin-top: 2rem;
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
-        /* Nutritional Info */
-        .nutrition-info {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #e5e7eb;
-        }
-
-        .nutrition-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .nutrition-item {
-            text-align: center;
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            border-radius: 1rem;
-            border: 1px solid #e2e8f0;
-        }
-
-        .nutrition-value {
-            font-size: 1.75rem;
-            font-weight: bold;
-            color: #f97316;
-            margin-bottom: 0.5rem;
-        }
-
-        .nutrition-label {
-            font-size: 0.875rem;
-            color: #6b7280;
-            font-weight: 500;
-        }
-
-        /* Related Combos */
+        /* Related Products */
         .related-section {
-            background: white;
-            border-radius: 1rem;
-            padding: 2rem;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-            border: 1px solid #e5e7eb;
+            margin-top: 3rem;
         }
 
         .related-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 1.5rem;
         }
 
         .related-card {
-            background: #f9fafb;
-            border-radius: 1rem;
-            overflow: hidden;
-            border: 1px solid #e5e7eb;
-            transition: all 0.3s;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
 
         .related-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-            background: white;
         }
 
         .related-image {
-            height: 180px;
+            aspect-ratio: 16/9;
+            border-radius: 0.75rem;
             overflow: hidden;
+            margin-bottom: 1rem;
         }
 
         .related-image img {
@@ -651,13 +569,9 @@
             transform: scale(1.1);
         }
 
-        .related-content {
-            padding: 1rem;
-        }
-
         .related-title {
             font-weight: 600;
-            color: #1f2937;
+            color: #1e293b;
             margin-bottom: 0.5rem;
         }
 
@@ -669,17 +583,17 @@
 
         /* Responsive */
         @media (max-width: 1024px) {
-            .combo-detail {
+            .main-grid {
                 grid-template-columns: 1fr;
                 gap: 2rem;
             }
 
-            .left-column {
-                order: 1;
+            .nutrition-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
 
-            .right-column {
-                order: 2;
+            .related-grid {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -688,63 +602,31 @@
                 font-size: 1.75rem;
             }
 
-            .action-buttons {
+            .product-header {
                 flex-direction: column;
+                align-items: start;
+            }
+
+            .price-section {
+                text-align: left;
+                margin-top: 1rem;
             }
 
             .nutrition-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .related-grid {
+            .photos-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .option-grid {
                 grid-template-columns: 1fr;
             }
 
-            .thumbnail-gallery {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .photos-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in-up {
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        /* Loading states */
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .btn.loading::after {
-            content: '';
-            width: 16px;
-            height: 16px;
-            border: 2px solid transparent;
-            border-top: 2px solid currentColor;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 0.5rem;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
+            .header-actions {
+                flex-direction: column;
+                gap: 0.5rem;
             }
         }
     </style>
@@ -752,153 +634,54 @@
 <body>
     <!-- Header -->
     <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <a href="/" class="back-btn">
-                    <i class="fas fa-arrow-left"></i>
-                    Quay lại
-                </a>
-
-                <div class="header-actions">
-                    <a href="#" class="header-btn">
-                        <i class="far fa-heart"></i>
-                        Yêu thích
-                    </a>
-                    <a href="#" class="header-btn">
-                        <i class="fas fa-share-alt"></i>
-                        Chia sẻ
-                    </a>
-                </div>
+        <div class="header-content">
+            <a href="/" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Quay lại
+            </a>
+            <div class="header-actions">
+                <button class="header-btn" id="favoriteBtn">
+                    <i class="far fa-heart" id="favoriteIcon"></i>
+                    <span id="favoriteText">Yêu thích</span>
+                </button>
+                <button class="header-btn">
+                    <i class="fas fa-share-alt"></i>
+                    Chia sẻ
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="container">
-        <div class="main-content">
-            <div class="combo-detail fade-in-up">
-                <!-- Left Column -->
-                <div class="left-column">
-                    <!-- Image Gallery -->
-                    <div class="image-gallery">
-                        <div class="main-image">
-                            <img src="/placeholder.svg?height=450&width=700" alt="Combo Big Burger Deluxe" id="mainImage">
-                            <div class="image-badges">
-                                <div class="badge badge-popular">Phổ biến nhất</div>
-                                <div class="badge badge-sale">Giảm 25%</div>
-                            </div>
-                        </div>
-
-                        <div class="thumbnail-gallery">
-                            <div class="thumbnail active" data-image="/placeholder.svg?height=450&width=700">
-                                <img src="/placeholder.svg?height=100&width=100" alt="Combo view 1">
-                            </div>
-                            <div class="thumbnail" data-image="/placeholder.svg?height=450&width=700&text=Burger">
-                                <img src="/placeholder.svg?height=100&width=100&text=Burger" alt="Burger view">
-                            </div>
-                            <div class="thumbnail" data-image="/placeholder.svg?height=450&width=700&text=Fries">
-                                <img src="/placeholder.svg?height=100&width=100&text=Fries" alt="Fries view">
-                            </div>
-                            <div class="thumbnail" data-image="/placeholder.svg?height=450&width=700&text=Drink">
-                                <img src="/placeholder.svg?height=100&width=100&text=Drink" alt="Drink view">
-                            </div>
+    <div class="container">
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Main Product Section -->
+                <div class="product-card">
+                    <!-- Product Image -->
+                    <div class="product-image">
+                        <img src="/placeholder.svg?height=400&width=800" alt="Combo Big Burger Deluxe">
+                        <div class="image-badges">
+                            <span class="badge badge-popular">Phổ biến nhất</span>
+                            <span class="badge badge-sale">Giảm 25%</span>
                         </div>
                     </div>
 
-                    <!-- Detailed Combo Items -->
-                    <div class="combo-items-detailed">
-                        <h3 class="section-title">
-                            <i class="fas fa-utensils"></i>
-                            Chi tiết combo
-                        </h3>
-
-                        <div class="items-detailed-grid">
-                            <div class="combo-item-detailed">
-                                <div class="item-image-large">
-                                    <img src="/placeholder.svg?height=80&width=80&text=Burger" alt="Big Burger Deluxe">
-                                </div>
-                                <div class="item-details">
-                                    <h4 class="item-name">Big Burger Deluxe</h4>
-                                    <p class="item-description-detailed">Bánh burger bò Úc nướng 200g với phô mai cheddar, rau xanh tươi, cà chua, hành tây và sốt đặc biệt</p>
-                                    <div class="item-features">
-                                        <span class="feature-tag">Bò Úc</span>
-                                        <span class="feature-tag">200g</span>
-                                        <span class="feature-tag">Phô mai cheddar</span>
-                                    </div>
-                                </div>
-                                <div class="item-price-large">55.000đ</div>
+                    <!-- Product Info -->
+                    <div class="product-info">
+                        <div class="product-header">
+                            <div>
+                                <h1 class="product-title">Combo Big Burger Deluxe</h1>
+                                <p class="product-subtitle">
+                                    Bữa ăn hoàn hảo cho những ai yêu thích hương vị đậm đà và thỏa mãn cơn đói
+                                </p>
                             </div>
-
-                            <div class="combo-item-detailed">
-                                <div class="item-image-large">
-                                    <img src="/placeholder.svg?height=80&width=80&text=Fries" alt="French Fries">
-                                </div>
-                                <div class="item-details">
-                                    <h4 class="item-name">French Fries (Large)</h4>
-                                    <p class="item-description-detailed">Khoai tây chiên giòn rụm từ khoai tây tươi, tẩm gia vị đặc biệt và muối biển</p>
-                                    <div class="item-features">
-                                        <span class="feature-tag">Khoai tây tươi</span>
-                                        <span class="feature-tag">Size L</span>
-                                        <span class="feature-tag">Giòn rụm</span>
-                                    </div>
-                                </div>
-                                <div class="item-price-large">35.000đ</div>
-                            </div>
-
-                            <div class="combo-item-detailed">
-                                <div class="item-image-large">
-                                    <img src="/placeholder.svg?height=80&width=80&text=Drink" alt="Coca Cola">
-                                </div>
-                                <div class="item-details">
-                                    <h4 class="item-name">Coca Cola (Large)</h4>
-                                    <p class="item-description-detailed">Nước ngọt có ga Coca Cola nguyên chất, mát lạnh với đá viên</p>
-                                    <div class="item-features">
-                                        <span class="feature-tag">500ml</span>
-                                        <span class="feature-tag">Có ga</span>
-                                        <span class="feature-tag">Mát lạnh</span>
-                                    </div>
-                                </div>
-                                <div class="item-price-large">29.000đ</div>
+                            <div class="price-section">
+                                <div class="current-price" id="displayPrice">89.000đ</div>
+                                <div class="original-price">119.000đ</div>
+                                <div class="savings">Tiết kiệm 30.000đ</div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Customer Photos -->
-                    <div class="customer-photos">
-                        <h3 class="section-title">
-                            <i class="fas fa-camera"></i>
-                            Ảnh từ khách hàng
-                        </h3>
-
-                        <div class="photos-grid">
-                            <div class="customer-photo">
-                                <img src="/placeholder.svg?height=120&width=120&text=Photo1" alt="Customer photo 1">
-                            </div>
-                            <div class="customer-photo">
-                                <img src="/placeholder.svg?height=120&width=120&text=Photo2" alt="Customer photo 2">
-                            </div>
-                            <div class="customer-photo">
-                                <img src="/placeholder.svg?height=120&width=120&text=Photo3" alt="Customer photo 3">
-                            </div>
-                            <div class="customer-photo">
-                                <img src="/placeholder.svg?height=120&width=120&text=Photo4" alt="Customer photo 4">
-                            </div>
-                            <div class="customer-photo">
-                                <img src="/placeholder.svg?height=120&width=120&text=Photo5" alt="Customer photo 5">
-                            </div>
-                            <div class="customer-photo">
-                                <img src="/placeholder.svg?height=120&width=120&text=+12" alt="More photos">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column -->
-                <div class="right-column">
-                    <!-- Product Header -->
-                    <div class="product-header">
-                        <h1 class="product-title">Combo Big Burger Deluxe</h1>
-                        <p class="product-subtitle">Bữa ăn hoàn hảo cho những ai yêu thích hương vị đậm đà và thỏa mãn cơn đói</p>
 
                         <div class="rating-section">
                             <div class="stars">
@@ -909,97 +692,77 @@
                                 <i class="fas fa-star star"></i>
                             </div>
                             <span class="rating-text">4.8 (156 đánh giá)</span>
-                            <div class="rating-badge">Xuất sắc</div>
+                            <span class="rating-badge">Xuất sắc</span>
                         </div>
-                    </div>
 
-                    <!-- Price Section -->
-                    <div class="price-section">
-                        <div class="price-header">
-                            <div>
-                                <div class="current-price">89.000đ</div>
-                                <div class="original-price">119.000đ</div>
+                        <!-- Combo Items -->
+                        <div class="combo-items">
+                            <h3 class="section-title">
+                                <i class="fas fa-utensils"></i>
+                                Chi tiết combo
+                            </h3>
+                            <div class="combo-item">
+                                <img src="/placeholder.svg?height=60&width=60&text=Burger" alt="Big Burger Deluxe" class="item-image">
+                                <div class="item-details">
+                                    <h4 class="item-name">Big Burger Deluxe</h4>
+                                    <p class="item-description">Bánh burger bò Úc nướng 200g với phô mai cheddar, rau xanh tươi</p>
+                                </div>
+                                <div class="item-price">55.000đ</div>
                             </div>
-                            <div class="savings">Tiết kiệm 30.000đ</div>
-                        </div>
-                    </div>
-
-                    <!-- Customization -->
-                    <div class="customization">
-                        <h3 class="section-title">
-                            <i class="fas fa-cog"></i>
-                            Tùy chỉnh combo
-                        </h3>
-
-                        <div class="custom-option">
-                            <div class="option-title">Chọn loại nước uống:</div>
-                            <div class="option-choices">
-                                <button class="choice-btn active">Coca Cola</button>
-                                <button class="choice-btn">Pepsi</button>
-                                <button class="choice-btn">Sprite</button>
-                                <button class="choice-btn">Fanta</button>
-                                <button class="choice-btn extra-cost">Nước cam tươi</button>
+                            <div class="combo-item">
+                                <img src="/placeholder.svg?height=60&width=60&text=Fries" alt="French Fries" class="item-image">
+                                <div class="item-details">
+                                    <h4 class="item-name">French Fries (Large)</h4>
+                                    <p class="item-description">Khoai tây chiên giòn rụm từ khoai tây tươi, tẩm gia vị đặc biệt</p>
+                                </div>
+                                <div class="item-price">35.000đ</div>
                             </div>
-                        </div>
-
-                        <div class="custom-option">
-                            <div class="option-title">Kích thước khoai tây:</div>
-                            <div class="option-choices">
-                                <button class="choice-btn">Medium</button>
-                                <button class="choice-btn active">Large</button>
-                                <button class="choice-btn extra-cost">Extra Large</button>
+                            <div class="combo-item">
+                                <img src="/placeholder.svg?height=60&width=60&text=Drink" alt="Coca Cola" class="item-image">
+                                <div class="item-details">
+                                    <h4 class="item-name">Coca Cola (Large)</h4>
+                                    <p class="item-description">Nước ngọt có ga Coca Cola nguyên chất, mát lạnh với đá viên</p>
+                                </div>
+                                <div class="item-price">29.000đ</div>
                             </div>
                         </div>
 
-                        <div class="custom-option">
-                            <div class="option-title">Thêm topping burger:</div>
-                            <div class="option-choices">
-                                <button class="choice-btn active">Không thêm</button>
-                                <button class="choice-btn extra-cost">Thêm phô mai</button>
-                                <button class="choice-btn extra-cost">Thêm thịt xông khói</button>
-                                <button class="choice-btn extra-cost">Thêm trứng</button>
+                        <!-- Customer Photos -->
+                        <div class="customer-photos">
+                            <h3 class="section-title">
+                                <i class="fas fa-camera"></i>
+                                Ảnh từ khách hàng
+                            </h3>
+                            <div class="photos-grid">
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo1" alt="Customer photo 1">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo2" alt="Customer photo 2">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo3" alt="Customer photo 3">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo4" alt="Customer photo 4">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo5" alt="Customer photo 5">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=+12" alt="More photos">
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Purchase Section -->
-                    <div class="purchase-section">
-                        <div class="quantity-selector">
-                            <span class="quantity-label">Số lượng:</span>
-                            <div class="quantity-controls">
-                                <button class="qty-btn" onclick="changeQuantity(-1)">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <input type="number" class="qty-input" value="1" min="1" max="10" id="quantity">
-                                <button class="qty-btn" onclick="changeQuantity(1)">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary" onclick="addToFavorites()">
-                                <i class="far fa-heart"></i>
-                                Yêu thích
-                            </button>
-                            <button class="btn btn-primary" onclick="addToCart()">
-                                <i class="fas fa-shopping-cart"></i>
-                                Thêm vào giỏ - <span id="totalPrice">89.000đ</span>
-                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Full Width Sections -->
-            <div class="full-width-section">
                 <!-- Nutritional Info -->
-                <div class="nutrition-info fade-in-up">
+                <div class="product-card">
                     <h3 class="section-title">
                         <i class="fas fa-chart-pie"></i>
                         Thông tin dinh dưỡng (1 combo)
                     </h3>
-
                     <div class="nutrition-grid">
                         <div class="nutrition-item">
                             <div class="nutrition-value">850</div>
@@ -1027,197 +790,285 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Related Combos -->
-                <div class="related-section fade-in-up">
-                    <h3 class="section-title">
-                        <i class="fas fa-fire"></i>
-                        Combo khác bạn có thể thích
-                    </h3>
+            <!-- Right Column - Order Section -->
+            <div class="right-column">
+                <div class="order-card">
+                    <h3 class="section-title">Tùy chỉnh combo</h3>
 
-                    <div class="related-grid">
-                        <div class="related-card">
-                            <div class="related-image">
-                                <img src="/placeholder.svg?height=180&width=280&text=Chicken+Combo" alt="Combo Chicken Deluxe">
-                            </div>
-                            <div class="related-content">
-                                <h4 class="related-title">Combo Chicken Deluxe</h4>
-                                <div class="related-price">159.000đ</div>
-                            </div>
+                    <!-- Drink Selection -->
+                    <div class="custom-option">
+                        <label class="option-label">Chọn loại nước uống:</label>
+                        <div class="option-grid">
+                            <button class="choice-btn active" data-option="drink" data-value="Coca Cola">
+                                Coca Cola
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Pepsi">
+                                Pepsi
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Sprite">
+                                Sprite
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Fanta">
+                                Fanta
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Nước cam tươi" data-extra="5000">
+                                Nước cam tươi
+                                <span class="extra-cost">+5.000đ</span>
+                            </button>
                         </div>
+                    </div>
 
-                        <div class="related-card">
-                            <div class="related-image">
-                                <img src="/placeholder.svg?height=180&width=280&text=Pizza+Combo" alt="Combo Pizza Family">
-                            </div>
-                            <div class="related-content">
-                                <h4 class="related-title">Combo Pizza Family</h4>
-                                <div class="related-price">299.000đ</div>
-                            </div>
+                    <!-- Fries Size -->
+                    <div class="custom-option">
+                        <label class="option-label">Kích thước khoai tây:</label>
+                        <div class="option-grid-3">
+                            <button class="choice-btn" data-option="fries" data-value="Medium">
+                                Medium
+                            </button>
+                            <button class="choice-btn active" data-option="fries" data-value="Large">
+                                Large
+                            </button>
+                            <button class="choice-btn" data-option="fries" data-value="Extra Large" data-extra="5000">
+                                Extra Large
+                                <span class="extra-cost">+5.000đ</span>
+                            </button>
                         </div>
+                    </div>
 
-                        <div class="related-card">
-                            <div class="related-image">
-                                <img src="/placeholder.svg?height=180&width=280&text=Fish+Combo" alt="Combo Fish & Chips">
-                            </div>
-                            <div class="related-content">
-                                <h4 class="related-title">Combo Fish & Chips</h4>
-                                <div class="related-price">125.000đ</div>
-                            </div>
+                    <!-- Toppings -->
+                    <div class="custom-option">
+                        <label class="option-label">Thêm topping burger:</label>
+                        <div class="option-grid-1">
+                            <button class="choice-btn active" data-option="topping" data-value="Không thêm">
+                                Không thêm
+                            </button>
+                            <button class="choice-btn" data-option="topping" data-value="Thêm phô mai" data-extra="5000">
+                                Thêm phô mai
+                                <span class="extra-cost-inline">+5.000đ</span>
+                            </button>
+                            <button class="choice-btn" data-option="topping" data-value="Thêm thịt xông khói" data-extra="8000">
+                                Thêm thịt xông khói
+                                <span class="extra-cost-inline">+8.000đ</span>
+                            </button>
+                            <button class="choice-btn" data-option="topping" data-value="Thêm trứng" data-extra="3000">
+                                Thêm trứng
+                                <span class="extra-cost-inline">+3.000đ</span>
+                            </button>
                         </div>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="quantity-section">
+                        <label class="option-label">Số lượng:</label>
+                        <div class="quantity-controls">
+                            <button class="qty-btn" id="decreaseQty">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" class="qty-input" id="quantity" value="1" min="1" max="10" readonly>
+                            <button class="qty-btn" id="increaseQty">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add to Cart -->
+                    <button class="add-to-cart" id="addToCartBtn">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cartButtonText">Thêm vào giỏ - <span id="totalPrice">89.000đ</span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Products -->
+        <div class="related-section">
+            <div class="product-card">
+                <h3 class="section-title">
+                    <i class="fas fa-fire"></i>
+                    Combo khác bạn có thể thích
+                </h3>
+                <div class="related-grid">
+                    <div class="related-card">
+                        <div class="related-image">
+                            <img src="/placeholder.svg?height=200&width=300&text=Chicken" alt="Combo Chicken Deluxe">
+                        </div>
+                        <h4 class="related-title">Combo Chicken Deluxe</h4>
+                        <div class="related-price">159.000đ</div>
+                    </div>
+                    <div class="related-card">
+                        <div class="related-image">
+                            <img src="/placeholder.svg?height=200&width=300&text=Pizza" alt="Combo Pizza Family">
+                        </div>
+                        <h4 class="related-title">Combo Pizza Family</h4>
+                        <div class="related-price">299.000đ</div>
+                    </div>
+                    <div class="related-card">
+                        <div class="related-image">
+                            <img src="/placeholder.svg?height=200&width=300&text=Fish" alt="Combo Fish & Chips">
+                        </div>
+                        <h4 class="related-title">Combo Fish & Chips</h4>
+                        <div class="related-price">125.000đ</div>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
 
     <script>
-        // Image gallery functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const thumbnails = document.querySelectorAll('.thumbnail');
-            const mainImage = document.getElementById('mainImage');
+        // State management
+        let state = {
+            quantity: 1,
+            selectedDrink: 'Coca Cola',
+            selectedFries: 'Large',
+            selectedTopping: 'Không thêm',
+            isFavorite: false,
+            isAddingToCart: false,
+            basePrice: 89000,
+            extraCosts: {
+                'Nước cam tươi': 5000,
+                'Extra Large': 5000,
+                'Thêm phô mai': 5000,
+                'Thêm thịt xông khói': 8000,
+                'Thêm trứng': 3000
+            }
+        };
 
-            thumbnails.forEach(thumbnail => {
-                thumbnail.addEventListener('click', function() {
-                    // Remove active class from all thumbnails
-                    thumbnails.forEach(t => t.classList.remove('active'));
+        // DOM elements
+        const favoriteBtn = document.getElementById('favoriteBtn');
+        const favoriteIcon = document.getElementById('favoriteIcon');
+        const favoriteText = document.getElementById('favoriteText');
+        const quantityInput = document.getElementById('quantity');
+        const decreaseBtn = document.getElementById('decreaseQty');
+        const increaseBtn = document.getElementById('increaseQty');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const totalPriceSpan = document.getElementById('totalPrice');
+        const displayPriceSpan = document.getElementById('displayPrice');
+        const cartButtonText = document.getElementById('cartButtonText');
 
-                    // Add active class to clicked thumbnail
-                    this.classList.add('active');
+        // Calculate total price
+        function calculateTotalPrice() {
+            let total = state.basePrice;
 
-                    // Change main image
-                    const newImageSrc = this.dataset.image;
-                    mainImage.src = newImageSrc;
-                });
-            });
+            if (state.extraCosts[state.selectedDrink]) {
+                total += state.extraCosts[state.selectedDrink];
+            }
+            if (state.extraCosts[state.selectedFries]) {
+                total += state.extraCosts[state.selectedFries];
+            }
+            if (state.extraCosts[state.selectedTopping]) {
+                total += state.extraCosts[state.selectedTopping];
+            }
 
-            // Customization options
-            const choiceBtns = document.querySelectorAll('.choice-btn');
-            choiceBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Only allow one selection per option group
-                    const optionGroup = this.closest('.custom-option');
-                    const groupBtns = optionGroup.querySelectorAll('.choice-btn');
+            return total * state.quantity;
+        }
 
-                    groupBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
+        // Update price display
+        function updatePriceDisplay() {
+            const total = calculateTotalPrice();
+            const formattedPrice = total.toLocaleString('vi-VN') + 'đ';
+            totalPriceSpan.textContent = formattedPrice;
+            displayPriceSpan.textContent = formattedPrice;
+        }
 
-                    updateTotalPrice();
-                });
-            });
+        // Handle choice button clicks
+        function handleChoiceClick(event) {
+            const button = event.target.closest('.choice-btn');
+            if (!button) return;
 
-            // Customer photos click
-            const customerPhotos = document.querySelectorAll('.customer-photo');
-            customerPhotos.forEach(photo => {
-                photo.addEventListener('click', function() {
-                    // Here you could open a lightbox or modal
-                    console.log('Opening photo gallery');
-                });
-            });
+            const option = button.dataset.option;
+            const value = button.dataset.value;
+            const extra = button.dataset.extra;
 
-            // Initialize animations
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            };
+            // Remove active class from siblings
+            const siblings = button.parentElement.querySelectorAll('.choice-btn');
+            siblings.forEach(sibling => sibling.classList.remove('active'));
 
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('fade-in-up');
-                    }
-                });
-            }, observerOptions);
+            // Add active class to clicked button
+            button.classList.add('active');
 
-            document.querySelectorAll('.nutrition-info, .related-section').forEach(el => {
-                observer.observe(el);
-            });
-        });
+            // Update state
+            if (option === 'drink') {
+                state.selectedDrink = value;
+            } else if (option === 'fries') {
+                state.selectedFries = value;
+            } else if (option === 'topping') {
+                state.selectedTopping = value;
+            }
 
-        // Quantity controls
-        function changeQuantity(delta) {
-            const quantityInput = document.getElementById('quantity');
-            let currentValue = parseInt(quantityInput.value);
-            let newValue = currentValue + delta;
+            updatePriceDisplay();
+        }
 
-            if (newValue >= 1 && newValue <= 10) {
-                quantityInput.value = newValue;
-                updateTotalPrice();
+        // Handle quantity changes
+        function updateQuantity(delta) {
+            const newQuantity = state.quantity + delta;
+            if (newQuantity >= 1 && newQuantity <= 10) {
+                state.quantity = newQuantity;
+                quantityInput.value = newQuantity;
+                updatePriceDisplay();
             }
         }
 
-        // Update total price
-        function updateTotalPrice() {
-            const basePrice = 89000;
-            const quantity = parseInt(document.getElementById('quantity').value);
+        // Handle favorite toggle
+        function toggleFavorite() {
+            state.isFavorite = !state.isFavorite;
 
-            // Calculate extra costs from customizations
-            let extraCost = 0;
-            const activeExtraCostBtns = document.querySelectorAll('.choice-btn.active.extra-cost');
-            activeExtraCostBtns.forEach(btn => {
-                extraCost += 5000; // Each extra option costs 5,000đ
-            });
-
-            const totalPrice = (basePrice + extraCost) * quantity;
-            document.getElementById('totalPrice').textContent = totalPrice.toLocaleString('vi-VN') + 'đ';
-        }
-
-        // Add to cart functionality
-        function addToCart() {
-            const btn = document.querySelector('.btn-primary');
-            btn.classList.add('loading');
-            btn.innerHTML = '<i class="fas fa-shopping-cart"></i> Đang thêm...';
-
-            // Simulate API call
-            setTimeout(() => {
-                btn.classList.remove('loading');
-                btn.innerHTML = '<i class="fas fa-check"></i> Đã thêm vào giỏ!';
-                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-
-                // Show success message
-                showNotification('Đã thêm combo vào giỏ hàng!', 'success');
-
-                // Reset button after 2 seconds
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm vào giỏ - <span id="totalPrice">89.000đ</span>';
-                    btn.style.background = 'linear-gradient(135deg, #f97316, #ea580c)';
-                    updateTotalPrice();
-                }, 2000);
-            }, 1500);
-        }
-
-        // Add to favorites
-        function addToFavorites() {
-            const btn = document.querySelector('.btn-secondary');
-            const icon = btn.querySelector('i');
-
-            if (icon.classList.contains('far')) {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-                btn.innerHTML = '<i class="fas fa-heart"></i> Đã yêu thích';
-                btn.style.background = '#dc2626';
-                btn.style.color = 'white';
-                btn.style.borderColor = '#dc2626';
+            if (state.isFavorite) {
+                favoriteBtn.classList.add('active');
+                favoriteIcon.classList.remove('far');
+                favoriteIcon.classList.add('fas');
+                favoriteText.textContent = 'Đã yêu thích';
                 showNotification('Đã thêm vào danh sách yêu thích!', 'success');
             } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-                btn.innerHTML = '<i class="far fa-heart"></i> Yêu thích';
-                btn.style.background = 'white';
-                btn.style.color = '#f97316';
-                btn.style.borderColor = '#f97316';
+                favoriteBtn.classList.remove('active');
+                favoriteIcon.classList.remove('fas');
+                favoriteIcon.classList.add('far');
+                favoriteText.textContent = 'Yêu thích';
                 showNotification('Đã xóa khỏi danh sách yêu thích!', 'info');
             }
         }
 
-        // Notification system
+        // Handle add to cart
+        async function handleAddToCart() {
+            if (state.isAddingToCart) return;
+
+            state.isAddingToCart = true;
+            addToCartBtn.disabled = true;
+
+            // Show loading state
+            cartButtonText.innerHTML = '<div class="loading-spinner"></div> Đang thêm...';
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Show success state
+            cartButtonText.innerHTML = '<i class="fas fa-check"></i> Đã thêm vào giỏ!';
+            addToCartBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+
+            showNotification('Đã thêm combo vào giỏ hàng!', 'success');
+
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                state.isAddingToCart = false;
+                addToCartBtn.disabled = false;
+                addToCartBtn.style.background = 'linear-gradient(135deg, #f97316, #ea580c)';
+                cartButtonText.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm vào giỏ - <span id="totalPrice">' + calculateTotalPrice().toLocaleString('vi-VN') + 'đ</span>';
+                // Re-assign the totalPrice span reference
+                document.getElementById('totalPrice').textContent = calculateTotalPrice().toLocaleString('vi-VN') + 'đ';
+            }, 2000);
+        }
+
+        // Show notification
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
+            const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+
             notification.style.cssText = `
                 position: fixed;
                 top: 20px;
                 right: 20px;
-                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                background: ${bgColor};
                 color: white;
                 padding: 1rem 1.5rem;
                 border-radius: 0.5rem;
@@ -1239,13 +1090,39 @@
             setTimeout(() => {
                 notification.style.transform = 'translateX(100%)';
                 setTimeout(() => {
-                    document.body.removeChild(notification);
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
                 }, 300);
             }, 3000);
         }
 
-        // Initialize price display
-        updateTotalPrice();
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Choice buttons
+            document.addEventListener('click', handleChoiceClick);
+
+            // Quantity controls
+            decreaseBtn.addEventListener('click', () => updateQuantity(-1));
+            increaseBtn.addEventListener('click', () => updateQuantity(1));
+
+            // Favorite button
+            favoriteBtn.addEventListener('click', toggleFavorite);
+
+            // Add to cart button
+            addToCartBtn.addEventListener('click', handleAddToCart);
+
+            // Customer photos
+            document.querySelectorAll('.customer-photo').forEach(photo => {
+                photo.addEventListener('click', function() {
+                    console.log('Opening photo gallery');
+                    // Here you could implement a lightbox or modal
+                });
+            });
+
+            // Initialize price display
+            updatePriceDisplay();
+        });
     </script>
 </body>
 </html>

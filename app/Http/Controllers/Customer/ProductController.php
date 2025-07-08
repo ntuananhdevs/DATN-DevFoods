@@ -648,6 +648,72 @@ class ProductController extends Controller
             'branches'
         ));
     }
+    public function showComboDetail(Request $request, $id)
+{
+    // Lấy branch hiện tại nếu có
+    $currentBranch = $this->branchService->getCurrentBranch();
+    $selectedBranchId = $currentBranch ? $currentBranch->id : null;
+
+    // Lấy combo và các quan hệ cần thiết
+    $combo = \App\Models\Combo::with([
+        'comboItems.productVariant.product.images',
+        'comboItems.productVariant.variantValues.attribute',
+        'category',
+        'comboBranchStocks' => function($query) use ($selectedBranchId) {
+            if ($selectedBranchId) {
+                $query->where('branch_id', $selectedBranchId);
+            }
+        }
+    ])->findOrFail($id);
+
+    // Lấy tồn kho tại chi nhánh hiện tại (nếu có)
+    $branchStocks = $combo->comboBranchStocks;
+
+    // Chuẩn bị dữ liệu sản phẩm trong combo
+    $items = $combo->comboItems->map(function($item) {
+        $variant = $item->productVariant;
+        $product = $variant->product;
+        return [
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'variant_id' => $variant->id,
+            'variant_name' => $variant->variant_description ?? null,
+            'quantity' => $item->quantity,
+            'image' => $product->primaryImage ? asset('storage/' . $product->primaryImage->img) : null,
+            'base_price' => $product->base_price,
+            'variant_price' => $variant->price,
+            'total_price' => $variant->price * $item->quantity,
+            'variant_values' => $variant->variantValues->map(function($v) {
+                return [
+                    'attribute' => $v->attribute->name ?? null,
+                    'value' => $v->value,
+                    'price_adjustment' => $v->price_adjustment,
+                ];
+            }),
+        ];
+    });
+
+    // Lấy các sản phẩm cùng danh mục với combo (trừ các sản phẩm đã nằm trong combo)
+    $productIdsInCombo = $items->pluck('product_id')->all();
+    $relatedProducts = \App\Models\Product::where('category_id', $combo->category_id)
+        ->whereNotIn('id', $productIdsInCombo)
+        ->where('status', 'selling')
+        ->limit(6)
+        ->get();
+
+    // Đảm bảo category đã eager load combos trạng thái 'selling'
+    if ($combo->relationLoaded('category') && $combo->category) {
+        $combo->category->setRelation('combos', $combo->category->combos->where('status', 'selling'));
+    }
+
+    return view('customer.shop.show-combo', [
+        'combo' => $combo,
+        'items' => $items,
+        'branchStocks' => $branchStocks,
+        'selectedBranch' => $currentBranch,
+        'relatedProducts' => $relatedProducts,
+    ]);
+}
 
     /**
      * Show the form for editing the specified resource.

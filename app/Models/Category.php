@@ -16,10 +16,15 @@ class Category extends Model
         return $this->hasMany(Product::class);
     }
 
+    public function combos()
+    {
+        return $this->hasMany(\App\Models\Combo::class, 'category_id');
+    }
+
     public function getShortNameAttribute()
     {
         $name = $this->name;
-        
+
         // Xử lý các trường hợp đặc biệt
         $specialCases = [
             'Pizza' => 'PZ',
