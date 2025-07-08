@@ -83,6 +83,29 @@
 
         <form action="{{ route('checkout.process') }}" method="POST" id="checkout-form">
             @csrf
+
+            <!-- Địa chỉ nhận hàng (giống Shopee) -->
+            <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex items-center border border-orange-200 relative">
+                <span class="text-orange-500 mr-3 text-xl">
+                    <i class="fas fa-map-marker-alt"></i>
+                </span>
+                <div class="flex-1">
+                    <div class="font-semibold text-base mb-1">
+                        <span class="font-bold">Bùi Đức Dương</span>
+                        <span class="ml-2">(+84) 355032605</span>
+                        <span class="ml-2 align-middle">
+                            <span class="border border-orange-500 text-orange-500 px-2 py-0.5 rounded text-xs font-medium bg-white">Mặc Định</span>
+                        </span>
+                    </div>
+                    <div class="text-gray-800 text-sm">
+                        Số Nhà 26, Ngách 66 Ngõ 250 Kim Giang, Phường Đại Kim, Quận Hoàng Mai, Hà Nội
+                    </div>
+                </div>
+                <a href="#" id="changeAddressBtn" class="ml-4 text-blue-600 hover:underline font-medium text-sm">Thay Đổi</a>
+            </div>
+
+            
+
             <div class="grid lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2">
                     <!-- Thông tin khách hàng -->
@@ -390,6 +413,168 @@
                 </div>
             </div>
         </form>
+
+        <!-- Modal chọn địa chỉ nhận hàng (tĩnh, giống Shopee) -->
+        <div id="addressModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                <div class="px-6 py-4 border-b">
+                    <span class="text-lg font-semibold">Địa Chỉ Của Tôi</span>
+                </div>
+                <div class="px-6 py-4 max-h-96 overflow-y-auto divide-y">
+                    <div class="flex items-start py-3">
+                        <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500" checked>
+                        <div class="flex-1">
+                            <div class="font-semibold">Nhữ Thị Minh <span class="font-normal text-gray-600">(+84) 975 154 746</span></div>
+                            <div class="text-sm text-gray-700">Hẻm số 4,Hẻm 144 Đồ Lương<br>Phường 11, Thành Phố Vũng Tàu, Bà Rịa - Vũng Tàu</div>
+                        </div>
+                        <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                    </div>
+                    <div class="flex items-start py-3">
+                        <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500">
+                        <div class="flex-1">
+                            <div class="font-semibold">Nguyễn Thị Huê <span class="font-normal text-gray-600">(+84) 966 189 711</span></div>
+                            <div class="text-sm text-gray-700">Cổng chợ mền Thanh Khê<br>Xã Thanh Hải, Huyện Thanh Liêm, Hà Nam</div>
+                        </div>
+                        <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                    </div>
+                    <div class="flex items-start py-3">
+                        <input type="radio" name="address" class="mt-1 mr-3 h-5 w-5 text-orange-500">
+                        <div class="flex-1">
+                            <div class="font-semibold">Mai Xuân Cường <span class="font-normal text-gray-600">(+84) 977 312 936</span></div>
+                            <div class="text-sm text-gray-700">Nhà Nghỉ Thế Cường, Thanh Khê<br>Xã Thanh Hải, Huyện Thanh Liêm, Hà Nam</div>
+                        </div>
+                        <a href="#" class="ml-3 text-blue-600 hover:underline text-sm font-medium">Cập nhật</a>
+                    </div>
+                </div>
+                <div class="px-6 py-3">
+                    <button class="flex items-center text-orange-600 border border-orange-500 rounded px-3 py-1 text-sm font-medium hover:bg-orange-50 mb-3">
+                        <i class="fas fa-plus mr-2"></i> Thêm Địa Chỉ Mới
+                    </button>
+                    <div class="flex justify-end gap-3">
+                        <button type="button" id="addressModalCancel" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Hủy</button>
+                        <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Xác nhận</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal cập nhật địa chỉ (tĩnh, giống Shopee) -->
+        <div id="updateAddressModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                <div class="max-h-[80vh] overflow-y-auto scrollbar-none" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <div class="px-6 py-4 border-b">
+                        <span class="text-lg font-semibold">Cập nhật địa chỉ</span>
+                    </div>
+                    <form class="px-6 py-4">
+                        <div class="flex gap-3 mb-3">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Họ và tên</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="Bùi Đức Dương">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Số điện thoại</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="(+84) 355 032 605">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Hà Nội</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Quận/Huyện</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Quận Hoàng Mai</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Phường/Xã</label>
+                            <select class="w-full border rounded px-3 py-2">
+                                <option>Phường Đại Kim</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Địa chỉ cụ thể</label>
+                            <textarea class="w-full border rounded px-3 py-2" rows="2">Số Nhà 26, Ngách 66 Ngõ 250 Kim Giang</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <img src="https://maps.googleapis.com/maps/api/staticmap?center=21.002,105.825&zoom=16&size=400x120&markers=color:red%7C21.002,105.825&key=AIzaSyDUMMYKEY" alt="Google Map" class="w-full rounded border" style="height:120px;object-fit:cover;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Loại địa chỉ:</label>
+                            <div class="flex gap-2">
+                                <button type="button" class="border border-orange-500 text-orange-600 bg-orange-50 px-4 py-1 rounded font-medium">Nhà Riêng</button>
+                                <button type="button" class="border border-gray-300 text-gray-700 bg-white px-4 py-1 rounded font-medium">Văn Phòng</button>
+                            </div>
+                        </div>
+                        <div class="mb-3 flex items-center">
+                            <input type="checkbox" id="setDefaultAddress" class="mr-2" checked disabled>
+                            <label for="setDefaultAddress" class="text-xs text-gray-400 select-none">Đặt làm địa chỉ mặc định</label>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" id="updateAddressBack" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Trở Lại</button>
+                            <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Hoàn thành</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal thêm địa chỉ mới (tĩnh, giống modal cập nhật) -->
+        <div id="addAddressModal" class="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-40 hidden">
+            <div class="bg-white rounded-lg shadow-lg w-full max-w-lg">
+                <div class="max-h-[80vh] overflow-y-auto scrollbar-none" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <div class="px-6 py-4 border-b">
+                        <span class="text-lg font-semibold">Thêm địa chỉ mới</span>
+                    </div>
+                    <form class="px-6 py-4">
+                        <div class="flex gap-3 mb-3">
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Họ và tên</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs text-gray-500 mb-1">Số điện thoại</label>
+                                <input type="text" class="w-full border rounded px-3 py-2" value="">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Tỉnh/Thành phố</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Hà Nội</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Quận/Huyện</label>
+                            <select class="w-full border rounded px-3 py-2 mb-2">
+                                <option>Quận Hoàng Mai</option>
+                            </select>
+                            <label class="block text-xs text-gray-500 mb-1">Phường/Xã</label>
+                            <select class="w-full border rounded px-3 py-2">
+                                <option>Phường Đại Kim</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Địa chỉ cụ thể</label>
+                            <textarea class="w-full border rounded px-3 py-2" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <img src="https://maps.googleapis.com/maps/api/staticmap?center=21.002,105.825&zoom=16&size=400x120&markers=color:red%7C21.002,105.825&key=AIzaSyDUMMYKEY" alt="Google Map" class="w-full rounded border" style="height:120px;object-fit:cover;">
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-500 mb-1">Loại địa chỉ:</label>
+                            <div class="flex gap-2">
+                                <button type="button" class="border border-orange-500 text-orange-600 bg-orange-50 px-4 py-1 rounded font-medium">Nhà Riêng</button>
+                                <button type="button" class="border border-gray-300 text-gray-700 bg-white px-4 py-1 rounded font-medium">Văn Phòng</button>
+                            </div>
+                        </div>
+                        <div class="mb-3 flex items-center">
+                            <input type="checkbox" id="setDefaultAddressAdd" class="mr-2">
+                            <label for="setDefaultAddressAdd" class="text-xs text-gray-500 select-none">Đặt làm địa chỉ mặc định</label>
+                        </div>
+                        <div class="flex justify-end gap-3 mt-6">
+                            <button type="button" id="addAddressBack" class="px-5 py-2 rounded border border-gray-300 text-gray-700 bg-white hover:bg-gray-100">Trở Lại</button>
+                            <button type="button" class="px-5 py-2 rounded bg-orange-500 text-white font-semibold hover:bg-orange-600">Hoàn thành</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -851,6 +1036,60 @@
                         document.body.removeChild(toast);
                     }, 300);
                 }, 3000);
+            }
+
+            // Khai báo các modal ngoài form
+            const addressModal = document.getElementById('addressModal');
+            const updateAddressModal = document.getElementById('updateAddressModal');
+            const addAddressModal = document.getElementById('addAddressModal');
+
+            // Nút mở modal chọn địa chỉ
+            const changeAddressBtn = document.getElementById('changeAddressBtn');
+            if (changeAddressBtn && addressModal) {
+                changeAddressBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.remove('hidden');
+                });
+            }
+            // Nút đóng modal chọn địa chỉ
+            const addressModalCancel = document.getElementById('addressModalCancel');
+            if (addressModalCancel && addressModal) {
+                addressModalCancel.addEventListener('click', function() {
+                    addressModal.classList.add('hidden');
+                });
+            }
+            // Nút cập nhật trong modal chọn địa chỉ (mở modal cập nhật)
+            document.querySelectorAll('#addressModal a.text-blue-600').forEach(function(updateBtn) {
+                updateBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.add('hidden');
+                    updateAddressModal.classList.remove('hidden');
+                });
+            });
+            // Nút Trở Lại trong modal cập nhật địa chỉ
+            const updateAddressBack = document.getElementById('updateAddressBack');
+            if (updateAddressBack && updateAddressModal && addressModal) {
+                updateAddressBack.addEventListener('click', function() {
+                    updateAddressModal.classList.add('hidden');
+                    addressModal.classList.remove('hidden');
+                });
+            }
+            // Nút Thêm Địa Chỉ Mới trong modal chọn địa chỉ (mở modal thêm địa chỉ)
+            const addAddressBtn = document.querySelector('#addressModal button.flex.items-center');
+            if (addAddressBtn && addAddressModal && addressModal) {
+                addAddressBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    addressModal.classList.add('hidden');
+                    addAddressModal.classList.remove('hidden');
+                });
+            }
+            // Nút Trở Lại trong modal thêm địa chỉ mới
+            const addAddressBack = document.getElementById('addAddressBack');
+            if (addAddressBack && addAddressModal && addressModal) {
+                addAddressBack.addEventListener('click', function() {
+                    addAddressModal.classList.add('hidden');
+                    addressModal.classList.remove('hidden');
+                });
             }
         });
     </script>

@@ -126,4 +126,15 @@ class OrderController extends Controller
             'order'   => $freshOrder
         ]);
     }
+
+    /**
+     * Trả về partial danh sách đơn hàng cho AJAX reload.
+     */
+    public function listPartial()
+    {
+        $orders = Order::where('customer_id', Auth::id())
+            ->latest()
+            ->paginate(10);
+        return view('customer.orders.partials.list', compact('orders'))->render();
+    }
 }
