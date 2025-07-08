@@ -102,6 +102,7 @@ class ChatCommon {
                         chatList.insertBefore(chatItem, chatList.firstChild);
                     }
                     this.showNotification("Có cuộc trò chuyện mới!", "info");
+                    this.updateInfoPanel(chatItem);
                 }
             });
             // LẮNG NGHE TIN NHẮN MỚI Ở CẤP SIDEBAR (ADMIN)
@@ -338,6 +339,7 @@ class ChatCommon {
                       };
                 this.updateSidebarPreview(sidebarMsg);
                 this.showNotification("Có cuộc trò chuyện mới!", "info");
+                this.updateInfoPanel(chatItem);
             } else if (data.last_message) {
                 this.updateSidebarPreview({
                     ...data.last_message,
@@ -346,6 +348,7 @@ class ChatCommon {
                     customer: data.conversation.customer,
                     branch_id: data.conversation.branch_id,
                 });
+                this.updateInfoPanel(chatItem);
             }
             // Cập nhật trạng thái nếu cần
             this.updateConversationStatus(data.conversation.status);
@@ -651,31 +654,20 @@ class ChatCommon {
             typingDiv = document.createElement("div");
             typingDiv.id = "admin-typing-indicator";
             typingDiv.className = "typing-indicator";
-            typingDiv.innerHTML = `
-                <div class=\"typing-flex\">
-                    <span class=\"typing-text\">${userName} đang nhập</span>
-                    <span class=\"dot\"></span><span class=\"dot\"></span><span class=\"dot\"></span>
-                    
-                </div>
-            `;
-            if (this.messageContainer)
-                this.messageContainer.appendChild(typingDiv);
-        } else {
-            typingDiv.style.display = "flex";
-            const textSpan = typingDiv.querySelector(".typing-text");
-            if (textSpan) textSpan.textContent = `${userName} đang nhập`;
+            typingDiv.innerHTML = `<span class=\"typing-text\">${userName} đang nhập</span><span class=\"dot\"></span><span class=\"dot\"></span><span class=\"dot\"></span>`;
         }
-        if (
-            this.messageContainer &&
-            this.messageContainer.lastChild !== typingDiv
-        ) {
+        if (this.messageContainer) {
+            const old = document.getElementById("admin-typing-indicator");
+            if (old && old.parentNode) old.parentNode.removeChild(old);
             this.messageContainer.appendChild(typingDiv);
+            this.scrollToBottom();
         }
     }
 
     hideTypingIndicator() {
         const typingDiv = document.getElementById("admin-typing-indicator");
-        if (typingDiv) typingDiv.style.display = "none";
+        if (typingDiv && typingDiv.parentNode)
+            typingDiv.parentNode.removeChild(typingDiv);
     }
 
     displayMessage(message) {
@@ -1280,6 +1272,7 @@ class ChatCommon {
                 distributionSection.style.display = "none";
             }
         }
+        this.updateInfoPanel(chatItem);
     }
 
     showDistributionSection(conversationId) {
@@ -1530,6 +1523,7 @@ class ChatCommon {
         const infoPhone = document.getElementById("customer-info-phone");
         if (infoPhone)
             infoPhone.textContent = "SĐT: " + (customerPhone || "---");
+        this.updateInfoPanel(chatItem);
     }
 
     appendMessage(message) {
@@ -1839,10 +1833,14 @@ class ChatCommon {
         div.dataset.conversationId = message.conversation_id;
         div.dataset.status = message.status || "new";
         div.dataset.customerName =
-            message.customer?.full_name ||
-            message.sender?.full_name ||
+            (message.customer &&
+                (message.customer.full_name || message.customer.name)) ||
+            (message.sender && message.sender.full_name) ||
             "Khách hàng";
-        div.dataset.customerEmail = message.customer?.email || "";
+        div.dataset.customerEmail =
+            (message.customer && message.customer.email) || "";
+        div.dataset.customerPhone =
+            (message.customer && message.customer.phone) || "";
         div.dataset.branchName =
             message.branch_name || (message.branch ? message.branch.name : "");
         // Tạo preview tin nhắn giới hạn 30 ký tự
@@ -1896,6 +1894,80 @@ class ChatCommon {
             this.switchConversation(message.conversation_id, div);
         });
         return div;
+    }
+
+    updateInfoPanel(chatItem) {
+        const customerName = chatItem.dataset.customerName || "Khách hàng";
+        const customerEmail = chatItem.dataset.customerEmail || "";
+        const customerPhone = chatItem.dataset.customerPhone || "---";
+        const branchName = chatItem.dataset.branchName || "";
+        const status = chatItem.dataset.status || "new";
+        const firstLetter = customerName.charAt(0).toUpperCase();
+        const conversationId = chatItem.dataset.conversationId;
+
+        const avatar = document.getElementById("customer-info-avatar");
+        const name = document.getElementById("customer-info-name");
+        const email = document.getElementById("customer-info-email");
+        const phone = document.getElementById("customer-info-phone");
+        const statusSpan = document.getElementById("customer-info-status");
+        const branchBadge = document.getElementById(
+            "customer-info-branch-badge"
+        );
+
+        if (avatar) avatar.textContent = firstLetter;
+        if (name) name.textContent = customerName;
+        if (email) email.textContent = customerEmail;
+        if (phone) phone.textContent = "SĐT: " + customerPhone;
+        if (statusSpan) {
+            if (status === "distributed" || status === "active") {
+                statusSpan.textContent = "Đã phân phối";
+            } else if (status === "new") {
+                statusSpan.textContent = "Chờ phản hồi";
+            } else if (status === "closed") {
+                statusSpan.textContent = "Đã đóng";
+            } else {
+                statusSpan.textContent = status;
+            }
+        }
+        if (branchBadge) {
+            if (branchName) {
+                branchBadge.textContent = branchName;
+                branchBadge.style.display = "";
+            } else {
+                branchBadge.style.display = "none";
+            }
+        }
+
+        // Xử lý select phân phối
+        const selectContainer = document.getElementById(
+            "distribution-select-container"
+        );
+        if (selectContainer) {
+            selectContainer.innerHTML = "";
+            if (
+                !branchName &&
+                status === "new" &&
+                window.branches &&
+                window.branches.length
+            ) {
+                const select = document.createElement("select");
+                select.className =
+                    "distribution-select form-select w-full max-w-xs";
+                select.id = "distribution-select";
+                select.dataset.conversationId = conversationId;
+                select.innerHTML = `<option value="" disabled selected>Chọn chi nhánh</option>`;
+                window.branches.forEach((branch) => {
+                    select.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
+                });
+                select.addEventListener("change", (e) => {
+                    const branchId = e.target.value;
+                    if (branchId) {
+                        this.distributeConversation(conversationId, branchId);
+                    }
+                });
+                selectContainer.appendChild(select);
+            }
+        }
     }
 }
 
@@ -2026,57 +2098,10 @@ class BranchChat {
             const branchChannel = pusher.subscribe(
                 `branch.${branchId}.conversations`
             );
-            branchChannel.bind("conversation.updated", (data) => {
+            branchChannel.bind("conversation.updated", async (data) => {
                 if (data.update_type === "created") {
-                    const chatList = this.chatList;
-                    const conversationId = data.conversation.id;
-                    let chatItem = chatList.querySelector(
-                        `[data-conversation-id='${conversationId}']`
-                    );
-                    let sidebarMsg = data.last_message
-                        ? {
-                              ...data.last_message,
-                              conversation_id: data.conversation.id,
-                              status: data.conversation.status,
-                              customer: data.conversation.customer,
-                              branch_id: data.conversation.branch_id,
-                          }
-                        : {
-                              conversation_id: data.conversation.id,
-                              status: data.conversation.status,
-                              customer: data.conversation.customer,
-                              branch_id: data.conversation.branch_id,
-                              message: "",
-                              sender: data.conversation.customer
-                                  ? {
-                                        full_name:
-                                            data.conversation.customer
-                                                .full_name,
-                                    }
-                                  : { full_name: "Khách hàng" },
-                              sender_id: data.conversation.customer
-                                  ? data.conversation.customer.id
-                                  : "",
-                              created_at: data.conversation.updated_at,
-                          };
-                    if (!chatItem) {
-                        // Tạo chat-item mới và prepend
-                        chatItem = this.createSidebarChatItem(sidebarMsg);
-                        if (chatList)
-                            chatList.insertBefore(
-                                chatItem,
-                                chatList.firstChild
-                            );
-                    } else {
-                        // Đã có, chỉ cập nhật preview/badge và di chuyển lên đầu
-                        this.updateSidebarPreview(sidebarMsg);
-                        chatItem.remove();
-                        chatList.insertBefore(chatItem, chatList.firstChild);
-                    }
-                    this.showNotification(
-                        "Bạn vừa nhận được một cuộc trò chuyện mới!",
-                        "info"
-                    );
+                    // Khi nhận conversation mới, fetch lại chi tiết và cập nhật UI
+                    await this.loadConversation(data.conversation.id);
                 }
             });
             // LẮNG NGHE TIN NHẮN MỚI Ở CẤP SIDEBAR (BRANCH)
@@ -2201,6 +2226,20 @@ class BranchChat {
                 location.reload();
             });
         }
+
+        // Nút gửi ảnh
+        const attachImageBtn = document.getElementById("attachImageBtn");
+        const imageInput = document.getElementById("chat-input-image");
+        if (attachImageBtn && imageInput) {
+            attachImageBtn.addEventListener("click", () => imageInput.click());
+        }
+
+        // Nút gửi file
+        const attachFileBtn = document.getElementById("attachFileBtn");
+        const fileInput = document.getElementById("chat-input-file");
+        if (attachFileBtn && fileInput) {
+            attachFileBtn.addEventListener("click", () => fileInput.click());
+        }
     }
 
     setupPusherChannels() {
@@ -2266,6 +2305,7 @@ class BranchChat {
                       };
                 this.updateSidebarPreview(sidebarMsg);
                 this.showNotification("Có cuộc trò chuyện mới!", "info");
+                this.updateInfoPanel(chatItem);
             } else if (data.last_message) {
                 this.updateSidebarPreview({
                     ...data.last_message,
@@ -2274,6 +2314,7 @@ class BranchChat {
                     customer: data.conversation.customer,
                     branch_id: data.conversation.branch_id,
                 });
+                this.updateInfoPanel(chatItem);
             }
             // Cập nhật trạng thái nếu cần
             this.updateConversationStatus(data.conversation.status);
@@ -2594,7 +2635,7 @@ class BranchChat {
         }
     }
 
-    switchConversation(conversationId, chatItem) {
+    async switchConversation(conversationId, chatItem) {
         // Cập nhật trạng thái active
         document.querySelectorAll(".chat-item").forEach((item) => {
             item.classList.remove("active");
@@ -2652,6 +2693,7 @@ class BranchChat {
                 infoStatus.textContent = status;
             }
         }
+        this.updateInfoPanel(chatItem);
     }
 
     scrollToBottom() {
@@ -2743,88 +2785,111 @@ class BranchChat {
             const data = await response.json();
 
             if (data.success) {
-                // Cập nhật thông tin khách hàng trong header
+                // Cập nhật header
+                const customer = data.conversation.customer || {};
                 const headerName = document.getElementById("chat-header-name");
                 const headerEmail =
                     document.getElementById("chat-header-email");
                 const headerAvatar =
                     document.getElementById("chat-header-avatar");
-
-                if (data.conversation.customer) {
+                if (headerName)
                     headerName.textContent =
-                        data.conversation.customer.full_name ||
-                        data.conversation.customer.name;
-                    headerEmail.textContent = data.conversation.customer.email;
+                        customer.full_name || customer.name || "Khách hàng";
+                if (headerEmail) headerEmail.textContent = customer.email || "";
+                if (headerAvatar) {
                     headerAvatar.textContent = (
-                        data.conversation.customer.full_name ||
-                        data.conversation.customer.name
+                        customer.full_name ||
+                        customer.name ||
+                        "K"
                     )
                         .charAt(0)
                         .toUpperCase();
+                    // Đổi màu avatar: cam cho khách, xanh cho nhân viên
+                    headerAvatar.style.backgroundColor =
+                        data.conversation.status === "distributed"
+                            ? "#f59e42"
+                            : "#3b82f6";
+                    headerAvatar.style.color = "#fff";
                 }
 
-                // Cập nhật thông tin trong info panel
+                // Cập nhật info panel
                 const infoName = document.getElementById("chat-info-name");
                 const infoEmail = document.getElementById("chat-info-email");
-                const infoPhone = document.getElementById("chat-info-phone");
-                const infoStatus = document.getElementById("chat-info-status");
-                const infoBranch = document.getElementById("chat-info-branch");
                 const infoAvatar = document.getElementById("chat-info-avatar");
-
-                if (data.conversation.customer) {
+                const infoBranch = document.getElementById("chat-info-branch");
+                const infoStatus = document.getElementById("chat-info-status");
+                if (infoName)
                     infoName.textContent =
-                        data.conversation.customer.full_name ||
-                        data.conversation.customer.name;
-                    infoEmail.textContent = data.conversation.customer.email;
+                        customer.full_name || customer.name || "Khách hàng";
+                if (infoEmail) infoEmail.textContent = customer.email || "";
+                if (infoAvatar) {
                     infoAvatar.textContent = (
-                        data.conversation.customer.full_name ||
-                        data.conversation.customer.name
+                        customer.full_name ||
+                        customer.name ||
+                        "K"
                     )
                         .charAt(0)
                         .toUpperCase();
+                    infoAvatar.style.backgroundColor =
+                        data.conversation.status === "distributed"
+                            ? "#f59e42"
+                            : "#3b82f6";
+                    infoAvatar.style.color = "#fff";
+                }
+                if (infoBranch)
+                    infoBranch.textContent = `Chi nhánh: ${
+                        data.conversation.branch
+                            ? data.conversation.branch.name
+                            : ""
+                    }`;
+                if (infoStatus)
+                    infoStatus.textContent = data.conversation.status;
+
+                // Cập nhật last activity
+                const lastActivity = document.getElementById(
+                    "chat-info-last-activity"
+                );
+                if (lastActivity && data.conversation.updated_at_human) {
+                    lastActivity.textContent =
+                        data.conversation.updated_at_human;
                 }
 
-                if (data.conversation.status) {
-                    infoStatus.textContent = this.getStatusText(
+                // Cập nhật branch badge, trạng thái badge
+                const mainBranchBadge =
+                    document.getElementById("main-branch-badge");
+                if (mainBranchBadge) {
+                    if (data.conversation.branch) {
+                        mainBranchBadge.textContent =
+                            data.conversation.branch.name;
+                        mainBranchBadge.style.display = "";
+                    } else {
+                        mainBranchBadge.style.display = "none";
+                    }
+                }
+                const statusBadge = document.querySelector(".status-badge");
+                if (statusBadge) {
+                    statusBadge.textContent = this.getStatusText(
                         data.conversation.status
                     );
-                    infoStatus.className = `chat-info-status status-${data.conversation.status}`;
+                    statusBadge.className = `badge status-badge status-${data.conversation.status}`;
                 }
 
-                if (data.conversation.branch) {
-                    infoBranch.textContent = `Chi nhánh: ${data.conversation.branch.name}`;
-                }
+                // Render lại nút action
+                this.renderActionButtons(data.conversation);
 
-                // Cập nhật danh sách tin nhắn
+                // Cập nhật tin nhắn
                 this.messageContainer.innerHTML = "";
                 data.messages.forEach((message) => {
                     this.appendMessage(message);
                 });
-
-                // Cuộn xuống tin nhắn mới nhất
                 this.scrollToBottom();
-
-                // Cập nhật trạng thái cuộc trò chuyện
                 this.updateConversationStatus(data.conversation.status);
 
                 // Cập nhật info panel bên phải: số điện thoại và trạng thái
+                const infoPhone = document.getElementById("chat-info-phone");
                 if (infoPhone)
                     infoPhone.textContent =
                         "SĐT: " + (data.conversation.customer?.phone || "---");
-                if (infoStatus) {
-                    if (
-                        data.conversation.status === "distributed" ||
-                        data.conversation.status === "active"
-                    ) {
-                        infoStatus.textContent = "Đã phân phối";
-                    } else if (data.conversation.status === "new") {
-                        infoStatus.textContent = "Chờ phản hồi";
-                    } else if (data.conversation.status === "closed") {
-                        infoStatus.textContent = "Đã đóng";
-                    } else {
-                        infoStatus.textContent = data.conversation.status;
-                    }
-                }
             }
         } catch (error) {
             this.showError(
@@ -2840,10 +2905,14 @@ class BranchChat {
         div.dataset.conversationId = message.conversation_id;
         div.dataset.status = message.status || "new";
         div.dataset.customerName =
-            message.customer?.full_name ||
-            message.sender?.full_name ||
+            (message.customer &&
+                (message.customer.full_name || message.customer.name)) ||
+            (message.sender && message.sender.full_name) ||
             "Khách hàng";
-        div.dataset.customerEmail = message.customer?.email || "";
+        div.dataset.customerEmail =
+            (message.customer && message.customer.email) || "";
+        div.dataset.customerPhone =
+            (message.customer && message.customer.phone) || "";
         div.dataset.branchName =
             message.branch_name || (message.branch ? message.branch.name : "");
         // Tạo preview tin nhắn giới hạn 30 ký tự
@@ -2922,32 +2991,85 @@ class BranchChat {
 
     showTypingIndicator(userName) {
         let typingDiv = document.getElementById("branch-typing-indicator");
-        const msg = document.getElementById("chat-messages");
         if (!typingDiv) {
             typingDiv = document.createElement("div");
             typingDiv.id = "branch-typing-indicator";
             typingDiv.className = "typing-indicator";
-            typingDiv.innerHTML = `
-                <div class=\"typing-flex\">
-                    <span class=\"typing-text\">${userName} đang nhập</span>
-                    <span class=\"dot\"></span><span class=\"dot\"></span><span class=\"dot\"></span>
-                    
-                </div>
-            `;
-            if (msg) msg.appendChild(typingDiv);
-        } else {
-            typingDiv.style.display = "flex";
-            const textSpan = typingDiv.querySelector(".typing-text");
-            if (textSpan) textSpan.textContent = `${userName} đang nhập`;
+            typingDiv.innerHTML = `<span class=\"typing-text\">${userName} đang nhập</span><span class=\"dot\"></span><span class=\"dot\"></span><span class=\"dot\"></span>`;
         }
-        if (msg && msg.lastChild !== typingDiv) {
+        const msg = document.getElementById("chat-messages");
+        if (msg) {
+            const old = document.getElementById("branch-typing-indicator");
+            if (old && old.parentNode) old.parentNode.removeChild(old);
             msg.appendChild(typingDiv);
+            if (typeof this.scrollToBottom === "function")
+                this.scrollToBottom();
         }
     }
 
     hideTypingIndicator() {
         const typingDiv = document.getElementById("branch-typing-indicator");
-        if (typingDiv) typingDiv.style.display = "none";
+        if (typingDiv && typingDiv.parentNode)
+            typingDiv.parentNode.removeChild(typingDiv);
+    }
+
+    // Thêm 2 method cập nhật UI
+    updateHeaderAndInfoPanel(conversation) {
+        if (!conversation) return;
+        const customer = conversation.customer || {};
+        const headerName = document.getElementById("chat-header-name");
+        const headerEmail = document.getElementById("chat-header-email");
+        const headerAvatar = document.getElementById("chat-header-avatar");
+        const infoName = document.getElementById("chat-info-name");
+        const infoEmail = document.getElementById("chat-info-email");
+        const infoAvatar = document.getElementById("chat-info-avatar");
+        const infoBranch = document.getElementById("chat-info-branch");
+        const infoStatus = document.getElementById("chat-info-status");
+        if (headerName)
+            headerName.textContent =
+                customer.full_name || customer.name || "Khách hàng";
+        if (headerEmail) headerEmail.textContent = customer.email || "";
+        if (headerAvatar)
+            headerAvatar.textContent = (
+                customer.full_name ||
+                customer.name ||
+                "K"
+            )
+                .charAt(0)
+                .toUpperCase();
+        if (infoName)
+            infoName.textContent =
+                customer.full_name || customer.name || "Khách hàng";
+        if (infoEmail) infoEmail.textContent = customer.email || "";
+        if (infoAvatar)
+            infoAvatar.textContent = (
+                customer.full_name ||
+                customer.name ||
+                "K"
+            )
+                .charAt(0)
+                .toUpperCase();
+        if (infoBranch)
+            infoBranch.textContent = `Chi nhánh: ${
+                conversation.branch ? conversation.branch.name : ""
+            }`;
+        if (infoStatus) infoStatus.textContent = conversation.status;
+    }
+
+    renderActionButtons(conversation) {
+        const container = document.querySelector(
+            ".chat-info-panel .flex.flex-col.items-end"
+        );
+        if (!container) return;
+        container.innerHTML = "";
+        if (conversation.status === "distributed") {
+            container.innerHTML = `<button id="btn-activate-conversation" class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200 transition"><i class="fas fa-play-circle text-blue-600"></i> Kích hoạt</button>`;
+        } else if (conversation.status === "active") {
+            container.innerHTML = `<button id="btn-resolve-conversation" class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-green-700 bg-green-100 rounded-full hover:bg-green-200 transition"><i class="fas fa-check-circle text-green-600"></i> Đã giải quyết</button><button id="btn-close-conversation" class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition"><i class="fas fa-times-circle text-gray-600"></i> Đóng</button>`;
+        } else if (conversation.status === "resolved") {
+            container.innerHTML = `<button id="btn-close-conversation" class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-full hover:bg-gray-300 transition"><i class="fas fa-times-circle text-gray-600"></i> Đóng</button>`;
+        }
+        // Gắn lại event cho các nút nếu cần
     }
 }
 
@@ -3012,27 +3134,40 @@ class CustomerChatRealtime {
             typingDiv = document.createElement("div");
             typingDiv.id = "customer-typing-indicator";
             typingDiv.className = "typing-indicator";
-            typingDiv.innerHTML = `
-                <div class=\"typing-flex\">
-                    <span class=\"typing-text\">${userName} đang nhập</span>
-                    <span class=\"dot\"></span><span class=\"dot\"></span><span class=\"dot\"></span>
-                    
-                </div>
-            `;
-            if (msgContainer) msgContainer.appendChild(typingDiv);
-        } else {
-            typingDiv.style.display = "flex";
-            const textSpan = typingDiv.querySelector(".typing-text");
-            if (textSpan) textSpan.textContent = `${userName} đang nhập`;
+            typingDiv.innerHTML = `<span class=\"typing-text\">${userName} đang nhập</span><span class=\"dot\"></span><span class=\"dot\"></span><span class=\"dot\"></span>`;
         }
-        if (msgContainer && msgContainer.lastChild !== typingDiv) {
+        if (msgContainer) {
+            // Remove old
+            const old = document.getElementById("customer-typing-indicator");
+            if (old && old.parentNode) old.parentNode.removeChild(old);
             msgContainer.appendChild(typingDiv);
+            msgContainer.scrollTop = msgContainer.scrollHeight;
         }
     }
 
     hideTypingIndicator() {
         const typingDiv = document.getElementById("customer-typing-indicator");
-        if (typingDiv) typingDiv.style.display = "none";
+        if (typingDiv && typingDiv.parentNode)
+            typingDiv.parentNode.removeChild(typingDiv);
+    }
+
+    async sendTypingIndicator(isTyping) {
+        try {
+            await fetch("/customer/chat/typing", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({
+                    conversation_id: this.conversationId,
+                    is_typing: isTyping,
+                }),
+            });
+        } catch (e) {}
     }
 }
 

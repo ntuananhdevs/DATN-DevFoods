@@ -193,7 +193,7 @@
                 @endif
             </div>
             <div class="p-4 flex justify-end">
-                <div class="w-full flex flex-col items-end">
+                <div class="w-full flex flex-col items-end" id="distribution-select-container">
                     @if ($hasConversation)
                         @if (!$conversation->branch_id && $conversation->status === 'new')
                             <select class="distribution-select form-select w-full max-w-xs" id="distribution-select"
@@ -220,6 +220,7 @@
     <script>
         window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
         window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
+        window.branches = @json($branches);
     </script>
 
     <style>

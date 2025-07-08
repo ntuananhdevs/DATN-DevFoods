@@ -270,16 +270,12 @@
             closeNotificationBtn.addEventListener('click', closeSuccessNotification);
             imageInput.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
-                    pendingImage = this.files[0];
-                } else {
-                    pendingImage = null;
+                    sendAttachment('image', this.files[0]);
                 }
             });
             fileInput.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
-                    pendingFile = this.files[0];
-                } else {
-                    pendingFile = null;
+                    sendAttachment('file', this.files[0]);
                 }
             });
             document.addEventListener('click', (e) => {
@@ -402,7 +398,8 @@
 
         function handleInputChange() {
             const hasText = messageInput.value.trim().length > 0;
-            sendBtn.disabled = !hasText || isChatEnded;
+            const hasFile = !!pendingFile || !!pendingImage;
+            sendBtn.disabled = (!hasText && !hasFile) || isChatEnded;
         }
 
         function handleKeyPress(e) {
@@ -914,6 +911,79 @@
                     is_typing: isTyping,
                 }),
             });
+        }
+
+        function createConversationAndSend(type, file) {
+            const formData = new FormData();
+            formData.append('message', 'Xin chào!');
+            fetch('/customer/chat/create', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.data && data.data.conversation) {
+                        conversationId = data.data.conversation.id;
+                        window.conversationId = conversationId;
+                        if (type === 'image') {
+                            pendingImage = file;
+                            sendMessage();
+                        } else if (type === 'file') {
+                            pendingFile = file;
+                            sendMessage();
+                        }
+                    }
+                });
+        }
+
+        // Hàm gửi file/ảnh giống branch/admin chat
+        function sendAttachment(type, file) {
+            if (!conversationId) {
+                // Nếu chưa có conversation, tạo trước rồi gửi file/ảnh
+                createConversationAndSend(type, file);
+                return;
+            }
+            const formData = new FormData();
+            formData.append('conversation_id', conversationId);
+            formData.append('message', '');
+            formData.append('attachment', file);
+            formData.append('attachment_type', type);
+            fetch('/customer/chat/send', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        addMessage({
+                            id: data.data.id,
+                            content: data.data.message,
+                            sender: 'user',
+                            timestamp: new Date(data.data.sent_at || data.data.created_at),
+                            type: data.data.attachment_type === 'image' ? 'image' : 'file',
+                            imageUrl: data.data.attachment_type === 'image' ? '/storage/' + data
+                                .data.attachment : undefined,
+                            fileName: data.data.attachment_type !== 'image' ? data.data.attachment
+                                .split('/').pop() : undefined,
+                            fileUrl: data.data.attachment_type !== 'image' ? '/storage/' + data.data
+                                .attachment : undefined,
+                        });
+                    }
+                    fileInput.value = '';
+                    imageInput.value = '';
+                    pendingFile = null;
+                    pendingImage = null;
+                    handleInputChange();
+                    autoResizeTextarea();
+                });
         }
     });
 </script>
