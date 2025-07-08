@@ -70,4 +70,9 @@ class ProductReview extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+
+    public function replies()
+    {
+        return $this->hasMany(\App\Models\ReviewReply::class, 'review_id');
+    }
 }

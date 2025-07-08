@@ -84,6 +84,7 @@
         @media (max-width: 768px) { .combo-detail-page .product-title { font-size: 1.75rem; } .combo-detail-page .product-header { flex-direction: column; align-items: start; } .combo-detail-page .price-section { text-align: left; margin-top: 1rem; } .combo-detail-page .nutrition-grid { grid-template-columns: repeat(2, 1fr); } .combo-detail-page .photos-grid { grid-template-columns: repeat(4, 1fr); } .combo-detail-page .option-grid { grid-template-columns: 1fr; } }
     </style>
 
+
     <div class="combo-detail-page">
         <div class="combo-content">
             <div class="main-grid">
@@ -270,7 +271,63 @@
     </div>
 
     <script>
-        // Copy toàn bộ script từ hihi.html nếu cần (hoặc giữ lại script cũ nếu đã có logic động)
+        // Live Search AJAX
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('liveSearchInput');
+            const resultsBox = document.getElementById('liveSearchResults');
+            let timer = null;
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                if (timer) clearTimeout(timer);
+                if (query.length < 2) {
+                    resultsBox.style.display = 'none';
+                    resultsBox.innerHTML = '';
+                    return;
+                }
+                timer = setTimeout(() => {
+                    fetchLiveSearch(query);
+                }, 250);
+            });
+
+            function fetchLiveSearch(query) {
+                fetch("{{ route('customer.search.ajax') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ search: query })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        resultsBox.innerHTML = data.results.map(item => `
+                            <a href="/customer/shop/product/${item.slug}" style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; text-decoration: none; color: #1f2937; border-bottom: 1px solid #f1f5f9;">
+                                <img src="${item.image_url}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 0.4rem;">
+                                <span style="flex:1;">${item.name}</span>
+                                <span style="color: #f97316; font-weight: 600;">${item.price.toLocaleString('vi-VN')}đ</span>
+                            </a>
+                        `).join('');
+                        resultsBox.style.display = 'block';
+                    } else {
+                        resultsBox.innerHTML = '<div style="padding: 12px; color: #64748b;">Không tìm thấy sản phẩm phù hợp.</div>';
+                        resultsBox.style.display = 'block';
+                    }
+                })
+                .catch(() => {
+                    resultsBox.innerHTML = '<div style="padding: 12px; color: #ef4444;">Lỗi tìm kiếm.</div>';
+                    resultsBox.style.display = 'block';
+                });
+            }
+
+            // Hide results when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !resultsBox.contains(e.target)) {
+                    resultsBox.style.display = 'none';
+                }
+            });
+        });
     </script>
 
 @endsection

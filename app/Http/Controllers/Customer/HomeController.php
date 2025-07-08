@@ -494,4 +494,68 @@ class HomeController extends Controller
         return view('customer.shop.search', compact('products', 'categories', 'banners', 'search', 'combos', 'searchType'));
     }
 
+    /**
+     * AJAX live search for products by name. Returns JSON.
+     */
+    public function searchAjax(Request $request)
+    {
+        $search = $request->input('search');
+        if (!$search || strlen($search) < 2) {
+            return response()->json(['results' => []]);
+        }
+        // Sản phẩm
+        $products = \App\Models\Product::where('status', 'selling')
+            ->where('name', 'like', "%$search%" )
+            ->orderBy('name')
+            ->get();
+        // Combo
+        $combos = \App\Models\Combo::where('status', 'selling')
+            ->where('active', true)
+            ->where('name', 'like', "%$search%")
+            ->orderBy('name')
+            ->get();
+        $results = [];
+        foreach ($products as $product) {
+            $image_url = null;
+            if ($product->images && $product->images->count()) {
+                $primary = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+                if ($primary && $primary->img) {
+                    $image_url = \Storage::disk('s3')->url($primary->img);
+                }
+            }
+            if (!$image_url) {
+                $image_url = \Illuminate\Support\Facades\URL::to('images/default-placeholder.png');
+            }
+            $results[] = [
+                'type' => 'product',
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->base_price,
+                'image_url' => $image_url,
+                'slug' => $product->slug,
+            ];
+        }
+        foreach ($combos as $combo) {
+            if ($combo->image) {
+                try {
+                    $image_url = \Storage::disk('s3')->url($combo->image);
+                } catch (\Exception $e) {
+                    $image_url = \Illuminate\Support\Facades\URL::to('images/default-combo.png');
+                }
+            } else {
+                $image_url = \Illuminate\Support\Facades\URL::to('images/default-combo.png');
+            }
+            $results[] = [
+                'type' => 'combo',
+                'id' => $combo->id,
+                'name' => $combo->name,
+                'price' => $combo->price,
+                'image_url' => $image_url,
+                'slug' => $combo->slug,
+            ];
+        }
+        // Sắp xếp: sản phẩm trước, combo sau, không giới hạn số lượng
+        return response()->json(['results' => $results]);
+    }
+
 }

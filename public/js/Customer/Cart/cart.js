@@ -12,8 +12,8 @@ function updateCartTotals() {
         if (quantityElement && itemPriceElement) {
             const quantity = parseInt(quantityElement.textContent);
             const itemPriceText = itemPriceElement.textContent;
-            const itemPrice = parseInt(itemPriceText.replace(/\D/g, ''));
-            
+            let itemPrice = parseInt(itemPriceText.replace(/\D/g, ''));
+            // Không cộng toppingTotal nữa, vì giá đã bao gồm topping
             const itemTotal = itemPrice * quantity;
             subtotal += itemTotal;
             

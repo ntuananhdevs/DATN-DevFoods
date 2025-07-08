@@ -21,6 +21,13 @@ use App\Observers\ComboObserver;
 use App\Models\Combo;
 use App\Observers\OrderObserver;
 use App\Models\Order;
+use App\Models\ProductReview;
+use App\Models\ReviewReply;
+use App\Observers\ProductReviewObserver;
+use App\Observers\ReviewReplyObserver;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Auth;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -61,7 +68,29 @@ class AppServiceProvider extends ServiceProvider
         // Register OrderObserver
         Order::observe(OrderObserver::class);
 
+        // Register ReviewReplyObserver
+        ReviewReply::observe(ReviewReplyObserver::class);
+
+        // Register ProductReviewObserver
+        ProductReview::observe(ProductReviewObserver::class);
+
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));
+
+        // View Composer cho layout/partials profile
+        View::composer([
+            'layouts.profile.fullLayoutProfile',
+            'partials.profile.header',
+            'partials.profile.sidebar',
+        ], function ($view) {
+            $user = Auth::user();
+            $currentRank = $user?->currentRank ?? null;
+            $currentPoints = $user?->points ?? 0;
+            $view->with([
+                'user' => $user,
+                'currentRank' => $currentRank,
+                'currentPoints' => $currentPoints,
+            ]);
+        });
     }
 }

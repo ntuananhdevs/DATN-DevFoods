@@ -73,11 +73,11 @@ class Combo extends Model
 
     public function getTotalOriginalPriceAttribute()
     {
-        return $this->comboItems()
-            ->join('product_variants', 'combo_items.product_variant_id', '=', 'product_variants.id')
-            ->join('products', 'product_variants.product_id', '=', 'products.id')
-            ->selectRaw('SUM(products.base_price * combo_items.quantity) as total_price')
-            ->value('total_price') ?? 0;
+        // Tính tổng giá gốc của combo dựa trên các biến thể sản phẩm và số lượng từng biến thể
+        return $this->productVariants()->get()->sum(function($variant) {
+            $quantity = $variant->pivot->quantity ?? 1;
+            return $variant->price * $quantity;
+        });
     }
 
     public function getDiscountPercentAttribute()

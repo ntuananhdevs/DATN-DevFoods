@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\HiringController;
 use App\Http\Controllers\Customer\Auth\RegisterController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Controllers\Customer\ReviewReplyController;
 
 // API Controllers for Customer
 // use App\Http\Controllers\Api\Customer\ProductController as ApiCustomerProductController;
@@ -44,23 +45,6 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
     Route::get('/shop/combos/{id}', [CustomerProductController::class, 'showComboDetail'])->name('combos.show');
     Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
-
-    // Debug routes for discount codes
-    Route::get('/debug/discount-codes', function () {
-        $now = \Carbon\Carbon::now();
-        $publicCodes = \App\Models\DiscountCode::where('is_active', true)
-            ->where('start_date', '<=', $now)
-            ->where('end_date', '>=', $now)
-            ->where('usage_type', 'public')
-            ->get();
-
-        return response()->json([
-            'count' => $publicCodes->count(),
-            'codes' => $publicCodes
-        ]);
-    });
-
-    Route::get('/debug/product/{id}/discount-codes', [CustomerProductController::class, 'showProductDiscounts']);
 
     // Wishlist
     Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
@@ -119,13 +103,19 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/profile/setting', [CustomerProfileController::class, 'setting'])->name('customer.profile.setting');
     Route::put('/profile/password', [CustomerProfileController::class, 'updatePassword'])->name('customer.password.update');
     Route::patch('/profile/update', [CustomerProfileController::class, 'update'])->name('customer.profile.update');
+    Route::post('/products/{id}/review', [CustomerProductController::class, 'submitReview'])->name('products.review');
+    Route::delete('/reviews/{id}', [CustomerProductController::class, 'destroyReview'])->name('reviews.destroy');
+    Route::post('/reviews/{review}/reply', [ReviewReplyController::class, 'store'])->name('reviews.reply');
+    Route::delete('/review-replies/{reply}', [ReviewReplyController::class, 'destroy'])->name('review-replies.destroy');
+    Route::post('/reviews/{id}/helpful', [CustomerProductController::class, 'markHelpful'])->name('reviews.helpful');
+    Route::delete('/reviews/{id}/helpful', [CustomerProductController::class, 'unmarkHelpful'])->name('reviews.unhelpful');
     // Route để hiển thị trang "Tất cả đơn hàng"
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
 
     // Route để hiển thị trang "Chi tiết đơn hàng"
-    // Sử dụng Route-Model Binding để tự động lấy Order model
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
     Route::post('/orders/{order}/status', [CustomerOrderController::class, 'updateStatus'])->name('customer.orders.updateStatus');
+    Route::get('/orders/list', [CustomerOrderController::class, 'listPartial'])->name('customer.orders.listPartial');
 });
 
 // Phone Required routes (không cần phone.required middleware)

@@ -307,15 +307,6 @@ class ProductController extends Controller
             return $product;
         });
 
-        // Nếu là AJAX (lazy load 1 category)
-        if ($request->ajax() || $request->has('ajax')) {
-            $categoryId = $request->get('category');
-            $catProducts = $products->where('category_id', $categoryId);
-            return view('customer.shop._product_grid', [
-                'products' => $catProducts,
-            ])->render();
-        }
-
         return view("customer.shop.index", compact('products', 'categories', 'selectedCategoryIds'));
     }
 
@@ -922,4 +913,145 @@ class ProductController extends Controller
 
         return response()->json($response);
     }
+
+    public function submitReview(Request $request, $id)
+    {
+        $request->validate([
+            'rating' => 'required|integer|min:0|max:5',
+            'review' => 'nullable|string|max:2000',
+            'review_image' => 'nullable|image|max:2048',
+            'is_anonymous' => 'nullable|boolean',
+        ]);
+
+        $product = Product::findOrFail($id);
+        $user = $request->user();
+
+        // Kiểm tra user đã mua sản phẩm này chưa (đã có đơn hàng delivered chứa product này)
+        $order = \App\Models\Order::where('customer_id', $user->id)
+            ->where('status', 'delivered')
+            ->whereHas('orderItems.productVariant', function($q) use ($id) {
+                $q->where('product_id', $id);
+            })
+            ->orderByDesc('order_date')
+            ->first();
+        if (!$order) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Bạn chỉ có thể đánh giá sản phẩm đã mua!'], 403);
+            }
+            return redirect()->back()->with('error', 'Bạn chỉ có thể đánh giá sản phẩm đã mua!');
+        }
+
+        // TẠM THỜI BỎ QUA KIỂM TRA ORDER
+        $review = new \App\Models\ProductReview();
+        $review->user_id = $user->id;
+        $review->product_id = $product->id;
+        $review->order_id = $order->id;
+        $review->branch_id = $request->input('branch_id');
+        $review->rating = $request->input('rating');
+        $review->review = $request->input('review');
+        $review->review_date = now();
+        $review->approved = false;
+        $review->is_verified_purchase = true;
+        $review->is_anonymous = $request->boolean('is_anonymous', false);
+        $review->helpful_count = 0;
+        $review->report_count = 0;
+        $review->is_featured = false;
+
+        if ($request->hasFile('review_image')) {
+            // Nếu có ảnh cũ thì xóa khỏi S3
+            if ($review->review_image) {
+                \Storage::disk('s3')->delete($review->review_image);
+            }
+            $path = $request->file('review_image')->store('reviews', 's3');
+            $review->review_image = $path;
+        }
+
+        $review->save();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Đánh giá của bạn đã được gửi và đang chờ duyệt!']);
+        }
+        return redirect()->route('products.show', $product->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+    }
+
+    public function destroyReview(Request $request, $id)
+    {
+        $review = \App\Models\ProductReview::findOrFail($id);
+        $user = $request->user();
+        if ($review->user_id !== $user->id) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Bạn không có quyền xóa bình luận này!'], 403);
+            }
+            return back()->with('error', 'Bạn không có quyền xóa bình luận này!');
+        }
+        $review->delete();
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Xóa bình luận thành công!']);
+        }
+        return back()->with('success', 'Xóa bình luận thành công!');
+    }
+
+    public function markHelpful($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập!'], 401);
+        }
+
+        $review = \App\Models\ProductReview::findOrFail($id);
+
+        // Kiểm tra nếu user đã bấm rồi thì không cho bấm nữa
+        $already = \App\Models\ReviewHelpful::where('user_id', $user->id)->where('review_id', $review->id)->exists();
+        if ($already) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã bấm hữu ích!',
+                'helpful_count' => $review->helpful_count,
+                'review_id' => $review->id
+            ]);
+        }
+
+        // Tạo record mới
+        \App\Models\ReviewHelpful::create([
+            'user_id' => $user->id,
+            'review_id' => $review->id
+        ]);
+        $review->helpful_count = $review->helpful_count + 1;
+        $review->save();
+
+        return response()->json([
+            'success' => true,
+            'helpful_count' => $review->helpful_count,
+            'review_id' => $review->id
+        ]);
+    }
+
+    public function unmarkHelpful($id)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập!'], 401);
+        }
+        $review = \App\Models\ProductReview::findOrFail($id);
+        $helpful = \App\Models\ReviewHelpful::where('user_id', $user->id)->where('review_id', $review->id)->first();
+        if (!$helpful) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa bấm hữu ích!',
+                'helpful_count' => $review->helpful_count,
+                'review_id' => $review->id
+            ]);
+        }
+        $helpful->delete();
+        if ($review->helpful_count > 0) {
+            $review->helpful_count = $review->helpful_count - 1;
+            $review->save();
+        }
+        return response()->json([
+            'success' => true,
+            'helpful_count' => $review->helpful_count,
+            'review_id' => $review->id
+        ]);
+    }
 }
+
