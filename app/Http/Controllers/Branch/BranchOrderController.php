@@ -11,13 +11,14 @@ use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
 use App\Events\OrderStatusUpdated;
 use App\Events\Branch\NewOrderReceived;
+use App\Events\NewOrderAvailable;
 
 class BranchOrderController extends Controller
 {
     public function index(Request $request)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         if (!$branch) {
             return redirect()->back()->with('error', 'Không tìm thấy thông tin chi nhánh');
         }
@@ -42,14 +43,14 @@ class BranchOrderController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('order_code', 'like', "%{$search}%")
-                  ->orWhere('guest_name', 'like', "%{$search}%")
-                  ->orWhere('guest_phone', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function($customerQuery) use ($search) {
-                      $customerQuery->where('name', 'like', "%{$search}%")
-                                   ->orWhere('phone', 'like', "%{$search}%");
-                  });
+                    ->orWhere('guest_name', 'like', "%{$search}%")
+                    ->orWhere('guest_phone', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -68,7 +69,7 @@ class BranchOrderController extends Controller
 
         // Payment method filter
         if ($request->filled('payment_method') && $request->payment_method !== 'all') {
-            $query->whereHas('payment', function($q) use ($request) {
+            $query->whereHas('payment', function ($q) use ($request) {
                 $q->where('payment_method', $request->payment_method);
             });
         }
@@ -118,7 +119,7 @@ class BranchOrderController extends Controller
     public function show($id)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         $order = Order::with([
             'customer',
             'driver',
@@ -130,8 +131,8 @@ class BranchOrderController extends Controller
             'payment',
             'address'
         ])->where('branch_id', $branch->id)
-          ->where('id', $id)
-          ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         return view('branch.orders.show', compact('order'));
     }
@@ -139,16 +140,16 @@ class BranchOrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         $order = Order::where('branch_id', $branch->id)
-                     ->where('id', $id)
-                     ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         $oldStatus = $order->status;
         $newStatus = $request->status;
         $note = $request->note;
 
-        // Validate status transition
+        // Validate status transition (UPDATED logic for new statuses)
         $validTransitions = $this->getValidStatusTransitions($oldStatus);
         if (!in_array($newStatus, $validTransitions)) {
             return response()->json([
@@ -157,7 +158,7 @@ class BranchOrderController extends Controller
             ], 400);
         }
 
-        // Additional validations for specific status changes
+        // Additional validations for specific status changes (UPDATED logic)
         $validationResult = $this->validateStatusChange($order, $newStatus);
         if (!$validationResult['valid']) {
             return response()->json([
@@ -166,31 +167,34 @@ class BranchOrderController extends Controller
             ], 400);
         }
 
-        // Update order status
-        $order->update(['status' => $newStatus]);
-
-        // Handle specific status actions
+        // Handle status-specific actions (UPDATED logic)
         $this->handleStatusSpecificActions($order, $newStatus);
 
-        // Create status history
+        // Cập nhật trạng thái đơn hàng
+        $order->status = $newStatus;
+        $order->save();
+
+        // Lấy lại đơn hàng với dữ liệu mới nhất
+        $freshOrder = $order->fresh();
+
+        // Ghi lại lịch sử trạng thái
         OrderStatusHistory::create([
             'order_id' => $order->id,
             'old_status' => $oldStatus,
             'new_status' => $newStatus,
             'changed_by' => Auth::guard('manager')->id(),
             'changed_by_role' => 'branch_manager',
-            'note' => $note ?: $this->getDefaultNote($oldStatus, $newStatus),
+            'note' => $note ?? $this->getDefaultNote($oldStatus, $newStatus),
             'changed_at' => now()
         ]);
 
-        // Broadcast order status update event
-        event(new OrderStatusUpdated($order, $oldStatus, $newStatus));
+        // Broadcast sự kiện cập nhật trạng thái đơn hàng
+        event(new OrderStatusUpdated($freshOrder)); //
 
         return response()->json([
             'success' => true,
-            'message' => 'Cập nhật trạng thái thành công',
-            'new_status' => $newStatus,
-            'status_text' => $this->getStatusText($newStatus)
+            'message' => 'Cập nhật trạng thái đơn hàng thành công.',
+            'order' => $freshOrder // Trả về đơn hàng đã cập nhật
         ]);
     }
 
@@ -258,20 +262,20 @@ class BranchOrderController extends Controller
             case 'processing':
                 // Có thể thêm logic gửi thông báo cho khách hàng
                 break;
-            
+
             case 'ready':
                 // Có thể thêm logic tìm tài xế
                 break;
-            
+
             case 'delivery':
                 // Có thể thêm logic gán tài xế nếu chưa có
                 break;
-            
+
             case 'completed':
                 // Cập nhật thời gian giao hàng thực tế
                 $order->update(['actual_delivery_time' => now()]);
                 break;
-            
+
             case 'cancelled':
                 // Tạo bản ghi hủy đơn hàng
                 OrderCancellation::create([
@@ -334,10 +338,10 @@ class BranchOrderController extends Controller
     public function cancel(Request $request, $id)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         $order = Order::where('branch_id', $branch->id)
-                     ->where('id', $id)
-                     ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         // Create cancellation record
         OrderCancellation::create([

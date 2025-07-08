@@ -19,7 +19,6 @@ class DriverController extends Controller
         $driver = Auth::guard('driver')->user();
 
         // CẬP NHẬT: Lấy thu nhập từ các đơn có trạng thái 'delivered' hoặc 'item_received'
-        // Vẫn giữ nguyên logic này để hiển thị ban đầu trên dashboard
         $ordersDeliveredToday = Order::where('driver_id', $driver->id)
             ->whereIn('status', ['delivered', 'item_received'])
             ->whereDate('actual_delivery_time', Carbon::today())
@@ -27,13 +26,14 @@ class DriverController extends Controller
         $totalEarnedToday = $ordersDeliveredToday->sum('driver_earning');
 
         // CẬP NHẬT: Lấy các đơn hàng tài xế đang xử lý
+        // Should now include 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'
         $processingOrders = Order::where('driver_id', $driver->id)
-            ->whereIn('status', ['driver_picked_up', 'in_transit'])
+            ->whereIn('status', ['driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit'])
             ->latest()->get();
 
-        // CẬP NHẬT: Lấy các đơn hàng mới đang chờ tài xế
+        // CẬP NHẬT: Lấy các đơn hàng mới đang chờ tài xế (chưa có driver_id)
         $availableOrders = Order::whereNull('driver_id')
-            ->where('status', 'awaiting_driver')
+            ->where('status', 'awaiting_driver') // Only orders awaiting *any* driver
             ->latest()->take(5)->get();
 
         return view('driver.dashboard', compact(
@@ -73,27 +73,25 @@ class DriverController extends Controller
 
         // CẬP NHẬT: Sử dụng cả 'delivered' và 'item_received' và 'actual_delivery_time'
         $query = Order::where('driver_id', $driverId)
-            ->whereIn('status', ['delivered', 'item_received']);
+            ->whereIn('status', ['delivered', 'item_received']); //
 
-        switch ($filter) {
+        switch ($filter) { //
             case 'today':
-                $query->whereDate('actual_delivery_time', Carbon::today());
+                $query->whereDate('actual_delivery_time', Carbon::today()); //
                 break;
             case 'week':
-                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]); //
                 break;
             case 'month':
-                $query->whereMonth('actual_delivery_time', Carbon::now()->month);
+                $query->whereMonth('actual_delivery_time', Carbon::now()->month); //
                 break;
                 // Case 'all' không cần thêm điều kiện ngày
         }
 
         $filteredHistory = $query->latest('actual_delivery_time')->get();
-
         $totalEarnings = $filteredHistory->sum('driver_earning');
-        $totalOrders = $filteredHistory->count();
 
-        return view('driver.history', compact('filteredHistory', 'filter', 'totalEarnings', 'totalOrders'));
+        return view('driver.history', compact('filteredHistory', 'totalEarnings', 'filter'));
     }
 
     /**
@@ -152,17 +150,24 @@ class DriverController extends Controller
      * API để bật/tắt trạng thái hoạt động.
      */
     // Phương thức để bật/tắt trạng thái
-    public function toggleStatus(Request $request)
-    {
-        $request->validate(['is_available' => 'required|boolean']);
-        $driver = $request->user('driver'); // Lấy driver đang đăng nhập
-        $driver->is_available = $request->is_available;
-        $driver->save();
+    public function setAvailability(Request $request)
+    { //
+        $driver = Auth::guard('driver')->user(); //
+        if (!$driver) { //
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy tài xế đang đăng nhập'], 404); //
+        }
 
-        return response()->json([
+        $request->validate([ //
+            'is_available' => 'required|boolean', //
+        ]);
+
+        $driver->is_available = $request->is_available; //
+        $driver->save(); //
+
+        return response()->json([ //
             'success' => true,
-            'is_available' => (bool)$driver->is_available,
-            'message' => $driver->is_available ? 'Bạn đã Online.' : 'Bạn đã Offline.',
+            'is_available' => (bool)$driver->is_available, //
+            'message' => $driver->is_available ? 'Bạn đã Online.' : 'Bạn đã Offline.', //
         ]);
     }
 
@@ -173,26 +178,26 @@ class DriverController extends Controller
         $period = $request->query('period', 'today');
 
         // CẬP NHẬT QUAN TRỌNG: Thay đổi where('status', 'delivered') thành whereIn và sử dụng actual_delivery_time
-        $query = Order::where('driver_id', $driverId)->whereIn('status', ['delivered', 'item_received']);
+        $query = Order::where('driver_id', $driverId)->whereIn('status', ['delivered', 'item_received']); //
 
-        switch ($period) {
+        switch ($period) { //
             case 'week':
-                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                $query->whereBetween('actual_delivery_time', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]); //
                 break;
             case 'month':
-                $query->whereMonth('actual_delivery_time', Carbon::now()->month);
+                $query->whereMonth('actual_delivery_time', Carbon::now()->month); //
                 break;
             default: // today
-                $query->whereDate('actual_delivery_time', Carbon::today());
+                $query->whereDate('actual_delivery_time', Carbon::today()); //
                 break;
         }
 
-        $totalEarnings = $query->sum('driver_earning');
-        $orderCount = $query->count();
+        $totalEarnings = $query->sum('driver_earning'); //
+        $orderCount = $query->count(); //
 
-        return response()->json([
+        return response()->json([ //
             'earnings' => number_format($totalEarnings, 0, ',', '.') . ' đ',
-            'order_count' => $orderCount . ' đơn đã giao',
+            'order_count' => $orderCount,
         ]);
     }
 }

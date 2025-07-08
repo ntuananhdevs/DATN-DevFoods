@@ -181,51 +181,46 @@ class Order extends Model
         'awaiting_confirmation' => ['text' => 'Chờ xác nhận', 'bg' => '#fef9c3', 'text_color' => '#ca8a04', 'icon' => 'fas fa-hourglass-half'],
         'confirmed' => ['text' => 'Đã xác nhận', 'bg' => '#dbeafe', 'text_color' => '#2563eb', 'icon' => 'fas fa-check'],
         'awaiting_driver' => ['text' => 'Chờ tài xế', 'bg' => '#ffedd5', 'text_color' => '#c2410c', 'icon' => 'fas fa-user-clock'],
-
+        'driver_assigned' => ['text' => 'Tài xế được giao', 'bg' => '#d1fae5', 'text_color' => '#047857', 'icon' => 'fas fa-user-check'], // NEW
+        'driver_confirmed' => ['text' => 'Tài xế xác nhận', 'bg' => '#bfdbfe', 'text_color' => '#1d4ed8', 'icon' => 'fas fa-handshake'], // NEW
         'driver_picked_up' => ['text' => 'Đã nhận đơn', 'bg' => '#e0e7ff', 'text_color' => '#4338ca', 'icon' => 'fas fa-shopping-bag'],
         'in_transit' => ['text' => 'Đang giao', 'bg' => '#ccfbf1', 'text_color' => '#0f766e', 'icon' => 'fas fa-truck'],
         'delivered' => ['text' => 'Đã giao', 'bg' => '#dcfce7', 'text_color' => '#16a34a', 'icon' => 'fas fa-check-double'],
-        'item_received' => ['text' => 'Đã nhận hàng', 'bg' => '#d1fae5', 'text_color' => '#047857', 'icon' => 'fas fa-home'],
+        'item_received' => ['text' => 'Khách đã nhận', 'bg' => '#d1fae5', 'text_color' => '#047857', 'icon' => 'fas fa-home'],
         'cancelled' => ['text' => 'Đã hủy', 'bg' => '#fee2e2', 'text_color' => '#dc2626', 'icon' => 'fas fa-times-circle'],
-        'failed_delivery' => ['text' => 'Giao thất bại', 'bg' => '#fee2e2', 'text_color' => '#dc2626', 'icon' => 'fas fa-exclamation-triangle'],
-        'delivery_incomplete' => ['text' => 'Giao chưa hoàn tất', 'bg' => '#fef3c7', 'text_color' => '#d97706', 'icon' => 'fas fa-exclamation-circle'],
-        'pending_refund' => ['text' => 'Chờ hoàn tiền', 'bg' => '#e0f2fe', 'text_color' => '#0284c7', 'icon' => 'fas fa-undo-alt'],
-        'investigating' => ['text' => 'Đang điều tra', 'bg' => '#e5e7eb', 'text_color' => '#4b5563', 'icon' => 'fas fa-search'],
-        'waiting_for_confirmation' => ['text' => 'Đang chờ xác nhận', 'bg' => '#fef9c3', 'text_color' => '#ca8a04', 'icon' => 'fas fa-hourglass-half'],
+        'refunded' => ['text' => 'Đã hoàn tiền', 'bg' => '#e0f2fe', 'text_color' => '#0284c7', 'icon' => 'fas fa-undo-alt'], // NEW
+        'payment_failed' => ['text' => 'Thanh toán thất bại', 'bg' => '#fee2e2', 'text_color' => '#dc2626', 'icon' => 'fas fa-credit-card'], // NEW
+        'payment_received' => ['text' => 'Đã nhận thanh toán', 'bg' => '#dcfce7', 'text_color' => '#16a34a', 'icon' => 'fas fa-dollar-sign'], // NEW
+        'order_failed' => ['text' => 'Đơn hàng thất bại', 'bg' => '#fee2e2', 'text_color' => '#dc2626', 'icon' => 'fas fa-exclamation-triangle'], // NEW
         'default' => ['text' => 'Không xác định', 'bg' => '#f3f4f6', 'text_color' => '#4b5563', 'icon' => 'fas fa-question-circle'],
     ];
 
     /**
      * Lấy text trạng thái Tiếng Việt.
      */
-    protected function statusText(): Attribute
+    public function getStatusTextAttribute(): string
     {
-        return Attribute::make(
-            get: fn() => self::$statusAttributes[$this->status]['text'] ?? self::$statusAttributes['default']['text'],
-        );
+        return self::$statusAttributes[$this->status]['text'] ?? self::$statusAttributes['default']['text'];
     }
 
     /**
      * Lấy MÀU HEX (string) cho từng trạng thái.
      */
-    protected function statusColor(): Attribute
+    public function getStatusColorAttribute(): array
     {
-        return Attribute::make(
-            get: fn() => [
-                'bg' => self::$statusAttributes[$this->status]['bg'] ?? self::$statusAttributes['default']['bg'],
-                'text' => self::$statusAttributes[$this->status]['text_color'] ?? self::$statusAttributes['default']['text_color'],
-            ]
-        );
+        $attributes = self::$statusAttributes[$this->status] ?? self::$statusAttributes['default'];
+        return [
+            'bg' => $attributes['bg'],
+            'text' => $attributes['text_color']
+        ];
     }
 
     /**
      * Lấy class ICON (string) cho từng trạng thái.
      */
-    protected function statusIcon(): Attribute
+    public function getStatusIconAttribute(): string
     {
-        return Attribute::make(
-            get: fn() => self::$statusAttributes[$this->status]['icon'] ?? self::$statusAttributes['default']['icon'],
-        );
+        return self::$statusAttributes[$this->status]['icon'] ?? self::$statusAttributes['default']['icon'];
     }
 
     /**

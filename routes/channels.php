@@ -170,9 +170,8 @@ Broadcast::channel('order.{orderId}', function ($user, $orderId) {
  * Kênh chung cho tất cả tài xế.
  */
 Broadcast::channel('drivers', function ($user) {
-    // Thay vì kiểm tra "instanceof Driver", ta kiểm tra trực tiếp guard 'driver'.
-    // Điều này chính xác và an toàn hơn.
-    return Auth::guard('driver')->check();
+    // Chỉ tài xế đã đăng nhập mới được nghe
+    return $user instanceof Driver;
 });
 
 // =========================================================================
