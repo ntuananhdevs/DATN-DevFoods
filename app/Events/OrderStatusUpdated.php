@@ -2,6 +2,11 @@
 
 namespace App\Events;
 
+use App\Notifications\OrderStatusNotification;
+use App\Models\Branch;
+use App\Models\User;
+use App\Models\Driver;
+use App\Models\Admin; // Nếu có
 use App\Models\Order;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -23,6 +28,39 @@ class OrderStatusUpdated implements ShouldBroadcast
     public function __construct(Order $order)
     {
         $this->order = $order;
+
+        // Lấy trạng thái mới
+        $status = $order->status;
+        $message = $this->getStatusMessage($status, $order);
+
+        // Gửi cho branch
+        $branch = Branch::find($order->branch_id);
+        if ($branch) {
+            $branch->notify(new OrderStatusNotification($order, $status, $message));
+        }
+
+        // Gửi cho admin (nếu có)
+        // ...
+
+        // Gửi cho customer
+        if ($order->customer) {
+            $order->customer->notify(new OrderStatusNotification($order, $status, $message));
+        }
+
+        // Gửi cho driver
+        if ($order->driver) {
+            $order->driver->notify(new OrderStatusNotification($order, $status, $message));
+        }
+    }
+
+    protected function getStatusMessage($status, $order)
+    {
+        switch ($status) {
+            case 'order_confirmed': return 'Đơn hàng đã được xác nhận';
+            case 'driver_found': return 'Đã tìm thấy tài xế cho đơn hàng';
+            // ... các trạng thái khác như hướng dẫn trước ...
+            default: return 'Đơn hàng cập nhật trạng thái: ' . $status;
+        }
     }
 
     /**

@@ -29,7 +29,8 @@ class Product extends Model
         'ingredients' => 'array',
         'release_at' => 'datetime',
         'is_featured' => 'boolean',
-        'base_price' => 'decimal:2'
+        'base_price' => 'decimal:2',
+        'discount_price' => 'decimal:2'
     ];
 
     public function category()
