@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DriverController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PromotionProgramController;
+use App\Http\Controllers\Admin\NotificationController;
 
 use App\Http\Controllers\Admin\User\UserController as UserUserController;
 use App\Http\Controllers\Admin\ProductVariantController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Admin\DiscountCodeController;
 use App\Http\Controllers\Admin\UserRankHistoryController;
 use App\Http\Controllers\Admin\ChatController;
 use App\Http\Controllers\Admin\GeneralSettingController;
+use App\Http\Controllers\Admin\OrderController;
 // Driver Auth Controller (if it's considered part of admin management or hiring process)
 use App\Http\Controllers\Driver\Auth\AuthController as DriverAuthController;
 
@@ -336,6 +338,16 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
         Route::get('/messages/{conversation}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/distribute', [ChatController::class, 'distributeConversation'])->name('distribute');
+    });
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    // Orders Management
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])->name('index');
+        // Thêm route show chi tiết đơn hàng
+        Route::get('/show/{order}', [OrderController::class, 'show'])->name('show');
+        Route::get('/export', [OrderController::class, 'export'])->name('export');
     });
 });
 

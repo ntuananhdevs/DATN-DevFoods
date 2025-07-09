@@ -11,6 +11,8 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewOrderNotification;
+use App\Models\Branch;
 
 class NewOrderReceived implements ShouldBroadcastNow
 {
@@ -26,6 +28,12 @@ class NewOrderReceived implements ShouldBroadcastNow
     {
         $this->order = $order;
         $this->branchId = $order->branch_id;
+        
+        // Gửi notification cho branch
+        $branch = Branch::find($this->branchId);
+        if ($branch) {
+            $branch->notify(new NewOrderNotification($order));
+        }
         
         Log::info('NewOrderReceived event constructed', [
             'order_id' => $order->id,

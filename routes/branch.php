@@ -2,15 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Branch\BranchChatController;
-use App\Http\Controllers\Branch\BranchDashboardController;
+use App\Http\Controllers\Branch\DashboardController;
 use App\Http\Controllers\Branch\BranchProductController;
 use App\Http\Controllers\Branch\BranchStaffController;
-use App\Http\Controllers\Branch\BranchOrderController;
-use App\Http\Controllers\Branch\BranchRevenueController;
+use App\Http\Controllers\Branch\OrderController as BranchOrderController; 
 use App\Http\Controllers\Branch\BranchCategoryController;
 use App\Http\Controllers\Branch\Auth\AuthController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Branch\DriverAssignmentController;
+use App\Http\Controllers\Branch\NotificationController;
 
 // Branch Authentication Routes
 Route::prefix('branch')->name('branch.')->group(function () {
@@ -34,15 +37,19 @@ Route::get('/branch/test', function() {
 
 // Branch Protected Routes
 Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(function () {
-    Route::get('/', [BranchDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [BranchOrderController::class, 'index'])->name('index');
         Route::get('/{id}', [BranchOrderController::class, 'show'])->name('show');
-        Route::post('/{id}/status', [BranchOrderController::class, 'updateStatus'])->name('updateStatus');
+        Route::post('/{id}/update-status', [BranchOrderController::class, 'updateStatus'])->name('update-status');
         Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
         Route::post('/{id}/confirm', [BranchOrderController::class, 'confirmOrder'])->name('confirm');
         Route::get('/{id}/card', [BranchOrderController::class, 'card'])->name('card');
+        
+        // Driver assignment routes
+        Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
+        Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
     Route::get('/categories', [BranchCategoryController::class, 'index'])->name('categories');
@@ -60,24 +67,27 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
     });
 
     // Broadcasting authentication route for branch
-    Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
-        \Log::info('[Broadcasting] Auth request received', [
+    Route::post('/broadcasting/auth', function (Request $request) {
+        Log::info('[Broadcasting] Auth request received', [
             'channel' => $request->input('channel_name'),
             'socket_id' => $request->input('socket_id'),
-            'user' => \Illuminate\Support\Facades\Auth::guard('manager')->user(),
+            'user' => Auth::guard('manager')->user(),
             'session' => $request->session()->all()
         ]);
         
-        try {
-            $result = \Illuminate\Support\Facades\Broadcast::auth($request);
-            \Log::info('[Broadcasting] Auth successful', ['result' => $result]);
+        try {   
+            $result = Broadcast::auth($request);
+            Log::info('[Broadcasting] Auth successful', ['result' => $result]);
             return $result;
-        } catch (\Exception $e) {
-            \Log::error('[Broadcasting] Auth failed', [
+        } catch (Exception $e) {
+            Log::error('[Broadcasting] Auth failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
             throw $e;
         }
     })->middleware(['web']);
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('branch.notifications.read');
 });

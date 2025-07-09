@@ -13,7 +13,7 @@ use App\Events\OrderStatusUpdated;
 use App\Events\Branch\NewOrderReceived;
 use Illuminate\Support\Facades\Log;
 
-class BranchOrderController extends Controller
+class OrderController extends Controller
 {
     public function index(Request $request)
     {
@@ -502,6 +502,9 @@ class BranchOrderController extends Controller
             ]);
             event(new OrderStatusUpdated($order, 'awaiting_confirmation', 'confirmed'));
 
+            // Tìm tài xế realtime ngay sau khi xác nhận đơn hàng
+            app(DriverAssignmentController::class)->findDriver($request, $order->id);
+
             Log::info('Tìm tài xế gần nhất', ['order_id' => $order->id, 'lat' => $lat, 'lng' => $lng]);
             $driver = $this->findNearestDriverByLatLng($lat, $lng);
             if ($driver) {
@@ -541,7 +544,8 @@ class BranchOrderController extends Controller
                     'success' => true,
                     'message' => 'Đã xác nhận đơn hàng, đang tìm tài xế...',
                     'driver' => null,
-                    'new_status' => 'confirmed'
+                    'new_status' => 'confirmed',
+                    'order_code' => $order->order_code ?? $order->id,
                 ]);
             }
         } catch (\Exception $e) {
