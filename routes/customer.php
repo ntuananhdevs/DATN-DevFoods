@@ -121,6 +121,7 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::delete('/review-replies/{reply}', [ReviewReplyController::class, 'destroy'])->name('review-replies.destroy');
     Route::post('/reviews/{id}/helpful', [CustomerProductController::class, 'markHelpful'])->name('reviews.helpful');
     Route::delete('/reviews/{id}/helpful', [CustomerProductController::class, 'unmarkHelpful'])->name('reviews.unhelpful');
+    Route::post('/reviews/{id}/report', [CustomerProductController::class, 'reportReview'])->name('reviews.report');
     // Route để hiển thị trang "Tất cả đơn hàng"
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
 

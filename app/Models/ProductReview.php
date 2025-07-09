@@ -39,6 +39,8 @@ class ProductReview extends Model
         'report_count' => 'integer'
     ];
 
+    protected $appends = ['purchased_variant_attributes'];
+
     /**
      * Get the user who wrote the review.
      */
@@ -74,5 +76,32 @@ class ProductReview extends Model
     public function replies()
     {
         return $this->hasMany(\App\Models\ReviewReply::class, 'review_id');
+    }
+
+    public function getPurchasedVariantAttributesAttribute()
+    {
+        // Nếu không có order_id thì không có thông tin
+        if (!$this->order_id || !$this->product_id) return [];
+        $order = $this->order;
+        if (!$order) return [];
+        // Lấy order item đúng product_id (có thể có nhiều item cùng product_id, lấy tất cả)
+        $items = $order->orderItems->where('productVariant.product_id', $this->product_id);
+        $result = [];
+        foreach ($items as $item) {
+            $variant = $item->productVariant;
+            if ($variant) {
+                foreach ($variant->variantValues as $value) {
+                    $result[] = [
+                        'name' => $value->attribute ? $value->attribute->name : '',
+                        'value' => $value->value
+                    ];
+                }
+            }
+        }
+        // Loại bỏ trùng lặp thuộc tính (nếu có nhiều item cùng product_id)
+        $result = collect($result)->unique(function($v) {
+            return $v['name'] . ':' . $v['value'];
+        })->values()->all();
+        return $result;
     }
 }

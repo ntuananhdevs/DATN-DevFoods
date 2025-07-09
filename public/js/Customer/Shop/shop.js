@@ -588,32 +588,41 @@ document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll('.delete-review-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const reviewId = this.getAttribute('data-review-id');
-            if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch(`/reviews/${reviewId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-            })
-            .then(async res => {
-                if (res.ok) {
-                    dtmodalShowToast('success', { title: 'Thành công', message: 'Đã xóa bình luận!' });
-                    // Ẩn review khỏi giao diện
-                    const reviewDiv = btn.closest('.p-6');
-                    if (reviewDiv) reviewDiv.remove();
-                } else {
-                    let msg = 'Không thể xóa bình luận!';
-                    try {
-                        const data = await res.json();
-                        if (data && data.message) msg = data.message;
-                    } catch {}
-                    dtmodalShowToast('error', { title: 'Lỗi', message: msg });
+            // Thay confirm bằng modal xác nhận đẹp
+            dtmodalCreateModal({
+                type: 'warning',
+                title: 'Xác nhận xóa',
+                message: 'Bạn có chắc chắn muốn xóa bình luận này?',
+                confirmText: 'Xóa',
+                cancelText: 'Hủy',
+                onConfirm: function() {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    fetch(`/reviews/${reviewId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                    })
+                    .then(async res => {
+                        if (res.ok) {
+                            dtmodalShowToast('success', { title: 'Thành công', message: 'Đã xóa bình luận!' });
+                            // Ẩn review khỏi giao diện
+                            const reviewDiv = btn.closest('.p-6');
+                            if (reviewDiv) reviewDiv.remove();
+                        } else {
+                            let msg = 'Không thể xóa bình luận!';
+                            try {
+                                const data = await res.json();
+                                if (data && data.message) msg = data.message;
+                            } catch {}
+                            dtmodalShowToast('error', { title: 'Lỗi', message: msg });
+                        }
+                    })
+                    .catch(() => {
+                        dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
+                    });
                 }
-            })
-            .catch(() => {
-                dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
             });
         });
     });
@@ -640,37 +649,118 @@ document.addEventListener("DOMContentLoaded", function() {
     // XỬ LÝ XÓA REPLY (fetch API)
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('delete-reply-btn')) {
-            if (!confirm('Bạn có chắc chắn muốn xóa phản hồi này không?')) return;
-            const btn = e.target;
-            const replyId = btn.getAttribute('data-reply-id');
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch('/review-replies/' + replyId, {
-                method: 'DELETE',
+            // Thay confirm bằng modal xác nhận đẹp
+            dtmodalCreateModal({
+                type: 'warning',
+                title: 'Xác nhận xóa',
+                message: 'Bạn có chắc chắn muốn xóa phản hồi này không?',
+                confirmText: 'Xóa',
+                cancelText: 'Hủy',
+                onConfirm: function() {
+                    const btn = e.target;
+                    const replyId = btn.getAttribute('data-reply-id');
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    fetch('/review-replies/' + replyId, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(async res => {
+                        if (res.ok) {
+                            let data = await res.json();
+                            if (window.dtmodalShowToast) {
+                                dtmodalShowToast('success', { title: 'Thành công', message: data.message });
+                            } else {
+                                alert(data.message);
+                            }
+                            btn.closest('.reply-item').remove();
+                        } else {
+                            let msg = 'Đã xảy ra lỗi!';
+                            try {
+                                const data = await res.json();
+                                if (data && data.message) msg = data.message;
+                            } catch {}
+                            if (window.dtmodalShowToast) {
+                                dtmodalShowToast('error', { title: 'Lỗi', message: msg });
+                            } else {
+                                alert(msg);
+                            }
+                        }
+                    })
+                    .catch(() => {
+                        if (window.dtmodalShowToast) {
+                            dtmodalShowToast('error', { title: 'Lỗi', message: 'Lỗi mạng hoặc server!' });
+                        } else {
+                            alert('Lỗi mạng hoặc server!');
+                        }
+                    });
+                }
+            });
+            return;
+        }
+    });
+
+    // Mở modal khi bấm nút báo cáo
+    document.querySelectorAll('.report-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reviewId = this.getAttribute('data-review-id');
+            document.getElementById('report_review_id').value = reviewId;
+            document.getElementById('report_reason').value = '';
+            document.getElementById('report-review-modal').classList.remove('hidden');
+        });
+    });
+
+    // Đóng modal
+    const closeReportModal = document.getElementById('close-report-modal');
+    const cancelReportBtn = document.getElementById('cancel-report-btn');
+    if (closeReportModal) closeReportModal.onclick = function() {
+        document.getElementById('report-review-modal').classList.add('hidden');
+    };
+    if (cancelReportBtn) cancelReportBtn.onclick = function() {
+        document.getElementById('report-review-modal').classList.add('hidden');
+    };
+
+    // Gửi báo cáo
+    const reportForm = document.getElementById('report-review-form');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const reviewId = document.getElementById('report_review_id').value;
+            const reason = document.getElementById('report_reason').value.trim();
+            if (!reason) {
+                if (window.dtmodalShowToast) {
+                    dtmodalShowToast('warning', { title: 'Thiếu lý do', message: 'Vui lòng nhập lý do báo cáo!' });
+                } else {
+                    alert('Vui lòng nhập lý do báo cáo!');
+                }
+                return;
+            }
+            fetch(`/reviews/${reviewId}/report`, {
+                method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': csrfToken,
+                    'X-CSRF-TOKEN': window.csrfToken,
                     'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                credentials: 'same-origin'
+                body: JSON.stringify({ reason })
             })
-            .then(async res => {
-                if (res.ok) {
-                    let data = await res.json();
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
                     if (window.dtmodalShowToast) {
                         dtmodalShowToast('success', { title: 'Thành công', message: data.message });
                     } else {
-                        alert(data.message);
+                        alert('Báo cáo thành công!');
                     }
-                    btn.closest('.reply-item').remove();
+                    document.getElementById('report-review-modal').classList.add('hidden');
                 } else {
-                    let msg = 'Đã xảy ra lỗi!';
-                    try {
-                        const data = await res.json();
-                        if (data && data.message) msg = data.message;
-                    } catch {}
                     if (window.dtmodalShowToast) {
-                        dtmodalShowToast('error', { title: 'Lỗi', message: msg });
+                        dtmodalShowToast('error', { title: 'Lỗi', message: data.message || 'Báo cáo thất bại' });
                     } else {
-                        alert(msg);
+                        alert(data.message || 'Báo cáo thất bại');
                     }
                 }
             })
@@ -681,8 +771,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     alert('Lỗi mạng hoặc server!');
                 }
             });
-        }
-    });
+        });
+    }
 });
 
 // Tab switching functionality
@@ -1870,3 +1960,80 @@ if (window.currentUserId) {
     });
     console.log('Subscribed to wishlist channel: private-user-wishlist-channel.' + window.currentUserId);
 }
+
+// === Realtime cập nhật report_count (báo cáo) ===
+const reviewReportPusher = new Pusher(window.pusherKey, {
+    cluster: window.pusherCluster,
+    encrypted: true,
+    enabledTransports: ['ws', 'wss']
+});
+const reviewReportChannel = reviewReportPusher.subscribe('review-reports');
+reviewReportChannel.bind('review-report-updated', function(data) {
+    // Tìm nút báo cáo đúng review
+    const reportBtn = document.querySelector(`.report-review-btn[data-review-id="${data.review_id}"]`);
+    if (reportBtn) {
+        let countSpan = reportBtn.querySelector('.report-count');
+        if (!countSpan) {
+            // Nếu chưa có, tạo mới
+            countSpan = document.createElement('span');
+            countSpan.className = 'ml-1 text-xs report-count';
+            reportBtn.appendChild(countSpan);
+        }
+        if (parseInt(data.report_count) > 0) {
+            countSpan.textContent = `(${data.report_count})`;
+            countSpan.style.display = '';
+        } else {
+            countSpan.textContent = '';
+            countSpan.style.display = 'none';
+        }
+    }
+});
+
+// === Drag-to-scroll for topping list ===
+document.addEventListener('DOMContentLoaded', function() {
+    const dragScroll = document.querySelector('.drag-scroll-topping');
+    if (dragScroll) {
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        dragScroll.addEventListener('mousedown', function(e) {
+            isDown = true;
+            dragScroll.classList.add('dragging');
+            startX = e.pageX - dragScroll.offsetLeft;
+            scrollLeft = dragScroll.scrollLeft;
+        });
+        dragScroll.addEventListener('mouseleave', function() {
+            isDown = false;
+            dragScroll.classList.remove('dragging');
+        });
+        dragScroll.addEventListener('mouseup', function() {
+            isDown = false;
+            dragScroll.classList.remove('dragging');
+        });
+        dragScroll.addEventListener('mousemove', function(e) {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - dragScroll.offsetLeft;
+            const walk = (x - startX) * 1.2; // scroll-fast
+            dragScroll.scrollLeft = scrollLeft - walk;
+        });
+        // Touch support
+        let touchStartX = 0;
+        let touchScrollLeft = 0;
+        dragScroll.addEventListener('touchstart', function(e) {
+            isDown = true;
+            touchStartX = e.touches[0].pageX;
+            touchScrollLeft = dragScroll.scrollLeft;
+        });
+        dragScroll.addEventListener('touchend', function() {
+            isDown = false;
+        });
+        dragScroll.addEventListener('touchmove', function(e) {
+            if (!isDown) return;
+            const x = e.touches[0].pageX;
+            const walk = (x - touchStartX) * 1.2;
+            dragScroll.scrollLeft = touchScrollLeft - walk;
+        });
+    }
+});

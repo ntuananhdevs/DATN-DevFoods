@@ -49,65 +49,56 @@ document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const branchIdFromUrl = urlParams.get('branch_id');
             const branchIdFromMeta = document.querySelector('meta[name="selected-branch"]')?.content;
-            const currentBranchId = branchIdFromUrl || branchIdFromMeta || '1'; // Default to branch 1 if not specified
-            
+            const currentBranchId = branchIdFromUrl || branchIdFromMeta || '1';
+
             // Only update if the stock change is for the current branch
             if (data.branchId == currentBranchId) {
-                const productCards = document.querySelectorAll('.product-card');
-                
-                productCards.forEach(card => {
+                // Duyệt tất cả card, tìm variant có id trùng productVariantId
+                document.querySelectorAll('.product-card').forEach(card => {
                     try {
-                        const variants = JSON.parse(card.dataset.variants);
-                        
-                        const variant = variants.find(v => v.id == data.productVariantId);
-                        
-                        if (variant) {
-                            // Update stock for the variant
-                            variant.stock = parseInt(data.stockQuantity);
-                            
-                            // Check if any variant has stock
-                            const hasStock = variants.some(v => v.stock > 0);
-                            
-                            card.dataset.hasStock = hasStock.toString();
-                            
-                            // Update the button
-                            const buttonContainer = card.querySelector('.flex.justify-between.items-center');
-                            if (buttonContainer) {
-                                const productId = card.dataset.productId;
-                                const priceContainer = buttonContainer.querySelector('.flex.flex-col');
-                                
-                                if (hasStock) {
-                                    buttonContainer.innerHTML = `
-                                        <div class="flex flex-col">
-                                            ${priceContainer.innerHTML}
-                                        </div>
-                                        <a href="/shop/products/${productId}" class="add-to-cart-btn">
-                                            <i class="fas fa-shopping-cart"></i>
-                                            Mua hàng
-                                        </a>
-                                    `;
-                                } else {
-                                    buttonContainer.innerHTML = `
-                                        <div class="flex flex-col">
-                                            ${priceContainer.innerHTML}
-                                        </div>
-                                        <button class="add-to-cart-btn disabled" disabled>
-                                            <i class="fas fa-ban"></i>
-                                            Hết hàng
-                                        </button>
-                                    `;
-                                }
+                        let variants = JSON.parse(card.dataset.variants);
+                        let updated = false;
+                        variants.forEach(v => {
+                            if (v.id == data.productVariantId) {
+                                v.stock = parseInt(data.stockQuantity);
+                                updated = true;
                             }
-                            
-                            // Update the variants data attribute
-                            card.dataset.variants = JSON.stringify(variants);
-                            
-                            // Add animation to highlight the change
-                            card.classList.add('highlight-update');
-                            setTimeout(() => {
-                                card.classList.remove('highlight-update');
-                            }, 1000);
+                        });
+                        if (!updated) return; // Không phải card này
+                        // Update lại data-variants
+                        card.dataset.variants = JSON.stringify(variants);
+                        // Tính tổng tồn kho mới
+                        const totalStock = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+                        // Update stock quantity text
+                        const stockQtySpan = card.querySelector('.product-stock-qty');
+                        if (stockQtySpan) {
+                            if (totalStock > 0) {
+                                stockQtySpan.textContent = `Còn ${totalStock} sản phẩm`;
+                            } else {
+                                stockQtySpan.textContent = 'Hết hàng';
+                            }
                         }
+                        // Update trạng thái button
+                        if (totalStock > 0) {
+                            // Xóa class và overlay hết hàng nếu có
+                            card.classList.remove('out-of-stock');
+                            const overlay = card.querySelector('.out-of-stock-overlay');
+                            if (overlay) overlay.remove();
+                        } else {
+                            // Thêm class và overlay hết hàng nếu chưa có
+                            card.classList.add('out-of-stock');
+                            if (!card.querySelector('.out-of-stock-overlay')) {
+                                const overlayDiv = document.createElement('div');
+                                overlayDiv.className = 'out-of-stock-overlay';
+                                overlayDiv.innerHTML = '<span>hết hàng</span>';
+                                card.querySelector('.relative').prepend(overlayDiv);
+                            }
+                        }
+                        // Add animation to highlight the change
+                        card.classList.add('highlight-update');
+                        setTimeout(() => {
+                            card.classList.remove('highlight-update');
+                        }, 1000);
                     } catch (error) {
                         console.error('Error updating product stock:', error);
                     }
@@ -133,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 productCard.remove();
             }
         });
-        
+        S
         // Listen for favorite updates if user is authenticated
         if (favoritesChannel) {
             favoritesChannel.bind('favorite-updated', function(data) {
@@ -307,4 +298,64 @@ document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible' && window.needDiscountReload) {
         window.location.reload();
     }
+});
+
+// Lazy load section by scroll
+window.addEventListener('DOMContentLoaded', function() {
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+    let currentSection = 0;
+    let loading = false;
+    function showNextSection() {
+        if (currentSection + 1 < sections.length) {
+            currentSection++;
+            const section = sections[currentSection];
+            // 1. Show skeletons
+            const skeletons = section.querySelector('.skeletons-container');
+            const cardsContainer = section.querySelector('.product-cards-container');
+            if (skeletons && cardsContainer) {
+                skeletons.style.display = 'grid';
+                cardsContainer.style.display = 'none';
+                section.style.display = 'block';
+                // 2. After delay, hide skeletons, show cards with fade-in
+                setTimeout(() => {
+                    skeletons.style.display = 'none';
+                    cardsContainer.style.display = 'grid';
+                    const cards = cardsContainer.querySelectorAll('.product-card');
+                    cards.forEach((card, idx) => {
+                        setTimeout(() => {
+                            card.classList.add('fade-in-card');
+                        }, idx * 60); // staggered
+                    });
+                }, 400);
+            } else {
+                section.style.display = 'block';
+            }
+        }
+    }
+    function onScroll() {
+        if (loading) return;
+        const lastVisible = sections[currentSection];
+        if (!lastVisible) return;
+        const rect = lastVisible.getBoundingClientRect();
+        if (rect.bottom < window.innerHeight + 200) {
+            loading = true;
+            setTimeout(() => {
+                showNextSection();
+                loading = false;
+            }, 100);
+        }
+    }
+    window.addEventListener('scroll', onScroll);
+    // Hiệu ứng fade-in cho section đầu tiên
+    setTimeout(() => {
+        const firstSection = sections[0];
+        if (firstSection) {
+            const cards = firstSection.querySelectorAll('.product-card');
+            cards.forEach((card, idx) => {
+                setTimeout(() => {
+                    card.classList.add('fade-in-card');
+                }, idx * 60);
+            });
+        }
+    }, 200);
 });

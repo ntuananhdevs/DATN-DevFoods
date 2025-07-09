@@ -25,6 +25,8 @@ use App\Models\ReviewReply;
 use App\Observers\ReviewReplyObserver;
 use App\Models\ProductReview;
 use App\Observers\ProductReviewObserver;
+use App\Models\ReviewReport;
+use App\Observers\ReviewReportObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -71,6 +73,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register ProductReviewObserver
         ProductReview::observe(ProductReviewObserver::class);
+
+        // Register ReviewReportObserver
+        ReviewReport::observe(ReviewReportObserver::class);
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));
