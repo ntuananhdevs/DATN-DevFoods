@@ -51,9 +51,9 @@ Route::prefix('driver')->name('driver.')->group(function () {
         // New/Updated Status Actions
         Route::post('/orders/{order}/accept', [OrderController::class, 'accept'])->name('orders.accept'); // Updated endpoint
         Route::post('/orders/{order}/confirm-assigned', [OrderController::class, 'confirmAssigned'])->name('orders.confirmAssigned'); // NEW
-        Route::post('/orders/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('orders.confirmPickup'); // Updated endpoint
+        Route::post('/orders/{order}/confirm-pickup', [OrderController::class, 'confirmPickup'])->name('orders.confirm-pickup'); // Updated endpoint
         Route::post('/orders/{order}/start-transit', [OrderController::class, 'startTransit'])->name('orders.startTransit'); // NEW
-        Route::post('/orders/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirmDelivery');
+        Route::post('/orders/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirm-delivery');
         Route::post('/orders/{order}/fail', [OrderController::class, 'failOrder'])->name('orders.failOrder'); // NEW
 
         // Driver profile and history

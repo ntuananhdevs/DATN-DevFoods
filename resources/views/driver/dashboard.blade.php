@@ -93,6 +93,7 @@
         </div>
 
         {{-- Card Đơn hàng đang xử lý --}}
+        {{-- Card Đơn hàng đang xử lý --}}
         <div class="bg-white rounded-lg p-4 shadow-sm">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="font-medium">Đơn hàng đang xử lý</h3><a href="{{ route('driver.orders.index') }}"
@@ -102,16 +103,21 @@
                 @forelse($processingOrders as $order)
                     <a href="{{ route('driver.orders.show', $order->id) }}"
                         class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0"><i
-                                class="fas fa-truck text-white text-lg"></i></div>
+                        {{-- CẬP NHẬT: Icon và màu nền động theo trạng thái --}}
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                            style="background-color: {{ $order->status_color }};">
+                            <i class="{{ $order->status_icon }} text-white text-lg"></i>
+                        </div>
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-800">Đơn #{{ $order->order_code }}</div>
                             <div class="text-sm text-gray-500 truncate">{{ $order->delivery_address }}</div>
                         </div>
-                        {{-- CẬP NHẬT: Thêm flex-shrink-0 để badge không bị co lại --}}
-                        <span
-                            class="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0">{{ $order->status_text }}</span>
+                        {{-- CẬP NHẬT: Badge trạng thái cũng dùng màu động --}}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0"
+                            style="background-color: {{ $order->status_color }}; color: white;"> {{-- Màu chữ trắng để tương phản với màu nền trạng thái --}}
+                            {{ $order->status_text }}
+                        </span>
                     </a>
                 @empty
                     <p class="text-center text-sm text-gray-500 py-3">Không có đơn hàng nào đang xử lý.</p>
@@ -119,7 +125,7 @@
             </div>
         </div>
 
-        {{-- Card Đơn hàng mới --}}
+        {{-- Card Đơn hàng mới có sẵn --}}
         <div class="bg-white rounded-lg p-4 shadow-sm">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="font-medium">Đơn hàng mới có sẵn</h3>
@@ -128,8 +134,11 @@
                 @forelse($availableOrders as $order)
                     {{-- Thêm data-order-id để dễ dàng quản lý bằng JS --}}
                     <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg" data-order-id="{{ $order->id }}">
-                        <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0"><i
-                                class="fas fa-box text-white text-lg"></i></div>
+                        {{-- CẬP NHẬT: Icon và màu nền động theo trạng thái --}}
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                            style="background-color: {{ $order->status_color }};">
+                            <i class="{{ $order->status_icon }} text-white text-lg"></i>
+                        </div>
                         {{-- CẬP NHẬT: Thêm min-w-0 để truncate hoạt động tốt --}}
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-gray-800">Đơn #{{ $order->order_code }}</div>
