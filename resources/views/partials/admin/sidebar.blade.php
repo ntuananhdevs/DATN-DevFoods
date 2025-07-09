@@ -2,7 +2,7 @@
     $user = Auth::user();
 @endphp
 
-@if ($user && $user->hasRole('spadmin'))
+@if ($user && $user->hasRole('admin'))
     {{-- Menu cho admin --}}
     <!-- Sidebar Header -->
     <div class="sidebar-header p-3 border-b border-sidebar-border flex justify-center items-center">
