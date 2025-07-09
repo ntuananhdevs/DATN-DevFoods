@@ -80,6 +80,41 @@
     @yield('scripts')
     @stack('scripts')
     @include('components.modal')
+    <script>
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+function updateCsrfToken(newToken) {
+    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+    if (window.jQuery) {
+        $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': newToken } });
+    }
+    if (window.axios) {
+        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+    }
+}
+$(document).ajaxError(function(event, jqxhr, settings, thrownError) {
+    if (jqxhr.status === 419) {
+        fetch('/refresh-csrf')
+            .then(res => res.json())
+            .then(data => {
+                updateCsrfToken(data.csrf_token);
+                // Có thể gửi lại request ở đây nếu muốn
+            });
+    }
+});
+if (window.axios) {
+    window.axios.interceptors.response.use(null, async function(error) {
+        if (error.response && error.response.status === 419) {
+            const res = await fetch('/refresh-csrf');
+            const data = await res.json();
+            updateCsrfToken(data.csrf_token);
+            // Có thể gửi lại request ở đây nếu muốn
+        }
+        return Promise.reject(error);
+    });
+}
+</script>
 </body>
 
 </html>

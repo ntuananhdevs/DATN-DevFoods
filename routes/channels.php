@@ -175,21 +175,7 @@ Broadcast::channel('drivers', function ($user) {
     return Auth::guard('driver')->check();
 });
 
-// =========================================================================
-// === BỔ SUNG KÊNH MỚI CHO CHI NHÁNH ===
-// =========================================================================
-/**
- * Kênh riêng cho từng chi nhánh.
- * Dùng để nhận thông báo khi có đơn hàng mới được khách hàng đặt cho chi nhánh đó.
- * Chỉ nhân viên/quản lý của chi nhánh đó mới được nghe.
- */
-Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
-    // Giả sử model User của bạn có 'branch_id' và 'role'
-    $isBranchMember = in_array($user->role, ['manager', 'branch_staff']);
-    $isCorrectBranch = (int)$user->branch_id === (int)$branchId;
 
-    return $isBranchMember && $isCorrectBranch;
-});
 
 
 // Wishlist channel for a specific user
@@ -200,12 +186,21 @@ Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
 
 // Branch orders channel
 Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
-    // Only branch managers and staff can listen to their branch orders
-    return (in_array($user->role, ['branch_manager', 'branch_staff']) && $user->branch_id == $branchId) ? [
+    // User đã được xác thực ở AuthController rồi, chỉ cần kiểm tra branch
+    $userBranch = $user->branch;
+    
+    \Log::info('[Broadcast] branch.{branchId}.orders authorization', [
+        'user_id' => $user->id,
+        'user_branch_id' => $userBranch ? $userBranch->id : null,
+        'requested_branch_id' => $branchId,
+        'can_access' => $userBranch && (int)$userBranch->id === (int)$branchId
+    ]);
+    
+    // Chỉ cần user có branch và branch_id khớp với channel
+    return $userBranch && (int)$userBranch->id === (int)$branchId ? [
         'id' => $user->id,
-        'name' => $user->name,
-        'role' => $user->role,
-        'branch_id' => $user->branch_id,
+        'name' => $user->full_name ?? $user->name ?? 'User',
+        'branch_id' => $userBranch->id,
     ] : false;
 });
 

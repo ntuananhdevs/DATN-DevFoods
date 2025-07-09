@@ -78,71 +78,45 @@
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
-                <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-badge">
+                @if(isset($adminUnreadCount) && $adminUnreadCount > 0)
+                <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-badge notification-unread-count">
                     <span class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping"></span>
-                    <span class="relative">5</span>
+                    <span class="relative">{{ $adminUnreadCount }}</span>
                 </span>
+                @endif
             </button>
-
             <!-- Dropdown menu -->
-            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-80 rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden" style="display: none;">
-                <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar">
+            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-80 rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden z-50" style="display: none;">
+                <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar flex flex-col" style="height:400px;">
                     <div class="px-2 py-1.5 mb-1">
                         <h3 class="font-semibold text-sm">Thông báo</h3>
-                        <p class="text-xs text-muted-foreground">Bạn có 5 thông báo chưa đọc</p>
+                        <p class="text-xs text-muted-foreground">Bạn có <span class="notification-unread-count">{{ $adminUnreadCount ?? 0 }}</span> thông báo chưa đọc</p>
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
                     <!-- Notification items -->
-                    <div class="space-y-1">
-                        <!-- Thông báo tin nhắn mới -->
-                        <div id="chat-new-message-notify" class="flex items-start gap-3 px-2 py-2 rounded-md bg-orange-100 text-orange-700 font-semibold cursor-pointer hover:bg-orange-200 transition hidden">
-                            <div class="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-600">
-                                <i class="fas fa-comments"></i>
+                    <div class="space-y-1 flex-1 overflow-y-auto" id="admin-notification-list">
+                        @foreach($adminNotifications ?? [] as $notification)
+                            <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md {{ $notification->read_at ? '' : 'bg-primary/10 text-primary font-semibold' }}"
+                                 style="cursor:pointer;"
+                                 onclick="markAdminNotificationAsRead('{{ $notification->id }}')">
+                                <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium">{{ $notification->data['message'] ?? '' }}</p>
+                                    <p class="text-xs text-muted-foreground">{{ $notification->created_at->diffForHumans() }}</p>
+                                </div>
+                                @if(!$notification->read_at)
+                                    <div class="w-2 h-2 rounded-full bg-primary mt-2"></div>
+                                @endif
                             </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium"><span id="chat-new-message-count">0</span> tin nhắn mới</p>
-                                <p class="text-xs text-orange-600">Bạn có <span id="chat-new-message-count-2">0</span> tin nhắn chưa đọc</p>
-                            </div>
-                        </div>
-                        <!-- Unread notification -->
-                        <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md">
-                            <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm font-medium">Đơn hàng mới #12345</p>
-                                <p class="text-xs text-muted-foreground">Khách hàng: Nguyễn Văn A</p>
-                                <p class="text-xs text-muted-foreground">2 phút trước</p>
-                            </div>
-                            <div class="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                        </div>
-                        
-                        <!-- Read notification -->
-                        <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md">
-                            <div class="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm">Cảnh báo hết hàng</p>
-                                <p class="text-xs text-muted-foreground">Sản phẩm "Burger Bò" sắp hết hàng</p>
-                                <p class="text-xs text-muted-foreground">1 giờ trước</p>
-                            </div>
-                        </div>
-                        
-                        <!-- System notification -->
-                        <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md">
-                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-sm">Cập nhật hệ thống</p>
-                                <p class="text-xs text-muted-foreground">Hệ thống sẽ bảo trì lúc 23:00 tối nay</p>
-                                <p class="text-xs text-muted-foreground">1 ngày trước</p>
-                            </div>
-                        </div>
+                        @endforeach
+                        @if(($adminNotifications ?? collect())->isEmpty())
+                            <div class="text-center text-xs text-muted-foreground py-4">Không có thông báo nào</div>
+                        @endif
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
-                    <a href="#" class="block px-2 py-1.5 text-sm text-center text-muted-foreground hover:text-foreground">
+                    <a href="{{ route('admin.notifications.index') }}" class="block px-2 py-1.5 text-sm text-center text-muted-foreground hover:text-foreground mt-2" style="display: block !important;">
                         Xem tất cả thông báo
                     </a>
                 </div>
@@ -282,3 +256,16 @@
         }
     }
 </style>
+<script>
+function markAdminNotificationAsRead(id) {
+    fetch("{{ url('admin/notifications') }}/" + id + "/read", {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+            "Accept": "application/json"
+        }
+    }).then(res => res.json()).then(data => {
+        location.reload();
+    });
+}
+</script>

@@ -117,9 +117,14 @@ class Driver extends Model implements Authenticatable
         return $this->hasMany(DriverDocument::class, 'driver_id');
     }
 
+    public function locations()
+    {
+        return $this->hasMany(\App\Models\DriverLocation::class);
+    }
+
     public function location()
     {
-        return $this->hasOne(DriverLocation::class, 'driver_id');
+        return $this->hasOne(\App\Models\DriverLocation::class)->latestOfMany();
     }
 
     // Scopes

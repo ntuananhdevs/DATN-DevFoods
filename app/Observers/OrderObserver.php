@@ -14,17 +14,17 @@ class OrderObserver
     public function created(Order $order): void
     {
         try {
-            // Broadcast new order event
-            event(new NewOrderReceived($order));
+            // Tạm thời tắt event để tránh duplicate với API OrderController
+            // event(new NewOrderReceived($order));
             
-            Log::info('New order created and broadcasted', [
+            Log::info('New order created (event disabled to avoid duplicate)', [
                 'order_id' => $order->id,
                 'order_code' => $order->order_code,
                 'branch_id' => $order->branch_id,
                 'status' => $order->status
             ]);
         } catch (\Exception $e) {
-            Log::error('Error broadcasting new order event', [
+            Log::error('Error in order created observer', [
                 'error' => $e->getMessage(),
                 'order_id' => $order->id
             ]);

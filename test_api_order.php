@@ -9,10 +9,10 @@
 
 // Sample data for testing (updated with valid IDs)
 $testData = [
-    'user_id' => 1,        // Administrator
-    'address_id' => 1,     // 123 Nguyen Trai
-    'payment_method' => 'cod',
-    'note' => 'Test order via API - Giao trong giờ hành chính',
+    'user_id' => 6,        // User ID = 6
+    'address_id' => 12,    // Address ID = 12 (belongs to user 6)
+    'payment_method' => 'vnpay',  // VNPAY payment method
+    'note' => 'Test order via API - Giao trong giờ hành chính - VNPAY',
     'items' => [
         ['product_id' => 1, 'quantity' => 2],  // Burger Bò Phô Mai
         ['product_id' => 2, 'quantity' => 1]   // Burger Gà Giòn
