@@ -119,150 +119,28 @@
                             <span class="text-red-500">*</span>
                         </label>
                         
-                        <!-- Toggle between simple and structured format -->
-                        <div class="mb-4">
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                                    <input type="radio" name="ingredients_format" value="simple" class="form-radio" 
-                                        @php
-                                            $isStructured = false;
-                                            if (!empty($product->ingredients)) {
-                                                $ingredientsData = $product->ingredients;
-                                                
-                                                // If it's a JSON string, decode it
-                                                if (is_string($ingredientsData)) {
-                                                    $decoded = json_decode($ingredientsData, true);
-                                                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                                                        $ingredientsData = $decoded;
-                                                    }
-                                                }
-                                                
-                                                // Check if it's structured (object with string keys)
-                                                if (is_array($ingredientsData)) {
-                                                    foreach ($ingredientsData as $key => $value) {
-                                                        if (!is_numeric($key) && is_array($value)) {
-                                                            $isStructured = true;
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        @endphp
-                                        {{ !$isStructured ? 'checked' : '' }}>
-                                    <span class="ml-2">Định dạng đơn giản</span>
-                                </label>
-                                <label class="inline-flex items-center">
-                                    <input type="radio" name="ingredients_format" value="structured" class="form-radio" {{ $isStructured ? 'checked' : '' }}>
-                                    <span class="ml-2">Định dạng có cấu trúc</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <!-- Simple format -->
-                        <div id="simple-ingredients" class="ingredients-format {{ $isStructured ? 'hidden' : '' }}">
-                            @php
-                                $ingredientsText = '';
-                                if (!empty($product->ingredients)) {
-                                    // If ingredients is a JSON string, decode it first
-                                    if (is_string($product->ingredients)) {
-                                        $decoded = json_decode($product->ingredients, true);
-                                        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                                            // Check if it's a simple array or structured object
-                                            if (array_keys($decoded) === range(0, count($decoded) - 1)) {
-                                                // Simple array - join with commas
-                                                $ingredientsText = implode(', ', $decoded);
-                                            } else {
-                                                // Structured object - flatten all values
-                                                $allIngredients = [];
-                                                foreach ($decoded as $category => $items) {
-                                                    if (is_array($items)) {
-                                                        $allIngredients = array_merge($allIngredients, $items);
-                                                    } else {
-                                                        $allIngredients[] = $items;
-                                                    }
-                                                }
-                                                $ingredientsText = implode(', ', $allIngredients);
-                                            }
-                                        } else {
-                                            // Not valid JSON, treat as plain text
-                                            $ingredientsText = $product->ingredients;
-                                        }
-                                    } elseif (is_array($product->ingredients)) {
-                                        // Already an array
-                                        $allIngredients = [];
-                                        foreach ($product->ingredients as $category => $items) {
-                                            if (is_array($items)) {
-                                                $allIngredients = array_merge($allIngredients, $items);
-                                            } else {
-                                                $allIngredients[] = $items;
-                                            }
-                                        }
-                                        $ingredientsText = implode(', ', $allIngredients);
-                                    }
+                        @php
+                            $ingredientsText = '';
+                            if (!empty($product->ingredients)) {
+                                // Laravel's array cast will handle the JSON automatically
+                                if (is_array($product->ingredients)) {
+                                    $ingredientsText = implode("\n", $product->ingredients);
+                                } else {
+                                    // Fallback for any string data
+                                    $ingredientsText = $product->ingredients;
                                 }
-                            @endphp
-                            <textarea id="ingredients" name="ingredients" rows="3"
-                                placeholder="Nhập danh sách nguyên liệu, phân cách bằng dấu phẩy (ví dụ: thịt bò, rau xà lách, ớt chuông)"
-                                class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients', $ingredientsText) }}</textarea>
-                            <p class="text-sm text-gray-500 mt-1">Ví dụ: thịt bò, rau xà lách, cà chua</p>
-                        </div>
+                            }
+                        @endphp
                         
-                        <!-- Structured format -->
-                        <div id="structured-ingredients" class="ingredients-format {{ !$isStructured ? 'hidden' : '' }}">
-                            <div class="space-y-4">
-                                @if($isStructured && !empty($product->ingredients))
-                                    @php
-                                        $structuredData = $product->ingredients;
-                                        if (is_string($structuredData)) {
-                                            $decoded = json_decode($structuredData, true);
-                                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                                                $structuredData = $decoded;
-                                            }
-                                        }
-                                    @endphp
-                                    @foreach($structuredData as $category => $items)
-                                        @if(!is_numeric($category) && is_array($items))
-                                            <div class="ingredient-category">
-                                                <div class="flex items-center space-x-2 mb-2">
-                                                    <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
-                                                           value="{{ $category }}"
-                                                           class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                                    <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
-                                                </div>
-                                                <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
-                                                          class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
-                                                          rows="3">{{ implode("\n", $items) }}</textarea>
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                @else
-                                    <div class="ingredient-category">
-                                        <div class="flex items-center space-x-2 mb-2">
-                                            <input type="text" placeholder="Tên danh mục (ví dụ: thịt)" 
-                                                   class="category-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                            <button type="button" class="remove-category px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Xóa</button>
-                                        </div>
-                                        <textarea placeholder="Nhập các nguyên liệu trong danh mục này, mỗi nguyên liệu một dòng" 
-                                                  class="category-items w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
-                                                  rows="3"></textarea>
-                                    </div>
-                                @endif
-                            </div>
-                            <button type="button" id="add-category" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                                Thêm danh mục
-                            </button>
-                            <p class="text-sm text-gray-500 mt-2">Ví dụ: Danh mục "thịt" có thể chứa "thịt bò", "thịt heo"</p>
-                        </div>
-                        
-                        {{-- Hidden input để giữ dữ liệu nguyên liệu gốc --}}
-                        <input type="hidden" name="ingredients_raw" value="{{ is_array($product->ingredients) ? json_encode($product->ingredients) : $product->ingredients }}">
+                        <textarea id="ingredients" name="ingredients" rows="5"
+                            placeholder="Nhập danh sách nguyên liệu, mỗi nguyên liệu một dòng&#10;Ví dụ:&#10;thịt bò&#10;rau xà lách&#10;ớt chuông&#10;cà chua"
+                            class="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm resize-none px-3 py-2 @error('ingredients') border-red-500 @enderror">{{ old('ingredients', $ingredientsText) }}</textarea>
+                        <p class="text-sm text-gray-500 mt-1">Mỗi dòng là một nguyên liệu riêng biệt</p>
                         
                         @error('ingredients')
                             <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                         @enderror
                     </div>
-                    
-                    
 
                     <div>
                         <label for="short_description" class="block text-sm font-medium text-gray-700">Mô tả ngắn

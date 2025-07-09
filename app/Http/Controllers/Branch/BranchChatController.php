@@ -26,33 +26,34 @@ class BranchChatController extends Controller
 
     public function index()
     {
-        $user = Auth::user();
-        // Lấy branch mà user này là manager (nếu quản lý nhiều chi nhánh, lấy đầu tiên hoặc cho chọn)
-        $branch = Branch::where('manager_user_id', $user->id)->first();
+        $user = Auth::guard('manager')->user();
+        $branch = $user ? $user->branch : null;
+
         if (!$branch) {
-            return abort(403, 'Bạn không phải quản lý của chi nhánh nào!');
+            return redirect()->back()->with('error', 'Không tìm thấy chi nhánh');
         }
-        $branchId = $branch->id;
 
         // Lọc tất cả dữ liệu chat theo branch_id của manager
         $conversations = Conversation::with(['customer', 'messages.sender'])
             ->whereNotNull('branch_id')
-            ->where('branch_id', $branchId)
+            ->where('branch_id', $branch->id)
             ->whereIn('status', ['distributed', 'active', 'resolved', 'closed',])
             ->orderBy('updated_at', 'desc')
             ->get();
 
+        $conversation = $conversations->first();
+
         $promotions = PromotionProgram::whereHas('branches', fn($q) => $q->where('branch_id', $branch->id))->get();
         $discountCodes = DiscountCode::whereHas('branches', fn($q) => $q->where('branch_id', $branch->id))->get();
 
-        return view('admin.branch.chat', compact('conversations', 'branch', 'user', 'promotions', 'discountCodes'));
+        return view('branch.chat.index', compact('conversations', 'conversation', 'branch', 'promotions', 'discountCodes'));
     }
 
     public function apiGetConversation($id)
     {
         try {
-            $user = Auth::user();
-            $branch = Branch::where('manager_user_id', $user->id)->first();
+            $user = Auth::guard('manager')->user();
+            $branch = $user ? $user->branch : null;
             if (!$branch) {
                 return response()->json([
                     'success' => false,
@@ -108,7 +109,7 @@ class BranchChatController extends Controller
             Log::error('BranchChatController: Conversation not found', [
                 'conversation_id' => $id,
                 'branch_id' => isset($branchId) ? $branchId : null,
-                'user_id' => Auth::id(),
+                'user_id' => Auth::guard('manager')->id(),
                 'conversations_of_branch' => isset($branchId) ? Conversation::where('branch_id', $branchId)->pluck('id')->toArray() : [],
             ]);
             return response()->json([
@@ -119,7 +120,7 @@ class BranchChatController extends Controller
             Log::error('BranchChatController: Error loading conversation', [
                 'conversation_id' => $id,
                 'branch_id' => isset($branchId) ? $branchId : null,
-                'user_id' => Auth::id(),
+                'user_id' => Auth::guard('manager')->id(),
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -139,8 +140,8 @@ class BranchChatController extends Controller
                 'attachment' => 'nullable|file|max:10240' // 10MB max
             ]);
 
-            $user = Auth::user();
-            $branch = Branch::where('manager_user_id', $user->id)->first();
+            $user = Auth::guard('manager')->user();
+            $branch = $user ? $user->branch : null;
             if (!$branch) {
                 return response()->json([
                     'success' => false,
@@ -200,8 +201,7 @@ class BranchChatController extends Controller
                 ], 422);
             }
 
-            $senderId = Auth::id();
-
+            $senderId = Auth::guard('manager')->id();
 
             $message = ChatMessage::create([
                 'conversation_id' => $conversation->id,
@@ -267,9 +267,8 @@ class BranchChatController extends Controller
                 'status' => 'required|in:active,resolved,closed'
             ]);
 
-            $userId = Auth::id() ?? 1;
-            $user = Auth::user();
-            $branch = Branch::where('manager_user_id', $userId)->first();
+            $user = Auth::guard('manager')->user();
+            $branch = $user ? $user->branch : null;
             if (!$branch) {
                 return response()->json([
                     'success' => false,
@@ -277,6 +276,7 @@ class BranchChatController extends Controller
                 ], 403);
             }
             $branchId = $branch->id;
+            $userId = $user->id;
 
             // Log để debug trước khi tìm conversation
             Log::info('Branch updateStatus', [
@@ -338,7 +338,10 @@ class BranchChatController extends Controller
     }
     public function typingIndicator(Request $request)
     {
-        $user = Auth::user();
+        $user = Auth::guard('manager')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Chưa đăng nhập!'], 401);
+        }
         $conversationId = $request->input('conversation_id');
         $isTyping = $request->input('is_typing');
         broadcast(new UserTyping($conversationId, $user->id, $user->full_name ?? $user->name, $isTyping))->toOthers();

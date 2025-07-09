@@ -13,6 +13,8 @@ use App\Models\CartItem;
 use App\Services\BranchService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Models\DiscountCode;
+use Carbon\Carbon;
 
 class CartController extends Controller
 {
@@ -27,48 +29,58 @@ class CartController extends Controller
      */
     public function index()
     {
+        // Debug session id và user id
+        \Log::info('CartController@index - Session ID: ' . session()->getId());
+        \Log::info('CartController@index - User ID: ' . (Auth::id() ?? 'null'));
+
         // Determine if user is authenticated or using session
         $userId = Auth::id();
         $sessionId = session()->getId();
-        
+
         // Query the cart based on user_id or session_id
         $cartQuery = Cart::query()->where('status', 'active');
-        
+
         if ($userId) {
             $cartQuery->where('user_id', $userId);
         } else {
             $cartQuery->where('session_id', $sessionId);
         }
-        
+
         $cart = $cartQuery->first();
-        
+        \Log::info('CartController@index - Cart found: ' . ($cart ? 'YES' : 'NO'));
+        if ($cart) {
+            \Log::info('CartController@index - Cart ID: ' . $cart->id . ' | session_id: ' . $cart->session_id . ' | user_id: ' . $cart->user_id);
+        }
+
         // Initialize cartItems as an empty collection rather than an array
         $cartItems = collect();
         $subtotal = 0;
-        
+
         if ($cart) {
             $cartItems = CartItem::with([
-                'variant.product.images',
+                'variant.product' => function($query) {
+                    $query->with('images', 'variants.variantValues');
+                },
                 'variant.variantValues.attribute',
-                'toppings'
+                'toppings.topping'
             ])->where('cart_id', $cart->id)->get();
-            
+
             // Calculate subtotal
             foreach ($cartItems as $item) {
                 $subtotal += $item->variant->price * $item->quantity;
-                
+
                 // Add topping prices to subtotal
                 foreach ($item->toppings as $topping) {
                     $subtotal += $topping->price * $item->quantity;
                 }
-                
+
                 // Set primary image for display
                 $item->variant->product->primary_image = $item->variant->product->images
                     ->where('is_primary', true)
                     ->first() ?? $item->variant->product->images->first();
             }
         }
-        
+
         // Store cart count in session
         $cartCount = $cartItems->count();
         session(['cart_count' => $cartCount]);
@@ -137,9 +149,133 @@ class CartController extends Controller
         }
         $suggestedProducts = $suggested;
 
+        // === DISCOUNT CODE LOGIC ===
+        $now = Carbon::now();
+        $selectedBranchId = $cart ? $cart->branch_id : null;
+        $currentTime = $now->format('H:i:s');
+        $activeDiscountCodesQuery = DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where(function($query) use ($selectedBranchId) {
+                if ($selectedBranchId) {
+                    $query->whereDoesntHave('branches')
+                        ->orWhereHas('branches', function($q) use ($selectedBranchId) {
+                            $q->where('branches.id', $selectedBranchId);
+                        });
+                }
+            });
+        $activeDiscountCodesQuery->where(function($query) {
+            $query->where('usage_type', 'public');
+            if (Auth::check()) {
+                $query->orWhere(function($q) {
+                    $q->where('usage_type', 'personal')
+                        ->whereHas('users', function($userQuery) {
+                            $userQuery->where('user_id', Auth::id());
+                        });
+                });
+            }
+        });
+        $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($query) {
+            $query->with(['product', 'category']);
+        }])->get()->filter(function($discountCode) use ($currentTime) {
+            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                $from = Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                $to = Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                if ($from < $to) {
+                    if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                } else {
+                    if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                }
+            }
+            return true;
+        });
+        // Tính min_price cho mỗi product trong cart (giống show/index)
+        foreach ($cartItems as $item) {
+            $product = $item->variant->product;
+            $product->min_price = $product->base_price;
+            if ($product->variants && $product->variants->count() > 0) {
+                $variantPrices = [];
+                foreach ($product->variants as $variant) {
+                    $variantPrice = $product->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count() > 0) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
+                }
+                if (!empty($variantPrices)) {
+                    $product->min_price = min($variantPrices);
+                }
+            }
+            // DEBUG: Log variant prices to find discrepancy
+            \Illuminate\Support\Facades\Log::debug('CartController@index - Variant Prices for Product ID ' . $product->id, [
+                'variant_prices' => $variantPrices ?? [],
+                'calculated_min_price' => $product->min_price,
+                'base_price' => $product->base_price
+            ]);
+        }
+        // Tính discount cho từng item
+        foreach ($cartItems as $item) {
+            $product = $item->variant->product;
+            $originPrice = $item->variant->price;
+            $item->origin_price = $originPrice;
+            $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                        if ($discountCode->min_requirement_type === 'order_amount') {
+                            return true;
+                        } elseif ($discountCode->min_requirement_type === 'product_price') {
+                            if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
+                $applies = $discountCode->products->contains(function($discountProduct) use ($item) {
+                    if ($discountProduct->product_id === $item->variant->product->id) return true;
+                    if ($discountProduct->category_id === $item->variant->product->category_id) return true;
+                    return false;
+                });
+                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                    if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                        return false;
+                    }
+                }
+                return $applies;
+            });
+            $maxDiscount = null;
+            $maxValue = 0;
+            foreach ($applicableDiscounts as $discountCode) {
+                $value = 0;
+                if ($discountCode->discount_type === 'fixed_amount') {
+                    $value = $discountCode->discount_value;
+                } elseif ($discountCode->discount_type === 'percentage') {
+                    $value = $originPrice * $discountCode->discount_value / 100;
+                }
+                if ($value > $maxValue) {
+                    $maxValue = $value;
+                    $maxDiscount = $discountCode;
+                }
+            }
+            $item->best_discount = $maxDiscount;
+            $item->best_discount_value = $maxValue;
+            // Debug giá topping từng item
+            $toppingSum = $item->toppings->sum('price');
+            $toppingSumWithRelation = $item->toppings->sum(function($t) { return $t->topping->price ?? 0; });
+            \Log::debug('CartItem debug', [
+                'cart_item_id' => $item->id,
+                'variant_price' => $originPrice,
+                'topping_ids' => $item->toppings->pluck('topping_id'),
+                'topping_sum' => $toppingSum,
+                'topping_sum_with_relation' => $toppingSumWithRelation,
+                'topping_names' => $item->toppings->map(function($t) { return $t->topping->name ?? null; }),
+            ]);
+            $item->final_price = max(0, $originPrice - $maxValue) + $toppingSumWithRelation;
+        }
+
         return view("customer.cart.index", compact('cartItems', 'subtotal', 'cart', 'suggestedProducts'));
     }
-    
+
     /**
      * Add a product to cart
      */
@@ -148,7 +284,7 @@ class CartController extends Controller
         try {
             // Log request data
             \Log::debug('Add to cart request:', $request->all());
-            
+
             // Log variant values details
             $variantValues = $request->variant_values;
             foreach ($variantValues as $valueId) {
@@ -173,7 +309,7 @@ class CartController extends Controller
             // Get or create cart
             $userId = Auth::id();
             $sessionId = session()->getId();
-            
+
             $cart = Cart::where('status', 'active')
                 ->when($userId, function($query) use ($userId) {
                     return $query->where('user_id', $userId);
@@ -248,8 +384,8 @@ class CartController extends Controller
 
                 // Loop through existing items to find an exact match (including toppings)
                 foreach ($existingCartItems as $item) {
-                    $itemToppingIds = $item->toppings->pluck('id')->sort()->values()->all();
-                    
+                    $itemToppingIds = $item->toppings->pluck('topping_id')->sort()->values()->all();
+
                     if ($itemToppingIds == $requestToppingIds) {
                         $matchingCartItem = $item;
                         break;
@@ -272,11 +408,13 @@ class CartController extends Controller
 
                     // Attach toppings if they exist in the request
                     if (!empty($requestToppingIds)) {
-                        $toppings = collect($requestToppingIds)->mapWithKeys(function ($toppingId) {
-                            return [$toppingId => ['quantity' => 1]];
+                        $toppingData = collect($requestToppingIds)->map(function ($toppingId) {
+                            return [
+                                'topping_id' => $toppingId,
+                                'quantity' => 1
+                            ];
                         })->all();
-                        
-                        $cartItem->toppings()->attach($toppings);
+                        $cartItem->toppings()->createMany($toppingData);
                     }
                 }
 
@@ -315,7 +453,7 @@ class CartController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng'
@@ -412,7 +550,7 @@ class CartController extends Controller
             $cart = $cartItem->cart;
 
             // Remove toppings first
-            $cartItem->toppings()->detach();
+            $cartItem->toppings()->delete();
 
             // Delete cart item
             $cartItem->delete();

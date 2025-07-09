@@ -116,12 +116,14 @@ function fetchUsersByRank($container, $countDisplay) {
         return;
     }
     
-    // Get the current discount code ID
+    // Get the current discount code ID (only for edit mode)
     const hiddenInput = $('input[name="discount_code_id"]');
     const formData = $('form').data('discount-code-id');
     const pathId = window.location.pathname.split('/').filter(Boolean).pop();
     
-    const discountCodeId = hiddenInput.val() || formData || pathId;
+    // Check if we're in edit mode (path contains 'edit')
+    const isEditMode = window.location.pathname.includes('/edit');
+    const discountCodeId = isEditMode ? (hiddenInput.val() || formData || pathId) : null;
     
     // Get CSRF token from multiple sources
     const metaToken = $('meta[name="csrf-token"]').attr('content');
@@ -130,11 +132,15 @@ function fetchUsersByRank($container, $countDisplay) {
     
     const csrfToken = metaToken || inputToken || csrfInput;
     
-    // Prepare request data
+    // Prepare request data - only include discount_code_id if it exists (edit mode)
     const requestData = {
-        ranks: selectedRanks,
-        discount_code_id: discountCodeId
+        ranks: selectedRanks
     };
+    
+    // Only add discount_code_id if we're in edit mode and have a valid ID
+    if (isEditMode && discountCodeId && discountCodeId !== 'create') {
+        requestData.discount_code_id = discountCodeId;
+    }
     
     $.ajax({
         url: "/admin/discount_codes/get-users-by-rank",
@@ -198,33 +204,40 @@ function fetchUsersByRank($container, $countDisplay) {
             } else {
                 $container.html(`
                     <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                        <p class="text-red-500">Lỗi: Không thể tải danh sách người dùng.</p>
-                        <p class="text-red-500">${data.message || 'Không có thông tin lỗi'}</p>
+                        <p class="text-red-600 dark:text-red-400">Lỗi: ${data.message || 'Không thể tải danh sách người dùng.'}</p>
                     </div>
                 `);
+                
+                if ($countDisplay) {
+                    $countDisplay.text('Lỗi khi tải danh sách người dùng');
+                }
             }
         },
         error: function(xhr, status, error) {
-            let errorMessage = error;
-            try {
-                const responseJson = JSON.parse(xhr.responseText);
-                if (responseJson.message) {
-                    errorMessage = responseJson.message;
-                }
-            } catch (e) {
-                // Could not parse error response as JSON
+            console.error('Error fetching users:', xhr.responseText);
+            
+            let errorMessage = 'Lỗi kết nối: Không thể tải danh sách người dùng.';
+            
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            } else if (xhr.status === 422) {
+                errorMessage = 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.';
+            } else if (xhr.status === 404) {
+                errorMessage = 'API không tồn tại.';
+            } else if (xhr.status === 500) {
+                errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
             }
             
             $container.html(`
                 <div class="col-span-full p-4 text-center bg-red-50 dark:bg-red-950/20 rounded-lg">
-                    <p class="text-red-500">Lỗi kết nối: Không thể tải danh sách người dùng.</p>
-                    <p class="text-red-500 text-sm mt-2">${errorMessage}</p>
-                    <p class="text-red-500 text-xs mt-1">Status code: ${xhr.status}</p>
-                    <button class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" onclick="window.discountCodeModule.users.fetchUsersByRank()">
-                        Thử lại
-                    </button>
+                    <p class="text-red-600 dark:text-red-400">${errorMessage}</p>
+                    <p class="text-xs text-red-500 mt-1">Status code: ${xhr.status}</p>
                 </div>
             `);
+            
+            if ($countDisplay) {
+                $countDisplay.text('Lỗi khi tải danh sách người dùng');
+            }
         }
     });
 }

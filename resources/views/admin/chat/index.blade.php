@@ -1,24 +1,9 @@
 @extends('layouts.admin.contentLayoutMaster')
-
 @section('title', 'Quản Lý Chat')
-<link rel="stylesheet" href="/css/admin/chat.css">
-
-@php
-    $statusLabels = [
-        'new' => ['label' => 'Chờ phản hồi', 'class' => 'badge badge-waiting', 'icon' => '⏰'],
-        'distributed' => ['label' => 'Đã phân phối', 'class' => 'badge badge-distributed', 'icon' => '📤'],
-        'active' => ['label' => 'Đang xử lý', 'class' => 'badge badge-active', 'icon' => '🟠'],
-        'resolved' => ['label' => 'Đã giải quyết', 'class' => 'badge badge-resolved', 'icon' => '✅'],
-        'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed', 'icon' => '🔒'],
-    ];
-@endphp
-
+<link rel="stylesheet" href="/css/admin/branchs/chat.css">
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <div id="chat-container" class="chat-container"
-        @if (isset($conversation) && $conversation) data-conversation-id="{{ $conversation->id }}" @endif
-        data-user-id="{{ auth()->id() }}" data-user-type="admin">
+    <div id="chat-container" class="chat-container" data-admin-id="{{ auth()->id() }}">
         <!-- Sidebar: Danh sách cuộc trò chuyện -->
         <div class="chat-sidebar" style="width:26%">
             <div class="chat-sidebar-header">
@@ -47,16 +32,17 @@
             </div>
             <div id="chat-list" class="chat-list">
                 @forelse ($conversations as $conv)
-                    <div class="chat-item {{ $conv->id == optional($conversation)->id ? 'active' : '' }}  relative"
+                    <div class="chat-item conversation-item {{ $loop->first ? 'active' : '' }}  relative"
                         data-conversation-id="{{ $conv->id }}" data-status="{{ $conv->status }}"
                         data-customer-name="{{ $conv->customer->full_name ?? ($conv->customer->name ?? 'Khách hàng') }}"
                         data-customer-email="{{ $conv->customer->email }}"
+                        data-customer-phone="{{ $conv->customer->phone ?? '' }}"
                         data-branch-name="{{ $conv->branch ? $conv->branch->name : '' }}"
-                        data-customer-phone="{{ $conv->customer->phone ?? '' }}">
+                        data-last-activity="{{ $conv->updated_at->diffForHumans() }}">
                         <div class="flex items-center gap-3 w-full min-w-0">
                             <div class="flex flex-col items-center justify-center relative">
                                 <div
-                                    class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg {{ $conv->id == optional($conversation)->id ? 'bg-blue-500' : 'bg-orange-500' }}">
+                                    class="chat-item-avatar mb-5 w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg {{ $loop->first ? 'bg-blue-500' : 'bg-orange-500' }}">
                                     {{ strtoupper(substr($conv->customer->full_name ?? ($conv->customer->name ?? 'K'), 0, 1)) }}
                                 </div>
                             </div>
@@ -67,58 +53,82 @@
                                 </div>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span
-                                        class="chat-item-preview truncate text-sm text-gray-500 flex-1">{{ $conv->messages->last()->message ?? '...' }}</span>
+                                        class="chat-item-preview truncate text-sm text-gray-500 flex-1">{{ $conv->messages->last()?->message ? Str::limit($conv->messages->last()->message, 30) : '...' }}</span>
                                 </div>
                                 <div class="flex items-center gap-2 mt-1">
                                     <span
                                         class="chat-item-time">{{ $conv->messages->last()?->created_at ? $conv->messages->last()->created_at->format('H:i') : '' }}</span>
                                 </div>
                             </div>
-                            @if ($conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() > 0)
-                                <span
-                                    class="unread-badge ml-2 absolute right-2 bottom-2">{{ $conv->messages->where('is_read', false)->where('sender_id', '!=', auth()->id())->count() }}</span>
-                            @endif
+                            
                         </div>
                         <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
+                            @php
+                                $statusLabels = [
+                                    'new' => [
+                                        'label' => 'Chờ phản hồi',
+                                        'class' => 'badge badge-waiting',
+                                        'icon' => '⏰',
+                                    ],
+                                    'distributed' => [
+                                        'label' => 'Đã phân phối',
+                                        'class' => 'badge badge-distributed',
+                                        'icon' => '📤',
+                                    ],
+                                    'active' => [
+                                        'label' => 'Đang xử lý',
+                                        'class' => 'badge badge-active',
+                                        'icon' => '🟠',
+                                    ],
+                                    'resolved' => [
+                                        'label' => 'Đã giải quyết',
+                                        'class' => 'badge badge-resolved',
+                                        'icon' => '✅',
+                                    ],
+                                    'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed', 'icon' => '🔒'],
+                                ];
+                            @endphp
                             <span class="{{ $statusLabels[$conv->status]['class'] ?? 'badge' }}">
                                 {{ $statusLabels[$conv->status]['icon'] ?? '' }}
                                 {{ $statusLabels[$conv->status]['label'] ?? $conv->status }}
                             </span>
                             <span class="badge badge-branch">{{ $conv->branch?->name }}</span>
                         </div>
-
                     </div>
                 @empty
-                    <div class="p-4 text-center ">Không có cuộc trò chuyện nào.</div>
+                    <div class="p-4 text-center ">
+                        <strong>Hiện tại bạn chưa có cuộc trò chuyện nào với khách hàng.</strong><br>
+                        Khi khách hàng nhắn tin, cuộc trò chuyện sẽ xuất hiện tại đây để bạn hỗ trợ.
+                    </div>
                 @endforelse
             </div>
         </div>
         <!-- Main Chat -->
         <div class="chat-main" style="width:55%">
             @php
-                $hasConversation = isset($conversation) && $conversation;
+                $hasConversation = isset($conversations) && count($conversations) > 0;
+                $currentConversation = $hasConversation ? $conversations->first() : null;
             @endphp
-            @if ($hasConversation)
+            @if ($hasConversation && $currentConversation)
                 <div class="chat-header">
                     <div class="chat-header-user">
-                        <div class="chat-avatar" id="chat-avatar">
-                            {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+                        <div class="chat-avatar" id="chat-header-avatar">
+                            {{ strtoupper(substr($currentConversation->customer->full_name ?? ($currentConversation->customer->name ?? 'K'), 0, 1)) }}
                         </div>
                         <div class="chat-header-info">
-                            <h3 id="chat-customer-name">
-                                {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}
+                            <h3 id="chat-header-name">
+                                {{ $currentConversation->customer->full_name ?? ($currentConversation->customer->name ?? 'Khách hàng') }}
                             </h3>
-                            <p id="chat-customer-email">{{ $conversation->customer->email }}</p>
+                            <p id="chat-header-email">{{ $currentConversation->customer->email }}</p>
                         </div>
                     </div>
                     <div class="chat-header-actions" id="chat-header-actions">
                         <span
-                            class="badge status-badge status-{{ $conversation->status }}">{{ ucfirst($conversation->status) }}</span>
-                        @if ($conversation->branch)
+                            class="badge status-badge status-{{ $currentConversation->status }}">{{ ucfirst($currentConversation->status) }}</span>
+                        @if ($currentConversation->branch)
                             <span class="badge badge-xs branch-badge ml-2"
-                                id="main-branch-badge">{{ $conversation->branch->name }}</span>
+                                id="main-branch-badge">{{ $currentConversation->branch->name }}</span>
                         @endif
-
                     </div>
                 </div>
                 <div class="chat-messages" id="chat-messages">
@@ -127,14 +137,13 @@
                 <div class="chat-input-container">
                     <form id="chat-form" enctype="multipart/form-data" class="flex w-full gap-2">
                         <textarea id="chat-input-message" class="chat-input" placeholder="Nhập tin nhắn..."></textarea>
-                        <input type="file" id="imageInput" class="hidden" name="image" accept="image/*">
-                        <input type="file" id="fileInput" class="hidden" name="file"
+                        <input type="file" id="chat-input-image" class="hidden" name="image" accept="image/*">
+                        <input type="file" id="chat-input-file" class="hidden" name="file"
                             accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,application/x-rar-compressed,application/octet-stream">
                         <button type="button" id="attachImageBtn" class="chat-tools-btn" title="Gửi ảnh"><i
                                 class="fas fa-image"></i></button>
                         <button type="button" id="attachFileBtn" class="chat-tools-btn" title="Gửi file"><i
                                 class="fas fa-paperclip"></i></button>
-
                         <button type="submit" id="chat-send-btn" class="chat-send-btn"><i
                                 class="fas fa-paper-plane"></i></button>
                     </form>
@@ -149,55 +158,48 @@
             @endif
         </div>
         <!-- Customer Info -->
-        <div class="chat-sidebar border-l" style="width:20%">
+        <div class="chat-info-panel border-l" style="width:20%">
             <div class="flex flex-col items-center gap-2 p-4">
-                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl mb-2"
-                    id="customer-info-avatar">
-                    @if ($hasConversation)
-                        {{ strtoupper(substr($conversation->customer->full_name ?? ($conversation->customer->name ?? 'K'), 0, 1)) }}
+                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center font-bold text-xl mb-2 chat-info-avatar "
+                    id="chat-info-avatar">
+                    @if ($hasConversation && $currentConversation)
+                        {{ strtoupper(substr($currentConversation->customer->full_name ?? ($currentConversation->customer->name ?? 'K'), 0, 1)) }}
                     @else
                         ?
                     @endif
                 </div>
-                <div class="font-bold" id="customer-info-name">
-                    @if ($hasConversation)
-                        {{ $conversation->customer->full_name ?? ($conversation->customer->name ?? 'Khách hàng') }}
+                <div class="font-bold" id="chat-info-name">
+                    @if ($hasConversation && $currentConversation)
+                        {{ $currentConversation->customer->full_name ?? ($currentConversation->customer->name ?? 'Khách hàng') }}
                     @else
                         Khách hàng
                     @endif
                 </div>
-                <div class="text-xs text-gray-500" id="customer-info-email">
-                    @if ($hasConversation)
-                        {{ $conversation->customer->email }}
+                <div class="text-xs text-gray-500" id="chat-info-email">
+                    @if ($hasConversation && $currentConversation)
+                        {{ $currentConversation->customer->email }}
                     @endif
                 </div>
-                <div class="text-xs text-gray-500" id="customer-info-phone">SĐT:
-                    @if ($hasConversation)
-                        {{ $conversation->customer->phone ?? '---' }}
-                    @else
-                        ---
-                    @endif
-                </div>
-                <div class="text-xs text-gray-500">Trạng thái: <span class="font-semibold" id="customer-info-status">
-                        @if ($hasConversation)
-                            {{ ucfirst($conversation->status) }}
+                <div class="text-xs text-gray-500">Trạng thái: <span class="font-semibold" id="chat-info-status">
+                        @if ($hasConversation && $currentConversation)
+                            {{ ucfirst($currentConversation->status) }}
                         @endif
                     </span></div>
-                <div class="text-xs text-gray-500">Lần cuối hoạt động: @if ($hasConversation)
-                        {{ $conversation->updated_at->diffForHumans() }}
+                <div class="text-xs text-gray-500">Lần cuối hoạt động: @if ($hasConversation && $currentConversation)
+                        {{ $currentConversation->updated_at->diffForHumans() }}
                     @endif
                 </div>
-                @if ($hasConversation && $conversation->branch)
+                @if ($hasConversation && $currentConversation && $currentConversation->branch)
                     <div class="mt-2"><span class="badge badge-xs branch-badge ml-2"
-                            id="customer-info-branch-badge">{{ $conversation->branch->name }}</span></div>
+                            id="chat-info-branch">{{ $currentConversation->branch->name }}</span></div>
                 @endif
             </div>
-            <div class="p-4 flex justify-end">
+            <div class="p-4 flex align-center">
                 <div class="w-full flex flex-col items-end" id="distribution-select-container">
-                    @if ($hasConversation)
-                        @if (!$conversation->branch_id && $conversation->status === 'new')
+                    @if ($hasConversation && $currentConversation)
+                        @if (!$currentConversation->branch_id && $currentConversation->status === 'new')
                             <select class="distribution-select form-select w-full max-w-xs" id="distribution-select"
-                                data-conversation-id="{{ $conversation->id }}">
+                                data-conversation-id="{{ $currentConversation->id }}">
                                 <option value="" disabled selected>Chọn chi nhánh</option>
                                 @foreach ($branches as $branch)
                                     <option value="{{ $branch->id }}">{{ $branch->name }}</option>
@@ -213,16 +215,13 @@
             </div>
         </div>
     </div>
-
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-    <script src="{{ asset('js/chat-realtime.js') }}" defer></script>
-
+    <script src="/js/chat-realtime.js"></script>
     <script>
         window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
         window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
         window.branches = @json($branches);
     </script>
-
     <style>
         .typing-indicator {
             display: flex;
@@ -299,4 +298,52 @@
             box-shadow: 0 0 0 2px #dbeafe;
         }
     </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if ($hasConversation && $currentConversation)
+                window.adminChat = new ChatCommon({
+                    conversationId: '{{ $currentConversation->id }}',
+                    userId: {{ auth()->id() }},
+                    userType: 'admin',
+                    api: {
+                        send: '/admin/chat/send',
+                        getMessages: '/admin/chat/messages/{{ $currentConversation->id }}',
+                        distribute: '/admin/chat/distribute'
+                    }
+                });
+            @endif
+        });
+
+        window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
+        window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('chat-image-preview');
+        let pendingImage = null;
+        if (imageInput && imagePreview) {
+            imageInput.addEventListener('change', function(e) {
+                imagePreview.innerHTML = '';
+                const file = this.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    pendingImage = file;
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        imagePreview.innerHTML =
+                            `<div class='relative inline-block'><img src='${ev.target.result}' class='w-24 h-24 object-cover rounded-lg border'><button type='button' class='absolute -top-2 -right-2 bg-white border border-gray-300 rounded-full p-1 shadow remove-preview-btn' title='Xóa'><i class='fas fa-times text-red-500'></i></button></div>`;
+                        imagePreview.classList.remove('hidden');
+                        imagePreview.querySelector('.remove-preview-btn').onclick = function() {
+                            imageInput.value = '';
+                            imagePreview.innerHTML = '';
+                            imagePreview.classList.add('hidden');
+                            pendingImage = null;
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.classList.add('hidden');
+                    pendingImage = null;
+                }
+            });
+        }
+    </script>
 @endsection

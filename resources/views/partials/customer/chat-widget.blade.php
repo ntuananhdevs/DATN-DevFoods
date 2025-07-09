@@ -76,9 +76,8 @@
                         <span class="text-white text-xs font-bold">FS</span>
                     </div>
                     <div class="flex flex-col items-start">
-                        <div>
-
-
+                        <div class="rounded-2xl px-4 py-2 max-w-full shadow-sm bg-white text-gray-900 border border-gray-200 rounded-bl-md">
+                            <p class="text-sm whitespace-pre-wrap">Xin chào! Chúng tôi có thể giúp gì cho bạn?</p>
                         </div>
                         <span class="text-xs text-gray-500 mt-1 px-2" id="initialTime"></span>
                     </div>
@@ -190,11 +189,21 @@
 <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.txt,.zip,.rar">
 <input type="file" id="imageInput" class="hidden" accept="image/*">
 
+<<<<<<< HEAD
 <script>
     window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
     window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
 </script>
 
+=======
+<!-- Thêm biến Pusher và biến user cho JS -->
+<script>
+    window.pusherKey = @json(config('broadcasting.connections.pusher.key'));
+    window.pusherCluster = @json(config('broadcasting.connections.pusher.options.cluster'));
+    window.customerUserId = @json(auth()->id());
+    window.isAuthenticated = @json(auth()->check());
+</script>
+>>>>>>> 58dd5bf16fb4de582f39c58aed1fe795a5b460f8
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script src="/js/chat-realtime.js"></script>
 <script>
@@ -330,7 +339,7 @@
 
         function toggleChat() {
             // Check if user is authenticated
-            const isAuthenticated = {{ auth()->check() ? 'true' : 'false' }};
+            const isAuthenticated = window.isAuthenticated;
 
             if (!isAuthenticated) {
                 loginRequiredModal.classList.remove('hidden');
@@ -719,6 +728,9 @@
                 minute: '2-digit'
             });
 
+            // Xác định tên người gửi
+            const senderName = isUser ? 'Bạn' : 'FastFood Support';
+
             let messageContent = '';
 
             if (message.type === 'text') {
@@ -762,6 +774,7 @@
                     <span class="text-white text-xs font-bold">${isUser ? 'U' : 'FS'}</span>
                                             </div>
                 <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'}">
+                    <div class="text-xs text-gray-500 mb-1">${senderName}</div>
                     <div class="rounded-2xl px-4 py-2 max-w-full shadow-sm ${
                         isUser 
                             ? 'bg-orange-500 text-white rounded-br-md' 
@@ -779,7 +792,7 @@
 
         // Hàm khởi tạo CustomerChatRealtime sau khi đã có conversationId
         function initCustomerChatRealtime(conversationId) {
-            const customerUserId = window.customerUserId || {{ auth()->id() ?? 'null' }};
+            const customerUserId = window.customerUserId;
             console.log('[DEBUG] conversationId:', conversationId, 'customerUserId:', customerUserId);
             if (!conversationId || !customerUserId) return;
             if (window.customerChatInstance) return; // Không khởi tạo lại nếu đã có

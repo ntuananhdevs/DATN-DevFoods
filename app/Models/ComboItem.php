@@ -26,10 +26,15 @@ class ComboItem extends Model
         return $this->belongsTo(ProductVariant::class);
     }
 
-    public function product(): BelongsTo
+    public function product()
     {
-        return $this->belongsTo(Product::class, 'product_variant_id', 'id')
-            ->join('product_variants', 'products.id', '=', 'product_variants.product_id')
-            ->where('product_variants.id', $this->product_variant_id);
+        return $this->hasOneThrough(
+            Product::class,
+            ProductVariant::class,
+            'id', // Foreign key on product_variants table
+            'id', // Foreign key on products table
+            'product_variant_id', // Local key on combo_items table
+            'product_id' // Local key on product_variants table
+        );
     }
 }

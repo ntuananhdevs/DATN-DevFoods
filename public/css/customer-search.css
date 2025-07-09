@@ -1,0 +1,56 @@
+header {
+    z-index: 90 !important;
+    position: sticky;
+    top: 0;
+}
+
+header.search-active {
+    background: #fff !important;
+    transition: background 0.2s;
+
+}
+
+.search-section {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 64px;
+    z-index: 90;
+    background: #ffffff;
+
+}
+
+.search-section.open {
+    max-height: 400px;
+    opacity: 1;
+}
+
+.quick-links-title {
+    color: #6b7280;
+}
+.quick-link .arrow, .quick-link .link-text {
+    transition: color 0.2s;
+}
+.quick-link:hover .arrow, .quick-link:hover .link-text {
+    color: #f97316 !important;
+}
+.quick-link .link-text {
+    color: #374151;
+}
+@media (max-width: 768px) {
+    .search-section {
+        top: 56px;
+    }
+}
+.overlay {
+    z-index: 80;
+}
+
+.search-input:hover,
+.search-input:focus,
+.search-input:active {
+    outline: none;
+    box-shadow: none;
+    border-color: inherit;
+
+}

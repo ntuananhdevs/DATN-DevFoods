@@ -353,16 +353,81 @@
         font-size: 0.8rem;
         font-weight: 400;
     }
+    /* Modern square anonymous checkbox */
+    .custom-checkbox {
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #f97316;
+        border-radius: 6px;
+        background: #fff;
+        outline: none;
+        cursor: pointer;
+        position: relative;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-shadow: 0 1px 3px rgba(249,115,22,0.08);
+        vertical-align: middle;
+        display: inline-block;
+    }
+    .custom-checkbox:checked {
+        background: #f97316;
+        border-color: #f97316;
+    }
+    .custom-checkbox:checked:after {
+        content: '';
+        display: block;
+        position: absolute;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 12px;
+        border: solid #fff;
+        border-width: 0 3px 3px 0;
+        transform: rotate(45deg);
+    }
+    .custom-checkbox:hover {
+        border-color: #ea580c;
+        box-shadow: 0 2px 8px rgba(249,115,22,0.15);
+    }
+    .anonymous-label {
+        margin-left: 10px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 1rem;
+        cursor: pointer;
+        user-select: none;
+        letter-spacing: 0.01em;
+        transition: color 0.2s;
+    }
+    .custom-checkbox:checked + .anonymous-label {
+        color: #f97316;
+    }
+    .reply-item {
+        position: relative;
+    }
+    .reply-arrow {
+        width: 24px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-start;
+        margin-top: 8px;
+    }
+    .reply-item .bg-blue-50 {
+        position: relative;
+    }
 </style>
 <div class="container mx-auto px-4 py-8">
     <!-- Product Info Section -->
     <div class="grid lg:grid-cols-2 gap-8 mb-12">
         <!-- Left column: Images -->
         <div class="space-y-4">
+            @php
+                $primaryImage = $product->images->where('is_primary', 1)->first() ?? $product->images->first();
+            @endphp
             <div class="relative h-[300px] sm:h-[400px] rounded-lg overflow-hidden border">
-                <img src="{{ $product->images->first() ? $product->images->first()->s3_url : '/placeholder.svg?height=600&width=600' }}" 
-                     alt="{{ $product->name }}" 
-                     class="object-cover w-full h-full" 
+                <img src="{{ $primaryImage ? Storage::disk('s3')->url($primaryImage->img) : '/placeholder.svg?height=600&width=600' }}"
+                     alt="{{ $product->name }}"
+                     class="object-cover w-full h-full"
                      id="main-product-image">
                 @if($product->release_at && $product->release_at->diffInDays(now()) <= 7)
                     <span class="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">Mới</span>
@@ -371,9 +436,9 @@
 
             <div class="flex gap-2 overflow-x-auto pb-2">
                 @foreach($product->images as $image)
-                <button class="relative w-20 h-20 rounded border-2 {{ $loop->first ? 'border-orange-500' : 'border-transparent' }} overflow-hidden flex-shrink-0 product-thumbnail">
-                    <img src="{{ $image->s3_url }}" 
-                         alt="{{ $product->name }} - Hình {{ $loop->iteration }}" 
+                <button class="relative w-20 h-20 rounded border-2 {{ ($primaryImage && $image->id === $primaryImage->id) ? 'border-orange-500' : 'border-transparent' }} overflow-hidden flex-shrink-0 product-thumbnail">
+                    <img src="{{ Storage::disk('s3')->url($image->img) }}"
+                         alt="{{ $product->name }} - Hình {{ $loop->iteration }}"
                          class="object-cover w-full h-full">
                 </button>
                 @endforeach
@@ -746,97 +811,17 @@
             <!-- Ingredients Tab -->
             <div class="tab-content hidden" id="content-ingredients">
                 @if(!empty($product->ingredients))
-                    @php
-                        $ingredients = is_string($product->ingredients) ? json_decode($product->ingredients, true) : $product->ingredients;
-                    @endphp
-                    
-                    @if(is_array($ingredients))
-                        <div class="space-y-6">
-                            @if(isset($ingredients['base']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Nguyên liệu cơ bản:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['base'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['vegetables']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Rau củ:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['vegetables'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['meat']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Thịt:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['meat'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['sauces']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Sốt:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['sauces'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @if(isset($ingredients['cheese']))
-                                <div>
-                                    <h4 class="font-medium mb-3 text-gray-900">Phô mai:</h4>
-                                    <ul class="space-y-2">
-                                        @foreach((array)$ingredients['cheese'] as $item)
-                                            <li class="flex items-center space-x-2 text-gray-700">
-                                                <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            @endif
-
-                            @foreach($ingredients as $key => $items)
-                                @if(!in_array($key, ['base', 'vegetables', 'meat', 'sauces', 'cheese']) && is_array($items))
-                                    <div>
-                                        <h4 class="font-medium mb-3 text-gray-900">{{ ucfirst(str_replace('_', ' ', $key)) }}:</h4>
-                                        <ul class="space-y-2">
-                                            @foreach($items as $item)
-                                                <li class="flex items-center space-x-2 text-gray-700">
-                                                    <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
-                                                    <span class="flex-1">{{ is_array($item) ? ($item['name'] ?? '') : $item }}</span>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
-                            @endforeach
+                    @if(is_array($product->ingredients) && !empty($product->ingredients))
+                        <div class="space-y-4">
+                            <h4 class="font-medium mb-3 text-gray-900">Thành phần:</h4>
+                            <ul class="space-y-2">
+                                @foreach($product->ingredients as $ingredient)
+                                    <li class="flex items-center space-x-2 text-gray-700">
+                                        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                                        <span class="flex-1">{{ $ingredient }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
                         </div>
                     @else
                         <p class="text-gray-600">{{ $product->ingredients }}</p>
@@ -880,7 +865,7 @@
 
                     <div class="divide-y max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-gray-100 hover:scrollbar-thumb-orange-300">
                         @forelse($product->reviews as $review)
-                        <div class="p-6 hover:bg-gray-50/50 transition-colors">
+                        <div class="p-6 hover:bg-gray-50/50 transition-colors" data-review-id="{{ $review->id }}">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="flex items-start gap-4">
                                     <div class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
@@ -934,16 +919,21 @@
                                 
                                 @if($review->review_image)
                                     <div class="mt-3">
-                                        <img src="{{ Storage::url($review->review_image) }}" 
+                                        <img src="{{ Storage::disk('s3')->url($review->review_image) }}" 
                                              alt="Review image" 
                                              class="rounded-lg max-h-48 object-cover hover:opacity-95 transition-opacity cursor-pointer">
                                     </div>
                                 @endif
 
                                 <div class="flex items-center gap-6 pt-2">
-                                    <button class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                                        <i class="far fa-thumbs-up"></i>
-                                        <span>Hữu ích ({{ $review->helpful_count }})</span>
+                                    @php
+                                        $userHelpful = auth()->check() ? \App\Models\ReviewHelpful::where('user_id', auth()->id())->where('review_id', $review->id)->exists() : false;
+                                    @endphp
+                                    <button class="inline-flex items-center gap-2 text-sm helpful-btn {{ $userHelpful ? 'helpful-active text-sky-600' : '' }}"
+                                            data-review-id="{{ $review->id }}"
+                                            data-helpful="{{ $userHelpful ? '1' : '0' }}">
+                                        <i class="{{ $userHelpful ? 'fas' : 'far' }} fa-thumbs-up {{ $userHelpful ? 'text-sky-600' : '' }}"></i>
+                                        <span>Hữu ích (<span class="helpful-count">{{ $review->helpful_count }}</span>)</span>
                                     </button>
                                     @if($review->report_count > 0)
                                         <span class="inline-flex items-center gap-1 text-xs text-red-500">
@@ -951,9 +941,46 @@
                                             {{ $review->report_count }} báo cáo
                                         </span>
                                     @endif
+                                    @auth
+                                        <button class="inline-flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 transition-colors reply-review-btn"
+                                            data-review-id="{{ $review->id }}"
+                                            data-user-name="{{ $review->is_anonymous ? 'Ẩn danh' : $review->user->name }}"
+                                            data-route-reply="{{ route('reviews.reply', ['review' => $review->id]) }}">
+                                            <i class="fas fa-reply"></i>
+                                            <span>Phản hồi</span>
+                                        </button>
+                                        @if($review->user_id === auth()->id() || (auth()->user()->is_admin ?? false))
+                                            <button class="inline-flex items-center gap-2 text-sm text-red-500 hover:text-red-700 transition-colors delete-review-btn" data-review-id="{{ $review->id }}">
+                                                <i class="fas fa-trash-alt"></i>
+                                                <span>Xóa</span>
+                                            </button>
+                                        @endif
+                                    @endauth
                                 </div>
                             </div>
                         </div>
+                        <!-- Hiển thị các reply -->
+                        @foreach($review->replies as $reply)
+                            <div class="reply-item flex items-start gap-2 ml-8 mt-2 relative" data-reply-id="{{ $reply->id }}">
+                                <div class="reply-arrow">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" class="text-blue-400"><path d="M2 12h16M18 12l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </div>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-semibold text-blue-700">{{ $reply->user->name ?? 'Ẩn danh' }}</span>
+                                        <span class="text-xs text-gray-400">{{ $reply->reply_date ? \Carbon\Carbon::parse($reply->reply_date)->format('d/m/Y H:i') : '' }}</span>
+                                        @auth
+                                            @if($reply->user_id === auth()->id() || (auth()->user()->is_admin ?? false))
+                                                <button class="inline-flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors delete-reply-btn" data-reply-id="{{ $reply->id }}">
+                                                    <i class="fas fa-trash-alt"></i> Xóa
+                                                </button>
+                                            @endif
+                                        @endauth
+                                    </div>
+                                    <div class="text-gray-700">{{ $reply->reply }}</div>
+                                </div>
+                            </div>
+                        @endforeach
                         @empty
                         <div class="p-8 text-center">
                             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -963,6 +990,51 @@
                             <p class="text-gray-400 text-sm mt-1">Hãy là người đầu tiên đánh giá sản phẩm!</p>
                         </div>
                         @endforelse
+                    </div>
+
+                    {{-- Form gửi đánh giá hoặc phản hồi --}}
+                    <div id="review-reply-form-container" class="mt-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                        <form id="review-reply-form" action="{{ route('products.review', $product->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-default-action="{{ route('products.review', $product->id) }}">
+                            @csrf
+                            <input type="hidden" name="branch_id" value="{{ $selectedBranchId }}">
+                            <input type="hidden" name="reply_review_id" id="reply_review_id" value="">
+                            <div id="replying-to" class="mb-2 hidden">
+                                <span class="text-sm text-blue-600">Phản hồi cho <b id="replying-to-user"></b></span>
+                                <button type="button" id="cancel-reply" class="ml-2 text-xs text-gray-500 hover:text-red-500">Hủy</button>
+                            </div>
+                            <div class="flex items-center justify-between mb-4 gap-2 flex-wrap" id="rating-row">
+                                <h4 class="font-semibold text-lg" id="form-title" data-default-title="Gửi đánh giá của bạn">Gửi đánh giá của bạn</h4>
+                                <div class="flex items-center" id="rating-stars">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <input type="radio" id="star{{ $i }}" name="rating" value="{{ $i }}" class="sr-only">
+                                        <label for="star{{ $i }}" class="cursor-pointer text-2xl text-yellow-400" style="position: relative;">
+                                            <i class="fas fa-star"></i>
+                                        </label>
+                                    @endfor
+                                </div>
+                            </div>
+                            <div id="review-message" class="mb-4 text-center"></div>
+                            <div>
+                                <textarea name="review" id="review-textarea" rows="3" class="w-full border rounded p-2" placeholder="Chia sẻ cảm nhận của bạn..." data-default-placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block font-medium mb-1">Ảnh minh họa (tùy chọn):</label>
+                                <div class="flex items-center justify-between gap-4 flex-wrap">
+                                    <div>
+                                        <input type="file" name="review_image" id="review_image" accept="image/*" class="hidden">
+                                        <label for="review_image" class="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors relative">
+                                            <i class="fas fa-camera text-3xl text-orange-500"></i>
+                                            <img id="preview_image" src="#" alt="Preview" class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center ml-auto">
+                                        <input type="checkbox" name="is_anonymous" id="is_anonymous" value="1" class="custom-checkbox" {{ old('is_anonymous') ? 'checked' : '' }}>
+                                        <label for="is_anonymous" class="anonymous-label">Ẩn danh</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" id="review-submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-medium" data-default-text="Gửi đánh giá">Gửi đánh giá</button>
+                        </form>
                     </div>
 
                     @if($product->reviews->count() > 0)
@@ -1144,11 +1216,8 @@
     window.csrfToken = '{{ csrf_token() }}';
     window.pusherKey = '{{ config('broadcasting.connections.pusher.key') }}';
     window.pusherCluster = '{{ config('broadcasting.connections.pusher.options.cluster') }}';
-    // Truyền discount tốt nhất sang JS
     window.bestDiscountCode = @json($maxDiscount);
     window.bestDiscountAmount = {{ $maxValue }};
-    
-    // Truyền mapping variant value ids -> product_variant_id
     window.variantCombinations = @json(
         \App\Models\ProductVariant::where('product_id', $product->id)
             ->with('variantValues')
@@ -1158,7 +1227,20 @@
                 return [implode('_', $ids) => $variant->id];
             })
     );
+    window.currentUserId = {{ auth()->check() ? auth()->id() : 'null' }};
+    window.isAdmin = {{ (auth()->user()->is_admin ?? false) ? 'true' : 'false' }};
 </script>
 <script src="{{ asset('js/Customer/Shop/shop.js') }}"></script>
 @include('partials.customer.branch-check')
+<script>
+    document.querySelectorAll('.reply-review-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reviewId = this.getAttribute('data-review-id');
+            const form = document.getElementById('reply-form-' + reviewId);
+            if (form) {
+                form.style.display = (form.style.display === 'none' || form.style.display === '') ? 'block' : 'none';
+            }
+        });
+    });
+</script>
 @endsection

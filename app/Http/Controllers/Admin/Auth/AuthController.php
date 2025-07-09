@@ -47,25 +47,17 @@ class AuthController extends Controller
             return back()->with('error', 'Email hoặc mật khẩu không chính xác')->withInput();
         }
 
-
-        if ($user->hasRole('spadmin')) {
+        // Chỉ cho phép admin đăng nhập vào admin
+        if ($user->hasRole('admin')) {
             Auth::guard('admin')->login($user, $request->boolean('remember'));
             RateLimiter::clear($key);
             $request->session()->regenerate();
             return redirect()->route('admin.dashboard');
         }
 
-        // ✅ Có vai trò manager → dùng guard manager
-        if ($user->hasRole('manager')) {
-            Auth::guard('manager')->login($user, $request->boolean('remember'));
-            RateLimiter::clear($key);
-            $request->session()->regenerate();
-            return redirect()->route('branch.dashboard');
-        }
-
         RateLimiter::hit($key, 60);
 
-        return back()->with('error', 'Email hoặc mật khẩu không chính xác')->withInput();
+        return back()->with('error', 'Bạn không có quyền truy cập vào hệ thống quản trị')->withInput();
     }
 
     // Xử lý đăng xuất

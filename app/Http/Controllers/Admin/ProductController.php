@@ -17,6 +17,7 @@ use App\Models\BranchStock;
 use App\Models\ProductVariant;
 use App\Models\ProductImg;
 use App\Models\Topping;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -509,60 +510,28 @@ class ProductController extends Controller
      * Process ingredients from request
      */
     private function processIngredients($validated) {
-        // Priority 1: Check for ingredients_json from JavaScript processing
-        if (isset($validated['ingredients_json'])) {
-            $ingredientsData = $validated['ingredients_json'];
-            
-            // If it's already a string (JSON), decode and re-encode to ensure proper format
-            if (is_string($ingredientsData)) {
-                $decoded = json_decode($ingredientsData, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    return json_encode($decoded);
-                }
-            }
-            
-            // If it's an array, encode it
-            if (is_array($ingredientsData)) {
-                return json_encode($ingredientsData);
-            }
-        }
-        
-        // Priority 2: Fallback to regular ingredients field
+        // Only handle simple ingredients field
         if (isset($validated['ingredients'])) {
             if (is_string($validated['ingredients'])) {
-                // Try to decode as JSON first
-                $decoded = json_decode($validated['ingredients'], true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    return json_encode($decoded);
-                }
-                
-                // If not JSON, treat as comma-separated or newline-separated string
-                // Handle both comma and newline separators
+                // Split by newlines and filter out empty items
                 $ingredientsText = str_replace(["\r\n", "\r"], "\n", $validated['ingredients']);
-                $ingredients = [];
+                $ingredients = array_map('trim', explode("\n", $ingredientsText));
                 
-                // First try splitting by commas
-                if (strpos($ingredientsText, ',') !== false) {
-                    $ingredients = array_map('trim', explode(',', $ingredientsText));
-                } else {
-                    // If no commas, split by newlines
-                    $ingredients = array_map('trim', explode("\n", $ingredientsText));
-                }
-                
-                // Filter out empty items and return as JSON
+                // Filter out empty items
                 $ingredients = array_filter($ingredients, function($item) {
                     return !empty(trim($item));
                 });
                 
-                return json_encode(array_values($ingredients));
+                // Return as array, let Laravel handle the JSON encoding
+                return array_values($ingredients);
             }
             
             if (is_array($validated['ingredients'])) {
-                return json_encode($validated['ingredients']);
+                return $validated['ingredients'];
             }
         }
         
-        return '[]';
+        return [];
     }
 
     /**
@@ -1079,7 +1048,7 @@ class ProductController extends Controller
             // Xử lý xuất dữ liệu theo định dạng
             switch ($type) {
                 case 'excel':
-                    return \Maatwebsite\Excel\Facades\Excel::download(
+                    return Excel::download(
                         new \App\Exports\ProductsExport($products, $request->branch_id), 
                         $filename . '.xlsx'
                     );
@@ -1149,12 +1118,12 @@ class ProductController extends Controller
                         'selectedBranch' => $selectedBranch
                     ];
                     
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.products', $pdfData);
+                    $pdf = Pdf::loadView('exports.products', $pdfData);
                     $pdf->setPaper('A4', 'landscape'); // Set landscape orientation for better table display
                     return $pdf->download($filename . '.pdf');
                     
                 case 'csv':
-                    return \Maatwebsite\Excel\Facades\Excel::download(
+                    return Excel::download(
                         new \App\Exports\ProductsExport($products, $request->branch_id), 
                         $filename . '.csv', 
                         \Maatwebsite\Excel\Excel::CSV

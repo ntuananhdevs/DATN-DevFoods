@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="login-container">
-    <h1 class="login-title">Đăng nhập tài khoản</h1>
+    <h1 class="login-title">Đăng nhập Quản trị</h1>
     <p class="login-subtitle">Nhập thông tin đăng nhập của bạn để tiếp tục</p>
     
     @if(session('success'))
@@ -43,7 +43,7 @@
 
             <script>
                 document.addEventListener('DOMContentLoaded', function () {
-                    let seconds = {{ session('cooldown') }};
+                    let seconds = parseInt('{{ session('cooldown') }}');
                     const countdown = document.getElementById('countdown');
                     const countdownBox = document.getElementById('countdownBox');
 

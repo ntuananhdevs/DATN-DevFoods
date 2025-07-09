@@ -241,6 +241,9 @@
     .dark .text-yellow-600 {
         color: hsl(var(--warning-foreground));
     }
+    .text-danger {
+        color: red;
+    }
 </style>
 
 <div class="fade-in flex flex-col gap-4 pb-4 p-4">
@@ -269,26 +272,6 @@
         </div>
     </div>
 
-    <!-- Error Messages -->
-    @if ($errors->any())
-    <div class="bg-red-100 dark:bg-red-950/30 border border-red-400 dark:border-red-900 text-red-700 dark:text-red-300 px-4 py-3 rounded relative" role="alert">
-        <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="m15 9-6 6"></path>
-                <path d="m9 9 6 6"></path>
-            </svg>
-            <div>
-                <ul class="list-disc list-inside">
-                    @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    </div>
-    @endif
-
     <!-- Form Card -->
     <div class="card border rounded-lg overflow-hidden bg-card dark:border-border">
         <div class="p-6 border-b dark:border-border">
@@ -314,7 +297,6 @@
                         <div class="form-group mb-3">
                             <label for="code" class="form-label">Mã giảm giá <span class="text-danger">*</span></label>
                             <input type="text" name="code" id="code" class="form-control" value="{{ old('code', $discountCode->code) }}" required>
-                            <small class="text-muted">Ví dụ: SUMMER2023, WELCOME10</small>
                             @error('code')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -369,14 +351,14 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu</label>
+                            <label for="min_requirement_type" class="form-label">Điều kiện tối thiểu <span class="text-danger">*</span></label>
                             <div class="flex gap-2">
                                 <select name="min_requirement_type" id="min_requirement_type" class="form-control w-1/2">
-                                    <option value="" {{ old('min_requirement_type', $discountCode->min_requirement_type) == '' ? 'selected' : '' }}>Không áp dụng</option>
+                                    <option value="" {{ old('min_requirement_type', $discountCode->min_requirement_type) == '' ? 'selected' : '' }}>Chọn loại điều kiện</option>
                                     <option value="order_amount" {{ old('min_requirement_type', $discountCode->min_requirement_type) == 'order_amount' ? 'selected' : '' }}>Đơn hàng tối thiểu</option>
                                     <option value="product_price" {{ old('min_requirement_type', $discountCode->min_requirement_type) == 'product_price' ? 'selected' : '' }}>Giá sản phẩm tối thiểu</option>
                                 </select>
-                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0" value="{{ old('min_requirement_value', $discountCode->min_requirement_value) }}" placeholder="Nhập giá trị...">
+                                <input type="number" name="min_requirement_value" id="min_requirement_value" class="form-control w-1/2" step="0.01" min="0.01" value="{{ old('min_requirement_value', $discountCode->min_requirement_value) }}" placeholder="Nhập giá trị...">
                             </div>
                             @error('min_requirement_type')
                             <div class="text-danger">{{ $message }}</div>
@@ -387,9 +369,8 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_discount_amount" class="form-label">Số tiền giảm tối đa</label>
-                            <input type="number" name="max_discount_amount" id="max_discount_amount" class="form-control" step="0.01" min="0" value="{{ old('max_discount_amount', $discountCode->max_discount_amount) }}">
-                            <small class="text-muted">Áp dụng khi loại giảm giá là phần trăm</small>
+                            <label for="max_discount_amount" class="form-label">Số tiền giảm tối đa <span class="text-danger" id="max_discount_required" style="display: none;">*</span></label>
+                            <input type="number" name="max_discount_amount" id="max_discount_amount" class="form-control" step="0.01" min="0.01" value="{{ old('max_discount_amount', $discountCode->max_discount_amount) }}">
                             @error('max_discount_amount')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -718,10 +699,6 @@
                                             </div>
                                             <div class="ml-3 text-sm">
                                                 <label for="rank_exclusive" class="font-medium text-gray-700 dark:text-foreground">Áp dụng giới hạn cho hạng đã chọn</label>
-                                                <p class="text-gray-500 dark:text-muted-foreground">
-                                                    Khi bật tùy chọn này, mã giảm giá sẽ <strong>chỉ áp dụng</strong> cho những hạng đã chọn, 
-                                                    không bao gồm các hạng cao hơn. Nếu tắt, mã giảm giá sẽ áp dụng cho các hạng đã chọn và tất cả các hạng cao hơn.
-                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -738,7 +715,6 @@
                                 <option value="public" {{ old('usage_type', $discountCode->usage_type) == 'public' ? 'selected' : '' }}>Công khai</option>
                                 <option value="personal" {{ old('usage_type', $discountCode->usage_type) == 'personal' ? 'selected' : '' }}>Riêng tư</option>
                             </select>
-                            <small class="text-muted">Mã riêng tư chỉ dành cho người dùng được chỉ định</small>
                             @error('usage_type')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -850,17 +826,16 @@
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_total_usage" class="form-label">Số lần sử dụng tối đa</label>
-                            <input type="number" name="max_total_usage" id="max_total_usage" class="form-control" min="0" value="{{ old('max_total_usage', $discountCode->max_total_usage) }}">
-                            <small class="text-muted">Để trống nếu không giới hạn</small>
+                            <label for="max_total_usage" class="form-label">Số lần sử dụng tối đa <span class="text-danger">*</span></label>
+                            <input type="number" name="max_total_usage" id="max_total_usage" class="form-control" min="1" value="{{ old('max_total_usage', $discountCode->max_total_usage) }}" placeholder="Nhập số lần sử dụng...">
                             @error('max_total_usage')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="form-group mb-3">
-                            <label for="max_usage_per_user" class="form-label">Số lần sử dụng tối đa mỗi người dùng</label>
-                            <input type="number" name="max_usage_per_user" id="max_usage_per_user" class="form-control" min="1" value="{{ old('max_usage_per_user', $discountCode->max_usage_per_user) }}">
+                            <label for="max_usage_per_user" class="form-label">Số lần sử dụng tối đa mỗi người dùng <span class="text-danger">*</span></label>
+                            <input type="number" name="max_usage_per_user" id="max_usage_per_user" class="form-control" min="1" value="{{ old('max_usage_per_user', $discountCode->max_usage_per_user) }}" placeholder="Nhập số lần sử dụng...">
                             @error('max_usage_per_user')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -883,7 +858,6 @@
                             <label for="start_date" class="form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
                             <input type="datetime-local" name="start_date" id="start_date" class="form-control" 
                                 value="{{ old('start_date', $discountCode->start_date ? $discountCode->start_date->format('Y-m-d\TH:i') : now()->format('Y-m-d\TH:i')) }}" required>
-                            <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('start_date')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -893,7 +867,6 @@
                             <label for="end_date" class="form-label">Ngày kết thúc <span class="text-danger">*</span></label>
                             <input type="datetime-local" name="end_date" id="end_date" class="form-control" 
                                 value="{{ old('end_date', $discountCode->end_date ? $discountCode->end_date->format('Y-m-d\TH:i') : now()->addDays(30)->format('Y-m-d\TH:i')) }}" required>
-                            <small class="text-muted">Định dạng: YYYY-MM-DD HH:MM</small>
                             @error('end_date')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -923,7 +896,6 @@
                                 </div>
                                 @endforeach
                             </div>
-                            <small class="text-muted">Nếu không chọn ngày nào, mã sẽ áp dụng mọi ngày trong tuần</small>
                             @error('valid_days_of_week')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
@@ -946,7 +918,6 @@
                                 <div>
                                     <label for="valid_from_time" class="form-label">Giờ bắt đầu trong ngày</label>
                                     <input type="time" name="valid_from_time" id="valid_from_time" class="form-control" value="{{ old('valid_from_time', $discountCode->valid_from_time ? $discountCode->valid_from_time->format('H:i') : '') }}">
-                                    <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
                                     @error('valid_from_time')
                                     <div class="text-danger">{{ $message }}</div>
                                     @enderror
@@ -954,7 +925,6 @@
                                 <div>
                                     <label for="valid_to_time" class="form-label">Giờ kết thúc trong ngày</label>
                                     <input type="time" name="valid_to_time" id="valid_to_time" class="form-control" value="{{ old('valid_to_time', $discountCode->valid_to_time ? $discountCode->valid_to_time->format('H:i') : '') }}">
-                                    <small class="text-muted">Để trống nếu áp dụng cả ngày</small>
                                     @error('valid_to_time')
                                     <div class="text-danger">{{ $message }}</div>
                                     @enderror

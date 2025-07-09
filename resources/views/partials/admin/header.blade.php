@@ -92,12 +92,9 @@
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
-                <span
-                    class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-badge">
-                    <span
-                        class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping"></span>
-                    <span class="relative">5</span>
-                </span>
+                <span id="header-chat-badge"
+                    class="header-unread-badge absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold animate-badge"
+                    style="display:none;">0</span>
             </button>
 
             <!-- Dropdown menu -->
@@ -112,6 +109,20 @@
                     <div class="h-px my-1 bg-muted"></div>
                     <!-- Notification items -->
                     <div class="space-y-1">
+                        <!-- Thông báo tin nhắn mới -->
+                        <div id="chat-new-message-notify"
+                            class="flex items-start gap-3 px-2 py-2 rounded-md bg-orange-100 text-orange-700 font-semibold cursor-pointer hover:bg-orange-200 transition hidden">
+                            <div
+                                class="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center text-orange-600">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium"><span id="chat-new-message-count">0</span> tin nhắn mới
+                                </p>
+                                <p class="text-xs text-orange-600">Bạn có <span id="chat-new-message-count-2">0</span>
+                                    tin nhắn chưa đọc</p>
+                            </div>
+                        </div>
                         <!-- Unread notification -->
                         <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md">
                             <div

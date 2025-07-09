@@ -122,14 +122,14 @@
                     data-product-id="{{ $product->id }}"
                     data-variant-id="{{ $product->first_variant ? $product->first_variant->id : '' }}"
                     data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
-                    
-                    <div class="relative"> 
+
+                    <div class="relative">
                         <a href="{{ route('products.show', $product->id) }}" class="block relative h-48 overflow-hidden">
                             @if($product->primary_image && $product->primary_image->s3_url)
-                                <img src="{{ $product->primary_image->s3_url }}" 
+                                <img src="{{ $product->primary_image->s3_url }}"
                                     alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                             @else
-                                <img src="{{ asset('images/default-placeholder.png') }}" 
+                                <img src="{{ asset('images/default-placeholder.png') }}"
                                     alt="{{ $product->name }}" class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300">
                                 {{-- Alternative placeholder like your other list:
                                 <div class="no-image-placeholder flex items-center justify-center h-full bg-gray-100">
@@ -184,7 +184,7 @@
                             <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count }})</span>
                         </div>
 
-                        <a href="{{ route('products.show', $product->id) }}"> 
+                        <a href="{{ route('products.show', $product->id) }}">
                             <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">
                                 {{ $product->name }}
                             </h3>
@@ -204,7 +204,7 @@
                                     <span class="font-bold text-lg">{{ number_format($product->base_price, 0, ',', '.') }}đ</span>
                                 @endif
                             </div>
-                            
+
                             {{-- Add to Cart Button --}}
                             @if(isset($product->has_stock) && $product->has_stock)
                                 <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors">
@@ -221,7 +221,7 @@
                     </div>
                 </div>
             @empty
-                <div class="col-span-full text-center py-8"> 
+                <div class="col-span-full text-center py-8">
                     <i class="fas fa-box-open text-gray-400 text-4xl mb-4"></i>
                     <h3 class="text-xl font-bold text-gray-700 mb-2">Chưa có sản phẩm nổi bật</h3>
                     <p class="text-gray-500">Vui lòng quay lại sau để xem các sản phẩm nổi bật nhé!</p>
@@ -229,6 +229,61 @@
             @endforelse
         </div>
     </section>
+
+    <!-- Combo Nổi Bật Section -->
+    @if(isset($featuredCombos) && $featuredCombos->count() > 0)
+    <section class="py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold">Combo Nổi Bật</h2>
+            <a href="{{ route('customer.search', ['type' => 'combos']) }}" class="text-orange-500 hover:text-orange-600 flex items-center"> Xem tất cả
+                <i class="fas fa-arrow-right h-4 w-4 ml-1"></i>
+            </a>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            @foreach ($featuredCombos as $combo)
+                <div class="product-card group bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                    data-combo-id="{{ $combo->id }}"
+                    data-has-stock="{{ $combo->has_stock ? 'true' : 'false' }}">
+                    <div class="relative">
+                        <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-48 group-hover:scale-110 transition-transform duration-300">
+                        <div class="absolute top-2 left-2">
+                            @if($combo->discount_percent > 0)
+                                <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $combo->discount_percent }}%</span>
+                            @elseif($combo->created_at->diffInDays(now()) <= 7)
+                                <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">{{ $combo->name }}</h3>
+                        <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ Illuminate\Support\Str::limit($combo->description, 80) }}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex flex-col">
+                                @if($combo->original_price && $combo->original_price > $combo->price)
+                                    <span class="font-bold text-lg text-red-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
+                                    <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
+                                @else
+                                    <span class="font-bold text-lg">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
+                                @endif
+                            </div>
+                            @if($combo->has_stock)
+                                <button class="add-to-cart-btn bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors" data-combo-id="{{ $combo->id }}">
+                                    <i class="fas fa-shopping-cart h-4 w-4 mr-1"></i>
+                                    Thêm
+                                </button>
+                            @else
+                                <button class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
+                                    <i class="fas fa-ban h-4 w-4 mr-1"></i>
+                                    Hết hàng
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </section>
+    @endif
 
     <section class="py-10">
         <div class="flex items-center justify-between mb-6">
@@ -455,4 +510,12 @@
 {{-- Include branch checking logic --}}
 @include('partials.customer.branch-check')
 <!-- Branch Selector Modal -->
+
+<!-- Thêm biến Pusher cho JS -->
+<script>
+    window.pusherKey = "{{ config('broadcasting.connections.pusher.key') }}";
+    window.pusherCluster = "{{ config('broadcasting.connections.pusher.options.cluster') }}";
+</script>
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script src="/js/chat-realtime.js"></script>
 @endsection

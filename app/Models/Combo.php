@@ -19,7 +19,7 @@ class Combo extends Model
         'original_price',
         'price',
         'quantity',
-        'active',
+        'status',
         'category_id',
         'created_by',
         'updated_by'
@@ -43,7 +43,7 @@ class Combo extends Model
 
     // Thêm vào Model Combo:
     protected $appends = ['image_url', 'total_products', 'status_text'];
-    
+
     public function getImageUrlAttribute()
     {
         if ($this->image) {
@@ -51,22 +51,35 @@ class Combo extends Model
         }
         return asset('images/default-combo.png');
     }
-    
+
     public function getTotalProductsAttribute()
     {
         return $this->products()->count();
     }
-    
+
     public function getStatusTextAttribute()
     {
-        return $this->active ? 'Hoạt động' : 'Không hoạt động';
+        switch ($this->status) {
+            case 'selling':
+                return 'Đang bán';
+            case 'coming_soon':
+                return 'Sắp bán';
+            case 'discontinued':
+                return 'Dừng bán';
+            default:
+                return 'Không xác định';
+        }
     }
-    
+
     public function getTotalOriginalPriceAttribute()
     {
-        return $this->products()->sum('price');
+        // Tính tổng giá gốc của combo dựa trên các biến thể sản phẩm và số lượng từng biến thể
+        return $this->productVariants()->get()->sum(function($variant) {
+            $quantity = $variant->pivot->quantity ?? 1;
+            return $variant->price * $quantity;
+        });
     }
-    
+
     public function getDiscountPercentAttribute()
     {
         $originalPrice = $this->total_original_price;
@@ -75,27 +88,32 @@ class Combo extends Model
         }
         return 0;
     }
-    
+
     // Relationship with Category
     public function category()
     {
         return $this->belongsTo(Category::class);
     }
-    
+
     // Relationship with ComboItems
     public function comboItems()
     {
         return $this->hasMany(ComboItem::class);
     }
-    
+
     // Relationships for created_by and updated_by
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    
+
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function comboBranchStocks()
+    {
+        return $this->hasMany(\App\Models\ComboBranchStock::class, 'combo_id');
     }
 }

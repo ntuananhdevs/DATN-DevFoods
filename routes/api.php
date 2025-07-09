@@ -4,6 +4,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
+use App\Http\Controllers\Api\OrderController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,16 +21,7 @@ use App\Http\Controllers\TestController;
 //     return $request->user();
 // });
 
-Route::group([
-  'prefix' => 'auth'
-], function () {
-  Route::post('login', 'AuthController@login');
-  Route::post('register', 'AuthController@register');
+// Order API endpoints
+Route::post('/orders', [OrderController::class, 'store']);
 
-  Route::group([
-    'middleware' => 'auth:api'
-  ], function () {
-    Route::get('logout', 'AuthController@logout');
-    Route::get('user', 'AuthController@user');
-  });
-});
+// API routes will be added here when needed

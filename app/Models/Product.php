@@ -29,25 +29,9 @@ class Product extends Model
         'ingredients' => 'array',
         'release_at' => 'datetime',
         'is_featured' => 'boolean',
-        'base_price' => 'decimal:2'
+        'base_price' => 'decimal:2',
+        'discount_price' => 'decimal:2'
     ];
-
-    /**
-     * Get the ingredients attribute and ensure it's always an array
-     */
-    public function getIngredientsAttribute($value)
-    {
-        if (is_string($value)) {
-            $decoded = json_decode($value, true);
-            return is_array($decoded) ? $decoded : [];
-        }
-        
-        if (is_array($value)) {
-            return $value;
-        }
-        
-        return [];
-    }
 
     public function category()
     {

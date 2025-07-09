@@ -12,47 +12,16 @@ class BranchSeeder extends Seeder
 {
     public function run()
     {
-        // Đảm bảo có role manager
-        $managerRole = Role::firstOrCreate(['name' => 'manager'], []);
+        // Lấy 3 manager theo email mới
+        $managers = User::whereIn('email', [
+            'manager1@devfoods.com',
+            'manager2@devfoods.com',
+            'manager3@devfoods.com',
+        ])->get()->keyBy('email');
 
-        // Tạo một số manager nếu chưa có
-        if (User::whereHas('roles', function ($query) {
-            $query->where('name', 'manager');
-        })->count() < 3) {
-            $managers = [
-                [
-                    'user_name' => 'manager1',
-                    'full_name' => 'Nguyễn Văn Quản Lý',
-                    'email' => 'manager1@example.com',
-                    'phone' => '0901234567',
-                    'password' => Hash::make('password123'),
-                ],
-                [
-                    'user_name' => 'manager2',
-                    'full_name' => 'Trần Thị Quản Lý',
-                    'email' => 'manager2@example.com',
-                    'phone' => '0912345678',
-                    'password' => Hash::make('password123'),
-                ],
-                [
-                    'user_name' => 'manager3',
-                    'full_name' => 'Lê Văn Quản Lý',
-                    'email' => 'manager3@example.com',
-                    'phone' => '0923456789',
-                    'password' => Hash::make('password123'),
-                ],
-            ];
-
-            foreach ($managers as $managerData) {
-                $manager = User::create($managerData);
-                $manager->roles()->attach($managerRole->id);
-            }
-        }
-
-        // Tạo các chi nhánh cố định
+        // Tạo 3 chi nhánh cố định, mỗi chi nhánh gán đúng 1 manager
         $fixedBranches = [
             [
-
                 'name' => 'Chi nhánh Hà Nội',
                 'address' => '123 Đường Láng, Đống Đa, Hà Nội',
                 'phone' => '0243123456',
@@ -61,10 +30,10 @@ class BranchSeeder extends Seeder
                 'longitude' => 105.8342,
                 'opening_hour' => '07:30',
                 'closing_hour' => '22:30',
-                'branch_code' => 'HCM001',
+                'branch_code' => 'HN001',
+                'manager_user_id' => $managers['manager1@devfoods.com']->id ?? null,
             ],
             [
-
                 'name' => 'Chi nhánh Hồ Chí Minh',
                 'address' => '456 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
                 'phone' => '0283456789',
@@ -74,9 +43,9 @@ class BranchSeeder extends Seeder
                 'opening_hour' => '07:00',
                 'closing_hour' => '23:00',
                 'branch_code' => 'HCM002',
+                'manager_user_id' => $managers['manager2@devfoods.com']->id ?? null,
             ],
             [
-
                 'name' => 'Chi nhánh Đà Nẵng',
                 'address' => '789 Nguyễn Văn Linh, Hải Châu, Đà Nẵng',
                 'phone' => '0236789012',
@@ -84,18 +53,14 @@ class BranchSeeder extends Seeder
                 'latitude' => 16.0544,
                 'longitude' => 108.2022,
                 'opening_hour' => '08:00',
-                'branch_code' => 'DN003',
                 'closing_hour' => '22:00',
+                'branch_code' => 'DN003',
+                'manager_user_id' => $managers['manager3@devfoods.com']->id ?? null,
             ],
         ];
 
-        $managerIds = User::whereHas('roles', function ($query) {
-            $query->where('name', 'manager');
-        })->pluck('id')->toArray();
-
-        foreach ($fixedBranches as $index => $branchData) {
+        foreach ($fixedBranches as $branchData) {
             Branch::create(array_merge($branchData, [
-                'manager_user_id' => $managerIds[$index % count($managerIds)],
                 'active' => true,
                 'balance' => rand(5000, 10000),
                 'rating' => rand(40, 50) / 10,

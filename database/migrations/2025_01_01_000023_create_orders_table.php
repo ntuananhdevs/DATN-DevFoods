@@ -38,7 +38,21 @@ return new class extends Migration
             $table->decimal('tax_amount', 12, 2)->default(0);
             $table->timestamp('order_date')->useCurrent();
             $table->timestamp('delivery_date')->nullable();
-            $table->string('status', 50);
+            $table->enum('status', [
+                            'awaiting_confirmation', //  chờ xác nhận
+                            'awaiting_driver', //  chờ tài xế nhận đơn
+                            'driver_assigned', // Tài xế đã được giao đơn
+                            'driver_confirmed', // Tài xế đã xác nhận đơn
+                            'driver_picked_up', // Tài xế đã nhận đơn
+                            'in_transit', // Đơn hàng đang trong quá trình giao hàng
+                            'delivered', // Đơn hàng đã giao thành công
+                            'item_received', // Khách hàng đã nhận hàng
+                            'cancelled', // Đơn hàng đã bị hủy
+                            'refunded', // Đơn hàng đã được hoàn tiền
+                            'payment_failed', // Thanh toán thất bại
+                            'payment_received', // Thanh toán đã nhận
+                            'order_failed' // Đơn hàng đã thất bại
+            ])->default('awaiting_confirmation');
             $table->integer('points_earned')->default(0);
             $table->decimal('subtotal', 12, 2);
             $table->decimal('total_amount', 12, 2);

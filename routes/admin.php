@@ -191,9 +191,9 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
         // Status management
         Route::patch('/{combo}/toggle-status', [ComboController::class, 'toggleStatus'])->name('toggle-status');
-
-        // Quantity management
-        Route::patch('/{combo}/update-quantity', [ComboController::class, 'updateQuantity'])->name('update-quantity');
+        Route::patch('/bulk-update-status', [ComboController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
+        Route::patch('/bulk-update-featured', [ComboController::class, 'bulkUpdateFeatured'])->name('bulk-update-featured');
+        Route::patch('/{combo}/quick-update-quantity', [ComboController::class, 'quickUpdateQuantity'])->name('admin.combos.quickUpdateQuantity');
     });
 
     // Driver Application Management

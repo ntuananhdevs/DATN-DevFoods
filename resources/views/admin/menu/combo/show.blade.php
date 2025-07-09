@@ -5,24 +5,21 @@
 <div class="min-h-screen bg-gray-50">
     <div class="container mx-auto p-6 space-y-6">
         <!-- Header -->
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.combos.index') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>
-                Quay lại
-            </a>
+        <div class="flex items-center gap-4 justify-end">
             <div class="flex-1">
                 <h1 class="text-3xl font-bold">Chi Tiết Combo: {{ $combo->name }}</h1>
                 <p class="text-gray-600">Thông tin chi tiết về combo</p>
             </div>
             <div class="flex gap-2">
+                <a href="{{ route('admin.combos.index') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                    <i class="fas fa-arrow-left w-4 h-4 mr-2"></i>
+                    Quay lại
+                </a>
                 <a href="{{ route('admin.combos.edit', $combo) }}" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-md">
                     <i class="fas fa-edit w-4 h-4 mr-2"></i>
                     Chỉnh sửa
                 </a>
-                <button onclick="openDeleteModal()" type="button" class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-md">
-                    <i class="fas fa-trash-2 w-4 h-4 mr-2"></i>
-                    Xóa
-                </button>
+
             </div>
         </div>
 
@@ -43,10 +40,12 @@
                             </div>
                         @endif
                         <div class="absolute top-4 right-4 flex gap-2">
-                            @if($combo->active)
-                                <span class="px-3 py-1 text-sm font-medium bg-green-500 text-white rounded-full">Hoạt động</span>
-                            @else
-                                <span class="px-3 py-1 text-sm font-medium bg-red-500 text-white rounded-full">Tạm dừng</span>
+                            @if($combo->status === 'selling')
+                                <span class="px-3 py-1 text-sm font-medium bg-green-100 text-green-800 rounded-full">Đang bán</span>
+                            @elseif($combo->status === 'coming_soon')
+                                <span class="px-3 py-1 text-sm font-medium bg-yellow-100 text-yellow-800 rounded-full">Sắp bán</span>
+                            @elseif($combo->status === 'discontinued')
+                                <span class="px-3 py-1 text-sm font-medium bg-gray-200 text-gray-700 rounded-full">Dừng bán</span>
                             @endif
                             @if($combo->original_price && $combo->original_price > $combo->price)
                                 <span class="px-3 py-1 text-sm font-medium bg-orange-500 text-white rounded-full">
@@ -73,6 +72,33 @@
                             <p class="text-gray-600 text-lg">{{ $combo->short_description ?: $combo->description ?: 'Không có mô tả' }}</p>
                         </div>
 
+                        <!-- Số lượng combo tại từng chi nhánh -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-2">Số lượng tại các chi nhánh</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white border rounded">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">Chi nhánh</th>
+                                            <th class="px-4 py-2 text-left">Số lượng tồn</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($combo->comboBranchStocks as $stock)
+                                            <tr>
+                                                <td class="px-4 py-2">{{ $stock->branch->name ?? 'N/A' }}</td>
+                                                <td class="px-4 py-2">{{ $stock->quantity }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="2" class="px-4 py-2 text-gray-500">Chưa có tồn kho tại chi nhánh nào</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <!-- Thông tin chi tiết -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div class="space-y-4">
@@ -86,10 +112,12 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
-                                    @if($combo->active)
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Hoạt động</span>
-                                    @else
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Tạm dừng</span>
+                                    @if($combo->status === 'selling')
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Đang bán</span>
+                                    @elseif($combo->status === 'coming_soon')
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Sắp bán</span>
+                                    @elseif($combo->status === 'discontinued')
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-700">Dừng bán</span>
                                     @endif
                                 </div>
                             </div>

@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combo Big Burger Deluxe - FastFood</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            line-height: 1.6;
+            color: #1f2937;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: #f97316;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .header-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            background: white;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .header-btn:hover {
+            border-color: #f97316;
+            color: #f97316;
+        }
+
+        .header-btn.active {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        /* Left Column */
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Product Image */
+        .product-image {
+            position: relative;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            group: hover;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .product-image:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-badges {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            padding: 0.5rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .badge-popular {
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+        }
+
+        .badge-sale {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        /* Product Info */
+        .product-info {
+            border-top: 1px solid #f1f5f9;
+            padding-top: 1.5rem;
+        }
+
+        .product-header {
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .product-title {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-subtitle {
+            color: #64748b;
+            font-size: 1.125rem;
+        }
+
+        .price-section {
+            text-align: right;
+        }
+
+        .current-price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ef4444;
+            margin-bottom: 0.25rem;
+        }
+
+        .original-price {
+            color: #94a3b8;
+            text-decoration: line-through;
+            font-size: 1.125rem;
+        }
+
+        .savings {
+            background: #10b981;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+
+        /* Rating */
+        .rating-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stars {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .star {
+            color: #fbbf24;
+            font-size: 1.125rem;
+        }
+
+        .rating-text {
+            color: #64748b;
+        }
+
+        .rating-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Combo Items */
+        .combo-items {
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }
+
+        .combo-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .combo-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .item-image {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
+            object-fit: cover;
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+        }
+
+        .item-description {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .item-price {
+            color: #f97316;
+            font-weight: 600;
+        }
+
+        /* Customer Photos */
+        .customer-photos {
+            border-top: 1px solid #f1f5f9;
+            padding-top: 1.5rem;
+        }
+
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.5rem;
+        }
+
+        .customer-photo {
+            aspect-ratio: 1;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .customer-photo:hover {
+            transform: scale(1.05);
+        }
+
+        .customer-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Nutrition Info */
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+        }
+
+        .nutrition-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .nutrition-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f97316;
+            margin-bottom: 0.5rem;
+        }
+
+        .nutrition-label {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        /* Right Column - Order Section */
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            position: sticky;
+            top: 6rem;
+        }
+
+        .custom-option {
+            margin-bottom: 1.5rem;
+        }
+
+        .option-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.75rem;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+
+        .option-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .option-grid-1 {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .choice-btn {
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            background: white;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .choice-btn:hover {
+            border-color: #fed7aa;
+        }
+
+        .choice-btn.active {
+            border-color: #f97316;
+            background: #fff7ed;
+            color: #ea580c;
+        }
+
+        .extra-cost {
+            font-size: 0.75rem;
+            color: #64748b;
+            display: block;
+        }
+
+        .extra-cost-inline {
+            font-size: 0.75rem;
+            color: #64748b;
+            float: right;
+        }
+
+        /* Quantity */
+        .quantity-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-btn:hover {
+            background: #f97316;
+            color: white;
+            border-color: #f97316;
+        }
+
+        .qty-btn:first-child {
+            border-radius: 0.5rem 0 0 0.5rem;
+        }
+
+        .qty-btn:last-child {
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+
+        .qty-input {
+            width: 64px;
+            height: 40px;
+            border: 2px solid #e2e8f0;
+            border-left: none;
+            border-right: none;
+            background: white;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Add to Cart Button */
+        .add-to-cart {
+            width: 100%;
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .add-to-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
+        }
+
+        .add-to-cart:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Related Products */
+        .related-section {
+            margin-top: 3rem;
+        }
+
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .related-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .related-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .related-image {
+            aspect-ratio: 16/9;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .related-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .related-card:hover .related-image img {
+            transform: scale(1.1);
+        }
+
+        .related-title {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .related-price {
+            color: #f97316;
+            font-weight: bold;
+            font-size: 1.125rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .nutrition-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .related-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .product-title {
+                font-size: 1.75rem;
+            }
+
+            .product-header {
+                flex-direction: column;
+                align-items: start;
+            }
+
+            .price-section {
+                text-align: left;
+                margin-top: 1rem;
+            }
+
+            .nutrition-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .photos-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .option-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="/" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Quay lại
+            </a>
+            <div class="header-actions">
+                <button class="header-btn" id="favoriteBtn">
+                    <i class="far fa-heart" id="favoriteIcon"></i>
+                    <span id="favoriteText">Yêu thích</span>
+                </button>
+                <button class="header-btn">
+                    <i class="fas fa-share-alt"></i>
+                    Chia sẻ
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div class="left-column">
+                <!-- Main Product Section -->
+                <div class="product-card">
+                    <!-- Product Image -->
+                    <div class="product-image">
+                        <img src="/placeholder.svg?height=400&width=800" alt="Combo Big Burger Deluxe">
+                        <div class="image-badges">
+                            <span class="badge badge-popular">Phổ biến nhất</span>
+                            <span class="badge badge-sale">Giảm 25%</span>
+                        </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="product-info">
+                        <div class="product-header">
+                            <div>
+                                <h1 class="product-title">Combo Big Burger Deluxe</h1>
+                                <p class="product-subtitle">
+                                    Bữa ăn hoàn hảo cho những ai yêu thích hương vị đậm đà và thỏa mãn cơn đói
+                                </p>
+                            </div>
+                            <div class="price-section">
+                                <div class="current-price" id="displayPrice">89.000đ</div>
+                                <div class="original-price">119.000đ</div>
+                                <div class="savings">Tiết kiệm 30.000đ</div>
+                            </div>
+                        </div>
+
+                        <div class="rating-section">
+                            <div class="stars">
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                            </div>
+                            <span class="rating-text">4.8 (156 đánh giá)</span>
+                            <span class="rating-badge">Xuất sắc</span>
+                        </div>
+
+                        <!-- Combo Items -->
+                        <div class="combo-items">
+                            <h3 class="section-title">
+                                <i class="fas fa-utensils"></i>
+                                Chi tiết combo
+                            </h3>
+                            <div class="combo-item">
+                                <img src="/placeholder.svg?height=60&width=60&text=Burger" alt="Big Burger Deluxe" class="item-image">
+                                <div class="item-details">
+                                    <h4 class="item-name">Big Burger Deluxe</h4>
+                                    <p class="item-description">Bánh burger bò Úc nướng 200g với phô mai cheddar, rau xanh tươi</p>
+                                </div>
+                                <div class="item-price">55.000đ</div>
+                            </div>
+                            <div class="combo-item">
+                                <img src="/placeholder.svg?height=60&width=60&text=Fries" alt="French Fries" class="item-image">
+                                <div class="item-details">
+                                    <h4 class="item-name">French Fries (Large)</h4>
+                                    <p class="item-description">Khoai tây chiên giòn rụm từ khoai tây tươi, tẩm gia vị đặc biệt</p>
+                                </div>
+                                <div class="item-price">35.000đ</div>
+                            </div>
+                            <div class="combo-item">
+                                <img src="/placeholder.svg?height=60&width=60&text=Drink" alt="Coca Cola" class="item-image">
+                                <div class="item-details">
+                                    <h4 class="item-name">Coca Cola (Large)</h4>
+                                    <p class="item-description">Nước ngọt có ga Coca Cola nguyên chất, mát lạnh với đá viên</p>
+                                </div>
+                                <div class="item-price">29.000đ</div>
+                            </div>
+                        </div>
+
+                        <!-- Customer Photos -->
+                        <div class="customer-photos">
+                            <h3 class="section-title">
+                                <i class="fas fa-camera"></i>
+                                Ảnh từ khách hàng
+                            </h3>
+                            <div class="photos-grid">
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo1" alt="Customer photo 1">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo2" alt="Customer photo 2">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo3" alt="Customer photo 3">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo4" alt="Customer photo 4">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=Photo5" alt="Customer photo 5">
+                                </div>
+                                <div class="customer-photo">
+                                    <img src="/placeholder.svg?height=80&width=80&text=+12" alt="More photos">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nutritional Info -->
+                <div class="product-card">
+                    <h3 class="section-title">
+                        <i class="fas fa-chart-pie"></i>
+                        Thông tin dinh dưỡng (1 combo)
+                    </h3>
+                    <div class="nutrition-grid">
+                        <div class="nutrition-item">
+                            <div class="nutrition-value">850</div>
+                            <div class="nutrition-label">Calories</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="nutrition-value">45g</div>
+                            <div class="nutrition-label">Protein</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="nutrition-value">65g</div>
+                            <div class="nutrition-label">Carbs</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="nutrition-value">35g</div>
+                            <div class="nutrition-label">Fat</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="nutrition-value">1200mg</div>
+                            <div class="nutrition-label">Sodium</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="nutrition-value">8g</div>
+                            <div class="nutrition-label">Fiber</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Order Section -->
+            <div class="right-column">
+                <div class="order-card">
+                    <h3 class="section-title">Tùy chỉnh combo</h3>
+
+                    <!-- Drink Selection -->
+                    <div class="custom-option">
+                        <label class="option-label">Chọn loại nước uống:</label>
+                        <div class="option-grid">
+                            <button class="choice-btn active" data-option="drink" data-value="Coca Cola">
+                                Coca Cola
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Pepsi">
+                                Pepsi
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Sprite">
+                                Sprite
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Fanta">
+                                Fanta
+                            </button>
+                            <button class="choice-btn" data-option="drink" data-value="Nước cam tươi" data-extra="5000">
+                                Nước cam tươi
+                                <span class="extra-cost">+5.000đ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Fries Size -->
+                    <div class="custom-option">
+                        <label class="option-label">Kích thước khoai tây:</label>
+                        <div class="option-grid-3">
+                            <button class="choice-btn" data-option="fries" data-value="Medium">
+                                Medium
+                            </button>
+                            <button class="choice-btn active" data-option="fries" data-value="Large">
+                                Large
+                            </button>
+                            <button class="choice-btn" data-option="fries" data-value="Extra Large" data-extra="5000">
+                                Extra Large
+                                <span class="extra-cost">+5.000đ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Toppings -->
+                    <div class="custom-option">
+                        <label class="option-label">Thêm topping burger:</label>
+                        <div class="option-grid-1">
+                            <button class="choice-btn active" data-option="topping" data-value="Không thêm">
+                                Không thêm
+                            </button>
+                            <button class="choice-btn" data-option="topping" data-value="Thêm phô mai" data-extra="5000">
+                                Thêm phô mai
+                                <span class="extra-cost-inline">+5.000đ</span>
+                            </button>
+                            <button class="choice-btn" data-option="topping" data-value="Thêm thịt xông khói" data-extra="8000">
+                                Thêm thịt xông khói
+                                <span class="extra-cost-inline">+8.000đ</span>
+                            </button>
+                            <button class="choice-btn" data-option="topping" data-value="Thêm trứng" data-extra="3000">
+                                Thêm trứng
+                                <span class="extra-cost-inline">+3.000đ</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="quantity-section">
+                        <label class="option-label">Số lượng:</label>
+                        <div class="quantity-controls">
+                            <button class="qty-btn" id="decreaseQty">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" class="qty-input" id="quantity" value="1" min="1" max="10" readonly>
+                            <button class="qty-btn" id="increaseQty">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add to Cart -->
+                    <button class="add-to-cart" id="addToCartBtn">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span id="cartButtonText">Thêm vào giỏ - <span id="totalPrice">89.000đ</span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Products -->
+        <div class="related-section">
+            <div class="product-card">
+                <h3 class="section-title">
+                    <i class="fas fa-fire"></i>
+                    Combo khác bạn có thể thích
+                </h3>
+                <div class="related-grid">
+                    <div class="related-card">
+                        <div class="related-image">
+                            <img src="/placeholder.svg?height=200&width=300&text=Chicken" alt="Combo Chicken Deluxe">
+                        </div>
+                        <h4 class="related-title">Combo Chicken Deluxe</h4>
+                        <div class="related-price">159.000đ</div>
+                    </div>
+                    <div class="related-card">
+                        <div class="related-image">
+                            <img src="/placeholder.svg?height=200&width=300&text=Pizza" alt="Combo Pizza Family">
+                        </div>
+                        <h4 class="related-title">Combo Pizza Family</h4>
+                        <div class="related-price">299.000đ</div>
+                    </div>
+                    <div class="related-card">
+                        <div class="related-image">
+                            <img src="/placeholder.svg?height=200&width=300&text=Fish" alt="Combo Fish & Chips">
+                        </div>
+                        <h4 class="related-title">Combo Fish & Chips</h4>
+                        <div class="related-price">125.000đ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let state = {
+            quantity: 1,
+            selectedDrink: 'Coca Cola',
+            selectedFries: 'Large',
+            selectedTopping: 'Không thêm',
+            isFavorite: false,
+            isAddingToCart: false,
+            basePrice: 89000,
+            extraCosts: {
+                'Nước cam tươi': 5000,
+                'Extra Large': 5000,
+                'Thêm phô mai': 5000,
+                'Thêm thịt xông khói': 8000,
+                'Thêm trứng': 3000
+            }
+        };
+
+        // DOM elements
+        const favoriteBtn = document.getElementById('favoriteBtn');
+        const favoriteIcon = document.getElementById('favoriteIcon');
+        const favoriteText = document.getElementById('favoriteText');
+        const quantityInput = document.getElementById('quantity');
+        const decreaseBtn = document.getElementById('decreaseQty');
+        const increaseBtn = document.getElementById('increaseQty');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const totalPriceSpan = document.getElementById('totalPrice');
+        const displayPriceSpan = document.getElementById('displayPrice');
+        const cartButtonText = document.getElementById('cartButtonText');
+
+        // Calculate total price
+        function calculateTotalPrice() {
+            let total = state.basePrice;
+
+            if (state.extraCosts[state.selectedDrink]) {
+                total += state.extraCosts[state.selectedDrink];
+            }
+            if (state.extraCosts[state.selectedFries]) {
+                total += state.extraCosts[state.selectedFries];
+            }
+            if (state.extraCosts[state.selectedTopping]) {
+                total += state.extraCosts[state.selectedTopping];
+            }
+
+            return total * state.quantity;
+        }
+
+        // Update price display
+        function updatePriceDisplay() {
+            const total = calculateTotalPrice();
+            const formattedPrice = total.toLocaleString('vi-VN') + 'đ';
+            totalPriceSpan.textContent = formattedPrice;
+            displayPriceSpan.textContent = formattedPrice;
+        }
+
+        // Handle choice button clicks
+        function handleChoiceClick(event) {
+            const button = event.target.closest('.choice-btn');
+            if (!button) return;
+
+            const option = button.dataset.option;
+            const value = button.dataset.value;
+            const extra = button.dataset.extra;
+
+            // Remove active class from siblings
+            const siblings = button.parentElement.querySelectorAll('.choice-btn');
+            siblings.forEach(sibling => sibling.classList.remove('active'));
+
+            // Add active class to clicked button
+            button.classList.add('active');
+
+            // Update state
+            if (option === 'drink') {
+                state.selectedDrink = value;
+            } else if (option === 'fries') {
+                state.selectedFries = value;
+            } else if (option === 'topping') {
+                state.selectedTopping = value;
+            }
+
+            updatePriceDisplay();
+        }
+
+        // Handle quantity changes
+        function updateQuantity(delta) {
+            const newQuantity = state.quantity + delta;
+            if (newQuantity >= 1 && newQuantity <= 10) {
+                state.quantity = newQuantity;
+                quantityInput.value = newQuantity;
+                updatePriceDisplay();
+            }
+        }
+
+        // Handle favorite toggle
+        function toggleFavorite() {
+            state.isFavorite = !state.isFavorite;
+
+            if (state.isFavorite) {
+                favoriteBtn.classList.add('active');
+                favoriteIcon.classList.remove('far');
+                favoriteIcon.classList.add('fas');
+                favoriteText.textContent = 'Đã yêu thích';
+                showNotification('Đã thêm vào danh sách yêu thích!', 'success');
+            } else {
+                favoriteBtn.classList.remove('active');
+                favoriteIcon.classList.remove('fas');
+                favoriteIcon.classList.add('far');
+                favoriteText.textContent = 'Yêu thích';
+                showNotification('Đã xóa khỏi danh sách yêu thích!', 'info');
+            }
+        }
+
+        // Handle add to cart
+        async function handleAddToCart() {
+            if (state.isAddingToCart) return;
+
+            state.isAddingToCart = true;
+            addToCartBtn.disabled = true;
+
+            // Show loading state
+            cartButtonText.innerHTML = '<div class="loading-spinner"></div> Đang thêm...';
+
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Show success state
+            cartButtonText.innerHTML = '<i class="fas fa-check"></i> Đã thêm vào giỏ!';
+            addToCartBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+
+            showNotification('Đã thêm combo vào giỏ hàng!', 'success');
+
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                state.isAddingToCart = false;
+                addToCartBtn.disabled = false;
+                addToCartBtn.style.background = 'linear-gradient(135deg, #f97316, #ea580c)';
+                cartButtonText.innerHTML = '<i class="fas fa-shopping-cart"></i> Thêm vào giỏ - <span id="totalPrice">' + calculateTotalPrice().toLocaleString('vi-VN') + 'đ</span>';
+                // Re-assign the totalPrice span reference
+                document.getElementById('totalPrice').textContent = calculateTotalPrice().toLocaleString('vi-VN') + 'đ';
+            }, 2000);
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${bgColor};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                z-index: 1000;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Choice buttons
+            document.addEventListener('click', handleChoiceClick);
+
+            // Quantity controls
+            decreaseBtn.addEventListener('click', () => updateQuantity(-1));
+            increaseBtn.addEventListener('click', () => updateQuantity(1));
+
+            // Favorite button
+            favoriteBtn.addEventListener('click', toggleFavorite);
+
+            // Add to cart button
+            addToCartBtn.addEventListener('click', handleAddToCart);
+
+            // Customer photos
+            document.querySelectorAll('.customer-photo').forEach(photo => {
+                photo.addEventListener('click', function() {
+                    console.log('Opening photo gallery');
+                    // Here you could implement a lightbox or modal
+                });
+            });
+
+            // Initialize price display
+            updatePriceDisplay();
+        });
+    </script>
+</body>
+</html>
