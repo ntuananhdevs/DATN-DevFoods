@@ -17,100 +17,130 @@ class OrderController extends Controller
     {
         $driverId = Auth::guard('driver')->id();
         $search = $request->query('search');
-        $currentTab = $request->query('tab', 'all');
+        $currentTab = $request->query('tab', 'all'); // Mặc định là 'all'
 
-        // Các trạng thái bạn muốn hiển thị
+        // Define all relevant statuses for the driver interface
         $statuses = [
             'all' => 'Tất cả',
-            'awaiting_driver' => 'Chờ tài xế',
+            // 'awaiting_confirmation' => 'Chờ xác nhận', // New status
+            // 'awaiting_driver' => 'Chờ tài xế', // New status
+            // 'driver_assigned' => 'Đã giao tài xế', // New status
+            // 'driver_confirmed' => 'Tài xế xác nhận', // New status
+            // 'driver_picked_up' => 'Đã lấy hàng',
             'in_transit' => 'Đang giao',
             'delivered' => 'Đã giao',
-            'item_received' => 'Đã nhận hàng',
+            'item_received' => 'Khách đã nhận', // New status
+            // 'cancelled' => 'Đã hủy',
+            // 'refunded' => 'Đã hoàn tiền', // New status
+            // 'payment_failed' => 'TT thất bại', // New status
+            // 'payment_received' => 'TT đã nhận', // New status
+            // 'order_failed' => 'Đơn hàng thất bại' // New status
         ];
 
         $tabConfig = [];
+        $baseQuery = Order::query();
 
-        // --- Đếm số lượng đơn cho từng tab ---
-        foreach ($statuses as $key => $label) {
-            $query = Order::query();
+        // Eager load relationships for display
+        $baseQuery->with([
+            'customer',
+            'orderItems.productVariant.product.category'
+        ]);
 
-            // Nếu tab != all
-            if ($key !== 'all') {
-                $query->where('status', $key);
+        // Calculate count for 'all' tab
+        $allOrdersCount = Order::query();
+        if ($driverId) {
+            // For 'all' tab, a driver should only see orders they are involved in (assigned, confirmed, picked up, in transit, delivered, received, cancelled by them or if they were assigned to it)
+            $allOrdersCount->where('driver_id', $driverId)
+                ->orWhereNull('driver_id') // Include orders awaiting driver if driver is online and looking for new orders
+                ->whereIn('status', ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit', 'delivered', 'item_received', 'cancelled', 'order_failed']);
+            // The above logic for 'all' might need fine-tuning based on exact business rules for what 'all' means for a driver.
+            // For now, it includes orders they are assigned to or that are awaiting *any* driver.
+        } else {
+            // If no driverId, perhaps show only orders awaiting driver, or nothing. For now, assume a driver is always logged in.
+            // This part might need adjustment if anonymous access is considered or 'all' is truly global.
+        }
 
-                if ($key === 'awaiting_driver') {
-                    // Đơn chưa gán tài xế
-                    $query->whereNull('driver_id');
-                } else {
-                    // Đơn của tài xế hiện tại
-                    $query->where('driver_id', $driverId);
-                }
-            } else {
-                // Tab "all": kết hợp 2 nhóm điều kiện
-                $query->where(function ($q) use ($driverId) {
-                    $q->where(function ($sub) {
-                        $sub->where('status', 'awaiting_driver')
-                            ->whereNull('driver_id');
-                    })->orWhere(function ($sub) use ($driverId) {
-                        $sub->whereIn('status', ['in_transit', 'delivered', 'item_received'])
-                            ->where('driver_id', $driverId);
+        if ($search) {
+            $allOrdersCount->where(function ($query) use ($search) {
+                $query->where('order_code', 'like', '%' . $search . '%')
+                    ->orWhere('delivery_address', 'like', '%' . $search . '%')
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('full_name', 'like', '%' . $search . '%')
+                            ->orWhere('phone', 'like', '%' . $search . '%');
                     });
-                });
+            });
+        }
+        $tabConfig['all']['count'] = $allOrdersCount->count();
+        $tabConfig['all']['label'] = 'Tất cả';
+
+        foreach ($statuses as $key => $label) {
+            if ($key === 'all') {
+                continue;
             }
 
-            // Tìm kiếm nếu có
+            $query = Order::query();
+            // Apply driver filter for specific status tabs.
+            // Only orders that are 'awaiting_driver' are not yet assigned to a specific driver.
+            if ($key !== 'awaiting_driver' && $driverId) {
+                $query->where('driver_id', $driverId);
+            }
+            // For 'awaiting_driver' tab, we only show unassigned orders
+            if ($key === 'awaiting_driver') {
+                $query->whereNull('driver_id');
+            }
+
+
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('order_code', 'like', '%' . $search . '%')
                         ->orWhere('delivery_address', 'like', '%' . $search . '%')
                         ->orWhereHas('customer', function ($subQ) use ($search) {
-                            $subQ->where('full_name', 'like', '%' . $search . '%')
+                            $subQ->where('name', 'like', '%' . $search . '%')
                                 ->orWhere('phone', 'like', '%' . $search . '%');
                         });
                 });
             }
-
-            // Lưu count và label
+            $query->where('status', $key);
             $tabConfig[$key]['count'] = $query->count();
             $tabConfig[$key]['label'] = $label;
         }
 
-        // --- Query để lấy danh sách đơn của tab hiện tại ---
-        $ordersQuery = Order::query()->with([
+        // Get orders for the current tab
+        $ordersQuery = Order::query();
+        $ordersQuery->with([
             'customer',
-            'orderItems.productVariant.product.primaryImage',
+            'orderItems.productVariant.product.primaryImage', // Add primaryImage to load for product image
             'orderItems.productVariant.variantValues.attribute',
             'orderItems.toppings',
-            'branch',
+            'branch' // To show branch info if needed
         ]);
 
         if ($currentTab !== 'all') {
             $ordersQuery->where('status', $currentTab);
-
-            if ($currentTab === 'awaiting_driver') {
-                $ordersQuery->whereNull('driver_id');
-            } else {
+            // Apply driver_id filter for all tabs EXCEPT 'awaiting_driver'
+            if ($currentTab !== 'awaiting_driver' && $driverId) {
                 $ordersQuery->where('driver_id', $driverId);
             }
+            // If the current tab is 'awaiting_driver', ensure driver_id is null
+            if ($currentTab === 'awaiting_driver') {
+                $ordersQuery->whereNull('driver_id');
+            }
         } else {
-            // Tab "all": kết hợp 2 nhóm điều kiện
-            $ordersQuery->where(function ($q) use ($driverId) {
-                $q->where(function ($sub) {
-                    $sub->where('status', 'awaiting_driver')
-                        ->whereNull('driver_id');
-                })->orWhere(function ($sub) use ($driverId) {
-                    $sub->whereIn('status', ['in_transit', 'delivered', 'item_received'])
-                        ->where('driver_id', $driverId);
-                });
-            });
+            // Logic for 'all' tab
+            if ($driverId) {
+                $ordersQuery->where('driver_id', $driverId)
+                    ->orWhereNull('driver_id')
+                    ->whereIn('status', ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit', 'delivered', 'item_received', 'cancelled', 'order_failed']);
+            }
         }
 
+
         if ($search) {
-            $ordersQuery->where(function ($q) use ($search) {
-                $q->where('order_code', 'like', '%' . $search . '%')
+            $ordersQuery->where(function ($query) use ($search) {
+                $query->where('order_code', 'like', '%' . $search . '%')
                     ->orWhere('delivery_address', 'like', '%' . $search . '%')
-                    ->orWhereHas('customer', function ($subQ) use ($search) {
-                        $subQ->where('full_name', 'like', '%' . $search . '%')
+                    ->orWhereHas('customer', function ($q) use ($search) {
+                        $q->where('name', 'like', '%' . $search . '%')
                             ->orWhere('phone', 'like', '%' . $search . '%');
                     });
             });
