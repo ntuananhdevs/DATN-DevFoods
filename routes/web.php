@@ -30,3 +30,7 @@ Route::post('/checkout/process', [App\Http\Controllers\Customer\CheckoutControll
 //VNPAY Routes
 Route::get('/checkout/vnpay-return', [App\Http\Controllers\Customer\CheckoutController::class, 'vnpayReturn'])->name('checkout.vnpay_return');
 Route::get('/checkout/vnpay-ipn', [App\Http\Controllers\Customer\CheckoutController::class, 'vnpayIpn'])->name('checkout.vnpay_ipn');
+
+Route::get('/refresh-csrf', function () {
+    return response()->json(['csrf_token' => csrf_token()]);
+});

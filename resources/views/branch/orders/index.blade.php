@@ -15,6 +15,7 @@
     transform: translateY(-2px);
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
+
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -201,26 +202,10 @@
     </div>
 
     <!-- Orders Grid + Pagination -->
-    @include('branch.orders.partials.grid')
+    @include('branch.orders.partials.orders_grid')
 
     <!-- Bulk Actions Bar -->
-    <div id="bulkActionsBar" class="bulk-actions-bar mt-4">
-        <div class="flex items-center gap-4">
-            <span id="selectedCount" class="font-medium">0 đơn đã chọn</span>
-            <button id="bulkConfirmBtn" class="px-3 py-1 bg-white text-blue-600 rounded text-sm font-medium hover:bg-gray-100">
-                Xác nhận tất cả
-            </button>
-            <button id="bulkPrintBtn" class="px-3 py-1 bg-white text-blue-600 rounded text-sm font-medium hover:bg-gray-100">
-                In tất cả
-            </button>
-            <button id="bulkCancelBtn" class="px-3 py-1 bg-red-500 text-white rounded text-sm font-medium hover:bg-red-600">
-                Hủy tất cả
-            </button>
-            <button id="closeBulkActions" class="px-2 py-1 text-white hover:bg-blue-700 rounded">
-                Đóng
-            </button>
-        </div>
-    </div>
+
 </div>
 
 @endsection
@@ -231,26 +216,12 @@
 
 @section('page-script')
 <script>
-console.log('Script loaded!');
+window.branchId = @json($branch->id);
+window.pusherKey = @json(config('broadcasting.connections.pusher.key'));
+window.pusherCluster = @json(config('broadcasting.connections.pusher.options.cluster'));
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded!');
-    
-    // Test button để kiểm tra JavaScript
-    const testBtn = document.createElement('button');
-    testBtn.textContent = 'Test JS';
-    testBtn.onclick = () => {
-        console.log('Test button clicked!');
-        alert('JavaScript is working!');
-    };
-    document.body.appendChild(testBtn);
-    
-    // Test event listener cho quick actions
-    document.addEventListener('click', (e) => {
-        if (e.target.matches('[data-quick-action]')) {
-            console.log('Quick action detected in main script:', e.target.dataset);
-        }
-    });
-    
     const tabs = document.querySelectorAll('#orderStatusTabs .status-tab');
     const ordersGrid = document.getElementById('ordersGrid');
     const ordersPagination = document.getElementById('ordersPagination');
@@ -285,7 +256,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newGrid = doc.getElementById('ordersGrid');
             const newPagination = doc.getElementById('ordersPagination');
             const newTabs = doc.querySelectorAll('#orderStatusTabs .status-tab');
-            
             // Cập nhật grid và pagination
             if (newGrid) {
                 ordersGrid.innerHTML = newGrid.innerHTML;
@@ -293,7 +263,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (newPagination) {
                 ordersPagination.innerHTML = newPagination.innerHTML;
             }
-            
             // Cập nhật số đếm trên tất cả tab
             const currentTabs = document.querySelectorAll('#orderStatusTabs .status-tab');
             currentTabs.forEach((tab, index) => {
@@ -301,7 +270,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     tab.innerHTML = newTabs[index].innerHTML;
                 }
             });
-            
             if (updateHistory) {
                 history.replaceState(null, '', url);
             }
@@ -318,6 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-<script src="{{ asset('js/branch/orders-realtime.js') }}" defer></script>
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script src="{{ asset('js/branch/orders-realtime-simple.js') }}" defer></script>
 <script src="{{ asset('js/modal.js') }}" defer></script>
 @endsection

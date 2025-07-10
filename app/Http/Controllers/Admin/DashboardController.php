@@ -121,6 +121,7 @@ class DashboardController extends Controller
         ]);
     }
 
+
     public function branchStatistics(Request $request)
     {
         // Lấy danh sách chi nhánh
@@ -372,8 +373,9 @@ class DashboardController extends Controller
             $orderItemsQuery->where('orders.branch_id', $branchId);
         }
 
-        // Danh sách món ăn + số lượng đã bán, doanh thu
+        // Thống kê sản phẩm: chỉ lấy order_items có product_variant_id khác null (bỏ qua combo)
         $items = (clone $orderItemsQuery)
+            ->whereNotNull('order_items.product_variant_id')
             ->selectRaw('order_items.product_variant_id, SUM(order_items.quantity) as total_quantity, SUM(order_items.total_price) as total_revenue')
             ->groupBy('order_items.product_variant_id')
             ->with(['productVariant.product'])
@@ -451,24 +453,19 @@ class DashboardController extends Controller
 
     public function customerStatistics(Request $request)
     {
-        $branches = \App\Models\Branch::all();
-        $branchId = $request->input('branch_id', null);
         $from = $request->input('from', now()->startOfMonth()->toDateString());
         $to = $request->input('to', now()->toDateString());
         $minOrders = $request->input('min_orders', null);
+        $area = $request->input('area', null);
         // Tổng số user mới trong tuần/tháng
         $weekStart = now()->startOfWeek()->toDateString();
         $newUsersWeek = User::whereHas('roles', function($q){ $q->where('name', 'customer'); })
             ->whereBetween('created_at', [$weekStart, $to]);
         $newUsersMonth = User::whereHas('roles', function($q){ $q->where('name', 'customer'); })
             ->whereBetween('created_at', [$from, $to]);
-        if ($branchId) {
-            $newUsersWeek->whereHas('orders', function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
-            });
-            $newUsersMonth->whereHas('orders', function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
-            });
+        if ($area) {
+            $newUsersWeek->where('area', $area);
+            $newUsersMonth->where('area', $area);
         }
         if ($minOrders) {
             $newUsersWeek->whereHas('orders', function($q) use ($minOrders) {
@@ -483,8 +480,8 @@ class DashboardController extends Controller
         // Top 10 khách mua nhiều nhất
         $topCustomers = \App\Models\Order::selectRaw('customer_id, COUNT(*) as total_orders, SUM(total_amount) as total_spent')
             ->whereBetween('order_date', [$from, $to])
-            ->when($branchId, function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
+            ->when($area, function($q) use ($area) {
+                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
             })
             ->groupBy('customer_id')
             ->orderByDesc('total_orders')
@@ -493,13 +490,11 @@ class DashboardController extends Controller
             ->get();
         // Số đơn trung bình mỗi người
         $totalCustomers = User::whereHas('roles', function($q){ $q->where('name', 'customer'); })
-            ->when($branchId, function($q) use ($branchId) {
-                $q->whereHas('orders', function($q2) use ($branchId) { $q2->where('branch_id', $branchId); });
-            })
+            ->when($area, function($q) use ($area) { $q->where('area', $area); })
             ->count();
         $totalOrders = \App\Models\Order::whereBetween('order_date', [$from, $to])
-            ->when($branchId, function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
+            ->when($area, function($q) use ($area) {
+                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
             })
             ->count();
         $avgOrdersPerUser = $totalCustomers > 0 ? round($totalOrders / $totalCustomers, 2) : 0;
@@ -508,15 +503,15 @@ class DashboardController extends Controller
             ->whereBetween('order_date', [$from, $to])
             ->groupBy('customer_id')
             ->havingRaw('COUNT(*) > 1')
-            ->when($branchId, function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
+            ->when($area, function($q) use ($area) {
+                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
             })
             ->count();
         $repeatRate = $totalCustomers > 0 ? round($repeatCustomers / $totalCustomers * 100, 2) : 0;
         // Mức chi tiêu trung bình mỗi khách
         $totalRevenue = \App\Models\Order::whereBetween('order_date', [$from, $to])
-            ->when($branchId, function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
+            ->when($area, function($q) use ($area) {
+                $q->whereHas('customer', function($q2) use ($area) { $q2->where('area', $area); });
             })
             ->sum('total_amount');
         $avgSpending = $totalCustomers > 0 ? round($totalRevenue / $totalCustomers, 0) : 0;
@@ -525,8 +520,6 @@ class DashboardController extends Controller
             ->whereBetween('review_date', [$from, $to])
             ->avg('rating');
         return view('admin.statistics.customer', [
-            'branches' => $branches,
-            'branchId' => $branchId,
             'newUsersWeekCount' => $newUsersWeekCount,
             'newUsersMonthCount' => $newUsersMonthCount,
             'topCustomers' => $topCustomers,
@@ -536,6 +529,7 @@ class DashboardController extends Controller
             'avgRating' => $avgRating,
             'from' => $from,
             'to' => $to,
+            'area' => $area,
             'minOrders' => $minOrders,
         ]);
     }
