@@ -6,6 +6,7 @@ class BranchOrdersRealtime {
         this.pusherCluster = window.pusherCluster;
         this.pusher = null;
         this.channel = null;
+        this.pollingInterval = null;
         
         this.init();
     }
@@ -20,33 +21,141 @@ class BranchOrdersRealtime {
         // Chỉ khởi tạo Pusher khi có đủ điều kiện
         if (this.branchId && this.pusherKey && this.pusherCluster) {
             this.initializePusher();
-        } else {
-            console.log('Pusher configuration not available, realtime features disabled');
         }
     }
 
     initializePusher() {
-        this.pusher = new Pusher(this.pusherKey, {
-            cluster: this.pusherCluster,
-            encrypted: true
-        });
+        try {
+            this.pusher = new Pusher(this.pusherKey, {
+                cluster: this.pusherCluster,
+                encrypted: true,
+                authEndpoint: '/branch/broadcasting/auth',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }
+            });
 
-        this.channel = this.pusher.subscribe(`private-branch.${this.branchId}.orders`);
+            // Add connection event listeners
+            this.pusher.connection.bind('connected', () => {
+                // Connected successfully
+            });
 
-        this.channel.bind('new-order-received', (data) => {
-            this.handleNewOrder(data);
-        });
+            this.pusher.connection.bind('error', (err) => {
+                this.handlePusherError(err);
+            });
 
-        this.channel.bind('order-status-updated', (data) => {
-            this.handleStatusUpdate(data);
-        });
+            this.pusher.connection.bind('disconnected', () => {
+                // Disconnected
+            });
+
+            const channelName = `private-branch.${this.branchId}.orders`;
+            
+            this.channel = this.pusher.subscribe(channelName);
+
+            this.channel.bind('pusher:subscription_succeeded', () => {
+                // Successfully subscribed
+            });
+
+            this.channel.bind('pusher:subscription_error', (status) => {
+                this.handleSubscriptionError(status);
+            });
+
+            this.channel.bind('new-order-received', (data) => {
+                this.handleNewOrder(data);
+            });
+
+            this.channel.bind('order-status-updated', (data) => {
+                this.handleStatusUpdate(data);
+            });
+
+        } catch (error) {
+            this.handlePusherError(error);
+        }
+    }
+
+    handlePusherError(error) {
+        // Show user-friendly error message
+        if (typeof dtmodalShowToast === 'function') {
+            dtmodalShowToast('warning', {
+                title: 'Kết nối realtime',
+                message: 'Không thể kết nối realtime. Các thay đổi sẽ cần tải lại trang.'
+            });
+        }
+        
+        // Fallback: Set up polling for updates
+        this.setupPollingFallback();
+    }
+
+    handleSubscriptionError(status) {
+        if (status === 403) {
+            if (typeof dtmodalShowToast === 'function') {
+                dtmodalShowToast('error', {
+                    title: 'Lỗi quyền truy cập',
+                    message: 'Không có quyền truy cập kênh realtime.'
+                });
+            }
+        }
+    }
+
+    setupPollingFallback() {
+        // Poll for new orders every 30 seconds
+        this.pollingInterval = setInterval(() => {
+            this.checkForNewOrders();
+        }, 30000);
+    }
+
+    async checkForNewOrders() {
+        try {
+            // Get the timestamp of the last order on the page
+            const lastOrderElement = document.querySelector('[data-order-date]');
+            let lastOrderTime = null;
+            
+            if (lastOrderElement) {
+                lastOrderTime = lastOrderElement.getAttribute('data-order-date');
+            }
+            
+            const params = new URLSearchParams({
+                check_new: 'true'
+            });
+            
+            if (lastOrderTime) {
+                params.append('last_order_time', lastOrderTime);
+            }
+            
+            const response = await fetch(`/branch/orders?${params.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.hasNewOrders) {
+                    // Show notification before reloading
+                    if (typeof dtmodalShowToast === 'function') {
+                        dtmodalShowToast('info', {
+                            title: 'Đơn hàng mới',
+                            message: 'Bạn có đơn hàng mới'
+                        });
+                    }
+                    
+                    // Reload the page to show new orders
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                }
+            }
+        } catch (error) {
+            // Error checking for new orders
+        }
     }
 
     bindEvents() {
-        console.log('Binding events...');
         document.addEventListener('click', (e) => {
             if (e.target.matches('[data-quick-action]')) {
-                console.log('Quick action clicked:', e.target.dataset);
                 e.preventDefault();
                 const orderId = e.target.dataset.orderId;
                 const action = e.target.dataset.quickAction;
@@ -76,54 +185,53 @@ class BranchOrdersRealtime {
                 this.hideBulkActionsBar();
             }
         });
-
-
     }
 
     handleNewOrder(data) {
-        console.log('New order received:', data);
-        
-        // Create new order card
-        const orderCard = this.createOrderCard(data.order);
-        
-        // Add to the beginning of the grid with animation
-        const ordersGrid = document.getElementById('ordersGrid');
-        if (ordersGrid) {
-            // Remove empty state if exists
-            const emptyState = ordersGrid.querySelector('.col-span-2');
-            if (emptyState) {
-                emptyState.remove();
+        // Kiểm tra tab hiện tại
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status') || 'all';
+        if (status === 'all' || status === 'awaiting_confirmation') {
+            // Create new order card HTML
+            const orderCardHtml = this.createOrderCard(data.order);
+            const ordersGrid = document.getElementById('ordersGrid');
+            if (ordersGrid) {
+                // Remove empty state if exists
+                const emptyState = ordersGrid.querySelector('.col-span-3');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+                // Create temporary container to parse HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = orderCardHtml;
+                const orderCard = tempDiv.firstElementChild;
+                // Add new order at the top
+                ordersGrid.insertBefore(orderCard, ordersGrid.firstChild);
+                // Add animation
+                orderCard.style.opacity = '0';
+                orderCard.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    orderCard.style.transition = 'all 0.3s ease';
+                    orderCard.style.opacity = '1';
+                    orderCard.style.transform = 'translateY(0)';
+                }, 10);
             }
-
-            // Add new order at the top
-            ordersGrid.insertBefore(orderCard, ordersGrid.firstChild);
-            
-            // Add animation
-            orderCard.style.opacity = '0';
-            orderCard.style.transform = 'translateY(-20px)';
-            setTimeout(() => {
-                orderCard.style.transition = 'all 0.3s ease';
-                orderCard.style.opacity = '1';
-                orderCard.style.transform = 'translateY(0)';
-            }, 10);
         }
-
         // Update status counts - cập nhật cả tab "Tất cả" và tab trạng thái cụ thể
         this.updateStatusCount('all', 1);
         this.updateStatusCount(data.order.status, 1);
-
         // Show notification using existing modal component
-        dtmodalShowToast('notification', {
-            title: 'Đơn hàng mới',
-            message: `Đơn hàng #${data.order.order_code || data.order.id} vừa được đặt`
-        });
-        
+        if (typeof dtmodalShowToast === 'function') {
+            dtmodalShowToast('notification', {
+                title: 'Đơn hàng mới',
+                message: 'Bạn có đơn hàng mới'
+            });
+        }
         // Play notification sound
         this.playNotificationSound();
     }
 
     handleStatusUpdate(data) {
-        console.log('Order status updated:', data);
         const orderCard = document.querySelector(`[data-order-id="${data.order.id}"]`);
         if (orderCard) {
             const statusBadge = orderCard.querySelector('.status-badge');
@@ -147,7 +255,6 @@ class BranchOrdersRealtime {
     }
 
     async handleQuickAction(orderId, action) {
-        console.log('handleQuickAction called:', orderId, action);
         const statusMap = {
             'confirm': 'awaiting_driver',
             'ready': 'in_transit',
@@ -193,7 +300,6 @@ class BranchOrdersRealtime {
                 });
             }
         } catch (error) {
-            console.error('Error updating order status:', error);
             dtmodalShowToast('error', {
                 title: 'Lỗi',
                 message: 'Không thể cập nhật trạng thái đơn hàng'
@@ -254,7 +360,6 @@ class BranchOrdersRealtime {
             document.querySelectorAll('.order-checkbox:checked').forEach(cb => cb.checked = false);
             this.hideBulkActionsBar();
         } catch (error) {
-            console.error('Error in bulk action:', error);
             dtmodalShowToast('error', {
                 title: 'Lỗi',
                 message: 'Không thể thực hiện hành động hàng loạt'
@@ -281,7 +386,6 @@ class BranchOrdersRealtime {
     }
 
     updateStatusCount(status, change) {
-        console.log('Updating status count:', status, change);
         const statusTabs = document.querySelectorAll('.status-tab');
         statusTabs.forEach(tab => {
             const href = tab.getAttribute('href');
@@ -336,8 +440,6 @@ class BranchOrdersRealtime {
             oldStatus = statusMap[statusText] || statusText?.toLowerCase().replace(/\s/g, '_');
         }
         
-        console.log('Moving order card:', orderId, 'from', oldStatus, 'to', newStatus);
-        
         // Xóa thẻ khỏi tab hiện tại
         orderCard.remove();
         
@@ -362,94 +464,137 @@ class BranchOrdersRealtime {
     }
 
     createOrderCard(order) {
-        const card = document.createElement('div');
-        card.className = 'order-card bg-white rounded-lg shadow-sm border border-gray-200';
-        card.setAttribute('data-order-id', order.id);
+        const statusColors = {
+            'awaiting_confirmation': '#f59e0b',
+            'awaiting_driver': '#3b82f6',
+            'driver_picked_up': '#8b5cf6',
+            'in_transit': '#06b6d4',
+            'delivered': '#10b981',
+            'item_received': '#059669',
+            'cancelled': '#ef4444',
+            'refunded': '#6b7280',
+        };
         
-        const customerInfo = order.customer ? 
-            `<p>📦 Tổng đơn: ${order.customer.orders_count}</p>
-             <p>📅 Đơn gần nhất: ${order.customer.last_order_date || 'N/A'}</p>` : '';
+        const statusTexts = {
+            'awaiting_confirmation': 'Chờ xác nhận',
+            'awaiting_driver': 'Đang chờ tài xế',
+            'driver_picked_up': 'Tài xế đã nhận',
+            'in_transit': 'Đang giao',
+            'delivered': 'Đã giao',
+            'item_received': 'Đã nhận',
+            'cancelled': 'Đã hủy',
+            'refunded': 'Đã hoàn tiền',
+        };
 
-        const paymentInfo = order.payment ? order.payment.method_name : 'Chưa thanh toán';
-        
-        const estimatedTime = order.estimated_delivery_time ? 
-            `<div class="flex justify-between">
-                <span class="text-gray-500">Dự kiến giao:</span>
-                <span class="font-medium text-green-600">${this.formatRelativeTime(order.estimated_delivery_time)}</span>
-            </div>` : '';
+        const statusColor = statusColors[order.status] || '#6b7280';
+        const statusText = statusTexts[order.status] || order.status;
 
-        const pointsBadge = order.points_earned > 0 ? 
-            `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                +${order.points_earned} điểm
-            </span>` : '';
+        const customerName = order.customer_name || order.customerName || 'Khách hàng';
+        const customerPhone = order.customer_phone || order.customerPhone || '';
+        const orderCode = order.order_code || order.id;
+        const totalAmount = this.formatCurrency(order.total_amount);
+        const orderDate = this.formatDateTime(order.created_at || order.order_date);
+        const estimatedTime = order.estimated_delivery_time ? this.formatRelativeTime(order.estimated_delivery_time) : '';
+        const notes = order.notes || '';
+        const pointsEarned = order.points_earned || 0;
+        const distanceKm = order.distance_km || '';
+        const itemCount = order.order_items_count || order.orderItems?.length || 0;
 
-        const notes = order.notes ? 
-            `<div class="flex items-start gap-1">
-                <span class="text-xs text-gray-500 line-clamp-2">${order.notes}</span>
-            </div>` : '';
+        // Payment method display
+        let paymentMethodHtml = '';
+        const pm = (order.payment?.payment_method || '').toLowerCase();
+        if (pm === 'cod') {
+            paymentMethodHtml = '<span class="inline-block px-2 py-0.5 rounded bg-green-700 text-white text-xs font-semibold">COD</span>';
+        } else if (pm === 'vnpay') {
+            paymentMethodHtml = '<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" style="height:1em;width:auto;display:inline;vertical-align:middle;" aria-label="VNPAY Icon"><text x="0" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#e30613">VN</text><text x="18" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#0072bc">PAY</text></svg></span>';
+        } else if (pm === 'balance') {
+            paymentMethodHtml = '<span class="inline-block px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Số dư</span>';
+        }
 
-        const quickActions = this.getQuickActionsHTML(order.id, order.status);
+        const quickActionsHtml = this.getQuickActionsHTML(order.id, order.status);
 
-        card.innerHTML = `
-            <div class="p-4">
-                <div class="flex items-start gap-3 mb-3">
-                    <input type="checkbox" class="order-checkbox mt-1 rounded" data-order-id="${order.id}">
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="flex items-center gap-2">
-                                <h3 class="font-semibold text-lg text-gray-900">#${order.order_code || order.id}</h3>
-                                ${pointsBadge}
+        return `
+            <div class="order-card bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col relative pb-16" data-order-id="${order.id}">
+                <div class="p-2 flex flex-col h-full pb-2">
+                    <div class="flex items-start gap-3 mb-2">
+                        <input type="checkbox" class="order-checkbox mt-1 rounded" data-order-id="${order.id}">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-semibold text-lg text-gray-900">#${orderCode}</h3>
+                                    ${pointsEarned > 0 ? `<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">+${pointsEarned} điểm</span>` : ''}
+                                </div>
+                                <span class="status-badge text-white rounded-lg px-2 py-1 text-xs font-medium" style="background-color: ${statusColor}">
+                                    ${statusText}
+                                </span>
                             </div>
-                            <span class="status-badge text-white rounded-lg px-1" style="background-color: ${order.status_color}">${order.status_text}</span>
-                        </div>
-
-                        <div class="flex items-center gap-2 mb-2">
-                            <div class="tooltip flex items-center gap-1 cursor-help">
-                                <span class="text-sm font-medium text-gray-900">${order.customer_name}</span>
-                                <div class="tooltip-content">
-                                    <div class="text-xs space-y-1">
-                                        <p>📞 ${order.customer_phone}</p>
-                                        ${customerInfo}
+                            <div class="flex items-center gap-2 mb-1">
+                                <div class="flex items-center justify-center w-11 h-11 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
+                                    ${customerName.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="font-semibold text-base text-gray-900">${customerName}</span>
+                                    <div class="flex items-center gap-2 text-gray-500 text-sm">
+                                        <span class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M22 16.92v3a2 2 0 01-2.18 2A19.72 19.72 0 013 5.18 2 2 0 015 3h3a2 2 0 012 1.72c.13.81.36 1.6.68 2.34a2 2 0 01-.45 2.11l-1.27 1.27a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.74.32 1.53.55 2.34.68A2 2 0 0122 16.92z"/>
+                                            </svg>
+                                            ${customerPhone}
+                                        </span>
+                                        ${distanceKm ? `<span class="flex items-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            ${parseFloat(distanceKm).toFixed(1)} km
+                                        </span>` : ''}
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="space-y-2 mb-4 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">Tổng tiền:</span>
-                                <span class="font-medium text-gray-900">${this.formatCurrency(order.total_amount)}₫</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">Thời gian:</span>
-                                <span class="text-gray-700">${this.formatDateTime(order.order_date)}</span>
-                            </div>
-                            ${estimatedTime}
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">Thanh toán:</span>
-                                <span class="text-gray-700">${paymentInfo}</span>
-                            </div>
-                            ${notes}
+                    </div>
+                    <div class="border-t border-gray-100 my-2"></div>
+                    <div class="flex flex-col gap-1 text-sm flex-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Tổng tiền:</span>
+                            <span class="font-semibold text-gray-900">${totalAmount}</span>
                         </div>
-
-                        ${quickActions}
-
-                        <div class="flex gap-2">
-                            <a href="/branch/orders/${order.id}" class="flex-1">
-                                <button class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                    Chi tiết
-                                </button>
-                            </a>
-                            <a href="tel:${order.customer_phone}" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                Gọi
-                            </a>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Sản phẩm:</span>
+                            <span class="text-gray-700">${itemCount} sản phẩm</span>
                         </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Thời gian:</span>
+                            <span class="text-gray-700">${orderDate}</span>
+                        </div>
+                        ${estimatedTime ? `<div class="flex justify-between">
+                            <span class="text-gray-500">Dự kiến giao:</span>
+                            <span class="font-medium text-green-600">${estimatedTime}</span>
+                        </div>` : ''}
+                        <div class="flex justify-between">
+                            <span class="text-gray-500">Thanh toán:</span>
+                            ${paymentMethodHtml}
+                        </div>
+                        ${notes ? `<div class="flex justify-between">
+                            <span class="text-gray-500">Note:</span>
+                            <span class="text-xs font-medium text-blue-700 bg-blue-50 rounded px-2 py-1 break-words" style="max-height:2rem;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;">
+                                ${notes}
+                            </span>
+                        </div>` : ''}
+                    </div>
+                </div>
+                <div class="absolute left-0 bottom-0 w-full px-4 pb-3">
+                    <div class="flex gap-2 items-end">
+                        ${quickActionsHtml}
+                        <a href="/branch/orders/${order.id}" class="flex-1">
+                            <button class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Chi tiết
+                            </button>
+                        </a>
                     </div>
                 </div>
             </div>
         `;
-
-        return card;
     }
 
     getQuickActionsHTML(orderId, status) {
@@ -460,38 +605,34 @@ class BranchOrdersRealtime {
         let actions = '';
         if (status === 'awaiting_confirmation') {
             actions = `
-                <button data-quick-action="confirm" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
+                <button data-quick-action="confirm" data-order-id="${orderId}" class="px-3 py-2 text-sm rounded-md bg-black text-white hover:bg-gray-800">
                     Xác nhận
                 </button>
-                <button data-quick-action="cancel" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-red-500 text-white hover:bg-red-600">
+                <button data-quick-action="cancel" data-order-id="${orderId}" class="px-3 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600">
                     Hủy
                 </button>
             `;
         } else if (status === 'awaiting_driver') {
             actions = `
-                <button data-quick-action="ready" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
+                <button data-quick-action="ready" data-order-id="${orderId}" class="px-3 py-2 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600">
                     Sẵn sàng
                 </button>
             `;
         } else if (status === 'driver_picked_up') {
             actions = `
-                <button data-quick-action="deliver" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
+                <button data-quick-action="deliver" data-order-id="${orderId}" class="px-3 py-2 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600">
                     Giao hàng
                 </button>
             `;
         } else if (status === 'in_transit') {
             actions = `
-                <button data-quick-action="complete" data-order-id="${orderId}" class="px-2 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600">
+                <button data-quick-action="complete" data-order-id="${orderId}" class="px-3 py-2 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600">
                     Hoàn thành
                 </button>
             `;
         }
 
-        return `
-            <div class="flex gap-2 mb-3">
-                ${actions}
-            </div>
-        `;
+        return actions;
     }
 
     playNotificationSound() {
@@ -513,20 +654,17 @@ class BranchOrdersRealtime {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.2);
         } catch (error) {
-            console.log('Could not play notification sound:', error);
+            // Could not play notification sound
         }
     }
 
     formatCurrency(amount) {
-        return new Intl.NumberFormat('vi-VN').format(amount);
+        return new Intl.NumberFormat('vi-VN').format(amount) + '₫';
     }
 
     formatDateTime(dateString) {
         const date = new Date(dateString);
-        return date.toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
+        return date.toLocaleTimeString('vi-VN', {
             hour: '2-digit',
             minute: '2-digit'
         });
@@ -563,7 +701,6 @@ class BranchOrdersRealtime {
     // Thêm hàm đồng bộ số đếm với server
     async syncStatusCounts() {
         // Tạm thời bỏ qua vì route chưa có
-        console.log('Status counts sync disabled - route not implemented yet');
         return;
         
         try {
@@ -586,13 +723,38 @@ class BranchOrdersRealtime {
                 });
             }
         } catch (error) {
-            console.log('Could not sync status counts:', error);
+            // Could not sync status counts
         }
+    }
+
+    // Cleanup method
+    destroy() {
+        // Clear polling interval
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+        }
+        
+        // Disconnect Pusher
+        if (this.pusher) {
+            this.pusher.disconnect();
+            this.pusher = null;
+        }
+        
+        // Clear channel
+        this.channel = null;
     }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Luôn khởi tạo để xử lý sự kiện click, ngay cả khi không có Pusher
-        window.branchOrdersRealtime = new BranchOrdersRealtime();
+    window.branchOrdersRealtime = new BranchOrdersRealtime();
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (window.branchOrdersRealtime) {
+            window.branchOrdersRealtime.destroy();
+        }
+    });
 }); 

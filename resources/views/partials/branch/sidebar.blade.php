@@ -24,9 +24,7 @@
     <div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
         <div class="space-y-6">
             <div>
-                <h1 class="text-sidebar-foreground/70 mb-2 px-2 sidebar-group-label">
-                    {{ $user->branch->name ?? 'N/A' }}
-                </h1>
+
                 <a href="{{ route('branch.dashboard') }}"
                     class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
                     data-tooltip="Thống kê">

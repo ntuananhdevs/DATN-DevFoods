@@ -10,6 +10,9 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use App\Notifications\NewOrderNotification;
+use App\Models\Branch;
 
 class NewOrderReceived implements ShouldBroadcastNow
 {
@@ -25,6 +28,19 @@ class NewOrderReceived implements ShouldBroadcastNow
     {
         $this->order = $order;
         $this->branchId = $order->branch_id;
+        
+        // Gửi notification cho branch
+        $branch = Branch::find($this->branchId);
+        if ($branch) {
+            $branch->notify(new NewOrderNotification($order));
+        }
+        
+        Log::info('NewOrderReceived event constructed', [
+            'order_id' => $order->id,
+            'order_code' => $order->order_code,
+            'branch_id' => $this->branchId,
+            'status' => $order->status
+        ]);
     }
 
     /**
@@ -32,10 +48,19 @@ class NewOrderReceived implements ShouldBroadcastNow
      */
     public function broadcastOn()
     {
-        return [
-            new PrivateChannel('branch.' . $this->branchId . '.orders'),
+        $channels = [
             new Channel('branch-orders-channel')
         ];
+        
+        Log::info('NewOrderReceived broadcasting on channels', [
+            'channels' => array_map(function($channel) {
+                return $channel->name;
+            }, $channels),
+            'order_id' => $this->order->id,
+            'branch_id' => $this->branchId
+        ]);
+        
+        return $channels;
     }
 
     /**
@@ -51,9 +76,29 @@ class NewOrderReceived implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        return [
+        // Load relationships
+        $this->order->load(['payment', 'orderItems', 'address', 'branch']);
+        
+        // Calculate total items count
+        $itemsCount = $this->order->orderItems->sum('quantity');
+        
+        // Calculate distance if address exists
+        $distanceKm = null;
+        if ($this->order->address && $this->order->branch) {
+            $orderLat = $this->order->address->latitude ?? null;
+            $orderLng = $this->order->address->longitude ?? null;
+            $branchLat = $this->order->branch->latitude ?? null;
+            $branchLng = $this->order->branch->longitude ?? null;
+            
+            if ($orderLat && $orderLng && $branchLat && $branchLng) {
+                $distanceKm = $this->calculateDistance($branchLat, $branchLng, $orderLat, $orderLng);
+            }
+        }
+        
+        $data = [
             'order' => [
                 'id' => $this->order->id,
+                'code' => $this->order->order_code,
                 'order_code' => $this->order->order_code,
                 'status' => $this->order->status,
                 'status_text' => $this->order->statusText,
@@ -65,6 +110,8 @@ class NewOrderReceived implements ShouldBroadcastNow
                 'estimated_delivery_time' => $this->order->estimated_delivery_time,
                 'points_earned' => $this->order->points_earned,
                 'notes' => $this->order->notes,
+                'items_count' => $itemsCount,
+                'distance_km' => $distanceKm,
                 'customer' => $this->order->customer ? [
                     'id' => $this->order->customer->id,
                     'name' => $this->order->customer->name,
@@ -72,12 +119,43 @@ class NewOrderReceived implements ShouldBroadcastNow
                     'orders_count' => $this->order->customer->orders()->count(),
                     'last_order_date' => $this->order->customer->orders()->latest()->first()?->order_date?->format('Y-m-d')
                 ] : null,
-                'payment' => [
-                    'method_name' => $this->order->paymentMethodText
-                ]
+                'payment' => $this->order->payment ? [
+                    'id' => $this->order->payment->id,
+                    'method' => $this->order->payment->payment_method,
+                    'payment_method' => $this->order->payment->payment_method,
+                    'payment_status' => $this->order->payment->payment_status,
+                    'payment_amount' => $this->order->payment->payment_amount,
+                    'payment_date' => $this->order->payment->payment_date,
+                ] : null
             ],
             'branch_id' => $this->branchId,
             'timestamp' => now()->toISOString()
         ];
+        
+        Log::info('NewOrderReceived broadcasting data', [
+            'order_id' => $this->order->id,
+            'data' => $data
+        ]);
+        
+        return $data;
+    }
+
+    /**
+     * Calculate distance between two points using Haversine formula
+     */
+    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    {
+        $earthRadius = 6371; // Earth's radius in kilometers
+
+        $latDelta = deg2rad($lat2 - $lat1);
+        $lngDelta = deg2rad($lng2 - $lng1);
+
+        $a = sin($latDelta / 2) * sin($latDelta / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
     }
 } 
