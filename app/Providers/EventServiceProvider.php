@@ -2,13 +2,14 @@
 
 namespace App\Providers;
 
-use App\Events\MessageSent;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Models\WishlistItem;
 use App\Observers\WishlistItemObserver;
+use App\Events\Order\OrderConfirmed;
+use App\Listeners\Order\FindDriverForOrder;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -21,8 +22,8 @@ class EventServiceProvider extends ServiceProvider
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],
-        MessageSent::class => [
-            // Add any listeners for MessageSent event here
+        OrderConfirmed::class => [
+            FindDriverForOrder::class,
         ],
     ];
 

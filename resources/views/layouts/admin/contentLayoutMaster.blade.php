@@ -11,7 +11,6 @@
     <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/custom-realtime.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link href='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.css' rel='stylesheet' />
     <script src='https://api.mapbox.com/mapbox-gl-js/v3.1.0/mapbox-gl.js'></script>
@@ -115,6 +114,18 @@ if (window.axios) {
     });
 }
 </script>
+
+<!-- Pusher for realtime -->
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
+<!-- Order notifications for all admin pages -->
+<script>
+    // Pusher configuration
+    window.pusherKey = '{{ config("broadcasting.connections.pusher.key") }}';
+    window.pusherCluster = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
+</script>
+<script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
+
 </body>
 
 </html>

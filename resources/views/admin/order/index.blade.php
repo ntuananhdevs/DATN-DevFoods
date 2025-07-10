@@ -1,22 +1,92 @@
 @extends('layouts.admin.contentLayoutMaster')
 
+@section('title', 'Danh sách đơn hàng')
+@section('description', 'Quản lý danh sách đơn hàng của bạn')
+
 @section('content')
-<div class="container mx-auto py-4">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-        <div>
-            <h1 class="text-2xl font-bold mb-1">Quản lý đơn hàng</h1>
-            <p class="text-gray-500">Theo dõi và xử lý các đơn hàng từ khách hàng</p>
+<style>
+    /* Badge style giống product index */
+    .order-status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        transition: all 0.2s ease;
+    }
+    .order-status-badge.awaiting_confirmation {
+        background-color: #fef3c7;
+        color: #d97706;
+    }
+    .order-status-badge.order_confirmed {
+        background-color: #dbeafe;
+        color: #2563eb;
+    }
+    .order-status-badge.in_transit {
+        background-color: #ede9fe;
+        color: #7c3aed;
+    }
+    .order-status-badge.delivered {
+        background-color: #dcfce7;
+        color: #15803d;
+    }
+    .order-status-badge.cancelled {
+        background-color: #fee2e2;
+        color: #dc2626;
+    }
+    .order-status-badge.refunded {
+        background-color: #e0e7ef;
+        color: #334155;
+    }
+    
+    /* Status tab style từ branch */
+    .status-tab.active {
+        border-bottom-color: #3b82f6 !important;
+        color: #3b82f6 !important;
+    }
+    .status-tab {
+        border-bottom-color: transparent;
+        color: #6b7280;
+        cursor: pointer;
+    }
+    .status-tab:hover {
+        color: #3b82f6;
+    }
+</style>
+<div class="fade-in flex flex-col gap-4 pb-4">
+    <!-- Main Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="flex aspect-square w-10 h-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text">
+                    <path d="M4 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l7 7v13a2 2 0 0 1-2 2Z"></path>
+                    <polyline points="14 3 14 8 19 8"></polyline>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight">Quản lý đơn hàng</h2>
+                <p class="text-muted-foreground">Quản lý danh sách đơn hàng của bạn</p>
+            </div>
         </div>
-        <form method="GET" class="hidden md:flex items-center gap-2 w-1/3 ml-auto">
-            <input type="text" name="order_code" value="{{ request('order_code') }}" placeholder="Tìm kiếm đơn hàng..." class="border border-gray-200 rounded-xl px-4 py-2 w-full text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none" style="min-width:220px;" />
-            <button type="submit" class="hidden">Tìm</button>
-        </form>
+        <div class="flex items-center gap-2">
+            <button class="btn btn-outline flex items-center" onclick="window.location.href='{{ route('admin.orders.export') }}'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Xuất báo cáo
+            </button>
+        </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm p-4 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border">
-        <div class="flex items-center gap-2 flex-wrap">
-            <span class="inline-flex items-center gap-1 text-gray-500 font-medium"><i class="fa fa-filter"></i> Bộ lọc:</span>
-            <form method="GET" class="flex items-center gap-2 flex-wrap">
+    <!-- Filter Card -->
+    <div class="card border rounded-lg overflow-hidden">
+        <div class="p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <form method="GET" class="flex items-center gap-2 w-full md:w-auto">
+                <input type="text" name="order_code" value="{{ request('order_code') }}" placeholder="Tìm kiếm mã đơn hàng..." class="border rounded-md px-3 py-2 bg-background text-sm w-full md:w-64" />
                 <select name="branch_id" class="rounded-xl border border-gray-200 px-4 py-2 min-w-[180px] text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none">
                     <option value="">Tất cả chi nhánh</option>
                     @foreach($branches as $branch)
@@ -26,110 +96,99 @@
                     @endforeach
                 </select>
                 <input type="text" name="date" value="{{ request('date') }}" placeholder="dd/mm/yyyy" class="border border-gray-200 rounded-xl px-4 py-2 min-w-[140px] text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none" />
-                <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Xuất báo cáo</button>
+                <button type="submit" class="btn btn-outline">Lọc</button>
             </form>
         </div>
-        <form method="GET" class="flex md:hidden mt-2 w-full">
-            <input type="text" name="order_code" value="{{ request('order_code') }}" placeholder="Tìm kiếm đơn hàng..." class="border border-gray-200 rounded-xl px-4 py-2 w-full text-[15px] bg-white text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition outline-none" />
-        </form>
     </div>
 
-    {{-- Tabs trạng thái và bảng sẽ render ở đây nếu có dữ liệu --}}
-    @if($orders->count())
-        <div class="flex gap-2 border-b mb-4">
-            @php
-                $tabs = [
-                    ['label' => 'Tất cả', 'key' => '', 'count' => $counts['all'] ?? 0],
-                    ['label' => 'Chờ xác nhận', 'key' => 'awaiting_confirmation', 'count' => $counts['awaiting_confirmation'] ?? 0],
-                    ['label' => 'Chờ tài xế', 'key' => 'awaiting_driver', 'count' => $counts['awaiting_driver'] ?? 0],
-                    ['label' => 'Đang giao', 'key' => 'in_transit', 'count' => $counts['in_transit'] ?? 0],
-                    ['label' => 'Đã giao', 'key' => 'delivered', 'count' => $counts['delivered'] ?? 0],
-                    ['label' => 'Đã hủy', 'key' => 'cancelled', 'count' => $counts['cancelled'] ?? 0],
-                    ['label' => 'Đã hoàn tiền', 'key' => 'refunded', 'count' => $counts['refunded'] ?? 0],
-                ];
-            @endphp
-            @foreach($tabs as $tab)
-                <a href="{{ route('admin.orders.index', array_merge(request()->except('page'), ['status' => $tab['key']])) }}"
-                   class="px-4 py-2 -mb-px border-b-2 {{ (request('status') == $tab['key'] || (!request('status') && $tab['key'] === '')) ? 'border-primary font-bold' : 'border-transparent text-gray-500' }}">
-                    {{ $tab['label'] }} <span class="ml-1 text-xs bg-gray-200 rounded px-2 py-0.5">{{ $tab['count'] }}</span>
-                </a>
-            @endforeach
+    <!-- Status Tabs (căn giữa) -->
+    <div class="mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex  space-x-8 overflow-x-auto">
+                @php
+                    $tabs = [
+                        ['label' => 'Tất cả', 'key' => '', 'count' => $counts['all'] ?? 0],
+                        ['label' => 'Chờ xác nhận', 'key' => 'awaiting_confirmation', 'count' => $counts['awaiting_confirmation'] ?? 0],
+                        ['label' => 'Chờ tài xế', 'key' => 'awaiting_driver', 'count' => $counts['awaiting_driver'] ?? 0],
+                        ['label' => 'Đang giao', 'key' => 'in_transit', 'count' => $counts['in_transit'] ?? 0],
+                        ['label' => 'Đã giao', 'key' => 'delivered', 'count' => $counts['delivered'] ?? 0],
+                        ['label' => 'Đã hủy', 'key' => 'cancelled', 'count' => $counts['cancelled'] ?? 0],
+                        ['label' => 'Đã hoàn tiền', 'key' => 'refunded', 'count' => $counts['refunded'] ?? 0],
+                    ];
+                @endphp
+                @foreach($tabs as $tab)
+                    <a href="{{ route('admin.orders.index', array_merge(request()->except('page'), ['status' => $tab['key']])) }}"
+                       class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ (request('status') == $tab['key'] || (!request('status') && $tab['key'] === '')) ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}">
+                        {{ $tab['label'] }} ({{ $tab['count'] }})
+                    </a>
+                @endforeach
+            </nav>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card border rounded-lg overflow-hidden">
+        <!-- Table header -->
+        <div class="p-6 border-b">
+            <h3 class="text-lg font-medium">Danh sách đơn hàng</h3>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-2 overflow-x-auto border">
-            <table class="min-w-full border-separate border-spacing-0">
+        <!-- Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
                 <thead>
-                    <tr>
-                        <th class="px-4 py-3 border-b font-semibold text-gray-700 bg-gray-50 text-left">Mã đơn hàng</th>
-                        <th class="px-4 py-3 border-b font-semibold text-gray-700 bg-gray-50 text-left">Khách hàng</th>
-                        <th class="px-4 py-3 border-b font-semibold text-gray-700 bg-gray-50 text-left">Chi nhánh</th>
-                        <th class="px-4 py-3 border-b font-semibold text-gray-700 bg-gray-50 text-left">Tổng tiền</th>
-                        <th class="px-4 py-3 border-b font-semibold text-gray-700 bg-gray-50 text-left">Trạng thái</th>
-                        <th class="px-4 py-3 border-b font-semibold text-gray-700 bg-gray-50 text-left">Thời gian</th>
-                        <th class="px-4 py-3 border-b font-semibold text-gray-700 bg-gray-50 text-left">Thao tác</th>
+                    <tr class="border-b bg-muted/50">
+                        <th class="py-3 px-4 text-left font-medium">Mã đơn hàng</th>
+                        <th class="py-3 px-4 text-left font-medium">Khách hàng</th>
+                        <th class="py-3 px-4 text-left font-medium">Chi nhánh</th>
+                        <th class="py-3 px-4 text-right font-medium">Tổng tiền</th>
+                        <th class="py-3 px-4 text-left font-medium">Trạng thái</th>
+                        <th class="py-3 px-4 text-left font-medium">Thời gian</th>
+                        <th class="py-3 px-4 text-center font-medium">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($orders as $order)
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="px-4 py-3 border-b align-middle font-medium text-gray-900 text-left">#{{ $order->order_code }}</td>
-                        <td class="px-4 py-3 border-b align-middle text-left">
-                            <span class="font-medium">{{ $order->customer->name ?? 'Khách lẻ' }}</span><br>
-                            <span class="text-xs text-gray-400">{{ $order->customer->phone ?? '' }}</span>
-                        </td>
-                        <td class="px-4 py-3 border-b align-middle text-left">{{ $order->branch->name ?? '' }}</td>
-                        <td class="px-4 py-3 border-b align-middle font-bold text-left">{{ number_format($order->total_amount) }}đ</td>
-                        <td class="px-4 py-3 border-b align-middle text-left">
-                            @include('admin.order._status_badge', ['status' => $order->status])
-                        </td>
-                        <td class="px-4 py-3 border-b align-middle text-left">{{ $order->created_at->format('h:i A') }}</td>
-                        <td class="px-4 py-3 border-b align-middle text-left">
-                            <div class="flex gap-2 items-center">
-                                <a href="{{ route('admin.orders.show', $order->id) }}" class="flex items-center gap-1 px-3 py-1 border border-gray-300 rounded-lg text-primary bg-white hover:bg-gray-100 transition text-sm font-medium">
-                                    <i class="fa fa-eye"></i> Chi tiết
-                                </a>
-                                @if($order->status === 'awaiting_confirmation')
-                                <div class="relative">
-                                    <button class="px-3 py-1 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-100 transition text-sm font-medium flex items-center gap-1">Cập nhật <i class="fa fa-chevron-down text-xs"></i></button>
-                                    {{-- Dropdown cập nhật trạng thái (nếu cần) --}}
-                                </div>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
+                        @include('admin.order._order_row', ['order' => $order])
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted-foreground py-4">Không có đơn hàng nào.</td>
+                        <td colspan="7" class="text-center py-8">
+                            <div class="flex flex-col items-center justify-center text-muted-foreground">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2">
+                                    <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                                    <path d="M3 6h18"></path>
+                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                </svg>
+                                <h3 class="text-lg font-medium">Không có đơn hàng nào</h3>
+                                <p class="text-sm">Hãy thêm đơn hàng mới để bắt đầu</p>
+                            </div>
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-        <div class="mt-4">
-            {{ $orders->withQueryString()->links() }}
+
+        <!-- Pagination -->
+        <div class="pagination-container flex items-center justify-between px-4 py-4 border-t">
+            <div class="text-sm text-muted-foreground">
+                Hiển thị <span id="paginationStart">{{ $orders->firstItem() }}</span> đến <span id="paginationEnd">{{ $orders->lastItem() }}</span> của <span id="paginationTotal">{{ $orders->total() }}</span> mục
+            </div>
+            <div class="flex items-center justify-end space-x-2 ml-auto" id="paginationControls">
+                {{ $orders->withQueryString()->links() }}
+            </div>
         </div>
-    @else
-        <div class="text-center text-muted-foreground py-8">Không có đơn hàng nào.</div>
-    @endif
+    </div>
 </div>
+
+<!-- Pusher Configuration -->
+<script>
+    window.pusherKey = '{{ config("broadcasting.connections.pusher.key") }}';
+    window.pusherCluster = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
+</script>
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 @endsection
 
-@push('page-style')
-<style>
-.admin-order-select {
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    padding: 10px 16px;
-    font-size: 15px;
-    background: #fff;
-    color: #222;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    outline: none;
-    min-width: 180px;
-}
-.admin-order-select:focus, .admin-order-select:hover {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px #dbeafe;
-}
-</style>
-@endpush
+@section('scripts')
+<script src="{{ asset('js/admin/orders-realtime.js') }}"></script>
+@endsection

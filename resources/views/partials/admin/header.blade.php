@@ -74,46 +74,28 @@
         <!-- Notifications -->
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open" class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell animate-bell">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell">
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
                 @if(isset($adminUnreadCount) && $adminUnreadCount > 0)
                 <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-badge notification-unread-count">
                     <span class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping"></span>
-                    <span class="relative">{{ $adminUnreadCount }}</span>
+                    <span class="relative">{{ $adminUnreadCount > 99 ? '99+' : $adminUnreadCount }}</span>
                 </span>
                 @endif
             </button>
             <!-- Dropdown menu -->
             <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-80 rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden z-50" style="display: none;">
-                <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar flex flex-col" style="height:400px;">
+                <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar flex flex-col" style="height:600px;">
                     <div class="px-2 py-1.5 mb-1">
                         <h3 class="font-semibold text-sm">Thông báo</h3>
-                        <p class="text-xs text-muted-foreground">Bạn có <span class="notification-unread-count">{{ $adminUnreadCount ?? 0 }}</span> thông báo chưa đọc</p>
+                        <p class="text-xs text-muted-foreground">Bạn có <span class="notification-unread-count">{{ isset($adminUnreadCount) ? ($adminUnreadCount > 99 ? '99+' : $adminUnreadCount) : 0 }}</span> thông báo chưa đọc</p>
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
                     <!-- Notification items -->
                     <div class="space-y-1 flex-1 overflow-y-auto" id="admin-notification-list">
-                        @foreach($adminNotifications ?? [] as $notification)
-                            <div class="flex items-start gap-3 px-2 py-2 hover:bg-accent rounded-md {{ $notification->read_at ? '' : 'bg-primary/10 text-primary font-semibold' }}"
-                                 style="cursor:pointer;"
-                                 onclick="markAdminNotificationAsRead('{{ $notification->id }}')">
-                                <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-medium">{{ $notification->data['message'] ?? '' }}</p>
-                                    <p class="text-xs text-muted-foreground">{{ $notification->created_at->diffForHumans() }}</p>
-                                </div>
-                                @if(!$notification->read_at)
-                                    <div class="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                                @endif
-                            </div>
-                        @endforeach
-                        @if(($adminNotifications ?? collect())->isEmpty())
-                            <div class="text-center text-xs text-muted-foreground py-4">Không có thông báo nào</div>
-                        @endif
+                        @include('partials.admin._notification_items', ['notifications' => $adminNotifications])
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
                     <a href="{{ route('admin.notifications.index') }}" class="block px-2 py-1.5 text-sm text-center text-muted-foreground hover:text-foreground mt-2" style="display: block !important;">
@@ -218,22 +200,7 @@
         background-color: rgba(255, 255, 255, 0.3);
     }
 
-    @keyframes bell-shake {
-        0% { transform: rotate(0); }
-        15% { transform: rotate(5deg); }
-        30% { transform: rotate(-5deg); }
-        45% { transform: rotate(4deg); }
-        60% { transform: rotate(-4deg); }
-        75% { transform: rotate(2deg); }
-        85% { transform: rotate(-2deg); }
-        92% { transform: rotate(1deg); }
-        100% { transform: rotate(0); }
-    }
 
-    .animate-bell {
-        transform-origin: top center;
-        animation: bell-shake 1s ease infinite;
-    }
 
     @keyframes badge-pulse {
         0% { transform: scale(1); }
@@ -255,17 +222,110 @@
             opacity: 0;
         }
     }
+
+    /* Notification layout fixes */
+    .notification-item {
+        transition: all 0.2s ease;
+    }
+    
+    .notification-item:hover {
+        background-color: hsl(var(--accent));
+    }
+    
+    .notification-text {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    .truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 </style>
 <script>
-function markAdminNotificationAsRead(id) {
+function markAdminNotificationAsRead(id, redirectUrl = null) {
+    // Nếu là notification từ realtime (có prefix 'new-order-')
+    if (id.startsWith('new-order-')) {
+        // Xóa notification khỏi UI
+        const notificationElement = document.querySelector(`[data-notification-id="${id}"]`);
+        if (notificationElement) {
+            notificationElement.remove();
+            
+            // Cập nhật số lượng notification
+            updateNotificationCount(-1);
+            
+            // Kiểm tra nếu không còn notification nào thì hiển thị empty state
+            const notificationList = document.getElementById('admin-notification-list');
+            if (notificationList && notificationList.children.length === 0) {
+                notificationList.innerHTML = '<div class="text-center text-xs text-muted-foreground py-4">Không có thông báo nào</div>';
+            }
+        }
+        
+        // Chuyển hướng đến trang orders nếu có redirect URL
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        }
+        return;
+    }
+    
+    // Nếu là notification từ database, gọi API
     fetch("{{ url('admin/notifications') }}/" + id + "/read", {
         method: "POST",
         headers: {
             "X-CSRF-TOKEN": "{{ csrf_token() }}",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "Content-Type": "application/json"
         }
-    }).then(res => res.json()).then(data => {
-        location.reload();
+    }).then(res => {
+        if (!res.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return res.json();
+    }).then(data => {
+        console.log('Notification marked as read:', data);
+        
+        // Chỉ chuyển hướng nếu có redirect URL
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        } else {
+            // Thay vì reload, chỉ cập nhật UI
+            const notificationElement = document.querySelector(`[onclick*="markAdminNotificationAsRead('${id}")]`);
+            if (notificationElement) {
+                // Thêm class để đánh dấu đã đọc
+                notificationElement.classList.remove('bg-primary/10', 'text-primary', 'font-semibold');
+                notificationElement.classList.add('bg-transparent');
+                
+                // Cập nhật số lượng notification
+                updateNotificationCount(-1);
+            }
+        }
+    }).catch(error => {
+        console.error('Error marking notification as read:', error);
+        // Nếu có lỗi và có redirect URL, vẫn chuyển hướng
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        }
+    });
+}
+
+function updateNotificationCount(increment = 0) {
+    // Update the notification count badge
+    const countElements = document.querySelectorAll('.notification-unread-count');
+    countElements.forEach(element => {
+        const currentCount = parseInt(element.textContent) || 0;
+        const newCount = Math.max(0, currentCount + increment);
+        element.textContent = newCount;
+        
+        // Show/hide badge based on count
+        const badge = element.closest('.absolute.-right-1.-top-1');
+        if (badge) {
+            if (newCount > 0) {
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
     });
 }
 </script>

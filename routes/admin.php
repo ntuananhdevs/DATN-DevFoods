@@ -342,12 +342,15 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::get('notifications/item/{orderId}', [OrderController::class, 'notificationItem'])->name('admin.notifications.item');
     // Orders Management
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         // Thêm route show chi tiết đơn hàng
-        Route::get('/show/{order}', [OrderController::class, 'show'])->name('show');
+        Route::get('/show/{id}', [OrderController::class, 'show'])->name('show');
         Route::get('/export', [OrderController::class, 'export'])->name('export');
+        // Route để lấy HTML partial cho order row (cho realtime)
+        Route::get('/{id}/row', [OrderController::class, 'getOrderRow'])->name('row');
     });
 });
 
