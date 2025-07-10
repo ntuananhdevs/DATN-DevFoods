@@ -9,7 +9,7 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
-use App\Events\OrderStatusUpdated;
+use App\Events\Order\OrderStatusUpdated;
 use App\Events\Order\NewOrderReceived;
 use App\Events\Order\OrderConfirmed;
 use Illuminate\Support\Facades\Log;
@@ -216,7 +216,6 @@ class OrderController extends Controller
         }
 
         // Handle specific status actions
-        $this->handleStatusSpecificActions($order, $newStatus);
 
         // Create status history
         OrderStatusHistory::create([
@@ -293,59 +292,6 @@ class OrderController extends Controller
         }
 
         return ['valid' => true, 'message' => ''];
-    }
-
-    /**
-     * Handle specific actions for status changes
-     */
-    private function handleStatusSpecificActions($order, $newStatus)
-    {
-        switch ($newStatus) {
-            case 'awaiting_driver':
-                // Tìm driver ngẫu nhiên đang active và available
-                $driver = \App\Models\Driver::where('status', 'active')
-                    ->where('is_available', true)
-                    ->inRandomOrder()
-                    ->first();
-
-                if ($driver) {
-                    $order->update(['driver_id' => $driver->id]);
-                    // Nếu muốn, cập nhật trạng thái driver thành không sẵn sàng
-                    // $driver->update(['is_available' => false]);
-                }
-                // Có thể gửi thông báo cho driver ở đây nếu muốn
-                break;
-            
-            case 'processing':
-                // Có thể thêm logic gửi thông báo cho khách hàng
-                break;
-            
-            case 'ready':
-                // Có thể thêm logic tìm tài xế
-                break;
-            
-            case 'delivery':
-                // Có thể thêm logic gán tài xế nếu chưa có
-                break;
-            
-            case 'completed':
-                // Cập nhật thời gian giao hàng thực tế
-                $order->update(['actual_delivery_time' => now()]);
-                break;
-            
-            case 'cancelled':
-                // Tạo bản ghi hủy đơn hàng
-                OrderCancellation::create([
-                    'order_id' => $order->id,
-                    'cancelled_by' => Auth::guard('manager')->id(),
-                    'cancellation_type' => 'restaurant_cancel',
-                    'cancellation_date' => now(),
-                    'reason' => 'Hủy bởi chi nhánh',
-                    'cancellation_stage' => $this->getCancellationStage($order->getOriginal('status')),
-                    'notes' => 'Hủy đơn hàng từ thao tác nhanh'
-                ]);
-                break;
-        }
     }
 
     /**
@@ -463,7 +409,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Xác nhận đơn hàng và tìm tài xế
+     * Xác nhận đơn hàng và dispatch event để tìm tài xế tự động
      */
     public function confirmOrder(Request $request, $id)
     {
@@ -483,20 +429,11 @@ class OrderController extends Controller
             ], 400);
         }
 
-        $lat = $order->address->latitude ?? $order->guest_latitude;
-        $lng = $order->address->longitude ?? $order->guest_longitude;
-        if (!$lat || !$lng) {
-            Log::warning('Thiếu toạ độ giao hàng', ['order_id' => $order->id, 'lat' => $lat, 'lng' => $lng]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Đơn hàng thiếu thông tin địa chỉ giao hàng (latitude/longitude)'
-            ], 500);
-        }
-
         try {
             Log::info('Cập nhật trạng thái confirmed', ['order_id' => $order->id]);
             $order->update(['status' => 'confirmed']);
             $order->refresh();
+            
             OrderStatusHistory::create([
                 'order_id' => $order->id,
                 'old_status' => 'awaiting_confirmation',
@@ -506,54 +443,23 @@ class OrderController extends Controller
                 'note' => 'Xác nhận đơn hàng',
                 'changed_at' => now()
             ]);
+            
+            // Broadcast event để cập nhật realtime
             event(new OrderStatusUpdated($order, 'awaiting_confirmation', 'confirmed'));
-
-            // Tìm tài xế realtime ngay sau khi xác nhận đơn hàng
-            app(DriverAssignmentController::class)->findDriver($request, $order->id);
-
-            Log::info('Tìm tài xế gần nhất', ['order_id' => $order->id, 'lat' => $lat, 'lng' => $lng]);
-            $driver = $this->findNearestDriverByLatLng($lat, $lng);
-            if ($driver) {
-                $oldStatus = $order->status;
-                Log::info('Cập nhật trạng thái driver_assigned', ['order_id' => $order->id, 'driver_id' => $driver->id]);
-                $order->update([
-                    'status' => 'driver_assigned',
-                    'driver_id' => $driver->id
-                ]);
-                $order->refresh();
-                OrderStatusHistory::create([
-                    'order_id' => $order->id,
-                    'old_status' => $oldStatus,
-                    'new_status' => 'driver_assigned',
-                    'changed_by' => Auth::guard('manager')->id(),
-                    'changed_by_role' => 'branch_manager',
-                    'note' => 'Tìm thấy tài xế phù hợp',
-                    'changed_at' => now()
-                ]);
-                event(new OrderStatusUpdated($order, $oldStatus, 'driver_assigned'));
-                event(new \App\Events\Branch\DriverFound($order, $driver));
-                Log::info('Đã xác nhận và gán tài xế thành công', ['order_id' => $order->id, 'driver_id' => $driver->id]);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Đã xác nhận và gán tài xế thành công',
-                    'driver' => [
-                        'id' => $driver->id,
-                        'name' => $driver->name,
-                        'phone' => $driver->phone
-                    ],
-                    'new_status' => 'driver_assigned',
-                    'order_code' => $order->order_code ?? $order->id,
-                ]);
-            } else {
-                Log::info('Không tìm được tài xế', ['order_id' => $order->id]);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Đã xác nhận đơn hàng, đang tìm tài xế...',
-                    'driver' => null,
-                    'new_status' => 'confirmed',
-                    'order_code' => $order->order_code ?? $order->id,
-                ]);
-            }
+            
+            // Dispatch event để tìm tài xế tự động
+            event(new OrderConfirmed($order));
+            
+            Log::info('Đã xác nhận đơn hàng và dispatch event tìm tài xế', ['order_id' => $order->id]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xác nhận đơn hàng, đang tìm tài xế...',
+                'driver' => null,
+                'new_status' => 'confirmed',
+                'order_code' => $order->order_code ?? $order->id,
+            ]);
+            
         } catch (\Exception $e) {
             Log::error('Lỗi xác nhận đơn hàng', [
                 'order_id' => $order->id,
@@ -568,37 +474,7 @@ class OrderController extends Controller
         }
     }
 
-    // Hàm tìm tài xế theo lat/lng
-    private function findNearestDriverByLatLng($lat, $lng)
-    {
-        if (!$lat || !$lng) {
-            return null;
-        }
-        $drivers = \App\Models\Driver::where('status', 'online')
-            ->where('is_available', true)
-            ->whereHas('location')
-            ->with('location')
-            ->get();
 
-        $nearestDriver = null;
-        $shortestDistance = PHP_FLOAT_MAX;
-
-        foreach ($drivers as $driver) {
-            $location = $driver->location;
-            if (!$location) continue;
-            $distance = $this->calculateDistance(
-                $lat,
-                $lng,
-                $location->latitude,
-                $location->longitude
-            );
-            if ($distance <= 10 && $distance < $shortestDistance) {
-                $shortestDistance = $distance;
-                $nearestDriver = $driver;
-            }
-        }
-        return $nearestDriver;
-    }
 
     /**
      * Trả về HTML partial card cho 1 order (dùng cho realtime)

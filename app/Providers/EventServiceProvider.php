@@ -10,6 +10,8 @@ use App\Models\WishlistItem;
 use App\Observers\WishlistItemObserver;
 use App\Events\Order\OrderConfirmed;
 use App\Listeners\Order\FindDriverForOrder;
+use App\Events\Order\DriverAssigned;
+use App\Listeners\Order\NotifyDriverAssigned;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         OrderConfirmed::class => [
             FindDriverForOrder::class,
+        ],
+        DriverAssigned::class => [
+            NotifyDriverAssigned::class,
         ],
     ];
 
