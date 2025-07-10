@@ -10,7 +10,8 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
 use App\Events\OrderStatusUpdated;
-use App\Events\Branch\NewOrderReceived;
+use App\Events\Order\NewOrderReceived;
+use App\Events\Order\OrderConfirmed;
 use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
@@ -208,6 +209,11 @@ class OrderController extends Controller
 
         // Update order status
         $order->update(['status' => $newStatus]);
+
+        // Nếu trạng thái mới là 'confirmed' hoặc 'awaiting_driver', dispatch event OrderConfirmed
+        if (in_array($newStatus, ['confirmed'])) {
+            event(new OrderConfirmed($order));
+        }
 
         // Handle specific status actions
         $this->handleStatusSpecificActions($order, $newStatus);

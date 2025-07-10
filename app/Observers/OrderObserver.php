@@ -3,7 +3,8 @@
 namespace App\Observers;
 
 use App\Models\Order;
-use App\Events\Branch\NewOrderReceived;
+use App\Events\Order\NewOrderReceived;
+use App\Events\OrderStatusUpdated;
 use Illuminate\Support\Facades\Log;
 
 class OrderObserver
@@ -43,7 +44,7 @@ class OrderObserver
                 $newStatus = $order->status;
                 
                 // Broadcast status update event
-                event(new \App\Events\Branch\OrderStatusUpdated($order, $oldStatus, $newStatus));
+                event(new OrderStatusUpdated($order, $oldStatus, $newStatus));
                 
                 Log::info('Order status updated and broadcasted', [
                     'order_id' => $order->id,
