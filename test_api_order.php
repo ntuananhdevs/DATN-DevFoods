@@ -10,7 +10,7 @@
 // Sample data for testing (updated with valid IDs)
 $testData = [
     'user_id' => 6,        // User ID = 6
-    'address_id' => 12,    // Address ID = 12 (belongs to user 6)
+    'address_id' => 13,    // Address ID = 12 (belongs to user 6)
     'payment_method' => 'vnpay',  // VNPAY payment method
     'note' => 'Test order via API - Giao trong giờ hành chính - VNPAY',
     'items' => [

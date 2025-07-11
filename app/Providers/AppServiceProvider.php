@@ -66,7 +66,7 @@ class AppServiceProvider extends ServiceProvider
         Combo::observe(ComboObserver::class);
 
         // Register OrderObserver
-        Order::observe(OrderObserver::class);
+        // Order::observe(OrderObserver::class);
 
         // Register ReviewReplyObserver
         ReviewReply::observe(ReviewReplyObserver::class);

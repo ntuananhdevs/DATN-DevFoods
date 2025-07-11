@@ -667,6 +667,7 @@ class ProductController extends Controller
         return [
             'product_id' => $product->id,
             'product_name' => $product->name,
+            'product_ingredients' => $product->ingredients, // Lấy thành phần sản phẩm
             'variant_id' => $variant->id,
             'variant_name' => $variant->variant_description ?? null,
             'quantity' => $item->quantity,
