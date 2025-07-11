@@ -15,4 +15,9 @@ class ReviewReport extends Model
         'reason_type',
         'reason_detail',
     ];
+
+    public function review()
+    {
+        return $this->belongsTo(ProductReview::class, 'review_id');
+    }
 }

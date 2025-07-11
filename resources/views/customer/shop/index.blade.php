@@ -389,19 +389,19 @@
                 <h2 class="text-2xl font-bold mb-4 text-orange-600 flex items-center gap-2">
                     <span>{{ $comboCategory->name }}</span>
                 </h2>
-                @if($comboCategory->products->count() > 0)
+                @if($comboCategory->combos->count() > 0)
                 <div class="skeletons-container" style="display:none;">
-                    @for($i = 0; $i < $comboCategory->products->count(); $i++)
+                    @for($i = 0; $i < $comboCategory->combos->count(); $i++)
                         <div class="skeleton-card"></div>
                     @endfor
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 product-cards-container">
-                    @foreach($comboCategory->products as $product)
-                        @include('customer.shop._product_card', ['product' => $product])
+                    @foreach($comboCategory->combos as $combo)
+                        @include('customer.shop._combo_card', ['combo' => $combo])
                     @endforeach
                 </div>
                 @else
-                    <div class="text-center py-8 text-gray-500">Không có sản phẩm nào trong danh mục này.</div>
+                    <div class="text-center py-8 text-gray-500">Không có combo nào trong danh mục này.</div>
                 @endif
             </section>
             @php $sectionIndex++; @endphp

@@ -29,7 +29,8 @@ class Product extends Model
         'ingredients' => 'array',
         'release_at' => 'datetime',
         'is_featured' => 'boolean',
-        'base_price' => 'decimal:2'
+        'base_price' => 'decimal:2',
+        'discount_price' => 'decimal:2'
     ];
 
     public function category()
@@ -83,6 +84,18 @@ class Product extends Model
     {
         return $this->belongsToMany(Topping::class, 'product_toppings')
             ->withTimestamps();
+    }
+
+    public function combos()
+    {
+        return $this->belongsToMany(Combo::class, 'combo_items', 'product_variant_id', 'combo_id')
+            ->using(\App\Models\ComboItem::class)
+            ->withPivot('quantity')
+            ->withTimestamps()
+            ->where('combos.status', 'selling')
+            ->join('product_variants', 'product_variants.id', '=', 'combo_items.product_variant_id')
+            ->where('product_variants.product_id', $this->id)
+            ->select('combos.*');
     }
 
     public function isActiveInBranch($branchId)

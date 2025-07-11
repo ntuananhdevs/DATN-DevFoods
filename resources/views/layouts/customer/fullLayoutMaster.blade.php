@@ -223,8 +223,8 @@
             const color = colors[type] || colors.info;
 
             const notificationHTML = `
-                <div class="notification-alert bg-white border-l-4 border-${color.bg}-500 rounded-lg overflow-hidden mb-4 transition-all duration-300" 
-                     data-type="${type}" 
+                <div class="notification-alert bg-white border-l-4 border-${color.bg}-500 rounded-lg overflow-hidden mb-4 transition-all duration-300"
+                     data-type="${type}"
                      id="${notificationId}">
                     <div class="p-4">
                         <div class="flex items-start">
@@ -236,7 +236,7 @@
                             <div class="ml-3 flex-1">
                                 <div class="flex items-center justify-between">
                                     <h3 class="text-sm font-bold text-gray-900">${type.charAt(0).toUpperCase() + type.slice(1)}</h3>
-                                    <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2" 
+                                    <button class="close-notification text-gray-400 hover:text-gray-600 transition-colors ml-2"
                                             data-target="${notificationId}">
                                         <i class="fas fa-times text-sm"></i>
                                     </button>
@@ -533,7 +533,41 @@
             localStorage.removeItem('wishlist_count');
         }
     });
-    </script>
+
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+function updateCsrfToken(newToken) {
+    document.querySelector('meta[name="csrf-token"]').setAttribute('content', newToken);
+    if (window.jQuery) {
+        $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': newToken } });
+    }
+    if (window.axios) {
+        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = newToken;
+    }
+}
+$(document).ajaxError(function(event, jqxhr, settings, thrownError) {
+    if (jqxhr.status === 419) {
+        fetch('/refresh-csrf')
+            .then(res => res.json())
+            .then(data => {
+                updateCsrfToken(data.csrf_token);
+                // Có thể gửi lại request ở đây nếu muốn
+            });
+    }
+});
+if (window.axios) {
+    window.axios.interceptors.response.use(null, async function(error) {
+        if (error.response && error.response.status === 419) {
+            const res = await fetch('/refresh-csrf');
+            const data = await res.json();
+            updateCsrfToken(data.csrf_token);
+            // Có thể gửi lại request ở đây nếu muốn
+        }
+        return Promise.reject(error);
+    });
+}
+</script>
 </body>
 
 </html>

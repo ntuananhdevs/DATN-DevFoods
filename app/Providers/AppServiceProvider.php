@@ -21,12 +21,14 @@ use App\Observers\ComboObserver;
 use App\Models\Combo;
 use App\Observers\OrderObserver;
 use App\Models\Order;
-use App\Models\ReviewReply;
-use App\Observers\ReviewReplyObserver;
 use App\Models\ProductReview;
+use App\Models\ReviewReply;
 use App\Observers\ProductReviewObserver;
 use App\Models\ReviewReport;
 use App\Observers\ReviewReportObserver;
+use App\Observers\ReviewReplyObserver;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -79,5 +81,47 @@ class AppServiceProvider extends ServiceProvider
 
         // Nếu bạn cần tuỳ chỉnh token expiration, scopes... thì thêm ở đây
         // Passport::tokensExpireIn(now()->addDays(15));
+
+        // View Composer cho layout/partials profile
+        View::composer([
+            'layouts.profile.fullLayoutProfile',
+            'partials.profile.header',
+            'partials.profile.sidebar',
+        ], function ($view) {
+            $user = Auth::user();
+            $currentRank = $user?->currentRank ?? null;
+            $currentPoints = $user?->points ?? 0;
+            $view->with([
+                'user' => $user,
+                'currentRank' => $currentRank,
+                'currentPoints' => $currentPoints,
+            ]);
+        });
+
+        // View Composer cho branch notification
+        View::composer([
+            'partials.branch.header',
+            'partials.branch.sidebar',
+        ], function ($view) {
+            $user = Auth::guard('manager')->user();
+            $branch = $user && $user->branch ? $user->branch : null;
+            $branchNotifications = $branch ? $branch->notifications()->latest()->limit(10)->get() : collect();
+            $branchUnreadCount = $branch ? $branch->unreadNotifications()->count() : 0;
+            $view->with([
+                'branchNotifications' => $branchNotifications,
+                'branchUnreadCount' => $branchUnreadCount,
+            ]);
+        });
+
+        // View Composer cho admin notification
+        View::composer('partials.admin.header', function ($view) {
+            $admin = Auth::user(); // hoặc Auth::guard('admin')->user() nếu dùng guard riêng
+            $adminNotifications = $admin ? $admin->notifications()->latest()->limit(10)->get() : collect();
+            $adminUnreadCount = $admin ? $admin->unreadNotifications()->count() : 0;
+            $view->with([
+                'adminNotifications' => $adminNotifications,
+                'adminUnreadCount' => $adminUnreadCount,
+            ]);
+        });
     }
 }

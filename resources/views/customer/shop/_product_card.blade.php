@@ -10,7 +10,21 @@
             }
         }
     }
+    // Lấy combos (nếu có)
+    $combos = $product->relationLoaded('combos') ? $product->combos : collect();
 @endphp
+@if($combos && $combos->count() > 0)
+    <div class="flex flex-wrap gap-1 px-4 pt-2 pb-1">
+        @foreach($combos->take(2) as $combo)
+            <a href="{{ route('combos.show', $combo->id) }}" class="inline-flex items-center text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded font-semibold hover:bg-orange-200 transition" title="{{ $combo->name }}">
+                <i class="fas fa-layer-group mr-1"></i> {{ \Illuminate\Support\Str::limit($combo->name, 18) }}
+            </a>
+        @endforeach
+        @if($combos->count() > 2)
+            <span class="inline-flex items-center text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">+{{ $combos->count() - 2 }} combo khác</span>
+        @endif
+    </div>
+@endif
 <div class="product-card bg-white rounded-lg overflow-hidden @if($totalStock <= 0) out-of-stock blurred @endif"
     data-product-id="{{ $product->id }}"
     data-variants="{{ json_encode($product->variants->map(function($variant) {

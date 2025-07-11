@@ -36,27 +36,15 @@ use App\Http\Controllers\Customer\ReviewReplyController;
 Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(function () {
     Route::get('/', [CustomerHomeController::class, 'index'])->name('home');
 
+    // Search
+    Route::get('/search', [CustomerHomeController::class, 'search'])->name('customer.search');
+    Route::post('/search/ajax', [CustomerHomeController::class, 'searchAjax'])->name('customer.search.ajax');
+
     // Product
     Route::get('/shop/products', [CustomerProductController::class, 'index'])->name('products.index');
     Route::get('/shop/products/{id}', [CustomerProductController::class, 'show'])->name('products.show');
+    Route::get('/shop/combos/{id}', [CustomerProductController::class, 'showComboDetail'])->name('combos.show');
     Route::post('/products/get-applicable-discounts', [CustomerProductController::class, 'getApplicableDiscounts'])->name('products.get-applicable-discounts');
-
-    // Debug routes for discount codes
-    Route::get('/debug/discount-codes', function () {
-        $now = \Carbon\Carbon::now();
-        $publicCodes = \App\Models\DiscountCode::where('is_active', true)
-            ->where('start_date', '<=', $now)
-            ->where('end_date', '>=', $now)
-            ->where('usage_type', 'public')
-            ->get();
-
-        return response()->json([
-            'count' => $publicCodes->count(),
-            'codes' => $publicCodes
-        ]);
-    });
-
-    Route::get('/debug/product/{id}/discount-codes', [CustomerProductController::class, 'showProductDiscounts']);
 
     // Wishlist
     Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
@@ -68,7 +56,8 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
     Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
-    
+    Route::post('/cart/clear', [CustomerCartController::class, 'clear'])->name('cart.clear');
+
     // Coupon
     Route::post('/coupon/apply', [CustomerCouponController::class, 'apply'])->name('coupon.apply');
     Route::post('/coupon/remove', [CustomerCouponController::class, 'remove'])->name('coupon.remove');
@@ -126,9 +115,9 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/orders', [CustomerOrderController::class, 'index'])->name('customer.orders.index');
 
     // Route để hiển thị trang "Chi tiết đơn hàng"
-    // Sử dụng Route-Model Binding để tự động lấy Order model
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
     Route::post('/orders/{order}/status', [CustomerOrderController::class, 'updateStatus'])->name('customer.orders.updateStatus');
+    Route::get('/orders/list', [CustomerOrderController::class, 'listPartial'])->name('customer.orders.listPartial');
 });
 
 // Phone Required routes (không cần phone.required middleware)
@@ -177,7 +166,7 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
     Route::get('/chat/conversations', [ChatController::class, 'getConversations'])->name('customer.chat.conversations');
     Route::get('/chat/messages', [ChatController::class, 'getMessages'])->name('customer.chat.messages');
 
-    
+
     Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
         return Broadcast::auth($request);
     })->middleware(['web']);

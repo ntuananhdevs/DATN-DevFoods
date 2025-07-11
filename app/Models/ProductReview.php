@@ -78,6 +78,11 @@ class ProductReview extends Model
         return $this->hasMany(\App\Models\ReviewReply::class, 'review_id');
     }
 
+    public function reports()
+    {
+        return $this->hasMany(\App\Models\ReviewReport::class, 'review_id');
+    }
+
     public function getPurchasedVariantAttributesAttribute()
     {
         // Nếu không có order_id thì không có thông tin

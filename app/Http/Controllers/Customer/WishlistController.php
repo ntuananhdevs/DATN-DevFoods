@@ -27,7 +27,7 @@ class WishlistController extends Controller
             return redirect()->route('login');
         }
         
-        $wishlistItems = Auth::user()->wishlist()->with('product')->get();
+        $wishlistItems = Auth::user()->wishlist()->with(['product', 'productVariant'])->get();
         return view('customer.wishlist.index', compact('wishlistItems'));
     }
 

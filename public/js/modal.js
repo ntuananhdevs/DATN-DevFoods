@@ -454,3 +454,10 @@ function updateSelectedCategoryStatus(status) {
     });
 }
 
+function dtmodalCloseAllToasts() {
+    const container = document.getElementById('dtmodalToastContainer');
+    if (container) {
+        Array.from(container.children).forEach(dtmodalCloseToast);
+    }
+}
+
