@@ -292,8 +292,8 @@ addressList.addEventListener('click', function(e) {
                 }, 300);
 
                 setTimeout(() => {
-                    const lat = addr.latitude || 21.028511;
-                    const lng = addr.longitude || 105.804817;
+                    const lat = addr.latitude;
+                    const lng = addr.longitude;
                     initMap(lat, lng);
                 }, 900);
                 modal.classList.remove('hidden');
