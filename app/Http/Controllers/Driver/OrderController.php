@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Driver;
 
-use App\Events\OrderStatusUpdated;
+use App\Events\Order\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
@@ -23,7 +23,7 @@ class OrderController extends Controller
         $statuses = [
             'all' => 'Tất cả',
             // 'awaiting_confirmation' => 'Chờ xác nhận', // New status
-            // 'awaiting_driver' => 'Chờ tài xế', // New status
+            'awaiting_driver' => 'Chờ tài xế', // New status
             // 'driver_assigned' => 'Đã giao tài xế', // New status
             // 'driver_confirmed' => 'Tài xế xác nhận', // New status
             // 'driver_picked_up' => 'Đã lấy hàng',

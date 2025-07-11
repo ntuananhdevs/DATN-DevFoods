@@ -9,7 +9,7 @@ use App\Models\Branch;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\OrderCancellation;
-use App\Events\OrderStatusUpdated;
+use App\Events\Order\OrderStatusUpdated;
 use App\Events\NewOrderAvailable;
 use App\Events\Order\NewOrderReceived;
 use App\Events\Order\OrderConfirmed;

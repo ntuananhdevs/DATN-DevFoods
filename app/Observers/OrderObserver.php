@@ -4,7 +4,7 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Events\Order\NewOrderReceived;
-use App\Events\OrderStatusUpdated;
+use App\Events\Order\OrderStatusUpdated;
 use Illuminate\Support\Facades\Log;
 
 class OrderObserver
@@ -17,7 +17,7 @@ class OrderObserver
         try {
             // Tạm thời tắt event để tránh duplicate với API OrderController
             // event(new NewOrderReceived($order));
-            
+
             Log::info('New order created (event disabled to avoid duplicate)', [
                 'order_id' => $order->id,
                 'order_code' => $order->order_code,
@@ -42,10 +42,10 @@ class OrderObserver
             try {
                 $oldStatus = $order->getOriginal('status');
                 $newStatus = $order->status;
-                
+
                 // Broadcast status update event
                 event(new OrderStatusUpdated($order, $oldStatus, $newStatus));
-                
+
                 Log::info('Order status updated and broadcasted', [
                     'order_id' => $order->id,
                     'order_code' => $order->order_code,
@@ -85,4 +85,4 @@ class OrderObserver
     {
         // Handle force deletion if needed
     }
-} 
+}

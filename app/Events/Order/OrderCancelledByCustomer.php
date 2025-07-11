@@ -1,5 +1,6 @@
 <?php
-namespace App\Events;
+
+namespace App\Events\Order;
 
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
@@ -20,7 +21,7 @@ class OrderCancelledByCustomer implements ShouldBroadcast
     public function broadcastOn(): array
     {
         // Gửi sự kiện này đến tất cả các tài xế
-        return [ new PrivateChannel('drivers') ];
+        return [new PrivateChannel('drivers')];
     }
 
     public function broadcastAs(): string
