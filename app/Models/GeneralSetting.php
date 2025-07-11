@@ -84,7 +84,7 @@ class GeneralSetting extends Model
      */
     public static function getShippingFee()
     {
-        return (int) self::get('shipping_fee', 30000);
+        return (int) self::get('shipping_fee', 25000);
     }
 
     /**

@@ -15,6 +15,7 @@ use App\Models\Cart;
 use App\Models\Branch;
 use App\Models\Address;
 use App\Services\BranchService;
+use App\Services\ShippingService;
 
 class CheckoutController extends Controller
 {
@@ -61,11 +62,11 @@ class CheckoutController extends Controller
 
             $cartItems = $query->get();
 
+            // === NEW: tính subtotal bằng hàm applyDiscountsToCartItems ===
+            $subtotal = $this->applyDiscountsToCartItems($cartItems);
+
             foreach ($cartItems as $item) {
-                $subtotal += $item->variant->price * $item->quantity;
-                foreach ($item->toppings as $topping) {
-                    $subtotal += $topping->price * $item->quantity;
-                }
+                // Đặt primary image
                 $item->variant->product->primary_image = $item->variant->product->images
                     ->where('is_primary', true)
                     ->first() ?? $item->variant->product->images->first();
@@ -79,7 +80,7 @@ class CheckoutController extends Controller
         }
 
         // Load user addresses if authenticated
-        $userAddresses = [];
+        $userAddresses = null;
         if ($userId) {
             $userAddresses = Address::where('user_id', $userId)
                 ->orderBy('is_default', 'desc')
@@ -87,7 +88,10 @@ class CheckoutController extends Controller
                 ->get();
         }
 
-        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses'));
+        // Get current selected branch for distance calculation
+        $currentBranch = $this->branchService->getCurrentBranch();
+
+        return view('customer.checkout.index', compact('cartItems', 'subtotal', 'cart', 'userAddresses', 'currentBranch'));
     }
     
     /**
@@ -98,26 +102,55 @@ class CheckoutController extends Controller
      */
     public function process(Request $request)
     {
-        // Validate checkout data
-        $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'email' => 'required|email|max:255',
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'district' => 'required|string|max:100',
-            'ward' => 'required|string|max:100',
-            'address_id' => 'nullable|exists:addresses,id',
-            'payment_method' => 'required|string|in:cod,vnpay,balance',
-            'notes' => 'nullable|string',
-            'terms' => 'required',
-        ]);
+        // Get user ID to determine validation rules
+        $userId = Auth::id();
+        
+        // Validate checkout data with different rules for authenticated vs guest users
+        if ($userId) {
+            // For authenticated users, require address_id selection
+            $validated = $request->validate([
+                'address_id' => 'required|exists:addresses,id',
+                'payment_method' => 'required|string|in:cod,vnpay,balance',
+                'notes' => 'nullable|string',
+                'terms' => 'required',
+                // Hidden fields that get populated by JavaScript
+                'full_name' => 'required|string|max:255',
+                'phone' => 'required|string|max:20',
+                'email' => 'required|email|max:255',
+                'address' => 'required|string|max:255',
+                'city' => 'required|string|max:100',
+                'district' => 'required|string|max:100',
+                'ward' => 'required|string|max:100',
+            ]);
+            
+            // Verify the address belongs to the user
+            $address = Address::where('id', $request->address_id)
+                ->where('user_id', $userId)
+                ->first();
+            
+            if (!$address) {
+                throw new \Exception('Địa chỉ được chọn không hợp lệ.');
+            }
+        } else {
+            // For guest users, require manual input
+            $validated = $request->validate([
+                'full_name' => 'required|string|max:255',
+                'phone' => 'required|string|max:20',
+                'email' => 'required|email|max:255',
+                'address' => 'required|string|max:255',
+                'city' => 'required|string|max:100',
+                'district' => 'required|string|max:100',
+                'ward' => 'required|string|max:100',
+                'payment_method' => 'required|string|in:cod,vnpay,balance',
+                'notes' => 'nullable|string',
+                'terms' => 'required',
+            ]);
+        }
         
         try {
             DB::beginTransaction();
             
-            // Get user ID (if logged in) or generate a guest ID
-            $userId = Auth::id();
+            // Get session ID for cart lookup
             $sessionId = session()->getId();
             
             // Query the cart based on user_id or session_id
@@ -144,17 +177,57 @@ class CheckoutController extends Controller
                 throw new \Exception('Giỏ hàng của bạn đang trống.');
             }
             
-            // Calculate totals
-            $subtotal = 0;
-            foreach ($cartItems as $item) {
-                $subtotal += $item->variant->price * $item->quantity;
-            }
+            // Calculate totals - FIX: Include toppings for consistency with view
+            // Tính subtotal đồng bộ với view (đã bao gồm discount + topping)
+            $subtotal = $this->applyDiscountsToCartItems($cartItems);
             
-            // Set a fixed shipping fee or based on subtotal
-            $shipping = $subtotal > 200000 ? 0 : 25000; // Example: free shipping for orders over 200k
+            // Calculate shipping using ShippingService - FIX: Use consistent service-based calculation
+            $currentBranch = $this->branchService->getCurrentBranch();
+            if (!$currentBranch || !$currentBranch->latitude || !$currentBranch->longitude) {
+                throw new \Exception('Không thể xác định vị trí chi nhánh để tính phí vận chuyển.');
+            }
+
+            // Lấy tọa độ của địa chỉ giao hàng
+            $deliveryLat = null;
+            $deliveryLon = null;
+            if ($userId) {
+                if (empty($address)) { // $address được lấy từ đầu hàm
+                    throw new \Exception('Địa chỉ giao hàng không hợp lệ.');
+                }
+                $deliveryLat = $address->latitude;
+                $deliveryLon = $address->longitude;
+            } else {
+                // Đối với guest, ta cần có tọa độ. Giả sử nó được gửi lên từ form
+                // Nếu không, ta không thể tính phí theo khoảng cách.
+                // For now, we'll assume guest checkout doesn't support distance-based fees
+                // unless we implement address->lat/lng conversion on the fly.
+                 throw new \Exception('Tính năng đặt hàng cho khách chưa hỗ trợ phí vận chuyển theo khoảng cách.');
+            }
+
+            if(is_null($deliveryLat) || is_null($deliveryLon)) {
+                 throw new \Exception('Không có đủ thông tin tọa độ để tính phí vận chuyển.');
+            }
+
+            // Tính khoảng cách
+            $distance = ShippingService::getDistance(
+                $currentBranch->latitude,
+                $currentBranch->longitude,
+                $deliveryLat,
+                $deliveryLon
+            );
+
+            // Tính phí vận chuyển
+            $shipping = ShippingService::calculateFee($subtotal, $distance);
+            if ($shipping < 0) {
+                 throw new \Exception('Địa chỉ giao hàng nằm ngoài vùng phục vụ.');
+            }
+
+            // Tính thời gian giao hàng dự kiến
+            $estimatedMinutes = ShippingService::calculateEstimatedDeliveryTime($cartItems, $distance);
+            $estimatedDeliveryTime = now()->addMinutes($estimatedMinutes);
             
             // Apply discount if available
-            $discount = session('discount', 0);
+            $discount = session('coupon_discount_amount', 0);
             
             // Calculate total
             $total = $subtotal + $shipping - $discount;
@@ -185,14 +258,13 @@ class CheckoutController extends Controller
             if ($userId) {
                 $order->customer_id = $userId;
                 
-                // Nếu user chọn địa chỉ có sẵn từ dropdown
-                if ($request->address_id) {
-                    $address = Address::where('id', $request->address_id)
-                        ->where('user_id', $userId)
-                        ->first();
-                    if ($address) {
-                        $order->address_id = $address->id;
-                    }
+                // For authenticated users, use the selected address
+                $selectedAddress = Address::where('id', $request->address_id)
+                    ->where('user_id', $userId)
+                    ->first();
+                
+                if ($selectedAddress) {
+                    $order->address_id = $selectedAddress->id;
                 }
             } else {
                 // Thông tin guest
@@ -209,6 +281,7 @@ class CheckoutController extends Controller
             $order->branch_id = $branchId;
             $order->order_code = 'ORD-' . strtoupper(substr(uniqid(), -8));
             $order->status = 'awaiting_confirmation';
+            $order->estimated_delivery_time = $estimatedDeliveryTime;
             $order->delivery_fee = $shipping;
             $order->discount_amount = $discount;
             $order->subtotal = $subtotal;
@@ -268,7 +341,7 @@ class CheckoutController extends Controller
             $cart->save();
             
             // Clear discount after order is placed
-            session()->forget('discount');
+            session()->forget('coupon_discount_amount');
             session()->forget('cart_count');
             
             DB::commit();
@@ -478,16 +551,99 @@ class CheckoutController extends Controller
             return redirect()->route('home')->with('error', 'Không tìm thấy thông tin đơn hàng');
         }
         
-        // Get order details
-        $order = Order::with(['orderItems.productVariant.product'])
-                    ->where('order_code', $orderCode)
-                    ->first();
+        // Get order details with comprehensive relationships
+        $order = Order::with([
+            'customer',
+            'branch',
+            'address',
+            'orderItems.productVariant.product.images',
+            'orderItems.productVariant.variantValues.attribute',
+            'orderItems.combo', // Load combo info
+            'orderItems.toppings.topping'
+        ])
+        ->where('order_code', $orderCode)
+        ->first();
         
         if (!$order) {
             return redirect()->route('home')->with('error', 'Đơn hàng không tồn tại');
         }
         
-        return view('customer.checkout.success', compact('order'));
+        // Process order items to add primary images and topping information
+        foreach ($order->orderItems as $item) {
+            
+            if ($item->productVariant && $item->productVariant->product) {
+                $product = $item->productVariant->product;
+            
+                // Set primary image
+                $product->primary_image = $product->images
+                    ->where('is_primary', true)
+                    ->first() ?? $product->images->first();
+                
+                // Calculate item total including toppings
+                $basePrice = $item->unit_price;
+                $toppingsPrice = $item->toppings->sum(fn($t) => $t->topping->price ?? 0);
+                $item->item_total_with_toppings = ($basePrice * $item->quantity) + ($toppingsPrice * $item->quantity);
+                
+                // Format variant description
+                if ($item->productVariant->variant_description) {
+                    $item->variant_display = $item->productVariant->variant_description;
+                } else {
+                    $item->variant_display = $item->productVariant->variantValues->pluck('value')->join(', ');
+                }
+            } elseif ($item->combo) {
+                // It's a combo. Create a fake product structure for the view.
+                $fakeProduct = new \stdClass();
+                $fakeProduct->name = $item->combo->name . ' (Combo)';
+                $fakeProduct->images = collect(); // Empty collection
+                $fakeProduct->primary_image = (object)[
+                    'img' => $item->combo->image ?? 'images/default-combo.png'
+                ];
+
+                $item->productVariant = new \stdClass();
+                $item->productVariant->product = $fakeProduct;
+                
+                $item->variant_display = $item->combo->description ?? 'Gói sản phẩm đặc biệt';
+                $item->item_total_with_toppings = $item->total_price;
+                $item->toppings = collect(); // Ensure toppings is an empty collection
+            } else {
+                // Invalid item, create a placeholder to avoid crashing the view
+                $fakeProduct = new \stdClass();
+                $fakeProduct->name = 'Sản phẩm không hợp lệ';
+                $fakeProduct->images = collect();
+                $fakeProduct->primary_image = (object)[
+                    'img' => 'images/default-topping.svg'
+                ];
+
+                $item->productVariant = new \stdClass();
+                $item->productVariant->product = $fakeProduct;
+
+                $item->variant_display = 'Vui lòng liên hệ hỗ trợ.';
+                $item->item_total_with_toppings = 0;
+                $item->toppings = collect();
+            }
+        }
+        
+        // Calculate estimated delivery time info
+        $estimatedTime = null;
+        $timeRange = null;
+        if ($order->estimated_delivery_time) {
+            $estimatedTime = \Carbon\Carbon::parse($order->estimated_delivery_time);
+            $timeRange = [
+                'start' => $estimatedTime->format('H:i'),
+                'end' => $estimatedTime->addMinutes(15)->format('H:i'),
+                'date' => $estimatedTime->format('d/m/Y')
+            ];
+        }
+        
+        // Get payment method display text
+        $paymentMethods = [
+            'cod' => 'Thanh toán khi nhận hàng (COD)',
+            'vnpay' => 'Thanh toán qua VNPAY',
+            'balance' => 'Thanh toán bằng số dư tài khoản'
+        ];
+        $order->payment_method_text = $paymentMethods[$order->payment_method] ?? 'Không xác định';
+        
+        return view('customer.checkout.success', compact('order', 'timeRange'));
     }
 
     /**
@@ -536,5 +692,124 @@ class CheckoutController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    /**
+     * Apply best discount for each cart item (same logic as CartController) and return updated subtotal
+     */
+    private function applyDiscountsToCartItems($cartItems, $branchId = null)
+    {
+        $now = \Carbon\Carbon::now();
+        $currentTime = $now->format('H:i:s');
+
+        // === LOAD ACTIVE DISCOUNT CODES (same as CartController) ===
+        $activeDiscountCodesQuery = \App\Models\DiscountCode::where('is_active', true)
+            ->where('start_date', '<=', $now)
+            ->where('end_date', '>=', $now)
+            ->where(function($query) use ($branchId) {
+                if ($branchId) {
+                    $query->whereDoesntHave('branches')
+                          ->orWhereHas('branches', function($q) use ($branchId) {
+                              $q->where('branches.id', $branchId);
+                          });
+                }
+            });
+
+        $activeDiscountCodesQuery->where(function($query) {
+            $query->where('usage_type', 'public');
+            if (\Illuminate\Support\Facades\Auth::check()) {
+                $query->orWhere(function($q) {
+                    $q->where('usage_type', 'personal')
+                       ->whereHas('users', function($uq){
+                           $uq->where('user_id', \Illuminate\Support\Facades\Auth::id());
+                       });
+                });
+            }
+        });
+
+        $activeDiscountCodes = $activeDiscountCodesQuery->with(['products' => function($q){
+            $q->with(['product', 'category']);
+        }])->get()->filter(function($discountCode) use ($currentTime) {
+            if ($discountCode->valid_from_time && $discountCode->valid_to_time) {
+                $from = \Carbon\Carbon::parse($discountCode->valid_from_time)->format('H:i:s');
+                $to   = \Carbon\Carbon::parse($discountCode->valid_to_time)->format('H:i:s');
+                if ($from < $to) {
+                    if (!($currentTime >= $from && $currentTime <= $to)) return false;
+                } else {
+                    if (!($currentTime >= $from || $currentTime <= $to)) return false;
+                }
+            }
+            return true;
+        });
+
+        // === CALCULATE MIN PRICE FOR EACH PRODUCT (needed for product_price requirement) ===
+        foreach ($cartItems as $item) {
+            $product = $item->variant->product;
+            $product->min_price = $product->base_price;
+            if ($product->variants && $product->variants->count()) {
+                $variantPrices = [];
+                foreach ($product->variants as $variant) {
+                    $variantPrice = $product->base_price;
+                    if ($variant->variantValues && $variant->variantValues->count()) {
+                        $variantPrice += $variant->variantValues->sum('price_adjustment');
+                    }
+                    $variantPrices[] = $variantPrice;
+                }
+                if ($variantPrices) {
+                    $product->min_price = min($variantPrices);
+                }
+            }
+        }
+
+        // === APPLY DISCOUNT TO EACH ITEM ===
+        $subtotal = 0;
+        foreach ($cartItems as $item) {
+            $originPrice = $item->variant->price;
+
+            $applicableDiscounts = $activeDiscountCodes->filter(function($discountCode) use ($item) {
+                // Scope ALL
+                if (($discountCode->applicable_scope === 'all') || ($discountCode->applicable_items === 'all_items')) {
+                    if ($discountCode->min_requirement_type && $discountCode->min_requirement_value > 0) {
+                        if ($discountCode->min_requirement_type === 'product_price') {
+                            if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
+                // Scope specific products/categories
+                $applies = $discountCode->products->contains(function($dp) use ($item){
+                    if ($dp->product_id === $item->variant->product->id) return true;
+                    if ($dp->category_id === $item->variant->product->category_id) return true;
+                    return false;
+                });
+                if ($applies && $discountCode->min_requirement_type === 'product_price' && $discountCode->min_requirement_value > 0) {
+                    if ($item->variant->product->min_price < $discountCode->min_requirement_value) {
+                        return false;
+                    }
+                }
+                return $applies;
+            });
+
+            // Get best discount value
+            $maxValue = 0;
+            foreach ($applicableDiscounts as $d) {
+                $value = 0;
+                if ($d->discount_type === 'fixed_amount') {
+                    $value = $d->discount_value;
+                } elseif ($d->discount_type === 'percentage') {
+                    $value = $originPrice * $d->discount_value / 100;
+                }
+                if ($value > $maxValue) $maxValue = $value;
+            }
+
+            $finalPrice = max(0, $originPrice - $maxValue);
+            $finalPrice += $item->toppings->sum(function($t){return $t->topping->price ?? 0;});
+            $item->final_price = $finalPrice;
+            $subtotal += $finalPrice * $item->quantity;
+        }
+
+        return $subtotal;
     }
 }
