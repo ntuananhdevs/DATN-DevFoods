@@ -40,14 +40,14 @@ return new class extends Migration
             $table->timestamp('order_date')->useCurrent();
             $table->timestamp('delivery_date')->nullable();
             $table->enum('status', [
-                            'awaiting_confirmation', //  chờ xác nhận
-                            'confirmed', //  đã xác nhận
-                            'awaiting_driver', //  chờ tài xế nhận đơn
-                            'driver_assigned', // Tài xế đã được giao đơn
-                            'driver_confirmed', // Tài xế đã xác nhận đơn
-                            'driver_picked_up', // Tài xế đã nhận đơn
-                            'in_transit', // Đơn hàng đang trong quá trình giao hàng
-                            'delivered', // Đơn hàng đã giao thành công
+                            'awaiting_confirmation',  //  chờ xác nhận
+                            'confirmed',              //  đã xác nhận
+                            'awaiting_driver',        //  chờ tài xế nhận đơn
+                            'driver_assigned',        // Tài xế đã được giao đơn
+                            'driver_confirmed',       // Tài xế đã xác nhận đơn
+                            'driver_picked_up',       // Tài xế đã nhận đơn
+                            'in_transit',             // Đơn hàng đang trong quá trình giao hàng
+                            'delivered',              // Đơn hàng đã giao thành công
                             'item_received', // Khách hàng đã nhận hàng
                             'cancelled', // Đơn hàng đã bị hủy
                             'refunded', // Đơn hàng đã được hoàn tiền

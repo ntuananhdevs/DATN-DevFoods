@@ -84,7 +84,7 @@
         <!-- Notifications -->
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open" class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell animate-bell">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell">
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
@@ -100,7 +100,7 @@
                 <div class="p-2 max-h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar flex flex-col" style="height:600px;">
                     <div class="px-2 py-1.5 mb-1">
                         <h3 class="font-semibold text-sm">Thông báo</h3>
-                        <p class="text-xs text-muted-foreground">Bạn có <span class="notification-unread-count">{{ $branchUnreadCount ?? 0 }}</span> thông báo chưa đọc</p>
+                        <p class="text-xs text-muted-foreground">Bạn có <span class="notification-unread-count">{{ isset($branchUnreadCount) ? ($branchUnreadCount > 99 ? '99+' : $branchUnreadCount) : 0 }}</span> thông báo chưa đọc</p>
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
                     <!-- Notification items -->
@@ -181,8 +181,8 @@
 <script>
 window.Echo = new Echo({
     broadcaster: 'pusher',
-    key: '{{ config('broadcasting.connections.pusher.key') }}',
-    cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
+    key: "{{ config('broadcasting.connections.pusher.key') }}",
+    cluster: "{{ config('broadcasting.connections.pusher.options.cluster') }}",
     forceTLS: true
 });
 

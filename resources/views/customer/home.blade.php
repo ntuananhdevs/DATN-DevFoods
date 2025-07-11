@@ -245,22 +245,26 @@
                     data-combo-id="{{ $combo->id }}"
                     data-has-stock="{{ $combo->has_stock ? 'true' : 'false' }}">
                     <div class="relative">
-                        <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-48 group-hover:scale-110 transition-transform duration-300">
-                        <div class="absolute top-2 left-2">
-                            @if($combo->discount_percent > 0)
-                                <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $combo->discount_percent }}%</span>
-                            @elseif($combo->created_at->diffInDays(now()) <= 7)
-                                <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
-                            @endif
-                        </div>
+                        <a href="{{ route('combos.show', $combo->id) }}">
+                            <img src="{{ $combo->image_url }}" alt="{{ $combo->name }}" class="object-cover w-full h-48 group-hover:scale-110 transition-transform duration-300">
+                            <div class="absolute top-2 left-2">
+                                @if($combo->discount_percent > 0)
+                                    <span class="custom-badge badge-sale text-xs bg-red-500 text-white px-2 py-1 rounded">-{{ $combo->discount_percent }}%</span>
+                                @elseif($combo->created_at->diffInDays(now()) <= 7)
+                                    <span class="custom-badge badge-new text-xs bg-green-500 text-white px-2 py-1 rounded">Mới</span>
+                                @endif
+                            </div>
+                        </a>
                     </div>
                     <div class="p-4">
-                        <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">{{ $combo->name }}</h3>
+                        <a href="{{ route('combos.show', $combo->id) }}">
+                            <h3 class="font-medium text-lg mb-1 hover:text-orange-500 transition-colors line-clamp-1">{{ $combo->name }}</h3>
+                        </a>
                         <p class="text-gray-500 text-sm mb-3 line-clamp-2">{{ Illuminate\Support\Str::limit($combo->description, 80) }}</p>
                         <div class="flex items-center justify-between">
                             <div class="flex flex-col">
                                 @if($combo->original_price && $combo->original_price > $combo->price)
-                                    <span class="font-bold text-lg text-red-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
+                                    <span class="font-bold text-lg text-black-600">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
                                     <span class="text-sm text-gray-500 line-through">{{ number_format($combo->original_price, 0, ',', '.') }}đ</span>
                                 @else
                                     <span class="font-bold text-lg">{{ number_format($combo->price, 0, ',', '.') }}đ</span>
@@ -272,10 +276,10 @@
                                     Thêm
                                 </button>
                             @else
-                                <button class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
+                                <span class="add-to-cart-btn bg-gray-400 text-white px-3 py-1 rounded-md text-sm flex items-center transition-colors cursor-not-allowed" disabled>
                                     <i class="fas fa-ban h-4 w-4 mr-1"></i>
                                     Hết hàng
-                                </button>
+                                </span>
                             @endif
                         </div>
                     </div>
