@@ -322,65 +322,69 @@
                 }
             }
 
-            // Đảm bảo availableOrdersList tồn tại trước khi lắng nghe Pusher
-            if (availableOrdersList) {
-                // Lắng nghe kênh private 'drivers'
-                window.Echo.private('drivers')
-                    .listen('.new-order-event', (eventData) => {
-                        console.log('Đã nhận được đơn hàng mới:', eventData.order);
+            // Đảm bảo bạn có biến driverId chứa ID tài xế đang đăng nhập
+            window.driverId = {{ auth('driver')->id() }};
+            if (typeof driverId === 'undefined') {
+                console.error('driverId chưa được khai báo!');
+            } else if (availableOrdersList) {
+                window.Echo.private(`driver.${driverId}`)
+                    .listen('DriverAssigned', (eventData) => {
+                        console.log('Bạn vừa được gán đơn hàng:', eventData.order);
 
-                        // Xóa tin nhắn "Không có đơn hàng" nếu có
+                        const order = eventData.order;
+
+                        // Xóa thông báo "Không có đơn hàng"
                         const noOrderMsg = availableOrdersList.querySelector('.no-order-message');
                         if (noOrderMsg) {
                             noOrderMsg.remove();
                         }
 
-                        const order = eventData.order;
-                        // Điều chỉnh URL cho khớp với route driver.orders.show
-                        // Ví dụ: /driver/orders/{id}/show nếu route là driver.orders.show
+                        // Tạo link tới trang xem chi tiết đơn hàng
                         const orderShowUrl = `/driver/orders/${order.id}/show`;
 
                         const newOrderHtml = `
-                            <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200 animate-pulse-fade-in" data-order-id="${order.id}">
-                                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <i class="fas fa-box text-white text-lg"></i>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-medium text-gray-800">Đơn #${order.order_code}</div>
-                                    <div class="text-sm text-gray-500 truncate">${order.delivery_address}</div>
-                                </div>
-                                <a href="${orderShowUrl}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Nhận đơn</a>
-                            </div>
-                        `;
+                <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200 animate-pulse-fade-in" data-order-id="${order.id}">
+                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-box text-white text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-gray-800">Đơn #${order.order_code}</div>
+                        <div class="text-sm text-gray-500 truncate">${order.delivery_address}</div>
+                    </div>
+                    <a href="${orderShowUrl}" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 flex-shrink-0">Xem đơn</a>
+                </div>
+            `;
 
                         availableOrdersList.insertAdjacentHTML('afterbegin', newOrderHtml);
-                        showToast('Có đơn hàng mới khả dụng!', 'info');
+                        showToast('Bạn vừa được gán một đơn hàng mới!', 'info');
                     })
-                    .listen('.order-cancelled-event', (eventData) => {
+                    .listen('order-cancelled-event', (eventData) => {
                         console.log('Đơn hàng đã bị hủy:', eventData.order_id);
+
                         const cancelledOrderId = eventData.order_id;
                         const orderElementToRemove = availableOrdersList.querySelector(
-                            `[data-order-id="${cancelledOrderId}"]`);
+                            `[data-order-id="${cancelledOrderId}"]`
+                        );
 
                         if (orderElementToRemove) {
                             orderElementToRemove.remove();
                             showToast(`Đơn hàng #${cancelledOrderId} đã bị hủy.`, 'warning');
 
-                            // Kiểm tra nếu không còn đơn hàng nào, hiển thị lại thông báo "Không có đơn hàng"
+                            // Nếu không còn đơn hàng nào, hiển thị lại thông báo
                             if (availableOrdersList.children.length === 0) {
                                 availableOrdersList.innerHTML = `
-                                    <p class="text-center text-sm text-gray-500 py-3 no-order-message">Hiện không có đơn hàng mới.</p>
-                                `;
+                        <p class="text-center text-sm text-gray-500 py-3 no-order-message">Hiện không có đơn hàng mới.</p>
+                    `;
                             }
                         } else {
-                            // Nếu đơn hàng bị hủy không có trong danh sách hiển thị (ví dụ, đã được tài xế chấp nhận)
-                            // thì chỉ thông báo. Tài xế sẽ thấy trạng thái hủy khi xem chi tiết.
+                            // Nếu đơn hàng không nằm trong danh sách (ví dụ tài xế đang xem chi tiết)
                             showToast(`Đơn hàng #${cancelledOrderId} đã bị hủy.`, 'warning');
                         }
                     });
             } else {
-                console.warn('Phần tử #available-orders-list không tồn tại, không thể lắng nghe đơn hàng mới.');
+                console.warn('Phần tử #available-orders-list không tồn tại, không thể lắng nghe đơn hàng.');
             }
+
 
             // --- Helper for Toast Notifications ---
             function showToast(message, type = 'info', duration = 3000) {

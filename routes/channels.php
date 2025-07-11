@@ -146,23 +146,25 @@ Broadcast::channel('order.{orderId}', function ($user, $orderId) {
         return false;
     }
 
-    // 1. Cho phép Customer sở hữu đơn hàng được nghe
-    if (Auth::guard('web')->check() && Auth::guard('web')->id() === $order->customer_id) {
+    // 1. Customer sở hữu đơn hàng
+    if ($user instanceof User && $user->id === (int)$order->customer_id) {
         return true;
     }
 
-    // 2. Cho phép Driver ĐÃ ĐƯỢC GÁN vào đơn hàng được nghe
-    if (Auth::guard('driver')->check() && Auth::guard('driver')->id() === $order->driver_id) {
+    // 2. Driver được gán đơn hàng
+    if ($user instanceof Driver && $user->id === (int)$order->driver_id) {
         return true;
     }
 
-    // === BỔ SUNG ĐIỀU KIỆN MỚI ===
-    // 3. Cho phép BẤT KỲ Driver nào cũng được nghe nếu đơn hàng đang ở trạng thái chờ
-    if (Auth::guard('driver')->check() && in_array($order->status, ['confirmed', 'awaiting_driver'])) {
-        return true;
-    }
-
+    // Không cho phép người khác nghe
     return false;
+});
+
+/**
+ * Kênh riêng cho mỗi driver (dành cho DriverAssigned, OrderCancelled)
+ */
+Broadcast::channel('driver.{driverId}', function ($user, $driverId) {
+    return $user instanceof Driver && $user->id === (int)$driverId;
 });
 
 
@@ -187,14 +189,14 @@ Broadcast::channel('user-wishlist-channel.{userId}', function ($user, $userId) {
 Broadcast::channel('branch.{branchId}.orders', function ($user, $branchId) {
     // User đã được xác thực ở AuthController rồi, chỉ cần kiểm tra branch
     $userBranch = $user->branch;
-    
-    \Log::info('[Broadcast] branch.{branchId}.orders authorization', [
+
+    Log::info('[Broadcast] branch.{branchId}.orders authorization', [
         'user_id' => $user->id,
         'user_branch_id' => $userBranch ? $userBranch->id : null,
         'requested_branch_id' => $branchId,
         'can_access' => $userBranch && (int)$userBranch->id === (int)$branchId
     ]);
-    
+
     // Chỉ cần user có branch và branch_id khớp với channel
     return $userBranch && (int)$userBranch->id === (int)$branchId ? [
         'id' => $user->id,

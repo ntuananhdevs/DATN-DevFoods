@@ -86,7 +86,7 @@ class OrderController extends Controller
             }
             // For 'awaiting_driver' tab, we only show unassigned orders
             if ($key === 'awaiting_driver') {
-                $query->whereNull('driver_id');
+                $query->where('driver_id', $driverId);
             }
 
 
@@ -123,15 +123,27 @@ class OrderController extends Controller
             }
             // If the current tab is 'awaiting_driver', ensure driver_id is null
             if ($currentTab === 'awaiting_driver') {
-                $ordersQuery->whereNull('driver_id');
+                $ordersQuery->where('driver_id', $driverId);
             }
         } else {
             // Logic for 'all' tab
-            if ($driverId) {
-                $ordersQuery->where('driver_id', $driverId)
-                    ->orWhereNull('driver_id')
-                    ->whereIn('status', ['awaiting_driver', 'driver_assigned', 'driver_confirmed', 'driver_picked_up', 'in_transit', 'delivered', 'item_received', 'cancelled', 'order_failed']);
-            }
+            $ordersQuery->where(function ($q) use ($driverId) {
+                $q->where('driver_id', $driverId)
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('driver_id')
+                            ->whereIn('status', [
+                                'awaiting_driver',
+                                'driver_assigned',
+                                'driver_confirmed',
+                                'driver_picked_up',
+                                'in_transit',
+                                'delivered',
+                                'item_received',
+                                'cancelled',
+                                'order_failed'
+                            ]);
+                    });
+            });
         }
 
 
@@ -208,12 +220,14 @@ class OrderController extends Controller
     // Khi tài xế nhận đơn:
     public function accept(Order $order): JsonResponse
     {
-        if ($order->status !== 'awaiting_driver' || !is_null($order->driver_id)) {
+        $currentDriverId = Auth::guard('driver')->id();
+
+        if ($order->status !== 'awaiting_driver' || $order->driver_id !== $currentDriverId) {
             return response()->json(['success' => false, 'message' => 'Đơn hàng này không còn khả dụng.'], 400);
         }
 
-        $order->driver_id = Auth::guard('driver')->id();
-        $order->status = 'driver_picked_up'; // Đúng với enum mới
+        $order->driver_id = $currentDriverId;
+        $order->status = 'waiting_driver_pick_up'; // Đúng với enum mới
 
         return $this->processUpdate($order, 'Đã nhận đơn hàng! Đang đến điểm lấy hàng.');
     }

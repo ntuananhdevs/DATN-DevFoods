@@ -2,6 +2,7 @@
 
 namespace App\Events\Order;
 
+use App\Models\Order;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -12,16 +13,17 @@ class OrderCancelledByCustomer implements ShouldBroadcast
     use Dispatchable, SerializesModels;
 
     public $orderId;
+    public $driverId;
 
-    public function __construct($orderId)
+    public function __construct($orderId, $driverId)
     {
         $this->orderId = $orderId;
+        $this->driverId = $driverId;
     }
 
     public function broadcastOn(): array
     {
-        // Gửi sự kiện này đến tất cả các tài xế
-        return [new PrivateChannel('drivers')];
+        return [new PrivateChannel('driver.' . $this->driverId)];
     }
 
     public function broadcastAs(): string
@@ -31,6 +33,8 @@ class OrderCancelledByCustomer implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
-        return ['order_id' => $this->orderId];
+        return [
+            'order_id' => $this->orderId,
+        ];
     }
 }

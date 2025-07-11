@@ -32,8 +32,8 @@ class DriverController extends Controller
             ->latest()->get();
 
         // CẬP NHẬT: Lấy các đơn hàng mới đang chờ tài xế (chưa có driver_id)
-        $availableOrders = Order::whereNull('driver_id')
-            ->where('status', 'awaiting_driver') // Only orders awaiting *any* driver
+        $availableOrders = Order::where('driver_id', $driver->id)
+            ->where('status', 'awaiting_driver')
             ->latest()->take(5)->get();
 
         return view('driver.dashboard', compact(

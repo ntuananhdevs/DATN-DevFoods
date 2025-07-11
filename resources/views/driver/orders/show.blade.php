@@ -131,11 +131,11 @@
                         </button>
                     @break
 
-                    @case('driver_picked_up')
+                    @case('waiting_driver_pick_up')
                         {{-- Nút "Xác nhận đã lấy hàng" --}}
                         <button data-action="confirm-pickup"
                             class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 flex items-center justify-center">
-                            <i class="{{ Order::getStatusIconStatic('driver_picked_up') }} w-4 h-4 mr-2"></i>
+                            <i class="{{ Order::getStatusIconStatic('waiting_driver_pick_up') }} w-4 h-4 mr-2"></i>
                             Xác nhận đã lấy hàng
                         </button>
                     @break
