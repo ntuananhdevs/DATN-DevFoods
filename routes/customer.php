@@ -116,6 +116,10 @@ Route::middleware(['auth', 'phone.required'])->group(function () {
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
     Route::post('/orders/{order}/status', [CustomerOrderController::class, 'updateStatus'])->name('customer.orders.updateStatus');
     Route::get('/orders/list', [CustomerOrderController::class, 'listPartial'])->name('customer.orders.listPartial');
+    Route::get('/profile/addresses', [CustomerProfileController::class, 'getAddresses'])->name('customer.profile.addresses');
+    Route::post('/profile/addresses', [CustomerProfileController::class, 'storeAddress'])->name('customer.profile.addresses.store');
+    Route::put('/profile/addresses/{id}', [CustomerProfileController::class, 'updateAddress'])->name('customer.profile.addresses.update');
+    Route::delete('/profile/addresses/{id}', [CustomerProfileController::class, 'deleteAddress'])->name('customer.profile.addresses.delete');
 });
 
 // Phone Required routes (không cần phone.required middleware)
