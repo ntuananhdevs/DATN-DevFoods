@@ -16,7 +16,7 @@ class DriverAssigned implements ShouldBroadcast
     public $order;
     public $driver;
 
-    public function __construct(Order $order)
+    public function __construct(Order $order, Driver $driver)
     {
         $this->order = $order;
         // Lấy driver từ order

@@ -328,7 +328,7 @@
                 console.error('driverId chưa được khai báo!');
             } else if (availableOrdersList) {
                 window.Echo.private(`driver.${driverId}`)
-                    .listen('DriverAssigned', (eventData) => {
+                    .listen('.DriverAssigned', (eventData) => {
                         console.log('Bạn vừa được gán đơn hàng:', eventData.order);
 
                         const order = eventData.order;
@@ -358,7 +358,7 @@
                         availableOrdersList.insertAdjacentHTML('afterbegin', newOrderHtml);
                         showToast('Bạn vừa được gán một đơn hàng mới!', 'info');
                     })
-                    .listen('order-cancelled-event', (eventData) => {
+                    .listen('.order-cancelled-event', (eventData) => {
                         console.log('Đơn hàng đã bị hủy:', eventData.order_id);
 
                         const cancelledOrderId = eventData.order_id;

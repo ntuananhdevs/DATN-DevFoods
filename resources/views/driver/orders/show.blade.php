@@ -122,56 +122,66 @@
             <div class="space-y-3" id="action-buttons-container">
                 @switch($order->status)
                     @case('awaiting_driver')
-                        {{-- Nút "Chấp nhận đơn hàng" --}}
-                        <button data-action="accept-order"
-                            class="w-full bg-blue-600 text-white
-                            py-3 rounded-lg font-medium shadow-sm hover:bg-blue-700 flex items-center justify-center">
-                            <i class="{{ Order::getStatusIconStatic('awaiting_driver') }} w-4 h-4 mr-2"></i>
-                            Chấp nhận đơn hàng
+                        {{-- Nút Xác nhận nhận đơn --}}
+                        <button data-action="confirm-order"
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-blue-700 flex items-center justify-center">
+                            <i class="fas fa-check w-4 h-4 mr-2"></i>
+                            Xác nhận nhận đơn
+                        </button>
+
+                        {{-- Nút Từ chối --}}
+                        <button data-action="reject-order"
+                            class="w-full bg-red-600 text-white mt-2 py-3 rounded-lg font-medium shadow-sm hover:bg-red-700 flex items-center justify-center">
+                            <i class="fas fa-times w-4 h-4 mr-2"></i>
+                            Từ chối nhận đơn
+                        </button>
+                    @break
+
+                    @case('driver_confirmed')
+                        {{-- Nút bắt đầu di chuyển đến điểm nhận --}}
+                        <button data-action="start-pickup"
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-blue-700 flex items-center justify-center">
+                            <i class="fas fa-location-arrow w-4 h-4 mr-2"></i>
+                            Bắt đầu di chuyển đến điểm lấy hàng
                         </button>
                     @break
 
                     @case('waiting_driver_pick_up')
-                        {{-- Nút "Xác nhận đã lấy hàng" --}}
+                        {{-- Nút đã lấy hàng --}}
                         <button data-action="confirm-pickup"
-                            class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-indigo-700 flex items-center justify-center">
-                            <i class="{{ Order::getStatusIconStatic('waiting_driver_pick_up') }} w-4 h-4 mr-2"></i>
+                            class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700 flex items-center justify-center">
+                            <i class="fas fa-box w-4 h-4 mr-2"></i>
                             Xác nhận đã lấy hàng
                         </button>
                     @break
 
+                    @case('driver_picked_up')
+                        {{-- Nút bắt đầu giao hàng --}}
+                        <button data-action="start-delivery"
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-blue-700 flex items-center justify-center">
+                            <i class="fas fa-truck w-4 h-4 mr-2"></i>
+                            Bắt đầu giao hàng
+                        </button>
+                    @break
+
                     @case('in_transit')
-                        {{-- Nút "Xác nhận đã giao hàng" --}}
+                        {{-- Nút đã giao hàng thành công --}}
                         <button data-action="confirm-delivery"
-                            class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700 flex items-center justify-center mb-2">
-                            <i class="{{ Order::getStatusIconStatic('delivered') }} w-4 h-4 mr-2"></i>
-                            Xác nhận đã giao hàng
+                            class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700 flex items-center justify-center">
+                            <i class="fas fa-check-circle w-4 h-4 mr-2"></i>
+                            Đã giao hàng thành công
                         </button>
                         {{-- Nút "Xem bản đồ lớn" --}}
-                        <button data-action="start-delivery"
+                        <button data-action="navigate"
                             class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center">
                             <i class="fas fa-route w-4 h-4 mr-2"></i> {{-- Using a direct fas icon for route map --}}
                             Xem bản đồ lớn
                         </button>
                     @break
 
-                    @case('delivered')
-                    @case('item_received')
-                        <div class="bg-green-50 p-4 rounded-lg text-center">
-                            <i class="{{ Order::getStatusIconStatic('delivered') }} text-green-600 w-8 h-8 mx-auto mb-2"></i>
-                            <p class="text-green-800 font-medium">Đơn hàng đã được giao thành công</p>
-                            <p class="text-sm text-green-600">Lúc:
-                                {{ optional($order->actual_delivery_time)->format('H:i d/m/Y') }}</p>
-                        </div>
-                    @break
-
-                    @case('cancelled')
-                        <div class="bg-red-50 p-4 rounded-lg text-center">
-                            <i class="{{ Order::getStatusIconStatic('cancelled') }} text-red-600 w-8 h-8 mx-auto mb-2"></i>
-                            <p class="text-red-800 font-medium">Đơn hàng đã bị hủy</p>
-                        </div>
-                    @break
-                @endswitch
+                    @default
+                        {{-- Các trạng thái delivered/item_received/... không hiển thị nút --}}
+                @endSwitch
 
                 @if (!in_array($order->status, ['delivered', 'item_received', 'cancelled']))
                     <button data-action="call-customer"
@@ -360,22 +370,32 @@
                     }
 
                     switch (action) {
-                        case 'accept-order':
-                            DriverOrderDetailPage.acceptAction(orderId);
+                        case 'confirm-order':
+                            DriverOrderDetailPage.confirmAction(orderId);
+                            break;
+                        case 'start-pickup':
+                            DriverOrderDetailPage.startPickupAction(orderId);
                             break;
                         case 'confirm-pickup':
                             DriverOrderDetailPage.confirmPickupAction(orderId);
                             break;
+                        case 'start-delivery':
+                            DriverOrderDetailPage.startDeliveryAction(orderId);
+                            break;
                         case 'confirm-delivery':
                             DriverOrderDetailPage.confirmDeliveryAction(orderId);
                             break;
-                        case 'start-delivery':
+                        case 'reject-order':
+                            DriverOrderDetailPage.rejectAction(orderId);
+                            break;
+                        case 'navigate':
                             DriverOrderDetailPage.navigateAction();
                             break;
                         case 'call-customer':
                             DriverOrderDetailPage.callCustomerAction();
                             break;
                     }
+
                 }
             });
 
@@ -542,24 +562,42 @@
                 sendRequest: async function(orderId, actionUrl, successMessage) {
                     try {
                         const response = await fetch(actionUrl, {
-                            method: 'POST', // Giữ nguyên là POST vì route Laravel đã là POST
+                            method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                    .getAttribute('content')
+                                    .getAttribute('content'),
+                                'Accept': 'application/json'
                             },
                             body: JSON.stringify({})
                         });
 
+                        if (!response.ok) {
+                            const text = await response.text();
+                            console.error('Server error:', text);
+                            showToast('error', {
+                                message: 'Lỗi server: ' + response.status
+                            });
+                            return;
+                        }
+
                         const data = await response.json();
+
                         if (data.success) {
                             showToast('success', {
                                 message: successMessage
                             });
-                            setTimeout(() => {
-                                // Reload or update UI as needed
-                                window.location.reload();
-                            }, timeout = 2000); // Thời gian chờ trước khi làm mới trang
+                            // Nếu có redirect_url thì chuyển trang
+                            if (data.redirect_url) {
+                                setTimeout(() => {
+                                    window.location.href = data.redirect_url;
+                                }, 1500);
+                            } else {
+                                // Nếu không có, thì reload trang
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 2000);
+                            }
                         } else {
                             showToast('error', {
                                 message: data.message || 'Có lỗi xảy ra khi xử lý yêu cầu.'
@@ -568,19 +606,37 @@
                     } catch (error) {
                         console.error('Error:', error);
                         showToast('error', {
-                            message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.'
+                            message: 'Không thể kết nối đến máy chủ.'
                         });
                     }
                 },
 
-                acceptAction: function(orderId) {
+
+                confirmAction: function(orderId) {
                     showModal('Xác nhận nhận đơn hàng', 'Bạn có chắc chắn muốn nhận đơn hàng này?',
                         () => this.sendRequest(orderId,
-                            `/driver/orders/${orderId}/accept`, // Đã sửa URL
+                            `/driver/orders/${orderId}/confirm`, // Đã sửa URL
                             'Đã nhận đơn hàng thành công và đang đến điểm lấy hàng!'), {
                             confirmText: 'Xác nhận',
                             confirmColor: 'blue',
                             icon: 'fas fa-check',
+                            iconColor: 'blue'
+                        }
+                    );
+                },
+
+                startPickupAction: function(orderId) {
+                    showModal(
+                        'Bắt đầu di chuyển',
+                        'Xác nhận bạn đang bắt đầu di chuyển đến điểm lấy hàng?',
+                        () => this.sendRequest(
+                            orderId,
+                            `/driver/orders/${orderId}/start-pickup`,
+                            'Bạn đang trên đường đến điểm lấy hàng!'
+                        ), {
+                            confirmText: 'Xác nhận',
+                            confirmColor: 'blue',
+                            icon: 'fas fa-location-arrow',
                             iconColor: 'blue'
                         }
                     );
@@ -599,6 +655,23 @@
                     );
                 },
 
+                startDeliveryAction: function(orderId) {
+                    showModal(
+                        'Bắt đầu giao hàng',
+                        'Xác nhận bạn đã lấy hàng và bắt đầu giao?',
+                        () => this.sendRequest(
+                            orderId,
+                            `/driver/orders/${orderId}/start-delivery`,
+                            'Bạn đang giao hàng!'
+                        ), {
+                            confirmText: 'Xác nhận',
+                            confirmColor: 'blue',
+                            icon: 'fas fa-truck',
+                            iconColor: 'blue'
+                        }
+                    );
+                },
+
                 confirmDeliveryAction: function(orderId) {
                     showModal('Xác nhận giao hàng', 'Bạn có chắc chắn đã giao hàng thành công?',
                         () => this.sendRequest(orderId,
@@ -608,6 +681,23 @@
                             confirmColor: 'purple',
                             icon: 'fas fa-truck',
                             iconColor: 'purple'
+                        }
+                    );
+                },
+
+                rejectAction: function(orderId) {
+                    showModal(
+                        'Từ chối đơn hàng',
+                        'Bạn chắc chắn muốn từ chối đơn hàng này?',
+                        () => this.sendRequest(
+                            orderId,
+                            `/driver/orders/${orderId}/reject`,
+                            'Bạn đã từ chối đơn hàng.'
+                        ), {
+                            confirmText: 'Từ chối',
+                            confirmColor: 'red',
+                            icon: 'fas fa-times',
+                            iconColor: 'red'
                         }
                     );
                 },

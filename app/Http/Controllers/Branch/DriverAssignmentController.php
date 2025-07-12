@@ -282,45 +282,6 @@ class DriverAssignmentController extends Controller
         return $nearestDriver;
     }
 
-    public function autoAssignNearestDriver($id)
-    {
-        $order = Order::findOrFail($id);
-
-        if ($order->driver_id) {
-            return response()->json([
-                'message' => 'Đơn hàng đã được gán tài xế'
-            ], 400);
-        }
-
-        $nearestDriver = $this->findNearestAvailableDriver(
-            $order->pickup_latitude,
-            $order->pickup_longitude
-        );
-
-        if (!$nearestDriver) {
-            return response()->json([
-                'message' => 'Không tìm thấy tài xế phù hợp'
-            ], 404);
-        }
-
-        $order->driver_id = $nearestDriver->id;
-        $order->status = 'awaiting_driver';
-        $order->save();
-
-        broadcast(new DriverAssigned($order))->toOthers();
-
-        return response()->json([
-            'message' => 'Đã gán tài xế thành công',
-            'driver' => [
-                'id' => $nearestDriver->id,
-                'name' => $nearestDriver->name,
-            ],
-            'order' => [
-                'id' => $order->id,
-                'status' => $order->status,
-            ]
-        ]);
-    }
 
 
     /**
