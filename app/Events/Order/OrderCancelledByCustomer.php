@@ -1,5 +1,5 @@
 <?php
-namespace App\Events;
+namespace App\Events\Order;
 
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;

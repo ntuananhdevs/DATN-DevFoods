@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events\Branch;
+namespace App\Events\Order;
 
 use App\Models\Order;
 use Illuminate\Broadcasting\Channel;
@@ -12,7 +12,9 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use App\Notifications\NewOrderNotification;
+use App\Notifications\AdminNewOrderNotification;
 use App\Models\Branch;
+use App\Models\User;
 
 class NewOrderReceived implements ShouldBroadcastNow
 {
@@ -35,6 +37,15 @@ class NewOrderReceived implements ShouldBroadcastNow
             $branch->notify(new NewOrderNotification($order));
         }
         
+        // Gửi notification cho tất cả admin
+        $admins = User::whereHas('roles', function($query) {
+            $query->where('name', 'admin');
+        })->get();
+        
+        foreach ($admins as $admin) {
+            $admin->notify(new AdminNewOrderNotification($order));
+        }
+        
         Log::info('NewOrderReceived event constructed', [
             'order_id' => $order->id,
             'order_code' => $order->order_code,
@@ -49,7 +60,8 @@ class NewOrderReceived implements ShouldBroadcastNow
     public function broadcastOn()
     {
         $channels = [
-            new Channel('branch-orders-channel')
+            new PrivateChannel('branch.' . $this->branchId),
+            new Channel('branch-orders-channel'),
         ];
         
         Log::info('NewOrderReceived broadcasting on channels', [
@@ -126,6 +138,12 @@ class NewOrderReceived implements ShouldBroadcastNow
                     'payment_status' => $this->order->payment->payment_status,
                     'payment_amount' => $this->order->payment->payment_amount,
                     'payment_date' => $this->order->payment->payment_date,
+                ] : null,
+                'branch' => $this->order->branch ? [
+                    'id' => $this->order->branch->id,
+                    'name' => $this->order->branch->name,
+                    'address' => $this->order->branch->address,
+                    'phone' => $this->order->branch->phone,
                 ] : null
             ],
             'branch_id' => $this->branchId,

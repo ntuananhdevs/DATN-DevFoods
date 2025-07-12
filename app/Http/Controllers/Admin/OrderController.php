@@ -6,12 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Models\Branch;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::query();
+        $query = Order::with(['customer', 'branch']);
 
         // Lọc theo trạng thái nếu có
         if ($request->filled('status')) {
@@ -61,8 +62,43 @@ class OrderController extends Controller
 
     public function show($orderId)
     {
-        $order = \App\Models\Order::with(['customer', 'branch'])->findOrFail($orderId);
-        // Tạm thời dump ra thông tin order, bạn có thể trả về view chi tiết sau
+        $order = Order::with(['customer', 'branch', 'driver'])->findOrFail($orderId);
         return view('admin.order.show', compact('order'));
+    }
+
+    public function getOrderRow($orderId)
+    {
+        $order = Order::with(['customer', 'branch'])->findOrFail($orderId);
+        
+        // Trả về HTML partial
+        $html = view('admin.order._order_row', compact('order'))->render();
+        
+        return response($html)->header('Content-Type', 'text/html');
+    }
+
+    public function notificationItem($orderId)
+    {
+        $order = Order::with(['branch', 'customer'])->findOrFail($orderId);
+
+        $notification = (object)[
+            'id' => 'new-order-' . $order->id,
+            'read_at' => null,
+            'created_at' => now(),
+            'data' => [
+                'order_id' => $order->id,
+                'message' => 'Đơn hàng mới #' . $order->order_code,
+                'branch_name' => $order->branch->name ?? '',
+                'customer_name' => $order->customer->name ?? '',
+            ]
+        ];
+
+        $html = view('partials.admin._notification_items', ['notifications' => [$notification]])->render();
+        return response($html)->header('Content-Type', 'text/html');
+    }
+
+    public function export()
+    {
+        // Tạm thời redirect về trang index
+        return redirect()->route('admin.orders.index');
     }
 } 

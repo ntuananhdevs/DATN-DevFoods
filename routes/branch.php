@@ -22,19 +22,6 @@ Route::prefix('branch')->name('branch.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
-// Test route để kiểm tra user
-Route::get('/branch/test', function() {
-    $user = Auth::guard('manager')->user();
-    if ($user) {
-        echo "User found: " . $user->name . "<br>";
-        echo "Email: " . $user->email . "<br>";
-        echo "Roles: " . $user->roles->pluck('name')->implode(', ') . "<br>";
-        echo "Branch: " . ($user->branch ? $user->branch->name : 'No branch') . "<br>";
-    } else {
-        echo "No user found in manager guard";
-    }
-});
-
 // Branch Protected Routes
 Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
