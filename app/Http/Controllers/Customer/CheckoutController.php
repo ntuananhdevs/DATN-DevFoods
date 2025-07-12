@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Events\NewOrderAvailable;
+use App\Events\Order\NewOrderReceived;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\CartItem;
@@ -340,7 +340,7 @@ class CheckoutController extends Controller
             }
 
             if ($order->status === 'awaiting_confirmation') {
-                \App\Events\Branch\NewOrderReceived::dispatch($order);
+                NewOrderReceived::dispatch($order);
             }
             
             // Create order items
@@ -474,7 +474,7 @@ class CheckoutController extends Controller
                     $order->save();
 
                     // Dispatch event cho branch
-                    \App\Events\Branch\NewOrderReceived::dispatch($order);
+                    NewOrderReceived::dispatch($order);
 
                     // Clear cart
                     $cart = Cart::where('user_id', $order->customer_id)
