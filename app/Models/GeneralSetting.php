@@ -140,4 +140,64 @@ class GeneralSetting extends Model
     {
         return self::qualifiesForFreeShipping($amount) ? 0 : self::getShippingFee();
     }
+
+    /**
+     * Get shipping base fee
+     * 
+     * @return int
+     */
+    public static function getShippingBaseFee()
+    {
+        return (int) self::get('shipping_base_fee', 25000);
+    }
+
+    /**
+     * Get shipping fee per km
+     * 
+     * @return int
+     */
+    public static function getShippingFeePerKm()
+    {
+        return (int) self::get('shipping_fee_per_km', 5000);
+    }
+
+    /**
+     * Get max delivery distance
+     * 
+     * @return int
+     */
+    public static function getMaxDeliveryDistance()
+    {
+        return (int) self::get('max_delivery_distance', 20);
+    }
+
+    /**
+     * Get default preparation time
+     * 
+     * @return int
+     */
+    public static function getDefaultPreparationTime()
+    {
+        return (int) self::get('default_preparation_time', 15);
+    }
+
+    /**
+     * Get average speed in km/h
+     * 
+     * @return int
+     */
+    public static function getAverageSpeedKmh()
+    {
+        return (int) self::get('average_speed_kmh', 20);
+    }
+
+    /**
+     * Get buffer time in minutes
+     * 
+     * @return int
+     */
+    public static function getBufferTimeMinutes()
+    {
+        return (int) self::get('buffer_time_minutes', 10);
+    }
 }

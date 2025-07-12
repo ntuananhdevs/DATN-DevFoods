@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\GeneralSetting;
+
 class ShippingService
 {
     /**
@@ -13,10 +15,10 @@ class ShippingService
      */
     public static function calculateFee(float $subtotal, float $distanceInKm): float
     {
-        $threshold = config('shipping.free_shipping_threshold');
-        $baseFee = config('shipping.base_fee');
-        $feePerKm = config('shipping.fee_per_km');
-        $maxDistance = config('shipping.max_delivery_distance');
+        $threshold = GeneralSetting::getFreeShippingThreshold();
+        $baseFee = GeneralSetting::getShippingBaseFee();
+        $feePerKm = GeneralSetting::getShippingFeePerKm();
+        $maxDistance = GeneralSetting::getMaxDeliveryDistance();
 
         // Miễn phí vận chuyển cho các đơn hàng trên ngưỡng giá trị.
         if ($subtotal >= $threshold) {
@@ -95,18 +97,18 @@ class ShippingService
         
         // Nếu không có sản phẩm nào có thời gian, sử dụng giá trị mặc định.
         if ($maxPreparationTime == 0) {
-            $maxPreparationTime = config('shipping.default_preparation_time', 15);
+            $maxPreparationTime = GeneralSetting::getDefaultPreparationTime();
         }
 
         // 2. Tính thời gian di chuyển.
-        $averageSpeed = config('shipping.average_speed_kmh', 20);
+        $averageSpeed = GeneralSetting::getAverageSpeedKmh();
         $travelTime = 0;
         if ($averageSpeed > 0 && $distanceInKm > 0) {
             $travelTime = ($distanceInKm / $averageSpeed) * 60; // Đổi sang phút
         }
 
-        // 3. Lấy thời gian dự phòng từ config.
-        $bufferTime = config('shipping.buffer_time_minutes', 10);
+        // 3. Lấy thời gian dự phòng từ database.
+        $bufferTime = GeneralSetting::getBufferTimeMinutes();
 
         // 4. Cộng tổng và làm tròn lên.
         $totalMinutes = $maxPreparationTime + $travelTime + $bufferTime;

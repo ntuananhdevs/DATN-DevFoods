@@ -19,7 +19,6 @@ return new class extends Migration
             $table->foreignId('driver_id')->nullable()->constrained('drivers');
             $table->foreignId('address_id')->nullable()->constrained('addresses');
             $table->foreignId('discount_code_id')->nullable()->constrained('discount_codes');
-            $table->enum('payment_method', ['cod', 'vnpay', 'balance'])->default('cod');
             $table->foreignId('payment_id')->nullable()->constrained('payments');
 
             $table->string('guest_name')->nullable();

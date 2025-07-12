@@ -250,8 +250,21 @@ class CheckoutController extends Controller
                 throw new \Exception('Vui lòng chọn chi nhánh trước khi thanh toán.');
             }
             $branchId = $currentBranch->id;
-            
-            // Create order
+
+            // BƯỚC 1: Tạo bản ghi thanh toán (Payment) trước
+            $payment = new \App\Models\Payment([
+                'payment_method' => $request->payment_method,
+                'payer_name' => $userId ? Auth::user()->name : $request->full_name,
+                'payer_email' => $userId ? Auth::user()->email : $request->email,
+                'payer_phone' => $userId ? Auth::user()->phone : $request->phone,
+                'payment_amount' => $total,
+                'txn_ref' => 'PAY-' . strtoupper(uniqid()), // Mã giao dịch tạm thời
+                'payment_status' => ($request->payment_method === 'cod' || $request->payment_method === 'balance') ? 'completed' : 'pending',
+                'ip_address' => $request->ip(),
+            ]);
+            $payment->save();
+
+            // BƯỚC 2: Tạo đơn hàng (Order) và liên kết với Payment
             $order = new Order();
             
             // Thiết lập thông tin người dùng - khác nhau giữa user và guest
@@ -277,9 +290,12 @@ class CheckoutController extends Controller
                 $order->guest_city = $request->city;
             }
             
-            // Thông tin chung
             $order->branch_id = $branchId;
-            $order->order_code = 'ORD-' . strtoupper(substr(uniqid(), -8));
+
+            // Tạo mã đơn hàng: 8 ký tự ngẫu nhiên
+            $order->order_code = strtoupper(\Illuminate\Support\Str::random(8));
+
+            $order->payment_id = $payment->id; // << QUAN TRỌNG: Gán payment_id
             $order->status = 'awaiting_confirmation';
             $order->estimated_delivery_time = $estimatedDeliveryTime;
             $order->delivery_fee = $shipping;
@@ -288,15 +304,18 @@ class CheckoutController extends Controller
             $order->total_amount = $total;
             $order->notes = $request->notes;
             $order->delivery_address = $request->address . ', ' . $request->ward . ', ' . $request->district . ', ' . $request->city;
+
+            // Cập nhật lại txn_ref của payment để dùng chung order_code cho dễ tra cứu
+            $payment->txn_ref = $order->order_code;
             
             // Xử lý theo phương thức thanh toán
             if ($request->payment_method === 'vnpay') {
-                $order->payment_method = 'vnpay';
                 $order->status = 'pending_payment'; 
                 $order->save();
+                $payment->save(); // Lưu lại txn_ref mới
 
                 // Logic tạo URL VNPAY sẽ ở đây
-                $vnp_Url = $this->createVnpayUrl($order, $request);
+                $vnp_Url = $this->createVnpayUrl($order, $request); // createVnpayUrl vẫn dùng order
 
                 DB::commit();
 
@@ -305,20 +324,19 @@ class CheckoutController extends Controller
 
             } else if ($request->payment_method === 'balance') {
                 // Xử lý thanh toán bằng số dư
-                $order->payment_method = 'balance';
                 $order->status = 'awaiting_confirmation'; // Đơn hàng chờ xác nhận từ nhà hàng
                 $order->save();
+                $payment->save(); // Lưu lại txn_ref mới
                 
                 // Trừ tiền từ tài khoản user
                 $user = Auth::user();
                 $user->balance -= $total;
                 $user->save();
                 
-            } else {
-                // Xử lý các phương thức thanh toán khác (ví dụ: COD)
-                $order->payment_method = $request->payment_method;
+            } else { // COD
                 $order->status = 'awaiting_confirmation';
                 $order->save();
+                $payment->save(); // Lưu lại txn_ref mới
             }
 
             if ($order->status === 'awaiting_confirmation') {
@@ -440,14 +458,23 @@ class CheckoutController extends Controller
         if ($secureHash == $vnp_SecureHash) {
             if ($request->vnp_ResponseCode == '00') {
                 $orderCode = $request->vnp_TxnRef;
-                $order = Order::where('order_code', $orderCode)->first();
+                $order = Order::with('payment')->where('order_code', $orderCode)->first();
 
-                if ($order && $order->status == 'pending_payment') {
-                    $order->status = 'awaiting_confirmation'; // Đơn hàng chờ xác nhận từ nhà hàng
+                if ($order && $order->payment && $order->payment->payment_status == 'pending') {
+                    // Cập nhật trạng thái Payment
+                    $order->payment->payment_status = 'completed';
+                    $order->payment->response_code = $request->vnp_ResponseCode;
+                    $order->payment->transaction_id = $request->vnp_TransactionNo;
+                    $order->payment->bank_code = $request->vnp_BankCode;
+                    $order->payment->payment_date = now();
+                    $order->payment->save();
+
+                    // Cập nhật trạng thái Order
+                    $order->status = 'awaiting_confirmation';
                     $order->save();
 
                     // Dispatch event cho branch
-                    \App\Events\Order\NewOrderReceived::dispatch($order);
+                    \App\Events\Branch\NewOrderReceived::dispatch($order);
 
                     // Clear cart
                     $cart = Cart::where('user_id', $order->customer_id)
@@ -456,7 +483,7 @@ class CheckoutController extends Controller
                     if ($cart) {
                         $cart->status = 'completed';
                         $cart->save();
-                        session()->forget(['cart_count', 'discount']);
+                        session()->forget(['coupon_discount_amount', 'cart_count', 'discount']);
                     }
                 }
                 
@@ -464,7 +491,16 @@ class CheckoutController extends Controller
                                  ->with('success', 'Thanh toán thành công!');
             } else {
                 $orderCode = $request->vnp_TxnRef;
-                Order::where('order_code', $orderCode)->update(['status' => 'payment_failed']);
+                $order = Order::with('payment')->where('order_code', $orderCode)->first();
+                if ($order) {
+                    $order->status = 'payment_failed';
+                    $order->save();
+                    if ($order->payment) {
+                        $order->payment->payment_status = 'failed';
+                        $order->payment->response_code = $request->vnp_ResponseCode;
+                        $order->payment->save();
+                    }
+                }
                 return redirect()->route('cart.index')
                                  ->with('error', 'Thanh toán không thành công. Vui lòng thử lại.');
             }
@@ -496,20 +532,23 @@ class CheckoutController extends Controller
 
         $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
         $orderId = $inputData['vnp_TxnRef'];
-        $order = Order::where('order_code', $orderId)->first();
+        $order = Order::with('payment')->where('order_code', $orderId)->first();
         $returnData = [];
 
         try {
             if ($secureHash == $vnp_SecureHash) {
-                if ($order) {
-                    if($order->total_amount == ($inputData['vnp_Amount'] / 100)) {
-                         if ($order->status != 'processing' && $order->status != 'completed') {
+                if ($order && $order->payment) {
+                    if($order->payment->payment_amount == ($inputData['vnp_Amount'] / 100)) {
+                         if ($order->payment->payment_status != 'completed') {
                             if ($inputData['vnp_ResponseCode'] == '00' && $inputData['vnp_TransactionStatus'] == '00') {
-                                $order->status = 'processing';
+                                $order->status = 'awaiting_confirmation'; // hoặc 'processing' tùy vào logic của bạn
+                                $order->payment->payment_status = 'completed';
                             } else {
                                 $order->status = 'payment_failed';
+                                $order->payment->payment_status = 'failed';
                             }
                             $order->save();
+                            $order->payment->save();
                             
                             $returnData['RspCode'] = '00';
                             $returnData['Message'] = 'Confirm Success';
@@ -556,6 +595,7 @@ class CheckoutController extends Controller
             'customer',
             'branch',
             'address',
+            'payment', // Eager load payment
             'orderItems.productVariant.product.images',
             'orderItems.productVariant.variantValues.attribute',
             'orderItems.combo', // Load combo info
@@ -641,7 +681,7 @@ class CheckoutController extends Controller
             'vnpay' => 'Thanh toán qua VNPAY',
             'balance' => 'Thanh toán bằng số dư tài khoản'
         ];
-        $order->payment_method_text = $paymentMethods[$order->payment_method] ?? 'Không xác định';
+        $order->payment_method_text = $paymentMethods[$order->payment->payment_method] ?? 'Không xác định';
         
         return view('customer.checkout.success', compact('order', 'timeRange'));
     }

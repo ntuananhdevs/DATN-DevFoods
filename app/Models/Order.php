@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class Order extends Model
@@ -18,7 +19,7 @@ class Order extends Model
         'driver_id',
         'address_id',
         'discount_code_id',
-        'payment_method',
+        'payment_id', // Thêm payment_id vào fillable
         'guest_name',
         'guest_phone',
         'guest_email',
@@ -256,12 +257,12 @@ class Order extends Model
     protected function paymentMethodText(): Attribute
     {
         return Attribute::make(
-            get: fn() => match ($this->payment_method) {
+            get: fn() => $this->payment ? match ($this->payment->payment_method) {
                 'cod' => 'COD (Thanh toán khi nhận hàng)',
                 'vnpay' => 'VNPAY',
                 'balance' => 'Số dư tài khoản',
                 default => 'Không xác định',
-            }
+            } : 'Chưa có thanh toán'
         );
     }
 
@@ -271,12 +272,7 @@ class Order extends Model
     protected function paymentStatus(): Attribute
     {
         return Attribute::make(
-            get: fn() => match ($this->payment_method) {
-                'cod' => $this->status === 'item_received' ? 'completed' : 'pending', // COD completed khi khách nhận hàng
-                'vnpay' => $this->status === 'pending_payment' ? 'pending' : 'completed',
-                'balance' => 'completed', // Số dư đã trừ tiền ngay
-                default => 'pending',
-            }
+            get: fn() => $this->payment->payment_status ?? 'pending'
         );
     }
 
@@ -327,6 +323,6 @@ class Order extends Model
      */
     public function payment()
     {
-        return $this->belongsTo(Payment::class, 'payment_id');
+        return $this->belongsTo(Payment::class);
     }
 }
