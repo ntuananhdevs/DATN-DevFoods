@@ -1,7 +1,8 @@
 // Cart functionality
 
 // Helper functions moved to the outer scope to be accessible
-function updateCartTotals() {
+
+async function updateCartTotals() {
     let subtotal = 0;
     const cartItems = document.querySelectorAll('.cart-item');
     
@@ -24,30 +25,19 @@ function updateCartTotals() {
         }
     });
     
-    const subtotalEl = document.getElementById('subtotal');
+    const subtotalEl = document.getElementById('subtotal-js');
     if (subtotalEl) {
         subtotalEl.textContent = subtotal.toLocaleString() + 'đ';
     }
     
-    const discountContainer = document.getElementById('discount-container');
+    const discountContainer = document.getElementById('discount-container-js');
     let discount = 0;
     if (discountContainer && !discountContainer.classList.contains('hidden')) {
-        const discountText = document.getElementById('discount').textContent;
+        const discountText = document.getElementById('discount-js').textContent;
         discount = parseInt(discountText.replace(/\D/g, '')) || 0;
     }
     
-    const shippingEl = document.getElementById('shipping');
-    if (shippingEl) {
-        // Phí ship: miễn phí nếu > 100k, ngược lại 15k
-        const shipping = subtotal > 100000 ? 0 : 15000;
-        shippingEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
-        
-        const total = subtotal + shipping - discount;
-        const totalEl = document.getElementById('total');
-        if (totalEl) {
-            totalEl.textContent = total.toLocaleString() + 'đ';
-        }
-    }
+    // No total calculation needed - only subtotal will be displayed
     
     // Update mini cart totals
     updateMiniCartTotals(subtotal);
@@ -67,16 +57,9 @@ function updateCartTotals() {
 
 function updateMiniCartTotals(subtotal) {
     const miniCartSubtotal = document.getElementById('mini-cart-subtotal');
-    const miniCartShipping = document.getElementById('mini-cart-shipping');
     
     if (miniCartSubtotal) {
         miniCartSubtotal.textContent = subtotal.toLocaleString() + 'đ';
-    }
-    
-    if (miniCartShipping) {
-        // Phí ship: miễn phí nếu > 100k, ngược lại 15k
-        const shipping = subtotal > 100000 ? 0 : 15000;
-        miniCartShipping.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
     }
 }
 
@@ -525,8 +508,6 @@ function renderSelectedItemsSummary() {
 function updateSummaryBySelected() {
     let subtotal = 0;
     let discount = 0;
-    let shipping = 0;
-    let total = 0;
     
     // Lấy các item được chọn
     const checked = document.querySelectorAll('.cart-item-checkbox:checked');
@@ -543,9 +524,6 @@ function updateSummaryBySelected() {
         validItems++;
     });
     
-    // Phí ship: miễn phí nếu > 100k, ngược lại 15k
-    shipping = subtotal > 100000 ? 0 : 15000;
-    
     // Giảm giá (nếu có, có thể lấy từ session hoặc tính lại)
     if (typeof sessionDiscount !== 'undefined') {
         discount = sessionDiscount;
@@ -553,18 +531,12 @@ function updateSummaryBySelected() {
         discount = 0;
     }
     
-    total = subtotal + shipping - discount;
-    
-    // Update summary elements
+    // Update summary elements - only subtotal needed
     const subtotalEl = document.getElementById('subtotal-js');
-    const shippingEl = document.getElementById('shipping-js');
     const discountEl = document.getElementById('discount-js');
-    const totalEl = document.getElementById('total-js');
     
     if (subtotalEl) subtotalEl.textContent = subtotal.toLocaleString() + 'đ';
-    if (shippingEl) shippingEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString() + 'đ';
     if (discountEl) discountEl.textContent = discount > 0 ? '-' + discount.toLocaleString() + 'đ' : '-0đ';
-    if (totalEl) totalEl.textContent = total.toLocaleString() + 'đ';
     
     // Update mini cart totals
     if (typeof updateMiniCartTotals === 'function') {

@@ -57,9 +57,20 @@ const calculateTotalAmount = (items) => {
 
 const calculateShippingFee = (distanceKm) => {
     if (distanceKm <= 0) return 0;
-    if (distanceKm <= 3) return 15000;
-    if (distanceKm <= 5) return 20000;
-    return 20000 + Math.ceil(distanceKm - 5) * 5000;
+    
+    // Theo spec mới:
+    // - Phí km đầu: 10,000đ (cho 1 km đầu tiên)
+    // - Giá/km tiếp theo: 5,000đ/km
+    const firstKmFee = 10000;
+    const additionalKmFee = 5000;
+    
+    if (distanceKm <= 1) {
+        return firstKmFee;
+    }
+    
+    // Round up distance for fair pricing
+    const additionalKm = Math.ceil(distanceKm - 1);
+    return firstKmFee + (additionalKm * additionalKmFee);
 };
 
 // IMPORTANT: This mockOrders array will be the source of truth for client-side updates.
