@@ -11,12 +11,6 @@
           @csrf
           <button type="submit" class="btn btn-sm btn-primary">Duyệt</button>
         </form>
-        @else
-        <form action="{{ route('admin.reviews.approve', $review->id) }}" method="POST" class="inline">
-          @csrf
-          <input type="hidden" name="approved" value="0">
-          <button type="submit" class="btn btn-sm btn-warning">Bỏ duyệt</button>
-        </form>
         @endif
         <a href="{{ route('admin.reviews.index') }}" class="btn btn-sm btn-secondary ml-2">Quay lại</a>
       </div>
@@ -54,12 +48,14 @@
           <p class="text-sm text-gray-600">Nội dung</p>
           <p class="text-gray-800">{{ $review->review }}</p>
         </div>
-        @if($review->review_image)
         <div>
           <p class="text-sm text-gray-600">Ảnh bình luận</p>
-          <img src="{{ Storage::disk('s3')->url($review->review_image) }}" alt="Ảnh bình luận" class="w-32 h-32 object-cover rounded border">
+          @if($review->review_image)
+            <img src="{{ Storage::disk('s3')->url($review->review_image) }}" alt="Ảnh bình luận" class="w-32 h-32 object-cover rounded border">
+          @else
+            <span class="text-gray-500 italic">Không có ảnh bình luận</span>
+          @endif
         </div>
-        @endif
         <div>
           <p class="text-sm text-gray-600">Ngày</p>
           <p class="text-gray-700">{{ $review->review_date ? $review->review_date->format('d/m/Y H:i') : '' }}</p>

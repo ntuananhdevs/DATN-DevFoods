@@ -1,15 +1,4 @@
 @php
-    // Tính tổng tồn kho của tất cả variant tại branch hiện tại
-    $totalStock = 0;
-    if ($product->variants) {
-        foreach ($product->variants as $variant) {
-            if ($variant->branchStocks) {
-                foreach ($variant->branchStocks as $stock) {
-                    $totalStock += $stock->stock_quantity;
-                }
-            }
-        }
-    }
     // Lấy combos (nếu có)
     $combos = $product->relationLoaded('combos') ? $product->combos : collect();
 @endphp
@@ -25,7 +14,7 @@
         @endif
     </div>
 @endif
-<div class="product-card bg-white rounded-lg overflow-hidden @if($totalStock <= 0) out-of-stock blurred @endif"
+<div class="product-card bg-white rounded-lg overflow-hidden {{ !$product->has_stock ? 'out-of-stock' : '' }}"
     data-product-id="{{ $product->id }}"
     data-variants="{{ json_encode($product->variants->map(function($variant) {
         return [
@@ -36,9 +25,9 @@
     })) }}"
     data-has-stock="{{ $product->has_stock ? 'true' : 'false' }}">
     <div class="relative">
-        @if($totalStock <= 0)
+        @if(!$product->has_stock)
             <div class="out-of-stock-overlay">
-                <span>Sản phẩm đã hết hàng</span>
+                <span>Hết hàng</span>
             </div>
         @endif
         <a href="{{ route('products.show', $product->id) }}" class="block">
@@ -169,30 +158,4 @@
         </div>
     </div>
 </div>
-<style>
-.out-of-stock {
-    opacity: 0.5;
-    pointer-events: none;
-    position: relative;
-}
-.out-of-stock-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    padding: 10px 24px;
-    border-radius: 24px;
-    font-size: 1rem;
-    font-weight: 600;
-    z-index: 20;
-    text-align: center;
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.blurred {
-    filter: blur(3px);
-    transition: filter 0.3s;
-}
-</style> 
+ 

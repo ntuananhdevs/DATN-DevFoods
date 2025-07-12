@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\ProductReview;
 use App\Models\ReviewReply;
 use App\Models\ReviewReport;
+use Illuminate\Support\Facades\DB;
 
 class ReviewController extends Controller
 {
@@ -65,7 +66,7 @@ class ReviewController extends Controller
                 'message' => 'Xóa bình luận thành công!'
             ]);
         }
-        return back()->with('success', 'Xóa bình luận thành công!');
+        return redirect()->route('admin.reviews.reports')->with('success', 'Xóa bình luận thành công!');
     }
 
     // Ẩn/hiện bình luận
@@ -97,6 +98,16 @@ class ReviewController extends Controller
     // Danh sách báo cáo vi phạm
     public function reports(Request $request)
     {
+        // Tự động xóa bình luận có số báo cáo > 10
+        $autoThreshold = 10;
+        $reviewIds = ReviewReport::select('review_id', DB::raw('COUNT(*) as report_count'))
+            ->groupBy('review_id')
+            ->having('report_count', '>', $autoThreshold)
+            ->pluck('review_id');
+        if ($reviewIds->count() > 0) {
+            ProductReview::whereIn('id', $reviewIds)->delete();
+            ReviewReport::whereIn('review_id', $reviewIds)->delete();
+        }
         $reports = ReviewReport::with(['review.user', 'review.product'])
             ->when($request->input('reason_type'), fn($q) => $q->where('reason_type', $request->reason_type))
             ->orderByDesc('created_at')
@@ -109,6 +120,14 @@ class ReviewController extends Controller
     {
         $review = ProductReview::with(['user', 'product', 'replies.user'])->findOrFail($id);
         return view('admin.reviews.show', compact('review'));
+    }
+
+    // Xem chi tiết báo cáo bình luận
+    public function showReport($id)
+    {
+        $review = ProductReview::with(['user', 'product', 'reports.user'])->findOrFail($id);
+        $reports = $review->reports;
+        return view('admin.reviews.show-report', compact('review', 'reports'));
     }
 
     // Lọc bình luận

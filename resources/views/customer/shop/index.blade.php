@@ -290,6 +290,80 @@
     .add-to-cart-btn.disabled:hover {
         background-color: #9CA3AF !important;
     }
+
+    /* Style cho sản phẩm hết hàng */
+    .product-card.out-of-stock {
+        position: relative;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .product-card.out-of-stock .product-image {
+        filter: blur(2px);
+    }
+
+    .product-card.out-of-stock .product-title,
+    .product-card.out-of-stock .product-price,
+    .product-card.out-of-stock .product-original-price,
+    .product-card.out-of-stock .add-to-cart-btn {
+        filter: blur(1px);
+    }
+
+    .out-of-stock-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(220, 38, 38, 0.9);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 20;
+        white-space: nowrap;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(4px);
+        filter: none !important; /* Đảm bảo overlay không bị blur */
+    }
+
+    .out-of-stock-overlay::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #dc2626, #ef4444);
+        border-radius: 22px;
+        z-index: -1;
+    }
+
+    /* Animation cho overlay */
+
+    /* Đảm bảo sản phẩm hết hàng vẫn hiển thị nhưng bị blur */
+    .product-card.out-of-stock {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* Style cho combo card hết hàng */
+    .product-card[data-combo-id].out-of-stock {
+        position: relative;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .product-card[data-combo-id].out-of-stock .product-image {
+        filter: blur(2px);
+    }
+
+    .product-card[data-combo-id].out-of-stock .product-title,
+    .product-card[data-combo-id].out-of-stock .product-price,
+    .product-card[data-combo-id].out-of-stock .product-original-price,
+    .product-card[data-combo-id].out-of-stock .add-to-cart-btn {
+        filter: blur(1px);
+    }
     .commons {
         color: #000;
         font-size: 0.8rem;
@@ -384,12 +458,11 @@
         $sectionIndex = 0;
     @endphp
     <div id="category-sections">
-        @if($comboCategory)
+        @if($comboCategory && $comboCategory->combos->count() > 0)
             <section class="category-section" id="category-section-{{ $comboCategory->id }}" data-section-index="{{ $sectionIndex }}" style="display: block; margin-bottom: 48px;">
                 <h2 class="text-2xl font-bold mb-4 text-orange-600 flex items-center gap-2">
                     <span>{{ $comboCategory->name }}</span>
                 </h2>
-                @if($comboCategory->combos->count() > 0)
                 <div class="skeletons-container" style="display:none;">
                     @for($i = 0; $i < $comboCategory->combos->count(); $i++)
                         <div class="skeleton-card"></div>
@@ -400,18 +473,15 @@
                         @include('customer.shop._combo_card', ['combo' => $combo])
                     @endforeach
                 </div>
-                @else
-                    <div class="text-center py-8 text-gray-500">Không có combo nào trong danh mục này.</div>
-                @endif
             </section>
             @php $sectionIndex++; @endphp
         @endif
         @foreach($otherCategories as $category)
-            <section class="category-section" id="category-section-{{ $category->id }}" data-section-index="{{ $sectionIndex }}" style="display: {{ $sectionIndex === 0 && !$comboCategory ? 'block' : 'none' }}; margin-bottom: 48px;">
+            @if($category->products->count() > 0)
+            <section class="category-section" id="category-section-{{ $category->id }}" data-section-index="{{ $sectionIndex }}" style="display: {{ $sectionIndex === 0 ? 'block' : 'none' }}; margin-bottom: 48px;">
                 <h2 class="text-2xl font-bold mb-4 text-orange-600 flex items-center gap-2">
                     <span>{{ $category->name }}</span>
                 </h2>
-                @if($category->products->count() > 0)
                 <div class="skeletons-container" style="display:none;">
                     @for($i = 0; $i < $category->products->count(); $i++)
                         <div class="skeleton-card"></div>
@@ -422,13 +492,38 @@
                         @include('customer.shop._product_card', ['product' => $product])
                     @endforeach
                 </div>
-                @else
-                    <div class="text-center py-8 text-gray-500">Không có sản phẩm nào trong danh mục này.</div>
-                @endif
             </section>
             @php $sectionIndex++; @endphp
+            @endif
         @endforeach
     </div>
+    
+    @php
+        $hasAnyProducts = false;
+        foreach($categories as $category) {
+            if (stripos($category->name, 'combo') !== false) {
+                if ($category->combos->count() > 0) {
+                    $hasAnyProducts = true;
+                    break;
+                }
+            } else {
+                if ($category->products->count() > 0) {
+                    $hasAnyProducts = true;
+                    break;
+                }
+            }
+        }
+    @endphp
+    
+    @if(!$hasAnyProducts)
+        <div class="text-center py-12">
+            <div class="text-gray-500 text-lg mb-4">
+                <i class="fas fa-box-open text-4xl mb-4"></i>
+                <p>Không có sản phẩm nào có sẵn tại chi nhánh này.</p>
+                <p class="text-sm text-gray-400 mt-2">Vui lòng thử chọn chi nhánh khác hoặc quay lại sau.</p>
+            </div>
+        </div>
+    @endif
 </div>
 
 <!-- Login Popup Modal -->

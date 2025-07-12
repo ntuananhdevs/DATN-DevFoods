@@ -29,6 +29,8 @@ use App\Observers\ReviewReportObserver;
 use App\Observers\ReviewReplyObserver;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
+use App\Models\ComboBranchStock;
+use App\Observers\ComboBranchStockObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -67,8 +69,11 @@ class AppServiceProvider extends ServiceProvider
         // Register ComboObserver
         Combo::observe(ComboObserver::class);
 
+        // Register ComboBranchStockObserver
+        ComboBranchStock::observe(ComboBranchStockObserver::class);
+
         // Register OrderObserver
-        Order::observe(OrderObserver::class);
+        // Order::observe(OrderObserver::class);
 
         // Register ReviewReplyObserver
         ReviewReply::observe(ReviewReplyObserver::class);
@@ -113,15 +118,23 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        // View Composer cho admin notification
+        // View composer for admin notifications
         View::composer('partials.admin.header', function ($view) {
-            $admin = Auth::user(); // hoặc Auth::guard('admin')->user() nếu dùng guard riêng
-            $adminNotifications = $admin ? $admin->notifications()->latest()->limit(10)->get() : collect();
-            $adminUnreadCount = $admin ? $admin->unreadNotifications()->count() : 0;
-            $view->with([
-                'adminNotifications' => $adminNotifications,
-                'adminUnreadCount' => $adminUnreadCount,
-            ]);
+            $admin = Auth::user();
+            if ($admin) {
+                $adminNotifications = $admin->notifications()->latest()->limit(10)->get();
+                $adminUnreadCount = $admin->unreadNotifications()->count();
+                
+                $view->with([
+                    'adminNotifications' => $adminNotifications,
+                    'adminUnreadCount' => $adminUnreadCount
+                ]);
+            } else {
+                $view->with([
+                    'adminNotifications' => collect(),
+                    'adminUnreadCount' => 0
+                ]);
+            }
         });
     }
 }

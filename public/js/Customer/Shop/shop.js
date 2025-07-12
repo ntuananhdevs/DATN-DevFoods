@@ -361,13 +361,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 icon.classList.add('fas', 'text-red-500');
             }
             // Gửi AJAX
-            fetch('/wishlist' + (isFavorite ? '/' + productId : ''), {
+            fetch('/wishlist', {
                 method: isFavorite ? 'DELETE' : 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': window.csrfToken
                 },
-                body: isFavorite ? null : JSON.stringify({ product_id: productId })
+                body: JSON.stringify({ product_id: productId })
             })
             .then(res => res.json())
             .then(data => {

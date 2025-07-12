@@ -14,6 +14,7 @@ class ProductReview extends Model
     protected $fillable = [
         'user_id',
         'product_id',
+        'combo_id',
         'order_id',
         'branch_id',
         'rating',
@@ -55,6 +56,14 @@ class ProductReview extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * Get the combo being reviewed.
+     */
+    public function combo()
+    {
+        return $this->belongsTo(Combo::class);
     }
 
     /**

@@ -14,20 +14,7 @@
         </div>
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
             <div class="p-6 border-b border-gray-200 bg-gray-50">
-                <form method="GET" action="" class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 gap-2">
-                    <div class="flex gap-2 items-center">
-                        <select name="reason_type" class="border rounded px-2 py-2 min-w-[150px]">
-                            <option value="">Tất cả lý do</option>
-                            <option value="spam" @if(request('reason_type')=='spam') selected @endif>Spam</option>
-                            <option value="harassment" @if(request('reason_type')=='harassment') selected @endif>Quấy rối</option>
-                            <option value="hate_speech" @if(request('reason_type')=='hate_speech') selected @endif>Ngôn từ thù ghét</option>
-                            <option value="inappropriate" @if(request('reason_type')=='inappropriate') selected @endif>Không phù hợp</option>
-                            <option value="misinformation" @if(request('reason_type')=='misinformation') selected @endif>Thông tin sai lệch</option>
-                            <option value="other" @if(request('reason_type')=='other') selected @endif>Khác</option>
-                        </select>
-                        <button type="submit" class="bg-pink-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-pink-700 transition">Lọc</button>
-                    </div>
-                </form>
+                {{-- The form for filtering reports is removed --}}
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -52,7 +39,9 @@
                                 <td class="px-4 py-3 max-w-xs truncate" title="{{ $report->reason_detail }}">{{ Str::limit($report->reason_detail, 80) }}</td>
                                 <td class="px-4 py-3">{{ $report->created_at ? $report->created_at->format('d/m/Y H:i') : '' }}</td>
                                 <td class="px-4 py-3">
-                                    <a href="{{ route('admin.reviews.index', ['keyword' => $report->review->id]) }}" class="btn btn-xs btn-info" title="Xem bình luận"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ route('admin.reviews.report.show', $report->review_id) }}" class="btn btn-xs btn-info" title="Xem chi tiết báo cáo">
+                                        <i class="fas fa-eye"></i> Xem chi tiết
+                                    </a>
                                 </td>
                             </tr>
                         @empty

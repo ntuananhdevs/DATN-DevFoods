@@ -116,4 +116,12 @@ class Combo extends Model
     {
         return $this->hasMany(\App\Models\ComboBranchStock::class, 'combo_id');
     }
+
+    /**
+     * Get reviews for this combo
+     */
+    public function reviews()
+    {
+        return $this->hasMany(\App\Models\ProductReview::class, 'combo_id');
+    }
 }

@@ -1,13 +1,12 @@
 @php
-    $hasStock = $combo->has_stock ?? true;
     $discountPercent = $combo->discount_percent ?? 0;
     $imageUrl = $combo->image_url ?? asset('images/default-combo.png');
 @endphp
-<div class="product-card bg-white rounded-lg overflow-hidden {{ !$hasStock ? 'out-of-stock blurred' : '' }}" data-combo-id="{{ $combo->id }}">
+<div class="product-card bg-white rounded-lg overflow-hidden {{ isset($combo->has_stock) && !$combo->has_stock ? 'out-of-stock' : '' }}" data-combo-id="{{ $combo->id }}">
     <div class="relative">
-        @if(!$hasStock)
+        @if(isset($combo->has_stock) && !$combo->has_stock)
             <div class="out-of-stock-overlay">
-                <span>Combo đã hết hàng</span>
+                <span>Hết hàng</span>
             </div>
         @endif
         <a href="{{ route('combos.show', $combo->id) }}" class="block">
@@ -46,30 +45,4 @@
         </div>
     </div>
 </div>
-<style>
-.out-of-stock {
-    opacity: 0.5;
-    pointer-events: none;
-    position: relative;
-}
-.out-of-stock-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    padding: 10px 24px;
-    border-radius: 24px;
-    font-size: 1rem;
-    font-weight: 600;
-    z-index: 20;
-    text-align: center;
-    pointer-events: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.blurred {
-    filter: blur(3px);
-    transition: filter 0.3s;
-}
-</style> 
+ 

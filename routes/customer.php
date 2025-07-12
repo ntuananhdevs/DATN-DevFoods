@@ -49,11 +49,12 @@ Route::middleware([CartCountMiddleware::class, 'phone.required'])->group(functio
     // Wishlist
     Route::get('/wishlist', [CustomerWishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist', [CustomerWishlistController::class, 'store'])->name('wishlist.store');
-    Route::delete('/wishlist/{id}', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
+    Route::delete('/wishlist', [CustomerWishlistController::class, 'destroy'])->name('wishlist.destroy');
 
     // Cart
     Route::get('/cart', [CustomerCartController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CustomerCartController::class, 'addToCart'])->name('cart.add');
+    Route::post('/cart/add-combo', [CustomerCartController::class, 'addComboToCart'])->name('cart.addCombo');
     Route::post('/cart/update', [CustomerCartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CustomerCartController::class, 'remove'])->name('cart.remove');
     Route::post('/cart/clear', [CustomerCartController::class, 'clear'])->name('cart.clear');

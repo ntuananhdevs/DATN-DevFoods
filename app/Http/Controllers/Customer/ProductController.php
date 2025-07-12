@@ -51,7 +51,30 @@ class ProductController extends Controller
                         },
                         'variants.variantValues'
                     ]);
+                
+                // Filter sản phẩm theo stock nếu có branch được chọn
+                // Không filter theo stock để hiển thị tất cả sản phẩm (kể cả hết hàng)
+                if ($selectedBranchId) {
+                    $query->whereHas('variants.branchStocks', function($q) use ($selectedBranchId) {
+                        $q->where('branch_id', $selectedBranchId);
+                    });
+                }
                 // Không phân trang
+            }, 'combos' => function($query) use ($selectedBranchId) {
+                $query->where('status', 'selling')
+                    ->where('active', true)
+                    ->with(['comboBranchStocks' => function($q) use ($selectedBranchId) {
+                        if ($selectedBranchId) {
+                            $q->where('branch_id', $selectedBranchId);
+                        }
+                    }]);
+                
+                // Không filter theo stock để hiển thị tất cả combo (kể cả hết hàng)
+                if ($selectedBranchId) {
+                    $query->whereHas('comboBranchStocks', function($q) use ($selectedBranchId) {
+                        $q->where('branch_id', $selectedBranchId);
+                    });
+                }
             }])
             ->get();
 
@@ -117,7 +140,7 @@ class ProductController extends Controller
                     $product->primary_image->s3_url = asset('storage/' . $product->primary_image->img);
                 }
                 $product->is_favorite = in_array($product->id, $favorites);
-                // Check stock
+                // Tính toán has_stock dựa trên branch hiện tại
                 if ($selectedBranchId) {
                     $product->has_stock = $product->variants->contains(function($variant) use ($selectedBranchId) {
                         return $variant->branchStocks->contains(function($stock) use ($selectedBranchId) {
@@ -170,6 +193,32 @@ class ProductController extends Controller
                     }
                     return $applies;
                 });
+            }
+            
+            // Thêm thông tin cho từng combo trong category
+            if ($category->combos) {
+                foreach ($category->combos as $combo) {
+                    // Thêm thông tin ảnh
+                    if ($combo->image) {
+                        $combo->image_url = \Storage::disk('s3')->url($combo->image);
+                    } else {
+                        $combo->image_url = asset('images/default-combo.png');
+                    }
+                    
+                    // Tính toán has_stock cho combo
+                    if ($selectedBranchId) {
+                        $combo->has_stock = $combo->comboBranchStocks->where('branch_id', $selectedBranchId)->sum('quantity') > 0;
+                    } else {
+                        $combo->has_stock = $combo->comboBranchStocks->sum('quantity') > 0;
+                    }
+                    
+                    // Tính phần trăm giảm giá nếu có
+                    if ($combo->original_price && $combo->original_price > $combo->price) {
+                        $combo->discount_percent = round((($combo->original_price - $combo->price) / $combo->original_price) * 100);
+                    } else {
+                        $combo->discount_percent = 0;
+                    }
+                }
             }
         }
 
@@ -533,6 +582,7 @@ class ProductController extends Controller
         return [
             'product_id' => $product->id,
             'product_name' => $product->name,
+            'product_ingredients' => $product->ingredients, // Lấy thành phần sản phẩm
             'variant_id' => $variant->id,
             'variant_name' => $variant->variant_description ?? null,
             'quantity' => $item->quantity,
@@ -563,12 +613,47 @@ class ProductController extends Controller
         $combo->category->setRelation('combos', $combo->category->combos->where('status', 'selling'));
     }
 
+    // Lấy reviews cho combo
+    $reviews = \App\Models\ProductReview::with(['user', 'replies.user'])
+        ->where('combo_id', $combo->id)
+        ->where('approved', true)
+        ->orderBy('review_date', 'desc')
+        ->get();
+
+    // Tính toán rating trung bình
+    $combo->average_rating = $reviews->avg('rating') ?? 0;
+    $combo->reviews_count = $reviews->count();
+
+    // Kiểm tra user đã mua combo này chưa (để hiển thị form review)
+    $user = auth()->user();
+    $hasPurchased = false;
+    $canReview = false;
+    if ($user) {
+        $hasPurchased = \App\Models\Order::where('customer_id', $user->id)
+            ->where('status', 'delivered')
+            ->whereHas('orderItems', function($q) use ($id) {
+                $q->where('combo_id', $id);
+            })
+            ->exists();
+        
+        if ($hasPurchased) {
+            // Kiểm tra đã review chưa
+            $existingReview = \App\Models\ProductReview::where('user_id', $user->id)
+                ->where('combo_id', $combo->id)
+                ->first();
+            $canReview = !$existingReview;
+        }
+    }
+
     return view('customer.shop.show-combo', [
         'combo' => $combo,
         'items' => $items,
         'branchStocks' => $branchStocks,
         'selectedBranch' => $currentBranch,
         'relatedProducts' => $relatedProducts,
+        'reviews' => $reviews,
+        'hasPurchased' => $hasPurchased,
+        'canReview' => $canReview,
     ]);
 }
 
@@ -787,30 +872,69 @@ class ProductController extends Controller
             'review' => 'nullable|string|max:2000',
             'review_image' => 'nullable|image|max:2048',
             'is_anonymous' => 'nullable|boolean',
+            'type' => 'required|in:product,combo', // Thêm validation cho type
         ]);
 
-        $product = Product::findOrFail($id);
         $user = $request->user();
+        $type = $request->input('type');
+        $item = null;
+        $order = null;
+        $itemType = '';
 
-        // Kiểm tra user đã mua sản phẩm này chưa (đã có đơn hàng delivered chứa product này)
-        $order = \App\Models\Order::where('customer_id', $user->id)
-            ->where('status', 'delivered')
-            ->whereHas('orderItems.productVariant', function($q) use ($id) {
-                $q->where('product_id', $id);
-            })
-            ->orderByDesc('order_date')
-            ->first();
-        if (!$order) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Bạn chỉ có thể đánh giá sản phẩm đã mua!'], 403);
-            }
-            return redirect()->back()->with('error', 'Bạn chỉ có thể đánh giá sản phẩm đã mua!');
+        if ($type === 'product') {
+            $item = Product::findOrFail($id);
+            $itemType = 'sản phẩm';
+            
+            // Kiểm tra user đã mua sản phẩm này chưa
+            $order = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems.productVariant', function($q) use ($id) {
+                    $q->where('product_id', $id);
+                })
+                ->orderByDesc('order_date')
+                ->first();
+        } else {
+            $item = \App\Models\Combo::findOrFail($id);
+            $itemType = 'combo';
+            
+            // Kiểm tra user đã mua combo này chưa
+            $order = \App\Models\Order::where('customer_id', $user->id)
+                ->where('status', 'delivered')
+                ->whereHas('orderItems', function($q) use ($id) {
+                    $q->where('combo_id', $id);
+                })
+                ->orderByDesc('order_date')
+                ->first();
         }
 
-        // TẠM THỜI BỎ QUA KIỂM TRA ORDER
+        if (!$order) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => "Bạn chỉ có thể đánh giá {$itemType} đã mua!"], 403);
+            }
+            return redirect()->back()->with('error', "Bạn chỉ có thể đánh giá {$itemType} đã mua!");
+        }
+
+        // Kiểm tra xem user đã review item này chưa
+        $existingReview = \App\Models\ProductReview::where('user_id', $user->id)
+            ->where('order_id', $order->id);
+        
+        if ($type === 'product') {
+            $existingReview->where('product_id', $item->id);
+        } else {
+            $existingReview->where('combo_id', $item->id);
+        }
+        
+        $existingReview = $existingReview->first();
+        
+        if ($existingReview) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => "Bạn đã đánh giá {$itemType} này rồi!"], 409);
+            }
+            return redirect()->back()->with('error', "Bạn đã đánh giá {$itemType} này rồi!");
+        }
+
         $review = new \App\Models\ProductReview();
         $review->user_id = $user->id;
-        $review->product_id = $product->id;
         $review->order_id = $order->id;
         $review->branch_id = $request->input('branch_id');
         $review->rating = $request->input('rating');
@@ -822,6 +946,13 @@ class ProductController extends Controller
         $review->helpful_count = 0;
         $review->report_count = 0;
         $review->is_featured = false;
+
+        // Set product_id hoặc combo_id tùy theo type
+        if ($type === 'product') {
+            $review->product_id = $item->id;
+        } else {
+            $review->combo_id = $item->id;
+        }
 
         if ($request->hasFile('review_image')) {
             // Nếu có ảnh cũ thì xóa khỏi S3
@@ -837,7 +968,13 @@ class ProductController extends Controller
         if ($request->expectsJson()) {
             return response()->json(['message' => 'Đánh giá của bạn đã được gửi và đang chờ duyệt!']);
         }
-        return redirect()->route('products.show', $product->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+        
+        // Redirect về trang tương ứng
+        if ($type === 'product') {
+            return redirect()->route('products.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+        } else {
+            return redirect()->route('combos.show', $item->id)->with('success', 'Đánh giá của bạn đã được gửi và đang chờ duyệt!');
+        }
     }
 
     public function destroyReview(Request $request, $id)
@@ -976,5 +1113,7 @@ class ProductController extends Controller
             'message' => 'Báo cáo của bạn đã được ghi nhận. Cảm ơn bạn đã phản hồi!'
         ]);
     }
+
+
 }
 

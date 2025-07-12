@@ -24,6 +24,7 @@ return new class extends Migration
             $table->integer('favorite_count')->default(0);
             $table->enum('status', ['coming_soon', 'selling', 'discontinued'])->default('selling');
             $table->timestamp('release_at')->nullable();
+            $table->string('slug')->unique()->nullable();
             $table->boolean('is_featured')->default(false);
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');

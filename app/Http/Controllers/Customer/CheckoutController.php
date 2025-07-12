@@ -374,7 +374,7 @@ class CheckoutController extends Controller
                     $order->save();
 
                     // Dispatch event cho branch
-                    \App\Events\Branch\NewOrderReceived::dispatch($order);
+                    \App\Events\Order\NewOrderReceived::dispatch($order);
 
                     // Clear cart
                     $cart = Cart::where('user_id', $order->customer_id)

@@ -12,7 +12,7 @@ use App\Models\User;
 use App\Models\Address;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use App\Events\Branch\NewOrderReceived;
+use App\Events\Order\NewOrderReceived;
 use App\Models\Payment;
 
 class OrderController extends Controller
