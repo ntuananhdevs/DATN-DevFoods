@@ -5,7 +5,7 @@ use App\Http\Controllers\Branch\BranchChatController;
 use App\Http\Controllers\Branch\DashboardController;
 use App\Http\Controllers\Branch\BranchProductController;
 use App\Http\Controllers\Branch\BranchStaffController;
-use App\Http\Controllers\Branch\OrderController as BranchOrderController; 
+use App\Http\Controllers\Branch\OrderController as BranchOrderController;
 use App\Http\Controllers\Branch\BranchCategoryController;
 use App\Http\Controllers\Branch\Auth\AuthController;
 use Illuminate\Http\Request;
@@ -37,9 +37,10 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
         Route::post('/{id}/confirm', [BranchOrderController::class, 'confirmOrder'])->name('confirm');
         Route::get('/{id}/card', [BranchOrderController::class, 'card'])->name('card');
-        
+
         // Driver assignment routes
         Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
+        Route::post('/{id}/auto-assign-driver', [DriverAssignmentController::class, 'autoAssignNearestDriver'])->name('auto-assign-driver');
         Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
@@ -65,8 +66,8 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
             'user' => Auth::guard('manager')->user(),
             'session' => $request->session()->all()
         ]);
-        
-        try {   
+
+        try {
             $result = Broadcast::auth($request);
             Log::info('[Broadcasting] Auth successful', ['result' => $result]);
             return $result;
