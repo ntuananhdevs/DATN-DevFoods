@@ -60,7 +60,8 @@ class NewOrderReceived implements ShouldBroadcastNow
     public function broadcastOn()
     {
         $channels = [
-            new Channel('branch-orders-channel')
+            new PrivateChannel('branch.' . $this->branchId),
+            new Channel('branch-orders-channel'),
         ];
         
         Log::info('NewOrderReceived broadcasting on channels', [
