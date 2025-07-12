@@ -38,6 +38,10 @@ Route::get('/branch/test', function() {
 // Branch Protected Routes
 Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/driver-statistics', [DashboardController::class, 'driverStatistics'])->name('driver-statistics');
+    Route::get('/order-statistics', [DashboardController::class, 'orderStatistics'])->name('order-statistics');
+    Route::get('/food-statistics', [DashboardController::class, 'foodStatistics'])->name('food-statistics');
+    Route::get('/customer-statistics', [DashboardController::class, 'customerStatistics'])->name('customer-statistics');
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [BranchOrderController::class, 'index'])->name('index');
