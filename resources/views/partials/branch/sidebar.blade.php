@@ -24,22 +24,50 @@
     <div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
         <div class="space-y-6">
             <div>
-
-                <a href="{{ route('branch.dashboard') }}"
-                    class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
-                    data-tooltip="Thống kê">
-                    <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+            <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
+                    <button type="button"
+                        class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.dashboard') || request()->routeIs('branch.drivers-statistics') || request()->routeIs('branch.order-statistics') || request()->routeIs('branch.food-statistics') || request()->routeIs('branch.customer-statistics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                        <span class="sidebar-icon-container mr-2 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-home">
+                                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                        </span>
+                        <span class="sidebar-text">Dashboard</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" class="lucide lucide-bar-chart-3">
-                            <path d="M3 3v18h18"></path>
-                            <path d="M18 17V9"></path>
-                            <path d="M13 17V5"></path>
-                            <path d="M8 17v-3"></path>
+                            stroke-linejoin="round"
+                            class="lucide lucide-chevron-down ml-auto transition-transform sidebar-dropdown-icon">
+                            <path d="m6 9 6 6 6-6"></path>
                         </svg>
-                    </span>
-                    <span class="sidebar-text">Thống kê chi nhánh</span>
-                </a>
+                    </button>
+                    <div
+                        class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 hidden">
+                        <a href="{{ route('branch.dashboard') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.dashboard') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Tổng quan</span>
+                        </a>
+                        <a href="{{ route('branch.driver-statistics') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.driver-statistics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Tài xế</span>
+                        </a>
+                        <a href="{{ route('branch.order-statistics') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.order-statistics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Đơn hàng</span>
+                        </a>
+                        <a href="{{ route('branch.food-statistics') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.food-statistics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Món ăn</span>
+                        </a>
+                        <a href="{{ route('branch.customer-statistics') }}"
+                            class="flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.customer-statistics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
+                            <span class="sidebar-text">Khách hàng</span>
+                        </a>
+                    </div>
+                </div>
+
                 <a href="{{ route('branch.categories') }}"
                     class="sidebar-menu-item flex items-center rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.categories') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }} sidebar-tooltip"
                     data-tooltip="Danh mục">
@@ -111,8 +139,7 @@
                     <div
                         class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 {{ request()->routeIs('branch.products.*') || request()->routeIs('branch.combos.*') || request()->routeIs('branch.toppings.*') ? '' : 'hidden' }}">
                         <a href="{{ route('branch.products') }}"
-                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món
-                            ăn</a>
+                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món ăn</a>
                         <a href="{{ route('branch.combos') }}"
                             class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.combos.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Combo</a>
                         <a href="{{ route('branch.toppings') }}"
