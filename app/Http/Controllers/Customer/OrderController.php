@@ -132,4 +132,104 @@ class OrderController extends Controller
                         ->paginate(10);
         return view('customer.orders.partials.list', compact('orders'))->render();
     }
+
+    /**
+     * Hiển thị trang theo dõi đơn hàng cho khách (không cần đăng nhập).
+     *
+     * @param string $order_code
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function orderTrackingForGuest(Request $request, $order_code)
+    {
+        $order = Order::where('order_code', $order_code)->first();
+
+        if (!$order) {
+            return view('customer.track.show', ['error' => 'Không tìm thấy đơn hàng với mã này.']);
+        }
+
+        // Rút gọn tên khách hàng để bảo mật
+        if ($order->customer_id && $order->customer) {
+             $order->customer_name_short = \Illuminate\Support\Str::limit($order->customer->name, 3, '***');
+        } else {
+             $order->customer_name_short = \Illuminate\Support\Str::limit($order->guest_name, 3, '***');
+        }
+
+        // Rút gọn địa chỉ để bảo mật
+        if ($order->address_id && $order->address) {
+            $order->delivery_address_short = '..., ' . $order->address->ward . ', ' . $order->address->district;
+        } else {
+            $order->delivery_address_short = '..., ' . $order->guest_ward . ', ' . $order->guest_district;
+        }
+
+        // Lấy và dịch trạng thái hiện tại
+        $currentStatus = $this->translateStatus($order->status);
+        $lastUpdateTime = $order->updated_at;
+
+
+        return view('customer.track.show', compact('order', 'currentStatus', 'lastUpdateTime'));
+    }
+
+    /**
+     * Build the status timeline for an order.
+     *
+     * @param Order $order
+     * @return \Illuminate\Support\Collection
+     */
+    private function buildStatusTimeline(Order $order)
+    {
+        $timeline = collect();
+
+        // Thêm trạng thái ban đầu
+        $timeline->push([
+            'status' => 'Đã đặt hàng',
+            'time' => $order->created_at,
+            'is_current' => false,
+            'is_completed' => true,
+        ]);
+
+        // Thêm các trạng thái từ lịch sử
+        foreach ($order->orderStatusHistories->sortBy('changed_at') as $history) {
+             $timeline->push([
+                'status' => $this->translateStatus($history->new_status),
+                'time' => $history->changed_at,
+                'is_current' => false,
+                'is_completed' => true,
+            ]);
+        }
+
+        // Đánh dấu trạng thái hiện tại
+        if ($timeline->isNotEmpty()) {
+            $lastStatus = $timeline->last();
+            if ($lastStatus) {
+                $lastStatus['is_current'] = true;
+                $timeline->pop();
+                $timeline->push($lastStatus);
+            }
+        }
+        
+        return $timeline;
+    }
+
+    /**
+     * Translate order status into Vietnamese.
+     */
+    private function translateStatus($status)
+    {
+        $translations = [
+            'awaiting_confirmation' => 'Chờ xác nhận',
+            'confirmed' => 'Đã xác nhận',
+            'awaiting_driver' => 'Đang tìm tài xế',
+            'driver_assigned' => 'Tài xế đã nhận đơn',
+            'driver_confirmed' => 'Tài xế đã xác nhận',
+            'driver_picked_up' => 'Tài xế đã lấy hàng',
+            'in_transit' => 'Đang giao hàng',
+            'delivered' => 'Đã giao hàng',
+            'item_received' => 'Đã nhận hàng',
+            'cancelled' => 'Đã hủy',
+            'refunded' => 'Đã hoàn tiền',
+            'payment_failed' => 'Thanh toán thất bại',
+        ];
+
+        return $translations[$status] ?? ucfirst(str_replace('_', ' ', $status));
+    }
 }
