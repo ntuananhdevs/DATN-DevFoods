@@ -174,162 +174,166 @@
 @endsection
 
 @section('content')
-<div class="bg-gray-50 min-h-screen py-8">
-    <div class="container mx-auto px-4">
-
-        <!-- Header Success Message -->
-        <div class="text-center mb-12">
-            <div class="success-check-circle w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-16 h-16" fill="none" stroke="#10b981" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" class="success-check-icon"></path>
-                </svg>
-            </div>
-            <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight mb-2">Đặt Hàng Thành Công!</h1>
-            <p class="text-gray-500 text-lg">Cảm ơn bạn đã tin tưởng. Đơn hàng của bạn đang được xử lý.</p>
-            <div class="mt-4 inline-flex items-center bg-white rounded-full p-2 border border-gray-200 shadow-sm">
-                <span class="text-sm text-gray-500 ml-2">Mã đơn hàng:</span>
-                <span class="font-mono text-lg font-bold text-orange-600 ml-2 mr-2 px-3 py-1 bg-gray-50 rounded-full">{{ $order->order_code }}</span>
-            </div>
+<div class="bg-gradient-to-b from-blue-50 to-white min-h-screen py-8 flex flex-col items-center">
+    <!-- Header Block -->
+    <div class="w-full max-w-xl flex flex-col items-center mb-10">
+        <div class="success-check-circle w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 shadow-md">
+            <svg class="w-12 h-12" fill="none" stroke="#10b981" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" class="success-check-icon"></path>
+            </svg>
         </div>
-
-        <div class="grid lg:grid-cols-3 gap-8">
-            <!-- Left Column -->
-            <div class="lg:col-span-2 space-y-8">
-
-                <!-- Delivery & Timeline Combined Card -->
-                <div class="info-card p-6 lg:p-8">
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <!-- Estimated Time -->
-                        @if($timeRange)
-                        <div class="text-center md:text-left">
-                            <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center justify-center md:justify-start">
-                                <i class="fas fa-shipping-fast text-green-500 mr-3 text-xl"></i>
-                                Giao Hàng Dự Kiến
-                            </h3>
-                            <div class="text-4xl font-bold text-green-600 mb-1">
-                                {{ $timeRange['start'] }} - {{ $timeRange['end'] }}
-                            </div>
-                            <div class="text-gray-500">{{ $timeRange['date'] }}</div>
-                        </div>
-                        @endif
-                        
-                        <!-- Delivery Address -->
-                        <div class="text-center md:text-left border-t md:border-t-0 md:border-l border-gray-200 pt-6 md:pt-0 md:pl-8">
-                            <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center justify-center md:justify-start">
-                                <i class="fas fa-map-marker-alt text-orange-500 mr-3 text-xl"></i>
-                                Giao Tới Địa Chỉ
-                            </h3>
-                            @if($order->customer_id && $order->address)
-                                <p class="text-gray-700 font-semibold">{{ $order->address->full_name }} - {{ $order->address->phone_number }}</p>
-                                <p class="text-gray-500 text-sm">{{ $order->address->full_address }}</p>
-                            @else
-                                <p class="text-gray-700 font-semibold">{{ $order->guest_name }} - {{ $order->guest_phone }}</p>
-                                <p class="text-gray-500 text-sm">{{ $order->delivery_address }}</p>
-                            @endif
-                        </div>
-                    </div>
-                    
-                </div>
-
-                {{-- ================= Order Items Detail (Removed) ================= --}}
-                {{--
-                <div class="info-card p-6 lg:p-8">
-                    <h2 class="text-xl font-bold mb-6 flex items-center">
-                        <i class="fas fa-shopping-basket text-orange-500 mr-3"></i>
-                        Các Món Trong Đơn
-                    </h2>
-                    <div class="space-y-4">
-                        @foreach($order->orderItems as $item)
-                            <div class="product-item"> ... </div>
-                        @endforeach
-                    </div>
-                </div>
-                --}}
+        <h1 class="text-2xl md:text-3xl font-extrabold text-gray-800 tracking-tight mb-2 text-center">Đặt Hàng Thành Công!</h1>
+        <p class="text-gray-500 text-base md:text-lg text-center mb-4">Cảm ơn bạn đã tin tưởng chúng tôi. Đơn hàng của bạn đang được chuẩn bị với sự tận tâm nhất.</p>
+        <!-- Mã đơn hàng + Nút -->
+        <div class="flex flex-col sm:flex-row items-center gap-3 w-full justify-center sm:flex-nowrap">
+            <div class="flex items-center bg-white rounded-full px-4 py-2 border border-gray-200 shadow-sm whitespace-nowrap">
+                <span class="text-sm text-gray-500">Mã đơn hàng:</span>
+                <span id="orderCode" class="font-mono text-base font-bold text-green-700 px-2 py-1 bg-gray-50 rounded-full select-all ml-2">{{ $order->order_code }}</span>
+                <button onclick="copyOrderCode()" class="ml-2 px-2 py-1 rounded bg-green-100 hover:bg-green-200 text-green-700 text-xs font-semibold transition">Copy</button>
             </div>
-
-            <!-- Right Column -->
-            <div class="space-y-8">
-                
-                <!-- Order Summary -->
-                <div class="info-card p-6 lg:p-8 sticky top-8">
-                    <h2 class="text-xl font-bold mb-6 flex items-center">
-                        <i class="fas fa-receipt text-orange-500 mr-3"></i>
-                        Thanh Toán
-                    </h2>
-                    
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between py-2 border-b border-gray-100">
-                            <span class="text-gray-600">Tạm tính</span>
-                            <span class="font-medium text-gray-900">{{ number_format($order->subtotal) }}đ</span>
-                        </div>
-                        
-                        <div class="flex justify-between py-2 border-b border-gray-100">
-                            <span class="text-gray-600">Phí vận chuyển</span>
-                            <span class="font-medium text-gray-900">{{ $order->delivery_fee > 0 ? number_format($order->delivery_fee) . 'đ' : 'Miễn phí' }}</span>
-                        </div>
-                        
-                        @if($order->discount_amount > 0)
-                        <div class="flex justify-between py-2 border-b border-gray-100 text-green-600">
-                            <span class="font-medium">Giảm giá</span>
-                            <span class="font-medium">-{{ number_format($order->discount_amount) }}đ</span>
-                        </div>
-                        @endif
-
-                        <div class="pt-4">
-                            <div class="flex justify-between items-center bg-orange-50 p-3 rounded-lg">
-                                <span class="text-base font-bold text-gray-800">Tổng cộng</span>
-                                <span class="text-xl font-bold text-orange-600">{{ number_format($order->total_amount) }}đ</span>
-                            </div>
-                        </div>
-
-                        <div class="pt-4">
-                            <h3 class="font-medium text-gray-800 mb-2">Phương thức thanh toán</h3>
-                            <p class="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">{{ $order->payment_method_text }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Contact Support -->
-                <div class="info-card p-6">
-                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-                        <i class="fas fa-headset text-blue-500 mr-2"></i>
-                        Cần hỗ trợ?
-                    </h3>
-                    <p class="text-sm text-gray-600 mb-4">Liên hệ với chúng tôi nếu bạn cần hỗ trợ về đơn hàng.</p>
-                    <div class="space-y-2 text-sm">
-                        <a href="tel:19001234" class="flex items-center text-blue-600 hover:underline">
-                            <i class="fas fa-phone w-4 mr-2"></i>
-                            <span>Hotline: 1900 1234</span>
-                        </a>
-                        <a href="mailto:support@fastfood.vn" class="flex items-center text-blue-600 hover:underline">
-                            <i class="fas fa-envelope w-4 mr-2"></i>
-                            <span>support@fastfood.vn</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="mt-12 text-center">
-            <div class="inline-flex flex-col sm:flex-row gap-4">
+            <div class="flex gap-3 mt-2 sm:mt-0">
                 @auth
                 <a href="{{ route('customer.orders.show', $order) }}" 
-                   class="follow-order-btn bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold py-3 px-10 rounded-full inline-flex items-center justify-center transition-all transform hover:scale-105 shadow-xl">
+                   class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-full inline-flex items-center justify-center transition-all shadow text-sm whitespace-nowrap">
                     <i class="fas fa-eye mr-2"></i>
                     Theo dõi đơn hàng
                 </a>
                 @endauth
-                
                 <a href="{{ route('products.index') }}" 
-                   class="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-3 px-8 rounded-lg inline-flex items-center justify-center transition-all border border-gray-300 transform hover:scale-105">
+                   class="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-2 px-6 rounded-full inline-flex items-center justify-center transition-all border border-gray-300 shadow text-sm whitespace-nowrap">
                     <i class="fas fa-shopping-bag mr-2"></i>
                     Tiếp tục mua hàng
                 </a>
             </div>
         </div>
     </div>
+    <!-- Main Content -->
+    <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+        <!-- Left Column -->
+        <div class="flex flex-col gap-6">
+            <!-- Card: Delivery Time -->
+            <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2">
+                <div class="flex items-center mb-2">
+                    <div class="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 mr-3">
+                        <i class="fas fa-clock text-green-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-green-700">Thời Gian Giao Hàng</div>
+                        <div class="text-xs text-gray-500">Dự kiến giao trong hôm nay</div>
+                    </div>
+                </div>
+                <div class="bg-green-50 rounded-xl p-4 flex flex-col items-center">
+                    <div class="text-xl font-bold text-green-600 mb-1">{{ $timeRange['start'] ?? '--:--' }} - {{ $timeRange['end'] ?? '--:--' }}</div>
+                    <div class="text-gray-500 text-sm">{{ $timeRange['date'] ?? '' }}</div>
+                    <div class="mt-2"><span class="inline-block px-3 py-1 rounded-full bg-green-200 text-green-800 text-xs font-semibold">@if($order->status == 'preparing') Đang chuẩn bị @elseif($order->status == 'delivering') Đang giao hàng @elseif($order->status == 'completed') Đã giao @else Chờ xác nhận @endif</span></div>
+                </div>
+            </div>
+            <!-- Card: Delivery Address -->
+            <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2">
+                <div class="flex items-center mb-2">
+                    <div class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 mr-3">
+                        <i class="fas fa-map-marker-alt text-blue-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-blue-700">Địa Chỉ Giao Hàng</div>
+                        <div class="text-xs text-gray-500">Thông tin người nhận</div>
+                    </div>
+                </div>
+                <div class="bg-blue-50 rounded-xl p-4">
+                    <div class="flex items-center mb-1">
+                        <i class="fas fa-phone-alt text-blue-400 mr-2"></i>
+                        <span class="text-gray-700 font-semibold text-sm">{{ $order->address->phone_number ?? $order->guest_phone }}</span>
+                    </div>
+                    <div class="text-gray-700 text-sm">
+                        @if($order->customer_id && $order->address)
+                            {{ $order->address->full_name }}<br>
+                            {{ $order->address->full_address }}
+                        @else
+                            {{ $order->guest_name }}<br>
+                            {{ $order->delivery_address }}
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Right Column -->
+        <div class="flex flex-col gap-6">
+            <!-- Card: Payment Details -->
+            <div class="bg-white rounded-2xl shadow p-6 flex flex-col gap-2">
+                <div class="flex items-center mb-2">
+                    <div class="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 mr-3">
+                        <i class="fas fa-file-invoice-dollar text-purple-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-purple-700">Chi Tiết Thanh Toán</div>
+                        <div class="text-xs text-gray-500">Tổng quan đơn hàng</div>
+                    </div>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-4">
+                    <div class="flex justify-between py-1">
+                        <span class="text-gray-600 text-sm">Tạm tính</span>
+                        <span class="font-medium text-gray-900 text-sm">{{ number_format($order->subtotal) }}đ</span>
+                    </div>
+                    <div class="flex justify-between py-1">
+                        <span class="text-gray-600 text-sm">Phí vận chuyển</span>
+                        <span class="font-medium text-gray-900 text-sm">{{ $order->delivery_fee > 0 ? number_format($order->delivery_fee) . 'đ' : 'Miễn phí' }}</span>
+                    </div>
+                    @if($order->discount_amount > 0)
+                    <div class="flex justify-between py-1 text-green-600">
+                        <span class="font-medium text-sm">Giảm giá</span>
+                        <span class="font-medium text-sm">-{{ number_format($order->discount_amount) }}đ</span>
+                    </div>
+                    @endif
+                    <div class="flex justify-between items-center py-2 mt-2 border-t border-purple-200">
+                        <span class="text-base font-bold text-gray-800">Tổng cộng</span>
+                        <span class="text-xl font-bold text-purple-600">{{ number_format($order->total_amount) }}đ</span>
+                    </div>
+                    <div class="mt-2">
+                        @if($order->payment_method == 'COD')
+                        <div class="flex items-center text-yellow-700 text-xs bg-yellow-100 rounded px-2 py-1">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Thanh toán khi nhận hàng (COD) <span class="ml-2">Vui lòng chuẩn bị đủ tiền khi nhận hàng</span>
+                        </div>
+                        @endif
+                    </div>
+                    <div class="mt-2">
+                        <h3 class="font-medium text-gray-800 mb-1 text-xs">Phương thức thanh toán</h3>
+                        <p class="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">{{ $order->payment_method_text }}</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Card: Support -->
+            <div class="bg-gray-900 rounded-2xl shadow p-6 flex flex-col gap-2">
+                <div class="flex items-center mb-2">
+                    <div class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-800 mr-3">
+                        <i class="fas fa-headset text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-base font-bold text-white">Cần Hỗ Trợ?</div>
+                        <div class="text-xs text-gray-300">Đội ngũ hỗ trợ 24/7 luôn sẵn sàng giúp đỡ bạn</div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <div class="flex items-center text-white mb-1">
+                        <i class="fas fa-phone-alt mr-2"></i>
+                        <span>Hotline: 1900 1234</span>
+                    </div>
+                    <div class="flex items-center text-white">
+                        <i class="fas fa-envelope mr-2"></i>
+                        <span>support@fastfood.vn</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+<script>
+function copyOrderCode() {
+    const code = document.getElementById('orderCode').innerText;
+    navigator.clipboard.writeText(code);
+    alert('Đã copy mã đơn hàng!');
+}
+</script>
 @endsection
 
 @section('scripts')
