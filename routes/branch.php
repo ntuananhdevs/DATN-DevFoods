@@ -5,7 +5,7 @@ use App\Http\Controllers\Branch\BranchChatController;
 use App\Http\Controllers\Branch\DashboardController;
 use App\Http\Controllers\Branch\BranchProductController;
 use App\Http\Controllers\Branch\BranchStaffController;
-use App\Http\Controllers\Branch\OrderController as BranchOrderController; 
+use App\Http\Controllers\Branch\OrderController as BranchOrderController;
 use App\Http\Controllers\Branch\BranchCategoryController;
 use App\Http\Controllers\Branch\Auth\AuthController;
 use Illuminate\Http\Request;
@@ -22,22 +22,13 @@ Route::prefix('branch')->name('branch.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
-// Test route để kiểm tra user
-Route::get('/branch/test', function() {
-    $user = Auth::guard('manager')->user();
-    if ($user) {
-        echo "User found: " . $user->name . "<br>";
-        echo "Email: " . $user->email . "<br>";
-        echo "Roles: " . $user->roles->pluck('name')->implode(', ') . "<br>";
-        echo "Branch: " . ($user->branch ? $user->branch->name : 'No branch') . "<br>";
-    } else {
-        echo "No user found in manager guard";
-    }
-});
-
 // Branch Protected Routes
 Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/driver-statistics', [DashboardController::class, 'driverStatistics'])->name('driver-statistics');
+    Route::get('/order-statistics', [DashboardController::class, 'orderStatistics'])->name('order-statistics');
+    Route::get('/food-statistics', [DashboardController::class, 'foodStatistics'])->name('food-statistics');
+    Route::get('/customer-statistics', [DashboardController::class, 'customerStatistics'])->name('customer-statistics');
 
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [BranchOrderController::class, 'index'])->name('index');
@@ -46,9 +37,10 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
         Route::post('/{id}/cancel', [BranchOrderController::class, 'cancel'])->name('cancel');
         Route::post('/{id}/confirm', [BranchOrderController::class, 'confirmOrder'])->name('confirm');
         Route::get('/{id}/card', [BranchOrderController::class, 'card'])->name('card');
-        
+
         // Driver assignment routes
         Route::post('/{id}/find-driver', [DriverAssignmentController::class, 'findDriver'])->name('find-driver');
+        Route::post('/{id}/auto-assign-driver', [DriverAssignmentController::class, 'autoAssignNearestDriver'])->name('auto-assign-driver');
         Route::post('/{id}/driver-rejection', [DriverAssignmentController::class, 'handleDriverRejection'])->name('driver-rejection');
     });
     Route::get('/products', [BranchProductController::class, 'index'])->name('products');
@@ -75,8 +67,8 @@ Route::middleware(['branch.auth'])->prefix('branch')->name('branch.')->group(fun
             'user' => Auth::guard('manager')->user(),
             'session' => $request->session()->all()
         ]);
-        
-        try {   
+
+        try {
             $result = Broadcast::auth($request);
             Log::info('[Broadcasting] Auth successful', ['result' => $result]);
             return $result;

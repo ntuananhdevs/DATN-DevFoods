@@ -25,7 +25,7 @@ class Payment extends Model
         'payment_method_detail',
         'gateway_response',
         'ip_address',
-        'callback_data'
+        'callback_data',
     ];
 
     protected $casts = [
@@ -34,11 +34,11 @@ class Payment extends Model
     ];
 
     /**
-     * Get the orders for this payment.
+     * Get the order associated with the payment.
      */
-    public function orders()
+    public function order()
     {
-        return $this->hasMany(Order::class);
+        return $this->hasOne(Order::class);
     }
 
     /**

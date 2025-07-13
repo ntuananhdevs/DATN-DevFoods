@@ -74,7 +74,7 @@
         <!-- Notifications -->
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open" class="flex items-center justify-center h-8 w-8 rounded-full hover:bg-accent hover:text-accent-foreground relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell animate-bell">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell">
                     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
                     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
                 </svg>
@@ -234,22 +234,7 @@
         background-color: rgba(255, 255, 255, 0.3);
     }
 
-    @keyframes bell-shake {
-        0% { transform: rotate(0); }
-        15% { transform: rotate(5deg); }
-        30% { transform: rotate(-5deg); }
-        45% { transform: rotate(4deg); }
-        60% { transform: rotate(-4deg); }
-        75% { transform: rotate(2deg); }
-        85% { transform: rotate(-2deg); }
-        92% { transform: rotate(1deg); }
-        100% { transform: rotate(0); }
-    }
 
-    .animate-bell {
-        transform-origin: top center;
-        animation: bell-shake 1s ease infinite;
-    }
 
     @keyframes badge-pulse {
         0% { transform: scale(1); }

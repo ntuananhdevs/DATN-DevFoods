@@ -120,8 +120,8 @@
                     <div class="px-2 py-1.5 mb-1">
                         <h3 class="font-semibold text-sm">Thông báo</h3>
                         <p class="text-xs text-muted-foreground">Bạn có <span
-                                class="notification-unread-count">{{ $branchUnreadCount ?? 0 }}</span> thông báo chưa
-                            đọc</p>
+                                class="notification-unread-count">{{ isset($branchUnreadCount) ? ($branchUnreadCount > 99 ? '99+' : $branchUnreadCount) : 0 }}</span>
+                            thông báo chưa đọc</p>
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
                     <!-- Notification items -->
@@ -229,10 +229,16 @@
 <script>
     window.Echo = new Echo({
         broadcaster: 'pusher',
-        key: '{{ config('broadcasting.connections.pusher.key') }}',
-        cluster: '{{ config('broadcasting.connections.pusher.options.cluster') }}',
+        key: "{{ config('broadcasting.connections.pusher.key') }}",
+        cluster: "{{ config('broadcasting.connections.pusher.options.cluster') }}",
         forceTLS: true
     });
+
+    window.Echo.channel('branch-orders-channel')
+        .listen('.new-order-received', (e) => {
+            // Gọi AJAX fetch lại notification và cập nhật modal
+            fetchNotifications();
+        });
 
     window.Echo.channel('branch-orders-channel')
         .listen('.new-order-received', (e) => {

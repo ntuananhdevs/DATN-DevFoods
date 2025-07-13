@@ -12,7 +12,7 @@
                         </p>
                     </div>
                     <span class="text-xs font-medium px-2.5 py-1 rounded-full capitalize"
-                        style="background-color: {{ $order->status_color['bg'] ?? '#f3f4f6' }}; color: {{ $order->status_color['text'] ?? '#374151' }};">
+                        style="background-color: {{ $order->status_color }}; color: {{ $order->status_text_color }};">
                         {{ $order->status_text }}
                     </span>
                 </div>
@@ -35,9 +35,8 @@
                         </a>
                         {{-- ====== NEW BUTTON LOGIC ====== --}}
                         @if ($order->status == 'awaiting_confirmation')
-                            <form
-                                action="{{ route('customer.orders.updateStatus', $order) }}"
-                                method="POST" class="cancel-order-form">
+                            <form action="{{ route('customer.orders.updateStatus', $order) }}" method="POST"
+                                class="cancel-order-form">
                                 @csrf
                                 <input type="hidden" name="status" value="cancelled">
                                 <button type="submit"
@@ -51,8 +50,7 @@
                                 class="inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200">Chưa
                                 nhận được hàng</a>
                             <form class="receive-order-form"
-                                action="{{ route('customer.orders.updateStatus', $order) }}"
-                                method="POST">
+                                action="{{ route('customer.orders.updateStatus', $order) }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="status" value="item_received">
                                 <button type="submit"
@@ -111,4 +109,4 @@
             </span>
         @endif
     @endif
-</div> 
+</div>

@@ -26,46 +26,11 @@
                 </a>
             @endforeach
         </div>
-        <input type="hidden" name="status" value="{{ $initialStatus }}">
-    </form>
 
         {{-- Danh sách đơn hàng --}}
         <div class="space-y-3">
             @forelse ($orders as $order)
-                {{-- Định nghĩa các thuộc tính cho badge trạng thái --}}
-                @php
-                    $badgeClass = '';
-                    $badgeIcon = '';
-                    switch ($order->status) {
-                        case 'driver_picked_up': // Đã lấy hàng
-                            $badgeClass = 'bg-[#657FE8] text-white';
-                            $badgeIcon =
-                                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck w-3 h-3 mr-1"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 2 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
-                            break;
-                        case 'in_transit': // Đang giao
-                            $badgeClass = 'bg-[#28BB9C] text-white';
-                            $badgeIcon =
-                                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck w-3 h-3 mr-1"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 2 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
-                            break;
-                        case 'item_received': // Đã nhận hàng (nếu có trạng thái này)
-                        case 'delivered': // Đã giao
-                            $badgeClass = 'bg-green-500 text-white';
-                            $badgeIcon =
-                                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big w-3 h-3 mr-1"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>';
-                            break;
-                        case 'cancelled': // Đã hủy
-                            $badgeClass = 'bg-red-500 text-white';
-                            $badgeIcon =
-                                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle w-3 h-3 mr-1"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>';
-                            break;
-                        default:
-                            $badgeClass = 'bg-gray-500 text-white';
-                            $badgeIcon =
-                                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info w-3 h-3 mr-1"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
-                            break;
-                    }
-                @endphp
-
+                {{-- Sử dụng các accessor từ Order model --}}
                 <a href="{{ route('driver.orders.show', $order->id) }}"
                     class="block bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
 
@@ -73,10 +38,10 @@
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2 mb-2">
-                                    {{-- Badge trạng thái mới --}}
-                                    <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 {{ $badgeClass }}"
-                                        data-v0-t="badge">
-                                        {!! $badgeIcon !!} {{-- Render SVG icon --}}
+                                    {{-- Badge trạng thái sử dụng accessor --}}
+                                    <div class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-primary/80 text-white"
+                                        style="background-color: {{ $order->status_color }};">
+                                        <i class="{{ $order->status_icon }} w-3 h-3 mr-1"></i> {{-- Font Awesome Icon --}}
                                         {{ $order->status_text }}
                                     </div>
                                     <span class="text-sm text-gray-500">#{{ $order->order_code }}</span>
@@ -162,52 +127,6 @@
             </div>
         @endif
     </div>
-
-    {{-- CẬP NHẬT: Danh sách đơn hàng sử dụng accessor và giao diện responsive --}}
-    <div class="space-y-3">
-        @forelse($orders as $order)
-        <a href="{{ route('driver.orders.show', $order->id) }}" class="flex items-center space-x-4 bg-white p-3 rounded-lg shadow-sm hover:shadow-md hover:ring-2 hover:ring-blue-500 transition-all duration-200">
-            
-            {{-- Phần icon, sử dụng status_color và status_icon từ accessor --}}
-            <div class="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl" style="background-color: {{ $order->status_color }};">
-                <i class="{{ $order->status_icon }}"></i>
-            </div>
-
-            {{-- Phần thông tin chính --}}
-            <div class="flex-grow min-w-0">
-                <div class="flex items-center justify-between">
-                    <span class="font-bold text-gray-800">Đơn #{{ $order->id }}</span>
-                    <span class="text-sm font-bold text-green-600">{{ number_format($order->total_amount, 0, ',', '.') }} đ</span>
-                </div>
-                {{-- Địa chỉ được rút gọn tự động --}}
-                <p class="text-sm text-gray-600 truncate">
-                    {{ $order->delivery_address }}
-                </p>
-                <p class="text-xs text-gray-400 mt-1">
-                    {{-- Dùng accessor status_text --}}
-                    {{ $order->status_text }}
-                </p>
-            </div>
-
-            <div class="flex-shrink-0 text-gray-300">
-                <i class="fas fa-chevron-right"></i>
-            </div>
-        </a>
-        @empty
-        <div class="text-center text-gray-500 py-16">
-            <i class="fas fa-box-open text-5xl mb-4 text-gray-300"></i>
-            <p class="font-medium">Không có đơn hàng nào</p>
-            <p class="text-sm">Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
-        </div>
-        @endforelse
-    </div>
-
-    @if ($orders->hasPages())
-    <div class="mt-6">
-        {{ $orders->appends(request()->query())->links() }}
-    </div>
-    @endif
-</div>
 @endsection
 
 @push('styles')
@@ -232,5 +151,3 @@
         }
     </style>
 @endpush
-
-{{-- Không cần push scripts cho orders.js nếu không dùng Alpine --}}

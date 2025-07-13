@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Order;
 
 use App\Notifications\OrderStatusNotification;
 use App\Models\Branch;
@@ -56,10 +56,13 @@ class OrderStatusUpdated implements ShouldBroadcast
     protected function getStatusMessage($status, $order)
     {
         switch ($status) {
-            case 'order_confirmed': return 'Đơn hàng đã được xác nhận';
-            case 'driver_found': return 'Đã tìm thấy tài xế cho đơn hàng';
-            // ... các trạng thái khác như hướng dẫn trước ...
-            default: return 'Đơn hàng cập nhật trạng thái: ' . $status;
+            case 'order_confirmed':
+                return 'Đơn hàng đã được xác nhận';
+            case 'driver_found':
+                return 'Đã tìm thấy tài xế cho đơn hàng';
+                // ... các trạng thái khác như hướng dẫn trước ...
+            default:
+                return 'Đơn hàng cập nhật trạng thái: ' . $status;
         }
     }
 

@@ -1,44 +1,46 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Order;
 
 use App\Models\Order;
+use App\Models\Driver;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewOrderAvailable implements ShouldBroadcast
+class DriverAssigned implements ShouldBroadcast
 {
     use Dispatchable, SerializesModels;
 
-    public Order $order;
+    public $order;
+    public $driver;
 
-    public function __construct(Order $order)
+    public function __construct(Order $order, Driver $driver)
     {
         $this->order = $order;
+        // Lấy driver từ order
+        $this->driver = $order->driver;
     }
 
-    public function broadcastOn(): array
+    public function broadcastOn()
     {
-        // Gửi đến kênh riêng tư 'drivers'
-        return [new PrivateChannel('drivers')];
+        return new PrivateChannel('driver.' . $this->order->driver_id);
     }
 
     public function broadcastAs(): string
     {
-        return 'new-order-event'; // Tên sự kiện để JS lắng nghe
+        return 'DriverAssigned';
     }
 
     public function broadcastWith(): array
     {
-        // Gửi đi các dữ liệu cần thiết để hiển thị trên dashboard của tài xế
         return [
             'order' => [
                 'id' => $this->order->id,
-                'order_code' => $this->order->order_code ?? $this->order->id,
+                'order_code' => $this->order->order_code,
                 'delivery_address' => $this->order->delivery_address,
-                'total_amount' => $this->order->total_amount,
+                'status' => $this->order->status,
             ]
         ];
     }

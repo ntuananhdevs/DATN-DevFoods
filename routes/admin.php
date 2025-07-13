@@ -52,9 +52,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
-    Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
-    Route::get('/ecommerce', [DashboardController::class, 'ecommerce'])->name('ecommerce');
-    Route::get('/store_analytics', [DashboardController::class, 'store_analytics'])->name('store_analytics');
+    Route::get('/branch-statistics', [DashboardController::class, 'branchStatistics'])->name('branch-statistics');
+    Route::get('/driver-statistics', [DashboardController::class, 'driverStatistics'])->name('driver-statistics');
+    Route::get('/order-statistics', [DashboardController::class, 'orderStatistics'])->name('order-statistics');
+    Route::get('/food-statistics', [DashboardController::class, 'foodStatistics'])->name('food-statistics');
+    Route::get('/customer-statistics', [DashboardController::class, 'customerStatistics'])->name('customer-statistics');
 
     // Categories Management
     Route::resource('categories', CategoryController::class)->except(['destroy']);
@@ -342,12 +344,15 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::get('notifications/item/{orderId}', [OrderController::class, 'notificationItem'])->name('admin.notifications.item');
     // Orders Management
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         // Thêm route show chi tiết đơn hàng
-        Route::get('/show/{order}', [OrderController::class, 'show'])->name('show');
+        Route::get('/show/{id}', [OrderController::class, 'show'])->name('show');
         Route::get('/export', [OrderController::class, 'export'])->name('export');
+        // Route để lấy HTML partial cho order row (cho realtime)
+        Route::get('/{id}/row', [OrderController::class, 'getOrderRow'])->name('row');
     });
 });
 

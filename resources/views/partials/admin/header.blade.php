@@ -298,48 +298,7 @@
         background-color: rgba(255, 255, 255, 0.3);
     }
 
-    @keyframes bell-shake {
-        0% {
-            transform: rotate(0);
-        }
 
-        15% {
-            transform: rotate(5deg);
-        }
-
-        30% {
-            transform: rotate(-5deg);
-        }
-
-        45% {
-            transform: rotate(4deg);
-        }
-
-        60% {
-            transform: rotate(-4deg);
-        }
-
-        75% {
-            transform: rotate(2deg);
-        }
-
-        85% {
-            transform: rotate(-2deg);
-        }
-
-        92% {
-            transform: rotate(1deg);
-        }
-
-        100% {
-            transform: rotate(0);
-        }
-    }
-
-    .animate-bell {
-        transform-origin: top center;
-        animation: bell-shake 1s ease infinite;
-    }
 
     @keyframes badge-pulse {
         0% {
@@ -371,6 +330,26 @@
             opacity: 0;
         }
     }
+
+    /* Notification layout fixes */
+    .notification-item {
+        transition: all 0.2s ease;
+    }
+
+    .notification-item:hover {
+        background-color: hsl(var(--accent));
+    }
+
+    .notification-text {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 </style>
 <script>
     function markNotificationAsRead(id, redirectUrl) {
@@ -385,6 +364,93 @@
                 window.location.href = redirectUrl;
             } else {
                 location.reload();
+            }
+        });
+    }
+
+    function markAdminNotificationAsRead(id, redirectUrl = null) {
+        // Nếu là notification từ realtime (có prefix 'new-order-')
+        if (id.startsWith('new-order-')) {
+            // Xóa notification khỏi UI
+            const notificationElement = document.querySelector(`[data-notification-id="${id}"]`);
+            if (notificationElement) {
+                notificationElement.remove();
+
+                // Cập nhật số lượng notification
+                updateNotificationCount(-1);
+
+                // Kiểm tra nếu không còn notification nào thì hiển thị empty state
+                const notificationList = document.getElementById('admin-notification-list');
+                if (notificationList && notificationList.children.length === 0) {
+                    notificationList.innerHTML =
+                        '<div class="text-center text-xs text-muted-foreground py-4">Không có thông báo nào</div>';
+                }
+            }
+
+            // Chuyển hướng đến trang orders nếu có redirect URL
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+            return;
+        }
+
+        // Nếu là notification từ database, gọi API
+        fetch("{{ url('admin/notifications') }}/" + id + "/read", {
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
+        }).then(res => {
+            if (!res.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return res.json();
+        }).then(data => {
+            console.log('Notification marked as read:', data);
+
+            // Chỉ chuyển hướng nếu có redirect URL
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else {
+                // Thay vì reload, chỉ cập nhật UI
+                const notificationElement = document.querySelector(
+                    `[onclick*="markAdminNotificationAsRead('${id}")]`);
+                if (notificationElement) {
+                    // Thêm class để đánh dấu đã đọc
+                    notificationElement.classList.remove('bg-primary/10', 'text-primary', 'font-semibold');
+                    notificationElement.classList.add('bg-transparent');
+
+                    // Cập nhật số lượng notification
+                    updateNotificationCount(-1);
+                }
+            }
+        }).catch(error => {
+            console.error('Error marking notification as read:', error);
+            // Nếu có lỗi và có redirect URL, vẫn chuyển hướng
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            }
+        });
+    }
+
+    function updateNotificationCount(increment = 0) {
+        // Update the notification count badge
+        const countElements = document.querySelectorAll('.notification-unread-count');
+        countElements.forEach(element => {
+            const currentCount = parseInt(element.textContent) || 0;
+            const newCount = Math.max(0, currentCount + increment);
+            element.textContent = newCount;
+
+            // Show/hide badge based on count
+            const badge = element.closest('.absolute.-right-1.-top-1');
+            if (badge) {
+                if (newCount > 0) {
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
             }
         });
     }
