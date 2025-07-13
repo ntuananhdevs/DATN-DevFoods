@@ -82,7 +82,7 @@
         </table>
 
         <p style="margin-top:20px;">Bạn có thể theo dõi trạng thái đơn hàng của mình bất cứ lúc nào tại đường dẫn dưới đây:</p>
-        <p><a href="http://127.0.0.1:8000/track/{{ $data['order']->order_code }}" style="background:#FF6B35;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Theo dõi đơn hàng</a></p>
+        <p><a href="{{ url('/track/' . $data['order']->order_code) }}" style="background:#FF6B35;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">Theo dõi đơn hàng</a></p>
         <p>Nếu bạn có bất kỳ thắc mắc nào, xin vui lòng phản hồi email này hoặc liên hệ với bộ phận hỗ trợ khách hàng.</p>
         <p style="margin-bottom:0;">Trân trọng,<br>{{ config('app.name') }}</p>
     </div>
