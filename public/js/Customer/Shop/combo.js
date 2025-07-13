@@ -575,55 +575,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Lắng nghe realtime combo stock
-    if (window.pusherKey && window.pusherCluster) {
-        const comboStockPusher = new Pusher(window.pusherKey, {
-            cluster: window.pusherCluster,
-            encrypted: true,
-            enabledTransports: ['ws', 'wss']
-        });
-        const comboBranchStockChannel = comboStockPusher.subscribe('combo-branch-stock-channel');
-        comboBranchStockChannel.bind('combo-branch-stock-updated', function(data) {
-            // Lấy combo_id và branch_id hiện tại trên trang
-            const comboId = document.querySelector('.product-card[data-combo-id]')?.getAttribute('data-combo-id');
-            const branchId = document.querySelector('meta[name="selected-branch"]')?.content;
-            if (parseInt(data.combo_id) == parseInt(comboId) && (!branchId || parseInt(data.branch_id) == parseInt(branchId))) {
-                // Nếu hết hàng
-                if (parseInt(data.quantity) <= 0) {
-                    // Disable nút mua
-                    const addToCartBtn = document.getElementById('add-to-cart-combo');
-                    const buyNowBtn = document.getElementById('buy-now-combo');
-                    if (addToCartBtn) addToCartBtn.disabled = true;
-                    if (buyNowBtn) buyNowBtn.disabled = true;
-                    // Hiện overlay hết hàng nếu có card
-                    const card = document.querySelector('.product-card[data-combo-id]');
-                    if (card) {
-                        card.classList.add('out-of-stock');
-                        if (!card.querySelector('.out-of-stock-overlay')) {
-                            const overlayDiv = document.createElement('div');
-                            overlayDiv.className = 'out-of-stock-overlay';
-                            overlayDiv.innerHTML = '<span>Hết hàng</span>';
-                            card.querySelector('.relative').prepend(overlayDiv);
-                        }
-                    }
-                } else {
-                    // Enable nút mua
-                    const addToCartBtn = document.getElementById('add-to-cart-combo');
-                    const buyNowBtn = document.getElementById('buy-now-combo');
-                    if (addToCartBtn) addToCartBtn.disabled = false;
-                    if (buyNowBtn) buyNowBtn.disabled = false;
-                    // Ẩn overlay hết hàng nếu có card
-                    const card = document.querySelector('.product-card[data-combo-id]');
-                    if (card) {
-                        card.classList.remove('out-of-stock');
-                        const overlay = card.querySelector('.out-of-stock-overlay');
-                        if (overlay) overlay.remove();
-                    }
-                }
-            }
-        });
-    }
-
     // Format date helper
     function formatDate(dateStr) {
         const d = new Date(dateStr);

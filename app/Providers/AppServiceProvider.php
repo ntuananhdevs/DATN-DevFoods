@@ -29,8 +29,6 @@ use App\Observers\ReviewReportObserver;
 use App\Observers\ReviewReplyObserver;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
-use App\Models\ComboBranchStock;
-use App\Observers\ComboBranchStockObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -68,9 +66,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Register ComboObserver
         Combo::observe(ComboObserver::class);
-
-        // Register ComboBranchStockObserver
-        ComboBranchStock::observe(ComboBranchStockObserver::class);
 
         // Register OrderObserver
         // Order::observe(OrderObserver::class);

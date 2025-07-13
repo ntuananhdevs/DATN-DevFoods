@@ -14,6 +14,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Events\Order\NewOrderReceived;
 use App\Models\Payment;
+use App\Services\ShippingService;
 
 class OrderController extends Controller
 {
@@ -89,8 +90,8 @@ class OrderController extends Controller
                 ];
             }
 
-            // Set shipping fee (using same logic as CheckoutController)
-            $shippingFee = $subtotal > 200000 ? 0 : 25000;
+            // Set shipping fee using ShippingService - FIX: Use consistent service-based calculation
+            $shippingFee = ShippingService::calculateFixedShippingFee($subtotal);
             $totalAmount = $subtotal + $shippingFee;
 
             // Create order (Note: payment_method is stored in notes for now since DB only has payment_id)

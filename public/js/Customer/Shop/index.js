@@ -39,27 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Subscribe to discounts channel
         discountsChannel = pusher.subscribe('discounts');
         
-        // Subscribe to combo branch stock channel
-        const comboBranchStockChannel = pusher.subscribe('combo-branch-stock-channel');
-        comboBranchStockChannel.bind('combo-branch-stock-updated', function(data) {
-            // Tìm combo card theo data-combo-id
-            const card = document.querySelector('.product-card[data-combo-id="' + data.combo_id + '"]');
-            if (!card) return;
-            if (parseInt(data.quantity) > 0) {
-                card.classList.remove('out-of-stock');
-                const overlay = card.querySelector('.out-of-stock-overlay');
-                if (overlay) overlay.remove();
-            } else {
-                card.classList.add('out-of-stock');
-                if (!card.querySelector('.out-of-stock-overlay')) {
-                    const overlayDiv = document.createElement('div');
-                    overlayDiv.className = 'out-of-stock-overlay';
-                    overlayDiv.innerHTML = '<span>Hết hàng</span>';
-                    card.querySelector('.relative').prepend(overlayDiv);
-                }
-            }
-        });
-        
         // Get current branch ID
         const urlParams = new URLSearchParams(window.location.search);
         const currentBranchId = urlParams.get('branch_id') || document.querySelector('meta[name="selected-branch"]')?.content;
