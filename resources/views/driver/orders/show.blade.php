@@ -6,8 +6,8 @@
 @endphp
 @section('content')
     <div id="order-details-card" data-order-id="{{ $order->id }}" data-order-status="{{ $order->status }}"
-        data-customer-latitude="{{ $order->guest_latitude }}" {{-- THÊM DÒNG NÀY --}}
-        data-customer-longitude="{{ $order->guest_longitude }}" {{-- THÊM DÒNG NÀY --}}
+        data-customer-latitude="{{ $latitude }}"
+        data-customer-longitude="{{ $longitude }}"
         data-customer-phone="{{ $order->customer->phone ?? ($order->guest_phone ?? '') }}"> {{-- THÊM DÒNG NÀY --}}
         <div class="pt-4 p-4 space-y-4">
             {{-- CẬP NHẬT: Thêm Header --}}
@@ -405,6 +405,12 @@
             let routeLayerId = 'route';
             let routeSourceId = 'route-source';
 
+            // Lấy Mapbox Access Token từ config Laravel
+            const mapboxToken = '{{ config("services.mapbox.access_token") }}';
+            if (mapboxToken && mapboxToken !== '' && mapboxToken !== 'null') {
+                mapboxgl.accessToken = mapboxToken;
+            }
+
             function initializeMap(customerLat, customerLng) {
                 const mapboxContainer = document.getElementById('orderMap');
                 if (!mapboxContainer) {
@@ -415,17 +421,6 @@
                 if (map) {
                     map.remove(); // Remove existing map if any
                 }
-
-                // Ensure the access token is correctly set here from Laravel's environment
-                // This assumes the Blade syntax `{{ config('services.mapbox.access_token') }}`
-                // is correctly processed on the server to embed the actual token.
-                mapboxgl.accessToken = '{{ config('services.mapbox.access_token') }}';
-
-                // VỊ TRÍ ẢO ĐỂ KIỂM TRA:
-                // Tắt dòng bên dưới sau khi kiểm tra xong hoặc khi bạn có dữ liệu thật
-                customerLat = 20.4403; // Ví dụ: Vĩ độ giả (Nam Định)
-                customerLng = 106.1706; // Ví dụ: Kinh độ giả (Nam Định)
-                // HÀM KIỂM TRA TỌA ĐỘ NÀY SẼ CHẠY KHI ĐƠN HÀNG Ở TRẠNG THÁI `in_transit`
 
                 map = new mapboxgl.Map({
                     container: 'orderMap',
@@ -705,17 +700,14 @@
                 navigateAction: function() {
                     // Ensure the order data is available in the HTML for these values
                     const orderDetailsCard = document.getElementById('order-details-card');
-                    const customerLat = parseFloat(orderDetailsCard.dataset.customerLatitude);
-                    const customerLng = parseFloat(orderDetailsCard.dataset.customerLongitude);
+                    const orderId = orderDetailsCard ? orderDetailsCard.dataset.orderId : null;
 
-                    if (!isNaN(customerLat) && !isNaN(customerLng)) {
-                        // Sửa URL Google Maps
-                        const googleMapsUrl =
-                            `http://maps.google.com/maps?q=${customerLat},${customerLng}&travelmode=driving`;
-                        window.open(googleMapsUrl, '_blank');
+                    if (orderId) {
+                        // Chuyển hướng sang trang điều hướng (navigate)
+                        window.location.href = `/driver/orders/${orderId}/navigate`;
                     } else {
                         showToast('error', {
-                            message: 'Không có tọa độ khách hàng để chỉ đường.'
+                            message: 'Không thể xác định đơn hàng để điều hướng.'
                         });
                     }
                 },

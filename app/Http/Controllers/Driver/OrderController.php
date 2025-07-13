@@ -170,7 +170,7 @@ class OrderController extends Controller
     public function show($orderId)
     {
         $driverId = Auth::guard('driver')->id();
-        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.primaryImage'])->findOrFail($orderId);
+        $order = Order::with(['customer', 'branch', 'orderItems.productVariant.product.primaryImage', 'address'])->findOrFail($orderId);
 
         // Logic mới:
         // 1. Nếu đơn hàng chưa có tài xế và đang chờ -> Cho phép xem để nhận đơn.
@@ -180,7 +180,11 @@ class OrderController extends Controller
             abort(403, 'Bạn không có quyền xem đơn hàng này.');
         }
 
-        return view('driver.orders.show', compact('order'));
+        // Ưu tiên lấy vĩ độ/kinh độ từ address, nếu không có thì lấy từ guest_latitude/guest_longitude
+        $latitude = $order->address && $order->address->latitude ? $order->address->latitude : $order->guest_latitude;
+        $longitude = $order->address && $order->address->longitude ? $order->address->longitude : $order->guest_longitude;
+
+        return view('driver.orders.show', compact('order', 'latitude', 'longitude'));
     }
 
     /**
@@ -190,13 +194,25 @@ class OrderController extends Controller
     {
         $driverId = Auth::guard('driver')->id();
 
-        // Lấy thông tin đơn hàng để biết tọa độ của khách hàng và chi nhánh
-        $order = Order::with(['customer.addresses', 'branch', 'address'])
+        // Lấy thông tin đơn hàng, địa chỉ, khách hàng
+        $order = Order::with(['customer', 'address', 'branch'])
             ->where('id', $orderId)
             ->where('driver_id', $driverId)
             ->firstOrFail();
 
-        return view('driver.orders.navigate', compact('order'));
+        // Ưu tiên lấy vĩ độ/kinh độ từ address, nếu không có thì lấy từ guest_latitude/guest_longitude
+        $latitude = $order->address && $order->address->latitude ? $order->address->latitude : $order->guest_latitude;
+        $longitude = $order->address && $order->address->longitude ? $order->address->longitude : $order->guest_longitude;
+
+        // Lấy tên, số điện thoại, địa chỉ, ghi chú
+        $customerName = $order->customer->full_name ?? $order->guest_name;
+        $customerPhone = $order->customer->phone ?? $order->guest_phone;
+        $deliveryAddress = $order->address->address_line ?? $order->guest_address;
+        $notes = $order->notes;
+
+        return view('driver.orders.navigate', compact(
+            'order', 'latitude', 'longitude', 'customerName', 'customerPhone', 'deliveryAddress', 'notes'
+        ));
     }
 
     // === CÁC HÀNH ĐỘNG CỦA TÀI XẾ - ĐƯỢC SẮP XẾP LẠI LOGIC ===

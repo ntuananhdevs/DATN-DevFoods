@@ -4,20 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Điều hướng giao hàng</title>
-    
+
     <!-- Mapbox GL JS -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
-    
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
+
     <!-- Font Awesome for modal icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+
     <!-- Modal JS -->
     <script src="{{ asset('js/modal.js') }}"></script>
-    
+
     <style>
         * {
             margin: 0;
@@ -479,7 +479,7 @@
                 top: 1rem;
             }
         }
-        
+
         /* Modal Styles - Enhanced Version */
         .dtmodal-overlay {
             position: fixed;
@@ -497,12 +497,12 @@
             visibility: hidden;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
+
         .dtmodal-overlay.dtmodal-active {
             opacity: 1;
             visibility: visible;
         }
-        
+
         .dtmodal-container {
             background: white;
             border-radius: 1rem;
@@ -515,11 +515,11 @@
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
-        
+
         .dtmodal-active .dtmodal-container {
             transform: scale(1) translateY(0);
         }
-        
+
         .dtmodal-container::before {
             content: '';
             position: absolute;
@@ -527,9 +527,9 @@
             left: 0;
             right: 0;
             height: 4px;
-            
+
         }
-        
+
         .dtmodal-header {
             padding: 2rem 2rem 1rem 2rem;
             display: flex;
@@ -537,7 +537,7 @@
             gap: 1rem;
             position: relative;
         }
-        
+
         .dtmodal-icon-wrapper {
             width: 3.5rem;
             height: 3.5rem;
@@ -548,7 +548,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .dtmodal-icon-wrapper::before {
             content: '';
             position: absolute;
@@ -560,36 +560,36 @@
             mask-composite: xor;
             opacity: 0.3;
         }
-        
+
         .dtmodal-success .dtmodal-icon-wrapper {
             background: linear-gradient(135deg, #dcfce7, #bbf7d0);
             color: #16a34a;
         }
-        
+
         .dtmodal-warning .dtmodal-icon-wrapper {
             background: linear-gradient(135deg, #fef3c7, #fde68a);
             color: #f59e0b;
         }
-        
+
         .dtmodal-error .dtmodal-icon-wrapper {
             background: linear-gradient(135deg, #fecaca, #fca5a5);
             color: #dc2626;
         }
-        
+
         .dtmodal-info .dtmodal-icon-wrapper {
             background: linear-gradient(135deg, #dbeafe, #bfdbfe);
             color: #3b82f6;
         }
-        
+
         .dtmodal-icon {
             font-size: 1.5rem;
             z-index: 1;
         }
-        
+
         .dtmodal-title-content {
             flex: 1;
         }
-        
+
         .dtmodal-title {
             font-size: 1.25rem;
             font-weight: 700;
@@ -597,14 +597,14 @@
             color: #1f2937;
             line-height: 1.4;
         }
-        
+
         .dtmodal-subtitle {
             font-size: 0.95rem;
             color: #6b7280;
             margin: 0;
             line-height: 1.5;
         }
-        
+
         .dtmodal-close {
             position: absolute;
             top: 1.5rem;
@@ -621,31 +621,31 @@
             transition: all 0.2s ease;
             color: #6b7280;
         }
-        
+
         .dtmodal-close:hover {
             background: #e5e7eb;
             color: #374151;
             transform: scale(1.1);
         }
-        
+
         .dtmodal-body {
             padding: 0 2rem 1.5rem 2rem;
         }
-        
+
         .dtmodal-message {
             margin: 0;
             color: #4b5563;
             line-height: 1.6;
             font-size: 0.95rem;
         }
-        
+
         .dtmodal-footer {
             padding: 1.5rem 2rem 2rem 2rem;
             display: flex;
             gap: 0.75rem;
             justify-content: flex-end;
         }
-        
+
         .dtmodal-btn {
             padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
@@ -658,7 +658,7 @@
             overflow: hidden;
             min-width: 100px;
         }
-        
+
         .dtmodal-btn::before {
             content: '';
             position: absolute;
@@ -669,41 +669,41 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s;
         }
-        
+
         .dtmodal-btn:hover::before {
             left: 100%;
         }
-        
+
         .dtmodal-btn-outline {
             background: white;
             color: #374151;
             border-color: #d1d5db;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
-        
+
         .dtmodal-btn-outline:hover {
             background: #f9fafb;
             border-color: #9ca3af;
             transform: translateY(-1px);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        
+
         .dtmodal-btn-primary {
             background: linear-gradient(135deg, #16a34a, #15803d);
             color: white;
             box-shadow: 0 4px 6px rgba(22, 163, 74, 0.25);
         }
-        
+
         .dtmodal-btn-primary:hover {
             background: linear-gradient(135deg, #15803d, #166534);
             transform: translateY(-1px);
             box-shadow: 0 6px 12px rgba(22, 163, 74, 0.35);
         }
-        
+
         .dtmodal-btn-primary:active {
             transform: translateY(0);
         }
-        
+
         /* Toast Styles - Enhanced */
         .dtmodal-toast-container {
             position: fixed;
@@ -714,7 +714,7 @@
             flex-direction: column;
             gap: 0.5rem;
         }
-        
+
         .dtmodal-toast {
             background: white;
             border-radius: 0.75rem;
@@ -731,7 +731,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .dtmodal-toast::before {
             content: '';
             position: absolute;
@@ -741,31 +741,31 @@
             height: 2px;
             background: linear-gradient(90deg, currentColor, transparent);
         }
-        
+
         .dtmodal-toast.dtmodal-active {
             transform: translateX(0);
         }
-        
+
         .dtmodal-toast-success {
             border-left-color: #16a34a;
             color: #ffff;
         }
-        
+
         .dtmodal-toast-error {
             border-left-color: #dc2626;
             color: #dc2626;
         }
-        
+
         .dtmodal-toast-warning {
             border-left-color: #f59e0b;
             color: #f59e0b;
         }
-        
+
         .dtmodal-toast-info {
             border-left-color: #3b82f6;
             color: #3b82f6;
         }
-        
+
         .dtmodal-toast-icon-wrapper {
             width: 2.5rem;
             height: 2.5rem;
@@ -777,25 +777,25 @@
             color: white;
             flex-shrink: 0;
         }
-        
+
         .dtmodal-toast-content {
             flex: 1;
         }
-        
+
         .dtmodal-toast-title {
             font-size: 0.95rem;
             font-weight: 600;
             margin: 0 0 0.25rem 0;
             color: #1f2937;
         }
-        
+
         .dtmodal-toast-message {
             font-size: 0.875rem;
             color: #6b7280;
             margin: 0;
             line-height: 1.4;
         }
-        
+
         .dtmodal-toast-close {
             background: none;
             border: none;
@@ -806,12 +806,12 @@
             transition: all 0.2s;
             flex-shrink: 0;
         }
-        
+
         .dtmodal-toast-close:hover {
             color: #6b7280;
             background: #f3f4f6;
         }
-        
+
         .dtmodal-toast-progress {
             position: absolute;
             bottom: 0;
@@ -820,33 +820,33 @@
             height: 3px;
             background: rgba(0, 0, 0, 0.1);
         }
-        
+
         .dtmodal-toast-progress-bar {
             height: 100%;
             background: currentColor;
             width: 100%;
             animation: toast-progress 5s linear;
         }
-        
+
         @keyframes toast-progress {
             from { width: 100%; }
             to { width: 0%; }
         }
-        
+
         /* Animation cho mobile */
         @media (max-width: 640px) {
             .dtmodal-container {
                 width: 95%;
                 margin: 1rem;
             }
-            
+
             .dtmodal-header,
             .dtmodal-body,
             .dtmodal-footer {
                 padding-left: 1.5rem;
                 padding-right: 1.5rem;
             }
-            
+
             .dtmodal-toast {
                 min-width: 280px;
                 margin-right: 1rem;
@@ -989,15 +989,15 @@
         let userMarker = null;
         let destinationMarker = null;
 
-        // Fake order data
+        // Dữ liệu đơn hàng thực từ controller
         const orderData = {
-            id: 123,
-            customer_name: "Trần Thị Bình", 
-            customer_phone: "0912345678",
-            delivery_address: "48 Tố Hữu, Nam Từ Liêm, Hà Nội",
-            guest_latitude: 21.0189,
-            guest_longitude: 105.7864,
-            notes: "Giao trong giờ hành chính, gọi trước 15 phút"
+            id: {{ $order->id }},
+            customer_name: @json($customerName),
+            customer_phone: @json($customerPhone),
+            delivery_address: @json($deliveryAddress),
+            guest_latitude: {{ $latitude ?? 'null' }},
+            guest_longitude: {{ $longitude ?? 'null' }},
+            notes: @json($notes)
         };
 
         // Initialize the application
@@ -1023,10 +1023,10 @@
                 center: [order.guest_longitude, order.guest_latitude],
                 zoom: 11 // Giảm zoom để có thể thấy rộng hơn
             });
-        
+
             map.on('load', function() {
                 document.getElementById('loading').classList.add('hidden');
-                
+
                 // Add destination marker
                 if (order) {
                     destinationMarker = new mapboxgl.Marker({ color: '#ef4444' })
@@ -1048,7 +1048,7 @@
                     function(position) {
                         const { latitude, longitude } = position.coords;
                         currentPosition = { latitude, longitude };
-                        
+
                         // Add user marker
                         if (userMarker) {
                             userMarker.remove();
@@ -1068,7 +1068,7 @@
                         // Use fake location for demo
                         const fakeLocation = { latitude: 21.0245, longitude: 105.8412 };
                         currentPosition = fakeLocation;
-                        
+
                         if (userMarker) {
                             userMarker.remove();
                         }
@@ -1092,7 +1092,7 @@
                 // Use fake location for demo
                 const fakeLocation = { latitude: 21.0245, longitude: 105.8412 };
                 currentPosition = fakeLocation;
-                
+
                 if (userMarker) {
                     userMarker.remove();
                 }
@@ -1111,15 +1111,15 @@
         // Thêm hàm mới để fit map hiển thị cả hai vị trí
         function fitMapToBothLocations() {
             if (!currentPosition || !order) return;
-            
+
             const bounds = new mapboxgl.LngLatBounds();
-            
+
             // Thêm vị trí hiện tại vào bounds
             bounds.extend([currentPosition.longitude, currentPosition.latitude]);
-            
+
             // Thêm vị trí giao hàng vào bounds
             bounds.extend([order.guest_longitude, order.guest_latitude]);
-            
+
             // Fit map để hiển thị cả hai vị trí với padding
             map.fitBounds(bounds, {
                 padding: {
@@ -1138,19 +1138,19 @@
             try {
                 const start = `${currentPosition.longitude},${currentPosition.latitude}`;
                 const end = `${order.guest_longitude},${order.guest_latitude}`;
-                
+
                 const response = await fetch(
                     `https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                 );
-                
+
                 const data = await response.json();
-                
+
                 if (data.routes && data.routes.length > 0) {
                     route = data.routes[0];
-                    
+
                     // Update UI with route info
                     updateRouteInfo(route);
-                    
+
                     // Enable start navigation button
                     document.getElementById('start-navigation-btn').disabled = false;
                     document.getElementById('status-text').textContent = "Sẵn sàng điều hướng";
@@ -1207,7 +1207,7 @@
         function updateRouteInfo(route) {
             const distance = formatDistance(route.distance);
             const time = formatTime(route.duration);
-            
+
             document.getElementById('total-distance').textContent = distance;
             document.getElementById('total-time').textContent = time;
             document.getElementById('remaining-time').textContent = time;
@@ -1215,10 +1215,10 @@
 
         function updateCustomerInfo() {
             if (!order) return;
-            
+
             document.getElementById('customer-name').textContent = order.customer_name || "Khách hàng";
             document.getElementById('customer-address').textContent = order.delivery_address || "Địa chỉ giao hàng";
-            
+
             if (order.notes) {
                 const noteElement = document.getElementById('customer-note');
                 if (noteElement) {
@@ -1230,32 +1230,32 @@
 
         function startNavigation() {
             navigationStarted = true;
-            
+
             // Add route to map when navigation starts
             if (route) {
                 addRouteToMap(route);
             }
-            
+
             // Show navigation panel
             document.getElementById('pre-navigation').classList.add('hidden');
             document.getElementById('navigation-panel').classList.remove('hidden');
             document.getElementById('navigation-badge').classList.remove('hidden');
-            
+
             // Start location tracking
             if ("geolocation" in navigator) {
                 watchId = navigator.geolocation.watchPosition(
                     function(position) {
                         const { latitude, longitude } = position.coords;
                         currentPosition = { latitude, longitude };
-                        
+
                         // Update user marker
                         if (userMarker) {
                             userMarker.setLngLat([longitude, latitude]);
                         }
-                        
+
                         // Update remaining distance
                         updateNavigationInfo();
-                        
+
                         // Center map on user during navigation
                         map.easeTo({
                             center: [longitude, latitude],
@@ -1272,22 +1272,22 @@
                     }
                 );
             }
-            
+
             showToast("Điều hướng", "Đã bắt đầu điều hướng", "success");
         }
 
         function updateNavigationInfo() {
             if (!currentPosition || !order) return;
-            
+
             const distance = calculateDistance(
                 currentPosition.latitude,
                 currentPosition.longitude,
                 order.guest_latitude,
                 order.guest_longitude
             );
-            
+
             const time = Math.round(distance / 40 * 60); // Assuming 40 km/h average speed
-            
+
             document.getElementById('nav-distance').textContent = formatDistance(distance * 1000);
             document.getElementById('nav-time').textContent = formatTime(time * 60);
             document.getElementById('remaining-time').textContent = formatTime(time * 60);
@@ -1305,13 +1305,13 @@
                     if (watchId) {
                         navigator.geolocation.clearWatch(watchId);
                     }
-                    
+
                     // Show success toast
                     dtmodalShowToast('success', {
                         title: 'Thành công!',
                         message: 'Đã hoàn thành giao hàng'
                     });
-                    
+
                     // Redirect back to orders list after 2 seconds
                     setTimeout(() => {
                         window.location.href = '{{ route("driver.orders.index") }}';
@@ -1336,7 +1336,7 @@
         function toggleCustomerInfo() {
             const customerInfo = document.getElementById('customer-info');
             const showBtn = document.getElementById('show-customer-btn');
-            
+
             if (customerInfo.classList.contains('hidden')) {
                 customerInfo.classList.remove('hidden');
                 showBtn.classList.add('hidden');
@@ -1421,9 +1421,9 @@
             // Create toast element
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
-            
+
             const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : type === 'warning' ? 'alert-triangle' : 'info';
-            
+
             toast.innerHTML = `
                 <div class="toast-icon">
                     <i data-lucide="${iconName}"></i>
