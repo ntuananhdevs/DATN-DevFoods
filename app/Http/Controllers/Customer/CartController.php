@@ -337,6 +337,17 @@ class CartController extends Controller
             $userId = Auth::id();
             $sessionId = session()->getId();
 
+            // Validate user exists if authenticated
+            if ($userId) {
+                $userExists = \App\Models\User::where('id', $userId)->exists();
+                if (!$userExists) {
+                    // User doesn't exist, clear authentication and use session-based cart
+                    Auth::logout();
+                    $userId = null;
+                    Log::warning('User ID ' . $userId . ' does not exist, falling back to session-based cart');
+                }
+            }
+
             $cart = Cart::where('status', 'active')
                 ->when($userId, function($query) use ($userId) {
                     return $query->where('user_id', $userId);
@@ -499,6 +510,18 @@ class CartController extends Controller
         ]);
         $userId = Auth::id();
         $sessionId = session()->getId();
+        
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist, falling back to session-based cart');
+            }
+        }
+        
         $cart = \App\Models\Cart::firstOrCreate(
             [
                 'user_id' => $userId,

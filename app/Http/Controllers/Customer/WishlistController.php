@@ -24,12 +24,84 @@ class WishlistController extends Controller
 
     public function index()
     {
-        if (!Auth::check()) {
-            return redirect()->route('login');
+        // Kiểm tra authentication đã được middleware xử lý
+        $user = Auth::user();
+        
+        // Lấy wishlist items với eager loading để tối ưu performance
+        $wishlistItems = $user->wishlist()
+            ->with([
+                'product' => function($query) {
+                    $query->with(['primaryImage', 'category']);
+                },
+                'combo' => function($query) {
+                    $query->with(['primaryImage']);
+                }
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Tính toán thống kê
+        $stats = $this->calculateWishlistStats($wishlistItems);
+        
+        // Lấy danh sách categories để filter
+        $categories = $this->getWishlistCategories($wishlistItems);
+        
+        return view('customer.wishlist.index', compact('wishlistItems', 'stats', 'categories'));
+    }
+    
+    /**
+     * Tính toán thống kê wishlist
+     */
+    private function calculateWishlistStats($wishlistItems)
+    {
+        $totalItems = $wishlistItems->count();
+        $totalValue = 0;
+        $categories = collect();
+        
+        foreach ($wishlistItems as $item) {
+            if ($item->product) {
+                $totalValue += $item->product->price ?? 0;
+                if ($item->product->category) {
+                    $categories->push($item->product->category->name);
+                }
+            } elseif ($item->combo) {
+                $totalValue += $item->combo->price ?? 0;
+                $categories->push('Combo');
+            }
         }
         
-        $wishlistItems = Auth::user()->wishlist()->with(['product', 'productVariant', 'combo'])->get();
-        return view('customer.wishlist.index', compact('wishlistItems'));
+        return [
+            'total_items' => $totalItems,
+            'total_value' => number_format($totalValue, 0, ',', '.') . 'đ',
+            'categories_count' => $categories->unique()->count(),
+            'categories' => $categories->unique()->values()
+        ];
+    }
+    
+    /**
+     * Lấy danh sách categories từ wishlist
+     */
+    private function getWishlistCategories($wishlistItems)
+    {
+        $categories = collect();
+        
+        foreach ($wishlistItems as $item) {
+            if ($item->product && $item->product->category) {
+                $categories->push([
+                    'id' => $item->product->category->id,
+                    'name' => $item->product->category->name,
+                    'slug' => $item->product->category->slug ?? strtolower(str_replace(' ', '-', $item->product->category->name))
+                ]);
+            } elseif ($item->combo) {
+                $categories->push([
+                    'id' => 'combo',
+                    'name' => 'Combo',
+                    'slug' => 'combo'
+                ]);
+            }
+        }
+        
+        return $categories->unique('id')->values();
     }
 
     /**

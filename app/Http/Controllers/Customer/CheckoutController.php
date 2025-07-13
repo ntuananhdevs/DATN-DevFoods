@@ -16,6 +16,7 @@ use App\Models\Branch;
 use App\Models\Address;
 use App\Services\BranchService;
 use App\Services\ShippingService;
+use Illuminate\Support\Facades\Log;
 
 class CheckoutController extends Controller
 {
@@ -37,6 +38,17 @@ class CheckoutController extends Controller
 
         $userId = Auth::id();
         $sessionId = session()->getId();
+        
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist in CheckoutController, falling back to session-based cart');
+            }
+        }
 
         $cartQuery = Cart::query()->where('status', 'active');
         if ($userId) {
@@ -112,6 +124,17 @@ class CheckoutController extends Controller
     {
         // Get user ID to determine validation rules
         $userId = Auth::id();
+        
+        // Validate user exists if authenticated
+        if ($userId) {
+            $userExists = \App\Models\User::where('id', $userId)->exists();
+            if (!$userExists) {
+                // User doesn't exist, clear authentication and use session-based cart
+                Auth::logout();
+                $userId = null;
+                Log::warning('User ID ' . $userId . ' does not exist in CheckoutController process, falling back to session-based cart');
+            }
+        }
         
         // Validate checkout data with different rules for authenticated vs guest users
         if ($userId) {
