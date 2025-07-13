@@ -37,6 +37,8 @@ class ChatCommon {
 
         this.init();
         this.setupPusherGlobalListeners(); // Lắng nghe Pusher JS thuần cho sidebar
+        this.currentChannel = null; // Lưu channel hiện tại
+        this.isSendingAttachment = false; // Thêm flag chống double submit
     }
 
     setupPusherGlobalListeners() {
@@ -147,10 +149,9 @@ class ChatCommon {
         });
         // LẮNG NGHE TIN NHẮN MỚI Ở CẤP SIDEBAR (ADMIN)
         adminChannel.bind("new-message", (data) => {
-            if (data.message) {
-                this.updateSidebarPreview(data.message);
-                this.moveConversationToTop(data.message.conversation_id);
-            }
+            // Đừng appendMessage ở đây!
+            // this.appendMessage(data.message); // <-- XÓA hoặc comment dòng này
+            this.updateSidebarPreview(data.message); // <-- chỉ update preview
         });
         // Đăng ký thành công
         adminChannel.bind("pusher:subscription_succeeded", () => {});
@@ -218,7 +219,14 @@ class ChatCommon {
         if (this.imageInput) {
             this.imageInput.addEventListener("change", (e) => {
                 if (e.target.files.length) {
-                    this.sendAttachment("image", e.target.files[0]);
+                    if (this.isSendingAttachment) return;
+                    this.isSendingAttachment = true;
+                    this.sendAttachment("image", e.target.files[0]).finally(
+                        () => {
+                            this.isSendingAttachment = false;
+                            this.imageInput.value = "";
+                        }
+                    );
                 }
             });
         }
@@ -298,7 +306,14 @@ class ChatCommon {
             attachImageBtn.addEventListener("click", () => imageInput.click());
             imageInput.addEventListener("change", (e) => {
                 if (e.target.files.length) {
-                    this.sendAttachment("image", e.target.files[0]);
+                    if (this.isSendingAttachment) return;
+                    this.isSendingAttachment = true;
+                    this.sendAttachment("image", e.target.files[0]).finally(
+                        () => {
+                            this.isSendingAttachment = false;
+                            this.imageInput.value = "";
+                        }
+                    );
                 }
             });
         }
@@ -317,33 +332,35 @@ class ChatCommon {
     }
 
     setupPusherChannels() {
+        if (!this.pusher) {
+            return;
+        }
+        // Unsubscribe channel cũ nếu có
+        if (this.currentChannel) {
+            this.pusher.unsubscribe(`chat.${this.currentChannel}`);
+        }
+        this.currentChannel = this.conversationId;
         // Lắng nghe kênh chat
         const channel = this.pusher.subscribe(`chat.${this.conversationId}`);
 
         channel.bind("new-message", (data) => {
             if (data.message) {
-                // Xóa message tạm thời đúng sender_id và loại
+                // Xóa message tạm thời đúng sender_id
                 const tempMsg = this.messageContainer.querySelector(
                     `[data-message-id^='temp-'][data-sender-id='${data.message.sender_id}']`
                 );
                 if (tempMsg) tempMsg.remove();
                 // Chỉ append nếu chưa có message thật
-                if (
-                    String(this.conversationId) ===
-                    String(data.message.conversation_id)
-                ) {
-                    const existingMessage = this.messageContainer.querySelector(
-                        `[data-message-id="${data.message.id}"]`
-                    );
-                    if (!existingMessage) {
-                        this.appendMessage(data.message);
-                        this.scrollToBottom();
-                    }
+                const existingMessage = this.messageContainer.querySelector(
+                    `[data-message-id='${data.message.id}']`
+                );
+                if (!existingMessage) {
+                    this.appendMessage(data.message);
+                    this.scrollToBottom();
                 }
                 // Cập nhật preview trong sidebar và di chuyển lên đầu
                 this.updateSidebarPreview(data.message);
                 this.moveConversationToTop(data.message.conversation_id);
-                showChatNotification(data.message.conversation_id);
             }
         });
 
@@ -469,23 +486,7 @@ class ChatCommon {
                         ? `<span class="badge" style="background:#374151;color:#fff;">${chatItem.dataset.branchName}</span>`
                         : "");
             }
-            // Cập nhật số tin nhắn chưa đọc
-            let unread = message.unread_count || 0;
-            let unreadBadge = chatItem.querySelector(".unread-badge");
-            if (unread > 0) {
-                if (!unreadBadge) {
-                    unreadBadge = document.createElement("span");
-                    unreadBadge.className = "unread-badge";
-                    unreadBadge.textContent = unread;
-                    chatItem
-                        .querySelector(".chat-item-footer")
-                        .appendChild(unreadBadge);
-                } else {
-                    unreadBadge.textContent = unread;
-                }
-            } else if (unreadBadge) {
-                unreadBadge.remove();
-            }
+
             // Luôn di chuyển lên đầu sidebar
             chatItem.remove();
             this.chatList.insertBefore(chatItem, this.chatList.firstChild);
@@ -1069,88 +1070,87 @@ class ChatCommon {
                 }
             }
         } catch (error) {
-            console.error("❌ Lỗi khi tải tin nhắn:", error);
             this.showError("Không thể tải tin nhắn");
         }
     }
 
-    appendMessage(message) {
-        console.log("[ChatRealtime] appendMessage", message);
-        if (!message) return;
+    // appendMessage(message) {
+    //     console.log("[ChatRealtime] appendMessage", message);
+    //     if (!message) return;
 
-        const chatMessages = document.getElementById("chat-messages");
-        if (!chatMessages) return;
+    //     const chatMessages = document.getElementById("chat-messages");
+    //     if (!chatMessages) return;
 
-        const messageElement = document.createElement("div");
-        messageElement.className = `message ${
-            message.sender_id === this.userId ? "sent" : "received"
-        }`;
+    //     const messageElement = document.createElement("div");
+    //     messageElement.className = `message ${
+    //         message.sender_id === this.userId ? "sent" : "received"
+    //     }`;
 
-        // Tạo avatar
-        const avatar = document.createElement("div");
-        avatar.className = "message-avatar";
-        avatar.textContent = (message.sender?.full_name || "U")
-            .charAt(0)
-            .toUpperCase();
+    //     // Tạo avatar
+    //     const avatar = document.createElement("div");
+    //     avatar.className = "message-avatar";
+    //     avatar.textContent = (message.sender?.full_name || "U")
+    //         .charAt(0)
+    //         .toUpperCase();
 
-        // Tạo nội dung tin nhắn
-        const content = document.createElement("div");
-        content.className = "message-content";
+    //     // Tạo nội dung tin nhắn
+    //     const content = document.createElement("div");
+    //     content.className = "message-content";
 
-        // Thêm tên người gửi
-        const senderName = document.createElement("div");
-        senderName.className = "message-sender";
-        senderName.textContent = message.sender?.full_name || "Người dùng";
+    //     // Thêm tên người gửi
+    //     const senderName = document.createElement("div");
+    //     senderName.className = "message-sender";
+    //     senderName.textContent = message.sender?.full_name || "Người dùng";
 
-        // Thêm nội dung tin nhắn
-        const text = document.createElement("div");
-        text.className = "message-text";
-        text.innerHTML = this.escapeHtml(message.message || "");
+    //     // Thêm nội dung tin nhắn
+    //     const text = document.createElement("div");
+    //     text.className = "message-text";
+    //     text.innerHTML = this.escapeHtml(message.message || "");
 
-        // Thêm thời gian
-        const time = document.createElement("div");
-        time.className = "message-time";
-        time.textContent = this.formatTime(message.created_at);
+    //     // Thêm thời gian
+    //     const time = document.createElement("div");
+    //     time.className = "message-time";
+    //     time.textContent = this.formatTime(message.created_at);
 
-        // Thêm attachment nếu có
-        if (message.attachment) {
-            const attachment = document.createElement("div");
-            attachment.className = "message-attachment";
+    //     // Thêm attachment nếu có
+    //     if (message.attachment) {
+    //         const attachment = document.createElement("div");
+    //         attachment.className = "message-attachment";
 
-            if (message.attachment_type === "image") {
-                const img = document.createElement("img");
-                img.src = `/storage/${message.attachment}`;
-                img.alt = "Attachment";
-                img.className = "attachment-image";
-                attachment.appendChild(img);
-            } else {
-                const link = document.createElement("a");
-                link.href = `/storage/${message.attachment}`;
-                link.target = "_blank";
-                link.className = "attachment-file";
-                link.innerHTML = `<i class="fas fa-file"></i> ${message.attachment
-                    .split("/")
-                    .pop()}`;
-                attachment.appendChild(link);
-            }
+    //         if (message.attachment_type === "image") {
+    //             const img = document.createElement("img");
+    //             img.src = `/storage/${message.attachment}`;
+    //             img.alt = "Attachment";
+    //             img.className = "attachment-image";
+    //             attachment.appendChild(img);
+    //         } else {
+    //             const link = document.createElement("a");
+    //             link.href = `/storage/${message.attachment}`;
+    //             link.target = "_blank";
+    //             link.className = "attachment-file";
+    //             link.innerHTML = `<i class="fas fa-file"></i> ${message.attachment
+    //                 .split("/")
+    //                 .pop()}`;
+    //             attachment.appendChild(link);
+    //         }
 
-            content.appendChild(attachment);
-        }
+    //         content.appendChild(attachment);
+    //     }
 
-        // Ghép các phần tử lại với nhau
-        content.appendChild(senderName);
-        content.appendChild(text);
-        content.appendChild(time);
+    //     // Ghép các phần tử lại với nhau
+    //     content.appendChild(senderName);
+    //     content.appendChild(text);
+    //     content.appendChild(time);
 
-        messageElement.appendChild(avatar);
-        messageElement.appendChild(content);
+    //     messageElement.appendChild(avatar);
+    //     messageElement.appendChild(content);
 
-        // Thêm tin nhắn vào chat
-        chatMessages.appendChild(messageElement);
+    //     // Thêm tin nhắn vào chat
+    //     chatMessages.appendChild(messageElement);
 
-        // Cuộn xuống tin nhắn mới nhất
-        this.scrollToBottom();
-    }
+    //     // Cuộn xuống tin nhắn mới nhất
+    //     this.scrollToBottom();
+    // }
 
     // Thêm hàm để hiển thị phân công chi nhánh
     showDistributionSection(conversationId) {
@@ -1194,6 +1194,7 @@ class ChatCommon {
                 body: formData,
                 headers: { "X-Requested-With": "XMLHttpRequest" },
             });
+            // KHÔNG appendMessage ở đây, chỉ append khi nhận realtime từ Pusher
         } catch (e) {
             this.showError("Không thể gửi file");
         } finally {
@@ -1802,6 +1803,7 @@ class ChatCommon {
             isAdmin ? "justify-end" : "justify-start"
         }`;
         msgDiv.dataset.messageId = message.id;
+        msgDiv.dataset.senderId = message.sender_id;
         msgDiv.innerHTML = `
             <div class="flex gap-2 max-w-[80%] ${
                 isAdmin ? "flex-row-reverse" : "flex-row"
@@ -1814,7 +1816,7 @@ class ChatCommon {
                 <div class="flex flex-col ${
                     isAdmin ? "items-end" : "items-start"
                 }">
-                    <div class=" text-xs text-gray-500 mb-1">${senderName}</div>
+                    <div class="text-xs text-gray-500 mb-1">${senderName}</div>
                     <div class="rounded-2xl px-4 py-2 max-w-full shadow-sm ${
                         isAdmin
                             ? "bg-orange-500 text-white rounded-br-md"
@@ -1827,17 +1829,13 @@ class ChatCommon {
                 </div>
             </div>
         `;
-
         // Thêm hiệu ứng fade-in cho tin nhắn mới
         msgDiv.style.opacity = "0";
         msgDiv.style.transition = "opacity 0.3s ease-in-out";
         this.messageContainer.appendChild(msgDiv);
-
-        // Trigger hiệu ứng fade-in
         setTimeout(() => {
             msgDiv.style.opacity = "1";
         }, 50);
-
         this.scrollToBottom();
     }
 
@@ -1978,6 +1976,7 @@ class ChatCommon {
                 body: formData,
                 headers: { "X-Requested-With": "XMLHttpRequest" },
             });
+            // KHÔNG appendMessage ở đây, chỉ append khi nhận realtime từ Pusher
         } catch (e) {
             this.showError("Không thể gửi file");
         } finally {
@@ -2124,11 +2123,7 @@ class ChatCommon {
                             : ""
                     }
                 </div>
-                ${
-                    message.unread_count && message.unread_count > 0
-                        ? `<span class="unread-badge">${message.unread_count}</span>`
-                        : ""
-                }
+                
             </div>
         `;
         div.addEventListener("click", () => {
@@ -2227,31 +2222,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 userType: "admin",
                 api: {
                     send: "/admin/chat/send",
-                    getMessages: "/admin/chat/messages/:id",
+                    getMessages: "/admin/chat/messages/:conversation",
                     distribute: "/admin/chat/distribute",
                 },
             });
         }
-        window.adminChat = new ChatCommon({
-            conversationId: chatContainer.dataset.conversationId,
-            userId: chatContainer.dataset.userId,
-            userType: "admin",
-            api: {
-                send: "/admin/chat/send",
-                getMessages: "/admin/chat/messages/:conversation",
-                distribute: "/admin/chat/distribute",
-            },
-        });
-
-        // Thêm event listener cho các chat item
-        document.querySelectorAll(".chat-item").forEach((item) => {
-            item.addEventListener("click", () => {
-                const conversationId = item.dataset.conversationId;
-                if (conversationId) {
-                    window.adminChat.switchConversation(conversationId, item);
-                }
-            });
-        });
+        // Không khởi tạo lại nếu đã có instance
     }
 });
 
@@ -2439,7 +2415,14 @@ class BranchChat {
         if (this.imageInput) {
             this.imageInput.addEventListener("change", (e) => {
                 if (e.target.files.length) {
-                    this.sendAttachment("image", e.target.files[0]);
+                    if (this.isSendingAttachment) return;
+                    this.isSendingAttachment = true;
+                    this.sendAttachment("image", e.target.files[0]).finally(
+                        () => {
+                            this.isSendingAttachment = false;
+                            this.imageInput.value = "";
+                        }
+                    );
                 }
             });
         }
@@ -2579,7 +2562,6 @@ class BranchChat {
                       };
                 this.updateSidebarPreview(sidebarMsg);
                 this.showNotification("Có cuộc trò chuyện mới!", "info");
-                this.updateInfoPanel(chatItem);
             } else if (data.last_message) {
                 this.updateSidebarPreview({
                     ...data.last_message,
@@ -2658,23 +2640,7 @@ class BranchChat {
                         ? `<span class="badge" style="background:#374151;color:#fff;">${chatItem.dataset.branchName}</span>`
                         : "");
             }
-            // Cập nhật số tin nhắn chưa đọc
-            let unread = message.unread_count || 0;
-            let unreadBadge = chatItem.querySelector(".unread-badge");
-            if (unread > 0) {
-                if (!unreadBadge) {
-                    unreadBadge = document.createElement("span");
-                    unreadBadge.className = "unread-badge";
-                    unreadBadge.textContent = unread;
-                    chatItem
-                        .querySelector(".chat-item-footer")
-                        .appendChild(unreadBadge);
-                } else {
-                    unreadBadge.textContent = unread;
-                }
-            } else if (unreadBadge) {
-                unreadBadge.remove();
-            }
+
             // Luôn di chuyển lên đầu sidebar
             chatItem.remove();
             this.chatList.insertBefore(chatItem, this.chatList.firstChild);
@@ -2735,6 +2701,7 @@ class BranchChat {
             isAdmin ? "justify-end" : "justify-start"
         }`;
         msgDiv.dataset.messageId = message.id;
+        msgDiv.dataset.senderId = message.sender_id; // <-- DÒNG NÀY LÀ BẮT BUỘC
         msgDiv.innerHTML = `
             <div class="flex gap-2 max-w-[80%] ${
                 isAdmin ? "flex-row-reverse" : "flex-row"
@@ -2805,7 +2772,7 @@ class BranchChat {
         // Xóa nội dung input sau khi đã lấy giá trị
         this.messageInput.value = "";
         if (this.sendBtn) this.sendBtn.disabled = true;
-        // Hiển thị tin nhắn ngay lập tức nếu là text (không file/ảnh)
+        // Hiển thị tin nhắn tạm thời nếu là text (không file/ảnh)
         if (!this.fileInput?.files?.length && !this.imageInput?.files?.length) {
             const tempId = "temp-" + Date.now();
             this.appendMessage({
@@ -3288,11 +3255,7 @@ class BranchChat {
                             : ""
                     }
                 </div>
-                ${
-                    message.unread_count && message.unread_count > 0
-                        ? `<span class="unread-badge">${message.unread_count}</span>`
-                        : ""
-                }
+                
             </div>
         `;
         div.addEventListener("click", () => {
@@ -3613,28 +3576,28 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 // ... existing code ...
 
-function showChatNotification(conversationId) {
-    // Hiện badge đỏ ở chuông
-    var bell = document.getElementById("chat-new-msg-badge");
-    if (bell) bell.classList.remove("hidden");
-    // Hiện badge đỏ ở chat-item sidebar
-    var chatItem = document.querySelector(
-        '.chat-item[data-conversation-id="' + conversationId + '"]'
-    );
-    if (chatItem) {
-        var badge = chatItem.querySelector(".unread-badge");
-        if (badge) {
-            badge.classList.remove("hidden");
-            badge.textContent = parseInt(badge.textContent || "0") + 1;
-        } else {
-            var newBadge = document.createElement("span");
-            newBadge.className =
-                "unread-badge absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center";
-            newBadge.textContent = "1";
-            chatItem.appendChild(newBadge);
-        }
-    }
-}
+// function showChatNotification(conversationId) {
+//     // Hiện badge đỏ ở chuông
+//     var bell = document.getElementById("chat-new-msg-badge");
+//     if (bell) bell.classList.remove("hidden");
+//     // Hiện badge đỏ ở chat-item sidebar
+//     var chatItem = document.querySelector(
+//         '.chat-item[data-conversation-id="' + conversationId + '"]'
+//     );
+//     if (chatItem) {
+//         var badge = chatItem.querySelector(".unread-badge");
+//         if (badge) {
+//             badge.classList.remove("hidden");
+//             badge.textContent = parseInt(badge.textContent || "0") + 1;
+//         } else {
+//             var newBadge = document.createElement("span");
+//             newBadge.className =
+//                 "unread-badge absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center";
+//             newBadge.textContent = "1";
+//             chatItem.appendChild(newBadge);
+//         }
+//     }
+// }
 
 function updateChatNewMessageNotify(count) {
     // Header dropdown notify

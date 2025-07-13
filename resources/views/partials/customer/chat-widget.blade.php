@@ -29,8 +29,9 @@
 
 <!-- Chat Popup -->
 <div id="chatPopup"
-    class="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-2rem)] shadow-2xl rounded-lg overflow-hidden z-50 border border-gray-200 chat-popup">
-    <div id="chatContent" class="bg-white flex flex-col h-[600px]">
+    class="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-2rem)] shadow-2xl rounded-lg overflow-hidden z-50 border border-gray-200 chat-popup"
+    style="height:540px; max-height:80vh;">
+    <div id="chatContent" class="bg-white flex flex-col h-full">
         <!-- Header -->
         <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -76,7 +77,8 @@
                         <span class="text-white text-xs font-bold">FS</span>
                     </div>
                     <div class="flex flex-col items-start">
-                        <div class="rounded-2xl px-4 py-2 max-w-full shadow-sm bg-white text-gray-900 border border-gray-200 rounded-bl-md">
+                        <div
+                            class="rounded-2xl px-4 py-2 max-w-full shadow-sm bg-white text-gray-900 border border-gray-200 rounded-bl-md">
                             <p class="text-sm whitespace-pre-wrap">Xin chào! Chúng tôi có thể giúp gì cho bạn?</p>
                         </div>
                         <span class="text-xs text-gray-500 mt-1 px-2" id="initialTime"></span>
@@ -87,28 +89,14 @@
 
         <!-- Input Area -->
         <div class="border-t border-gray-200 bg-white p-4">
-            <div class="flex items-end gap-3">
-                <div class="flex-1 relative">
-                    <!-- Attachment buttons -->
-                    <div class="flex items-center gap-2 mb-3">
-                        <button id="imageBtn"
-                            class="h-8 w-8 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded flex items-center justify-center transition-colors">
-                            <i class="fas fa-image text-sm"></i>
-                        </button>
-                        <button id="fileBtn"
-                            class="h-8 w-8 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded flex items-center justify-center transition-colors">
-                            <i class="fas fa-paperclip text-sm"></i>
-                        </button>
-                        <button id="emojiBtn"
-                            class="h-8 w-8 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded flex items-center justify-center transition-colors">
-                            <i class="fas fa-smile text-sm"></i>
-                        </button>
-                        {{-- <button id="endChatBtn"
-                            class="text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 px-3 py-1 rounded text-sm transition-colors">
-                            Kết thúc
-                        </button> --}}
-                    </div>
+            <div class="flex gap-2 items-end">
 
+
+                <!-- Message input -->
+                <div class="flex-1 relative flex items-end">
+                    <textarea id="messageInput" placeholder="Nhập tin nhắn..."
+                        class="flex-1 min-h-[44px] max-h-[120px] resize-none border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg px-3 py-2 text-sm"
+                        rows="1"></textarea>
                     <!-- Emoji picker -->
                     <div id="emojiPicker"
                         class="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg p-3 shadow-lg z-10 emoji-picker hidden">
@@ -116,19 +104,21 @@
                             <!-- Emojis will be populated by JavaScript -->
                         </div>
                     </div>
-
-                    <!-- Message input -->
-                    <div class="flex items-end gap-2">
-                        <textarea id="messageInput" placeholder="Nhập tin nhắn..."
-                            class="flex-1 min-h-[44px] max-h-[120px] resize-none border border-gray-300 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-lg px-3 py-2 text-sm"
-                            rows="1"></textarea>
-                        <button id="sendBtn"
-                            class="bg-orange-500 hover:bg-orange-600 text-white h-[44px] px-4 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled>
-                            <i class="fas fa-paper-plane text-sm"></i>
-                        </button>
-                    </div>
                 </div>
+                <!-- Attachment buttons -->
+                <button id="imageBtn"
+                    class="h-10 w-10 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded flex items-center justify-center transition-colors">
+                    <i class="fas fa-image text-lg"></i>
+                </button>
+                <button id="fileBtn"
+                    class="h-10 w-10 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded flex items-center justify-center transition-colors">
+                    <i class="fas fa-paperclip text-lg"></i>
+                </button>
+                <button id="sendBtn"
+                    class="bg-orange-500 hover:bg-orange-600 text-white h-12 w-12 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-2"
+                    disabled>
+                    <i class="fas fa-paper-plane text-lg"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -189,8 +179,7 @@
 <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.txt,.zip,.rar">
 <input type="file" id="imageInput" class="hidden" accept="image/*">
 
-<<<<<<< HEAD
-<script>
+<<<<<<< HEAD <script>
     window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
     window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
 </script>
@@ -279,12 +268,16 @@
             closeNotificationBtn.addEventListener('click', closeSuccessNotification);
             imageInput.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
-                    sendAttachment('image', this.files[0]);
+                    pendingImage = this.files[0];
+                    pendingFile = null;
+                    sendMessage();
                 }
             });
             fileInput.addEventListener('change', function() {
                 if (this.files && this.files[0]) {
-                    sendAttachment('file', this.files[0]);
+                    pendingFile = this.files[0];
+                    pendingImage = null;
+                    sendMessage();
                 }
             });
             document.addEventListener('click', (e) => {
@@ -998,6 +991,28 @@
                     autoResizeTextarea();
                 });
         }
+
+        // Hàm mở chat widget từ notification
+        window.openCustomerChatWidget = function(conversationId) {
+            // Mở popup chat nếu chưa mở
+            const chatToggleBtn = document.getElementById('chatToggleBtn');
+            const chatPopup = document.getElementById('chatPopup');
+            if (!chatPopup.classList.contains('show')) {
+                chatToggleBtn.click();
+            }
+            // Nếu đã có conversationId, load đúng cuộc trò chuyện
+            if (conversationId) {
+                window.conversationId = conversationId;
+                // Nếu đã có hàm loadMessages thì gọi lại
+                if (typeof loadMessages === 'function') {
+                    loadMessages();
+                }
+                // Nếu đã có hàm initCustomerChatRealtime thì gọi lại
+                if (typeof initCustomerChatRealtime === 'function') {
+                    initCustomerChatRealtime(conversationId);
+                }
+            }
+        };
     });
 </script>
 
@@ -1074,6 +1089,22 @@
         to {
             opacity: 1;
             transform: none;
+        }
+    }
+
+    @media (max-width: 640px) {
+        #chatPopup {
+            width: 100vw !important;
+            right: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            border-radius: 0 !important;
+            height: 80vh !important;
+            max-height: 90vh !important;
+        }
+
+        #chatContent {
+            height: 100% !important;
         }
     }
 </style>

@@ -199,9 +199,7 @@
                         </svg>
                     </span>
                     <span class="sidebar-text">Chat</span>
-                    <span id="sidebar-chat-badge"
-                        style="display:none; position:absolute; top:4px; right:8px; min-width:18px; height:18px; padding:0 5px; font-size:12px;"
-                        class="mt-1 sidebar-unread-badge inline-flex items-center justify-center text-xs font-bold leading-none text-white bg-red-500 rounded-full shadow">0</span>
+
                 </a>
 
 
@@ -453,55 +451,4 @@
             });
         });
     });
-</script>
-
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-<script>
-    window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
-    window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
-    let sidebarChatCount = 0;
-
-    function updateSidebarChatBadge() {
-        sidebarChatCount++;
-        const badge = document.getElementById('sidebar-chat-badge');
-        if (badge) {
-            badge.textContent = sidebarChatCount;
-            badge.style.display = 'inline-flex';
-        }
-    }
-
-    function resetSidebarChatBadge() {
-        sidebarChatCount = 0;
-        const badge = document.getElementById('sidebar-chat-badge');
-        if (badge) {
-            badge.textContent = '';
-            badge.style.display = 'none';
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        if (window.PUSHER_APP_KEY && window.PUSHER_APP_CLUSTER) {
-            const pusher = new Pusher(window.PUSHER_APP_KEY, {
-                cluster: window.PUSHER_APP_CLUSTER,
-                encrypted: true
-            });
-            // Lắng nghe kênh tổng admin
-            const channel = pusher.subscribe('admin.conversations');
-            channel.bind('new-message', function(data) {
-                // Lấy user id hiện tại từ meta hoặc biến PHP
-                var currentUserId = {{ auth()->id() ?? 'null' }};
-                if (data.message && data.message.sender_id && String(data.message.sender_id) !== String(
-                        currentUserId)) {
-                    updateSidebarChatBadge();
-                }
-            });
-        }
-    });
-
-    // Gọi resetSidebarChatBadge khi vào trang chat hoặc đọc tin nhắn
-    if (window.location.pathname.includes('/admin/chat')) {
-        document.addEventListener('DOMContentLoaded', function() {
-            resetSidebarChatBadge();
-        });
-    }
 </script>

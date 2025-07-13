@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewChatMessageNotification;
 
 class ChatController extends Controller
 {
@@ -40,11 +41,12 @@ class ChatController extends Controller
 
     public function sendMessage(Request $request)
     {
-        Log::info('Admin gửi tin nhắn', [
-            'conversation_id' => $request->conversation_id,
-            'message' => $request->message,
+        Log::info('--- BẮT ĐẦU sendMessage ---', [
+            'time' => now(),
+            'ip' => $request->ip(),
             'user_id' => Auth::id(),
-            'has_attachment' => $request->hasFile('attachment')
+            'has_attachment' => $request->hasFile('attachment'),
+            'message' => $request->message,
         ]);
         $request->validate([
             'conversation_id' => 'required|exists:conversations,id',
@@ -91,6 +93,46 @@ class ChatController extends Controller
         Log::info('Sender loaded:', ['sender' => $message->sender]);
         broadcast(new NewMessage($message, $conversation->id))->toOthers();
         broadcast(new ConversationUpdated($conversation, 'created'))->toOthers();
+
+        // Gửi cho branch (nếu có)
+        if ($conversation->branch_id) {
+            $branch = Branch::find($conversation->branch_id);
+            if ($branch) {
+                $branch->notify(new NewChatMessageNotification($message));
+                $existing = $branch->notifications()
+                    ->whereNull('read_at')
+                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                    ->where('data->conversation_id', $conversation->id)
+                    ->first();
+                if ($existing) {
+                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($branch));
+                    $existing->created_at = now();
+                    $existing->save();
+                }
+                // Không tạo notification mới nếu đã đọc
+            }
+        }
+
+        // Gửi cho customer (nếu có)
+        if ($conversation->customer_id) {
+            $customer = \App\Models\User::find($conversation->customer_id);
+            if ($customer) {
+                $existing = $customer->notifications()
+                    ->whereNull('read_at')
+                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                    ->where('data->conversation_id', $conversation->id)
+                    ->first();
+                if ($existing) {
+                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($customer));
+                    $existing->created_at = now();
+                    $existing->save();
+                }
+                // Không tạo notification mới nếu đã đọc
+                // Broadcast lên channel tổng cho customer
+                broadcast(new \App\Events\Customer\NewNotification($customer->id, $message))->toOthers();
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => [

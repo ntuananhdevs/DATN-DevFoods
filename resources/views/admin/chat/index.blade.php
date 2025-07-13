@@ -60,7 +60,7 @@
                                         class="chat-item-time">{{ $conv->messages->last()?->created_at ? $conv->messages->last()->created_at->format('H:i') : '' }}</span>
                                 </div>
                             </div>
-                            
+
                         </div>
                         <div class="chat-item-badges mt-2 flex flex-row flex-wrap gap-2">
                             @php

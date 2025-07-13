@@ -15,6 +15,7 @@ use App\Events\Chat\NewMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewChatMessageNotification;
 
 class BranchChatController extends Controller
 {
@@ -228,6 +229,47 @@ class BranchChatController extends Controller
                 ]);
             } else {
                 $conversation->update(['updated_at' => now()]);
+            }
+
+            // Gửi cho admin (tất cả hoặc phụ trách)
+            $admins = \App\Models\User::whereHas('roles', function ($q) {
+                $q->where('name', 'admin');
+            })->get();
+
+            foreach ($admins as $admin) {
+
+                $admin->notify(new NewChatMessageNotification($message));
+                $existing = $admin->notifications()
+                    ->whereNull('read_at')
+                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                    ->where('data->conversation_id', $conversation->id)
+                    ->first();
+                if ($existing) {
+                    $existing->data = array_merge($existing->data, (new \App\Notifications\NewChatMessageNotification($message))->toDatabase($admin));
+                    $existing->created_at = now();
+                    $existing->save();
+                }
+                // Không tạo notification mới nếu đã đọc
+            }
+
+            // Gửi cho customer (nếu có)
+            if ($conversation->customer_id) {
+                $customer = \App\Models\User::find($conversation->customer_id);
+                if ($customer) {
+                    $existing = $customer->notifications()
+                        ->whereNull('read_at')
+                        ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                        ->where('data->conversation_id', $conversation->id)
+                        ->first();
+                    if ($existing) {
+                        $existing->data = array_merge($existing->data, (new \App\Notifications\NewChatMessageNotification($message))->toDatabase($customer));
+                        $existing->created_at = now();
+                        $existing->save();
+                    }
+                    // Không tạo notification mới nếu đã đọc
+                    // Broadcast lên channel tổng cho customer
+                    broadcast(new \App\Events\Customer\NewNotification($customer->id, $message))->toOthers();
+                }
             }
 
             return response()->json([

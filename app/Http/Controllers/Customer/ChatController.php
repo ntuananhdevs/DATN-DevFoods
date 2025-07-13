@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewChatMessageNotification;
 
 class ChatController extends Controller
 {
@@ -106,6 +107,42 @@ class ChatController extends Controller
                 $query->select('id', 'full_name');
             }])->find($message->id);
             broadcast(new NewMessage($message, $request->conversation_id))->toOthers();
+
+            $admins = \App\Models\User::whereHas('roles', function ($q) {
+                $q->where('name', 'admin');
+            })->get();
+            foreach ($admins as $admin) {
+                $existing = $admin->notifications()
+                    ->whereNull('read_at')
+                    ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                    ->where('data->conversation_id', $conversation->id)
+                    ->first();
+                if ($existing) {
+                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($admin));
+                    $existing->created_at = now();
+                    $existing->save();
+                }
+                // Không tạo notification mới nếu đã đọc
+            }
+
+            // Gửi cho branch (nếu có)
+            if ($conversation->branch_id) {
+                $branch = Branch::find($conversation->branch_id);
+                if ($branch) {
+                    $existing = $branch->notifications()
+                        ->whereNull('read_at')
+                        ->where('type', 'App\\Notifications\\NewChatMessageNotification')
+                        ->where('data->conversation_id', $conversation->id)
+                        ->first();
+                    if ($existing) {
+                        $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($branch));
+                        $existing->created_at = now();
+                        $existing->save();
+                    }
+                    // Không tạo notification mới nếu đã đọc
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => [

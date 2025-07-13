@@ -396,32 +396,33 @@ function dtmodalHandleCategoryStatusToggle(options) {
         button,
         categoryName,
         currentStatus,
-        formSelector = 'form',
-        confirmTitle = 'Xác nhận thay đổi trạng thái',
-        confirmSubtitle = 'Bạn có chắc chắn muốn thay đổi trạng thái danh mục này?',
-        confirmMessage = 'Hành động này sẽ thay đổi trạng thái hiển thị của danh mục.',
-        successMessage = 'Đã thay đổi trạng thái danh mục thành công',
-        errorMessage = 'Có lỗi xảy ra khi thay đổi trạng thái danh mục'
+        formSelector = "form",
+        confirmTitle = "Xác nhận thay đổi trạng thái",
+        confirmSubtitle = "Bạn có chắc chắn muốn thay đổi trạng thái danh mục này?",
+        confirmMessage = "Hành động này sẽ thay đổi trạng thái hiển thị của danh mục.",
+        successMessage = "Đã thay đổi trạng thái danh mục thành công",
+        errorMessage = "Có lỗi xảy ra khi thay đổi trạng thái danh mục",
     } = options;
 
     const newStatus = !currentStatus;
-    const statusText = newStatus ? 'hiển thị' : 'ẩn';
+    const statusText = newStatus ? "hiển thị" : "ẩn";
 
     dtmodalConfirmIndex({
         title: confirmTitle,
-        subtitle: confirmSubtitle || `Bạn có chắc chắn muốn ${statusText} danh mục này?`,
+        subtitle:
+            confirmSubtitle ||
+            `Bạn có chắc chắn muốn ${statusText} danh mục này?`,
         message: confirmMessage,
         itemName: categoryName,
         onConfirm: () => {
             const form = button.closest(formSelector);
             form.submit();
-        }
+        },
     });
 }
 
-
 function updateSelectedCategoryStatus(status) {
-    const checkboxes = document.getElementsByClassName('category-row-checkbox');
+    const checkboxes = document.getElementsByClassName("category-row-checkbox");
     const selectedIds = [];
 
     for (let checkbox of checkboxes) {
@@ -431,26 +432,41 @@ function updateSelectedCategoryStatus(status) {
     }
 
     if (selectedIds.length === 0) {
-        dtmodalShowToast('warning', {
-            title: 'Cảnh báo',
-            message: 'Vui lòng chọn ít nhất một danh mục'
+        dtmodalShowToast("warning", {
+            title: "Cảnh báo",
+            message: "Vui lòng chọn ít nhất một danh mục",
         });
         return;
     }
 
-    const statusText = status === 1 ? 'hiển thị' : 'ẩn';
+    const statusText = status === 1 ? "hiển thị" : "ẩn";
 
     dtmodalCreateModal({
-        type: 'warning',
+        type: "warning",
         title: `Xác nhận ${statusText} danh mục`,
         message: `Bạn có chắc chắn muốn ${statusText} ${selectedIds.length} danh mục đã chọn không?`,
-        confirmText: 'Xác nhận',
-        cancelText: 'Hủy',
+        confirmText: "Xác nhận",
+        cancelText: "Hủy",
         onConfirm: function () {
-            document.getElementById('selectedCategoryIds').value = selectedIds.join(',');
-            document.getElementById('selectedCategoryStatus').value = status;
-            document.getElementById('bulkCategoryStatusForm').submit();
-        }
+            document.getElementById("selectedCategoryIds").value =
+                selectedIds.join(",");
+            document.getElementById("selectedCategoryStatus").value = status;
+            document.getElementById("bulkCategoryStatusForm").submit();
+        },
     });
 }
 
+function dtmodalCloseAllToasts() {
+    const container = document.getElementById("dtmodalToastContainer");
+    if (container) {
+        Array.from(container.children).forEach(dtmodalCloseToast);
+    }
+}
+
+function showChatToast(message, options = {}) {
+    dtmodalShowToast("notification", {
+        title: options.title || "Tin nhắn mới",
+        message: message,
+        // Có thể mở rộng thêm: icon, link, v.v.
+    });
+}

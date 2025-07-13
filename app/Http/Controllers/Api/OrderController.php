@@ -13,6 +13,7 @@ use App\Models\Address;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Events\Branch\NewOrderReceived;
+use App\Models\Payment;
 
 class OrderController extends Controller
 {
@@ -119,7 +120,17 @@ class OrderController extends Controller
                 ]);
             }
 
-            // Dispatch event to notify branch
+            // Create payment and link to order
+            $payment = Payment::create([
+                'payment_method' => $request->payment_method,
+                'payment_amount' => $totalAmount,
+                'payment_status' => 'pending',
+                'txn_ref' => 'API-' . time() . '-' . $order->id, // Unique transaction reference
+            ]);
+            $order->payment_id = $payment->id;
+            $order->save();
+
+            // Dispatch event to notify branch (sau khi đã có đầy đủ order_items và payment)
             NewOrderReceived::dispatch($order);
 
             DB::commit();
@@ -129,7 +140,8 @@ class OrderController extends Controller
                 'message' => 'Tạo đơn hàng thành công',
                 'order_id' => $order->id,
                 'order_code' => $order->order_code,
-                'total_amount' => $totalAmount
+                'total_amount' => $totalAmount,
+                'payment' => $payment,
             ], 201);
 
         } catch (\Exception $e) {

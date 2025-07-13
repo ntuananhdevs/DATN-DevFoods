@@ -92,5 +92,44 @@ class AppServiceProvider extends ServiceProvider
                 'currentPoints' => $currentPoints,
             ]);
         });
+
+        // View Composer cho branch notification
+        View::composer([
+            'partials.branch.header',
+            'partials.branch.sidebar',
+        ], function ($view) {
+            $user = Auth::guard('manager')->user();
+            $branch = $user && $user->branch ? $user->branch : null;
+            $branchNotifications = $branch ? $branch->notifications()->latest()->limit(10)->get() : collect();
+            $branchUnreadCount = $branch ? $branch->unreadNotifications()->count() : 0;
+            $view->with([
+                'branchNotifications' => $branchNotifications,
+                'branchUnreadCount' => $branchUnreadCount,
+            ]);
+        });
+
+        // View Composer cho admin notification
+        View::composer('partials.admin.header', function ($view) {
+            $admin = Auth::user(); // hoặc Auth::guard('admin')->user() nếu dùng guard riêng
+            $adminNotifications = $admin ? $admin->notifications()->latest()->limit(10)->get() : collect();
+            $adminUnreadCount = $admin ? $admin->unreadNotifications()->count() : 0;
+            $view->with([
+                'adminNotifications' => $adminNotifications,
+                'adminUnreadCount' => $adminUnreadCount,
+            ]);
+        });
+
+        // View Composer cho customer notification
+        View::composer('partials.customer.header', function ($view) {
+
+            $user = Auth::user();
+            $customerNotifications = $user
+                ? $user->notifications()->latest()->limit(10)->get()
+                : collect();
+            $customerUnreadCount = $user
+                ? $user->unreadNotifications()->count()
+                : 0;
+            $view->with(compact('customerNotifications', 'customerUnreadCount'));
+        });
     }
 }
