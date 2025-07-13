@@ -129,6 +129,20 @@
                     {{-- <span class="status-badge {{ $order->statusColor }} text-white rounded-lg px-3 py-1">{{ $order->statusText }}</span> --}}
                 </div>
                 
+                @php
+                    $mainStatusTextMap = [
+                        'awaiting_confirmation' => 'Chờ xác nhận',
+                        'confirmed' => 'Đã xác nhận',
+                        'awaiting_driver' => 'Chờ tài xế',
+                        'driver_confirmed' => 'Chờ tài xế',
+                        'waiting_driver_pick_up' => 'Chờ tài xế',
+                        'driver_picked_up' => 'Đang giao',
+                        'in_transit' => 'Đang giao',
+                        'delivered' => 'Hoàn thành',
+                        'item_received' => 'Hoàn thành',
+                    ];
+                    $mainStatusList = ['Chờ xác nhận', 'Đã xác nhận', 'Chờ tài xế', 'Đang giao', 'Hoàn thành'];
+                @endphp
                 @if($order->statusHistory->count() > 0)
                     <div class="space-y-3">
                         @foreach($order->statusHistory->sortByDesc('changed_at') as $history)
@@ -141,7 +155,7 @@
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
                                         <span class="text-sm font-medium text-gray-900">
-                                            {{ $history->old_status ? $history->oldStatusText . ' → ' : '' }}{{ $history->newStatusText }}
+                                            {{ $history->old_status ? ($mainStatusTextMap[$history->old_status] ?? 'Khác') . ' → ' : '' }}{{ $mainStatusTextMap[$history->new_status] ?? 'Khác' }}
                                         </span>
                                         <span class="text-xs text-gray-500">{{ $history->changed_at->format('d/m/Y H:i') }}</span>
                                     </div>
@@ -299,9 +313,51 @@
                             <span class="font-medium">{{ $order->actual_delivery_time->format('d/m/Y H:i') }}</span>
                         </div>
                     @endif
+                    @php
+                        $paymentStatusMap = [
+                            'pending' => ['Chờ xử lý', 'bg-yellow-100 text-yellow-800'],
+                            'completed' => ['Thành công', 'bg-green-100 text-green-800'],
+                            'failed' => ['Thất bại', 'bg-red-100 text-red-800'],
+                            'refunded' => ['Đã hoàn tiền', 'bg-pink-100 text-pink-800'],
+                        ];
+                        $ps = $order->payment->payment_status ?? null;
+                        [$psLabel, $psClass] = $paymentStatusMap[$ps] ?? ['Không xác định (' . ($ps ?? 'null') . ')', 'bg-gray-100 text-gray-800'];
+                    @endphp
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Trạng thái thanh toán:</span>
+                        @if($order->payment)
+                            <span class="px-2 py-1 rounded text-xs font-semibold {{ $psClass }}">{{ $psLabel }}</span>
+                        @else
+                            <span class="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800">Không có</span>
+                        @endif
+                    </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Phương thức thanh toán:</span>
-                        <span class="font-medium">{{ $order->paymentMethodText }}</span>
+                        @if($order->payment)
+                            @php
+                                $paymentMethodMap = [
+                                    'cod' => 'Thanh toán khi nhận hàng',
+                                    'vnpay' => 'VNPay',
+                                    'balance' => 'Số dư tài khoản',
+                                ];
+                                $pm = $order->payment->payment_method ?? null;
+                                $pmLabel = $paymentMethodMap[$pm] ?? ucfirst($pm ?? 'Không xác định');
+                            @endphp
+                            @if($pm === 'vnpay')
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 16" style="height:1em;width:auto;display:inline;vertical-align:middle;" aria-label="VNPAY Icon">
+                                    <text x="0" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#e30613">VN</text>
+                                    <text x="18" y="12" font-size="12" font-family="Arial, Helvetica, sans-serif" font-weight="bold" fill="#0072bc">PAY</text>
+                                </svg>
+                            </span>
+                            @elseif($pm === 'cod')
+                                 <span class="inline-block px-2 py-0.5 rounded bg-green-700 text-white text-xs font-semibold">COD</span>
+                            @else
+                                <span class="font-medium">{{ $pmLabel }}</span>
+                            @endif
+                        @else
+                            <span class="font-medium">Không có</span>
+                        @endif
                     </div>
                     @if($order->driver)
                         <div class="flex justify-between">

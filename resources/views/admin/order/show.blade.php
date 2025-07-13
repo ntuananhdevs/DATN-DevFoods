@@ -14,17 +14,31 @@
         <h3 class="text-lg font-semibold text-gray-800 mb-6">Tiến trình đơn hàng</h3>
         <div class="relative">
             @php
-                $steps = [
-                    ['label' => 'Đặt hàng', 'status' => 'created', 'icon' => 'fa-shopping-cart'],
-                    ['label' => 'Xác nhận', 'status' => 'awaiting_confirmation', 'icon' => 'fa-check'],
-                    ['label' => 'Đang giao', 'status' => 'in_transit', 'icon' => 'fa-motorcycle'],
-                    ['label' => 'Hoàn thành', 'status' => 'delivered', 'icon' => 'fa-flag-checkered'],
+                // Map trạng thái thực tế về 5 bước chính
+                $stepMap = [
+                    'awaiting_confirmation' => 0, // Chờ xác nhận
+                    'confirmed' => 1,            // Đã xác nhận
+                    'awaiting_driver' => 2,      // Chờ tài xế
+                    'driver_confirmed' => 2,
+                    'waiting_driver_pick_up' => 2,
+                    'driver_picked_up' => 3,     // Đang giao
+                    'in_transit' => 3,
+                    'delivered' => 4,            // Hoàn thành
+                    'item_received' => 4,
+                    'cancelled' => 0,            // Nếu hủy thì dừng ở bước 1
+                    'refunded' => 0,
+                    'payment_failed' => 0,
+                    'payment_received' => 4,
+                    'order_failed' => 0,
                 ];
-                $statusOrder = array_column($steps, 'status');
-                $currentIdx = array_search($order->status, $statusOrder);
-                if ($currentIdx === false) {
-                    $currentIdx = 0; // Default to first step if status not found
-                }
+                $steps = [
+                    ['label' => 'Chờ xác nhận', 'icon' => 'fa-hourglass-half'],
+                    ['label' => 'Đã xác nhận', 'icon' => 'fa-check'],
+                    ['label' => 'Chờ tài xế', 'icon' => 'fa-user-clock'],
+                    ['label' => 'Đang giao', 'icon' => 'fa-truck'],
+                    ['label' => 'Hoàn thành', 'icon' => 'fa-flag-checkered'],
+                ];
+                $currentIdx = $stepMap[$order->status] ?? 0;
             @endphp
             
             <!-- Progress Bar -->

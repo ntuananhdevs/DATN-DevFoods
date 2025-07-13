@@ -142,6 +142,7 @@
                         <th class="py-3 px-4 text-left font-medium">Khách hàng</th>
                         <th class="py-3 px-4 text-left font-medium">Chi nhánh</th>
                         <th class="py-3 px-4 text-right font-medium">Tổng tiền</th>
+                        <th class="py-3 px-4 text-left font-medium">Thanh toán</th>
                         <th class="py-3 px-4 text-left font-medium">Trạng thái</th>
                         <th class="py-3 px-4 text-left font-medium">Thời gian</th>
                         <th class="py-3 px-4 text-center font-medium">Thao tác</th>

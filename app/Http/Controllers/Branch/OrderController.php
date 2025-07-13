@@ -81,10 +81,10 @@ class OrderController extends Controller
         if ($request->filled('status') && $request->status !== 'all') {
             if ($request->status === 'awaiting_driver') {
                 $query->whereIn('status', [
-                    'awaiting_driver',
                     'confirmed',
-                    'driver_assigned',
+                    'awaiting_driver',
                     'driver_confirmed',
+                    'waiting_driver_pick_up',
                     'driver_picked_up'
                 ]);
             } else {
@@ -130,16 +130,25 @@ class OrderController extends Controller
             'awaiting_confirmation' => Order::where('branch_id', $branch->id)->where('status', 'awaiting_confirmation')->count(),
             'awaiting_driver' => Order::where('branch_id', $branch->id)
                 ->whereIn('status', [
-                    'awaiting_driver',
                     'confirmed',
-                    'driver_assigned',
+                    'awaiting_driver',
                     'driver_confirmed',
+                    'waiting_driver_pick_up',
                     'driver_picked_up'
                 ])->count(),
+            'confirmed' => Order::where('branch_id', $branch->id)->where('status', 'confirmed')->count(),
+            'driver_assigned' => Order::where('branch_id', $branch->id)->where('status', 'driver_assigned')->count(),
+            'driver_confirmed' => Order::where('branch_id', $branch->id)->where('status', 'driver_confirmed')->count(),
+            'waiting_driver_pick_up' => Order::where('branch_id', $branch->id)->where('status', 'waiting_driver_pick_up')->count(),
+            'driver_picked_up' => Order::where('branch_id', $branch->id)->where('status', 'driver_picked_up')->count(),
             'in_transit' => Order::where('branch_id', $branch->id)->where('status', 'in_transit')->count(),
             'delivered' => Order::where('branch_id', $branch->id)->where('status', 'delivered')->count(),
+            'item_received' => Order::where('branch_id', $branch->id)->where('status', 'item_received')->count(),
             'cancelled' => Order::where('branch_id', $branch->id)->where('status', 'cancelled')->count(),
             'refunded' => Order::where('branch_id', $branch->id)->where('status', 'refunded')->count(),
+            'payment_failed' => Order::where('branch_id', $branch->id)->where('status', 'payment_failed')->count(),
+            'payment_received' => Order::where('branch_id', $branch->id)->where('status', 'payment_received')->count(),
+            'order_failed' => Order::where('branch_id', $branch->id)->where('status', 'order_failed')->count(),
         ];
 
         // Get payment methods for filter
