@@ -42,8 +42,8 @@ return new class extends Migration
                             'awaiting_confirmation',  //  chờ xác nhận
                             'confirmed',              //  đã xác nhận
                             'awaiting_driver',        //  chờ tài xế nhận đơn
-                            'driver_assigned',        // Tài xế đã được giao đơn
-                            'driver_confirmed',       // Tài xế đã xác nhận đơn
+                            'driver_confirmed',      // Tài xế đã xác nhận đơn
+                            'waiting_driver_pick_up', // Tài xế đang chờ đơn
                             'driver_picked_up',       // Tài xế đã nhận đơn
                             'in_transit',             // Đơn hàng đang trong quá trình giao hàng
                             'delivered',              // Đơn hàng đã giao thành công

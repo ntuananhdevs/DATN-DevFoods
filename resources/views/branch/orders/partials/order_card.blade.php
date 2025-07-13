@@ -19,6 +19,7 @@
                             'awaiting_driver' => 'bg-blue-400 text-white',
                             'driver_assigned' => 'bg-indigo-500 text-white',
                             'driver_confirmed' => 'bg-indigo-600 text-white',
+                            'waiting_driver_pick_up' => 'bg-purple-400 text-white',
                             'driver_picked_up' => 'bg-purple-500 text-white',
                             'in_transit' => 'bg-orange-500 text-white',
                             'delivered' => 'bg-green-500 text-white',
@@ -35,6 +36,7 @@
                             'awaiting_driver' => 'Chờ tài xế',
                             'driver_assigned' => 'Đã gán tài xế',
                             'driver_confirmed' => 'Tài xế đã xác nhận',
+                            'waiting_driver_pick_up' => 'Chờ tài xế lấy hàng',
                             'driver_picked_up' => 'Tài xế đã nhận đơn',
                             'in_transit' => 'Đang giao',
                             'delivered' => 'Đã giao',
@@ -148,8 +150,8 @@
                 <button data-quick-action="cancel" data-order-id="{{ $order->id }}" class="px-3 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600">
                     Hủy
                 </button>
-            @endif
-            @if($order->status === 'confirmed')
+                <a href="{{ route('branch.orders.show', $order->id) }}" class="flex-1 px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 text-center">Chi tiết</a>
+            @elseif($order->status === 'confirmed')
                 <div class="flex w-full gap-2">
                     <button type="button" class="flex-1 px-3 py-2 text-sm rounded-md bg-gray-200 text-gray-700 flex items-center gap-2 cursor-default" disabled>
                         <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

@@ -182,7 +182,7 @@
                 <a href="{{ route('branch.orders.index', ['status' => 'awaiting_confirmation']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'awaiting_confirmation' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="awaiting_confirmation">
                     Chờ xác nhận ({{ $statusCounts['awaiting_confirmation'] ?? 0 }})
                 </a>
-                <a href="{{ route('branch.orders.index', ['status' => 'awaiting_driver']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'awaiting_driver' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="awaiting_driver">
+                <a href="{{ route('branch.orders.index', ['status' => 'awaiting_driver']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'awaiting_driver' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }} tooltip" data-status="awaiting_driver">
                     Chờ tài xế ({{ $statusCounts['awaiting_driver'] ?? 0 }})
                 </a>
                 <a href="{{ route('branch.orders.index', ['status' => 'in_transit']) }}" class="status-tab whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm {{ request('status') == 'in_transit' ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500' }}" data-status="in_transit">
