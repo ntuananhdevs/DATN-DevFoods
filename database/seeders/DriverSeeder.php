@@ -18,10 +18,10 @@ class DriverSeeder extends Seeder
     {
         $drivers = [
             [
-                'full_name' => 'Tài xế Test 1',
+                'full_name' => 'Nguyễn Văn A',
                 'email' => 'driver1@test.com',
-                'phone_number' => '0123456789',
-                'password' => 'password',
+                'phone_number' => '0981714620',
+                'password' => '123456',
                 'status' => 'active',
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
@@ -30,10 +30,10 @@ class DriverSeeder extends Seeder
                 'longitude' => 105.849,
             ],
             [
-                'full_name' => 'Tài xế Test 2',
+                'full_name' => 'Nguyễn Văn B',
                 'email' => 'driver2@test.com',
-                'phone_number' => '0123456790',
-                'password' => 'password',
+                'phone_number' => '0981714621',
+                'password' => '123456',
                 'status' => 'active',
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
@@ -42,10 +42,10 @@ class DriverSeeder extends Seeder
                 'longitude' => 105.850,
             ],
             [
-                'full_name' => 'Tài xế Test 3',
+                'full_name' => 'Nguyễn Văn C',
                 'email' => 'driver3@test.com',
-                'phone_number' => '0123456791',
-                'password' => 'password',
+                'phone_number' => '0981714622',
+                'password' => '123456',
                 'status' => 'active',
                 'is_available' => true,
                 'vehicle_type' => 'motorcycle',
