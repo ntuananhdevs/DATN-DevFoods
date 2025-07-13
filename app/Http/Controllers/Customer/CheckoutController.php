@@ -260,7 +260,7 @@ class CheckoutController extends Controller
                 'payer_phone' => $userId ? Auth::user()->phone : $request->phone,
                 'payment_amount' => $total,
                 'txn_ref' => 'PAY-' . strtoupper(uniqid()), // Mã giao dịch tạm thời
-                'payment_status' => ($request->payment_method === 'cod' || $request->payment_method === 'balance') ? 'completed' : 'pending',
+                'payment_status' => ($request->payment_method === 'balance') ? 'completed' : 'pending',
                 'ip_address' => $request->ip(),
             ]);
             $payment->save();
