@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Events\OrderCancelledByCustomer;
+use App\Events\OrderCancelledByCustomer; // Ensure this event is correctly imported.
 use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Http\JsonResponse; // Add this import
+
 
 class OrderController extends Controller
 {
@@ -18,8 +20,8 @@ class OrderController extends Controller
     public function index()
     {
         $orders = Order::where('customer_id', Auth::id())
-                        ->latest() // Sắp xếp đơn hàng mới nhất lên đầu
-                        ->paginate(10); // Phân trang, mỗi trang 10 đơn hàng
+            ->latest() // Sắp xếp đơn hàng mới nhất lên đầu
+            ->paginate(10); // Phân trang, mỗi trang 10 đơn hàng
 
         return view('customer.orders.index', compact('orders'));
     }
@@ -51,45 +53,47 @@ class OrderController extends Controller
      * Update the status of an order.
      * This single method handles cancelling, confirming receipt, etc.
      */
-    public function updateStatus(Request $request, Order $order)
+    public function updateStatus(Request $request, Order $order): JsonResponse
     {
-        // 1. Authorization: Kiểm tra quyền truy cập của khách hàng
+        // 1. Bảo mật: Đảm bảo khách hàng chỉ có thể cập nhật đơn hàng của chính mình.
         if ($order->customer_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền thực hiện hành động này.'
-            ], 403); // Trả về mã lỗi 403 khi không có quyền
+                'message' => 'Bạn không có quyền truy cập đơn hàng này.'
+            ], 403);
         }
 
-        // 2. Validation: Kiểm tra dữ liệu đầu vào
-        $validated = $request->validate([
+        // 2. Validate yêu cầu
+        $request->validate([
             'status' => ['required', 'string', Rule::in(['cancelled', 'item_received'])],
-            'rating' => 'nullable|integer|min:1|max:5',
-            'review' => 'nullable|string|max:500'
+            'reason' => 'required_if:status,cancelled|string|max:500', // Lý do hủy
+            // 'rating' => 'nullable|integer|min:1|max:5', // Đánh giá sao
+            // 'review' => 'nullable|string|max:1000' // Đánh giá văn bản
         ]);
-        $newStatus = $validated['status'];
 
-        // 3. Logic: Kiểm tra trạng thái và điều kiện để thay đổi
+        $newStatus = $request->status;
         $canUpdate = false;
         $message = '';
+        $oldStatus = $order->status; // Lấy trạng thái cũ trước khi cập nhật
 
-        // Kiểm tra trạng thái hủy đơn
+        // 3. Logic chuyển đổi trạng thái
+        // Khách hàng hủy đơn hàng (chỉ khi đơn đang chờ xác nhận)
         if ($newStatus === 'cancelled' && $order->status === 'awaiting_confirmation') {
             $canUpdate = true;
-            $message = 'Đã hủy đơn hàng thành công!';
-            // Broadcast sự kiện hủy đơn đến các kênh liên quan
-            broadcast(new OrderCancelledByCustomer($order->id))->toOthers();
+            $message = 'Đơn hàng của bạn đã được hủy thành công.';
+            // Dispatch event for driver about customer cancellation
+            event(new OrderCancelledByCustomer($order->id)); //
         }
-        // Kiểm tra trạng thái xác nhận đã nhận hàng
+        // Khách hàng xác nhận đã nhận hàng (chỉ khi đơn đã được giao)
         elseif ($newStatus === 'item_received' && $order->status === 'delivered') {
             $canUpdate = true;
             // Lưu rating và review nếu có
-            if ($request->rating) {
-                $order->rating = $request->rating;
-            }
-            if ($request->review) {
-                $order->review = $request->review;
-            }
+            // if ($request->rating) {
+            //     $order->rating = $request->rating;
+            // }
+            // if ($request->review) {
+            //     $order->review = $request->review;
+            // }
             $message = 'Đã xác nhận nhận hàng thành công!';
         }
 
@@ -107,12 +111,13 @@ class OrderController extends Controller
             $order->actual_delivery_time = now();
         }
         $order->save();
-        
+
         // Lấy dữ liệu mới nhất từ cơ sở dữ liệu
         $freshOrder = $order->fresh();
 
         // 5. Broadcast sự kiện cập nhật trạng thái đơn hàng
-        broadcast(new OrderStatusUpdated($freshOrder))->toOthers();
+        // broadcast(new OrderStatusUpdated($freshOrder))->toOthers(); // Remove .toOthers() if not needed or if it causes issues
+        event(new OrderStatusUpdated($freshOrder)); //
 
         // Trả về kết quả thành công và dữ liệu đơn hàng đã được cập nhật
         return response()->json([
@@ -128,8 +133,8 @@ class OrderController extends Controller
     public function listPartial()
     {
         $orders = Order::where('customer_id', Auth::id())
-                        ->latest()
-                        ->paginate(10);
+            ->latest()
+            ->paginate(10);
         return view('customer.orders.partials.list', compact('orders'))->render();
     }
 

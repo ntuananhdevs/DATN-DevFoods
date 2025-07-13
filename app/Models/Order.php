@@ -13,7 +13,6 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'order_code',
         'customer_id',
         'branch_id',
         'driver_id',
@@ -92,7 +91,13 @@ class Order extends Model
         return $this->belongsTo(Address::class);
     }
 
-
+    /**
+     * Get the payment associated with the order.
+     */
+    public function payment()
+    {
+        return $this->belongsTo(Payment::class);
+    }
 
     /**
      * Get the discount code associated with the order.
@@ -125,8 +130,6 @@ class Order extends Model
 
 
     /**
-     * === THÊM KHỐI CODE NÀY VÀO MODEL CỦA BẠN ===
-     *
      * The accessors to append to the model's array form.
      * Thuộc tính này yêu cầu Laravel luôn đính kèm các giá trị từ Accessor
      * vào kết quả JSON, giải quyết lỗi "reading 'bg'".
@@ -136,11 +139,10 @@ class Order extends Model
     protected $appends = [
         'status_text',
         'status_color',
+        'status_text_color',
         'status_icon',
         'customer_name',
-        'customer_phone',
-        'payment_method_text',
-        'payment_status'
+        'customer_phone'
     ];
 
     /**
@@ -178,60 +180,6 @@ class Order extends Model
     /**
      * Get the customer name (either from User or guest_name)
      */
-    private static array $statusAttributes = [
-        'awaiting_confirmation' => ['text' => 'Chờ xác nhận', 'bg' => '#fef9c3', 'text_color' => '#ca8a04', 'icon' => 'fas fa-hourglass-half'],
-        'confirmed' => ['text' => 'Đã xác nhận', 'bg' => '#dbeafe', 'text_color' => '#2563eb', 'icon' => 'fas fa-check'],
-        'awaiting_driver' => ['text' => 'Chờ tài xế', 'bg' => '#ffedd5', 'text_color' => '#c2410c', 'icon' => 'fas fa-user-clock'],
-
-        'driver_picked_up' => ['text' => 'Đã nhận đơn', 'bg' => '#e0e7ff', 'text_color' => '#4338ca', 'icon' => 'fas fa-shopping-bag'],
-        'in_transit' => ['text' => 'Đang giao', 'bg' => '#ccfbf1', 'text_color' => '#0f766e', 'icon' => 'fas fa-truck'],
-        'delivered' => ['text' => 'Đã giao', 'bg' => '#dcfce7', 'text_color' => '#16a34a', 'icon' => 'fas fa-check-double'],
-        'item_received' => ['text' => 'Đã nhận hàng', 'bg' => '#d1fae5', 'text_color' => '#047857', 'icon' => 'fas fa-home'],
-        'cancelled' => ['text' => 'Đã hủy', 'bg' => '#fee2e2', 'text_color' => '#dc2626', 'icon' => 'fas fa-times-circle'],
-        'failed_delivery' => ['text' => 'Giao thất bại', 'bg' => '#fee2e2', 'text_color' => '#dc2626', 'icon' => 'fas fa-exclamation-triangle'],
-        'delivery_incomplete' => ['text' => 'Giao chưa hoàn tất', 'bg' => '#fef3c7', 'text_color' => '#d97706', 'icon' => 'fas fa-exclamation-circle'],
-        'pending_refund' => ['text' => 'Chờ hoàn tiền', 'bg' => '#e0f2fe', 'text_color' => '#0284c7', 'icon' => 'fas fa-undo-alt'],
-        'investigating' => ['text' => 'Đang điều tra', 'bg' => '#e5e7eb', 'text_color' => '#4b5563', 'icon' => 'fas fa-search'],
-        'waiting_for_confirmation' => ['text' => 'Đang chờ xác nhận', 'bg' => '#fef9c3', 'text_color' => '#ca8a04', 'icon' => 'fas fa-hourglass-half'],
-        'default' => ['text' => 'Không xác định', 'bg' => '#f3f4f6', 'text_color' => '#4b5563', 'icon' => 'fas fa-question-circle'],
-    ];
-
-    /**
-     * Lấy text trạng thái Tiếng Việt.
-     */
-    protected function statusText(): Attribute
-    {
-        return Attribute::make(
-            get: fn() => self::$statusAttributes[$this->status]['text'] ?? self::$statusAttributes['default']['text'],
-        );
-    }
-
-    /**
-     * Lấy MÀU HEX (string) cho từng trạng thái.
-     */
-    protected function statusColor(): Attribute
-    {
-        return Attribute::make(
-            get: fn() => [
-                'bg' => self::$statusAttributes[$this->status]['bg'] ?? self::$statusAttributes['default']['bg'],
-                'text' => self::$statusAttributes[$this->status]['text_color'] ?? self::$statusAttributes['default']['text_color'],
-            ]
-        );
-    }
-
-    /**
-     * Lấy class ICON (string) cho từng trạng thái.
-     */
-    protected function statusIcon(): Attribute
-    {
-        return Attribute::make(
-            get: fn() => self::$statusAttributes[$this->status]['icon'] ?? self::$statusAttributes['default']['icon'],
-        );
-    }
-
-    /**
-     * Lấy tên khách hàng (từ User hoặc guest_name)
-     */
     protected function customerName(): Attribute
     {
         return Attribute::make(
@@ -249,20 +197,15 @@ class Order extends Model
         );
     }
 
-    /**
-     * Lấy text trạng thái tĩnh cho các tab
-     *
-     * Lấy text phương thức thanh toán
-     */
     protected function paymentMethodText(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->payment ? match ($this->payment->payment_method) {
+            get: fn() => match ($this->payment_method) {
                 'cod' => 'COD (Thanh toán khi nhận hàng)',
                 'vnpay' => 'VNPAY',
                 'balance' => 'Số dư tài khoản',
                 default => 'Không xác định',
-            } : 'Chưa có thanh toán'
+            }
         );
     }
 
@@ -276,53 +219,77 @@ class Order extends Model
         );
     }
 
+
+    // --- CẬP NHẬT TẠI ĐÂY ---
+
+    // Định nghĩa tĩnh các thuộc tính trạng thái
+    private static array $statusAttributes = [
+        'awaiting_confirmation' => ['text' => 'Chờ xác nhận', 'bg' => '#fcd34d', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-hourglass-half'], // Vàng nhạt -> Cam đậm
+        'awaiting_driver' => ['text' => 'Chờ tài xế', 'bg' => '#f97316', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-user-clock'],       // Cam -> Nâu đỏ
+        'driver_assigned' => ['text' => 'Tài xế đã được giao', 'bg' => '#60a5fa', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-clipboard-check'], // Xanh dương nhạt -> Xanh dương đậm
+        'driver_confirmed' => ['text' => 'Tài xế đã xác nhận', 'bg' => '#3b82f6', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-check-circle'], // Xanh dương trung bình -> Xanh đậm
+        'waiting_driver_pick_up' => ['text' => 'Chờ tài xế lấy hàng', 'bg' => '#818cf8', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-shopping-bag'], // Tím nhạt -> Tím đậm
+        'driver_picked_up' => ['text' => 'Đã nhận đơn', 'bg' => '#a78bfa', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-shopping-bag'],     // Tím nhạt -> Tím đậm
+        'in_transit' => ['text' => 'Đang giao', 'bg' => '#2dd4bf', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-truck'],               // Xanh ngọc lam -> Xanh lá cây đậm
+        'delivered' => ['text' => 'Đã giao', 'bg' => '#4ade80', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-check-double'],            // Xanh lá cây nhạt -> Xanh lá cây đậm hơn
+        'item_received' => ['text' => 'Khách đã nhận hàng', 'bg' => '#22c55e', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-home'],      // Xanh lá cây tươi -> Xanh lá cây rất đậm
+        'cancelled' => ['text' => 'Đã hủy', 'bg' => '#f87171', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-times-circle'],             // Đỏ nhạt -> Đỏ đậm
+        'refunded' => ['text' => 'Đã hoàn tiền', 'bg' => '#a5b4fc', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-undo-alt'],          // Tím xanh nhạt -> Xanh tím đậm
+        'payment_failed' => ['text' => 'Thanh toán thất bại', 'bg' => '#ef4444', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-exclamation-triangle'], // Đỏ -> Đỏ sẫm
+        'payment_received' => ['text' => 'Thanh toán đã nhận', 'bg' => '#84cc16', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-money-check-alt'], // Xanh lá cây tươi -> Xanh lá cây đậm
+        'order_failed' => ['text' => 'Đơn hàng đã thất bại', 'bg' => '#dc2626', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-times-circle'],     // Đỏ đậm -> Đỏ sẫm hơn
+        'default' => ['text' => 'Không xác định', 'bg' => '#e5e7eb', 'text_color' => '#FFFFFF', 'icon' => 'fas fa-question-circle'], // Xám nhạt -> Xám đậm
+    ];
+
     /**
-     * Lấy text trạng thái tĩnh cho các tab
+     * Lấy text trạng thái Tiếng Việt.
      */
-    public static function getStatusText(string $status): string
+    protected function statusText(): Attribute
     {
-        return self::$statusAttributes[$status]['text'] ?? ucfirst($status);
-    }
-
-    public function getStatusSvgIconAttribute(): string
-    {
-        $iconClass = 'w-6 h-6'; // Kích thước icon bên trong hình tròn
-        $svg = '';
-
-        switch ($this->status) {
-            case 'awaiting_confirmation':
-                $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hourglass ' . $iconClass . '"><path d="M6 2v6a6 6 0 0 0 6 6 6 6 0 0 0 6-6V2"></path><path d="M6 22v-6a6 6 0 0 1 6-6 6 6 0 0 1 6 6v6"></path></svg>';
-                break;
-            case 'awaiting_driver':
-            case 'accepted':
-                $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-package ' . $iconClass . '"><path d="m7.5 4.27 9 5.15"></path><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>';
-                break;
-            case 'driver_picked_up':
-            case 'in_transit':
-                $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck ' . $iconClass . '"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 2 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>';
-                break;
-            case 'delivered':
-            case 'item_received':
-                $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big ' . $iconClass . '"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="m9 11 3 3L22 4"></path></svg>';
-                break;
-            case 'cancelled':
-                $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle ' . $iconClass . '"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>';
-                break;
-            case 'refunded':
-                $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wallet-2 ' . $iconClass . '"><path d="M17 14h.01"></path><path d="M7 14h.01"></path><path d="M22 7H2v13a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2Z"></path><path d="M2 7V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3"></path></svg>';
-                break;
-            default:
-                $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info ' . $iconClass . '"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
-                break;
-        }
-        return $svg;
+        return Attribute::make(
+            get: fn() => static::$statusAttributes[$this->status]['text'] ?? static::$statusAttributes['default']['text'],
+        );
     }
 
     /**
-     * Get the payment associated with the order.
+     * Lấy MÀU HEX (string) cho từng trạng thái.
+     * Lưu ý: Phương thức này hiện chỉ trả về màu nền (bg).
+     * Nếu bạn cần màu chữ riêng, bạn sẽ cần truy cập $order->status_color['text'] trong Blade.
      */
-    public function payment()
+    protected function statusColor(): Attribute
     {
-        return $this->belongsTo(Payment::class);
+        return Attribute::make(
+            get: fn() => static::$statusAttributes[$this->status]['bg'] ?? static::$statusAttributes['default']['bg'],
+        );
+    }
+
+    /**
+     * Lấy class ICON (string) cho từng trạng thái.
+     */
+    protected function statusIcon(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => static::$statusAttributes[$this->status]['icon'] ?? static::$statusAttributes['default']['icon'],
+        );
+    }
+
+    /**
+     * Lấy text trạng thái tĩnh cho các tab (nếu cần dùng bên ngoài instance của Order)
+     */
+    public static function getStatusTextStatic(string $status): string
+    {
+        return static::$statusAttributes[$status]['text'] ?? static::$statusAttributes['default']['text'];
+    }
+
+    public static function getStatusIconStatic(string $status): string
+    {
+        return static::$statusAttributes[$status]['icon'] ?? static::$statusAttributes['default']['icon'];
+    }
+
+    protected function statusTextColor(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => static::$statusAttributes[$this->status]['text_color'] ?? static::$statusAttributes['default']['text_color'],
+        );
     }
 }
