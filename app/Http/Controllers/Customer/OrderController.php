@@ -134,13 +134,36 @@ class OrderController extends Controller
     }
 
     /**
+     * Hiển thị form nhập mã đơn hàng để theo dõi.
+     *
+     * @return \Illuminate\Contracts\View\View
+     */
+    public function showTrackingForm()
+    {
+        return view('customer.track.index');
+    }
+
+    /**
      * Hiển thị trang theo dõi đơn hàng cho khách (không cần đăng nhập).
      *
      * @param string $order_code
      * @return \Illuminate\Contracts\View\View
      */
-    public function orderTrackingForGuest(Request $request, $order_code)
+    public function orderTrackingForGuest(Request $request, $order_code = null)
     {
+        // Nếu có form submission, validate Turnstile
+        if ($request->isMethod('post')) {
+            $validated = $request->validate([
+                'order_code' => 'required|string|max:20',
+                'cf-turnstile-response' => ['required', new \App\Rules\TurnstileRule()],
+            ]);
+            
+            $order_code = $validated['order_code'];
+            
+            // Redirect to GET route với order_code
+            return redirect()->route('customer.order.track', ['order_code' => $order_code]);
+        }
+
         $order = Order::where('order_code', $order_code)->first();
 
         if (!$order) {
