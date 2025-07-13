@@ -16,6 +16,7 @@ use App\Models\Branch;
 use App\Models\Address;
 use App\Services\BranchService;
 use App\Services\ShippingService;
+use App\Mail\EmailFactory;
 
 class CheckoutController extends Controller
 {
@@ -364,6 +365,9 @@ class CheckoutController extends Controller
             
             DB::commit();
             
+            // Send confirmation email
+            EmailFactory::sendOrderConfirmation($order);
+            
             // Redirect to success page
             return redirect()->route('checkout.success', ['order_code' => $order->order_code])
                         ->with('success', 'Đơn hàng của bạn đã được đặt thành công!');
@@ -475,6 +479,9 @@ class CheckoutController extends Controller
 
                     // Dispatch event cho branch
                     NewOrderReceived::dispatch($order);
+
+                    // Send confirmation email
+                    EmailFactory::sendOrderConfirmation($order);
 
                     // Clear cart
                     $cart = Cart::where('user_id', $order->customer_id)
