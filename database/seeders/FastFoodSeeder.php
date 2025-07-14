@@ -387,6 +387,7 @@ class FastFoodSeeder extends Seeder
                 $product = Product::create([
                     'category_id' => $category->id,
                     'name' => $productName,
+                    'slug' => Str::slug($productName),
                     'sku' => $this->generateSku($category->name, 'product'),
                     'description' => $description,
                     'short_description' => $shortDescription,

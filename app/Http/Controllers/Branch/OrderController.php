@@ -19,7 +19,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         if (!$branch) {
             return redirect()->back()->with('error', 'Không tìm thấy thông tin chi nhánh');
         }
@@ -28,7 +28,7 @@ class OrderController extends Controller
         if ($request->has('check_new') && $request->check_new === 'true') {
             $lastOrderTime = $request->input('last_order_time');
             $hasNewOrders = false;
-            
+
             if ($lastOrderTime) {
                 $hasNewOrders = Order::where('branch_id', $branch->id)
                     ->where('created_at', '>', $lastOrderTime)
@@ -39,7 +39,7 @@ class OrderController extends Controller
                     ->where('created_at', '>', now()->subMinutes(5))
                     ->exists();
             }
-            
+
             return response()->json([
                 'hasNewOrders' => $hasNewOrders,
                 'timestamp' => now()->toISOString()
@@ -66,14 +66,14 @@ class OrderController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('order_code', 'like', "%{$search}%")
-                  ->orWhere('guest_name', 'like', "%{$search}%")
-                  ->orWhere('guest_phone', 'like', "%{$search}%")
-                  ->orWhereHas('customer', function($customerQuery) use ($search) {
-                      $customerQuery->where('name', 'like', "%{$search}%")
-                                   ->orWhere('phone', 'like', "%{$search}%");
-                  });
+                    ->orWhere('guest_name', 'like', "%{$search}%")
+                    ->orWhere('guest_phone', 'like', "%{$search}%")
+                    ->orWhereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -102,7 +102,7 @@ class OrderController extends Controller
 
         // Payment method filter
         if ($request->filled('payment_method') && $request->payment_method !== 'all') {
-            $query->whereHas('payment', function($q) use ($request) {
+            $query->whereHas('payment', function ($q) use ($request) {
                 $q->where('payment_method', $request->payment_method);
             });
         }
@@ -159,7 +159,7 @@ class OrderController extends Controller
     public function show($id)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         $order = Order::with([
             'customer',
             'driver',
@@ -171,8 +171,8 @@ class OrderController extends Controller
             'payment',
             'address'
         ])->where('branch_id', $branch->id)
-          ->where('id', $id)
-          ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         return view('branch.orders.show', compact('order'));
     }
@@ -180,16 +180,16 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         $order = Order::where('branch_id', $branch->id)
-                     ->where('id', $id)
-                     ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         $oldStatus = $order->status;
         $newStatus = $request->status;
         $note = $request->note;
 
-        // Validate status transition
+        // Validate status transition (UPDATED logic for new statuses)
         $validTransitions = $this->getValidStatusTransitions($oldStatus);
         if (!in_array($newStatus, $validTransitions)) {
             return response()->json([
@@ -198,7 +198,7 @@ class OrderController extends Controller
             ], 400);
         }
 
-        // Additional validations for specific status changes
+        // Additional validations for specific status changes (UPDATED logic)
         $validationResult = $this->validateStatusChange($order, $newStatus);
         if (!$validationResult['valid']) {
             return response()->json([
@@ -217,25 +217,31 @@ class OrderController extends Controller
 
         // Handle specific status actions
 
-        // Create status history
+        // Cập nhật trạng thái đơn hàng
+        $order->status = $newStatus;
+        $order->save();
+
+        // Lấy lại đơn hàng với dữ liệu mới nhất
+        $freshOrder = $order->fresh();
+
+        // Ghi lại lịch sử trạng thái
         OrderStatusHistory::create([
             'order_id' => $order->id,
             'old_status' => $oldStatus,
             'new_status' => $newStatus,
             'changed_by' => Auth::guard('manager')->id(),
             'changed_by_role' => 'branch_manager',
-            'note' => $note ?: $this->getDefaultNote($oldStatus, $newStatus),
+            'note' => $note ?? $this->getDefaultNote($oldStatus, $newStatus),
             'changed_at' => now()
         ]);
 
-        // Broadcast order status update event
-        event(new OrderStatusUpdated($order, $oldStatus, $newStatus));
+        // Broadcast sự kiện cập nhật trạng thái đơn hàng
+        event(new OrderStatusUpdated($freshOrder)); //
 
         return response()->json([
             'success' => true,
-            'message' => 'Cập nhật trạng thái thành công',
-            'new_status' => $newStatus,
-            'status_text' => $this->getStatusText($newStatus)
+            'message' => 'Cập nhật trạng thái đơn hàng thành công.',
+            'order' => $freshOrder // Trả về đơn hàng đã cập nhật
         ]);
     }
 
@@ -341,10 +347,10 @@ class OrderController extends Controller
     public function cancel(Request $request, $id)
     {
         $branch = Auth::guard('manager')->user()->branch;
-        
+
         $order = Order::where('branch_id', $branch->id)
-                     ->where('id', $id)
-                     ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         // Create cancellation record
         OrderCancellation::create([
@@ -415,8 +421,8 @@ class OrderController extends Controller
     {
         $branch = Auth::guard('manager')->user()->branch;
         $order = Order::where('branch_id', $branch->id)
-                     ->where('id', $id)
-                     ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         Log::info('Bắt đầu xác nhận đơn hàng', ['order_id' => $order->id]);
 
@@ -433,7 +439,7 @@ class OrderController extends Controller
             Log::info('Cập nhật trạng thái confirmed', ['order_id' => $order->id]);
             $order->update(['status' => 'confirmed']);
             $order->refresh();
-            
+
             OrderStatusHistory::create([
                 'order_id' => $order->id,
                 'old_status' => 'awaiting_confirmation',
@@ -443,15 +449,15 @@ class OrderController extends Controller
                 'note' => 'Xác nhận đơn hàng',
                 'changed_at' => now()
             ]);
-            
+
             // Broadcast event để cập nhật realtime
             event(new OrderStatusUpdated($order, 'awaiting_confirmation', 'confirmed'));
-            
+
             // Dispatch event để tìm tài xế tự động
             event(new OrderConfirmed($order));
-            
+
             Log::info('Đã xác nhận đơn hàng và dispatch event tìm tài xế', ['order_id' => $order->id]);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Đã xác nhận đơn hàng, đang tìm tài xế...',
@@ -459,7 +465,6 @@ class OrderController extends Controller
                 'new_status' => 'confirmed',
                 'order_code' => $order->order_code ?? $order->id,
             ]);
-            
         } catch (\Exception $e) {
             Log::error('Lỗi xác nhận đơn hàng', [
                 'order_id' => $order->id,

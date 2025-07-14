@@ -176,3 +176,8 @@ Route::prefix('customer')->middleware(['auth'])->group(function () {
         return Broadcast::auth($request);
     })->middleware(['web']);
 });
+
+// Route for guest to track order
+Route::get('/track', [CustomerOrderController::class, 'showTrackingForm'])->name('customer.order.track.form');
+Route::post('/track', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track.submit');
+Route::get('/track/{order_code}', [CustomerOrderController::class, 'orderTrackingForGuest'])->name('customer.order.track');

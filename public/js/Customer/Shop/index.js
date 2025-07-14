@@ -39,6 +39,40 @@ document.addEventListener('DOMContentLoaded', function() {
         // Subscribe to discounts channel
         discountsChannel = pusher.subscribe('discounts');
         
+        // === Subscribe to combo stock channel for real-time combo updates ===
+        const comboStockChannel = pusher.subscribe('combo-branch-stock-channel');
+        comboStockChannel.bind('combo-stock-updated', function(data) {
+            // Get current branch ID from meta tag
+            const branchIdMeta = document.querySelector('meta[name="selected-branch"]');
+            const currentBranchId = branchIdMeta ? branchIdMeta.content : null;
+            if (!currentBranchId || parseInt(currentBranchId) !== data.branchId) {
+                // Not the current branch, ignore
+                return;
+            }
+            // Find the combo card
+            const card = document.querySelector(`.product-card[data-combo-id="${data.comboId}"]`);
+            if (!card) return;
+            // Update out-of-stock status
+            if (parseInt(data.stockQuantity) > 0) {
+                card.classList.remove('out-of-stock');
+                const overlay = card.querySelector('.out-of-stock-overlay');
+                if (overlay) overlay.remove();
+            } else {
+                card.classList.add('out-of-stock');
+                if (!card.querySelector('.out-of-stock-overlay')) {
+                    const overlayDiv = document.createElement('div');
+                    overlayDiv.className = 'out-of-stock-overlay';
+                    overlayDiv.innerHTML = '<span>Hết hàng</span>';
+                    card.querySelector('.relative').prepend(overlayDiv);
+                }
+            }
+            // Animation highlight
+            card.classList.add('highlight-update');
+            setTimeout(() => {
+                card.classList.remove('highlight-update');
+            }, 1000);
+        });
+        
         // Get current branch ID
         const urlParams = new URLSearchParams(window.location.search);
         const currentBranchId = urlParams.get('branch_id') || document.querySelector('meta[name="selected-branch"]')?.content;

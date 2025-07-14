@@ -583,3 +583,105 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 });
+
+// === REALTIME COMBO STOCK ===
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.pusherKey && window.pusherCluster) {
+        const comboStockPusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
+            encrypted: true,
+            enabledTransports: ['ws', 'wss']
+        });
+        const comboStockChannel = comboStockPusher.subscribe('combo-branch-stock-channel');
+
+        comboStockChannel.bind('combo-stock-updated', function(data) {
+            console.log('[Realtime combo-stock-updated]', data);
+            // Lấy branchId hiện tại từ meta tag
+            const branchIdMeta = document.querySelector('meta[name="selected-branch"]');
+            const currentBranchId = branchIdMeta ? branchIdMeta.content : null;
+            if (!currentBranchId || parseInt(currentBranchId) !== data.branchId) {
+                console.log('[Realtime combo-stock-updated] Branch mismatch:', {currentBranchId, eventBranchId: data.branchId});
+                return; // Không phải chi nhánh hiện tại
+            }
+            // Tìm card combo tương ứng
+            const card = document.querySelector(`.product-card[data-combo-id="${data.comboId}"]`);
+            if (!card) {
+                console.log('[Realtime combo-stock-updated] Không tìm thấy card combo:', data.comboId);
+                return;
+            }
+            // Cập nhật trạng thái hết hàng
+            if (parseInt(data.stockQuantity) > 0) {
+                card.classList.remove('out-of-stock');
+                // Xóa overlay hết hàng nếu có
+                const overlay = card.querySelector('.out-of-stock-overlay');
+                if (overlay) overlay.remove();
+            } else {
+                card.classList.add('out-of-stock');
+                // Thêm overlay hết hàng nếu chưa có
+                if (!card.querySelector('.out-of-stock-overlay')) {
+                    const overlayDiv = document.createElement('div');
+                    overlayDiv.className = 'out-of-stock-overlay';
+                    overlayDiv.innerHTML = '<span>Hết hàng</span>';
+                    card.querySelector('.relative').prepend(overlayDiv);
+                }
+            }
+            // Animation highlight update
+            card.classList.add('highlight-update');
+            setTimeout(() => {
+                card.classList.remove('highlight-update');
+            }, 1000);
+        });
+    }
+});
+
+// === REALTIME COMBO STOCK FOR DETAIL PAGE ===
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.pusherKey && window.pusherCluster) {
+        const comboStockPusher = new Pusher(window.pusherKey, {
+            cluster: window.pusherCluster,
+            encrypted: true,
+            enabledTransports: ['ws', 'wss']
+        });
+        const comboStockChannel = comboStockPusher.subscribe('combo-branch-stock-channel');
+        comboStockChannel.bind('combo-stock-updated', function(data) {
+            console.log('[Realtime combo-stock-updated][DETAIL]', data);
+            // Nếu đang ở trang chi tiết combo, kiểm tra comboId
+            const detailComboIdElem = document.getElementById('add-to-cart-combo');
+            if (detailComboIdElem && parseInt(detailComboIdElem.getAttribute('data-combo-id')) === parseInt(data.comboId)) {
+                const addToCartBtn = document.getElementById('add-to-cart-combo');
+                const buyNowBtn = document.getElementById('buy-now-combo');
+                const outOfStockMsg = document.getElementById('combo-out-of-stock-message');
+                if (parseInt(data.stockQuantity) > 0) {
+                    if (addToCartBtn) addToCartBtn.disabled = false;
+                    if (buyNowBtn) buyNowBtn.disabled = false;
+                    if (outOfStockMsg) outOfStockMsg.style.display = 'none';
+                } else {
+                    if (addToCartBtn) addToCartBtn.disabled = true;
+                    if (buyNowBtn) buyNowBtn.disabled = true;
+                    if (outOfStockMsg) outOfStockMsg.style.display = 'block';
+                }
+            } else {
+                console.log('[Realtime combo-stock-updated][DETAIL] ComboId mismatch:', {
+                    detailComboId: detailComboIdElem ? detailComboIdElem.getAttribute('data-combo-id') : null,
+                    eventComboId: data.comboId
+                });
+            }
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Kiểm tra trạng thái hết hàng khi load trang chi tiết combo
+    const addToCartBtn = document.getElementById('add-to-cart-combo');
+    const buyNowBtn = document.getElementById('buy-now-combo');
+    const outOfStockMsg = document.getElementById('combo-out-of-stock-message');
+    if (addToCartBtn && addToCartBtn.dataset && addToCartBtn.dataset.hasStock === 'false') {
+        addToCartBtn.disabled = true;
+        if (buyNowBtn) buyNowBtn.disabled = true;
+        if (outOfStockMsg) outOfStockMsg.style.display = 'block';
+    } else {
+        if (addToCartBtn) addToCartBtn.disabled = false;
+        if (buyNowBtn) buyNowBtn.disabled = false;
+        if (outOfStockMsg) outOfStockMsg.style.display = 'none';
+    }
+});

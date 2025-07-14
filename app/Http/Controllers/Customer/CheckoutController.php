@@ -17,6 +17,7 @@ use App\Models\Address;
 use App\Services\BranchService;
 use App\Services\ShippingService;
 use Illuminate\Support\Facades\Log;
+use App\Mail\EmailFactory;
 
 class CheckoutController extends Controller
 {
@@ -290,7 +291,7 @@ class CheckoutController extends Controller
                 'payer_phone' => $userId ? Auth::user()->phone : $request->phone,
                 'payment_amount' => $total,
                 'txn_ref' => 'PAY-' . strtoupper(uniqid()), // Mã giao dịch tạm thời
-                'payment_status' => ($request->payment_method === 'cod' || $request->payment_method === 'balance') ? 'completed' : 'pending',
+                'payment_status' => ($request->payment_method === 'balance') ? 'completed' : 'pending',
                 'ip_address' => $request->ip(),
             ]);
             $payment->save();
@@ -410,6 +411,9 @@ class CheckoutController extends Controller
             
             DB::commit();
             
+            // Send confirmation email
+            EmailFactory::sendOrderConfirmation($order);
+            
             // Redirect to success page
             return redirect()->route('checkout.success', ['order_code' => $order->order_code])
                         ->with('success', 'Đơn hàng của bạn đã được đặt thành công!');
@@ -521,6 +525,9 @@ class CheckoutController extends Controller
 
                     // Dispatch event cho branch
                     NewOrderReceived::dispatch($order);
+
+                    // Send confirmation email
+                    EmailFactory::sendOrderConfirmation($order);
 
                     // Clear cart
                     $cart = Cart::where('user_id', $order->customer_id)

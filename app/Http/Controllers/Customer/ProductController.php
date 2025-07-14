@@ -575,6 +575,9 @@ class ProductController extends Controller
     // Lấy tồn kho tại chi nhánh hiện tại (nếu có)
     $branchStocks = $combo->comboBranchStocks;
 
+    // Tính trạng thái còn hàng cho combo ở branch hiện tại
+    $combo->has_stock = $branchStocks->sum('quantity') > 0;
+
     // Chuẩn bị dữ liệu sản phẩm trong combo
     $items = $combo->comboItems->map(function($item) {
         $variant = $item->productVariant;
