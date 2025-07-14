@@ -126,5 +126,18 @@ class AppServiceProvider extends ServiceProvider
                 ]);
             }
         });
+
+        // View Composer cho customer notification
+        View::composer('partials.customer.header', function ($view) {
+
+            $user = Auth::user();
+            $customerNotifications = $user
+                ? $user->notifications()->latest()->limit(10)->get()
+                : collect();
+            $customerUnreadCount = $user
+                ? $user->unreadNotifications()->count()
+                : 0;
+            $view->with(compact('customerNotifications', 'customerUnreadCount'));
+        });
     }
 }
