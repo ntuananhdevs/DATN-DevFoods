@@ -15,7 +15,9 @@
 
 <!-- Login Required Modal -->
 <div id="loginRequiredModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 relative">
+        <button id="closeLoginModalBtn"
+            class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold focus:outline-none">&times;</button>
         <h3 class="text-lg font-semibold mb-4">Yêu cầu đăng nhập</h3>
         <p class="text-gray-600 mb-6">Vui lòng đăng nhập để sử dụng tính năng chat với chúng tôi.</p>
         <div class="flex justify-end gap-2">
@@ -226,6 +228,19 @@
         const adminStatusText = document.getElementById('adminStatusText');
         const initialTime = document.getElementById('initialTime');
         const loginRequiredModal = document.getElementById('loginRequiredModal');
+        const closeLoginModalBtn = document.getElementById('closeLoginModalBtn');
+        // Đảm bảo sự kiện đóng modal chỉ gắn 1 lần và đúng selector
+        if (loginRequiredModal && closeLoginModalBtn) {
+            closeLoginModalBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                loginRequiredModal.classList.add('hidden');
+            });
+            loginRequiredModal.addEventListener('mousedown', function(e) {
+                if (e.target === loginRequiredModal) {
+                    loginRequiredModal.classList.add('hidden');
+                }
+            });
+        }
 
         // State
         let isChatOpen = false;
@@ -284,7 +299,21 @@
                 if (!emojiPicker.contains(e.target) && !emojiBtn.contains(e.target)) {
                     hideEmojiPicker();
                 }
+                // Đóng modal đăng nhập khi click ra ngoài
+                if (loginRequiredModal && !loginRequiredModal.classList.contains('hidden')) {
+                    const modalContent = loginRequiredModal.querySelector('.bg-white');
+                    if (modalContent && !modalContent.contains(e.target)) {
+                        loginRequiredModal.classList.add('hidden');
+                    }
+                }
             });
+            // Đóng modal khi bấm nút X
+            const closeLoginModalBtn = document.getElementById('closeLoginModalBtn');
+            if (closeLoginModalBtn) {
+                closeLoginModalBtn.addEventListener('click', function() {
+                    loginRequiredModal.classList.add('hidden');
+                });
+            }
             messageInput.addEventListener('input', autoResizeTextarea);
             messageInput.addEventListener('input', () => {
                 sendTypingIndicator(true);
@@ -357,8 +386,7 @@
                     if (list.conversations && list.conversations.length > 0) {
                         conversationId = list.conversations[0].id;
                         window.conversationId = conversationId;
-                        console.log('[DEBUG] Sắp gọi initCustomerChatRealtime với conversationId:',
-                            conversationId);
+                        
                         loadMessages();
                         initCustomerChatRealtime(conversationId);
                     } else {
@@ -786,11 +814,10 @@
         // Hàm khởi tạo CustomerChatRealtime sau khi đã có conversationId
         function initCustomerChatRealtime(conversationId) {
             const customerUserId = window.customerUserId;
-            console.log('[DEBUG] conversationId:', conversationId, 'customerUserId:', customerUserId);
+           
             if (!conversationId || !customerUserId) return;
             if (window.customerChatInstance) return; // Không khởi tạo lại nếu đã có
-            console.log('[DEBUG] Khởi tạo CustomerChatRealtime với conversationId:', conversationId, 'userId:',
-                customerUserId);
+            
             window.customerChatInstance = new CustomerChatRealtime({
                 conversationId: conversationId,
                 userId: customerUserId,
@@ -819,31 +846,22 @@
                 // Ghi đè hàm setupPusherChannel để thêm log
                 setupPusherChannel: function() {
                     try {
-                        console.log(
-                            `[CustomerChatRealtime] Đăng ký channel: chat.${this.conversationId}`
-                        );
+                       
                         const channel = this.pusher.subscribe(`chat.${this.conversationId}`);
                         channel.bind("pusher:subscription_succeeded", () => {
-                            console.log(
-                                `[CustomerChatRealtime] Đã subscribe thành công vào chat.${this.conversationId}`
-                            );
+                            
                         });
                         channel.bind("pusher:subscription_error", (err) => {
-                            console.error(
-                                `[CustomerChatRealtime] Lỗi subscribe channel chat.${this.conversationId}:`,
-                                err);
+                            
                         });
                         channel.bind("new-message", (data) => {
-                            console.log("[CustomerChatRealtime] Tin nhắn mới nhận được:",
-                                data);
+                            
                             if (data.message) {
                                 this.appendMessage(data.message);
                             }
                         });
                         channel.bind("user.typing", (data) => {
-                            console.log(
-                                "[DEBUG][CustomerChatRealtime] Nhận event user.typing",
-                                data);
+                            
                             if (
                                 data.user_id !== this.userId &&
                                 String(data.conversation_id) === String(this.conversationId)
@@ -860,7 +878,7 @@
                     }
                 },
                 showTypingIndicator: function(userName) {
-                    console.log("[DEBUG][CustomerChatRealtime] showTypingIndicator", userName);
+                    
                     let typingDiv = document.getElementById("customer-typing-indicator");
                     const msgContainer = document.getElementById("messagesContainer");
                     const typingHTML = `
@@ -1108,3 +1126,4 @@
         }
     }
 </style>
+//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

@@ -1,6 +1,8 @@
 <header class="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b bg-background px-4 shadow-sm"
     style="height:59px;min-height:59px;max-height:59px;">
     <div class="flex items-center gap-2">
+
+
         <!-- Mobile menu button -->
         <button id="mobile-menu-btn"
             class="lg:hidden flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground">
@@ -107,7 +109,7 @@
                         class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-badge notification-unread-count">
                         <span
                             class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping"></span>
-                        <span class="relative">{{ $branchUnreadCount }}</span>
+                        <span class="relative">{{ $branchUnreadCount > 99 ? '99+' : $branchUnreadCount }}</span>
                     </span>
                 @endif
             </button>
@@ -261,9 +263,9 @@
             })
             .then(res => res.json())
             .then(data => {
-                console.log('Branch fetchNotifications badge:', data.unreadCount);
+
                 document.querySelectorAll('.notification-unread-count').forEach(el => {
-                    el.textContent = data.unreadCount;
+                    el.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
                 });
                 // Cập nhật danh sách notification trong modal (chỉ update từng item)
                 let container = document.getElementById('branch-notification-list');

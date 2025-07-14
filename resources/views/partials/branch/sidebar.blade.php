@@ -25,7 +25,7 @@
     <div class="sidebar-content p-4 overflow-y-auto custom-scrollbar">
         <div class="space-y-6">
             <div>
-            <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
+                <div class="sidebar-dropdown sidebar-tooltip" data-tooltip="Dashboard">
                     <button type="button"
                         class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.dashboard') || request()->routeIs('branch.drivers-statistics') || request()->routeIs('branch.order-statistics') || request()->routeIs('branch.food-statistics') || request()->routeIs('branch.customer-statistics') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
@@ -121,9 +121,9 @@
                     <button type="button"
                         class="sidebar-dropdown-trigger flex items-center w-full rounded-md p-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground {{ request()->routeIs('branch.products.*') || request()->routeIs('branch.combos.*') || request()->routeIs('branch.toppings.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">
                         <span class="sidebar-icon-container mr-2 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="lucide lucide-shopping-bag">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag">
                                 <path d="M6 2L3 6v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
                                 <path d="M3 6h18"></path>
                                 <path d="M16 10a4 4 0 0 1-8 0"></path>
@@ -140,7 +140,8 @@
                     <div
                         class="sidebar-dropdown-content ml-6 pl-2 border-l border-sidebar-border mt-1 space-y-1 {{ request()->routeIs('branch.products.*') || request()->routeIs('branch.combos.*') || request()->routeIs('branch.toppings.*') ? '' : 'hidden' }}">
                         <a href="{{ route('branch.products') }}"
-                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món ăn</a>
+                            class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.products.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Món
+                            ăn</a>
                         <a href="{{ route('branch.combos') }}"
                             class="flex items-center rounded-md p-2 text-sm {{ request()->routeIs('branch.combos.*') ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : '' }}">Combo</a>
                         <a href="{{ route('branch.toppings') }}"
@@ -275,6 +276,7 @@
         }
     }
 
+    //aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     .sidebar-menu-item.bg-sidebar-accent,
     .sidebar-dropdown-trigger.bg-sidebar-accent,
     .sidebar-dropdown-content a.bg-sidebar-accent {

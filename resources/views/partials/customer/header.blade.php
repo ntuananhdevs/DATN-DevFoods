@@ -122,7 +122,8 @@
                             class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-badge notification-unread-count">
                             <span
                                 class="absolute text-white inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping"></span>
-                            <span class="relative">{{ $customerUnreadCount ?? 0 }}</span>
+                            <span
+                                class="relative">{{ ($customerUnreadCount ?? 0) > 99 ? '99+' : $customerUnreadCount ?? 0 }}</span>
                         </span>
                     </button>
                     <!-- Popup notification -->
@@ -582,9 +583,9 @@
             })
             .then(res => res.json())
             .then(data => {
-                console.log('Customer fetchNotifications badge:', data.unreadCount);
+
                 document.querySelectorAll('.notification-unread-count').forEach(el => {
-                    el.textContent = data.unreadCount;
+                    el.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
                 });
                 let container = document.getElementById('customer-notification-list');
                 if (container && data.html) {
@@ -650,3 +651,4 @@
         });
     }
 </script>
+//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

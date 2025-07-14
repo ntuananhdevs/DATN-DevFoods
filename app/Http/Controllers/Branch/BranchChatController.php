@@ -245,7 +245,7 @@ class BranchChatController extends Controller
                     ->where('data->conversation_id', $conversation->id)
                     ->first();
                 if ($existing) {
-                    $existing->data = array_merge($existing->data, (new \App\Notifications\NewChatMessageNotification($message))->toDatabase($admin));
+                    $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($admin));
                     $existing->created_at = now();
                     $existing->save();
                 }
@@ -262,7 +262,7 @@ class BranchChatController extends Controller
                         ->where('data->conversation_id', $conversation->id)
                         ->first();
                     if ($existing) {
-                        $existing->data = array_merge($existing->data, (new \App\Notifications\NewChatMessageNotification($message))->toDatabase($customer));
+                        $existing->data = array_merge($existing->data, (new NewChatMessageNotification($message))->toDatabase($customer));
                         $existing->created_at = now();
                         $existing->save();
                     }
@@ -343,9 +343,9 @@ class BranchChatController extends Controller
 
             // Create system message about status change
             $statusMessages = [
-                'active' => '🟢 Cuộc trò chuyện đã được kích hoạt',
-                'resolved' => '✅ Cuộc trò chuyện đã được giải quyết',
-                'closed' => '🔒 Cuộc trò chuyện đã được đóng'
+                'active' => ' Cuộc trò chuyện đã được kích hoạt',
+                'resolved' => ' Cuộc trò chuyện đã được giải quyết',
+                'closed' => ' Cuộc trò chuyện đã được đóng'
             ];
 
             $systemMessage = ChatMessage::create([

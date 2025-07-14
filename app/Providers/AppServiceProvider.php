@@ -114,7 +114,7 @@ class AppServiceProvider extends ServiceProvider
             if ($admin) {
                 $adminNotifications = $admin->notifications()->latest()->limit(10)->get();
                 $adminUnreadCount = $admin->unreadNotifications()->count();
-                
+
                 $view->with([
                     'adminNotifications' => $adminNotifications,
                     'adminUnreadCount' => $adminUnreadCount

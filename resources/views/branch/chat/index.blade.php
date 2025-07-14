@@ -1,6 +1,6 @@
 @extends('layouts.branch.contentLayoutMaster')
 
-@section('title', 'Quản Lý Chat - ' . ($branch->name ?? ''))
+@section('title', 'Quản Lý Chat')
 <link rel="stylesheet" href="/css/admin/branchs/chat.css">
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -69,24 +69,20 @@
                                     'new' => [
                                         'label' => 'Chờ phản hồi',
                                         'class' => 'badge badge-waiting',
-                                        'icon' => '⏰',
                                     ],
                                     'distributed' => [
                                         'label' => 'Đã phân phối',
                                         'class' => 'badge badge-distributed',
-                                        'icon' => '📤',
                                     ],
                                     'active' => [
                                         'label' => 'Đang xử lý',
                                         'class' => 'badge badge-active',
-                                        'icon' => '🟠',
                                     ],
                                     'resolved' => [
                                         'label' => 'Đã giải quyết',
                                         'class' => 'badge badge-resolved',
-                                        'icon' => '✅',
                                     ],
-                                    'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed', 'icon' => '🔒'],
+                                    'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed'],
                                 ];
                             @endphp
 

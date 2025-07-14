@@ -97,7 +97,7 @@
                         class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground animate-badge notification-unread-count">
                         <span
                             class="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping"></span>
-                        <span class="relative">{{ $adminUnreadCount }}</span>
+                        <span class="relative">{{ $adminUnreadCount > 99 ? '99+' : $adminUnreadCount }}</span>
                     </span>
                 @endif
             </button>
@@ -110,7 +110,8 @@
                     <div class="px-2 py-1.5 mb-1">
                         <h3 class="font-semibold text-sm">Thông báo</h3>
                         <p class="text-xs text-muted-foreground">Bạn có <span
-                                class="notification-unread-count">{{ $adminUnreadCount ?? 0 }}</span> thông báo chưa
+                                class="notification-unread-count">{{ ($adminUnreadCount ?? 0) > 99 ? '99+' : $adminUnreadCount ?? 0 }}</span>
+                            thông báo chưa
                             đọc</p>
                     </div>
                     <div class="h-px my-1 bg-muted"></div>
@@ -230,9 +231,9 @@
             })
             .then(res => res.json())
             .then(data => {
-                console.log('Admin fetchNotifications badge:', data.unreadCount);
+
                 document.querySelectorAll('.notification-unread-count').forEach(el => {
-                    el.textContent = data.unreadCount;
+                    el.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
                 });
                 // Cập nhật danh sách notification trong modal (chỉ update từng item)
                 let container = document.getElementById('admin-notification-list');
@@ -257,6 +258,16 @@
                             oldNoti.remove();
                         }
                     });
+                }
+                // Cập nhật badge
+                document.querySelectorAll('.notification-unread-count').forEach(el => {
+                    el.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
+                });
+                // Cập nhật dòng text trong dropdown (nếu có)
+                const dropdownText = document.querySelector(
+                    'p.text-xs.text-muted-foreground .notification-unread-count');
+                if (dropdownText) {
+                    dropdownText.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
                 }
             });
     }
@@ -408,7 +419,7 @@
             }
             return res.json();
         }).then(data => {
-            console.log('Notification marked as read:', data);
+
 
             // Chỉ chuyển hướng nếu có redirect URL
             if (redirectUrl) {
@@ -427,7 +438,7 @@
                 }
             }
         }).catch(error => {
-            console.error('Error marking notification as read:', error);
+
             // Nếu có lỗi và có redirect URL, vẫn chuyển hướng
             if (redirectUrl) {
                 window.location.href = redirectUrl;
@@ -441,7 +452,7 @@
         countElements.forEach(element => {
             const currentCount = parseInt(element.textContent) || 0;
             const newCount = Math.max(0, currentCount + increment);
-            element.textContent = newCount;
+            element.textContent = newCount > 99 ? '99+' : newCount;
 
             // Show/hide badge based on count
             const badge = element.closest('.absolute.-right-1.-top-1');

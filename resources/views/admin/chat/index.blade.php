@@ -68,24 +68,20 @@
                                     'new' => [
                                         'label' => 'Chờ phản hồi',
                                         'class' => 'badge badge-waiting',
-                                        'icon' => '⏰',
                                     ],
                                     'distributed' => [
                                         'label' => 'Đã phân phối',
                                         'class' => 'badge badge-distributed',
-                                        'icon' => '📤',
                                     ],
                                     'active' => [
                                         'label' => 'Đang xử lý',
                                         'class' => 'badge badge-active',
-                                        'icon' => '🟠',
                                     ],
                                     'resolved' => [
                                         'label' => 'Đã giải quyết',
                                         'class' => 'badge badge-resolved',
-                                        'icon' => '✅',
                                     ],
-                                    'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed', 'icon' => '🔒'],
+                                    'closed' => ['label' => 'Đã đóng', 'class' => 'badge badge-closed'],
                                 ];
                             @endphp
                             <span class="{{ $statusLabels[$conv->status]['class'] ?? 'badge' }}">
@@ -347,3 +343,4 @@
         }
     </script>
 @endsection
+//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
