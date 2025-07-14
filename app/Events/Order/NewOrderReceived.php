@@ -30,22 +30,22 @@ class NewOrderReceived implements ShouldBroadcastNow
     {
         $this->order = $order;
         $this->branchId = $order->branch_id;
-
+        
         // Gửi notification cho branch
         $branch = Branch::find($this->branchId);
         if ($branch) {
             $branch->notify(new NewOrderNotification($order));
         }
-
+        
         // Gửi notification cho tất cả admin
-        $admins = User::whereHas('roles', function ($query) {
+        $admins = User::whereHas('roles', function($query) {
             $query->where('name', 'admin');
         })->get();
-
+        
         foreach ($admins as $admin) {
             $admin->notify(new AdminNewOrderNotification($order));
         }
-
+        
         Log::info('NewOrderReceived event constructed', [
             'order_id' => $order->id,
             'order_code' => $order->order_code,
@@ -62,17 +62,16 @@ class NewOrderReceived implements ShouldBroadcastNow
         $channels = [
             new PrivateChannel('branch.' . $this->branchId),
             new Channel('branch-orders-channel'),
-            new Channel('admin.conversations'),
         ];
-
+        
         Log::info('NewOrderReceived broadcasting on channels', [
-            'channels' => array_map(function ($channel) {
+            'channels' => array_map(function($channel) {
                 return $channel->name;
             }, $channels),
             'order_id' => $this->order->id,
             'branch_id' => $this->branchId
         ]);
-
+        
         return $channels;
     }
 
@@ -91,10 +90,10 @@ class NewOrderReceived implements ShouldBroadcastNow
     {
         // Load relationships
         $this->order->load(['payment', 'orderItems', 'address', 'branch']);
-
+        
         // Calculate total items count
         $itemsCount = $this->order->orderItems->sum('quantity');
-
+        
         // Calculate distance if address exists
         $distanceKm = null;
         if ($this->order->address && $this->order->branch) {
@@ -102,12 +101,12 @@ class NewOrderReceived implements ShouldBroadcastNow
             $orderLng = $this->order->address->longitude ?? null;
             $branchLat = $this->order->branch->latitude ?? null;
             $branchLng = $this->order->branch->longitude ?? null;
-
+            
             if ($orderLat && $orderLng && $branchLat && $branchLng) {
                 $distanceKm = $this->calculateDistance($branchLat, $branchLng, $orderLat, $orderLng);
             }
         }
-
+        
         $data = [
             'order' => [
                 'id' => $this->order->id,
@@ -150,12 +149,12 @@ class NewOrderReceived implements ShouldBroadcastNow
             'branch_id' => $this->branchId,
             'timestamp' => now()->toISOString()
         ];
-
+        
         Log::info('NewOrderReceived broadcasting data', [
             'order_id' => $this->order->id,
             'data' => $data
         ]);
-
+        
         return $data;
     }
 
@@ -170,11 +169,11 @@ class NewOrderReceived implements ShouldBroadcastNow
         $lngDelta = deg2rad($lng2 - $lng1);
 
         $a = sin($latDelta / 2) * sin($latDelta / 2) +
-            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-            sin($lngDelta / 2) * sin($lngDelta / 2);
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($lngDelta / 2) * sin($lngDelta / 2);
 
         $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         return $earthRadius * $c;
     }
-}
+} 

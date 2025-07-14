@@ -7,10 +7,8 @@
             @forelse($notifications as $notification)
                 <div class="p-3 rounded-md border {{ $notification->read_at ? 'bg-white' : 'bg-primary/10' }}">
                     <div class="font-semibold">{{ $notification->data['message'] ?? '' }}</div>
-                    <div class="text-xs text-muted-foreground">Khách hàng: {{ $notification->data['customer_name'] ?? '' }}
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                        {{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</div>
+                    <div class="text-xs text-muted-foreground">Khách hàng: {{ $notification->data['customer_name'] ?? '' }}</div>
+                    <div class="text-xs text-muted-foreground">{{ \Carbon\Carbon::parse($notification->created_at)->diffForHumans() }}</div>
                 </div>
             @empty
                 <div class="text-center text-muted-foreground">Không có thông báo nào.</div>
@@ -20,4 +18,4 @@
             {{ $notifications->links() }}
         </div>
     </div>
-@endsection
+@endsection 
