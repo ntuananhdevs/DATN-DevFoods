@@ -964,14 +964,27 @@
                 </div>
             </div>
             <div class="action-buttons">
-                <button class="btn" onclick="callCustomer()">
+                <button class="btn w-full" onclick="callCustomer()">
                     <i data-lucide="phone"></i>
-                    Gọi khách
+                    Gọi {{ $type === 'branch' ? 'cửa hàng' : 'khách' }}
                 </button>
-                <button class="btn btn-success" onclick="completeDelivery()">
-                    <i data-lucide="check-circle"></i>
-                    Đã giao
-                </button>
+                @if ($type === 'branch')
+                    <form method="POST" action="{{ route('driver.orders.confirm-pickup', $order->id) }}" class="w-full" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-success w-full">
+                            <i data-lucide="check-circle"></i>
+                            Xác nhận đã lấy hàng
+                        </button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('driver.orders.confirm-delivery', $order->id) }}" class="w-full" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="btn btn-success w-full">
+                            <i data-lucide="check-circle"></i>
+                            Đã giao
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
     </div>
@@ -990,13 +1003,14 @@
         let destinationMarker = null;
 
         // Dữ liệu đơn hàng thực từ controller
+        const type = @json($type ?? null);
         const orderData = {
             id: {{ $order->id }},
-            customer_name: @json($customerName),
-            customer_phone: @json($customerPhone),
-            delivery_address: @json($deliveryAddress),
-            guest_latitude: {{ $latitude ?? 'null' }},
-            guest_longitude: {{ $longitude ?? 'null' }},
+            customer_name: type === 'branch' ? @json($branchName) : @json($customerName),
+            customer_phone: type === 'branch' ? @json($branchPhone) : @json($customerPhone),
+            delivery_address: type === 'branch' ? @json($branchAddress) : @json($deliveryAddress),
+            guest_latitude: type === 'branch' ? {{ $branchLat ?? 'null' }} : {{ $latitude ?? 'null' }},
+            guest_longitude: type === 'branch' ? {{ $branchLng ?? 'null' }} : {{ $longitude ?? 'null' }},
             notes: @json($notes)
         };
 
@@ -1049,7 +1063,7 @@
                         const { latitude, longitude } = position.coords;
                         currentPosition = { latitude, longitude };
 
-                        // Add user marker
+                        // Add user marker (driver)
                         if (userMarker) {
                             userMarker.remove();
                         }
@@ -1060,7 +1074,7 @@
                         // Fit map to show both locations
                         fitMapToBothLocations();
 
-                        // Calculate route
+                        // Calculate route: driver → branch (nếu type=branch), driver → khách (nếu không)
                         calculateRoute();
                     },
                     function(error) {
@@ -1068,19 +1082,18 @@
                         // Use fake location for demo
                         const fakeLocation = { latitude: 21.0245, longitude: 105.8412 };
                         currentPosition = fakeLocation;
-
                         if (userMarker) {
                             userMarker.remove();
                         }
                         userMarker = new mapboxgl.Marker({ color: '#3b82f6' })
                             .setLngLat([fakeLocation.longitude, fakeLocation.latitude])
                             .addTo(map);
-
-                        // Fit map to show both locations
                         fitMapToBothLocations();
-
                         calculateRoute();
-                        showToast("Thông báo", "Sử dụng vị trí giả để demo", "warning");
+                        dtmodalShowToast("warning", {
+                            title: "Thông báo",
+                            message: "Sử dụng vị trí giả để demo"
+                        });
                     },
                     {
                         enableHighAccuracy: true,
@@ -1092,35 +1105,26 @@
                 // Use fake location for demo
                 const fakeLocation = { latitude: 21.0245, longitude: 105.8412 };
                 currentPosition = fakeLocation;
-
                 if (userMarker) {
                     userMarker.remove();
                 }
                 userMarker = new mapboxgl.Marker({ color: '#3b82f6' })
                     .setLngLat([fakeLocation.longitude, fakeLocation.latitude])
                     .addTo(map);
-
-                // Fit map to show both locations
                 fitMapToBothLocations();
-
                 calculateRoute();
-                showToast("Thông báo", "Sử dụng vị trí giả để demo", "warning");
+                dtmodalShowToast("warning", {
+                    title: "Thông báo",
+                    message: "Sử dụng vị trí giả để demo"
+                });
             }
         }
 
-        // Thêm hàm mới để fit map hiển thị cả hai vị trí
         function fitMapToBothLocations() {
-            if (!currentPosition || !order) return;
-
+            if (!currentPosition || !orderData) return;
             const bounds = new mapboxgl.LngLatBounds();
-
-            // Thêm vị trí hiện tại vào bounds
             bounds.extend([currentPosition.longitude, currentPosition.latitude]);
-
-            // Thêm vị trí giao hàng vào bounds
-            bounds.extend([order.guest_longitude, order.guest_latitude]);
-
-            // Fit map để hiển thị cả hai vị trí với padding
+            bounds.extend([orderData.guest_longitude, orderData.guest_latitude]);
             map.fitBounds(bounds, {
                 padding: {
                     top: 100,
@@ -1128,36 +1132,31 @@
                     left: 50,
                     right: 50
                 },
-                maxZoom: 16 // Giới hạn zoom tối đa
+                maxZoom: 16
             });
         }
 
         async function calculateRoute() {
-            if (!currentPosition || !order) return;
-
+            if (!currentPosition || !orderData) return;
+            const start = `${currentPosition.longitude},${currentPosition.latitude}`;
+            const end = `${orderData.guest_longitude},${orderData.guest_latitude}`;
             try {
-                const start = `${currentPosition.longitude},${currentPosition.latitude}`;
-                const end = `${order.guest_longitude},${order.guest_latitude}`;
-
                 const response = await fetch(
                     `https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?geometries=geojson&access_token=${mapboxgl.accessToken}`
                 );
-
                 const data = await response.json();
-
                 if (data.routes && data.routes.length > 0) {
                     route = data.routes[0];
-
-                    // Update UI with route info
                     updateRouteInfo(route);
-
-                    // Enable start navigation button
                     document.getElementById('start-navigation-btn').disabled = false;
                     document.getElementById('status-text').textContent = "Sẵn sàng điều hướng";
                 }
             } catch (error) {
                 console.error("Error calculating route:", error);
-                showToast("Lỗi tính toán đường đi", "Không thể tính toán đường đi. Vui lòng thử lại.", "error");
+                dtmodalShowToast("error", {
+                    title: "Lỗi tính toán đường đi",
+                    message: "Không thể tính toán đường đi. Vui lòng thử lại."
+                });
             }
         }
 
@@ -1214,16 +1213,14 @@
         }
 
         function updateCustomerInfo() {
-            if (!order) return;
-
-            document.getElementById('customer-name').textContent = order.customer_name || "Khách hàng";
-            document.getElementById('customer-address').textContent = order.delivery_address || "Địa chỉ giao hàng";
-
-            if (order.notes) {
+            if (!orderData) return;
+            document.getElementById('customer-name').textContent = orderData.customer_name || (type === 'branch' ? 'Chi nhánh' : 'Khách hàng');
+            document.getElementById('customer-address').textContent = orderData.delivery_address || (type === 'branch' ? 'Địa chỉ chi nhánh' : 'Địa chỉ giao hàng');
+            if (orderData.notes) {
                 const noteElement = document.getElementById('customer-note');
                 if (noteElement) {
                     noteElement.classList.remove('hidden');
-                    document.getElementById('note-text').textContent = order.notes;
+                    document.getElementById('note-text').textContent = orderData.notes;
                 }
             }
         }
@@ -1273,17 +1270,20 @@
                 );
             }
 
-            showToast("Điều hướng", "Đã bắt đầu điều hướng", "success");
+            dtmodalShowToast("success", {
+                title: "Điều hướng",
+                message: "Đã bắt đầu điều hướng"
+            });
         }
 
         function updateNavigationInfo() {
-            if (!currentPosition || !order) return;
+            if (!currentPosition || !orderData) return;
 
             const distance = calculateDistance(
                 currentPosition.latitude,
                 currentPosition.longitude,
-                order.guest_latitude,
-                order.guest_longitude
+                orderData.guest_latitude,
+                orderData.guest_longitude
             );
 
             const time = Math.round(distance / 40 * 60); // Assuming 40 km/h average speed
@@ -1294,28 +1294,35 @@
         }
 
         function completeDelivery() {
-            dtmodalCreateModal({
-                type: 'success',
-                title: 'Xác nhận hoàn thành',
-                message: 'Bạn có chắc chắn đã giao hàng thành công cho khách hàng?',
-                confirmText: 'Xác nhận',
-                cancelText: 'Hủy bỏ',
+            dtmodalConfirmOrderStatus({
+                orderCode: orderData.id,
+                newStatusText: "Đã giao hàng",
+                message: "Bạn có chắc chắn đã giao hàng thành công cho khách hàng?",
                 onConfirm: function() {
-                    // Stop navigation
-                    if (watchId) {
-                        navigator.geolocation.clearWatch(watchId);
-                    }
-
-                    // Show success toast
-                    dtmodalShowToast('success', {
-                        title: 'Thành công!',
-                        message: 'Đã hoàn thành giao hàng'
+                    fetch(`/driver/orders/${orderData.id}/confirm-delivery`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            dtmodalShowToast('success', {
+                                title: 'Thành công!',
+                                message: 'Đã hoàn thành giao hàng'
+                            });
+                            setTimeout(() => {
+                                window.location.href = '{{ route("driver.orders.index") }}';
+                            }, 2000);
+                        } else {
+                            dtmodalShowToast('error', {
+                                title: 'Lỗi',
+                                message: data.message || 'Có lỗi xảy ra'
+                            });
+                        }
                     });
-
-                    // Redirect back to orders list after 2 seconds
-                    setTimeout(() => {
-                        window.location.href = '{{ route("driver.orders.index") }}';
-                    }, 2000);
                 },
                 onCancel: function() {
                     // Do nothing, just close modal
@@ -1324,13 +1331,53 @@
         }
 
         function callCustomer() {
-            if (order && order.customer_phone) {
-                if (confirm(`Gọi cho ${order.customer_name} (${order.customer_phone})?`)) {
-                    window.location.href = `tel:${order.customer_phone}`;
+            if (orderData && orderData.customer_phone) {
+                if (confirm(`Gọi cho ${orderData.customer_name} (${orderData.customer_phone})?`)) {
+                    window.location.href = `tel:${orderData.customer_phone}`;
                 }
             } else {
-                showToast("Lỗi", "Không có số điện thoại khách hàng", "error");
+                dtmodalShowToast("error", {
+                    title: "Lỗi",
+                    message: "Không có số điện thoại"
+                });
             }
+        }
+
+        function completePickup() {
+            dtmodalConfirmOrderStatus({
+                orderCode: orderData.id,
+                newStatusText: "Đã lấy hàng",
+                message: "Bạn có chắc chắn đã lấy hàng tại cửa hàng?",
+                onConfirm: function() {
+                    fetch(`/driver/orders/${orderData.id}/confirm-pickup`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            dtmodalShowToast('success', {
+                                title: 'Thành công!',
+                                message: 'Đã xác nhận lấy hàng'
+                            });
+                            setTimeout(() => {
+                                window.location.href = `/driver/orders/${orderData.id}/show`;
+                            }, 2000);
+                        } else {
+                            dtmodalShowToast('error', {
+                                title: 'Lỗi',
+                                message: data.message || 'Có lỗi xảy ra'
+                            });
+                        }
+                    });
+                },
+                onCancel: function() {
+                    // Do nothing, just close modal
+                }
+            });
         }
 
         function toggleCustomerInfo() {
@@ -1409,55 +1456,6 @@
                 const remainingMinutes = minutes % 60;
                 return hours + 'h ' + remainingMinutes + 'p';
             }
-        }
-
-        function showToast(title, message, type = 'info') {
-            // Remove existing toast
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
-
-            // Create toast element
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-
-            const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : type === 'warning' ? 'alert-triangle' : 'info';
-
-            toast.innerHTML = `
-                <div class="toast-icon">
-                    <i data-lucide="${iconName}"></i>
-                </div>
-                <div class="toast-content">
-                    <div class="toast-title">${title}</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-                <button class="toast-close" onclick="this.parentElement.remove()">
-                    <i data-lucide="x"></i>
-                </button>
-                <div class="toast-progress">
-                    <div class="toast-progress-bar"></div>
-                </div>
-            `;
-
-            // Add to page
-            document.body.appendChild(toast);
-            lucide.createIcons();
-
-            // Show toast
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-
-            // Hide toast after 5 seconds
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
-            }, 5000);
         }
 
         // Initialize when DOM is loaded

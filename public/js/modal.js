@@ -232,12 +232,15 @@ function dtmodalCreateModal(options) {
 
 // Xử lý action của modal
 function dtmodalHandleAction(modalId, isConfirm) {
+    console.log('dtmodalHandleAction', modalId, isConfirm);
     const modal = document.getElementById(modalId);
     if (!modal) return;
 
     if (isConfirm && typeof modal.onConfirm === "function") {
+        console.log('Calling modal.onConfirm');
         modal.onConfirm();
     } else if (!isConfirm && typeof modal.onCancel === "function") {
+        console.log('Calling modal.onCancel');
         modal.onCancel();
     }
 
@@ -459,5 +462,35 @@ function dtmodalCloseAllToasts() {
     if (container) {
         Array.from(container.children).forEach(dtmodalCloseToast);
     }
+}
+
+/**
+ * Hiển thị modal xác nhận thay đổi trạng thái đơn hàng
+ * @param {Object} options
+ *   - orderCode: mã đơn hàng (hiển thị)
+ *   - newStatusText: tên trạng thái mới (VD: 'Đã lấy hàng', 'Đang giao', ...)
+ *   - message: nội dung bổ sung (tùy chọn)
+ *   - onConfirm: callback khi xác nhận
+ *   - onCancel: callback khi hủy
+ */
+function dtmodalConfirmOrderStatus(options) {
+    const {
+        orderCode = "",
+        newStatusText = "",
+        message = "",
+        onConfirm = null,
+        onCancel = null
+    } = options;
+
+    return dtmodalCreateModal({
+        type: "success",
+        title: "Xác nhận thay đổi trạng thái đơn hàng",
+        subtitle: orderCode ? `Đơn hàng #${orderCode}` : "",
+        message: `Bạn có chắc chắn muốn chuyển đơn hàng sang trạng thái <strong>${newStatusText}</strong>?<br>${message || ""}`,
+        confirmText: "Xác nhận",
+        cancelText: "Hủy bỏ",
+        onConfirm: onConfirm,
+        onCancel: onCancel
+    });
 }
 

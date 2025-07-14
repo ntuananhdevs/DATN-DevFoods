@@ -144,6 +144,8 @@
                             <i class="fas fa-location-arrow w-4 h-4 mr-2"></i>
                             Bắt đầu di chuyển đến điểm lấy hàng
                         </button>
+                        {{-- Nút "Xem bản đồ lớn" --}}
+                     
                     @break
 
                     @case('waiting_driver_pick_up')
@@ -152,6 +154,12 @@
                             class="w-full bg-green-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-green-700 flex items-center justify-center">
                             <i class="fas fa-box w-4 h-4 mr-2"></i>
                             Xác nhận đã lấy hàng
+                        </button>
+                        {{-- Nút "Xem bản đồ lớn" --}}
+                        <button onclick="DriverOrderDetailPage.navigateAction('branch')"
+                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center mt-2">
+                            <i class="fas fa-route w-4 h-4 mr-2"></i>
+                            Xem bản đồ lớn
                         </button>
                     @break
 
@@ -173,7 +181,7 @@
                         </button>
                         {{-- Nút "Xem bản đồ lớn" --}}
                         <button data-action="navigate"
-                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center">
+                            class="w-full bg-purple-600 text-white py-3 rounded-lg font-medium shadow-sm hover:bg-purple-700 flex items-center justify-center mt-2">
                             <i class="fas fa-route w-4 h-4 mr-2"></i> {{-- Using a direct fas icon for route map --}}
                             Xem bản đồ lớn
                         </button>
@@ -551,7 +559,7 @@
             }
 
 
-            const DriverOrderDetailPage = {
+            window.DriverOrderDetailPage = {
                 // orderId is now passed via action functions
 
                 sendRequest: async function(orderId, actionUrl, successMessage) {
@@ -697,14 +705,17 @@
                     );
                 },
 
-                navigateAction: function() {
-                    // Ensure the order data is available in the HTML for these values
+                navigateAction: function(type) {
                     const orderDetailsCard = document.getElementById('order-details-card');
                     const orderId = orderDetailsCard ? orderDetailsCard.dataset.orderId : null;
+                    const orderStatus = orderDetailsCard ? orderDetailsCard.dataset.orderStatus : null;
 
                     if (orderId) {
-                        // Chuyển hướng sang trang điều hướng (navigate)
-                        window.location.href = `/driver/orders/${orderId}/navigate`;
+                        let url = `/driver/orders/${orderId}/navigate`;
+                        if (type === 'branch' || orderStatus === 'waiting_driver_pick_up') {
+                            url += '?type=branch';
+                        }
+                        window.location.href = url;
                     } else {
                         showToast('error', {
                             message: 'Không thể xác định đơn hàng để điều hướng.'

@@ -183,35 +183,42 @@ class OrderController extends Controller
         // Ưu tiên lấy vĩ độ/kinh độ từ address, nếu không có thì lấy từ guest_latitude/guest_longitude
         $latitude = $order->address && $order->address->latitude ? $order->address->latitude : $order->guest_latitude;
         $longitude = $order->address && $order->address->longitude ? $order->address->longitude : $order->guest_longitude;
+        $branchLat = $order->branch->latitude ?? null;
+        $branchLng = $order->branch->longitude ?? null;
 
-        return view('driver.orders.show', compact('order', 'latitude', 'longitude'));
+        return view('driver.orders.show', compact('order', 'latitude', 'longitude', 'branchLat', 'branchLng'));
     }
 
     /**
      * Hiển thị trang điều hướng cho một đơn hàng.
      */
-    public function navigate($orderId)
+    public function navigate($orderId, Request $request)
     {
         $driverId = Auth::guard('driver')->id();
-
-        // Lấy thông tin đơn hàng, địa chỉ, khách hàng
         $order = Order::with(['customer', 'address', 'branch'])
             ->where('id', $orderId)
             ->where('driver_id', $driverId)
             ->firstOrFail();
 
-        // Ưu tiên lấy vĩ độ/kinh độ từ address, nếu không có thì lấy từ guest_latitude/guest_longitude
         $latitude = $order->address && $order->address->latitude ? $order->address->latitude : $order->guest_latitude;
         $longitude = $order->address && $order->address->longitude ? $order->address->longitude : $order->guest_longitude;
+        $branchLat = $order->branch->latitude ?? null;
+        $branchLng = $order->branch->longitude ?? null;
 
-        // Lấy tên, số điện thoại, địa chỉ, ghi chú
         $customerName = $order->customer->full_name ?? $order->guest_name;
         $customerPhone = $order->customer->phone ?? $order->guest_phone;
         $deliveryAddress = $order->address->address_line ?? $order->guest_address;
         $notes = $order->notes;
 
+        $type = $request->query('type');
+
+        $branchName = $order->branch->name ?? '';
+        $branchPhone = $order->branch->phone ?? '';
+        $branchAddress = $order->branch->address ?? '';
+
         return view('driver.orders.navigate', compact(
-            'order', 'latitude', 'longitude', 'customerName', 'customerPhone', 'deliveryAddress', 'notes'
+            'order', 'latitude', 'longitude', 'branchLat', 'branchLng', 'customerName', 'customerPhone', 'deliveryAddress', 'notes', 'type',
+            'branchName', 'branchPhone', 'branchAddress'
         ));
     }
 
@@ -262,14 +269,17 @@ class OrderController extends Controller
     /**
      * Tài xế xác nhận đã lấy hàng (waiting_driver_pick_up -> driver_picked_up)
      */
-    public function confirmPickup(Order $order): JsonResponse
+    public function confirmPickup(Order $order)
     {
         if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'waiting_driver_pick_up') {
-            return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
         $order->status = 'driver_picked_up';
-        return $this->processUpdate($order, 'Bạn đã lấy hàng thành công!');
+        $order->save();
+
+        return redirect()->route('driver.orders.show', $order->id)
+            ->with('success', 'Bạn đã lấy hàng thành công!');
     }
 
     /**
@@ -288,15 +298,18 @@ class OrderController extends Controller
     /**
      * Tài xế xác nhận giao thành công (in_transit -> delivered)
      */
-    public function confirmDelivery(Order $order): JsonResponse
+    public function confirmDelivery(Order $order)
     {
         if ($order->driver_id !== Auth::guard('driver')->id() || $order->status !== 'in_transit') {
-            return response()->json(['success' => false, 'message' => 'Bạn không thể thực hiện hành động này.'], 400);
+            return redirect()->back()->with('error', 'Bạn không thể thực hiện hành động này.');
         }
 
         $order->status = 'delivered';
         $order->actual_delivery_time = Carbon::now();
-        return $this->processUpdate($order, 'Đã giao hàng thành công!');
+        $order->save();
+
+        return redirect()->route('driver.orders.show', $order->id)
+            ->with('success', 'Đã giao hàng thành công!');
     }
 
     /**
